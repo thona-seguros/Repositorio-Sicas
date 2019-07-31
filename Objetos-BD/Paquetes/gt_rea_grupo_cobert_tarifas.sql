@@ -1,0 +1,41 @@
+--
+-- GT_REA_GRUPO_COBERT_TARIFAS  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   REA_GRUPO_COBERT_TARIFAS (Table)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.GT_REA_GRUPO_COBERT_TARIFAS IS
+
+  FUNCTION DESCRIPCION_GRUPO(nCodCia NUMBER, cCodGrupoCobert VARCHAR2) RETURN VARCHAR2;
+
+END GT_REA_GRUPO_COBERT_TARIFAS;
+/
+
+--
+-- GT_REA_GRUPO_COBERT_TARIFAS  (Package Body) 
+--
+--  Dependencies: 
+--   GT_REA_GRUPO_COBERT_TARIFAS (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_REA_GRUPO_COBERT_TARIFAS IS
+
+FUNCTION DESCRIPCION_GRUPO(nCodCia NUMBER, cCodGrupoCobert VARCHAR2) RETURN VARCHAR2 IS
+cDescGrupoCobert       REA_GRUPO_COBERT_TARIFAS.DescGrupoCobert%TYPE;
+BEGIN
+   BEGIN
+      SELECT DescGrupoCobert
+        INTO cDescGrupoCobert
+        FROM REA_GRUPO_COBERT_TARIFAS
+       WHERE CodCia           = nCodCia
+         AND CodGrupoCobert   = cCodGrupoCobert;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cDescGrupoCobert := 'Grupo NO Existe';
+   END;
+   RETURN(cDescGrupoCobert);
+END DESCRIPCION_GRUPO;
+
+END GT_REA_GRUPO_COBERT_TARIFAS;
+/

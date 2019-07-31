@@ -1,0 +1,89 @@
+--
+-- OC_MONEDA  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DBMS_STANDARD (Package)
+--   MONEDA (Table)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_MONEDA IS
+
+  FUNCTION MONEDA_ALTERNA(cCodMoneda VARCHAR2) RETURN VARCHAR2;
+  FUNCTION DESCRIPCION_MONEDA(cCodMoneda VARCHAR2) RETURN VARCHAR2;
+  FUNCTION CODIGO_SISTEMA_CONTABLE(cCodMoneda VARCHAR2) RETURN VARCHAR2;
+  FUNCTION CODIGO_FACTURACION_ELECTRONICA(cCodMoneda VARCHAR2) RETURN VARCHAR2;
+
+END OC_MONEDA;
+/
+
+--
+-- OC_MONEDA  (Package Body) 
+--
+--  Dependencies: 
+--   OC_MONEDA (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_moneda IS
+
+FUNCTION MONEDA_ALTERNA(cCodMoneda VARCHAR2) RETURN VARCHAR2 IS
+cCodAlterno   MONEDA.CodAlterno%TYPE;
+BEGIN
+   BEGIN
+      SELECT CodAlterno
+        INTO cCodAlterno
+        FROM MONEDA
+       WHERE Cod_Moneda = cCodMoneda;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20000,'Código de Moneda '|| cCodMoneda || ' NO EXISTE');
+   END;
+   RETURN(cCodAlterno);
+END MONEDA_ALTERNA;
+
+FUNCTION DESCRIPCION_MONEDA(cCodMoneda VARCHAR2) RETURN VARCHAR2 IS
+cDesc_Moneda   MONEDA.Desc_Moneda%TYPE;
+BEGIN
+   BEGIN
+      SELECT Desc_Moneda
+        INTO cDesc_Moneda
+        FROM MONEDA
+       WHERE Cod_Moneda = cCodMoneda;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20000,'Código de Moneda '|| cCodMoneda || ' NO EXISTE');
+   END;
+   RETURN(cDesc_Moneda);
+END DESCRIPCION_MONEDA;
+
+FUNCTION CODIGO_SISTEMA_CONTABLE(cCodMoneda VARCHAR2) RETURN VARCHAR2 IS
+cCodSistCont   MONEDA.CodSistCont%TYPE;
+BEGIN
+   BEGIN
+      SELECT CodSistCont
+        INTO cCodSistCont
+        FROM MONEDA
+       WHERE Cod_Moneda = cCodMoneda;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20000,'Código de Moneda '|| cCodMoneda || ' NO EXISTE');
+   END;
+   RETURN(cCodSistCont);
+END CODIGO_SISTEMA_CONTABLE;
+
+FUNCTION CODIGO_FACTURACION_ELECTRONICA(cCodMoneda VARCHAR2) RETURN VARCHAR2 IS
+cCodFactElect   MONEDA.CodFactElect%TYPE;
+BEGIN
+   BEGIN
+      SELECT CodFactElect
+        INTO cCodFactElect
+        FROM MONEDA
+       WHERE Cod_Moneda = cCodMoneda;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20000,'Código de Moneda '|| cCodMoneda || ' NO EXISTE');
+   END;
+   RETURN(cCodFactElect);
+END CODIGO_FACTURACION_ELECTRONICA;
+
+END OC_MONEDA;
+/

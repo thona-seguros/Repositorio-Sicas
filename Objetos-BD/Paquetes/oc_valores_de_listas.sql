@@ -1,0 +1,60 @@
+--
+-- OC_VALORES_DE_LISTAS  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   VALORES_DE_LISTAS (Table)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_VALORES_DE_LISTAS IS
+
+  FUNCTION BUSCA_LVALOR(cCodLista VARCHAR2, cCodValor VARCHAR2) RETURN VARCHAR2;
+
+  FUNCTION BUSCA_VALORDESC(cCodLista VARCHAR2, cDescValLst VARCHAR2) RETURN VARCHAR2;
+
+END OC_VALORES_DE_LISTAS;
+/
+
+--
+-- OC_VALORES_DE_LISTAS  (Package Body) 
+--
+--  Dependencies: 
+--   OC_VALORES_DE_LISTAS (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_VALORES_DE_LISTAS IS
+
+
+FUNCTION BUSCA_LVALOR(cCodLista VARCHAR2, cCodValor VARCHAR2) RETURN VARCHAR2 IS
+cDescripcion    VALORES_DE_LISTAS.DescValLst%TYPE;
+BEGIN
+   BEGIN
+      SELECT DescValLst
+        INTO cDescripcion
+        FROM VALORES_DE_LISTAS
+       WHERE CodLista = cCodLista
+         AND CodValor = cCodValor;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cDescripcion := 'Invalida';
+   END;
+   RETURN(cDescripcion);
+END BUSCA_LVALOR;
+
+FUNCTION BUSCA_VALORDESC(cCodLista VARCHAR2, cDescValLst VARCHAR2) RETURN VARCHAR2 IS
+cCodValor    VALORES_DE_LISTAS.CodValor%TYPE;
+BEGIN
+   BEGIN
+      SELECT CodValor
+        INTO cCodValor
+        FROM VALORES_DE_LISTAS
+       WHERE CodLista   = cCodLista
+         AND DescValLst = cDescValLst;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cCodValor := 'NO EXISTE';
+   END;
+   RETURN(cCodValor);
+END BUSCA_VALORDESC;
+
+END OC_VALORES_DE_LISTAS;
+/

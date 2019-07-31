@@ -1,0 +1,43 @@
+--
+-- OC_CPTOS_TRANSAC_SINIESTROS  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DBMS_STANDARD (Package)
+--   CPTOS_TRANSAC_SINIESTROS (Table)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_CPTOS_TRANSAC_SINIESTROS IS
+
+  FUNCTION CONCEPTO_TRANSACCION(nCodCia NUMBER, cCodTransac VARCHAR, cIndTipoCobert VARCHAR2) RETURN VARCHAR2;
+
+END OC_CPTOS_TRANSAC_SINIESTROS;
+/
+
+--
+-- OC_CPTOS_TRANSAC_SINIESTROS  (Package Body) 
+--
+--  Dependencies: 
+--   OC_CPTOS_TRANSAC_SINIESTROS (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_CPTOS_TRANSAC_SINIESTROS IS
+
+FUNCTION CONCEPTO_TRANSACCION(nCodCia NUMBER, cCodTransac VARCHAR, cIndTipoCobert VARCHAR2) RETURN VARCHAR2 IS
+cCodCptoTransac    CPTOS_TRANSAC_SINIESTROS.CodCptoTransac%TYPE;
+BEGIN
+   BEGIN
+      SELECT CodCptoTransac
+        INTO cCodCptoTransac
+        FROM CPTOS_TRANSAC_SINIESTROS
+       WHERE CodCia         = nCodCia
+         AND CodTransac     = cCodTransac
+                        AND IndTipoCobert IN (cIndTipoCobert, 'TO');
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20225,'NO Existe Concepto Configurado para Transaccion '||TRIM(cCodTransac));
+   END;
+   RETURN(cCodCptoTransac);
+END CONCEPTO_TRANSACCION;
+
+END OC_CPTOS_TRANSAC_SINIESTROS;
+/

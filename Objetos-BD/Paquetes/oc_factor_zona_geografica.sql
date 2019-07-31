@@ -1,0 +1,42 @@
+--
+-- OC_FACTOR_ZONA_GEOGRAFICA  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   FACTOR_ZONA_GEOGRAFICA (Table)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTOR_ZONA_GEOGRAFICA IS
+
+  FUNCTION FACTOR_ZONA(cCodZonaGeo VARCHAR2, dFecFactor DATE) RETURN NUMBER;
+
+END OC_FACTOR_ZONA_GEOGRAFICA;
+/
+
+--
+-- OC_FACTOR_ZONA_GEOGRAFICA  (Package Body) 
+--
+--  Dependencies: 
+--   OC_FACTOR_ZONA_GEOGRAFICA (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTOR_ZONA_GEOGRAFICA IS
+
+FUNCTION FACTOR_ZONA(cCodZonaGeo VARCHAR2, dFecFactor DATE) RETURN NUMBER IS
+nFactorZona    FACTOR_ZONA_GEOGRAFICA.FactorZona%TYPE;
+BEGIN
+   BEGIN
+      SELECT FactorZona
+        INTO nFactorZona
+        FROM FACTOR_ZONA_GEOGRAFICA
+       WHERE CodZonaGeo    = cCodZonaGeo
+         AND FecIniVig    >= dFecFactor
+         AND FecIniVig    <= dFecFactor;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         nFactorZona := 0;
+   END;
+   RETURN(nFactorZona);
+END FACTOR_ZONA;
+
+END OC_FACTOR_ZONA_GEOGRAFICA;
+/
