@@ -57,6 +57,8 @@ PROCEDURE VALIDA_PERSONAS_ENDOSO(P_CODCIA     NUMBER,
                                  P_IDPOLIZA   NUMBER,
                                  P_ENDOSO     NUMBER,
                                  P_MENSAJE    IN OUT VARCHAR2);
+                                 
+FUNCTION EXISTE_POLIZA_PLD(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2;                                 
                                                    
 END OC_ADMON_RIESGO;
 /
@@ -467,6 +469,26 @@ BEGIN
       --
   END LOOP;
 END VALIDA_PERSONAS_ENDOSO;
+
+FUNCTION EXISTE_POLIZA_PLD(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2 IS
+cExiste VARCHAR2(1);
+BEGIN
+   BEGIN
+      SELECT 'S'
+        INTO cExiste
+        FROM ADMON_RIESGO
+       WHERE CodCia        = nCodCia
+         AND CodEmpresa    = nCodEmpresa
+         AND IdPoliza      = nIdPoliza
+         AND St_Resolucion = 'PEND';
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cExiste := 'N';
+      WHEN TOO_MANY_ROWS THEN
+         cExiste := 'S';
+   END;
+   RETURN cExiste;
+END EXISTE_POLIZA_PLD;
 
 
 END OC_ADMON_RIESGO;
