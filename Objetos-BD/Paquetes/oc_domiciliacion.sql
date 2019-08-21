@@ -614,9 +614,10 @@ BEGIN
                   D.CodEntidadFinan             ||cLimitador||
                   TRIM(TO_CHAR(D.TipoCta))      ||cLimitador||
                   D.NumCuenta                   ||cLimitador||
-                  D.Titular_Cuenta              ||cLimitador|| CHR(13);
+                  D.Titular_Cuenta              ||cLimitador;---|| CHR(13);
 
-      UTL_FILE.PUT(fArchivo, cCadena||CHR(10));
+      --UTL_FILE.PUT(fArchivo, cCadena||CHR(10));
+      UTL_FILE.PUT(fArchivo, cCadena);
       nLinea := nLinea + 1;
    END LOOP;
    UTL_FILE.FCLOSE(fArchivo); 
