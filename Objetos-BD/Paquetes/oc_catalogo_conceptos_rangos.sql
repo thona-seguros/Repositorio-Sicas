@@ -1,42 +1,40 @@
---
--- OC_CATALOGO_CONCEPTOS_RANGOS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   POLIZAS (Table)
---   DETALLE_POLIZA (Table)
---   OC_DETALLE_POLIZA (Package)
---   CATALOGO_CONCEPTOS_RANGOS (Table)
---   OC_ENDOSO (Package)
---   OC_GENERALES (Package)
---   OC_POLIZAS (Package)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_CATALOGO_CONCEPTOS_RANGOS IS
+CREATE OR REPLACE PACKAGE OC_CATALOGO_CONCEPTOS_RANGOS IS
 
-  PROCEDURE VALOR_CONCEPTO(nCodCia NUMBER, nCodEmpresa NUMBER, cCodConcepto VARCHAR2, 
-                           cIdTipoSeg VARCHAR2, nIdPoliza NUMBER, nIDetPol NUMBER,
-                           nIdEndoso NUMBER, nMtoCpto IN OUT NUMBER, nPorcCpto IN OUT NUMBER);
+PROCEDURE VALOR_CONCEPTO(nCodCia      NUMBER,
+                         nCodEmpresa  NUMBER, 
+                         cCodConcepto VARCHAR2, 
+                         cIdTipoSeg   VARCHAR2,    
+                         nIdPoliza    NUMBER, 
+                         nIDetPol     NUMBER, 
+                         nIdEndoso    NUMBER,      
+                         nMtoCpto     IN OUT NUMBER, 
+                         nPorcCpto    IN OUT NUMBER);
 
 END OC_CATALOGO_CONCEPTOS_RANGOS;
 /
-
+CREATE OR REPLACE PACKAGE BODY OC_CATALOGO_CONCEPTOS_RANGOS IS
 --
--- OC_CATALOGO_CONCEPTOS_RANGOS  (Package Body) 
+-- BITACORA DE CAMBIOS
 --
---  Dependencies: 
---   OC_CATALOGO_CONCEPTOS_RANGOS (Package)
+-- Se adicionara la funcionalida de productros de largo plazo     JICO 2019/07/09    --LARPLA
 --
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_CATALOGO_CONCEPTOS_RANGOS IS
-
-PROCEDURE VALOR_CONCEPTO(nCodCia NUMBER, nCodEmpresa NUMBER, cCodConcepto VARCHAR2, 
-                         cIdTipoSeg VARCHAR2, nIdPoliza NUMBER, nIDetPol NUMBER, 
-                         nIdEndoso NUMBER, nMtoCpto IN OUT NUMBER, nPorcCpto IN OUT NUMBER) IS
+PROCEDURE VALOR_CONCEPTO(nCodCia      NUMBER,
+                         nCodEmpresa  NUMBER, 
+                         cCodConcepto VARCHAR2, 
+                         cIdTipoSeg   VARCHAR2,    
+                         nIdPoliza    NUMBER, 
+                         nIDetPol     NUMBER, 
+                         nIdEndoso    NUMBER,      
+                         nMtoCpto     IN OUT NUMBER, 
+                         nPorcCpto    IN OUT NUMBER) IS
 cCodTipoRango     CATALOGO_CONCEPTOS_RANGOS.CodTipoRango%TYPE;
 nCantMonto        CATALOGO_CONCEPTOS_RANGOS.RangoInicial%TYPE;
 nTasaCambio       DETALLE_POLIZA.Tasa_Cambio%TYPE;
 cCodMoneda        POLIZAS.Cod_Moneda%TYPE;
+NAÑO_POLIZA       NUMBER;
+CIDTIPOSEG        DETALLE_POLIZA.IDTIPOSEG%TYPE;
+CID_LARGO_PLAZO   TIPOS_DE_SEGUROS.ID_LARGO_PLAZO%TYPE;
+
 BEGIN
    BEGIN
       SELECT DISTINCT CodTipoRango
@@ -53,12 +51,32 @@ BEGIN
          RAISE_APPLICATION_ERROR(-20220,'Error de Configuración. Existen Varios Tipos de Rangos para Concepto ' || 
                                  cCodConcepto || ' del Tipo de Seguro '|| cIdTipoSeg);
    END;
-
-   SELECT Cod_Moneda
-     INTO cCodMoneda
-     FROM POLIZAS
-    WHERE CodCia   = nCodCia
-      AND IdPoliza = nIdPoliza;
+   --
+   SELECT P.COD_MONEDA , 
+          TO_NUMBER(TO_CHAR(P.FECRENOVACION,'YYYY')) - TO_NUMBER(TO_CHAR(P.FECINIVIG,'YYYY')) AÑO_POLIZA,
+          DP.IDTIPOSEG,
+          TS.ID_LARGO_PLAZO
+     INTO cCodMoneda,
+          NAÑO_POLIZA,
+          CIDTIPOSEG,
+          CID_LARGO_PLAZO     
+     FROM POLIZAS          P,
+          DETALLE_POLIZA   DP,
+          TIPOS_DE_SEGUROS TS
+    WHERE P.CODCIA   = nCodCia
+      AND P.IDPOLIZA = nIdPoliza
+      --
+      AND DP.CODCIA   = P.CODCIA
+      AND DP.IDPOLIZA = P.IDPOLIZA
+      AND DP.IDETPOL  = (SELECT MAX(DP1.IDETPOL)
+                           FROM DETALLE_POLIZA DP1
+                          WHERE DP1.CODCIA   = P.CODCIA
+                            AND DP1.IDPOLIZA = P.IDPOLIZA)
+      --
+      AND TS.IDTIPOSEG  = DP.IDTIPOSEG
+      AND TS.CODEMPRESA = DP.CODEMPRESA
+      AND TS.CODCIA     = DP.CODCIA;
+   --   
 
    nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
 
