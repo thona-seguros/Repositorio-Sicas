@@ -640,17 +640,17 @@ BEGIN
 END MONTO_IMPUESTO_FACT_ELECT;
 
 FUNCTION MONTO_CONCEPTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2) RETURN NUMBER IS
-nMonto_Det_Local    DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nMonto_Det_Moneda    DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 BEGIN
-   SELECT NVL(SUM(Monto_Det_Local),0)
-     INTO nMonto_Det_Local
+   SELECT NVL(SUM(Monto_Det_Moneda),0)
+     INTO nMonto_Det_Moneda
      FROM DETALLE_FACTURAS D, FACTURAS F,
           CATALOGO_DE_CONCEPTOS CC       
     WHERE F.IdFactura                = nIdFactura
       AND CC.CodCptoPrimasFactElect  = cCodCpto
       AND D.IdFactura                = F.IdFactura
       AND D.CodCpto                  = CC.CodConcepto;
-   RETURN(nMonto_Det_Local);
+   RETURN(nMonto_Det_Moneda);
 END MONTO_CONCEPTO_FACT_ELECT;
 
 END OC_DETALLE_FACTURAS;

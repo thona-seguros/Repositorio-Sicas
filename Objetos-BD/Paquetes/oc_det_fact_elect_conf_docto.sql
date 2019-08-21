@@ -366,7 +366,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                 IF  cTipoComprobante = 'P' THEN
                     nSubTotal := 0;
                 ELSIF cTipoComprobante = 'I' THEN
-                    SELECT NVL(SUM(DF.Monto_Det_Local),0)
+                    SELECT NVL(SUM(DF.Monto_Det_Moneda),0) --NVL(SUM(DF.Monto_Det_Local),0)
                       INTO nSubTotal
                       FROM FACTURAS F,DETALLE_FACTURAS DF
                      WHERE F.Codcia    = nCodCia
@@ -374,7 +374,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                        AND F.IdFactura = DF.IdFactura
                        AND DF.CodCpto  NOT IN ('IVASIN','DCTEMI');
                 ELSIF cTipoComprobante = 'E' THEN
-                    SELECT NVL(SUM(DN.Monto_Det_Local),0)
+                    SELECT NVL(SUM(DN.Monto_Det_Moneda),0) --NVL(SUM(DN.Monto_Det_Local),0)
                       INTO nSubTotal
                       FROM NOTAS_DE_CREDITO N,DETALLE_NOTAS_DE_CREDITO DN
                      WHERE N.IdNcr     = nIdNcr
@@ -400,13 +400,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                 IF  cTipoComprobante = 'P' THEN
                     nTotal := 0;
                 ELSIF cTipoComprobante = 'I' THEN
-                    SELECT NVL(SUM(F.Monto_Fact_Local),0)
+                    SELECT NVL(SUM(F.Monto_Fact_Moneda),0)--NVL(SUM(F.Monto_Fact_Local),0)
                       INTO nTotal
                       FROM FACTURAS F
                      WHERE F.Codcia    = nCodCia
                        AND F.IdFactura = nIdFactura;
                 ELSIF cTipoComprobante = 'E' THEN
-                    SELECT NVL(SUM(N.Monto_Ncr_Local),0)
+                    SELECT NVL(SUM(N.Monto_Ncr_Moneda),0)--NVL(SUM(N.Monto_Ncr_Local),0)
                       INTO nTotal
                       FROM NOTAS_DE_CREDITO N
                      WHERE N.IdNcr     = nIdNcr;
