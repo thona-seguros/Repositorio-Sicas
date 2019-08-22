@@ -1068,8 +1068,8 @@ BEGIN
             END LOOP;          
              ---valida si tiene habito para generar valores
             IF NVL(w.HabitoTarifa, 'NA') != 'NA' THEN             
-               --GT_TAB_VALORES_GARANTIZADOS.INSERTA(nCodCia, nCodEmpresa, nIdPoliza,W.IDetPol,0,W.Cod_Asegurado,1);
-               NULL;
+               GT_TAB_VALORES_GARANTIZADOS.INSERTA(nCodCia, nCodEmpresa, nIdPoliza,W.IDetPol,0,W.Cod_Asegurado,1);
+               --NULL;
             END IF;            
          END LOOP;
 
