@@ -336,10 +336,10 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISVG_INFONACOT ( nCodCia      ENTREG
          AND EXISTS  ( SELECT 'S' 
                          FROM TRANSACCION T, DETALLE_TRANSACCION DT
                         WHERE DT.IdTransaccion    = T.IdTransaccion
-                          AND DT.CodCia           = T.CodCia
                           AND DT.Valor1           = D.IdPoliza
                           AND DT.Correlativo      > 0
                           AND DT.CodSubProceso  NOT IN ('ESV','PAG')
+                          AND DT.CodCia           = T.CodCia
                           AND T.CodCia           = D.CodCia
                           AND T.CodEmpresa       = D.CodEmpresa
                           AND T.IdTransaccion    > 0

@@ -371,11 +371,11 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIIND ( nCodCia      ENTREGAS_C
                          FROM TRANSACCION          T
                             , DETALLE_TRANSACCION  D
                         WHERE D.IdTransaccion     = T.IdTransaccion
-                          AND D.CodCia            = T.CodCia
                           AND D.Valor1            = D.IdPoliza
                           AND D.Valor2            = D.IDetPol
                           AND D.Correlativo       > 0
                           AND D.CodSubProceso   NOT IN ('ESV','PAG')
+                          AND D.CodCia            = T.CodCia
                           AND T.CodCia            = D.CodCia
                           AND T.CodEmpresa        = D.CodEmpresa
                           AND T.IdTransaccion     > 0
@@ -455,10 +455,10 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIIND ( nCodCia      ENTREGAS_C
                          FROM TRANSACCION          T
                             , DETALLE_TRANSACCION  D
                         WHERE D.IdTransaccion     = T.IdTransaccion
-                          AND D.CodCia            = T.CodCia
                           AND D.Valor1            = D.IdPoliza
                           AND D.Correlativo       > 0
                           AND D.CodSubProceso   NOT IN ('ESV','PAG')
+                          AND D.CodCia            = T.CodCia
                           AND T.CodCia            = D.CodCia
                           AND T.CodEmpresa        = D.CodEmpresa
                           AND T.IdTransaccion     > 0

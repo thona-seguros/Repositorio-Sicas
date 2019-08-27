@@ -355,8 +355,6 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
            , POLIZAS                    P
            , ASEGURADO                  A
            , PERSONA_NATURAL_JURIDICA  PN
---           , TRANSACCION                T
---           , DETALLE_TRANSACCION       DT
            , PLAN_COBERTURAS           PC
        WHERE A.Num_Doc_Identificacion = PN.Num_Doc_Identificacion 
          AND A.Tipo_Doc_Identificacion = PN.Tipo_Doc_Identificacion 
@@ -393,19 +391,20 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
          AND PC.CodCia      = D.CodCia
          AND PC.PlanCob     = D.PlanCob
          AND PC.CodTipoPlan = '033'
-         AND EXISTS                       ( SELECT 'S' 
-                                              FROM TRANSACCION T, DETALLE_TRANSACCION X
-                                             WHERE X.IdTransaccion    = T.IdTransaccion
-                                               AND X.CodCia           = T.CodCia
-                                               AND X.CodEmpresa       = T.CodEmpresa
-                                               AND X.Valor1           = D.IdPoliza
-                                               AND X.Correlativo      > 0
-                                               AND X.CodSubProceso  NOT IN ('ESV','PAG')
-                                               AND T.IdTransaccion    > 0
-                                               AND T.CodCia           = D.CodCia
-                                               AND T.CodEmpresa       = D.CodEmpresa
-                                               AND T.IdProceso       != 6
-                                               AND T.FechaTransaccion >= dFecDesde )
+         AND EXISTS ( SELECT 'S' 
+                        FROM TRANSACCION          T
+                           , DETALLE_TRANSACCION  X
+                       WHERE X.IdTransaccion     = T.IdTransaccion
+                         AND X.CodCia            = T.CodCia
+                         AND X.CodEmpresa        = T.CodEmpresa
+                         AND X.Valor1            = D.IdPoliza
+                         AND X.Correlativo       > 0
+                         AND X.CodSubProceso   NOT IN ('ESV','PAG')
+                         AND T.IdTransaccion     > 0
+                         AND T.CodCia            = D.CodCia
+                         AND T.CodEmpresa        = D.CodEmpresa
+                         AND T.IdProceso        != 6
+                         AND T.FechaTransaccion >= dFecDesde )
        ORDER BY P.IdPoliza;
 
    CURSOR POL_COL_MOV_Q IS
@@ -442,8 +441,6 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
            , ASEGURADO_CERTIFICADO     AC
            , ASEGURADO                  A
            , PERSONA_NATURAL_JURIDICA  PN
---           , TRANSACCION                T
---           , DETALLE_TRANSACCION       DT
            , PLAN_COBERTURAS           PC
        WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
          AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
@@ -462,34 +459,24 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
          AND D.CodCia                   = nCodCia
          AND D.IDetPol                  > 0
          AND D.IdPoliza                 > 0
---         AND DT.IdTransaccion    = T.IdTransaccion
---         AND DT.CodCia           = T.CodCia
---         AND DT.Valor1           = D.IdPoliza
---         AND DT.Correlativo      > 0
---         AND DT.CodSubProceso  NOT IN ('ESV','PAG')
---         AND T.CodCia           = D.CodCia
---         AND T.CodEmpresa       = D.CodEmpresa
---         AND T.IdTransaccion    > 0
---         AND T.IdProceso        != 6
---         AND T.FechaTransaccion >= dFecDesde
          AND PC.IdTipoSeg   = D.IdTipoSeg
          AND PC.CodEmpresa  = D.CodEmpresa
          AND PC.CodCia      = D.CodCia
          AND PC.PlanCob     = D.PlanCob
          AND PC.CodTipoPlan = '033'
-         AND EXISTS         ( SELECT 'S' 
-                                FROM TRANSACCION         T
-                                   , DETALLE_TRANSACCION DT
-                               WHERE DT.IdTransaccion    = T.IdTransaccion
-                                 AND DT.CodCia           = T.CodCia
-                                 AND DT.Valor1           = D.IdPoliza
-                                 AND DT.Correlativo      > 0
-                                 AND DT.CodSubProceso  NOT IN ('ESV','PAG')
-                                 AND T.CodCia           = D.CodCia
-                                 AND T.CodEmpresa       = D.CodEmpresa
-                                 AND T.IdTransaccion    > 0
-                                 AND T.IdProceso        != 6
-                                 AND T.FechaTransaccion >= dFecDesde )
+         AND EXISTS ( SELECT 'S' 
+                        FROM TRANSACCION         T
+                           , DETALLE_TRANSACCION DT
+                       WHERE DT.IdTransaccion    = T.IdTransaccion
+                         AND DT.Valor1           = D.IdPoliza
+                         AND DT.Correlativo      > 0
+                         AND DT.CodSubProceso  NOT IN ('ESV','PAG')
+                         AND DT.CodCia           = T.CodCia
+                         AND T.CodCia            = D.CodCia
+                         AND T.CodEmpresa        = D.CodEmpresa
+                         AND T.IdTransaccion     > 0
+                         AND T.IdProceso        != 6
+                         AND T.FechaTransaccion >= dFecDesde )
       MINUS
       SELECT P.NumPolUnico  Poliza
            , TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(AC.Cod_Asegurado,'0000000'))  Certi
