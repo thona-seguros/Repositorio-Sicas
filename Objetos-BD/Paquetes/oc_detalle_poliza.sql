@@ -600,41 +600,36 @@ BEGIN
    SELECT COUNT(*)
      INTO nTotalAseg
      FROM ASEGURADO_CERTIFICADO AC, DETALLE_POLIZA D
-    WHERE AC.CodCia        = D.CodCia
-      AND AC.IdPoliza      = D.IdPoliza
-      AND AC.IDetPol       = D.IDetPol
-      AND AC.Cod_Asegurado = D.Cod_Asegurado
-      AND AC.Estado       IN ('SOL','XRE','EMI')
-      AND D.IdPoliza       = nIdPoliza
-      AND D.IDetPol        = nIDetPol
-      AND D.CodCia         = nCodCia;
+    WHERE AC.IDetPol   = D.IDetPol
+      AND AC.IdPoliza  = D.IdPoliza
+      AND AC.Estado   IN ('SOL','XRE','EMI')
+      AND D.IDetPol    = nIDetPol
+      AND D.IdPoliza   = nIdPoliza;
 
    SELECT NVL(SUM(CantAsegModelo),0) + NVL(nTotalAseg,0)
      INTO nTotalAseg
      FROM TIPOS_DE_SEGUROS TS, DETALLE_POLIZA D
-    WHERE TS.IdTipoSeg    = D.IdTipoSeg
+    WHERE TS.TipoSeg      = 'P'
+      AND TS.IdTipoSeg    = D.IdTipoSeg
       AND TS.CodEmpresa   = D.CodEmpresa
       AND TS.CodCia       = D.CodCia
-      AND TS.TipoSeg      = 'P'
       AND D.IndAsegModelo = 'S'
       AND D.StsDetalle   IN ('SOL','XRE','EMI')
-      AND D.IdPoliza      = nIdPoliza
       AND D.IDetPol       = nIDetPol
-      AND D.CodCia        = nCodCia;
+      AND D.IdPoliza      = nIdPoliza;
 
    IF NVL(nTotalAseg,0) = 0 THEN
       SELECT COUNT(*)
         INTO nTotalAseg
         FROM TIPOS_DE_SEGUROS TS, DETALLE_POLIZA D
-       WHERE TS.IdTipoSeg    = D.IdTipoSeg
+       WHERE TS.TipoSeg      = 'P'
+         AND TS.IdTipoSeg    = D.IdTipoSeg
          AND TS.CodEmpresa   = D.CodEmpresa
          AND TS.CodCia       = D.CodCia
-         AND TS.TipoSeg      = 'P'
          AND D.IndAsegModelo = 'N'
          AND D.StsDetalle   IN ('SOL','XRE','EMI')
-         AND D.IdPoliza      = nIdPoliza
          AND D.IDetPol       = nIDetPol
-         AND D.CodCia        = nCodCia;
+         AND D.IdPoliza      = nIdPoliza;
    END IF;
    RETURN(nTotalAseg);
 END TOTAL_ASEGURADOS;
