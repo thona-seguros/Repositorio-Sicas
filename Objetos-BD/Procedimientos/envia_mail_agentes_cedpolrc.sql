@@ -1,27 +1,4 @@
---
--- ENVIA_MAIL_AGENTES_CEDPOLRC  (Procedure) 
---
---  Dependencies: 
---   STANDARD (Package)
---   DBMS_OUTPUT (Synonym)
---   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
---   POLIZAS (Table)
---   FACTURAS (Table)
---   EJECUTIVO_COMERCIAL (Table)
---   ENDOSO_TXT_DET (Table)
---   OC_CORREOS_ELECTRONICOS_PNJ (Package)
---   AGENTES (Table)
---   AGENTES_CEDULA_AUTORIZADA (Table)
---   AGENTE_POLIZA (Table)
---   USUARIOS (Table)
---   OC_SENDMAIL (Package)
---   CONTROL_PROCESOS_AUTOMATICOS (Table)
---   CORREOS_ELECTRONICOS_PNJ (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_GENERALES (Package)
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---
-CREATE OR REPLACE PROCEDURE SICAS_OC.ENVIA_MAIL_AGENTES_CEDPOLRC  IS
+CREATE OR REPLACE PROCEDURE ENVIA_MAIL_AGENTES_CEDPOLRC  IS
 
   nLeidos                     NUMBER := 0;
   cEmail                      USUARIOS.EMAIL%TYPE;  
@@ -40,16 +17,16 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.ENVIA_MAIL_AGENTES_CEDPOLRC  IS
   cSubject                    VARCHAR2(500);
   cTxtEstatusCed              VARCHAR2(1000);
   cTxtEstatusRc               VARCHAR2(1000);
-  cSubjectCed                 VARCHAR2(1000) := 'NotificaciÛn Vencimiento de CÈdula: ';
-  cSubjectRc                  VARCHAR2(1000) := 'NotificaciÛn Vencimiento de PÛliza RC: ';
-  cSubjectCedRc               VARCHAR2(1000) := 'NotificaciÛn Vencimiento de CÈdula y PÛliza RC: ';
+  cSubjectCed                 VARCHAR2(1000) := 'Notificaci√≥n Vencimiento de C√©dula: ';
+  cSubjectRc                  VARCHAR2(1000) := 'Notificaci√≥n Vencimiento de P√≥liza RC: ';
+  cSubjectCedRc               VARCHAR2(1000) := 'Notificaci√≥n Vencimiento de C√©dula y P√≥liza RC: ';
   cTxtVencido                 VARCHAR2(1000) := 'vencida a partir del';
-  cTxtXVencer                 VARCHAR2(1000) := 'por vencer el prÛximo';
+  cTxtXVencer                 VARCHAR2(1000) := 'por vencer el pr√≥ximo';
   cTexto1                     VARCHAR2(10000):= 'Apreciable Conducto, ';
   cTexto2                     varchar2(10)   := ' Clave ';
   --cTexto3                     varchar2(100)  := chr(10);
   cTexto4                     varchar2(200)  := 'De acuerdo a nuestros registros identificamos que la Cedula de agentes que mantenemos en su expediente, esta  ';
-  cTexto5                     varchar2(150)  := 'Favor de gestionar su actualizaciÛn  a travÈs del portal Agentes Thona, proporcionando copia de documento vigente.';
+  cTexto5                     varchar2(150)  := 'Favor de gestionar su actualizaci√≥n  a trav√©s del portal Agentes Thona, proporcionando copia de documento vigente.';
   cTexto6                     varchar2(150)  := 'De acuerdo a nuestros registros identificamos que la poliza de Responsabilidad Civil que mantenemos en su expediente esta ';
   cTexto7                     varchar2(250)  := ', por lo que solicitamos nos envie copia para su actualizacion.';
   cTexto8                     varchar2(250)  := 'Lo anterior para dar cumplimiento al articulo 93 de la Ley de Instituciones de Seguros que dice: "Para el ejercicio de la actividad  de agentes de seguros o de agente de fianzas, se requerira autorizacion de la Comision"';                            
@@ -78,6 +55,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.ENVIA_MAIL_AGENTES_CEDPOLRC  IS
   AND PNJ.TIPO_DOC_IDENTIFICACION = EC.TIPODOCIDENTEJEC 
   AND PNJ.NUM_DOC_IDENTIFICACION = EC.NUMDOCIDENTEJEC
   AND ACA.COD_AGENTE = A.COD_AGENTE
+  AND (ACA.FECVENCIMIENTO <=  SYSDATE  OR ACA.FECVENCPOLRC <= SYSDATE )  
   ORDER BY A.COD_AGENTE;
 
   BEGIN
@@ -88,18 +66,14 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.ENVIA_MAIL_AGENTES_CEDPOLRC  IS
       
      FOR X IN AGENTES LOOP
          nLeidos := nLeidos + 1;
+
          nenviar_mail := 0;
+         cTextoEndosoEnv := NULL;    
+         cSubject := NULL;            
+         
          cEmail     := OC_GENERALES.BUSCA_PARAMETRO(1,'021');
          cPwdEmail := OC_GENERALES.BUSCA_PARAMETRO(1,'022');
-         
-  /*        SELECT count(*)
-          into ncuantaspolizas
-          FROM agente_poliza ap
-          , polizas p
-          where p.idpoliza = ap.idpoliza
-          and ap.cod_agente = x.cod_agente
-          and trunc(p.fecfinvig) >= trunc(sysdate);  */
-          
+                
           select MAX(F.FECFINVIG)
             into dfechafinpago
             from facturas F
@@ -110,8 +84,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.ENVIA_MAIL_AGENTES_CEDPOLRC  IS
                             where p.idpoliza = ap.idpoliza
                             and ap.cod_agente = X.COD_AGENTE
                             and trunc(p.fecfinvig) >= trunc(sysdate));        
-          
-  --       IF ncuantaspolizas > 0 THEN    
+              
          IF  TRUNC(dfechafinpago) >= SYSDATE THEN       
              BEGIN
                 SELECT PNJJ.EMAIL EMAIL_AGENTE 
@@ -135,9 +108,9 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.ENVIA_MAIL_AGENTES_CEDPOLRC  IS
 --                dbms_output.put_line('pase por 5');
              END IF;
                 cEmailEjecutivo := X.EMAIL_EJECUTIVO;
---                cEmailEjecutivo := 'jmmdcbt@prodigy.net.mx';          
+--                cEmailEjecutivo := NULL; --'jmmdcbt@prodigy.net.mx';          
 --                cEmailAgen := 'jmarquez@thonaseguros.mx';
---                cEmailJefe := 'juanmanuelmarquezd@gmail.com';  
+--                cEmailJefe := NULL; --'juanmanuelmarquezd@gmail.com';  
 -----------------------             
                     
              IF (TRUNC(SYSDATE) - x.VENC_POLRC > 0) and (TRUNC(SYSDATE) - X.FINVENC_CEDULA > 0) THEN
@@ -153,79 +126,82 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.ENVIA_MAIL_AGENTES_CEDPOLRC  IS
   --              dbms_output.put_line('pase por 3 '||X.EMAIL_AGENTE);    
             
   --              dbms_output.put_line('cSubject '||cSubject);
-    /*            dbms_output.put_line('cEmail '||cEmail);  
-                dbms_output.put_line('cPwdEmail '||cPwdEmail);
-                dbms_output.put_line('cEmailAgen '||cEmailAgen);
-                dbms_output.put_line('cTextoEndosoEnv  '||cTextoEndosoEnv );
+    /*          dbms_output.put_line('cTextoEndosoEnv  '||cTextoEndosoEnv );
                 dbms_output.put_line('nenviar_mail '||nenviar_mail); */             
-                if nenviar_mail = 1 then
-                   dbms_output.put_line('se envio correo al agente '||x.cod_Agente);             
+--                if nenviar_mail = 1 then
+                   dbms_output.put_line('se enviara correo al agente '||x.cod_Agente);             
                       BEGIN
                          OC_SENDMAIL.SEND_MAIL_AGENTES(cEmail,cPwdEmail,cMiMail,cEmailAgen,cEmailJefe,cEmailEjecutivo,cSubject,cTextoEndosoEnv);
                       EXCEPTION
                         WHEN OTHERS THEN
-                          dbms_output.put_line('Error en el envÌo de notificacion al agente '||X.NOMBRE_AGENTE);      
+                          dbms_output.put_line('Error en el env√≠o de notificacion al agente '||X.NOMBRE_AGENTE);      
                       END;  
-                  END IF;                                                 
-             ELSE
-               IF TRUNC(SYSDATE) - X.FINVENC_CEDULA > 0  THEN
+                nenviar_mail := 0; 
+                cTextoEndosoEnv := NULL;    
+                cSubject := NULL;           
+--                  END IF;                                                 
+            ELSE
+             IF TRUNC(SYSDATE) - X.FINVENC_CEDULA > 0  THEN
                   cSubject := cSubjectCed||X.NOMBRE_AGENTE;               
                   cTxtEstatusCed := cTxtVencido;
-  --                dbms_output.put_line('Entre por cedula vencida, se enviar· mail al agente ');
+  --                dbms_output.put_line('Entre por cedula vencida, se enviar√° mail al agente ');
                   nenviar_mail := 1;
     --           ELSIF TRUNC(SYSDATE) - X.FINVENC_CEDULA <= 0 THEN
-               ELSIF trunc(X.FINVENC_CEDULA) between TRUNC(SYSDATE)  and TRUNC(SYSDATE + 7) THEN           
+             ELSIF trunc(X.FINVENC_CEDULA) between TRUNC(SYSDATE)  and TRUNC(SYSDATE + 7) THEN   
+                  cSubject := cSubjectCed||X.NOMBRE_AGENTE;                     
                   cTxtEstatusCed := cTxtXVencer;
                   nenviar_mail := 1;
-               END IF;
+             END IF;
                  
-                cTextoEndosoEnv :=  cTexto1||X.NOMBRE_AGENTE||cTexto2||X.COD_AGENTE||chr(10)||chr(13)||cTexto4||cTxtEstatusCed||' '||
-                to_char(x.FINVENC_CEDULA,'dd/mm/yyyy')||cTexto7||chr(10)||chr(13)||cTexto8||chr(10)||chr(13)||cTexto9;
   --              dbms_output.put_line('pase por 3 '||X.EMAIL_AGENTE);    
   --              dbms_output.put_line('cSubject '||cSubject);
-    /*            dbms_output.put_line('cEmail '||cEmail);  
-                dbms_output.put_line('cPwdEmail '||cPwdEmail);
-                dbms_output.put_line('cEmailAgen '||cEmailAgen);
-                dbms_output.put_line('cTextoEndosoEnv  '||cTextoEndosoEnv );
+    /*          dbms_output.put_line('cTextoEndosoEnv  '||cTextoEndosoEnv );
                 dbms_output.put_line('nenviar_mail '||nenviar_mail); */             
-                if nenviar_mail = 1 then
+                IF nenviar_mail = 1 then
+                   cTextoEndosoEnv :=  cTexto1||X.NOMBRE_AGENTE||cTexto2||X.COD_AGENTE||chr(10)||chr(13)||cTexto4||cTxtEstatusCed||' '||
+                   to_char(x.FINVENC_CEDULA,'dd/mm/yyyy')||cTexto7||chr(10)||chr(13)||cTexto8||chr(10)||chr(13)||cTexto9;
+                
                    dbms_output.put_line('se envio correo al agente '||x.cod_Agente);             
-                      BEGIN
+                   BEGIN
                          OC_SENDMAIL.SEND_MAIL_AGENTES(cEmail,cPwdEmail,cMiMail,cEmailAgen,cEmailJefe,cEmailEjecutivo,cSubject,cTextoEndosoEnv);
-                      EXCEPTION
+                   EXCEPTION
                         WHEN OTHERS THEN
-                          dbms_output.put_line('Error en el envÌo de notificacion al agente '||X.NOMBRE_AGENTE);      
-                      END;  
-                  END IF;    
-               nenviar_mail := 0;   
-               cSubject := cSubjectRc||X.NOMBRE_AGENTE;
+                          dbms_output.put_line('Error en el env√≠o de notificacion al agente '||X.NOMBRE_AGENTE);      
+                   END;  
+                END IF;    
+   
+                nenviar_mail := 0; 
+                cTextoEndosoEnv := NULL;    
+                cSubject := NULL;   
+                                   
+
                IF TRUNC(SYSDATE) - x.VENC_POLRC > 0 THEN
+                  cSubject := cSubjectRc||X.NOMBRE_AGENTE;               
                   cTxtEstatusRc := cTxtVencido;
                   nenviar_mail := 1;
-  --                dbms_output.put_line('Entre por poliza RC vencida, se enviar· mail al agente ');          
+  --                dbms_output.put_line('Entre por poliza RC vencida, se enviar√° mail al agente ');          
     --           ELSIF TRUNC(SYSDATE) - x.VENC_POLRC <= 0 THEN
-               ELSIF TRUNC(x.VENC_POLRC) BETWEEN TRUNC(SYSDATE) AND TRUNC(SYSDATE + 7) THEN           
-                 cTxtEstatusRc := cTxtXVencer;
-                  nenviar_mail := 1;             
+               ELSIF TRUNC(x.VENC_POLRC) BETWEEN TRUNC(SYSDATE) AND TRUNC(SYSDATE + 7) THEN 
+                     cSubject := cSubjectRc||X.NOMBRE_AGENTE;                         
+                     cTxtEstatusRc := cTxtXVencer;
+                     nenviar_mail := 1;             
                END IF;  
-                 cTextoEndosoEnv :=  cTexto1||X.NOMBRE_AGENTE||cTexto2||X.COD_AGENTE||chr(10)||chr(13)||cTexto6||cTxtEstatusRc||' '
-                 ||to_char(x.VENC_POLRC,'dd/mm/yyyy')||cTexto7||chr(10)||chr(13)||cTexto10||chr(10)||chr(13)||
-                 cTexto11||chr(10)||chr(13)||cTexto5||chr(10)||chr(13)||cTexto9;
+
   --               dbms_output.put_line('pase por 3 '||X.EMAIL_AGENTE);    
   --               dbms_output.put_line('cSubject '||cSubject);
-    /*             dbms_output.put_line('cEmail '||cEmail);  
-                 dbms_output.put_line('cPwdEmail '||cPwdEmail);
-                 dbms_output.put_line('cEmailAgen '||cEmailAgen);
-                 dbms_output.put_line('cTextoEndosoEnv  '||cTextoEndosoEnv ); 
+    /*           dbms_output.put_line('cTextoEndosoEnv  '||cTextoEndosoEnv ); 
                  dbms_output.put_line('nenviar_mail '||nenviar_mail);  */           
                  IF nenviar_mail = 1 THEN  
+                    cTextoEndosoEnv :=  cTexto1||X.NOMBRE_AGENTE||cTexto2||X.COD_AGENTE||chr(10)||chr(13)||cTexto6||cTxtEstatusRc||' '
+                    ||to_char(x.VENC_POLRC,'dd/mm/yyyy')||cTexto7||chr(10)||chr(13)||cTexto10||chr(10)||chr(13)||
+                    cTexto11||chr(10)||chr(13)||cTexto5||chr(10)||chr(13)||cTexto9;                 
                     dbms_output.put_line('se envio correo al agente '||x.cod_agente);            
-                     BEGIN
+                    BEGIN
                        OC_SENDMAIL.SEND_MAIL_AGENTES(cEmail,cPwdEmail,cMiMail,cEmailAgen,cEmailJefe,cEmailEjecutivo,cSubject,cTextoEndosoEnv);
-                     EXCEPTION
+                    EXCEPTION
                        WHEN OTHERS THEN
-                         dbms_output.put_line('Error en el envÌo de notificacion al agente '||X.NOMBRE_AGENTE);      
-                     END;    
+                         dbms_output.put_line('Error en el env√≠o de notificacion al agente '||X.NOMBRE_AGENTE);      
+                    END;    
                  END IF;  
             END IF;  
         END IF;               
@@ -237,4 +213,10 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.ENVIA_MAIL_AGENTES_CEDPOLRC  IS
     WHEN OTHERS THEN
   dbms_output.put_line('Error: '||SQLERRM);  
   END;
+
+CREATE OR REPLACE PUBLIC SYNONYM ENVIA_MAIL_AGENTES_CEDPOLRC FOR ENVIA_MAIL_AGENTES_CEDPOLRC;
+/
+-- Grants for Procedure
+
+GRANT EXECUTE ON ENVIA_MAIL_AGENTES_CEDPOLRC TO PUBLIC
 /
