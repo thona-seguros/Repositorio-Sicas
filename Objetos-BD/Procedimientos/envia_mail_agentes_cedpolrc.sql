@@ -15,9 +15,9 @@ CREATE OR REPLACE PROCEDURE ENVIA_MAIL_AGENTES_CEDPOLRC  IS
   cSubject                    VARCHAR2(500);
   cTxtEstatusCed              VARCHAR2(1000);
   cTxtEstatusRc               VARCHAR2(1000);
-  cSubjectCed                 VARCHAR2(1000) := 'Thona Notificación Vencimiento de Cédula: ';
-  cSubjectRc                  VARCHAR2(1000) := 'Thona Notificación Vencimiento de Póliza RC: ';
-  cSubjectCedRc               VARCHAR2(1000) := 'Thona Notificación Vencimiento de Cédula y Póliza RC: ';
+  cSubjectCed                 VARCHAR2(1000) := 'Notificación Vencimiento de Cédula: ';
+  cSubjectRc                  VARCHAR2(1000) := 'Notificación Vencimiento de Póliza RC: ';
+  cSubjectCedRc               VARCHAR2(1000) := 'Notificación Vencimiento de Cédula y Póliza RC: ';
   cTxtVencido                 VARCHAR2(1000) := 'vencida a partir del';
   cTxtXVencer                 VARCHAR2(1000) := 'por vencer el próximo';
   cTexto1                     VARCHAR2(10000):= 'Apreciable Conducto, ';
@@ -27,7 +27,7 @@ CREATE OR REPLACE PROCEDURE ENVIA_MAIL_AGENTES_CEDPOLRC  IS
   cTexto6                     varchar2(150)  := 'De acuerdo a nuestros registros identificamos que la poliza de Responsabilidad Civil que mantenemos en su expediente esta ';
   cTexto7                     varchar2(250)  := ', por lo que solicitamos nos envie copia para su actualizacion.';
   cTexto8                     varchar2(250)  := 'Lo anterior para dar cumplimiento al articulo 93 de la Ley de Instituciones de Seguros que dice: "Para el ejercicio de la actividad  de agentes de seguros o de agente de fianzas, se requerira autorizacion de la Comision"';                            
-  cTexto9                     varchar2(150)  := 'Agradecemos la atencion al presente.';
+  cTexto9                     varchar2(150)  := 'Agradecemos la atencion al presente';
   cTexto10                    varchar2(500)  := 'Lo anterior para dar cumplimiento al articulo 23 del Reglamento de Agentes de Seguros y Fianzas, que dice: "los agentes deberan contratar y mantener vigente un seguro de responsabilidad civil por errores y omisiones, por los montos, terminos y bajo las condiciones que la Comision establezca."';
   cTexto11                    varchar2(500)  := 'Asi como del articulo 32.10.1 de la CUSF que indica: "Los agentes tienen la obligacion de contar con un contrato de seguro de responsabilidad civil por errores y omisiones"; articulo 32.10.2 III "Su cobertura debera ser ininterrumpida, sin dejar periodos al descubierto" 32.10.12 "Los agentes deberan informar a las Instituciones con las que celebren contratos mercantiles, que cuentan con el contrato de seguro de responsabilidad civil por errores y omisiones."';
   --
@@ -57,8 +57,8 @@ CURSOR AGENTES IS
     AND PNJ.NUM_DOC_IDENTIFICACION  = EC.NUMDOCIDENTEJEC
     --
     AND ACA.COD_AGENTE       = A.COD_AGENTE
-    AND (ACA.FECVENCIMIENTO <= SYSDATE  OR 
-         ACA.FECVENCPOLRC   <= SYSDATE )  
+    AND (TRUNC(ACA.FECVENCIMIENTO) <= TRUNC(SYSDATE)  OR 
+         TRUNC(ACA.FECVENCPOLRC)   <= TRUNC(SYSDATE) )  
   ORDER BY A.COD_AGENTE;
 --
 BEGIN
@@ -137,8 +137,8 @@ BEGIN
 --          cEmailAgen      := 'jmarquez@thonaseguros.mx';
 --          cEmailJefe      := NULL; --'juanmanuelmarquezd@gmail.com';  
           --                     
-          IF (TRUNC(SYSDATE) - X.VENC_POLRC     > 0) AND
-             (TRUNC(SYSDATE) - X.FINVENC_CEDULA > 0) THEN
+          IF (TRUNC(SYSDATE) - TRUNC(X.VENC_POLRC)     > 0) AND
+             (TRUNC(SYSDATE) - TRUNC(X.FINVENC_CEDULA) > 0) THEN
              cSubject        := cSubjectCedRc||X.NOMBRE_AGENTE;             
              cTxtEstatusCed  := cTxtVencido; 
              cTxtEstatusRc   := cTxtVencido;
@@ -147,7 +147,7 @@ BEGIN
                                 to_char(x.FINVENC_CEDULA,'dd/mm/yyyy')||cTexto7||chr(10)||chr(13)||cTexto8||chr(10)||chr(13)
                                 ||chr(10)||chr(13)||cTexto6||cTxtEstatusRc||' '
                                 ||to_char(x.VENC_POLRC,'dd/mm/yyyy')||cTexto7||chr(10)||chr(13)||cTexto10||chr(10)||chr(13)||
-                                cTexto11||chr(10)||chr(13)||cTexto5||chr(10)||chr(13)||cTexto9;                
+                                cTexto11||chr(10)||chr(13)||cTexto5||chr(10)||chr(13)||cTexto9||W_ID_ENVIO;                
              dbms_output.put_line('se enviara correo al agente '||x.cod_Agente);             
              BEGIN
                OC_SENDMAIL.SEND_MAIL_AGENTES(cEmail,cPwdEmail,cMiMail,cEmailAgen,cEmailJefe,cEmailEjecutivo,cSubject,cTextoEndosoEnv);
@@ -159,7 +159,7 @@ BEGIN
              nenviar_mail    := 0; 
              cTextoEndosoEnv := NULL;    
              cSubject        := NULL; 
-             IF TRUNC(SYSDATE) - X.FINVENC_CEDULA > 0  THEN
+             IF TRUNC(SYSDATE) - TRUNC(X.FINVENC_CEDULA) > 0  THEN
                   cSubject       := cSubjectCed||X.NOMBRE_AGENTE;               
                   cTxtEstatusCed := cTxtVencido;
                   nenviar_mail   := 1;
@@ -171,7 +171,7 @@ BEGIN
              --
              IF nenviar_mail = 1 then
                 cTextoEndosoEnv :=  cTexto1||X.NOMBRE_AGENTE||cTexto2||X.COD_AGENTE||chr(10)||chr(13)||cTexto4||cTxtEstatusCed||' '||
-                                    to_char(x.FINVENC_CEDULA,'dd/mm/yyyy')||cTexto7||chr(10)||chr(13)||cTexto8||chr(10)||chr(13)||cTexto9;
+                                    to_char(x.FINVENC_CEDULA,'dd/mm/yyyy')||cTexto7||chr(10)||chr(13)||cTexto8||chr(10)||chr(13)||cTexto9||W_ID_ENVIO;
                 dbms_output.put_line('se envio correo al agente '||x.cod_Agente);             
                 BEGIN
                   OC_SENDMAIL.SEND_MAIL_AGENTES(cEmail,cPwdEmail,cMiMail,cEmailAgen,cEmailJefe,cEmailEjecutivo,cSubject,cTextoEndosoEnv);
@@ -186,7 +186,7 @@ BEGIN
              cTextoEndosoEnv := NULL;    
              cSubject        := NULL;   
              --
-             IF TRUNC(SYSDATE) - x.VENC_POLRC > 0 THEN
+             IF TRUNC(SYSDATE) - TRUNC(x.VENC_POLRC) > 0 THEN
                 cSubject      := cSubjectRc||X.NOMBRE_AGENTE;               
                 cTxtEstatusRc := cTxtVencido;
                 nenviar_mail  := 1;
@@ -199,7 +199,7 @@ BEGIN
              IF nenviar_mail = 1 THEN  
                 cTextoEndosoEnv := cTexto1||X.NOMBRE_AGENTE||cTexto2||X.COD_AGENTE||chr(10)||chr(13)||cTexto6||cTxtEstatusRc||' '
                                    ||to_char(x.VENC_POLRC,'dd/mm/yyyy')||cTexto7||chr(10)||chr(13)||cTexto10||chr(10)||chr(13)||
-                                   cTexto11||chr(10)||chr(13)||cTexto5||chr(10)||chr(13)||cTexto9;                 
+                                   cTexto11||chr(10)||chr(13)||cTexto5||chr(10)||chr(13)||cTexto9||W_ID_ENVIO;                 
                 dbms_output.put_line('se envio correo al agente '||x.cod_agente);            
                 BEGIN
                   OC_SENDMAIL.SEND_MAIL_AGENTES(cEmail,cPwdEmail,cMiMail,cEmailAgen,cEmailJefe,cEmailEjecutivo,cSubject,cTextoEndosoEnv);
