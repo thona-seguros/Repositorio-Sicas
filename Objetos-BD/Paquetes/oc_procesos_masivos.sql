@@ -10523,9 +10523,9 @@ BEGIN
                 cRFCBenef         := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,23,cSeparador));
                 cNombProvBenef    := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,24,cSeparador));
 
-                IF LENGTH(REPLACE(LTRIM(RTRIM(REPLACE(cRFCBenef,' '))),'-')) NOT between 12 and 13 THEN
-                    cMsjError := ' RFC De Beneficiario De Pago '||cRFCBenef||' No Cumple Con La Longitud Establecida De 13 Caracteres, Por Favor Valide';
-                    RAISE_APPLICATION_ERROR(-20225,'RFC De Beneficiario De Pago '||cRFCBenef||' No Cumple Con La Longitud Establecida De 13 Caracteres, Por Favor Valide');
+                IF LENGTH(REPLACE(LTRIM(RTRIM(REPLACE(cRFCBenef,' '))),'-')) <> 12 THEN
+                    cMsjError := ' RFC De Beneficiario De Pago '||cRFCBenef||' No Cumple Con La Longitud Establecida De 12 Caracteres, Por Favor Valide';
+                    RAISE_APPLICATION_ERROR(-20225,'RFC De Beneficiario De Pago '||cRFCBenef||' No Cumple Con La Longitud Establecida De 12 Caracteres, Por Favor Valide');
                 END IF;
                 ---VALIDACION RFC Y REGIMENES FISCALES
 
