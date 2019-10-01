@@ -1,115 +1,4 @@
---
--- OC_POLIZAS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   PLAN_COBERTURAS (Table)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   PREEMISION (Table)
---   FACTURAS (Table)
---   FAI_FONDOS_DETALLE_POLIZA (Table)
---   FZ_DETALLE_FIANZAS (Table)
---   DATOS_PARTICULARES_BIENES (Table)
---   DATOS_PARTICULARES_PERSONAS (Table)
---   DATOS_PARTICULARES_VEHICULO (Table)
---   DATOS_PART_EMISION (Table)
---   DESCUENTOS (Table)
---   DETALLE_DESCUENTO (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
---   DETALLE_POLIZAS_TARJETAS (Table)
---   DETALLE_RECARGO (Table)
---   DETALLE_TRANSACCION (Table)
---   DOCUMENTO_POLIZA (Table)
---   ENDOSOS (Table)
---   EXAMEN (Table)
---   TAREA (Table)
---   TASAS_CAMBIO (Table)
---   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
---   GT_REA_DISTRIBUCION (Package)
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---   OC_DETALLE_POLIZA (Package)
---   OC_DETALLE_TRANSACCION (Package)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   AGENTES_DISTRIBUCION_POLIZA (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO (Table)
---   ASEGURADO_CERT (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   BENEFICIARIO (Table)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   INSPECCION (Table)
---   NOTAS_DE_CREDITO (Table)
---   TIPOS_DE_SEGUROS (Table)
---   TRANSACCION (Table)
---   OC_PROCESO_AUTORIZA_USUARIO (Package)
---   OC_SEGUIMIENTO (Package)
---   OC_SOLICITUD_EMISION (Package)
---   RESPONSABLE_PAGO_DET (Table)
---   RESPONSABLE_PAGO_POL (Table)
---   SINIESTRO (Table)
---   COMPROBANTES_CONTABLES (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLAUSULAS (Table)
---   CLAUSULAS_DETALLE (Table)
---   CLAUSULAS_PLAN_COBERTURAS (Table)
---   CLAUSULAS_POLIZA (Table)
---   CLAUSULAS_TIPOS_SEGUROS (Table)
---   CLIENTES (Table)
---   COBERTURAS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERTURA_ASEG (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   OC_ENDOSO (Package)
---   OC_FACTURAR (Package)
---   OC_FACTURAS (Package)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_TRANSACCION (Package)
---   PARAMETROS_EMISION (Table)
---   PARAMETROS_ENUM_POL (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_ADMON_RIESGO (Package)
---   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
---   OC_ASEGURADO (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_ASISTENCIAS_ASEGURADO (Package)
---   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
---   OC_BENEFICIARIO (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_CLAUSULAS_DETALLE (Package)
---   OC_CLAUSULAS_POLIZA (Package)
---   OC_CLIENTES (Package)
---   OC_COBERT_ACT (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   OC_COMISIONES (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   OC_COMPROBANTES_DETALLE (Package)
---   REA_DISTRIBUCION (Table)
---   RECARGOS (Table)
---   REQUISITOS (Table)
---   REQUISITOS_ENC_POLIZA (Table)
---   REQUISITOS_POLIZA (Table)
---   REQUISITOS_SEGUROS (Table)
---   GT_COTIZACIONES (Package)
---   OC_GENERALES (Package)
---   OC_MAIL (Package)
---   OC_MEDIOS_DE_COBRO (Package)
---   OC_NOTAS_DE_CREDITO (Package)
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---   OC_PLAN_COBERTURAS (Package)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
+CREATE OR REPLACE PACKAGE OC_POLIZAS IS
 
     FUNCTION F_GET_NUMPOL ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
 
@@ -192,14 +81,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
     
 END OC_POLIZAS;
 /
-
---
--- OC_POLIZAS  (Package Body) 
---
---  Dependencies: 
---   OC_POLIZAS (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
+CREATE OR REPLACE PACKAGE BODY OC_POLIZAS IS
 --
 -- BITACORA DE CAMBIO
 -- SE AGREGO LA FUNCIONALIDAD DE LAVADO DE DINERO                        JICO 18/05/2017  LAVDIN
@@ -207,6 +89,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
 -- SE AGREGO LA FUNCIONALIDAD PARA RENOVACION DE CLAUSULAS               JICO 10/08/2017  CLAUREN
 -- SE AGREGO LA FUNCIONALIDA DE LARGO PLAZO                              JICO 10/04/2019  LARPLA
 -- SE AGREGO LA FUNCIONALIDA DE PREEMISIONO                              JICO 16/05/2019  PREEMI
+-- HOMOLOGACION                                                          JICO 01/10/2019 
 ----------------------------------------------------------------------  SEQ XDS
       --- Funcion para buscar el proximo numero de poliza  ---
 ----------------------------------------------------------------------
@@ -1069,7 +952,6 @@ BEGIN
              ---valida si tiene habito para generar valores
             IF NVL(w.HabitoTarifa, 'NA') != 'NA' THEN             
                GT_TAB_VALORES_GARANTIZADOS.INSERTA(nCodCia, nCodEmpresa, nIdPoliza,W.IDetPol,0,W.Cod_Asegurado,1);
-               --NULL;
             END IF;            
          END LOOP;
 
@@ -3145,6 +3027,9 @@ BEGIN
       IF NVL(nIdTransacNc,0) != 0 THEN
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacNc, 'C');
       END IF;
+      --
+      OC_ENDOSO.ENDOSO_REHABILITACION(nCodCia, nCodEmpresa , nIdPoliza);  --ENDCAN
+      --
    ELSE
       RAISE_APPLICATION_ERROR(-20225,'La Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' NO está Anulada para Rehabilitarse');
    END IF;
@@ -3622,6 +3507,9 @@ BEGIN
             RAISE_APPLICATION_ERROR(-20200,'Póliza No. '|| cNumPolRef || ' Posee Distribución Facultativa Pendiente');
          END IF;
       END IF;
+      --
+      OC_ENDOSO.ENDOSO_ANULACION(nCodCia, nCodEmpresa , nIdPoliza , dFecAnulReal, cMotivAnul);  --ENDCAN
+      --
    ELSIF cAnulaSubGrupo = 'S' THEN
       FOR W IN DET_ANU_Q LOOP
          OC_DETALLE_POLIZA.ANULAR_DETALLE(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, dFecAnulReal,
