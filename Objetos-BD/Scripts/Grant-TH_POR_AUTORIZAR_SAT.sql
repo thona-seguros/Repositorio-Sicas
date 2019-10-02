@@ -1,0 +1,3 @@
+-- Grants for Package
+GRANT EXECUTE ON TH_POR_AUTORIZAR_SAT TO PUBLIC
+/
