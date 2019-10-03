@@ -1,67 +1,4 @@
---
--- OC_ENDOSO  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Table)
---   DBMS_STANDARD (Package)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   PROPIEDADES_VALORES (Table)
---   FACTURAS (Table)
---   DETALLE_COMISION (Table)
---   DETALLE_ENDOSO (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
---   DETALLE_TRANSACCION (Table)
---   ENDOSOS (Table)
---   TASAS_CAMBIO (Table)
---   GT_REA_DISTRIBUCION (Package)
---   OC_DETALLE_POLIZA (Package)
---   OC_DETALLE_TRANSACCION (Package)
---   ASEGURADO (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   NOTAS_DE_CREDITO (Table)
---   TRANSACCION (Table)
---   VALORES_DE_LISTAS (Table)
---   OC_PROCESO_AUTORIZA_USUARIO (Package)
---   SINIESTRO (Table)
---   SUB_PROCESO (Table)
---   COMISIONES (Table)
---   COMPROBANTES_CONTABLES (Table)
---   COMPROBANTES_DETALLE (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLIENTES (Table)
---   COBERTURAS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERTURA_ASEG (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   OC_ENDOSO_TEXTO (Package)
---   OC_FACTURAR (Package)
---   OC_FACTURAS (Package)
---   OC_TRANSACCION (Package)
---   OC_VALORES_DE_LISTAS (Package)
---   OC_ASEGURADO (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_ASISTENCIAS_ASEGURADO (Package)
---   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
---   OC_BENEFICIARIO (Package)
---   OC_COBERT_ACT (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   OC_GENERALES (Package)
---   OC_NOTAS_DE_CREDITO (Package)
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---   OC_PLAN_COBERTURAS (Package)
---   OC_PLAN_DE_PAGOS (Package)
---   OC_POLIZAS (Package)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
+CREATE OR REPLACE PACKAGE OC_ENDOSO IS
 
    FUNCTION CREAR (nIdPoliza NUMBER ) RETURN NUMBER;
    FUNCTION NATURALIDAD(cTipoEndoso VARCHAR2) RETURN VARCHAR2;
@@ -100,15 +37,13 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
    
 END OC_ENDOSO;
 /
-
+CREATE OR REPLACE PACKAGE BODY oc_endoso IS
 --
--- OC_ENDOSO  (Package Body) 
+-- BITACORA DE CAMBIO
+-- SE AGREGO LA FUNCIONALIDAD DE LAVADO DE DINERO  JICO 20180626     LAVDIN
+-- ENDOSO DE ANULACION                             JICO 20181203     ENDCAN
+-- HOMOLOGACION                                    JICO 20191001
 --
---  Dependencies: 
---   OC_ENDOSO (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_endoso IS
-
 FUNCTION CREAR (nIdPoliza NUMBER )RETURN NUMBER IS
 nIdEndoso ENDOSOS.IdEndoso%TYPE;
 BEGIN
@@ -783,6 +718,9 @@ nFacturas          NUMBER(5);
 nNotasCred         NUMBER(5);
 nCantAseg          NUMBER(10);
 nEdad              NUMBER(5);
+cMensaje           VARCHAR2(300);                          --LAVDIN
+cPldstaprobada     POLIZAS.PLDSTAPROBADA%TYPE;             --LAVDIN
+W_ACTIVA_PLD       SAI_CAT_GENERAL.CAGE_VALOR_CORTO%TYPE;  --LAVDIN
 cIdTipoSeg         DETALLE_POLIZA.IdTipoSeg%TYPE;
 cPlanCob           DETALLE_POLIZA.PlanCob%TYPE;
 
@@ -812,8 +750,8 @@ BEGIN
    END;
 
    BEGIN
-      SELECT TipoEndoso, IDetPol, StsEndoso, CodEmpresa, FecIniVig
-        INTO cTipoEndoso, nIDetPol, cStsEndoso, nCodEmpresa, dFecIniVig
+      SELECT TipoEndoso,  IDetPol,  StsEndoso,  CodEmpresa,  FecIniVig,  nvl(Pldstaprobada,'N')  --LAVDIN
+        INTO cTipoEndoso, nIDetPol, cStsEndoso, nCodEmpresa, dFecIniVig, cPldstaprobada          --LAVDIN
         FROM ENDOSOS
        WHERE CodCia   = nCodCia
          AND IdPoliza = nIdPoliza
@@ -837,8 +775,32 @@ BEGIN
       WHEN OTHERS THEN
          cNaturalidad := ' ';
    END;
-
-   IF cStsEndoso = 'EMI' AND cTipoEndoso NOT IN ('ESV', 'ESVTL', 'CLA') THEN
+   --
+   -- INICIA LAVDIN 
+   --
+   BEGIN
+     SELECT A.CAGE_VALOR_CORTO
+       INTO W_ACTIVA_PLD
+       FROM SAI_CAT_GENERAL A
+      WHERE A.CAGE_CD_CATALOGO = 104 
+        AND A.CAGE_CD_CLAVE_SEG = 1
+        AND A.CAGE_CD_CLAVE_TER = 1;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         W_ACTIVA_PLD := 'N';
+      WHEN TOO_MANY_ROWS THEN
+         W_ACTIVA_PLD := 'N';
+      WHEN OTHERS THEN
+         W_ACTIVA_PLD := 'N';
+   END;
+   --
+   IF cStsEndoso = 'PLD'  THEN                             
+      RAISE_APPLICATION_ERROR(-20200,'El Endoso es PLD');  
+   END IF;                                                
+   --
+   --TERMINA LAVDIN 
+   --
+    IF cStsEndoso = 'EMI' AND cTipoEndoso NOT IN ('ESV', 'ESVTL', 'CLA') THEN
       BEGIN
          SELECT COUNT(*)
            INTO nComprobantes
@@ -986,7 +948,16 @@ BEGIN
          END IF;
 
          IF OC_ASEGURADO_CERTIFICADO.TIENE_ASEGURADOS(nCodCia, nIdPoliza, nIDetPol, nIdEndoso) = 'S' THEN
+            --   --LAVDIN   INI
+            IF cPldstaprobada = 'N' AND W_ACTIVA_PLD   = 'S' THEN
+               OC_ADMON_RIESGO.VALIDA_PERSONAS_ENDOSO(nCodCia,nIdPoliza,nIdEndoso,cMensaje);
+               IF cMensaje IS NOT NULL THEN
+                  RAISE_APPLICATION_ERROR(-20200,cMensaje);
+               END IF;
+            END IF;
+            --  --LAVDIN   FIN
             FOR W IN ASEG_Q LOOP
+               /*            
                IF OC_PERSONA_NATURAL_JURIDICA.EN_LISTA_DE_REFERENCIA(W.Tipo_Doc_Identificacion, W.Num_Doc_Identificacion) = 'S' THEN
                   cCodListaRef  := OC_PERSONA_NATURAL_JURIDICA.CODIGO_LISTA_REFERENCIA(W.Tipo_Doc_Identificacion, W.Num_Doc_Identificacion);
                   cDescListaRef := OC_VALORES_DE_LISTAS.BUSCA_LVALOR('LISTAREF', cCodListaRef);
@@ -994,7 +965,7 @@ BEGIN
                                                 ' Está en Lista de Referencia por: ' || cCodListaRef || '-' ||
                                                 cDescListaRef || ' - NO Puede Emitirle Endoso');
                END IF;
-
+               */
                nEdad   := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, W.CodEmpresa, W.Cod_Asegurado, dFecIniVig);
 
                SELECT COUNT(*)
@@ -2335,6 +2306,6 @@ BEGIN
   OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdendoso, CLINEA_T);                               
   --
 END ENDOSO_REHABILITACION;
-
+--
 END OC_ENDOSO;
 /
