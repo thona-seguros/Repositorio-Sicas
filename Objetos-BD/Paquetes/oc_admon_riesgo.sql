@@ -60,7 +60,7 @@ PROCEDURE VALIDA_PERSONAS_ENDOSO(P_CODCIA     NUMBER,
                                  
 FUNCTION EXISTE_POLIZA_PLD(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2;                                 
                                                    
-END OC_ADMON_RIESGO;
+FUNCTION POLIZA_BLOQUEADA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2;END OC_ADMON_RIESGO;
 /
 
 --
@@ -491,5 +491,23 @@ BEGIN
 END EXISTE_POLIZA_PLD;
 
 
-END OC_ADMON_RIESGO;
+FUNCTION POLIZA_BLOQUEADA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2 IS
+cExiste VARCHAR2(1);
+BEGIN
+   BEGIN
+      SELECT 'S'
+        INTO cExiste
+        FROM ADMON_RIESGO
+       WHERE CodCia        = nCodCia
+         AND CodEmpresa    = nCodEmpresa
+         AND IdPoliza      = nIdPoliza
+         AND St_Resolucion = 'BLOQ';
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cExiste := 'N';
+      WHEN TOO_MANY_ROWS THEN
+         cExiste := 'S';
+   END;
+   RETURN cExiste;
+END POLIZA_BLOQUEADA;END OC_ADMON_RIESGO;
 /

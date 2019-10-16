@@ -1,4 +1,115 @@
-CREATE OR REPLACE PACKAGE OC_POLIZAS IS
+--
+-- OC_POLIZAS  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DUAL (Synonym)
+--   DBMS_OUTPUT (Synonym)
+--   DBMS_STANDARD (Package)
+--   PLAN_COBERTURAS (Table)
+--   PLAN_DE_PAGOS (Table)
+--   POLIZAS (Table)
+--   PREEMISION (Table)
+--   FACTURAS (Table)
+--   FAI_FONDOS_DETALLE_POLIZA (Table)
+--   FZ_DETALLE_FIANZAS (Table)
+--   DATOS_PARTICULARES_BIENES (Table)
+--   DATOS_PARTICULARES_PERSONAS (Table)
+--   DATOS_PARTICULARES_VEHICULO (Table)
+--   DATOS_PART_EMISION (Table)
+--   DESCUENTOS (Table)
+--   DETALLE_DESCUENTO (Table)
+--   DETALLE_FACTURAS (Table)
+--   DETALLE_NOTAS_DE_CREDITO (Table)
+--   DETALLE_POLIZA (Table)
+--   DETALLE_POLIZAS_TARJETAS (Table)
+--   DETALLE_RECARGO (Table)
+--   DETALLE_TRANSACCION (Table)
+--   DOCUMENTO_POLIZA (Table)
+--   ENDOSOS (Table)
+--   EXAMEN (Table)
+--   TAREA (Table)
+--   TASAS_CAMBIO (Table)
+--   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
+--   GT_REA_DISTRIBUCION (Package)
+--   OC_DETALLE_NOTAS_DE_CREDITO (Package)
+--   OC_DETALLE_POLIZA (Package)
+--   OC_DETALLE_TRANSACCION (Package)
+--   AGENTES_DETALLES_POLIZAS (Table)
+--   AGENTES_DISTRIBUCION_COMISION (Table)
+--   AGENTES_DISTRIBUCION_POLIZA (Table)
+--   AGENTE_POLIZA (Table)
+--   ASEGURADO (Table)
+--   ASEGURADO_CERT (Table)
+--   ASEGURADO_CERTIFICADO (Table)
+--   ASISTENCIAS (Table)
+--   ASISTENCIAS_ASEGURADO (Table)
+--   ASISTENCIAS_DETALLE_POLIZA (Table)
+--   BENEFICIARIO (Table)
+--   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
+--   INSPECCION (Table)
+--   NOTAS_DE_CREDITO (Table)
+--   TIPOS_DE_SEGUROS (Table)
+--   TRANSACCION (Table)
+--   OC_PROCESO_AUTORIZA_USUARIO (Package)
+--   OC_SEGUIMIENTO (Package)
+--   OC_SOLICITUD_EMISION (Package)
+--   RESPONSABLE_PAGO_DET (Table)
+--   RESPONSABLE_PAGO_POL (Table)
+--   SINIESTRO (Table)
+--   COMPROBANTES_CONTABLES (Table)
+--   CATALOGO_DE_CONCEPTOS (Table)
+--   CLAUSULAS (Table)
+--   CLAUSULAS_DETALLE (Table)
+--   CLAUSULAS_PLAN_COBERTURAS (Table)
+--   CLAUSULAS_POLIZA (Table)
+--   CLAUSULAS_TIPOS_SEGUROS (Table)
+--   CLIENTES (Table)
+--   COBERTURAS (Table)
+--   COBERTURAS_DE_SEGUROS (Table)
+--   COBERTURA_ASEG (Table)
+--   COBERT_ACT (Table)
+--   COBERT_ACT_ASEG (Table)
+--   OC_ENDOSO (Package)
+--   OC_FACTURAR (Package)
+--   OC_FACTURAS (Package)
+--   OC_TIPOS_DE_SEGUROS (Package)
+--   OC_TRANSACCION (Package)
+--   PARAMETROS_EMISION (Table)
+--   PARAMETROS_ENUM_POL (Table)
+--   PERSONA_NATURAL_JURIDICA (Table)
+--   OC_ADMON_RIESGO (Package)
+--   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
+--   OC_ASEGURADO (Package)
+--   OC_ASEGURADO_CERTIFICADO (Package)
+--   OC_ASISTENCIAS_ASEGURADO (Package)
+--   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
+--   OC_BENEFICIARIO (Package)
+--   OC_CATALOGO_DE_CONCEPTOS (Package)
+--   OC_CLAUSULAS_DETALLE (Package)
+--   OC_CLAUSULAS_POLIZA (Package)
+--   OC_CLIENTES (Package)
+--   OC_COBERT_ACT (Package)
+--   OC_COBERT_ACT_ASEG (Package)
+--   OC_COMISIONES (Package)
+--   OC_COMPROBANTES_CONTABLES (Package)
+--   OC_COMPROBANTES_DETALLE (Package)
+--   REA_DISTRIBUCION (Table)
+--   RECARGOS (Table)
+--   REQUISITOS (Table)
+--   REQUISITOS_ENC_POLIZA (Table)
+--   REQUISITOS_POLIZA (Table)
+--   REQUISITOS_SEGUROS (Table)
+--   GT_COTIZACIONES (Package)
+--   OC_GENERALES (Package)
+--   OC_MAIL (Package)
+--   OC_MEDIOS_DE_COBRO (Package)
+--   OC_NOTAS_DE_CREDITO (Package)
+--   OC_PERSONA_NATURAL_JURIDICA (Package)
+--   OC_PLAN_COBERTURAS (Package)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
 
     FUNCTION F_GET_NUMPOL ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
 
@@ -79,9 +190,20 @@ CREATE OR REPLACE PACKAGE OC_POLIZAS IS
 
     FUNCTION DIA_COBRO (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN NUMBER;
     
+    FUNCTION BLOQUEADA_PLD(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
+    
+    FUNCTION LIBERADA_PLD(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
+    
 END OC_POLIZAS;
 /
-CREATE OR REPLACE PACKAGE BODY OC_POLIZAS IS
+
+--
+-- OC_POLIZAS  (Package Body) 
+--
+--  Dependencies: 
+--   OC_POLIZAS (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
 --
 -- BITACORA DE CAMBIO
 -- SE AGREGO LA FUNCIONALIDAD DE LAVADO DE DINERO                        JICO 18/05/2017  LAVDIN
@@ -4164,6 +4286,46 @@ BEGIN
    END;
    RETURN nDiaCobroAutomatico;
 END;
+
+FUNCTION BLOQUEADA_PLD(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS
+cExiste VARCHAR2(1);
+BEGIN
+   BEGIN
+      SELECT 'S'
+        INTO cExiste
+        FROM POLIZAS
+       WHERE CodCia                    = nCodCia
+         AND CodEmpresa                = nCodEmpresa
+         AND IdPoliza                  = nIdPoliza
+         AND NVL(PldStBloqueada,'N')   = 'S'
+         AND NVL(PldStAprobada,'N')    = 'N'
+         AND StsPoliza                 = 'PLD';
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN 
+         cExiste := 'N';
+   END;
+   RETURN cExiste;
+END BLOQUEADA_PLD;
+    
+FUNCTION LIBERADA_PLD(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS
+cExiste VARCHAR2(1);
+BEGIN
+   BEGIN
+      SELECT 'S'
+        INTO cExiste
+        FROM POLIZAS
+       WHERE CodCia                    = nCodCia
+         AND CodEmpresa                = nCodEmpresa
+         AND IdPoliza                  = nIdPoliza
+         AND NVL(PldStBloqueada,'N')   = 'S'
+         AND NVL(PldStAprobada,'N')    = 'S'
+         AND StsPoliza                != 'PLD';
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN 
+         cExiste := 'N';
+   END;
+   RETURN cExiste;
+END LIBERADA_PLD;
 
 END OC_POLIZAS;
 /
