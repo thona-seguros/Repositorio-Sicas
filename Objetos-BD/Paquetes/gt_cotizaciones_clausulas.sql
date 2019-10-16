@@ -50,7 +50,8 @@ PROCEDURE CREAR_CLAUSULAS_POL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion 
 nCodClausula    COTIZACIONES_CLAUSULAS.CodClausula%TYPE;
    
 CURSOR COTCLA_Q IS
-   SELECT L.CodClausula, '0000' TipoClausula, L.TextoClausula,
+   SELECT L.CodClausula TipoClausula, L.TextoClausula,
+          --L.CodClausula, '0000' TipoClausula, L.TextoClausula,
           C.FecIniVigCot, C.FecFinVigCot
      FROM COTIZACIONES_CLAUSULAS L,
           COTIZACIONES C
@@ -66,8 +67,8 @@ BEGIN
       nCodClausula := nCodClausula + 1;
 
       INSERT INTO CLAUSULAS_POLIZA
-            (CodCia, IdPoliza, Cod_Clausula, Texto, Inicio_Vigencia, Fin_Vigencia, Estado)
-      VALUES(nCodCia, nIdPoliza, nCodClausula, X.TextoClausula, X.FecIniVigCot, X.FecFinVigCot, 'SOL');
+            (CodCia, IdPoliza, Cod_Clausula, Tipo_Clausula, Texto, Inicio_Vigencia, Fin_Vigencia, Estado)
+      VALUES(nCodCia, nIdPoliza, nCodClausula, X.TipoClausula, X.TextoClausula, X.FecIniVigCot, X.FecFinVigCot, 'SOL');
    END LOOP;
 EXCEPTION
    WHEN OTHERS THEN
