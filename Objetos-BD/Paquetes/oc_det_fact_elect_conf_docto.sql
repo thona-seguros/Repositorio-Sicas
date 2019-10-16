@@ -573,7 +573,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                     ELSE
                         cDescripcion := ' '||cLeyendaEsp;
                     END IF;
-                    cValorAtributo := OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia,cCodCpto)||cDescripcion;
+                    cValorAtributo := CAMBIA_ACENTOS(OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia,cCodCpto)||cDescripcion);
                 END IF;
             WHEN 'CONVAL07' THEN
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'EMI' THEN
