@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 --
 -- OC_NOMINA  (Package) 
 --
@@ -33,6 +34,8 @@
 --   OC_GENERALES (Package)
 --   OC_NOTAS_DE_CREDITO (Package)
 --
+=======
+>>>>>>> Stashed changes
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_NOMINA IS
 FUNCTION  CREAR(nCodCia VARCHAR2) RETURN NUMBER;
 PROCEDURE GENERA_NOMINA (nCodCia NUMBER, nCodEmp NUMBER, nIdNomina NUMBER, 
@@ -51,9 +54,13 @@ PROCEDURE REVERTIR_NOMINA (nCodCia NUMBER, nCodEmpresa NUMBER, nIdNomina NUMBER)
 PROCEDURE ACTUALIZA_AUTORIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNomina NUMBER, nIdAutorizacion NUMBER);
 END OC_NOMINA;
 /
+<<<<<<< Updated upstream
 
 --
 -- OC_NOMINA  (Package Body) 
+=======
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_NOMINA IS
+>>>>>>> Stashed changes
 --
 --  Dependencies: 
 --   OC_NOMINA (Package)
@@ -62,6 +69,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_NOMINA IS
 FUNCTION CREAR(nCodCia VARCHAR2) RETURN NUMBER  IS
 nIdNomina   NOMINA_COMISION.IdNomina%TYPE;
 BEGIN
+<<<<<<< Updated upstream
    SELECT TO_NUMBER(TO_CHAR(SYSDATE,'YYYYMMDD')||NVL((SUBSTR(MAX(NVL(IdNomina,0)),9,RPAD(MAX(NVL(IdNomina,0)),1,8))+1),1))
      INTO nIdNomina
      FROM NOMINA_COMISION
@@ -69,6 +77,15 @@ BEGIN
       AND IdNomina LIKE TO_CHAR(SYSDATE,'YYYYMMDD')||'%';
 
    RETURN (nIdNomina);
+=======
+  --
+  SELECT SQ_NOMINA.NEXTVAL    
+    INTO nIdNomina
+    FROM DUAL;
+  --  
+  RETURN (nIdNomina);
+  --
+>>>>>>> Stashed changes
 END CREAR;
 
 PROCEDURE GENERA_NOMINA (nCodCia NUMBER, nCodEmp NUMBER, nIdNomina NUMBER,
