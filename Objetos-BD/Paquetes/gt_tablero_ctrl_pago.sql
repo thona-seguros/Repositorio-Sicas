@@ -312,6 +312,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
                                                                           AND D.IDPROCDET = ENT.IDPROCDET)) LOOP                    
                             NULL; --OC_APROBACIONES.ACTUALIZA_IDLOTE_MIZAR(APR.IDPOLIZA, APR.IDSINIESTRO, APR.IDDETSIN, APR.NUM_APROBACION, TAB.IDPROC, ENT.IDPROCDET);  
                         END LOOP;
+                        GT_TABLERO_CTRL_PAGO.MARCAR_ERROR(TAB.CODCIA, TAB.IDPROC, 'NO ES ERROR, FALTA LA IMPLEMENTACION DE OC_APROBACIONES.ACTUALIZA_IDLOTE_MIZAR');    
                     END IF;                                            
                 EXCEPTION WHEN OTHERS THEN
                     case SQLCODE 
