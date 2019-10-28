@@ -302,8 +302,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
                                                                                           AND A.Benef       = B.Benef    
                                                          INNER JOIN SINIESTRO           S ON  S.IdPoliza    = A.IdPoliza
                                                                                           AND S.IdSiniestro = A.IdSiniestro 
-                                                         INNER JOIN INFO_SINIESTRO      I ON  I.Fe_Carga    >= T.FechaTransaccion and
-                                                                                             I.Siniestro   = S.IdSiniestro
+                                                         INNER JOIN INFO_SINIESTRO      I ON  T.FechaTransaccion >= I.Fe_Carga  
+                                                                                          AND I.Siniestro   = S.IdSiniestro
                                     WHERE I.ID_CODCIA = TAB.CODCIA
                                       AND (I.FE_CARGA, I.ID_ENVIO) IN (SELECT D.FECHA, D.FACTURA
                                                                          FROM DETALLE_TABLERO_CTRL_PAGO D 
@@ -806,7 +806,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
         dFecDesde   VARCHAR2(10) := TO_CHAR(PFECHA, 'DD/MM/YYYY');
         
         CURSOR QRY_SIN IS
-                SELECT 
+                    SELECT 
                      5                                                              COMPANIA
                     ,'#FOLIO_AGRUPADOR'                                             FOLIO_AGRUP
                     ,8601                                                           AUXILIAR
@@ -834,24 +834,28 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
                     ,11                                                             grupo        
                     ,8                                                              flujo        
                     ,I.ID_ENVIO                                                     factura
-                    ,'012'                                                          id_cta_banco
-                    ,I.Ref_Banca                                                    clabe
+                    ,MAX(F.CODBCOMIZAR)                                         id_cta_banco
+                    ,CASE WHEN MAX(N.NUMCUENTACLABE) IS NULL THEN MAX(N.NUMCUENTABANCARIA) ELSE MAX(N.NUMCUENTABANCARIA) END   CLABE
                     ,'1'                                                            plaza_cta
                     ,0                                                              tipo_pago  --  TRANSFERENCIA
                     ,9                                                              fuente
                     ,'0'                                                            folio_solicitud
                     ,'0'                                                            error
-                    ,'1'                                                            comentario                
+                    ,'1'                                                            comentario      
               FROM TRANSACCION T INNER JOIN APROBACIONES        A ON  T.IdTransaccion= A.IdTransaccion
                                  INNER JOIN BENEF_SIN           B ON  A.IdPoliza    = B.IdPoliza
                                                                   AND A.IdSiniestro = B.IdSiniestro
                                                                   AND A.Benef       = B.Benef    
                                  INNER JOIN SINIESTRO           S ON  S.IdPoliza    = A.IdPoliza
                                                                   AND S.IdSiniestro = A.IdSiniestro 
-                                 INNER JOIN INFO_SINIESTRO      I ON  I.Fe_Carga    >= T.FechaTransaccion and
-                                                                     I.Siniestro   = S.IdSiniestro
+                                 INNER JOIN INFO_SINIESTRO      I ON  T.FechaTransaccion >= I.Fe_Carga and
+                                                                      I.Siniestro   = S.IdSiniestro
+                                 INNER JOIN POLIZAS             P ON P.CODCIA = S.CODCIA AND P.IDPOLIZA = S.IDPOLIZA
+                                 INNER JOIN CLIENTES            G ON G.CODCLIENTE   = P.CODCLIENTE                                                            
+                                 INNER JOIN MEDIOS_DE_PAGO      N ON N.TIPO_DOC_IDENTIFICACION = G.TIPO_DOC_IDENTIFICACION AND N.NUM_DOC_IDENTIFICACION = G.NUM_DOC_IDENTIFICACION AND N.IDFORMAPAGO  = N.IDFORMAPAGO AND INDMEDIOPRINCIPAL = 'S'
+                                 INNER JOIN ENTIDAD_FINANCIERA  F ON F.CODCIA = S.CODCIA AND F.CODENTIDAD = N.CODENTIDADFINAN                                                                          
             WHERE I.ID_CODCIA = nCodCia
-              AND I.FE_CARGA = to_date(dFecDesde, 'DD/MM/YYYY') 
+              AND I.FE_CARGA = to_date(dFecDesde, 'DD/MM/YYYY')
               AND NOT EXISTS (SELECT 1 FROM TABLERO_CTRL_PAGO  CP INNER JOIN DETALLE_TABLERO_CTRL_PAGO P ON CP.CODCIA = P.CODCIA AND CP.IDPROC = P.IDPROC WHERE P.CODCIA = T.CODCIA AND P.FACTURA = I.ID_ENVIO AND CP.ESFONDEO = 'S') 
             GROUP BY I.ID_ENVIO,  I.Fe_Carga,       
                      B.Nombre||' '||B.Apellido_Paterno||' '||B.Apellido_Materno,
