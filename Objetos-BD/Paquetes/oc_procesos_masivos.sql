@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_PROCESOS_MASIVOS IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOS_MASIVOS IS
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 PROCEDURE ACTUALIZA_STATUS(nIdProcMasivo NUMBER, cStsRegProceso VARCHAR2);
 PROCEDURE EMISION(nIdProcMasivo NUMBER);
@@ -56,7 +56,7 @@ PROCEDURE  SINIESTROS_ANUPGO(nIdProcMasivo NUMBER);
 PROCEDURE  SINIESTROS_PGOGG(nIdProcMasivo NUMBER);
 PROCEDURE DIRVAD( wIdSiniestro in Number, wMntoPgo in Number, wCobertura in  Varchar2);
 PROCEDURE AURVAD (wIdSiniestro in Number, wMntoPgo in Number, wCobertura in  Varchar2);
-PROCEDURE PAGO_SINIESTROS_MASIVO(nIdProcMasivo NUMBER);
+PROCEDURE PAGO_SINIESTROS_MASIVO(nIdProcMasivo NUMBER); -- SE AGREGO VALIDACION DE PLD JMMD201911
 FUNCTION  VALIDA_ARCHIVO_CARGA(cNomArchivoCarga VARCHAR2) RETURN BOOLEAN;
 PROCEDURE ACTUALIZA_AUTORIZACION(nCodCia NUMBER, nCodEmpresa NUMBER,nIdProcMasivo NUMBER,cNomArchivoCarga VARCHAR2,nIdAutorizacion NUMBER);
 PROCEDURE ENDOSO_DECLARACION_MASIVO(nIdProcMasivo NUMBER);
@@ -65,7 +65,7 @@ PROCEDURE COBRANZA_APORTES_ASEG_FONDOS(nIdProcMasivo NUMBER);
 
 END OC_PROCESOS_MASIVOS;
 /
-CREATE OR REPLACE PACKAGE BODY OC_PROCESOS_MASIVOS IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOS_MASIVOS IS
 --
 --  MODIFICACION
 --  17/02/2016  SE ELIMINO LA RUTINA DE REQUESITOS                                               -- JICO REQ
@@ -9973,6 +9973,7 @@ cIndFecEquivPro    PROC_TAREA.IndFecEquiv%TYPE;
 dFechaCamb         APROBACIONES.FECPAGO%TYPE;
 dFechaCont         FECHA_CONTABLE_EQUIVALENTE.FECHACONTABLE%TYPE;
 dFechaReal         FECHA_CONTABLE_EQUIVALENTE.FECHAREAL%TYPE;
+cFechaNacimiento   varchar2(10);
 
 CURSOR PAGO_Q  IS
    SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.OrdenDatoPart
@@ -10215,6 +10216,33 @@ BEGIN
                     RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de SAT PRESUNTOS, requiere de autorizacion.');
                 END IF;                               
 -------
+------- JMMD20191025 VALIDACION DE REGISTROS EN PLD
+                cFechaNacimiento := CALCULA_FECHA_NACIMIENTO(cRFCProv);
+                dbms_output.put_line('jmmd pruebas PLD cRFCProv : '||cRFCProv||' NOMBRE : '||cNombProv);
+                IF OC_CAT_QEQ.ES_QEQ_SINIESTRO('RFC', cRFCProv, cNombProv, cFechaNacimiento ) = 'S' THEN
+                   OC_ADMON_RIESGO_SINIESTROS.INSERTA(
+                          X.CodCia,
+                          nCodEmpresa,
+                          1 ,
+                          nIdPoliza  ,
+                          'N/A' ,
+                          nCodAsegurado ,      
+                          nIdSiniestro ,
+                          'QEQ'  ,
+                          'RFC'	,
+                          cRFCProv	,
+                          cNombProv	,
+                          'PEND'	,
+                          TRUNC(SYSDATE)	,
+                          ''	,
+                          'LA PERSONA ESTA EN PLD'	,
+                          TRUNC(SYSDATE)  ,
+                          USUSARIO );                         
+                    dbms_output.put_line('jmmd pruebas PLD existe en PLD : ');
+                    cMsjError := 'Persona encontrada en an el Catalogo de quien es quien.';
+                    RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de quien es quien, requiere de autorizacion.');
+                END IF;
+-------                
                 --- SIN VALIDACIONES
                 nMtoHono          := TO_NUMBER(LTRIM(REPLACE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,13,cSeparador),',')));
                 nMtoHosp          := TO_NUMBER(LTRIM(REPLACE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,14,cSeparador),',')));
@@ -11666,3 +11694,4 @@ EXCEPTION
 END COBRANZA_APORTES_ASEG_FONDOS;
 
 END OC_PROCESOS_MASIVOS;
+/
