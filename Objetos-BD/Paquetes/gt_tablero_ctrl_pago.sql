@@ -312,6 +312,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
                                                                           AND D.IDPROCDET = ENT.IDPROCDET)) LOOP                    
                             NULL; --OC_APROBACIONES.ACTUALIZA_IDLOTE_MIZAR(APR.IDPOLIZA, APR.IDSINIESTRO, APR.IDDETSIN, APR.NUM_APROBACION, TAB.IDPROC, ENT.IDPROCDET);  
                         END LOOP;
+                        GT_TABLERO_CTRL_PAGO.MARCAR_ERROR(TAB.CODCIA, TAB.IDPROC, 'NO ES ERROR, FALTA LA IMPLEMENTACION DE OC_APROBACIONES.ACTUALIZA_IDLOTE_MIZAR');    
                     END IF;                                            
                 EXCEPTION WHEN OTHERS THEN
                     case SQLCODE 
@@ -856,7 +857,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
                                  INNER JOIN ENTIDAD_FINANCIERA  F ON F.CODCIA = S.CODCIA AND F.CODENTIDAD = N.CODENTIDADFINAN                                                                          
             WHERE I.ID_CODCIA = nCodCia
               AND I.FE_CARGA = to_date(dFecDesde, 'DD/MM/YYYY')
-              AND NOT EXISTS (SELECT 1 FROM TABLERO_CTRL_PAGO  CP INNER JOIN DETALLE_TABLERO_CTRL_PAGO P ON CP.CODCIA = P.CODCIA AND CP.IDPROC = P.IDPROC WHERE P.CODCIA = T.CODCIA AND P.FACTURA = I.ID_ENVIO AND CP.ESFONDEO = 'S') 
+              AND NOT EXISTS (SELECT 1 FROM TABLERO_CTRL_PAGO  CP INNER JOIN DETALLE_TABLERO_CTRL_PAGO P ON CP.CODCIA = P.CODCIA AND CP.IDPROC = P.IDPROC WHERE P.CODCIA = T.CODCIA AND P.FACTURA = I.ID_ENVIO AND CP.ESFONDEO = 'S' AND CP.STSPROCESO NOT IN ('ERRDER')  ) 
             GROUP BY I.ID_ENVIO,  I.Fe_Carga,       
                      B.Nombre||' '||B.Apellido_Paterno||' '||B.Apellido_Materno,
                      B.Ent_Financiera, I.Ref_Banca, B.NumCuentaBancaria,
