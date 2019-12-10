@@ -289,6 +289,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
                                                                ,GT_WEB_SERVICES.ExtraeDatos_XmlDom('cuenta')
                                                                ,GT_WEB_SERVICES.ExtraeDatos_XmlDom('referencia')
                                                                ,GT_WEB_SERVICES.ExtraeDatos_XmlDom('fechapago')
+                                                               ,GT_WEB_SERVICES.ExtraeDatos_XmlDom('tipo_pago')                                                               
                                                                );
                     IF MOD(nReg, 10) = 0 THEN
                         COMMIT;
