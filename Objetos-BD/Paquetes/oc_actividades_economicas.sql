@@ -14,6 +14,8 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_ACTIVIDADES_ECONOMICAS IS
   FUNCTION RIESGO_ACTIVIDAD(cCodActividad VARCHAR2) RETURN VARCHAR2;
 
   FUNCTION TIPORIESGO(cCodActividad VARCHAR2) RETURN VARCHAR2;
+  
+  PROCEDURE ACT_ECONOMICA_DIGITAL(cRiesgoActividad IN VARCHAR2, cTipoRiesgo IN VARCHAR2, xDatosActE OUT XMLTYPE);
 
 END OC_ACTIVIDADES_ECONOMICAS;
 /
@@ -81,6 +83,34 @@ BEGIN
    END;
    RETURN(CTIPORIESGO);
 END TIPORIESGO;
+
+PROCEDURE ACT_ECONOMICA_DIGITAL(cRiesgoActividad IN VARCHAR2, cTipoRiesgo IN VARCHAR2, xDatosActE OUT XMLTYPE) IS
+xPrevDatActividad XMLTYPE;   
+BEGIN
+   BEGIN
+      SELECT XMLElement("DATA",
+                        XMLAGG(
+                           XMLCONCAT(
+                                     XMLElement("InfoActEconomica", 
+                                                  XMLElement("CodActividad",CodActividad),
+                                                  XMLElement("DescActividad",DescActividad),
+                                                  XMLElement("RiesgoActividad",RiesgoActividad),
+                                                  XMLElement("DescRiesgoAct",OC_VALORES_DE_LISTAS.BUSCA_LVALOR('TPRIESACTI',RiesgoActividad)),
+                                                  XMLElement("TipoRiesgo",TipoRiesgo),
+                                                  XMLElement("DescTipoRiesgo",OC_VALORES_DE_LISTAS.BUSCA_LVALOR('TIPOCLIE',TipoRiesgo))
+                                               )
+                                    )
+                              ) 
+                        )
+        INTO xPrevDatActividad
+        FROM ACTIVIDADES_ECONOMICAS
+       WHERE RiesgoActividad  = NVL(cRiesgoActividad, RiesgoActividad)
+         AND TipoRiesgo       = NVL(cTipoRiesgo, TipoRiesgo);
+   END;
+   SELECT XMLROOT (xPrevDatActividad, VERSION '1.0" encoding="UTF-8')
+     INTO xDatosActE
+     FROM DUAL;
+END ACT_ECONOMICA_DIGITAL;
 
 END OC_ACTIVIDADES_ECONOMICAS;
 /
