@@ -71,7 +71,7 @@ BEGIN
                                VALUES (nCodCia, nCodEmpresa, nNumDeclaracion, nIdPoliza, nIDetPol, nCodAsegurado, nIdEndoso,
                                        dFecNacimiento, nEdad, cNutraCertificado, dFecIniVig, dFecFinVig, 
                                        nMtoSumaAsegLocal, nMtoSumaAsegMoneda, nMtoPrimaLocal, nMtoPrimaMoneda, 
-                                       NVL(cStsDeclaracion,'ACTIVA'), TRUNC(SYSDATE));
+                                       NVL(cStsDeclaracion,'EMI'), TRUNC(SYSDATE));
 END INSERTAR;
 
 FUNCTION EXISTE_HISTORICO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER) RETURN VARCHAR2 IS
