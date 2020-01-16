@@ -19,6 +19,7 @@ END OC_NOMINA;
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_NOMINA IS
 --
 -- 20190930  SE AJUSTE LA PROGRAMACION      ICO
+-- 20191223  SE DESCOMENTA EL PROCEDIMIENTO REVERTIR NOMINA Y SE COMPLETAN DATOS DE INDICES  JMMD
 --
 FUNCTION CREAR(nCodCia VARCHAR2) RETURN NUMBER  IS
 nIdNomina   NOMINA_COMISION.IdNomina%TYPE;
@@ -540,13 +541,14 @@ CURSOR NC_Q IS
      AND N.CODCIA = nCodCia;
 --
 BEGIN
-  NULL;
-/*
+--  NULL;  jmmd20191223 se descomento el procedimiento por solicitud de Juan Perez
+
   FOR W IN NC_Q LOOP
       SELECT COUNT(*)
         INTO nExiste
         FROM COMPROBANTES_CONTABLES
-       WHERE NumTransaccion = W.IdTransacAplic
+       WHERE CODCIA = nCodCia
+         AND NumTransaccion = W.IdTransacAplic
          AND FecEnvioSc IS NOT NULL;
       --
       IF nExiste != 0 THEN
@@ -574,12 +576,15 @@ BEGIN
        --
        FOR W IN NC_Q LOOP
            DELETE COMPROBANTES_DETALLE
-            WHERE NumComprob IN (SELECT NumComprob
+            WHERE Codcia = nCodCia
+              AND NumComprob IN (SELECT NumComprob
                                    FROM COMPROBANTES_CONTABLES
-                                  WHERE NumTransaccion = W.IdTransacAplic);
+                                  WHERE Codcia = nCodCia
+                                    and NumTransaccion = W.IdTransacAplic);
            -- 
            DELETE COMPROBANTES_CONTABLES
-            WHERE NumTransaccion = W.IdTransacAplic;
+            WHERE Codcia = nCodCia
+              AND NumTransaccion = W.IdTransacAplic;
            --
            DELETE NCR_FACTEXT
             WHERE IdNcr = W.IdNcr;
@@ -588,18 +593,25 @@ BEGIN
             WHERE IdNcr = W.IdNcr;
            --
            DELETE NOTAS_DE_CREDITO
-            WHERE IdNcr = W.IdNcr;
+            WHERE Codcia = nCodCia
+              AND IdNcr  = W.IdNcr;
            --
-           DELETE DETALLE_TRANSACCION WHERE IdTransaccion = W.IdTransacAplic;
+           DELETE DETALLE_TRANSACCION 
+            WHERE Codcia        = nCodCia
+              AND IdTransaccion = W.IdTransacAplic;
            --
-           DELETE TRANSACCION WHERE IdTransaccion = W.IdTransacAplic;
+           DELETE TRANSACCION 
+            WHERE Codcia        = nCodCia
+              AND IdTransaccion = W.IdTransacAplic;
        END LOOP;
        --
        DELETE DETALLE_NOMINA_COMISION
-        WHERE Idnomina = nIdNomina;    
+        WHERE Codcia   = nCodCia
+          AND Idnomina = nIdNomina;    
        --
        DELETE DETALLE_NOMINA 
-        WHERE Idnomina = nIdNomina;
+        WHERE Codcia   = nCodCia
+          AND Idnomina = nIdNomina;
        --
        DELETE NOMINA_COMISION
         WHERE IdNomina = nIdNomina;
@@ -607,7 +619,7 @@ BEGIN
 EXCEPTION
    WHEN OTHERS THEN
       RAISE_APPLICATION_ERROR(-20225,SQLERRM);
-*/
+
 END REVERTIR_NOMINA;
 --
 PROCEDURE ACTUALIZA_AUTORIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNomina NUMBER, nIdAutorizacion NUMBER) IS
@@ -623,4 +635,4 @@ EXCEPTION
 END ACTUALIZA_AUTORIZACION;
 
 END OC_NOMINA;
-/
+
