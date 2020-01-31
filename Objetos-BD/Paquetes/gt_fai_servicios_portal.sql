@@ -37,25 +37,28 @@
 --   OC_PLAN_COBERTURAS (Package)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_FAI_SERVICIOS_PORTAL AS
-    FUNCTION NUMERO_CONSULTA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER) RETURN NUMBER;
-    FUNCTION XML_SERVICIO(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdConsultaServicio IN NUMBER, 
-                          cCodServicio IN VARCHAR2) RETURN XMLTYPE;
-    PROCEDURE INSERTAR(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, cCodServicio IN VARCHAR2, 
-                       dFechaConsulta IN DATE, xXmlConsulta IN XMLTYPE);
-    PROCEDURE VALIDA_LOGIN(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, 
-                           cRfc IN VARCHAR2, cNumPolUnico VARCHAR2, nExiste OUT NUMBER);
-    PROCEDURE CLIENTE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, 
-                      xDatosCliente OUT XMLTYPE); 
-    PROCEDURE POLIZAS_CLIENTE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, 
-                              cRfc IN VARCHAR2, nIdPoliza IN NUMBER, xPolizasCliente OUT XMLTYPE); 
-    PROCEDURE PRINCIPAL(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, 
-                        dFechaDesde IN DATE, dFechaHasta IN DATE, xPrincipal OUT XMLTYPE);
-    PROCEDURE MOVIMIENTOS(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, 
-                          dFechaDesde IN DATE, dFechaHasta IN DATE, xMovimientos OUT XMLTYPE);
-    PROCEDURE MOVIMIENTOS_POR_FONDO(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, 
-                          dFechaDesde IN DATE, dFechaHasta IN DATE, xMovimientos OUT XMLTYPE); 
-    PROCEDURE INTEGRACION_SALDO(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, 
-                          dFechaDesde IN DATE, dFechaHasta IN DATE, xIntegraSaldo OUT XMLTYPE);
+   FUNCTION NUMERO_CONSULTA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER) RETURN NUMBER;
+   FUNCTION XML_SERVICIO(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdConsultaServicio IN NUMBER, 
+                         cCodServicio IN VARCHAR2) RETURN XMLTYPE;
+   PROCEDURE INSERTAR(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, cCodServicio IN VARCHAR2, 
+                      dFechaConsulta IN DATE, xXmlConsulta IN XMLTYPE);
+--    PROCEDURE VALIDA_LOGIN(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, 
+--                           cRfc IN VARCHAR2, cNumPolUnico VARCHAR2, nExiste OUT NUMBER);
+   PROCEDURE VALIDA_LOGIN(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, 
+                          cRfc IN VARCHAR2, nExiste OUT NUMBER);                           
+   PROCEDURE CLIENTE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, 
+                     xDatosCliente OUT XMLTYPE); 
+   PROCEDURE POLIZAS_CLIENTE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, 
+                             cRfc IN VARCHAR2, nIdPoliza IN NUMBER, xPolizasCliente OUT XMLTYPE); 
+   PROCEDURE PRINCIPAL(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, 
+                       dFechaDesde IN DATE, dFechaHasta IN DATE, xPrincipal OUT XMLTYPE);
+   PROCEDURE MOVIMIENTOS(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, 
+                         dFechaDesde IN DATE, dFechaHasta IN DATE, xMovimientos OUT XMLTYPE);
+   PROCEDURE MOVIMIENTOS_POR_FONDO(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, 
+                         dFechaDesde IN DATE, dFechaHasta IN DATE, xMovimientos OUT XMLTYPE); 
+   PROCEDURE INTEGRACION_SALDO(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, 
+                         dFechaDesde IN DATE, dFechaHasta IN DATE, xIntegraSaldo OUT XMLTYPE);
+   PROCEDURE LISTADO_POLIZAS (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, xListaPolizas OUT XMLTYPE);                     
 END GT_FAI_SERVICIOS_PORTAL;
 /
 
@@ -100,21 +103,24 @@ BEGIN
                               VALUES(nCodCia, nCodEmpresa, nIdConsultaServicio, cCodServicio, dFechaConsulta, USER, xXmlConsulta);
 END INSERTAR;
 
+--PROCEDURE VALIDA_LOGIN(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, 
+--                       cRfc IN VARCHAR2, cNumPolUnico VARCHAR2, nExiste OUT NUMBER) IS
 PROCEDURE VALIDA_LOGIN(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, 
-                       cRfc IN VARCHAR2, cNumPolUnico VARCHAR2, nExiste OUT NUMBER) IS
+                       cRfc IN VARCHAR2, nExiste OUT NUMBER) IS              
 BEGIN
     BEGIN
-        SELECT PO.IdPoliza
+        SELECT 1 --PO.IdPoliza
           INTO nExiste
           FROM POLIZAS PO,CLIENTES C,PERSONA_NATURAL_JURIDICA P
-         WHERE C.CodCliente                                     = nCodCliente
-           AND NVL(P.Num_Tributario,C.Num_Doc_Identificacion)   = NVL(cRfc,C.Num_Doc_Identificacion)
+         WHERE C.CodCliente                                    = nCodCliente
+           AND NVL(P.Num_Tributario,C.Num_Doc_Identificacion)  = NVL(cRfc,C.Num_Doc_Identificacion)
            --AND PO.IdPoliza                = nIdPoliza
-           AND PO.NumPolUnico                                   = cNumPolUnico
-           AND PO.StsPoliza                                     = 'EMI'
-           AND PO.CodCliente                                    = C.CodCliente
-           AND C.Tipo_Doc_Identificacion                        = P.Tipo_Doc_Identificacion
-           AND C.Num_Doc_Identificacion                         = P.Num_Doc_Identificacion;
+           --AND PO.NumPolUnico                                   = cNumPolUnico
+           AND PO.StsPoliza                                    = 'EMI'
+           AND PO.CodCliente                                   = C.CodCliente
+           AND C.Tipo_Doc_Identificacion                       = P.Tipo_Doc_Identificacion
+           AND C.Num_Doc_Identificacion                        = P.Num_Doc_Identificacion
+           AND NVL(PO.IndManejaFondos,'N')                     = 'S' ;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             nExiste := 0;
@@ -455,6 +461,39 @@ BEGIN
     
     GT_FAI_SERVICIOS_PORTAL.INSERTAR(nCodCia, nCodEmpresa, cCodServicio, TRUNC(SYSDATE), xIntegraSaldo);
 END INTEGRACION_SALDO;
+
+PROCEDURE LISTADO_POLIZAS (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, xListaPolizas OUT XMLTYPE) IS
+xPrevListaPolizas   XMLTYPE;   
+cCodServicio        FAI_SERVICIOS_PORTAL.CodServicio%TYPE := 'LSTPOL'; 
+BEGIN
+   BEGIN
+      SELECT XMLElement("DATA",
+                           XMLAGG(
+                              XMLCONCAT(
+                                        XMLElement("PolizasCliente", 
+                                                     XMLElement("NumerodePoliza",PO.IdPoliza),
+                                                     XMLElement("FolioPoliza",PO.NumPolUnico),
+                                                     XMLElement("FecIniVig",TO_CHAR(PO.FecIniVig,'DD/MM/YYYY')),
+                                                     XMLElement("FecFinVig",TO_CHAR(PO.FecFinVig,'DD/MM/YYYY'))
+                                                  )
+                                       )
+                                 ) 
+                           )
+        INTO xPrevListaPolizas
+        FROM POLIZAS PO,CLIENTES C,PERSONA_NATURAL_JURIDICA P
+       WHERE C.CodCliente                                    = nCodCliente
+         AND PO.StsPoliza                                    = 'EMI'
+         AND PO.CodCliente                                   = C.CodCliente
+         AND C.Tipo_Doc_Identificacion                       = P.Tipo_Doc_Identificacion
+         AND C.Num_Doc_Identificacion                        = P.Num_Doc_Identificacion
+         AND NVL(PO.IndManejaFondos,'N')                     = 'S' ;
+   END;
+   SELECT XMLROOT (xPrevListaPolizas, VERSION '1.0" encoding="UTF-8')
+     INTO xListaPolizas
+     FROM DUAL;
+   
+   GT_FAI_SERVICIOS_PORTAL.INSERTAR(nCodCia, nCodEmpresa, cCodServicio, TRUNC(SYSDATE), xListaPolizas);
+END LISTADO_POLIZAS;
 
 END GT_FAI_SERVICIOS_PORTAL;
 /
