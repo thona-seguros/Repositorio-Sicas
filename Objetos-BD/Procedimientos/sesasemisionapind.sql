@@ -1,9 +1,9 @@
-CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPIND ( nCodCia      ENTREGAS_CNSF_CONFIG.CODCIA%TYPE
-                                                       , nCodEmpresa  ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE
-                                                       , cCodEntrega  ENTREGAS_CNSF_CONFIG.CODENTREGA%TYPE
-                                                       , dFecDesde    DATE
-                                                       , dFecHasta    DATE
-                                                       , cIdUsr       TEMP_REGISTROS_SESAS.CODUSUARIO%TYPE )  IS
+CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPIND( nCodCia      ENTREGAS_CNSF_CONFIG.CODCIA%TYPE
+                                                      , nCodEmpresa  ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE
+                                                      , cCodEntrega  ENTREGAS_CNSF_CONFIG.CODENTREGA%TYPE
+                                                      , dFecDesde    DATE
+                                                      , dFecHasta    DATE
+                                                      , cIdUsr       TEMP_REGISTROS_SESAS.CODUSUARIO%TYPE )  IS
    cCodPlantilla         ENTREGAS_CNSF_CONFIG.CodPlantilla%TYPE;
    cSeparador            ENTREGAS_CNSF_CONFIG.Separador%TYPE;
    cEncabezado           VARCHAR2(4000);
@@ -150,7 +150,10 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPIND ( nCodCia      ENTREGAS_C
    nIdTarifa             TARIFA_CONTROL_VIGENCIAS.IdTarifa%TYPE;
    nEdad                 NUMBER(5);
    nTasa                 NUMBER;
-
+   --Afinación
+   cNomArchivo           ENTREGAS_CNSF_CONFIG.NOMARCHIVO%TYPE;
+   cNomArchZip           VARCHAR2(100);
+   --
    CURSOR C_CAMPO IS
       SELECT NomCampo
         FROM CONFIG_PLANTILLAS_CAMPOS
@@ -361,7 +364,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPIND ( nCodCia      ENTREGAS_C
                           AND T.IdTransaccion     > 0
                           AND T.IdProceso        != 6
                           AND T.FechaTransaccion >= dFecDesde );
-
+   --
    PROCEDURE COBERTURAS ( nCodCia         COBERT_ACT.CODCIA%TYPE
                         , nIdPoliza       COBERT_ACT.IDPOLIZA%TYPE
                         , nIDetPol        COBERT_ACT.IDETPOL%TYPE
@@ -995,12 +998,22 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPIND ( nCodCia      ENTREGAS_C
          AND StsAsistencia NOT IN ('EXCLUI');
    END COBERTURAS;
 BEGIN
+   -- Elimina Registros de SESAS
+   DELETE TEMP_REPORTES_THONA
+   WHERE  CodCia     = nCodCia
+     AND  CodEmpresa = nCodEmpresa
+     AND  CodReporte = cCodEntrega
+     AND  CodUsuario = cIdUsr;
+   --
+   COMMIT;
+   --
    cCodPlantilla := OC_ENTREGAS_CNSF_CONFIG.PLANTILLA(nCodCia, nCodEmpresa, cCodEntrega);
    cSeparador    := OC_ENTREGAS_CNSF_CONFIG.SEPARADOR(nCodCia, nCodEmpresa, cCodEntrega);
-
+   --
    FOR I IN  C_CAMPO  LOOP
-      cEncabezado := cEncabezado||I.NomCampo ||cSeparador;
+      cEncabezado := cEncabezado || I.NomCampo || cSeparador;
    END LOOP;
+   --
    cEncabezado := cEncabezado     ||
                   'Prima Cob. 1'  ||cSeparador || 'Prima Cob. 2'  ||cSeparador ||
                   'Prima Cob. 3'  ||cSeparador || 'Prima Cob. 4'  ||cSeparador ||
@@ -1041,8 +1054,10 @@ BEGIN
                   'SA Cob. 35'    ||cSeparador || 'SA Cob. 36'    ||cSeparador ||
                   'SA Cob. 37'    ||cSeparador || 'SA Cob. 38'    ||cSeparador;
    nLinea  := 1;
-   cCadena := SUBSTR(cEncabezado,1,LENGTH(cEncabezado)-1) || CHR(13);
-   OC_ARCHIVO.Escribir_Linea(cCadena, cIdUsr, nLinea);
+   cCadena := SUBSTR(cEncabezado,1,LENGTH(cEncabezado)-1);
+   --
+   INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
+   VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
    --
    DELETE TEMP_POLIZAS_SESAS
    COMMIT;
@@ -1220,16 +1235,21 @@ BEGIN
                  TRIM(TO_CHAR(nSACober35,'9999999999999999.99')) || cSeparador ||
                  TRIM(TO_CHAR(nSACober36,'9999999999999999.99')) || cSeparador ||
                  TRIM(TO_CHAR(nSACober37,'9999999999999999.99')) || cSeparador ||
-                 TRIM(TO_CHAR(nSACober38,'9999999999999999.99')) || cSeparador || CHR(13);
-      nLinea  := nLinea + 1;
-      OC_ARCHIVO.Escribir_Linea(cCadena, cIdUsr, nLinea);
+                 TRIM(TO_CHAR(nSACober38,'9999999999999999.99')) || cSeparador;
+      --
+      INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
+      VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
    END LOOP;
-   --
-   OC_ARCHIVO.Escribir_Linea('EOF', cIdUsr, 0);
    COMMIT;
+   --
+   cNomArchivo := OC_ENTREGAS_CNSF_CONFIG.NOMBRE_ARCHIVO(nCodCia, nCodEmpresa, cCodEntrega);
+   cNomArchZip := SUBSTR(cNomArchivo, 1, INSTR(cNomArchivo, '.')-1) || '.zip';
+   --
+   OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cNomArchivo, cNomArchZip );
+   OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cNomArchZip );
+   --
 EXCEPTION
 WHEN OTHERS THEN
      RAISE_APPLICATION_ERROR(-20200,SQLERRM);
 END SESASEMISIONAPIND;
-
 /

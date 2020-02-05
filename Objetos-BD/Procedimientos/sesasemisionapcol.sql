@@ -39,12 +39,12 @@
 --   OC_ARCHIVO (Package)
 --   OC_ASEGURADO (Package)
 --
-CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_CNSF_CONFIG.CODCIA%TYPE
-                                                       , nCodEmpresa  ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE
-                                                       , cCodEntrega  ENTREGAS_CNSF_CONFIG.CODENTREGA%TYPE
-                                                       , dFecDesde    DATE
-                                                       , dFecHasta    DATE
-                                                       , cIdUsr       TEMP_REGISTROS_SESAS.CODUSUARIO%TYPE )  IS
+CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CNSF_CONFIG.CODCIA%TYPE
+                                                      , nCodEmpresa  ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE
+                                                      , cCodEntrega  ENTREGAS_CNSF_CONFIG.CODENTREGA%TYPE
+                                                      , dFecDesde    DATE
+                                                      , dFecHasta    DATE
+                                                      , cIdUsr       TEMP_REGISTROS_SESAS.CODUSUARIO%TYPE )  IS
    --Variables Locales
    cCodPlantilla         ENTREGAS_CNSF_CONFIG.CodPlantilla%TYPE;
    cSeparador            ENTREGAS_CNSF_CONFIG.Separador%TYPE;
@@ -184,6 +184,16 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
    cRecalculoPrimas      VARCHAR2(1);
    --
    dFecNacimiento        PERSONA_NATURAL_JURIDICA.FECNACIMIENTO%TYPE;
+   --
+   --Afinación
+   nCodCiaAfina          DETALLE_POLIZA.CODCIA%TYPE;
+   nCodEmpresaAfina      DETALLE_POLIZA.CODEMPRESA%TYPE;
+   nIdPolizaAfina        DETALLE_POLIZA.IDPOLIZA%TYPE;
+   nIDetPolAfina         DETALLE_POLIZA.IDETPOL%TYPE;
+   nCantAseg_1           NUMBER;
+   nCantAseg_2           NUMBER;
+   cNomArchivo           ENTREGAS_CNSF_CONFIG.NOMARCHIVO%TYPE;
+   cNomArchZip           VARCHAR2(100);
    --
    CURSOR C_CAMPO IS
       SELECT NomCampo
@@ -367,19 +377,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
          AND nCodCia                   = D.CodCia 
          AND D.IDetPol                 > 0
          AND D.IdPoliza                > 0
---         AND T.IdTransaccion           = DT.IdTransaccion 
---         AND T.CodCia                  = DT.CodCia 
---         AND T.CodEmpresa              = DT.CodEmpresa 
---         AND D.IdPoliza                = DT.Valor1 
---         AND DT.Correlativo            > 0
---         AND DT.CodSubProceso     NOT IN ('ESV','PAG')
---         AND T.IdTransaccion           > 0
---         AND D.CodCia                  = T.CodCia 
---         AND D.CodEmpresa              = T.CodEmpresa 
---         AND T.IdProceso              <> 6
---         AND dFecDesde                <= T.FechaTransaccion
          AND nCodCia                   = P.CodCia 
---         AND P.CodCia                  = T.CodCia 
          AND NOT EXISTS ( SELECT 'N' 
                             FROM ASEGURADO_CERTIFICADO 
                            WHERE D.CodCia        = CodCia 
@@ -399,7 +397,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
                          AND X.CodEmpresa        = T.CodEmpresa
                          AND X.Valor1            = D.IdPoliza
                          AND X.Correlativo       > 0
-                         AND X.CodSubProceso   NOT IN ('ESV','PAG')
+                         AND X.CodSubProceso   NOT IN ('ESV','ESVTL','PAG','EMIPRD','PAGPRD','APLPRD','ANUPRD','REVPPD')
                          AND T.IdTransaccion     > 0
                          AND T.CodCia            = D.CodCia
                          AND T.CodEmpresa        = D.CodEmpresa
@@ -470,7 +468,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
                        WHERE DT.IdTransaccion    = T.IdTransaccion
                          AND DT.Valor1           = D.IdPoliza
                          AND DT.Correlativo      > 0
-                         AND DT.CodSubProceso  NOT IN ('ESV','PAG')
+                         AND DT.CodSubProceso  NOT IN ('ESV','ESVTL','PAG','EMIPRD','PAGPRD','APLPRD','ANUPRD','REVPPD')
                          AND DT.CodCia           = T.CodCia
                          AND T.CodCia            = D.CodCia
                          AND T.CodEmpresa        = D.CodEmpresa
@@ -539,7 +537,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
          AND PC.PlanCob     = D.PlanCob
          AND PC.CodTipoPlan = '033'
        ORDER BY IdPoliza;
-   --
+
    PROCEDURE COBERTURAS ( nCodCia         COBERT_ACT.CODCIA%TYPE
                         , nIdPoliza       COBERT_ACT.IDPOLIZA%TYPE
                         , nIDetPol        COBERT_ACT.IDETPOL%TYPE
@@ -1330,7 +1328,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
                               cCerti VARCHAR2, cMoneda VARCHAR2, cIni_Vig VARCHAR2,
                               cFin_Vig VARCHAR2, cFecha_Alta VARCHAR2, cFecha_Baja VARCHAR2, cFecha_Nac VARCHAR2, 
                               cSexo VARCHAR2, cForma_Vta VARCHAR2, cTipoDividendo VARCHAR2, nMontoDividendo NUMBER,
-                              nAnioPoliza NUMBER,  dFecIniVig DATE) IS
+                              nAnioPoliza NUMBER,  dFecIniVig DATE, nCantAseg_1 NUMBER, nCantAseg_2  NUMBER, cCodEntrega VARCHAR2 ) IS
    BEGIN
       nContadorReg := nContadorReg + 1;
       IF nContadorReg > 5000 THEN
@@ -1424,26 +1422,19 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
       nIdPolizaProc  := nIdPoliza;
       nIDetPolProc   := nIDetPol;
       COBERTURAS (nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, dFecIniVig);
-      
+
       IF cPolConcentrada = 1 THEN
          IF cIndAsegModelo = 'S' THEN
-            nCantCert := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol);
-            SELECT nCantCert - (COUNT(*) - 1)
-              INTO nCantCert
-              FROM ASEGURADO_CERTIFICADO
-             WHERE IdPoliza   = nIdPoliza
-               AND IDetPol    = nIDetPol
-               AND CodCia     = nCodCia
-               AND Estado    IN ('SOL','XRE','EMI');
+            nCantCert := nCantAseg_1;
          ELSE
-            nCantCert := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol);
+            nCantCert := nCantAseg_2;
          END IF;
       ELSIF cIndAsegModelo = 'S' THEN
          nCantCert := NVL(nCantAsegModelo,0);
       ELSE
          nCantCert := 1;
       END IF;
-      
+
       IF dFecFinVig > dFecHasta THEN
          nIniCob  := 1;
       ELSIF dFecFinVig <= dFecHasta THEN
@@ -1560,17 +1551,37 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL ( nCodCia      ENTREGAS_C
                  TRIM(TO_CHAR(nSACober35,'9999999999999999.99')) || cSeparador ||
                  TRIM(TO_CHAR(nSACober36,'9999999999999999.99')) || cSeparador ||
                  TRIM(TO_CHAR(nSACober37,'9999999999999999.99')) || cSeparador ||
-                 TRIM(TO_CHAR(nSACober38,'9999999999999999.99')) || cSeparador || CHR(13);
+                 TRIM(TO_CHAR(nSACober38,'9999999999999999.99')) || cSeparador;
       --
-      nLinea := nLinea + 1;
-      OC_ARCHIVO.Escribir_Linea(cCadena, cIdUsr, nLinea);
-   END;
+      INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
+      VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
+   END INSERTA_REGISTRO;
 BEGIN
+   -- Elimina Registros de SESAS
+   DELETE TEMP_REPORTES_THONA
+   WHERE  CodCia     = nCodCia
+     AND  CodEmpresa = nCodEmpresa
+     AND  CodReporte = cCodEntrega
+     AND  CodUsuario = cIdUsr;
+   --
+   COMMIT;
+   --
    cCodPlantilla := OC_ENTREGAS_CNSF_CONFIG.PLANTILLA(nCodCia, nCodEmpresa, cCodEntrega);
    cSeparador    := OC_ENTREGAS_CNSF_CONFIG.SEPARADOR(nCodCia, nCodEmpresa, cCodEntrega);
+   nContadorReg  := 0;
+   --
+   --Inicializo variables de Afinación
+   nCodCiaAfina     := 0;
+   nCodEmpresaAfina := 0;
+   nIdPolizaAfina   := 0;
+   nIDetPolAfina    := 0;
+   nCantAseg_1      := 0;
+   nCantAseg_2      := 0; 
+   --
    FOR I IN  C_CAMPO  LOOP
       cEncabezado := cEncabezado||I.NomCampo ||cSeparador;
    END LOOP;
+   --
    cEncabezado := cEncabezado     ||
                   'Prima Cob. 1'  ||cSeparador || 'Prima Cob. 2'  ||cSeparador ||
                   'Prima Cob. 3'  ||cSeparador || 'Prima Cob. 4'  ||cSeparador ||
@@ -1612,67 +1623,172 @@ BEGIN
                   'SA Cob. 37'    ||cSeparador || 'SA Cob. 38'    ||cSeparador;
 
    nLinea  := 1;
-   cCadena := SUBSTR(cEncabezado,1,LENGTH(cEncabezado)-1) || CHR(13);
-   OC_ARCHIVO.Escribir_Linea(cCadena, cIdUsr, nLinea);
-
-   nContadorReg  := 0;
+   cCadena := SUBSTR(cEncabezado,1,LENGTH(cEncabezado)-1);
+   --
+   INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
+   VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
    --
    DELETE TEMP_POLIZAS_SESAS
    COMMIT;
    --
    FOR W IN POL_IND_Q LOOP
+      --Afinación
+      IF nCodCiaAfina <> nCodCia OR nCodEmpresaAfina <> nCodEmpresa OR nIdPolizaAfina <> W.IdPoliza OR nIDetPolAfina <> W.IDetPol THEN
+         nCodCiaAfina     := nCodCia;
+         nCodEmpresaAfina := nCodEmpresa;
+         nIdPolizaAfina   := W.IdPoliza;
+         nIDetPolAfina    := W.IDetPol;
+         --
+         nCantAseg_1      := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, W.IdPoliza, W.IDetPol);
+         nCantAseg_2      := nCantAseg_1; 
+         --
+         SELECT nCantAseg_1 - (COUNT(*) - 1)
+           INTO nCantAseg_1
+           FROM ASEGURADO_CERTIFICADO
+          WHERE IdPoliza   = W.IdPoliza
+            AND IDetPol    = W.IDetPol
+            AND CodCia     = nCodCia
+            AND Estado    IN ('SOL','XRE','EMI');
+      END IF;
+      --
       INSERTA_REGISTRO(W.IdPoliza, W.IDetPol, W.IdTipoSeg, W.CodPais, W.CodEstado, 
                        W.StsPoliza, W.FecFinVigPol, W.StsDetalle, W.FecFinVig,
                        W.TipoDetalle, W.Poliza, W.Cod_Asegurado, W.PolConcentrada,
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, 
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.AnioPoliza, W.FecIniVig);
+                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
    END LOOP;
    --
    DELETE TEMP_POLIZAS_SESAS
    COMMIT;
    --
+   --Inicializo variables de Afinación
+   nCodCiaAfina     := 0;
+   nCodEmpresaAfina := 0;
+   nIdPolizaAfina   := 0;
+   nIDetPolAfina    := 0;
+   nCantAseg_1      := 0;
+   nCantAseg_2      := 0; 
+   --
    FOR W IN POL_COL_Q LOOP
+      --Afinación
+      IF nCodCiaAfina <> nCodCia OR nCodEmpresaAfina <> nCodEmpresa OR nIdPolizaAfina <> W.IdPoliza OR nIDetPolAfina <> W.IDetPol THEN
+         nCodCiaAfina     := nCodCia;
+         nCodEmpresaAfina := nCodEmpresa;
+         nIdPolizaAfina   := W.IdPoliza;
+         nIDetPolAfina    := W.IDetPol;
+         --
+         nCantAseg_1      := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, W.IdPoliza, W.IDetPol);
+         nCantAseg_2      := nCantAseg_1; 
+         --
+         SELECT nCantAseg_1 - (COUNT(*) - 1)
+           INTO nCantAseg_1
+           FROM ASEGURADO_CERTIFICADO
+          WHERE IdPoliza   = W.IdPoliza
+            AND IDetPol    = W.IDetPol
+            AND CodCia     = nCodCia
+            AND Estado    IN ('SOL','XRE','EMI');
+      END IF;
+      --
       INSERTA_REGISTRO(W.IdPoliza, W.IDetPol, W.IdTipoSeg, W.CodPais, W.CodEstado, 
                        W.StsPoliza, W.FecFinVigPol, W.StsDetalle, W.FecFinVig,
                        W.TipoDetalle, W.Poliza, W.Cod_Asegurado, W.PolConcentrada,
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.AnioPoliza, W.FecIniVig);
+                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
    END LOOP;
    --
    DELETE TEMP_POLIZAS_SESAS
    COMMIT;
+   --
+   --Inicializo variables de Afinación
+   nCodCiaAfina     := 0;
+   nCodEmpresaAfina := 0;
+   nIdPolizaAfina   := 0;
+   nIDetPolAfina    := 0;
+   nCantAseg_1      := 0;
+   nCantAseg_2      := 0; 
    --
    FOR W IN POL_IND_MOV_Q LOOP
+      --Afinación
+      IF nCodCiaAfina <> nCodCia OR nCodEmpresaAfina <> nCodEmpresa OR nIdPolizaAfina <> W.IdPoliza OR nIDetPolAfina <> W.IDetPol THEN
+         nCodCiaAfina     := nCodCia;
+         nCodEmpresaAfina := nCodEmpresa;
+         nIdPolizaAfina   := W.IdPoliza;
+         nIDetPolAfina    := W.IDetPol;
+         --
+         nCantAseg_1      := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, W.IdPoliza, W.IDetPol);
+         nCantAseg_2      := nCantAseg_1; 
+         --
+         SELECT nCantAseg_1 - (COUNT(*) - 1)
+           INTO nCantAseg_1
+           FROM ASEGURADO_CERTIFICADO
+          WHERE IdPoliza   = W.IdPoliza
+            AND IDetPol    = W.IDetPol
+            AND CodCia     = nCodCia
+            AND Estado    IN ('SOL','XRE','EMI');
+      END IF;
+      --
       INSERTA_REGISTRO(W.IdPoliza, W.IDetPol, W.IdTipoSeg, W.CodPais, W.CodEstado, 
                        W.StsPoliza, W.FecFinVigPol, W.StsDetalle, W.FecFinVig,
                        W.TipoDetalle, W.Poliza, W.Cod_Asegurado, W.PolConcentrada,
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, 
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.AnioPoliza, W.FecIniVig);
+                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
    END LOOP;
    --
    DELETE TEMP_POLIZAS_SESAS
    COMMIT;
    --
+   --Inicializo variables de Afinación
+   nCodCiaAfina     := 0;
+   nCodEmpresaAfina := 0;
+   nIdPolizaAfina   := 0;
+   nIDetPolAfina    := 0;
+   nCantAseg_1      := 0;
+   nCantAseg_2      := 0; 
+   --
    FOR W IN POL_COL_MOV_Q LOOP
+      --Afinación
+      IF nCodCiaAfina <> nCodCia OR nCodEmpresaAfina <> nCodEmpresa OR nIdPolizaAfina <> W.IdPoliza OR nIDetPolAfina <> W.IDetPol THEN
+         nCodCiaAfina     := nCodCia;
+         nCodEmpresaAfina := nCodEmpresa;
+         nIdPolizaAfina   := W.IdPoliza;
+         nIDetPolAfina    := W.IDetPol;
+         --
+         nCantAseg_1      := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, W.IdPoliza, W.IDetPol);
+         nCantAseg_2      := nCantAseg_1; 
+         --
+         SELECT nCantAseg_1 - (COUNT(*) - 1)
+           INTO nCantAseg_1
+           FROM ASEGURADO_CERTIFICADO
+          WHERE IdPoliza   = W.IdPoliza
+            AND IDetPol    = W.IDetPol
+            AND CodCia     = nCodCia
+            AND Estado    IN ('SOL','XRE','EMI');
+      END IF;
+      --
       INSERTA_REGISTRO(W.IdPoliza, W.IDetPol, W.IdTipoSeg, W.CodPais, W.CodEstado, 
                        W.StsPoliza, W.FecFinVigPol, W.StsDetalle, W.FecFinVig,
                        W.TipoDetalle, W.Poliza, W.Cod_Asegurado, W.PolConcentrada,
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, 
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.AnioPoliza, W.FecIniVig);
+                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
    END LOOP;
-   --
-   OC_ARCHIVO.Escribir_Linea('EOF', cIdUsr, 0);
    COMMIT;
+   --
+   cNomArchivo := OC_ENTREGAS_CNSF_CONFIG.NOMBRE_ARCHIVO(nCodCia, nCodEmpresa, cCodEntrega);
+   cNomArchZip := SUBSTR(cNomArchivo, 1, INSTR(cNomArchivo, '.')-1) || '.zip';
+   --
+   OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cNomArchivo, cNomArchZip );
+   OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cNomArchZip );
+   --
 EXCEPTION
-   WHEN OTHERS THEN
-      RAISE_APPLICATION_ERROR(-20200,SQLERRM);
+WHEN OTHERS THEN
+     RAISE_APPLICATION_ERROR(-20200,SQLERRM);
 END SESASEMISIONAPCOL;
 /
