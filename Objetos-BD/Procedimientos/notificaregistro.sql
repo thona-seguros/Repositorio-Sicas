@@ -83,7 +83,7 @@ BEGIN
                ' con inicio de vigencia a partir del '||cTextoImportanteOpen||TO_CHAR(dFecIniVig,'DD/MM/YYYY')||cTextoImportanteClose||'.'                                                      ||cSaltoLinea||cSaltoLinea||
                'Usted tendrá acceso al portal '||cTextoImportanteOpen||'"Tus Fondos Thona" '||cTextoImportanteClose                                                                             ||
                'donde encontrará información sobre su póliza, estado de cuenta, movimientos, entre otra información relevante. '                                                                ||
-               'Para su registro deberá acceder a la siguiente liga  http://devinv.thonaseguros.mx/ValidateSicas/Register, es importante tener a la mano su número de Cliente: '                ||
+               'Para su registro deberá acceder a la siguiente liga  http://http://inversiones.thonaseguros.mx/ValidateSicas/Register, es importante tener a la mano su número de Cliente: '    ||
                cTextoImportanteOpen||nCodCliente||cTextoImportanteClose||' y número de póliza.'                                                                                                 ||cSaltoLinea||cSaltoLinea||
                'Agradecemos su atención y nos ponemos a sus órdenes para cualquier duda o aclaración  en el centro de Servicios a Asegurados, para todo lo relacionado con su plan '            ||
                cTextoAmarilloOpen||cTextoImportanteOpen||OC_TIPOS_DE_SEGUROS.TIPO_DE_SEGURO(nCodCia, nCodEmpresa, cIdTipoSeg)||cTextoImportanteClose||cTextoClose                               ||
