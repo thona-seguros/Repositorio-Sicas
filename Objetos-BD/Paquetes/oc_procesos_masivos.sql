@@ -10257,7 +10257,7 @@ BEGIN
                     dbms_output.put_line('jmmd pruebas sat es proveedor sat presuntos : '||cRFCProv);                
                     cMsjError := 'Persona encontrada en an el archivo de SAT PRESUNTOS.';
                     RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de SAT PRESUNTOS, requiere de autorizacion.');
-                END IF;                               
+                END IF;                             
 -------
 ------- JMMD20191025 VALIDACION DE REGISTROS EN PLD
                 cFechaNacimiento := CALCULA_FECHA_NACIMIENTO(cRFCProv);
@@ -10271,7 +10271,8 @@ BEGIN
                      WHERE TIPO_DOC_IDENTIFICACION = 'RFC'
                        AND NUM_DOC_IDENTIFICACION = cRFCProv 
                        AND NOMBRE_BENEFICIARIO = cNombProv ;
-                   EXCEPTION WHEN NO_DATA_FOUND THEN	
+                   EXCEPTION 
+		     WHEN NO_DATA_FOUND THEN	
 -----------------                
                        OC_ADMON_RIESGO_SINIESTROS.INSERTA(
                               X.CodCia,
@@ -10294,6 +10295,8 @@ BEGIN
                         dbms_output.put_line('jmmd1 pruebas PLD existe en PLD :Persona encontrada en an el Catalogo de quien es quien. ');
                         cMsjError := 'Persona encontrada en an el Catalogo de quien es quien.';
                         RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de quien es quien, requiere de autorizacion.');
+     		    WHEN OTHERS THEN
+                      CONTINUE;
                     END;
 ---------------
                     SELECT COUNT(*)
