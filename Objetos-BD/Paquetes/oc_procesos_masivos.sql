@@ -2192,6 +2192,14 @@ nIdEndoso          ENDOSOS.IdEndoso%TYPE;
 cStsDetalle        DETALLE_POLIZA.StsDetalle%TYPE;
 nIdSolicitud       SOLICITUD_EMISION.IdSolicitud%TYPE;
 
+nSumaAsegurada     COBERT_ACT_ASEG.SumaAseg_Local%TYPE;
+nIdCotizacion      COTIZACIONES.IdCotizacion%TYPE;
+nIDetCotizacion    COTIZACIONES_DETALLE.IDetCotizacion%TYPE;
+--
+cIndEdadPromedio   COTIZACIONES_DETALLE.IndEdadPromedio%TYPE;
+cIndCuotaPromedio  COTIZACIONES_DETALLE.IndCuotaPromedio%TYPE;
+cIndPrimaPromedio  COTIZACIONES_DETALLE.IndPrimaPromedio%TYPE;
+
 CURSOR C_CAMPOS (cNomTabla VARCHAR2) IS
    SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.TipoCampo
      FROM CONFIG_PLANTILLAS_CAMPOS C
@@ -2354,8 +2362,8 @@ BEGIN
             -- Genera Detalle de Poliza
             nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
             BEGIN
-               SELECT FecIniVig ,FecFinVig, StsPoliza
-                 INTO dFecIniVig,dFecFinVig, cStsPoliza
+               SELECT FecIniVig ,FecFinVig, StsPoliza, Num_Cotizacion
+                 INTO dFecIniVig,dFecFinVig, cStsPoliza, nIdCotizacion
                  FROM Polizas
                 WHERE IdPoliza   = nIdPoliza
                   AND CodCia     = X.CodCia
@@ -2435,25 +2443,48 @@ BEGIN
 
                FOR I IN C_CAMPOS_ASEG LOOP
                   nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + 5 + nOrden;
-
                   cUpdate   := 'UPDATE '||'ASEGURADO_CERTIFICADO'||' '||'SET'||' '||'CAMPO'||I.OrdenDatoPart||'='||''''||
                                LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')||''''||' '||
                                'WHERE IdPoliza = '||nIdPoliza||' '|| 'AND IDetPol= '||nIDetPol||' '||'AND CodCia= '||X.CodCia||
                                'AND Cod_Asegurado= '||nCod_Asegurado);
                   OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate);
+                  nSumaAsegurada := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,24,',')));
                   nOrden := nOrden + 1;
                END LOOP;
-
+               nIDetCotizacion := nIDetPol;
+               BEGIN
+                  SELECT NVL(D.IndEdadPromedio,'N'), NVL(D.IndCuotaPromedio,'N'), NVL(D.IndPrimaPromedio,'N')
+                    INTO cIndEdadPromedio, cIndCuotaPromedio, cIndPrimaPromedio
+                    FROM COTIZACIONES C, COTIZACIONES_DETALLE D
+                   WHERE C.CodCia         = nCodCia
+                     AND C.CodEmpresa     = nCodEmpresa
+                     AND D.IdCotizacion   = nIdCotizacion
+                     AND D.IDetCotizacion = nIDetCotizacion
+                     AND C.CodCia         = D.CodCia
+                     AND C.CodEmpresa     = D.CodEmpresa
+                     AND C.IdCotizacion   = D.IdCotizacion;
+                     --AND C.IDetCotizacion = D.IDetCotizacion;
+               EXCEPTION 
+                  WHEN NO_DATA_FOUND THEN
+                     cIndEdadPromedio  := 'N'; 
+                     cIndCuotaPromedio := 'N'; 
+                     cIndPrimaPromedio := 'N';
+               END;
                /* Se quita temporalmente la carga de coberturas para agilizar el proceso de Emisión y solo se deja para Endosos*/
-               IF NVL(nIdEndoso,0) != 0 THEN
+               --IF NVL(nIdEndoso,0) != 0 THEN
+               IF cIndEdadPromedio = 'N' AND cIndCuotaPromedio = 'N' AND cIndPrimaPromedio = 'N' THEN
                   IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA (X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,
                                                          nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
                      IF NVL(cIndSinAseg,'N') = 'N' THEN
                         IF NVL(nIdSolicitud,0) = 0 THEN
 --                           OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,
 --                                                                nIdPoliza, nIDetPol, nTasaCambio, nCod_Asegurado);
-                            OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,nIdPoliza,
-                                                                 nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0);
+                           IF NVL(nIdCotizacion,0) = 0 THEN 
+                              OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,nIdPoliza,
+                                                                   nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0);
+                           ELSE
+                              GT_COTIZACIONES_COBERT_MASTER.CREAR_COBERTURAS_POLIZA(X.CodCia, X.CodEmpresa, nIdCotizacion, nIDetCotizacion, nIdPoliza, nIDetPol, nCod_Asegurado, 'S', nSumaAsegurada);
+                           END IF;
                         ELSE
                            OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(X.CodCia, X.CodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
                            OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(X.CodCia, X.CodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
@@ -2488,6 +2519,13 @@ BEGIN
                      END IF;
                      OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(X.CodCia, X.CodEmpresa, nIdPoliza, nIDetPol,nCod_Asegurado);
                   END IF;
+               ELSIF NVL(nIdCotizacion,0) != 0  AND (cIndEdadPromedio = 'S' OR cIndCuotaPromedio = 'S' OR cIndPrimaPromedio = 'S') THEN
+                  --IF NVL(nIdCotizacion,0) != 0 THEN
+                     
+                     GT_TEMP_LISTADO_DECLARACIONES.GENERA_COBERTURAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso, nCod_Asegurado, 
+                                                                     nIdCotizacion, nIDetCotizacion, X.PlanCob, X.IdTipoSeg, cCodMoneda, 
+                                                                     nSumaAsegurada);
+                  --END IF;                                                         
                END IF;
             END IF;
 
