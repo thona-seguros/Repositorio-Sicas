@@ -10296,7 +10296,7 @@ BEGIN
                         cMsjError := 'Persona encontrada en an el Catalogo de quien es quien.';
                         RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de quien es quien, requiere de autorizacion.');
      		    WHEN OTHERS THEN
-                      CONTINUE;
+                      ncuantos := 0;   
                     END;
 ---------------
                     SELECT COUNT(*)
