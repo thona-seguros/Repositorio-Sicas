@@ -89,7 +89,16 @@ PROCEDURE HEREDA_COB_ENDOSO_DECL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza N
 FUNCTION TOTAL_PRIMA_NIVELADA(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, 
                               nCod_Asegurado NUMBER, nIdEndoso NUMBER) RETURN NUMBER;
                               
-PROCEDURE SUSPENDER(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER);                              
+PROCEDURE SUSPENDER(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER);    
+
+PROCEDURE CARGAR_COBERTURAS_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
+                            cPlanCob VARCHAR2, nIdCotizacion NUMBER, nIDetCotizacion NUMBER,
+                            cCodCobert VARCHAR2, nSumaAsegManual NUMBER, nSalarioMensual NUMBER, 
+                            nVecesSalario NUMBER, nEdad_Minima NUMBER, nEdad_Maxima NUMBER, 
+                            nEdad_Exclusion NUMBER, nSumaAseg_Minima NUMBER, nSumaAseg_Maxima NUMBER, 
+                            nPorcExtraPrimaDet NUMBER, nMontoExtraPrimaDet NUMBER, nSumaIngresada NUMBER, 
+                            nDeducibleIngresado NUMBER, nCuotaPromedio NUMBER, nPrimaPromedio NUMBER, 
+                            nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER);                                                       
 
 END OC_COBERT_ACT_ASEG;
 /
@@ -1483,6 +1492,328 @@ BEGIN
       AND IdetPol       = nIDetPol
       AND Cod_Asegurado = nCod_Asegurado;
 END SUSPENDER;
+
+PROCEDURE CARGAR_COBERTURAS_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
+                            cPlanCob VARCHAR2, nIdCotizacion NUMBER, nIDetCotizacion NUMBER,
+                            cCodCobert VARCHAR2, nSumaAsegManual NUMBER, nSalarioMensual NUMBER, 
+                            nVecesSalario NUMBER, nEdad_Minima NUMBER, nEdad_Maxima NUMBER, 
+                            nEdad_Exclusion NUMBER, nSumaAseg_Minima NUMBER, nSumaAseg_Maxima NUMBER, 
+                            nPorcExtraPrimaDet NUMBER, nMontoExtraPrimaDet NUMBER, nSumaIngresada NUMBER, 
+                            nDeducibleIngresado NUMBER, nCuotaPromedio NUMBER, nPrimaPromedio NUMBER, 
+                            nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER) IS
+cCod_Moneda             COTIZACIONES.Cod_Moneda%TYPE;
+nTasaCambioDet          TASAS_CAMBIO.Tasa_Cambio%TYPE;
+nTasaCambio             TASAS_CAMBIO.Tasa_Cambio%TYPE;
+dFecCotizacion          COTIZACIONES.FecCotizacion%TYPE ;
+nSumaAsegMoneda         DETALLE_POLIZA.Suma_Aseg_Moneda%TYPE;
+nSumaAsegLocal          DETALLE_POLIZA.Suma_Aseg_Local%TYPE;
+nCod_Asegurado          DETALLE_POLIZA.Cod_Asegurado%TYPE;
+dFecIniVigCot           COTIZACIONES.FecIniVigCot%TYPE;
+dFecFinVigCot           COTIZACIONES.FecFinVigCot%TYPE;
+cIndAsegModelo          COTIZACIONES.IndAsegModelo%TYPE;
+cIndListadoAseg         COTIZACIONES.IndListadoAseg%TYPE;
+cIndCensoSubgrupo       COTIZACIONES.IndCensoSubgrupo%TYPE;
+cIndExtraPrima          COTIZACIONES.IndExtraPrima%TYPE;
+nPorcDescuento          COTIZACIONES.PorcDescuento%TYPE;
+nPorcGtoAdmin           COTIZACIONES.PorcGtoAdmin%TYPE;
+nPorcGtoAdqui           COTIZACIONES.PorcGtoAdqui%TYPE;
+nPorcUtilidad           COTIZACIONES.PorcUtilidad%TYPE;
+nFactorAjuste           COTIZACIONES.FactorAjuste%TYPE;
+nFactorAjusteSubGrupo   COTIZACIONES.FactorAjuste%TYPE;
+nMontoDeducible         COTIZACIONES.MontoDeducible%TYPE;
+nFactFormulaDeduc       COTIZACIONES.FactFormulaDeduc%TYPE;
+nPorcExtraPrima         COTIZACIONES_DETALLE.PorcExtraPrimaDet%TYPE;
+nMontoExtraPrima        COTIZACIONES_DETALLE.MontoExtraPrimaDet%TYPE;
+nHorasVig               COTIZACIONES.HorasVig%TYPE;
+nDiasVig                COTIZACIONES.DiasVig%TYPE;
+cTipoProrrata           COTIZACIONES.TipoProrrata%TYPE;
+nDeducibleCobLocal      COTIZACIONES_COBERTURAS.DeducibleCobLocal%TYPE;
+nDeducibleCobMoneda     COTIZACIONES_COBERTURAS.DeducibleCobMoneda%TYPE;
+cSexo                   PERSONA_NATURAL_JURIDICA.Sexo%TYPE;
+cRiesgo                 ACTIVIDADES_ECONOMICAS.RiesgoActividad%TYPE;
+cCodActividad           PERSONA_NATURAL_JURIDICA.CodActividad%TYPE;
+cTipoSeg                TIPOS_DE_SEGUROS.TipoSeg%TYPE;
+cTipoProceso            CONFIG_PLANTILLAS_PLANCOB.TipoProceso%TYPE;
+nEdad_MinimaCob         COTIZACIONES_COBERT_MASTER.Edad_Minima%TYPE;
+nEdad_MaximaCob         COTIZACIONES_COBERT_MASTER.Edad_Maxima%TYPE;
+nEdad_ExclusionCob      COTIZACIONES_COBERT_MASTER.Edad_Exclusion%TYPE;
+nSumaAseg_MinimaCob     COTIZACIONES_COBERT_MASTER.SumaAseg_Minima%TYPE;
+nSumaAseg_MaximaCob     COTIZACIONES_COBERT_MASTER.SumaAseg_Minima%TYPE;
+cCodCotizador           COTIZACIONES.CodCotizador%TYPE;
+cRiesgoTarifa           COTIZACIONES_DETALLE.RiesgoTarifa%TYPE;
+nIdTarifa               TARIFA_CONTROL_VIGENCIAS.IdTarifa%TYPE;
+nEdad                   NUMBER(5);
+nExiste                 NUMBER;
+nExisteAgen             NUMBER;
+nTasa                   NUMBER;
+nValor                  NUMBER;
+nValorMoneda            NUMBER;
+nCantAseg               NUMBER;
+cTarifaDinamica         VARCHAR2(1) := 'N';
+nIdEndoso               COBERT_ACT_ASEG.IdEndoso%TYPE;
+nPorcGtoAdminTar        TARIFA_SEXO_EDAD_RIESGO.PorcGtoAdmin%TYPE;
+
+CURSOR COB_Q IS
+   SELECT CodCobert, Porc_Tasa, TipoTasa, Prima_Cobert,
+          SumaAsegurada, Cod_Moneda, CodTarifa, Edad_Minima, 
+          Edad_Maxima, Edad_Exclusion, MontoDeducible, PorcenDeducible,
+          SumaAsegMinima, SumaAsegMaxima, OrdenImpresion
+     FROM COBERTURAS_DE_SEGUROS
+    WHERE CodCia       = nCodCia
+      AND CodEmpresa   = nCodEmpresa
+      AND IdTipoSeg    = cIdTipoSeg
+      AND PlanCob      = cPlanCob
+      AND CodCobert    = NVL(cCodCobert, CodCobert)
+      AND StsCobertura = 'ACT';
+BEGIN
+   BEGIN
+      SELECT Cod_Moneda, FecCotizacion, FecIniVigCot, FecFinVigCot, HorasVig, DiasVig,
+             NVL(IndAsegModelo,'N'), NVL(IndListadoAseg,'N'), NVL(IndCensoSubgrupo,'N'),
+             PorcDescuento, PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste,
+             MontoDeducible, FactFormulaDeduc, NVL(IndExtraPrima,'N'), TipoProrrata,
+             CodCotizador
+        INTO cCod_Moneda, dFecCotizacion, dFecIniVigCot, dFecFinVigCot, nHorasVig, nDiasVig,
+             cIndAsegModelo, cIndListadoAseg, cIndCensoSubgrupo,
+             nPorcDescuento, nPorcGtoAdmin, nPorcGtoAdqui, nPorcUtilidad, nFactorAjuste,
+             nMontoDeducible, nFactFormulaDeduc, cIndExtraPrima, cTipoProrrata,
+             cCodCotizador
+        FROM COTIZACIONES
+       WHERE CodCia       = nCodCia
+         AND CodEmpresa   = nCodEmpresa
+         AND IdCotizacion = nIdCotizacion;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20200,'NO Existe Cotización No. : ' || TRIM(TO_CHAR(nIdCotizacion)));
+   END;
+
+   IF NVL(nDeducibleIngresado,0) != 0 THEN
+      nMontoDeducible := NVL(nDeducibleIngresado,0);
+   END IF;
+
+   IF GT_COTIZADOR_CONFIG.TIPO_DE_COTIZADOR(nCodCia, nCodEmpresa, cCodCotizador) IN ('API','APC') THEN
+      BEGIN
+         SELECT RiesgoTarifa, HorasVig, DiasVig, 
+                FactorAjuste, FactFormulaDeduc
+           INTO cRiesgoTarifa, nHorasVig, nDiasVig,
+                nFactorAjusteSubGrupo, nFactFormulaDeduc
+           FROM COTIZACIONES_DETALLE
+          WHERE CodCia         = nCodCia
+            AND CodEmpresa     = nCodEmpresa
+            AND IdCotizacion   = nIdCotizacion
+            AND IDetCotizacion = nIDetCotizacion;
+      EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20200,'NO Existe Detalle No. ' || nIDetCotizacion || 
+                                    ' en Cotización No. : ' || TRIM(TO_CHAR(nIdCotizacion)));
+      END;
+   ELSE
+      cRiesgoTarifa := NULL;
+   END IF;
+
+   nTasaCambioDet := OC_GENERALES.TASA_DE_CAMBIO(cCod_Moneda, dFecCotizacion);
+   nIdTarifa      := GT_TARIFA_CONTROL_VIGENCIAS.TARIFA_VIGENTE(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecIniVigCot);
+   
+   
+   nEdad            := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, nCodEmpresa, nCodAsegurado, dFecIniVigCot);--.EDAD_ASEGURADO(nCodCia, nCodEmpresa, nIdCotizacion, nIDetCotizacion, nIdAsegurado, dFecIniVigCot);
+   cSexo            := OC_ASEGURADO.SEXO_ASEGURADO(nCodCia, nCodEmpresa, nCodAsegurado);
+   nCantAseg        := 1;
+  -- cSexo            := 'U';
+   nPorcExtraPrima  := NVL(nPorcExtraPrimaDet,0);
+   nMontoExtraPrima := NVL(nMontoExtraPrimaDet,0);
+   
+   FOR X IN COB_Q  LOOP
+      nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(X.Cod_Moneda, dFecCotizacion);
+      BEGIN
+         SELECT TipoSeg
+           INTO cTipoSeg
+           FROM TIPOS_DE_SEGUROS
+          WHERE CodCia     = nCodCia
+            AND CodEmpresa = nCodEmpresa
+            AND IdTipoSeg  = cIdTipoSeg;
+      EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+            cTipoSeg := 'N';
+      END;
+
+      IF (nEdad BETWEEN X.Edad_Minima AND X.Edad_Maxima AND nEdad_Minima = X.Edad_Minima AND nEdad_Maxima = X.Edad_Maxima) OR
+          NVL(cTipoSeg,'N') != 'P' OR
+         (nEdad_Minima != X.Edad_Minima OR nEdad_Maxima != X.Edad_Maxima) THEN
+         nEdad_MinimaCob     := NVL(nEdad_Minima,0);
+         nEdad_MaximaCob     := NVL(nEdad_Maxima,0);
+         nEdad_ExclusionCob  := NVL(nEdad_Exclusion,0);
+         nSumaAseg_MinimaCob := NVL(nSumaAseg_Minima,0);
+         nSumaAseg_MaximaCob := NVL(nSumaAseg_Maxima,0);
+
+         IF cCodCobert IS NULL THEN
+            IF NVL(nEdad_MinimaCob,0) = 0 THEN
+               nEdad_MinimaCob := X.Edad_Minima;
+            END IF;
+            IF NVL(nEdad_MaximaCob,0) = 0 THEN
+               nEdad_MaximaCob := X.Edad_Maxima;
+            END IF;
+            IF NVL(nEdad_ExclusionCob,0) = 0 THEN
+               nEdad_ExclusionCob := X.Edad_Exclusion;
+            END IF;
+            IF NVL(nSumaAseg_MinimaCob,0) = 0 THEN
+               nSumaAseg_MinimaCob := X.SumaAsegMinima;
+            END IF;
+            IF NVL(nSumaAseg_MaximaCob,0) = 0 THEN
+               nSumaAseg_MaximaCob := X.SumaAsegMaxima;
+            END IF;
+         END IF;
+         IF X.CodTarifa IS NULL THEN
+            cTarifaDinamica := 'N'; -- EC - 20/01/2017
+            nSumaAsegMoneda := 0;
+            nSumaAsegLocal  := 0;
+            
+            -- Si viene Suma Asegurada de Cotización se Mantiene Sustituye la Configuración
+            IF NVL(nSumaAsegManual,0) = 0 THEN
+               nSumaAsegMoneda := X.SumaAsegurada * NVL(nCantAseg,0);
+            ELSE
+               nSumaAsegMoneda := NVL(nSumaAsegManual,0) * NVL(nCantAseg,0);
+            END IF;
+            IF X.TipoTasa = 'C' THEN
+               nTasa := X.Porc_Tasa/100;
+            ELSIF X.TipoTasa = 'M' THEN
+               nTasa := X.Porc_Tasa/1000;
+            ELSE
+               nTasa := X.Porc_Tasa;
+            END IF;
+            IF NVL(nTasa,0) =  0 THEN
+               nValorMoneda := X.Prima_Cobert;
+               nValor       := X.Prima_Cobert * nTasaCambio;
+               IF NVL(nSumaAsegMoneda,0) != 0 THEN
+                  nTasa        := NVL(nValorMoneda,0) / nSumaAsegMoneda;
+               END IF;
+            ELSE
+               nValorMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasa,0);
+               nValor       := (NVL(nSumaAsegMoneda,0) * NVL(nTasa,0)) * nTasaCambio;
+            END IF;
+            nSumaAsegLocal  := NVL(nSumaAsegMoneda,0) * nTasaCambio;
+         ELSE
+            IF OC_TARIFA_DINAMICA.TARIFA_VIGENTE(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecCotizacion) = 0 THEN
+               cTarifaDinamica := 'N';
+               cCodActividad   := NULL; --OC_ASEGURADO.ACTIVIDAD_ECONOMICA_ASEG(nCodCia, nCodEmpresa, nCod_Asegurado);
+               IF cRiesgoTarifa IS NULL THEN
+                  cRiesgo      := 'NA'; --OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
+               ELSE
+                  cRiesgo      := cRiesgoTarifa;
+               END IF;
+               
+               IF NVL(nSumaAsegManual,0) = 0 THEN
+                  nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
+                                                                               X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+               ELSE
+                  nSumaAsegMoneda := NVL(nSumaAsegManual,0);
+               END IF;
+               nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
+                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+               nPorcGtoAdminTar := OC_TARIFA_SEXO_EDAD_RIESGO.PORCEN_GASTOS_ADMIN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
+                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+               IF NVL(nTasa,0) > 0 THEN
+                  nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
+
+                  nTasa := NVL(nTasa,0) * (1 + (NVL(nPorcExtraPrima,0) / 100));
+                  
+                  nTasa := NVL(nTasa,0) + NVL(nMontoExtraPrima,0);
+                  
+                  nTasa := NVL(nTasa,0) * NVL(nFactorAjuste,0);
+
+                  IF NVL(nFactorAjusteSubGrupo,0) > 0 THEN
+                     nTasa := NVL(nTasa,0) * NVL(nFactorAjusteSubGrupo,0);
+                  END IF;
+
+                  -- Factor Deducible ??
+                  nTasa := (1-(NVL(nFactFormulaDeduc,0) * NVL(nMontoDeducible,0))) * NVL(nTasa,0);
+                  
+                  IF NVL(nHorasVig,0) > 0 THEN
+                     nTasa := NVL(nTasa,0) * (NVL(nHorasVig,0) / 24);
+                  END IF;
+
+                  IF GT_COTIZADOR_CONFIG.TIPO_DE_COTIZADOR(nCodCia, nCodEmpresa, cCodCotizador) IN ('API','APC') THEN
+                     IF NVL(nDiasVig,0) > 0 THEN
+                        nTasa := NVL(nTasa,0) * (NVL(nDiasVig,0) / OC_GENERALES.DIAS_ANIO(dFecIniVigCot, dFecFinVigCot));
+                     END IF;
+                  ELSE
+                     IF cTipoProrrata = 'D365' THEN
+                        nTasa := (NVL(nTasa,0) / 365) * (dFecFinVigCot - dFecIniVigCot);
+                     END IF;
+                  END IF;
+
+                  --nTasa := NVL(nTasa,0) / (1 - (NVL(nPorcGtoAdqui,0) / 100) - (NVL(nPorcUtilidad,0) / 100) - (NVL(nPorcGtoAdmin,0) / 100));
+                  nTasa := NVL(nTasa,0) / (1 - (NVL(nPorcGtoAdqui,0) / 100) - (NVL(nPorcUtilidad,0) / 100) -
+                           (NVL(nPorcGtoAdmin,0) / 100) -  (NVL(nPorcGtoAdminTar,0) / 100));
+               END IF;
+               
+               IF NVL(nSumaAsegMoneda,0) = 0 THEN
+                  nSumaAsegMoneda  := NVL(X.SumaAsegurada,0);
+               END IF;
+
+               nSumaAsegMoneda := NVL(nSumaAsegMoneda,0) * NVL(nCantAseg,0);
+               nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa); --nSumaAsegMoneda);
+               IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
+                  nValorMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasa,0) / 1000;
+               END IF;
+               nValor    := NVL(nValorMoneda,0) * nTasaCambio;
+               IF NVL(nSumaAsegMoneda,0) != 0 AND NVL(nTasa,0) = 0 THEN
+                  nTasa        := NVL(nValorMoneda,0) / NVL(nSumaAsegMoneda,0);
+               END IF;
+            END IF;
+         END IF;
+         IF X.Cod_Moneda != cCod_Moneda THEN
+            nTasaCambioDet  := OC_GENERALES.TASA_DE_CAMBIO(X.Cod_Moneda, dFecCotizacion);
+            nSumaAsegMoneda := NVL(nSumaAsegMoneda,0) / nTasaCambioDet;
+            nSumaAsegLocal  := NVL(nSumaAsegMoneda,0) * nTasaCambioDet;
+            nValorMoneda    := NVL(nValorMoneda,0) / nTasaCambioDet;
+            nValor          := NVL(nValorMoneda,0) * nTasaCambioDet;
+            nTasaCambio     := nTasaCambioDet;
+         ELSE
+            nSumaAsegLocal  := NVL(nSumaAsegMoneda,0) * nTasaCambio;
+         END IF;
+
+         IF NVL(X.MontoDeducible,0) != 0 THEN
+            nDeducibleCobMoneda := NVL(X.MontoDeducible,0);
+            nDeducibleCobLocal  := NVL(X.MontoDeducible,0) * nTasaCambio;
+         ELSE
+            nDeducibleCobMoneda := NVL(nSumaAsegMoneda,0) * NVL(X.PorcenDeducible,0) / 100;
+            nDeducibleCobLocal  := NVL(nDeducibleCobMoneda,0) * nTasaCambio;
+         END IF;
+         BEGIN
+            SELECT NVL(MAX(IdEndoso),0)
+              INTO nIdEndoso
+              FROM ASEGURADO_CERTIFICADO
+             WHERE CodCia        = nCodCia
+               AND IdPoliza      = nIdPoliza
+               AND IDetPol       = nIDetPol
+               AND Cod_Asegurado = nCodAsegurado;
+         END;
+         IF NVL(nSumaAsegMoneda,0) != 0 AND NVL(nValorMoneda,0) != 0 THEN
+            BEGIN
+               INSERT INTO COBERT_ACT_ASEG
+                     (Codcia, Codempresa, Idpoliza, Idetpol, Idtiposeg, Tiporef, 
+                      Numref, Codcobert, Cod_Asegurado, Sumaaseg_Local, Sumaaseg_Moneda, 
+                      Tasa, Prima_Moneda, Prima_Local, Idendoso, Stscobertura, Plancob, 
+                      Cod_Moneda, Deducible_Local, Deducible_Moneda, Sumaasegorigen, 
+                      Salariomensual, Vecessalario, Sumaasegcalculada, Edad_Minima, 
+                      Edad_Maxima, Edad_Exclusion, Sumaaseg_Minima, Sumaaseg_Maxima, 
+                      Porcextraprimadet, Montoextraprimadet, Sumaingresada, Primanivmoneda, 
+                      Primanivlocal)
+               VALUES(nCodCia, nCodEmpresa, nIdpoliza, nIdetpol, cIdTipoSeg, 'POLI',
+                      nIdpoliza, X.CodCobert, nCodAsegurado, NVL(nSumaAsegLocal,0), NVL(nSumaAsegMoneda,0),
+                      nTasa, NVL(nValorMoneda,0), NVL(nValor,0), nIdEndoso, 'SOL', cPlanCob,
+                      X.Cod_Moneda, NVL(nDeducibleCobLocal,0), NVL(nDeducibleCobMoneda,0), 0,
+                      NVL(nSalarioMensual,0), NVL(nVecesSalario,0), NVL(nSumaAsegManual,0),
+                      nEdad_MinimaCob, nEdad_MaximaCob, nEdad_ExclusionCob, nSumaAseg_MinimaCob, nSumaAseg_MaximaCob, 
+                      nPorcExtraPrima, nMontoExtraPrima, nSumaIngresada, 0,
+                      0);
+
+
+            END;
+         END IF;
+      END IF;
+   END LOOP;
+END CARGAR_COBERTURAS_COTIZACION;
 
 END OC_COBERT_ACT_ASEG;
 /

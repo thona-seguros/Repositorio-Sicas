@@ -1,709 +1,624 @@
---
--- SESASEMISIONVIGRP  (Procedure) 
---
---  Dependencies: 
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
---   PLAN_COBERTURAS (Table)
---   POLIZAS (Table)
---   FACTURAS (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
---   DETALLE_TRANSACCION (Table)
---   ENTREGAS_CNSF_CONFIG (Table)
---   TARIFA_CONTROL_VIGENCIAS (Table)
---   GT_TARIFA_CONTROL_VIGENCIAS (Package)
---   OC_DETALLE_POLIZA (Package)
---   ACTIVIDADES_ECONOMICAS (Table)
---   ASEGURADO (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   NOTAS_DE_CREDITO (Table)
---   TEMP_REGISTROS_SESAS (Table)
---   TRANSACCION (Table)
---   OC_SINIESTRO (Package)
---   CONFIG_PLANTILLAS_CAMPOS (Table)
---   CONFIG_SESAS_TIPO_SEGURO (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   OC_ENTREGAS_CNSF_CONFIG (Package)
---   OC_TARIFA_SEXO_EDAD_RIESGO (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_ACTIVIDADES_ECONOMICAS (Package)
---   OC_ARCHIVO (Package)
---   OC_ASEGURADO (Package)
---   OC_PLAN_COBERTURAS (Package)
---
-CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_CNSF_CONFIG.CODCIA%TYPE
-                                                       , nCodEmpresa  ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE
-                                                       , cCodEntrega  ENTREGAS_CNSF_CONFIG.CODENTREGA%TYPE
-                                                       , dFecDesde    DATE
-                                                       , dFecHasta    DATE
-                                                       , cIdUsr       TEMP_REGISTROS_SESAS.CODUSUARIO%TYPE )  IS
-   --Variables Locales
-   cCodPlantilla         ENTREGAS_CNSF_CONFIG.CodPlantilla%TYPE;
-   cSeparador            ENTREGAS_CNSF_CONFIG.Separador%TYPE;
-   cEncabezado           VARCHAR2(4000);
-   cPoliz_Stus           POLIZAS.StsPoliza%TYPE;
-   cCerti_Stus           DETALLE_POLIZA.StsDetalle%TYPE;
-   nPeriodoEspCob        COBERTURAS_DE_SEGUROS.PeriodoEsperaMeses%TYPE;
-   nPrimaMonedaTotPol    POLIZAS.PrimaNeta_Moneda%TYPE;
-   nPrimaContable        POLIZAS.PrimaNeta_Moneda%TYPE;
-   nPrimaContableAnu     POLIZAS.PrimaNeta_Moneda%TYPE;
-   nMtoCptoNcrMoneda     DETALLE_NOTAS_DE_CREDITO.MONTO_DET_MONEDA%TYPE;
-   nMtoCptoNcrMonedaAnu  DETALLE_NOTAS_DE_CREDITO.MONTO_DET_MONEDA%TYPE;
-   nIdPolizaProcCalc     POLIZAS.IdPoliza%TYPE := 0;
-   nIdPolizaCalc         POLIZAS.IdPoliza%TYPE := 0;
-   nIdPolizaProc         POLIZAS.IdPoliza%TYPE;
-   nIDetPolProc          DETALLE_POLIZA.IDetPol%TYPE;
-   cEntDd_Ctte           VARCHAR2(2);
-   nLinea                NUMBER;
-   cCadena               VARCHAR2(4000);
-   nSABenef1             NUMBER(20)    := 0;
-   nSABenef2             NUMBER(20)    := 0;
-   nSABenef3             NUMBER(20)    := 0;
-   nSABenef4             NUMBER(20)    := 0;
-   nSABenef6             NUMBER(20)    := 0;
-   nSABenef8             NUMBER(20)    := 0;
-   nSABenef9             NUMBER(20)    := 0;
-   nPmaEmiBe1            NUMBER(20,2)  := 0;
-   nPmaEmiBe2            NUMBER(20,2)  := 0;
-   nPmaEmiBe3            NUMBER(20,2)  := 0;
-   nPmaEmiBe4            NUMBER(20,2)  := 0;
-   nPmaEmiBe5            NUMBER(20,2)  := 0;
-   nPmaEmiBe6            NUMBER(20,2)  := 0;
-   nPmaEmiBe7            NUMBER(20,2)  := 0;
-   nPmaEmiBe8            NUMBER(20,2)  := 0;
-   nPmaEmiBe9            NUMBER(20,2)  := 0;
-   cPuntoComa            VARCHAR2(1)   := ';';
-   nTotPoliza            NUMBER(20)    := 0;
-   nTotCertif            NUMBER(20)    := 0;
-   nTotFecIni            NUMBER(20)    := 0;
-   nTotFecFin            NUMBER(20)    := 0;
-   nTotFecAlta           NUMBER(20)    := 0;
-   nTotFecBaja           NUMBER(20)    := 0;
-   nTotFecNac            NUMBER(20)    := 0;
-   nTotStsPol            NUMBER(20)    := 0;
-   nTotStsCert           NUMBER(20)    := 0;
-   nTotEntCont           NUMBER(20)    := 0;
-   nTotPerEspe           NUMBER(20)    := 0;
-   nTotSABenef1          NUMBER(20)    := 0;
-   nTotSABenef2          NUMBER(20)    := 0;
-   nTotSABenef3          NUMBER(20)    := 0;
-   nTotSABenef4          NUMBER(20)    := 0;
-   nTotSABenef6          NUMBER(20)    := 0;
-   nTotSABenef8          NUMBER(20)    := 0;
-   nTotSABenef9          NUMBER(20)    := 0;
-   nTotPmaEmiBe1         NUMBER(20)    := 0;
-   nTotPmaEmiBe2         NUMBER(20)    := 0;
-   nTotPmaEmiBe3         NUMBER(20)    := 0;
-   nTotPmaEmiBe4         NUMBER(20)    := 0;
-   nTotPmaEmiBe5         NUMBER(20)    := 0;
-   nTotPmaEmiBe6         NUMBER(20)    := 0;
-   nTotPmaEmiBe7         NUMBER(20)    := 0;
-   nTotPmaEmiBe8         NUMBER(20)    := 0;
-   nTotPmaEmiBe9         NUMBER(20)    := 0;
-   nTotAnioPol           NUMBER(20)    := 0;
-   nTotIniCob            NUMBER(20)    := 0;
-   nTotDiasBen3          NUMBER(20)    := 0;
-   nTotSubTipo           NUMBER(20)    := 0;
-   nTotTipoRiesAsoc      NUMBER(20)    := 0;
-   nCantAseg             NUMBER(20)    := 0;
-   nTotMtoDivid          NUMBER(20)    := 0;
-   nTotPolConce          NUMBER(20)    := 0;
-   nTotAsegPolCon        NUMBER(20)    := 0;
-   nTotMtoFondoAdmin     NUMBER(20)    := 0;
-   nTotMtoVencim         NUMBER(20)    := 0;
-   nTotMtoRescate        NUMBER(20)    := 0;
-   nTotSldoFondoInv      NUMBER(20)    := 0;
-   nTotPlazoPagoPri      NUMBER(20)    := 0;
-   nTotSumaAsegDotCP     NUMBER(20)    := 0;
-   nTotPrimaDotCP        NUMBER(20)    := 0;
-   nTotEmision           NUMBER(20)    := 0;
-   nTotPlanPoliza        NUMBER(20)    := 0;
-   cTipoDetalle          VARCHAR2(20);
-   nSACober1             NUMBER(20)    := 0;
-   nSACober2             NUMBER(20)    := 0;
-   nSACober3             NUMBER(20)    := 0;
-   nSACober4             NUMBER(20)    := 0;
-   nSACober5             NUMBER(20)    := 0;
-   nSACober6             NUMBER(20)    := 0;
-   nSACober7             NUMBER(20)    := 0;
-   nSACober8             NUMBER(20)    := 0;
-   nSACober9             NUMBER(20)    := 0;
-   nSACober10            NUMBER(20)    := 0;
-   nSACober11            NUMBER(20)    := 0;
-   nSACober12            NUMBER(20)    := 0;
-   nSACober13            NUMBER(20)    := 0;
-   nSACober14            NUMBER(20)    := 0;
-   nSACober15            NUMBER(20)    := 0;
-   nSACober16            NUMBER(20)    := 0;
-   nSACober17            NUMBER(20)    := 0;
-   nSACober18            NUMBER(20)    := 0;
-   nSACober19            NUMBER(20)    := 0;
-   nSACober20            NUMBER(20)    := 0;
-   nSACober21            NUMBER(20)    := 0;
-   nSACober22            NUMBER(20)    := 0;
-   nSACober23            NUMBER(20)    := 0;
-   nSACober24            NUMBER(20)    := 0;
-   nSACober25            NUMBER(20)    := 0;
-   nSACober26            NUMBER(20)    := 0;
-   nSACober27            NUMBER(20)    := 0;
-   nSACober28            NUMBER(20)    := 0;
-   nSACober29            NUMBER(20)    := 0;
-   nSACober30            NUMBER(20)    := 0;
-   nSACober31            NUMBER(20)    := 0;
-   nSACober32            NUMBER(20)    := 0;
-   nSACober33            NUMBER(20)    := 0;
-   nSACober34            NUMBER(20)    := 0;
-   nSACober35            NUMBER(20)    := 0;
-   nSACober36            NUMBER(20)    := 0;
-   nSACober37            NUMBER(20)    := 0;
-   nSACober38            NUMBER(20)    := 0;
-   nPmaEmiCo1            NUMBER(20,2)  := 0;
-   nPmaEmiCo2            NUMBER(20,2)  := 0;
-   nPmaEmiCo3            NUMBER(20,2)  := 0;
-   nPmaEmiCo4            NUMBER(20,2)  := 0;
-   nPmaEmiCo5            NUMBER(20,2)  := 0;
-   nPmaEmiCo6            NUMBER(20,2)  := 0;
-   nPmaEmiCo7            NUMBER(20,2)  := 0;
-   nPmaEmiCo8            NUMBER(20,2)  := 0;
-   nPmaEmiCo9            NUMBER(20,2)  := 0;
-   nPmaEmiCo10           NUMBER(20,2)  := 0;
-   nPmaEmiCo11           NUMBER(20,2)  := 0;
-   nPmaEmiCo12           NUMBER(20,2)  := 0;
-   nPmaEmiCo13           NUMBER(20,2)  := 0;
-   nPmaEmiCo14           NUMBER(20,2)  := 0;
-   nPmaEmiCo15           NUMBER(20,2)  := 0;
-   nPmaEmiCo16           NUMBER(20,2)  := 0;
-   nPmaEmiCo17           NUMBER(20,2)  := 0;
-   nPmaEmiCo18           NUMBER(20,2)  := 0;
-   nPmaEmiCo19           NUMBER(20,2)  := 0;
-   nPmaEmiCo20           NUMBER(20,2)  := 0;
-   nPmaEmiCo21           NUMBER(20,2)  := 0;
-   nPmaEmiCo22           NUMBER(20,2)  := 0;
-   nPmaEmiCo23           NUMBER(20,2)  := 0;
-   nPmaEmiCo24           NUMBER(20,2)  := 0;
-   nPmaEmiCo25           NUMBER(20,2)  := 0;
-   nPmaEmiCo26           NUMBER(20,2)  := 0;
-   nPmaEmiCo27           NUMBER(20,2)  := 0;
-   nPmaEmiCo28           NUMBER(20,2)  := 0;
-   nPmaEmiCo29           NUMBER(20,2)  := 0;
-   nPmaEmiCo30           NUMBER(20,2)  := 0;
-   nPmaEmiCo31           NUMBER(20,2)  := 0;
-   nPmaEmiCo32           NUMBER(20,2)  := 0;
-   nPmaEmiCo33           NUMBER(20,2)  := 0;
-   nPmaEmiCo34           NUMBER(20,2)  := 0;
-   nPmaEmiCo35           NUMBER(20,2)  := 0;
-   nPmaEmiCo36           NUMBER(20,2)  := 0;
-   nPmaEmiCo37           NUMBER(20,2)  := 0;
-   nPmaEmiCo38           NUMBER(20,2)  := 0;
-   cPdo_Espera           CONFIG_SESAS_TIPO_SEGURO.PeriodoEspera%TYPE;
-   nIniCob               CONFIG_SESAS_TIPO_SEGURO.InicioCobertura%TYPE;
-   cSubTipoSeg           CONFIG_SESAS_TIPO_SEGURO.SubTipoSeg%TYPE;
-   cModalPoliza          CONFIG_SESAS_TIPO_SEGURO.ModalPoliza%TYPE;
-   cTipoRiesgoAsoc       CONFIG_SESAS_TIPO_SEGURO.TipoRiesgoAsoc%TYPE;
-   cTipo_Seg             CONFIG_SESAS_TIPO_SEGURO.TipoSeguro%TYPE;
-   nMtoFondoAdmin        NUMBER(28,2);
-   nMtoVencimiento       NUMBER(28,2);
-   nMtoRescate           NUMBER(28,2);
-   nSldoFondoInv         NUMBER(28,2);
-   nContadorReg          NUMBER(10);
-   nSumaAsegDotalesCP    NUMBER(28,2) := 0;
-   nPrimaDotalesCP       NUMBER(28,2) := 0;
-   cTodasAnuladas        VARCHAR2(1);
-   cStatus1              VARCHAR2(6);
-   cStatus2              VARCHAR2(6);
-   cStatus3              VARCHAR2(6);
-   cStatus4              VARCHAR2(6);
-   cStatus5              VARCHAR2(6) := 'SOL';
-   cStatus6              VARCHAR2(6) := 'SOLICI';
-   cEsDeclarativa        VARCHAR2(6) := 'S';
-   cSexo                 PERSONA_NATURAL_JURIDICA.Sexo%TYPE;
-   cRiesgo               ACTIVIDADES_ECONOMICAS.RiesgoActividad%TYPE;
-   cCodActividad         PERSONA_NATURAL_JURIDICA.CodActividad%TYPE;
-   nIdTarifa             TARIFA_CONTROL_VIGENCIAS.IdTarifa%TYPE;
-   nEdad                 NUMBER(5);
-   nTasa                 NUMBER;
-   cCodCobert            COBERTURAS_DE_SEGUROS.CodCobert%TYPE;
-   nPrima_Moneda         COBERT_ACT.Prima_Moneda%TYPE;
-   cRecalculoPrimas      VARCHAR2(1);
+CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP( nCodCia      ENTREGAS_CNSF_CONFIG.CODCIA%TYPE
+                                                      , nCodEmpresa  ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE
+                                                      , cCodEntrega  ENTREGAS_CNSF_CONFIG.CODENTREGA%TYPE
+                                                      , dFecDesde    DATE
+                                                      , dFecHasta    DATE
+                                                      , cIdUsr       TEMP_REGISTROS_SESAS.CODUSUARIO%TYPE )  IS
+cCodPlantilla         ENTREGAS_CNSF_CONFIG.CodPlantilla%TYPE;
+cSeparador            ENTREGAS_CNSF_CONFIG.Separador%TYPE;
+cEncabezado           VARCHAR2(4000);
+cPoliz_Stus           POLIZAS.StsPoliza%TYPE;
+cCerti_Stus           DETALLE_POLIZA.StsDetalle%TYPE;
+nPeriodoEspCob        COBERTURAS_DE_SEGUROS.PeriodoEsperaMeses%TYPE;
+nPrimaMonedaTotPol    POLIZAS.PrimaNeta_Moneda%TYPE;
+nPrimaContable        POLIZAS.PrimaNeta_Moneda%TYPE;
+nPrimaContableAnu     POLIZAS.PrimaNeta_Moneda%TYPE;
+nMtoCptoNcrMoneda     DETALLE_NOTAS_DE_CREDITO.MONTO_DET_MONEDA%TYPE;
+nMtoCptoNcrMonedaAnu  DETALLE_NOTAS_DE_CREDITO.MONTO_DET_MONEDA%TYPE;
+nIdPolizaProcCalc     POLIZAS.IdPoliza%TYPE := 0;
+nIdPolizaCalc         POLIZAS.IdPoliza%TYPE := 0;
+nIdPolizaProc         POLIZAS.IdPoliza%TYPE;
+nIDetPolProc          DETALLE_POLIZA.IDetPol%TYPE;
+cEntDd_Ctte           VARCHAR2(2);
+nLinea                NUMBER;
+cCadena               VARCHAR2(4000);
+nSABenef1             NUMBER(20)    := 0;
+nSABenef2             NUMBER(20)    := 0;
+nSABenef3             NUMBER(20)    := 0;
+nSABenef4             NUMBER(20)    := 0;
+nSABenef6             NUMBER(20)    := 0;
+nSABenef8             NUMBER(20)    := 0;
+nSABenef9             NUMBER(20)    := 0;
+nPmaEmiBe1            NUMBER(20,2)  := 0;
+nPmaEmiBe2            NUMBER(20,2)  := 0;
+nPmaEmiBe3            NUMBER(20,2)  := 0;
+nPmaEmiBe4            NUMBER(20,2)  := 0;
+nPmaEmiBe5            NUMBER(20,2)  := 0;
+nPmaEmiBe6            NUMBER(20,2)  := 0;
+nPmaEmiBe7            NUMBER(20,2)  := 0;
+nPmaEmiBe8            NUMBER(20,2)  := 0;
+nPmaEmiBe9            NUMBER(20,2)  := 0;
+cPuntoComa            VARCHAR2(1)   := ';';
+nTotPoliza            NUMBER(20)    := 0;
+nTotCertif            NUMBER(20)    := 0;
+nTotFecIni            NUMBER(20)    := 0;
+nTotFecFin            NUMBER(20)    := 0;
+nTotFecAlta           NUMBER(20)    := 0;
+nTotFecBaja           NUMBER(20)    := 0;
+nTotFecNac            NUMBER(20)    := 0;
+nTotStsPol            NUMBER(20)    := 0;
+nTotStsCert           NUMBER(20)    := 0;
+nTotEntCont           NUMBER(20)    := 0;
+nTotPerEspe           NUMBER(20)    := 0;
+nTotSABenef1          NUMBER(20)    := 0;
+nTotSABenef2          NUMBER(20)    := 0;
+nTotSABenef3          NUMBER(20)    := 0;
+nTotSABenef4          NUMBER(20)    := 0;
+nTotSABenef6          NUMBER(20)    := 0;
+nTotSABenef8          NUMBER(20)    := 0;
+nTotSABenef9          NUMBER(20)    := 0;
+nTotPmaEmiBe1         NUMBER(20)    := 0;
+nTotPmaEmiBe2         NUMBER(20)    := 0;
+nTotPmaEmiBe3         NUMBER(20)    := 0;
+nTotPmaEmiBe4         NUMBER(20)    := 0;
+nTotPmaEmiBe5         NUMBER(20)    := 0;
+nTotPmaEmiBe6         NUMBER(20)    := 0;
+nTotPmaEmiBe7         NUMBER(20)    := 0;
+nTotPmaEmiBe8         NUMBER(20)    := 0;
+nTotPmaEmiBe9         NUMBER(20)    := 0;
+nTotAnioPol           NUMBER(20)    := 0;
+nTotIniCob            NUMBER(20)    := 0;
+nTotDiasBen3          NUMBER(20)    := 0;
+nTotSubTipo           NUMBER(20)    := 0;
+nTotTipoRiesAsoc      NUMBER(20)    := 0;
+nCantAseg             NUMBER(20)    := 0;
+nTotMtoDivid          NUMBER(20)    := 0;
+nTotPolConce          NUMBER(20)    := 0;
+nTotAsegPolCon        NUMBER(20)    := 0;
+nTotMtoFondoAdmin     NUMBER(20)    := 0;
+nTotMtoVencim         NUMBER(20)    := 0;
+nTotMtoRescate        NUMBER(20)    := 0;
+nTotSldoFondoInv      NUMBER(20)    := 0;
+nTotPlazoPagoPri      NUMBER(20)    := 0;
+nTotSumaAsegDotCP     NUMBER(20)    := 0;
+nTotPrimaDotCP        NUMBER(20)    := 0;
+nTotEmision           NUMBER(20)    := 0;
+nTotPlanPoliza        NUMBER(20)    := 0;
+cTipoDetalle          VARCHAR2(20);
+nSACober1             NUMBER(20)    := 0;
+nSACober2             NUMBER(20)    := 0;
+nSACober3             NUMBER(20)    := 0;
+nSACober4             NUMBER(20)    := 0;
+nSACober5             NUMBER(20)    := 0;
+nSACober6             NUMBER(20)    := 0;
+nSACober7             NUMBER(20)    := 0;
+nSACober8             NUMBER(20)    := 0;
+nSACober9             NUMBER(20)    := 0;
+nSACober10            NUMBER(20)    := 0;
+nSACober11            NUMBER(20)    := 0;
+nSACober12            NUMBER(20)    := 0;
+nSACober13            NUMBER(20)    := 0;
+nSACober14            NUMBER(20)    := 0;
+nSACober15            NUMBER(20)    := 0;
+nSACober16            NUMBER(20)    := 0;
+nSACober17            NUMBER(20)    := 0;
+nSACober18            NUMBER(20)    := 0;
+nSACober19            NUMBER(20)    := 0;
+nSACober20            NUMBER(20)    := 0;
+nSACober21            NUMBER(20)    := 0;
+nSACober22            NUMBER(20)    := 0;
+nSACober23            NUMBER(20)    := 0;
+nSACober24            NUMBER(20)    := 0;
+nSACober25            NUMBER(20)    := 0;
+nSACober26            NUMBER(20)    := 0;
+nSACober27            NUMBER(20)    := 0;
+nSACober28            NUMBER(20)    := 0;
+nSACober29            NUMBER(20)    := 0;
+nSACober30            NUMBER(20)    := 0;
+nSACober31            NUMBER(20)    := 0;
+nSACober32            NUMBER(20)    := 0;
+nSACober33            NUMBER(20)    := 0;
+nSACober34            NUMBER(20)    := 0;
+nSACober35            NUMBER(20)    := 0;
+nSACober36            NUMBER(20)    := 0;
+nSACober37            NUMBER(20)    := 0;
+nSACober38            NUMBER(20)    := 0;
+nPmaEmiCo1            NUMBER(20,2)  := 0;
+nPmaEmiCo2            NUMBER(20,2)  := 0;
+nPmaEmiCo3            NUMBER(20,2)  := 0;
+nPmaEmiCo4            NUMBER(20,2)  := 0;
+nPmaEmiCo5            NUMBER(20,2)  := 0;
+nPmaEmiCo6            NUMBER(20,2)  := 0;
+nPmaEmiCo7            NUMBER(20,2)  := 0;
+nPmaEmiCo8            NUMBER(20,2)  := 0;
+nPmaEmiCo9            NUMBER(20,2)  := 0;
+nPmaEmiCo10           NUMBER(20,2)  := 0;
+nPmaEmiCo11           NUMBER(20,2)  := 0;
+nPmaEmiCo12           NUMBER(20,2)  := 0;
+nPmaEmiCo13           NUMBER(20,2)  := 0;
+nPmaEmiCo14           NUMBER(20,2)  := 0;
+nPmaEmiCo15           NUMBER(20,2)  := 0;
+nPmaEmiCo16           NUMBER(20,2)  := 0;
+nPmaEmiCo17           NUMBER(20,2)  := 0;
+nPmaEmiCo18           NUMBER(20,2)  := 0;
+nPmaEmiCo19           NUMBER(20,2)  := 0;
+nPmaEmiCo20           NUMBER(20,2)  := 0;
+nPmaEmiCo21           NUMBER(20,2)  := 0;
+nPmaEmiCo22           NUMBER(20,2)  := 0;
+nPmaEmiCo23           NUMBER(20,2)  := 0;
+nPmaEmiCo24           NUMBER(20,2)  := 0;
+nPmaEmiCo25           NUMBER(20,2)  := 0;
+nPmaEmiCo26           NUMBER(20,2)  := 0;
+nPmaEmiCo27           NUMBER(20,2)  := 0;
+nPmaEmiCo28           NUMBER(20,2)  := 0;
+nPmaEmiCo29           NUMBER(20,2)  := 0;
+nPmaEmiCo30           NUMBER(20,2)  := 0;
+nPmaEmiCo31           NUMBER(20,2)  := 0;
+nPmaEmiCo32           NUMBER(20,2)  := 0;
+nPmaEmiCo33           NUMBER(20,2)  := 0;
+nPmaEmiCo34           NUMBER(20,2)  := 0;
+nPmaEmiCo35           NUMBER(20,2)  := 0;
+nPmaEmiCo36           NUMBER(20,2)  := 0;
+nPmaEmiCo37           NUMBER(20,2)  := 0;
+nPmaEmiCo38           NUMBER(20,2)  := 0;
+cPdo_Espera           CONFIG_SESAS_TIPO_SEGURO.PeriodoEspera%TYPE;
+nIniCob               CONFIG_SESAS_TIPO_SEGURO.InicioCobertura%TYPE;
+cSubTipoSeg           CONFIG_SESAS_TIPO_SEGURO.SubTipoSeg%TYPE;
+cModalPoliza          CONFIG_SESAS_TIPO_SEGURO.ModalPoliza%TYPE;
+cTipoRiesgoAsoc       CONFIG_SESAS_TIPO_SEGURO.TipoRiesgoAsoc%TYPE;
+cTipo_Seg             CONFIG_SESAS_TIPO_SEGURO.TipoSeguro%TYPE;
+nMtoFondoAdmin        NUMBER(28,2);
+nMtoVencimiento       NUMBER(28,2);
+nMtoRescate           NUMBER(28,2);
+nSldoFondoInv         NUMBER(28,2);
+nContadorReg          NUMBER(10);
+nSumaAsegDotalesCP    NUMBER(28,2) := 0;
+nPrimaDotalesCP       NUMBER(28,2) := 0;
+cTodasAnuladas        VARCHAR2(1);
+cStatus1              VARCHAR2(6);
+cStatus2              VARCHAR2(6);
+cStatus3              VARCHAR2(6);
+cStatus4              VARCHAR2(6);
+cStatus5              VARCHAR2(6) := 'SOL';
+cStatus6              VARCHAR2(6) := 'SOLICI';
+cEsDeclarativa        VARCHAR2(6) := 'S';
+cSexo                 PERSONA_NATURAL_JURIDICA.Sexo%TYPE;
+cRiesgo               ACTIVIDADES_ECONOMICAS.RiesgoActividad%TYPE;
+cCodActividad         PERSONA_NATURAL_JURIDICA.CodActividad%TYPE;
+nIdTarifa             TARIFA_CONTROL_VIGENCIAS.IdTarifa%TYPE;
+nEdad                 NUMBER(5);
+nTasa                 NUMBER;
+cCodCobert            COBERTURAS_DE_SEGUROS.CodCobert%TYPE;
+nPrima_Moneda         COBERT_ACT.Prima_Moneda%TYPE;
+cRecalculoPrimas      VARCHAR2(1);
+   --Afinación
+   nCodCiaAfina          DETALLE_POLIZA.CODCIA%TYPE;
+   nCodEmpresaAfina      DETALLE_POLIZA.CODEMPRESA%TYPE;
+   nIdPolizaAfina        DETALLE_POLIZA.IDPOLIZA%TYPE;
+   nIDetPolAfina         DETALLE_POLIZA.IDETPOL%TYPE;
+   nCantAseg_1           NUMBER;
+   nCantAseg_2           NUMBER;
+   cNomArchivo           ENTREGAS_CNSF_CONFIG.NOMARCHIVO%TYPE;
+   cNomArchZip           VARCHAR2(100);
    --
-   dFecNacimiento        PERSONA_NATURAL_JURIDICA.FECNACIMIENTO%TYPE;
-   --
-   CURSOR C_CAMPO IS
-      SELECT NomCampo
-        FROM CONFIG_PLANTILLAS_CAMPOS
-       WHERE CodCia       = nCodCia
-         AND CodEmpresa   = nCodEmpresa
-         AND CodPlantilla = cCodPlantilla
-      ORDER BY OrdenCampo;
-   --
-   CURSOR POL_Q IS
-      SELECT IdPoliza
-           , StsPoliza
-           , TipoAdministracion
-           , IdTipoSeg
-           , PlanCob
-           , FecIniVig
-        FROM TEMP_POLIZAS_SESAS
-       WHERE IdPoliza   = nIdPolizaProc;
-   --
-   CURSOR POL_IND_Q IS
-      SELECT P.NumPolUnico Poliza
-           , TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(D.Cod_Asegurado,'0000000')) Certi
-           , DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I'))                 Moneda
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Ini_Vig
-           , TO_CHAR(D.FecFinVig,'YYYYMMDD')                                                 Fin_Vig
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Fecha_Alta
-           , TO_CHAR(D.FecAnul,'YYYYMMDD')                                                   Fecha_Baja
-           , TO_CHAR(PN.FecNacimiento,'YYYYMMDD')                                            Fecha_Nac
-           , DECODE(PN.Sexo,'N',NULL,PN.Sexo)                                                Sexo
-           , P.FormaVenta                                                                    Forma_Vta
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                AnioPoliza
-           , SUBSTR(P.TipoDividendo,3,1)                                                     TipoDividendo
-           , 0                                                                               MontoDividendo
-           , DECODE(NVL(P.IndConcentrada,'N'),'N',0,1)                                       PolConcentrada
-           , DECODE(P.NumRenov,0,0,1)                                                        Emision
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                PlazoPagoPrimas
-           , PC.PlanPoliza
-           , PN.CodPaisRes                                                                   CodPais
-           , PN.CodProvRes                                                                   CodEstado
-           , P.IdPoliza
-           , P.StsPoliza
-           , P.FecIniVig
-           , P.FecFinVig                                                                     FecFinVigPol
-           , D.IdTipoSeg
-           , D.PlanCob
-           , D.IDetPol
-           , D.StsDetalle
-           , D.FecFinVig
-           , D.IndAsegModelo
-           , NVL(D.CantAsegModelo,0)                                                         CantAsegModelo
-           , D.Cod_Asegurado
-           , 'IND'                                                                           TipoDetalle
-        FROM DETALLE_POLIZA            D
-           , POLIZAS                   P
-           , ASEGURADO                 A
-           , PERSONA_NATURAL_JURIDICA  PN
-           , PLAN_COBERTURAS           PC
-       WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
-         AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
-         AND A.Cod_Asegurado            = D.Cod_Asegurado
-         AND OC_ASEGURADO_CERTIFICADO.TIENE_ASEGURADOS(D.CodCia, D.IdPoliza, D.IDetPol, 0) = 'N'
-         AND ( ( D.FecFinVig  >= dFecDesde AND D.StsDetalle IN ('EMI','REN') )
-            OR ( D.StsDetalle  = 'ANU'     AND D.FecAnul    >= dFecDesde AND D.MotivAnul != 'REEX' )
-            OR ( P.StsPoliza   = 'ANU'     AND P.FecSts     >= dFecDesde )
-             )
-         AND P.CodCia              = D.CodCia
-         AND P.IdPoliza            = D.IdPoliza
-         AND P.CodEmpresa          = D.CodEmpresa
-         AND SUBSTR(P.NumPolUnico, 1, 3) <> 'TRD' -- Infonacot
---         AND P.NumPolUnico  NOT LIKE 'TRD%' -- Infonacot
-         AND D.CodEmpresa          = nCodEmpresa
-         AND D.CodCia              = nCodCia
-         AND D.IDetPol             > 0
-         AND D.IdPoliza            > 0
-         --AND D.IdPoliza                IN (25575)
-         AND PC.IdTipoSeg   = D.IdTipoSeg
-         AND PC.CodEmpresa  = D.CodEmpresa
-         AND PC.CodCia      = D.CodCia
-         AND PC.PlanCob     = D.PlanCob
-         AND PC.CodTipoPlan = '012'
-       ORDER BY P.IdPoliza;
-   --
-   CURSOR POL_COL_Q IS
-      SELECT P.NumPolUnico                                                                   Poliza
-           , TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(AC.Cod_Asegurado,'0000000')) Certi
-           , DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I'))                 Moneda
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Ini_Vig
-           , TO_CHAR(D.FecFinVig,'YYYYMMDD')                                                 Fin_Vig
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Fecha_Alta
-           , TO_CHAR(D.FecAnul,'YYYYMMDD')                                                   Fecha_Baja
-           , TO_CHAR(PN.FecNacimiento,'YYYYMMDD')                                            Fecha_Nac
-           , DECODE(PN.Sexo,'N',NULL,PN.Sexo)                                                Sexo
-           , P.FormaVenta                                                                    Forma_Vta
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                AnioPoliza
-           , SUBSTR(P.TipoDividendo,3,1)                                                     TipoDividendo
-           , 0                                                                               MontoDividendo
-           , DECODE(NVL(P.IndConcentrada,'N'),'N',0,1)                                       PolConcentrada
-           , DECODE(P.NumRenov,0,0,1)                                                        Emision
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                PlazoPagoPrimas
-           , PC.PlanPoliza
-           , PN.CodPaisRes                                                                   CodPais
-           , PN.CodProvRes                                                                   CodEstado
-           , P.IdPoliza
-           , P.StsPoliza
-           , P.FecIniVig
-           , P.FecFinVig                                                                     FecFinVigPol
-           , D.IdTipoSeg
-           , D.PlanCob
-           , D.IDetPol
-           , AC.Estado                                                                       StsDetalle
-           , D.FecFinVig
-           , D.IndAsegModelo
-           , NVL(D.CantAsegModelo,0)                                                         CantAsegModelo
-           , AC.Cod_Asegurado
-           , 'COL'                                                                           TipoDetalle
-        FROM DETALLE_POLIZA             D
-           , POLIZAS                    P
-           , ASEGURADO_CERTIFICADO     AC
-           , ASEGURADO                  A
-           , PERSONA_NATURAL_JURIDICA  PN
-           , PLAN_COBERTURAS           PC
-       WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
-         AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
-         AND A.Cod_Asegurado            = AC.Cod_Asegurado
-         AND AC.CodCia                  = D.CodCia
-         AND AC.IdPoliza                = D.IdPoliza
-         AND AC.IDetPol                 = D.IDetPol
-         AND ( ( D.FecFinVig >= dFecDesde AND D.StsDetalle IN ('EMI','REN') )
-            OR ( D.StsDetalle = 'ANU'     AND D.FecAnul >= dFecDesde AND D.MotivAnul != 'REEX' )
-            OR ( P.StsPoliza  = 'ANU'     AND  P.FecSts >= dFecDesde ))
-         AND P.CodCia             = D.CodCia
-         AND P.CodEmpresa         = D.CodEmpresa
-         AND P.IdPoliza           = D.IdPoliza
-         AND SUBSTR(P.NumPolUnico, 1, 3) <> 'TRD' -- Infonacot
---         AND P.NumPolUnico NOT LIKE 'TRD%' -- Infonacot
-         AND D.CodEmpresa         = nCodEmpresa
-         AND D.CodCia             = nCodCia
-         AND D.IDetPol            > 0
-         --AND D.IdPoliza          IN (25575)
-         AND PC.IdTipoSeg   = D.IdTipoSeg
-         AND PC.CodEmpresa  = D.CodEmpresa
-         AND PC.CodCia      = D.CodCia
-         AND PC.PlanCob     = D.PlanCob
-         AND PC.CodTipoPlan = '012'
-       ORDER BY P.IdPoliza;
+CURSOR C_CAMPO IS
+   SELECT NomCampo
+     FROM CONFIG_PLANTILLAS_CAMPOS
+    WHERE CodCia       = nCodCia
+      AND CodEmpresa   = nCodEmpresa
+      AND CodPlantilla = cCodPlantilla
+    ORDER BY OrdenCampo;
 
-   CURSOR POL_IND_MOV_Q IS
-      SELECT DISTINCT P.NumPolUnico                                                          Poliza
-           , TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(D.Cod_Asegurado,'0000000')) Certi
-           , DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I'))                 Moneda
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Ini_Vig
-           , TO_CHAR(D.FecFinVig,'YYYYMMDD')                                                 Fin_Vig
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Fecha_Alta
-           , TO_CHAR(D.FecAnul,'YYYYMMDD')                                                   Fecha_Baja
-           , TO_CHAR(PN.FecNacimiento,'YYYYMMDD')                                            Fecha_Nac
-           , DECODE(PN.Sexo,'N',NULL,PN.Sexo)                                                Sexo
-           , P.FormaVenta                                                                    Forma_Vta
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                AnioPoliza
-           , SUBSTR(P.TipoDividendo,3,1)                                                     TipoDividendo
-           , 0                                                                               MontoDividendo
-           , DECODE(NVL(P.IndConcentrada,'N'),'N',0,1)                                       PolConcentrada
-           , DECODE(P.NumRenov,0,0,1)                                                        Emision
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                PlazoPagoPrimas
-           , PC.PlanPoliza
-           , PN.CodPaisRes                                                                   CodPais
-           , PN.CodProvRes                                                                   CodEstado
-           , P.IdPoliza
-           , P.StsPoliza
-           , P.FecIniVig
-           , P.FecFinVig                                                                     FecFinVigPol
-           , D.IdTipoSeg
-           , D.PlanCob
-           , D.IDetPol
-           , D.StsDetalle
-           , D.FecFinVig
-           , D.IndAsegModelo
-           , NVL(D.CantAsegModelo,0)                                                         CantAsegModelo
-           , D.Cod_Asegurado
-           , 'IND'                                                                           TipoDetalle
-        FROM DETALLE_POLIZA             D
-           , POLIZAS                    P
-           , ASEGURADO                  A
-           , PERSONA_NATURAL_JURIDICA  PN
-           , TRANSACCION                T
-           , DETALLE_TRANSACCION       DT
-           , PLAN_COBERTURAS           PC
-       WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
-         AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
-         AND A.Cod_Asegurado            = D.Cod_Asegurado
-         AND OC_ASEGURADO_CERTIFICADO.TIENE_ASEGURADOS(D.CodCia, D.IdPoliza, D.IDetPol, 0) = 'N'
-         AND D.FecFinVig                < dFecDesde
-         AND P.CodCia              = D.CodCia
-         AND P.CodEmpresa          = D.CodEmpresa
-         AND P.IdPoliza            = D.IdPoliza
-         AND SUBSTR(P.NumPolUnico, 1, 3) <> 'TRD' -- Infonacot
---         AND P.NumPolUnico  NOT LIKE 'TRD%' -- Infonacot
-         AND D.CodEmpresa          = nCodEmpresa
-         AND D.CodCia              = nCodCia
-         AND D.IDetPol             > 0
-         AND D.IdPoliza            > 0
-         AND DT.IdTransaccion      = T.IdTransaccion
-         AND DT.Valor1             = D.IdPoliza
-         AND DT.Correlativo        > 0
-         AND DT.CodSubProceso NOT IN ('ESV','PAG')
-         AND DT.CodCia             = T.CodCia
-         AND T.CodCia              = D.CodCia
-         AND T.CodEmpresa          = D.CodEmpresa
-         AND T.IdTransaccion       > 0
-         AND T.IdProceso          != 6
-         AND T.FechaTransaccion   >= dFecDesde
-         AND PC.IdTipoSeg   = D.IdTipoSeg
-         AND PC.CodEmpresa  = D.CodEmpresa
-         AND PC.CodCia      = D.CodCia
-         AND PC.PlanCob     = D.PlanCob
-         AND PC.CodTipoPlan = '012'
-       ORDER BY P.IdPoliza;
-   --
-   CURSOR POL_COL_MOV_Q IS
-      SELECT TP.Poliza
-           , TP.Certi
-           , TP.Moneda
-           , TP.Ini_Vig
-           , TP.Fin_Vig
-           , TP.Fecha_Alta
-           , TP.Fecha_Baja
-           , TP.Fecha_Nac
-           , TP.Sexo
-           , TP.Forma_Vta
-           , TP.AnioPoliza
-           , TP.TipoDividendo
-           , TP.MontoDividendo
-           , TP.PolConcentrada
-           , TP.Emision
-           , TP.PlazoPagoPrimas
-           , TP.PlanPoliza
-           , TP.CodPais
-           , TP.CodEstado
-           , TP.IdPoliza
-           , TP.StsPoliza
-           , TP.FecIniVig
-           , TP.FecFinVigPol
-           , TP.IdTipoSeg
-           , TP.PlanCob
-           , TP.IDetPol
-           , TP.StsDetalle
-           , TP.FecFinVig
-           , TP.IndAsegModelo
-           , TP.CantAsegModelo
-           , TP.Cod_Asegurado
-           , TP.TipoDetalle
-      FROM   TEMP_MOVTOS_SESAS TP
-      MINUS
-      SELECT P.NumPolUnico                                                                   Poliza
-           , TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(AC.Cod_Asegurado,'0000000')) Certi
-           , DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I'))                 Moneda
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Ini_Vig
-           , TO_CHAR(D.FecFinVig,'YYYYMMDD')                                                 Fin_Vig
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Fecha_Alta
-           , TO_CHAR(D.FecAnul,'YYYYMMDD')                                                   Fecha_Baja
-           , TO_CHAR(PN.FecNacimiento,'YYYYMMDD')                                            Fecha_Nac
-           , DECODE(PN.Sexo,'N',NULL,PN.Sexo)                                                Sexo
-           , P.FormaVenta                                                                    Forma_Vta
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                AnioPoliza
-           , SUBSTR(P.TipoDividendo,3,1)                                                     TipoDividendo
-           , 0                                                                               MontoDividendo
-           , DECODE(NVL(P.IndConcentrada,'N'),'N',0,1)                                       PolConcentrada
-           , DECODE(P.NumRenov,0,0,1)                                                        Emision
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                PlazoPagoPrimas
-           , PC.PlanPoliza
-           , PN.CodPaisRes                                                                   CodPais
-           , PN.CodProvRes                                                                   CodEstado
-           , P.IdPoliza
-           , P.StsPoliza
-           , P.FecIniVig
-           , P.FecFinVig                                                                     FecFinVigPol
-           , D.IdTipoSeg
-           , D.PlanCob
-           , D.IDetPol
-           , AC.Estado                                                                       StsDetalle
-           , D.FecFinVig
-           , D.IndAsegModelo
-           , NVL(D.CantAsegModelo,0)                                                         CantAsegModelo
-           , AC.Cod_Asegurado
-           , 'COL'                                                                           TipoDetalle
-        FROM DETALLE_POLIZA             D
-           , POLIZAS                    P
-           , ASEGURADO_CERTIFICADO     AC
-           , ASEGURADO                  A
-           , PERSONA_NATURAL_JURIDICA  PN
-           , PLAN_COBERTURAS           PC
-       WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
-         AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
-         AND A.Cod_Asegurado            = AC.Cod_Asegurado
-         AND A.CodCia                   = AC.CodCia
-         AND AC.CodCia                  = D.CodCia
-         AND AC.IdPoliza                = D.IdPoliza
-         AND AC.IDetPol                 = D.IDetPol
-         AND ( ( D.FecFinVig  >= dFecDesde AND D.StsDetalle IN ('EMI','REN') )
-            OR ( D.StsDetalle  = 'ANU'     AND D.FecAnul    >= dFecDesde AND D.MotivAnul != 'REEX')
-            OR ( P.StsPoliza   = 'ANU'     AND P.FecSts     >= dFecDesde )
-             )
-         AND P.CodCia              = D.CodCia
-         AND P.CodEmpresa          = D.CodEmpresa
-         AND P.IdPoliza            = D.IdPoliza
-         AND SUBSTR(P.NumPolUnico, 1, 3) <> 'TRD' -- Infonacot
---         AND P.NumPolUnico  NOT LIKE 'TRD%' -- Infonacot
-         AND D.CodEmpresa          = nCodEmpresa
-         AND D.CodCia              = nCodCia
-         AND D.IDetPol             > 0
-         AND D.IdPoliza            > 0
-         --AND D.IdPoliza                IN (25575)
-         AND PC.IdTipoSeg   = D.IdTipoSeg
-         AND PC.CodEmpresa  = D.CodEmpresa
-         AND PC.CodCia      = D.CodCia
-         AND PC.PlanCob     = D.PlanCob
-         AND PC.CodTipoPlan = '012'
-       ORDER BY IdPoliza;
+CURSOR POL_Q IS
+   SELECT DISTINCT P.IdPoliza, P.StsPoliza, P.TipoAdministracion,
+          D.IdTipoSeg, D.PlanCob, P.FecIniVig
+     FROM POLIZAS P, DETALLE_POLIZA D
+    WHERE D.IdPoliza                = P.IdPoliza
+      AND D.CodCia                  = P.CodCia
+      AND P.CodCia                  = nCodCia
+      AND P.IdPoliza                = nIdPolizaProc
+      AND P.StsPoliza              != 'SOL'
+      AND (P.MotivAnul              IS NULL
+       OR NVL(P.MotivAnul,'NULL')  IS NOT NULL
+      AND P.FecSts                 >= dFecDesde)
+    UNION
+   SELECT DISTINCT D.IdPoliza, P.StsPoliza, P.TipoAdministracion,
+          D.IdTipoSeg, D.PlanCob, P.FecIniVig
+     FROM POLIZAS P, DETALLE_POLIZA D
+    WHERE P.CodCia        = nCodCia
+      AND P.IdPoliza     != nIdPolizaProc
+      AND P.StsPoliza    != 'SOL'
+      AND P.NumPolUnico  IN (SELECT NumPolUnico
+                               FROM POLIZAS
+                              WHERE CodCia    = nCodCia
+                                AND IdPoliza  = nIdPolizaProc)
+      AND D.IDetPol                  = nIDetPolProc
+      AND (D.MotivAnul              IS NULL
+       OR NVL(D.MotivAnul,'NULL')   IS NOT NULL
+      AND D.FecAnul                 >= dFecDesde
+       OR P.StsPoliza                = 'ANU'
+      AND P.FecSts                  >= dFecDesde)
+      AND D.IdPoliza                 = P.IdPoliza
+      AND D.CodCia                   = P.CodCia;
 
-   PROCEDURE COBERTURAS ( nCodCia         COBERT_ACT.CODCIA%TYPE
-                        , nIdPoliza       COBERT_ACT.IDPOLIZA%TYPE
-                        , nIDetPol        COBERT_ACT.IDETPOL%TYPE
-                        , nCod_Asegurado  COBERT_ACT.COD_ASEGURADO%TYPE
-                        , dFecIniVig      DATE ) IS
-      CURSOR COBERT_Q IS
-         SELECT C.CodCobert
-              , NVL(CS.ClaveSesas,'1')     ClaveSesas
-              , NVL(OrdenSESAS,0)          OrdenSESAS
-              , NVL(PeriodoEsperaMeses,0)  PeriodoEspera
-              , SUM(SumaAseg_Moneda)       Suma_Moneda
-              , SUM(C.Prima_Moneda)        Prima_Moneda
-           FROM COBERT_ACT              C
-              , COBERTURAS_DE_SEGUROS  CS
-          WHERE CS.IdTipoSeg     = C.IdTipoSeg
-            AND CS.PlanCob       = C.PlanCob
-            AND CS.CodCobert     = C.CodCobert
-            AND CS.CodEmpresa    = C.CodEmpresa
-            AND CS.CodCia        = C.CodCia
-            AND C.StsCobertura NOT IN (cStatus1, cStatus2, cStatus5)
-            AND C.Cod_Asegurado  = nCod_Asegurado
-            AND C.IDetPol        = nIDetPol
-            AND C.IdPoliza       = nIdPoliza
-            AND C.CodCia         = nCodCia
-          GROUP BY C.CodCobert, NVL(CS.ClaveSesas,'1'), NVL(OrdenSESAS,0), NVL(PeriodoEsperaMeses,0)
-         UNION ALL
-         SELECT C.CodCobert
-              , NVL(CS.ClaveSesas,'1')     ClaveSesas
-              , NVL(OrdenSESAS,0)          OrdenSESAS
-              , NVL(PeriodoEsperaMeses,0)  PeriodoEspera
-              , SUM(SumaAseg_Moneda)       Suma_Moneda
-              , SUM(C.Prima_Moneda)        Prima_Moneda
-           FROM COBERT_ACT_ASEG         C
-              , COBERTURAS_DE_SEGUROS  CS
-          WHERE CS.IdTipoSeg     = C.IdTipoSeg
-            AND CS.PlanCob       = C.PlanCob
-            AND CS.CodCobert     = C.CodCobert
-            AND CS.CodEmpresa    = C.CodEmpresa
-            AND CS.CodCia        = C.CodCia
-            AND C.StsCobertura NOT IN (cStatus1, cStatus2, cStatus5)
-            AND C.Cod_Asegurado  = nCod_Asegurado
-            AND C.IDetPol        = nIDetPol
-            AND C.IdPoliza       = nIdPoliza
-            AND C.CodCia         = nCodCia
-          GROUP BY C.CodCobert, NVL(CS.ClaveSesas,'1'), NVL(OrdenSESAS,0), NVL(PeriodoEsperaMeses,0);
+CURSOR POL_IND_Q IS
+   SELECT P.NumPolUnico Poliza
+        , TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(D.Cod_Asegurado,'0000000')) Certi
+        , DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I')) MONEDA
+        , TO_CHAR(D.FecIniVig,'YYYYMMDD') Ini_Vig
+        , TO_CHAR(D.FecFinVig,'YYYYMMDD') Fin_Vig
+        , TO_CHAR(D.FecIniVig,'YYYYMMDD') Fecha_Alta
+        , TO_CHAR(D.FecAnul,'YYYYMMDD') Fecha_Baja
+        , TO_CHAR(PN.FecNacimiento,'YYYYMMDD') Fecha_Nac
+        , DECODE(PN.Sexo,'N',NULL,PN.Sexo)     Sexo
+        , P.FormaVenta                         Forma_Vta
+        , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) AnioPoliza
+        , SUBSTR(P.TipoDividendo,3,1) TipoDividendo
+        , 0 MontoDividendo
+        , DECODE(NVL(P.IndConcentrada,'N'),'N',0,1) PolConcentrada
+        , DECODE(P.NumRenov,0,0,1) Emision
+        , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) PlazoPagoPrimas
+        , OC_PLAN_COBERTURAS.PLAN_POLIZA(D.CodCia, D.CodEmpresa, D.IdTipoSeg, D.PlanCob) PlanPoliza
+        , PN.CodPaisRes CodPais
+        , PN.CodProvRes CodEstado
+        , P.IdPoliza
+        , P.StsPoliza
+        , P.FecIniVig
+        , P.FecFinVig FecFinVigPol
+        , D.IdTipoSeg
+        , D.PlanCob
+        , D.IDetPol
+        , D.StsDetalle
+        , D.FecFinVig
+        , D.IndAsegModelo
+        , NVL(D.CantAsegModelo,0) CantAsegModelo
+        , D.Cod_Asegurado
+        , 'IND' TipoDetalle
+     FROM POLIZAS        P
+        , DETALLE_POLIZA D
+        , PLAN_COBERTURAS PC
+        , ASEGURADO A
+        , PERSONA_NATURAL_JURIDICA PN
+    WHERE D.CodCia                   = P.CodCia
+      AND D.CodEmpresa               = P.CodEmpresa
+      AND D.IdPoliza                 = P.IdPoliza
+      AND PC.IdTipoSeg               = D.IdTipoSeg
+      AND PC.CodEmpresa              = D.CodEmpresa
+      AND PC.CodCia                  = D.CodCia
+      AND PC.PlanCob                 = D.PlanCob
+      AND A.Cod_Asegurado            = D.Cod_Asegurado
+      AND PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+      AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
+      AND NOT EXISTS  ( SELECT 'S'
+                        FROM    ASEGURADO_CERTIFICADO
+                        WHERE   CodCia         = D.CodCia
+                          AND   IdPoliza       = D.IdPoliza
+                          AND   IdetPol        = D.IDetPol
+                          AND   ( IdEndoso = 0 OR IdEndosoExclu = 0 )) 
+      AND ((D.FecFinVig              >= dFecDesde
+      AND  D.StsDetalle              IN ('EMI','REN'))
+       OR (D.StsDetalle              = 'ANU'
+      AND  D.FecAnul                >=  dFecDesde
+      AND  D.MotivAnul              != 'REEX')
+       OR (P.StsPoliza               = 'ANU'
+      AND  P.FecSts                 >= dFecDesde))
+      AND PC.CodTipoPlan             = '012'
+      AND P.CodEmpresa               = nCodEmpresa
+      AND P.CodCia                   = nCodCia
+      AND P.NumPolUnico       NOT LIKE 'TRD%' -- Infonacot
+    ORDER BY P.IdPoliza;
 
-      CURSOR CALC_Q IS
-         SELECT C.Cod_Asegurado
-              , C.SumaAseg_Moneda
-              , C.CodCobert
-              , C.Tasa
-              , CS.Porc_Tasa
-              , CS.CodTarifa
-              , C.IdTipoSeg
-              , C.PlanCob
-              , DECODE(CS.TipoTasa,'C',100,DECODE(CS.TipoTasa,'M',1000,1)) FactorTasa
-              , CS.Prima_Cobert
-           FROM COBERT_ACT              C
-              , COBERTURAS_DE_SEGUROS  CS
-          WHERE CS.IdTipoSeg      = C.IdTipoSeg
-            AND CS.PlanCob        = C.PlanCob
-            AND CS.CodCobert      = C.CodCobert
-            AND CS.CodEmpresa     = C.CodEmpresa
-            AND CS.CodCia         = C.CodCia
-            AND C.SumaAseg_Moneda > 0
-            AND C.IDetPol         > 0
-            AND C.CodCia          = nCodCia
-            AND C.IdPoliza        = nIdPolizaCalc
-         UNION ALL
-         SELECT C.Cod_Asegurado
-              , C.SumaAseg_Moneda
-              , C.CodCobert
-              , C.Tasa
-              , CS.Porc_Tasa
-              , CS.CodTarifa
-              , C.IdTipoSeg
-              , C.PlanCob
-              , DECODE(CS.TipoTasa,'C',100,DECODE(CS.TipoTasa,'M',1000,1)) FactorTasa
-              , CS.Prima_Cobert
-           FROM COBERT_ACT_ASEG         C
-              , COBERTURAS_DE_SEGUROS  CS
-          WHERE CS.IdTipoSeg      = C.IdTipoSeg
-            AND CS.PlanCob        = C.PlanCob
-            AND CS.CodCobert      = C.CodCobert
-            AND CS.CodEmpresa     = C.CodEmpresa
-            AND CS.CodCia         = C.CodCia
-            AND C.SumaAseg_Moneda > 0
-            AND C.IDetPol         > 0
-            AND C.CodCia          = nCodCia
-            AND C.IdPoliza        = nIdPolizaCalc;
+CURSOR POL_COL_Q IS
+   SELECT P.NumPolUnico Poliza
+        , TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(AC.Cod_Asegurado,'0000000')) Certi
+        , DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I')) MONEDA
+        , TO_CHAR(D.FecIniVig,'YYYYMMDD') Ini_Vig
+        , TO_CHAR(D.FecFinVig,'YYYYMMDD') Fin_Vig
+        , TO_CHAR(D.FecIniVig,'YYYYMMDD') Fecha_Alta
+        , TO_CHAR(D.FecAnul,'YYYYMMDD') Fecha_Baja
+        , TO_CHAR(PN.FecNacimiento,'YYYYMMDD') Fecha_Nac
+        , DECODE(PN.Sexo,'N',NULL,PN.Sexo) Sexo
+        , P.FormaVenta Forma_Vta
+        , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) AnioPoliza
+        , SUBSTR(P.TipoDividendo,3,1) TipoDividendo
+        , 0 MontoDividendo
+        , DECODE(NVL(P.IndConcentrada,'N'),'N',0,1) PolConcentrada
+        , DECODE(P.NumRenov,0,0,1) Emision
+        , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) PlazoPagoPrimas
+        , OC_PLAN_COBERTURAS.PLAN_POLIZA(D.CodCia, D.CodEmpresa, D.IdTipoSeg, D.PlanCob) PlanPoliza
+        , PN.CodPaisRes CodPais
+        , PN.CodProvRes CodEstado
+        , P.IdPoliza
+        , P.StsPoliza
+        , P.FecIniVig
+        , P.FecFinVig FecFinVigPol
+        , D.IdTipoSeg
+        , D.PlanCob
+        , D.IDetPol
+        , AC.Estado StsDetalle
+        , D.FecFinVig
+        , D.IndAsegModelo
+        , NVL(D.CantAsegModelo,0) CantAsegModelo
+        , AC.Cod_Asegurado
+        , 'COL' TipoDetalle
+     FROM POLIZAS                    P
+        , DETALLE_POLIZA             D 
+        , PLAN_COBERTURAS           PC
+        , ASEGURADO                  A
+        , PERSONA_NATURAL_JURIDICA  PN
+        , ASEGURADO_CERTIFICADO     AC
+    WHERE D.CodCia                   = P.CodCia
+      AND D.CodEmpresa               = P.CodEmpresa
+      AND D.IdPoliza                 = P.IdPoliza
+      AND PC.IdTipoSeg               = D.IdTipoSeg
+      AND PC.CodEmpresa              = D.CodEmpresa
+      AND PC.CodCia                  = D.CodCia
+      AND PC.PlanCob                 = D.PlanCob
+      AND PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+      AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
+      AND A.Cod_Asegurado            = AC.Cod_Asegurado
+      AND AC.CodCia                  = D.CodCia
+      AND AC.IdPoliza                = D.IdPoliza
+      AND AC.IDetPol                 = D.IDetPol
+      AND ((D.FecFinVig             >= dFecDesde
+      AND  D.StsDetalle             IN ('EMI', 'REN'))
+       OR (D.StsDetalle              = 'ANU'
+      AND  D.FecAnul                >=  dFecDesde
+      AND  D.MotivAnul              != 'REEX')
+       OR (P.StsPoliza               = 'ANU'
+      AND  P.FecSts                 >= dFecDesde))
+      AND PC.CodTipoPlan             = '012'
+      AND P.CodEmpresa               = nCodEmpresa
+      AND P.CodCia                   = nCodCia
+      AND P.NumPolUnico       NOT LIKE 'TRD%' -- Infonacot
+    ORDER BY P.IdPoliza;
 
-      CURSOR COB_CALC_Q IS
-         SELECT C.Cod_Asegurado
-              , C.SumaAseg_Moneda
-              , C.CodCobert
-              , C.Tasa
-              , CS.Porc_Tasa
-              , CS.CodTarifa
-              , C.IdTipoSeg
-              , C.PlanCob
-              , DECODE(CS.TipoTasa,'C',100,DECODE(CS.TipoTasa,'M',1000,1)) FactorTasa
-              , CS.Prima_Cobert
-           FROM COBERT_ACT              C
-              , COBERTURAS_DE_SEGUROS  CS
-          WHERE CS.IdTipoSeg      = C.IdTipoSeg
-            AND CS.PlanCob        = C.PlanCob
-            AND CS.CodCobert      = C.CodCobert
-            AND CS.CodEmpresa     = C.CodEmpresa
-            AND CS.CodCia         = C.CodCia
-            AND C.SumaAseg_Moneda > 0
-            AND C.Cod_Asegurado   = nCod_Asegurado
-            AND C.IDetPol         = nIDetPol
-            AND C.CodCia          = nCodCia
-            AND C.IdPoliza        = nIdPoliza
-            AND C.CodCobert       = cCodCobert
-          UNION ALL
-         SELECT C.Cod_Asegurado
-              , C.SumaAseg_Moneda
-              , C.CodCobert
-              , C.Tasa
-              , CS.Porc_Tasa
-              , CS.CodTarifa
-              , C.IdTipoSeg
-              , C.PlanCob
-              , DECODE(CS.TipoTasa,'C',100,DECODE(CS.TipoTasa,'M',1000,1)) FactorTasa
-              , CS.Prima_Cobert
-           FROM COBERT_ACT_ASEG         C
-              , COBERTURAS_DE_SEGUROS  CS
-          WHERE CS.IdTipoSeg      = C.IdTipoSeg
-            AND CS.PlanCob        = C.PlanCob
-            AND CS.CodCobert      = C.CodCobert
-            AND CS.CodEmpresa     = C.CodEmpresa
-            AND CS.CodCia         = C.CodCia
-            AND C.SumaAseg_Moneda > 0
-            AND C.Cod_Asegurado   = nCod_Asegurado
-            AND C.IDetPol         = nIDetPol
-            AND C.CodCia          = nCodCia
-            AND C.IdPoliza        = nIdPoliza
-            AND C.CodCobert       = cCodCobert;
-         --
-         CURSOR c_DatosPersona( nCodCia         ASEGURADO.CODCIA%TYPE
-                              , nCodEmpresa     ASEGURADO.CODEMPRESA%TYPE
-                              , nCod_Asegurado  ASEGURADO.COD_ASEGURADO%TYPE ) IS
-            SELECT Sexo, FecNacimiento, CodActividad
-              FROM PERSONA_NATURAL_JURIDICA
-             WHERE (Tipo_Doc_Identificacion, Num_Doc_Identificacion) IN ( SELECT Tipo_Doc_Identificacion, Num_Doc_Identificacion
-                                                                            FROM ASEGURADO
-                                                                           WHERE CodCia        = nCodCia
-                                                                             AND CodEmpresa    = nCodEmpresa
-                                                                             AND Cod_Asegurado = nCod_Asegurado );
-      cExistePoliza  VARCHAR2(1);
+CURSOR POL_IND_MOV_Q IS
+   SELECT P.NumPolUnico Poliza, 
+          TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(D.Cod_Asegurado,'0000000')) Certi,
+          DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I')) MONEDA,
+          TO_CHAR(D.FecIniVig,'YYYYMMDD') Ini_Vig, TO_CHAR(D.FecFinVig,'YYYYMMDD') Fin_Vig,
+          TO_CHAR(D.FecIniVig,'YYYYMMDD') Fecha_Alta, TO_CHAR(D.FecAnul,'YYYYMMDD') Fecha_Baja,
+          TO_CHAR(PN.FecNacimiento,'YYYYMMDD') Fecha_Nac, DECODE(PN.Sexo,'N',NULL,PN.Sexo) Sexo,
+          P.FormaVenta Forma_Vta, CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) AnioPoliza,
+          SUBSTR(P.TipoDividendo,3,1) TipoDividendo, 0 MontoDividendo,
+          DECODE(NVL(P.IndConcentrada,'N'),'N',0,1) PolConcentrada,
+          DECODE(P.NumRenov,0,0,1) Emision, CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) PlazoPagoPrimas,
+          OC_PLAN_COBERTURAS.PLAN_POLIZA(D.CodCia, D.CodEmpresa, D.IdTipoSeg, D.PlanCob) PlanPoliza,
+          PN.CodPaisRes CodPais, PN.CodProvRes CodEstado, P.IdPoliza, P.StsPoliza, P.FecIniVig,
+          P.FecFinVig FecFinVigPol, D.IdTipoSeg, D.PlanCob, D.IDetPol, D.StsDetalle, D.FecFinVig, 
+          D.IndAsegModelo, NVL(D.CantAsegModelo,0) CantAsegModelo, D.Cod_Asegurado, 'IND' TipoDetalle
+     FROM DETALLE_POLIZA D, POLIZAS P, ASEGURADO A, PERSONA_NATURAL_JURIDICA PN
+    WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+      AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
+      AND A.Cod_Asegurado            = D.Cod_Asegurado
+      AND OC_ASEGURADO_CERTIFICADO.TIENE_ASEGURADOS(D.CodCia, D.IdPoliza, D.IDetPol, 0) = 'N'
+      AND D.FecFinVig                < dFecDesde
+      AND EXISTS                   (SELECT 'S' 
+                                      FROM TRANSACCION T, DETALLE_TRANSACCION D
+                                     WHERE D.IdTransaccion    = T.IdTransaccion
+                                       AND D.CodCia           = T.CodCia
+                                       AND D.Valor1           = D.IdPoliza
+                                       AND D.Correlativo      > 0
+                                       AND D.CodSubProceso  NOT IN ('ESV','ESVTL','PAG','EMIPRD','PAGPRD','APLPRD','ANUPRD','REVPPD')
+                                       AND T.CodCia           = D.CodCia
+                                       AND T.CodEmpresa       = D.CodEmpresa
+                                       AND T.IdTransaccion    > 0
+                                       AND T.IdProceso        != 6
+                                       AND T.FechaTransaccion >= dFecDesde)
+      AND D.IdTipoSeg               IN (SELECT IdTipoSeg
+                                          FROM PLAN_COBERTURAS
+                                         WHERE CodCia       = D.CodCia
+                                           AND CodEmpresa   = D.CodEmpresa
+                                           AND IdTipoSeg    = D.IdTipoSeg
+                                           AND PlanCob      = D.PlanCob
+                                           AND CodTipoPlan  = '012')
+      AND P.CodCia                   = D.CodCia
+      --AND P.CodEmpresa               = D.CodEmpresa
+      AND P.NumPolUnico       NOT LIKE 'TRD%' -- Infonacot
+      AND P.IdPoliza                 = D.IdPoliza
+      AND D.CodEmpresa               = nCodEmpresa
+      AND D.CodCia                   = nCodCia
+      AND D.IDetPol                  > 0
+      --AND D.IdPoliza                 > 0
+      --AND D.IdPoliza                IN (25575)
+    ORDER BY P.IdPoliza;
+
+CURSOR POL_COL_MOV_Q IS
+   SELECT P.NumPolUnico Poliza,
+          TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(AC.Cod_Asegurado,'0000000')) Certi,
+          DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I')) MONEDA,
+          TO_CHAR(D.FecIniVig,'YYYYMMDD') Ini_Vig, TO_CHAR(D.FecFinVig,'YYYYMMDD') Fin_Vig,
+          TO_CHAR(D.FecIniVig,'YYYYMMDD') Fecha_Alta, TO_CHAR(D.FecAnul,'YYYYMMDD') Fecha_Baja,
+          TO_CHAR(PN.FecNacimiento,'YYYYMMDD') Fecha_Nac, DECODE(PN.Sexo,'N',NULL,PN.Sexo) Sexo,
+          P.FormaVenta Forma_Vta, CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) AnioPoliza,
+          SUBSTR(P.TipoDividendo,3,1) TipoDividendo, 0 MontoDividendo,
+          DECODE(NVL(P.IndConcentrada,'N'),'N',0,1) PolConcentrada,
+          DECODE(P.NumRenov,0,0,1) Emision, CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) PlazoPagoPrimas,
+          OC_PLAN_COBERTURAS.PLAN_POLIZA(D.CodCia, D.CodEmpresa, D.IdTipoSeg, D.PlanCob) PlanPoliza,
+          PN.CodPaisRes CodPais, PN.CodProvRes CodEstado, P.IdPoliza, P.StsPoliza, P.FecIniVig,
+          P.FecFinVig FecFinVigPol, D.IdTipoSeg, D.PlanCob, D.IDetPol, AC.Estado StsDetalle, D.FecFinVig,
+          D.IndAsegModelo, NVL(D.CantAsegModelo,0) CantAsegModelo, AC.Cod_Asegurado, 'COL' TipoDetalle
+     FROM DETALLE_POLIZA D, POLIZAS P, ASEGURADO_CERTIFICADO AC, ASEGURADO A, PERSONA_NATURAL_JURIDICA PN
+    WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+      AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
+      AND A.Cod_Asegurado            = AC.Cod_Asegurado
+      AND AC.IDetPol                 = D.IDetPol
+      AND AC.IdPoliza                = D.IdPoliza
+      AND AC.CodCia                  = D.CodCia
+      AND D.FecFinVig                < dFecDesde
+      AND EXISTS                   (SELECT 'S' 
+                                      FROM TRANSACCION T, DETALLE_TRANSACCION D
+                                     WHERE D.IdTransaccion    = T.IdTransaccion
+                                       AND D.CodCia           = T.CodCia
+                                       AND D.Valor1           = D.IdPoliza
+                                       AND D.Correlativo      > 0
+                                       AND D.CodSubProceso  NOT IN ('ESV','ESVTL','PAG','EMIPRD','PAGPRD','APLPRD','ANUPRD','REVPPD')
+                                       AND T.CodCia           = D.CodCia
+                                       AND T.CodEmpresa       = D.CodEmpresa
+                                       AND T.IdTransaccion    > 0
+                                       AND T.IdProceso        != 6
+                                       AND T.FechaTransaccion >= dFecDesde)
+      AND D.IdTipoSeg               IN (SELECT IdTipoSeg
+                                          FROM PLAN_COBERTURAS
+                                         WHERE CodCia       = D.CodCia
+                                           AND CodEmpresa   = D.CodEmpresa
+                                           AND IdTipoSeg    = D.IdTipoSeg
+                                           AND PlanCob      = D.PlanCob
+                                           AND CodTipoPlan  = '012')
+      AND P.CodCia                   = D.CodCia
+      AND P.CodEmpresa               = D.CodEmpresa
+      AND P.NumPolUnico       NOT LIKE 'TRD%' -- Infonacot
+      AND P.IdPoliza                 = D.IdPoliza
+      AND D.CodEmpresa               = nCodEmpresa
+      AND D.CodCia                   = nCodCia
+      AND D.IDetPol                  > 0
+      AND D.IdPoliza                 > 0
+      --AND D.IdPoliza                IN (25575)
+    MINUS
+   SELECT P.NumPolUnico Poliza,
+          TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(AC.Cod_Asegurado,'0000000')) Certi,
+          DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I')) MONEDA,
+          TO_CHAR(D.FecIniVig,'YYYYMMDD') Ini_Vig, TO_CHAR(D.FecFinVig,'YYYYMMDD') Fin_Vig,
+          TO_CHAR(D.FecIniVig,'YYYYMMDD') Fecha_Alta, TO_CHAR(D.FecAnul,'YYYYMMDD') Fecha_Baja,
+          TO_CHAR(PN.FecNacimiento,'YYYYMMDD') Fecha_Nac, DECODE(PN.Sexo,'N',NULL,PN.Sexo) Sexo,
+          P.FormaVenta Forma_Vta, CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) AnioPoliza,
+          SUBSTR(P.TipoDividendo,3,1) TipoDividendo, 0 MontoDividendo,
+          DECODE(NVL(P.IndConcentrada,'N'),'N',0,1) PolConcentrada,
+          DECODE(P.NumRenov,0,0,1) Emision, CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12) PlazoPagoPrimas,
+          OC_PLAN_COBERTURAS.PLAN_POLIZA(D.CodCia, D.CodEmpresa, D.IdTipoSeg, D.PlanCob) PlanPoliza,
+          PN.CodPaisRes CodPais, PN.CodProvRes CodEstado, P.IdPoliza, P.StsPoliza, P.FecIniVig,
+          P.FecFinVig FecFinVigPol, D.IdTipoSeg, D.PlanCob, D.IDetPol, AC.Estado StsDetalle, D.FecFinVig,
+          D.IndAsegModelo, NVL(D.CantAsegModelo,0) CantAsegModelo, AC.Cod_Asegurado, 'COL' TipoDetalle
+     FROM DETALLE_POLIZA D, POLIZAS P, ASEGURADO_CERTIFICADO AC, ASEGURADO A, PERSONA_NATURAL_JURIDICA PN
+    WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+      AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
+      AND A.Cod_Asegurado            = AC.Cod_Asegurado
+      AND AC.IDetPol                 = D.IDetPol
+      AND AC.IdPoliza                = D.IdPoliza
+      AND AC.CodCia                  = D.CodCia
+      AND ((D.FecFinVig              >= dFecDesde
+      AND  D.StsDetalle              IN ('EMI','REN'))
+       OR (D.StsDetalle              = 'ANU'
+      AND  D.FecAnul                >=  dFecDesde
+      AND  D.MotivAnul              != 'REEX')
+       OR (P.StsPoliza               = 'ANU'
+      AND  P.FecSts                 >= dFecDesde))
+      AND D.IdTipoSeg               IN (SELECT IdTipoSeg
+                                          FROM PLAN_COBERTURAS
+                                         WHERE CodCia       = D.CodCia
+                                           AND CodEmpresa   = D.CodEmpresa
+                                           AND IdTipoSeg    = D.IdTipoSeg
+                                           AND PlanCob      = D.PlanCob
+                                           AND CodTipoPlan  = '012')
+      AND P.CodCia                   = D.CodCia
+      --AND P.CodEmpresa               = D.CodEmpresa
+      AND P.NumPolUnico       NOT LIKE 'TRD%' -- Infonacot
+      AND P.IdPoliza                 = D.IdPoliza
+      AND D.CodEmpresa               = nCodEmpresa
+      AND D.CodCia                   = nCodCia
+      AND D.IDetPol                  > 0
+      --AND D.IdPoliza                 > 0
+      --AND D.IdPoliza                IN (25575)
+    ORDER BY IdPoliza;
+
+   PROCEDURE COBERTURAS (nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER, dFecIniVig DATE) IS
+   CURSOR COBERT_Q IS
+      SELECT C.CodCobert, NVL(CS.ClaveSesas,'1') ClaveSesas, NVL(OrdenSESAS,0) OrdenSESAS, NVL(PeriodoEsperaMeses,0) PeriodoEspera,
+             SUM(SumaAseg_Moneda) Suma_Moneda, SUM(C.Prima_Moneda) Prima_Moneda
+        FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert    = C.CodCobert
+         AND CS.PlanCob      = C.PlanCob
+         AND CS.IdTipoSeg    = C.IdTipoSeg
+         AND CS.CodEmpresa   = C.CodEmpresa
+         AND CS.CodCia       = C.CodCia
+         AND C.StsCobertura NOT IN (cStatus1, cStatus2, cStatus5)
+         AND C.Cod_Asegurado = nCod_Asegurado
+         AND C.IDetPol       = nIDetPol
+         AND C.IdPoliza      = nIdPoliza
+         AND C.CodCia        = nCodCia
+       GROUP BY C.CodCobert, NVL(CS.ClaveSesas,'1'), NVL(OrdenSESAS,0), NVL(PeriodoEsperaMeses,0)
+       UNION ALL
+      SELECT C.CodCobert, NVL(CS.ClaveSesas,'1') ClaveSesas, NVL(OrdenSESAS,0) OrdenSESAS, NVL(PeriodoEsperaMeses,0) PeriodoEspera,
+             SUM(SumaAseg_Moneda) Suma_Moneda, SUM(C.Prima_Moneda) Prima_Moneda
+        FROM COBERT_ACT_ASEG C, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert    = C.CodCobert
+         AND CS.PlanCob      = C.PlanCob
+         AND CS.IdTipoSeg    = C.IdTipoSeg
+         AND CS.CodEmpresa   = C.CodEmpresa
+         AND CS.CodCia       = C.CodCia
+         AND C.StsCobertura NOT IN (cStatus1, cStatus2, cStatus5)
+         AND C.Cod_Asegurado = nCod_Asegurado
+         AND C.IDetPol       = nIDetPol
+         AND C.IdPoliza      = nIdPoliza
+         AND C.CodCia        = nCodCia
+       GROUP BY C.CodCobert, NVL(CS.ClaveSesas,'1'), NVL(OrdenSESAS,0), NVL(PeriodoEsperaMeses,0);
+
+   CURSOR CALC_Q IS
+      SELECT C.Cod_Asegurado, C.SumaAseg_Moneda, C.CodCobert, C.Tasa, 
+             CS.Porc_Tasa, CS.CodTarifa, C.IdTipoSeg, C.PlanCob,
+             DECODE(CS.TipoTasa,'C',100,DECODE(CS.TipoTasa,'M',1000,1)) FactorTasa,
+             CS.Prima_Cobert
+        FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert      = C.CodCobert
+         AND CS.PlanCob        = C.PlanCob
+         AND CS.IdTipoSeg      = C.IdTipoSeg
+         AND CS.CodEmpresa     = C.CodEmpresa
+         AND CS.CodCia         = C.CodCia
+         AND C.SumaAseg_Moneda > 0
+         AND C.IDetPol         > 0
+         AND C.CodCia          = nCodCia
+         AND C.IdPoliza        = nIdPolizaCalc
+       UNION ALL
+      SELECT C.Cod_Asegurado, C.SumaAseg_Moneda, C.CodCobert, C.Tasa, 
+             CS.Porc_Tasa, CS.CodTarifa , C.IdTipoSeg, C.PlanCob,
+             DECODE(CS.TipoTasa,'C',100,DECODE(CS.TipoTasa,'M',1000,1)) FactorTasa,
+             CS.Prima_Cobert
+        FROM COBERT_ACT_ASEG C, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert      = C.CodCobert
+         AND CS.PlanCob        = C.PlanCob
+         AND CS.IdTipoSeg      = C.IdTipoSeg
+         AND CS.CodEmpresa     = C.CodEmpresa
+         AND CS.CodCia         = C.CodCia
+         AND C.SumaAseg_Moneda > 0
+         AND C.IDetPol         > 0
+         AND C.CodCia          = nCodCia
+         AND C.IdPoliza        = nIdPolizaCalc;
+
+   CURSOR COB_CALC_Q IS
+      SELECT C.Cod_Asegurado, C.SumaAseg_Moneda, C.CodCobert, C.Tasa, 
+             CS.Porc_Tasa, CS.CodTarifa, C.IdTipoSeg, C.PlanCob,
+             DECODE(CS.TipoTasa,'C',100,DECODE(CS.TipoTasa,'M',1000,1)) FactorTasa,
+             CS.Prima_Cobert
+        FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert      = C.CodCobert
+         AND CS.PlanCob        = C.PlanCob
+         AND CS.IdTipoSeg      = C.IdTipoSeg
+         AND CS.CodEmpresa     = C.CodEmpresa
+         AND CS.CodCia         = C.CodCia
+         AND C.SumaAseg_Moneda > 0
+         AND C.Cod_Asegurado   = nCod_Asegurado
+         AND C.IDetPol         = nIDetPol
+         AND C.CodCia          = nCodCia
+         AND C.IdPoliza        = nIdPoliza
+         AND C.CodCobert       = cCodCobert
+       UNION ALL
+      SELECT C.Cod_Asegurado, C.SumaAseg_Moneda, C.CodCobert, C.Tasa, 
+             CS.Porc_Tasa, CS.CodTarifa , C.IdTipoSeg, C.PlanCob,
+             DECODE(CS.TipoTasa,'C',100,DECODE(CS.TipoTasa,'M',1000,1)) FactorTasa,
+             CS.Prima_Cobert
+        FROM COBERT_ACT_ASEG C, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert      = C.CodCobert
+         AND CS.PlanCob        = C.PlanCob
+         AND CS.IdTipoSeg      = C.IdTipoSeg
+         AND CS.CodEmpresa     = C.CodEmpresa
+         AND CS.CodCia         = C.CodCia
+         AND C.SumaAseg_Moneda > 0
+         AND C.Cod_Asegurado   = nCod_Asegurado
+         AND C.IDetPol         = nIDetPol
+         AND C.CodCia          = nCodCia
+         AND C.IdPoliza        = nIdPoliza
+         AND C.CodCobert       = cCodCobert;
    BEGIN
       nSABenef1   := 0;
       nSABenef2   := 0;
@@ -797,75 +712,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
       nPmaEmiCo36 := 0;
       nPmaEmiCo37 := 0;
       nPmaEmiCo38 := 0;
-
-      BEGIN
-         SELECT 'S'
-         INTO   cExistePoliza
-         FROM   TEMP_POLIZAS_SESAS
-         WHERE  IdPoliza = nIdPolizaProc;
-      EXCEPTION
-      WHEN NO_DATA_FOUND THEN
-           cExistePoliza := 'N';
-      WHEN TOO_MANY_ROWS THEN
-           cExistePoliza := 'S';
-      END;
-
-      IF cExistePoliza = 'N' THEN
-         DELETE TEMP_POLIZAS_SESAS;
-         --
-         --Administro la tabla alterna
-         INSERT INTO TEMP_POLIZAS_SESAS
-            SELECT DISTINCT P.IdPoliza
-                 , P.StsPoliza
-                 , P.TipoAdministracion
-                 , D.IdTipoSeg
-                 , D.PlanCob
-                 , P.FecIniVig
-              FROM POLIZAS         P
-                 , DETALLE_POLIZA  D
-             WHERE D.CodCia                  = P.CodCia
-               AND D.IdPoliza                = P.IdPoliza
-               AND P.CodCia                  = nCodCia
-               AND P.IdPoliza                = nIdPolizaProc
-               AND P.StsPoliza              != 'SOL'
-               AND ( P.MotivAnul IS NULL
-                     OR
-                     NVL(P.MotivAnul,'NULL') IS NOT NULL
-                     AND
-                     P.FecSts >= dFecDesde)
-            UNION
-            SELECT DISTINCT D.IdPoliza
-                 , P.StsPoliza
-                 , P.TipoAdministracion
-                 , D.IdTipoSeg
-                 , D.PlanCob
-                 , P.FecIniVig
-              FROM POLIZAS         P
-                 , DETALLE_POLIZA  D
-             WHERE P.CodCia        = nCodCia
-               AND P.IdPoliza     != nIdPolizaProc
-               AND P.StsPoliza    != 'SOL'
-               AND P.NumPolUnico  IN ( SELECT NumPolUnico
-                                         FROM POLIZAS
-                                        WHERE CodCia    = nCodCia
-                                          AND IdPoliza  = nIdPolizaProc )
-               AND D.IDetPol       = nIDetPolProc
-               AND ( D.MotivAnul IS NULL
-                     OR
-                     NVL(D.MotivAnul,'NULL') IS NOT NULL
-                     AND
-                     D.FecAnul   >= dFecDesde
-                     OR
-                     P.StsPoliza  = 'ANU'
-                     AND
-                     P.FecSts    >= dFecDesde )
-               AND D.IdPoliza      = P.IdPoliza
-               AND D.CodCia        = P.CodCia;
-         --
-         COMMIT;
-         --
-      END IF;
-      --
+      
       IF NVL(nIdPolizaProcCalc,0) != NVL(nIdPoliza,0) THEN
          nIdPolizaProcCalc    := nIdPoliza;
          nPrimaMonedaTotPol   := 0;
@@ -965,12 +812,11 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
                AND T.IdTransaccion     = F.IdTransaccion
                AND F.CodCia            = nCodCia
                AND F.IdPoliza          = Z.IdPoliza
-               AND DF.CodCpto         IN ( SELECT CodConcepto 
-                                             FROM CATALOGO_DE_CONCEPTOS 
-                                            WHERE IndCptoPrimas   = 'S' 
-                                               OR IndCptoServicio = 'S'
-                                               OR IndCptoFondo    = 'S'
-                                             GROUP BY CodConcepto )
+               AND DF.CodCpto         IN (SELECT CodConcepto 
+                                            FROM CATALOGO_DE_CONCEPTOS 
+                                           WHERE IndCptoPrimas   = 'S' 
+                                              OR IndCptoServicio = 'S'
+                                              OR IndCptoFondo    = 'S')
                --AND F.Stsfact      NOT IN ('ANU') 
                AND DF.IdFactura        = F.IdFactura;
 
@@ -1048,21 +894,11 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
                         nPrimaMonedaTotPol := NVL(nPrimaMonedaTotPol,0) + (W.SumaAseg_Moneda * W.Porc_Tasa / 1000);
                      END IF;
                   ELSE
-                     --
-                     OPEN c_DatosPersona ( nCodCia, nCodEmpresa, W.Cod_Asegurado );
-                     FETCH c_DatosPersona INTO cSexo, dFecNacimiento, cCodActividad;
-                     CLOSE c_DatosPersona;
-                     --                     
-                     IF cSexo IS NULL THEN
-                        cSexo := 'M';
-                        dFecNacimiento := TRUNC(SYSDATE);
-                        cCodActividad := NULL;
-                     END IF;
-                     --
-                     nEdad   := FLOOR((TRUNC(dFecIniVig) - TRUNC(dFecNacimiento)) / 365.25);
-                     cRiesgo := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
-                     --
-                     IF nEdad = 0 THEN  --masp
+                     cSexo         := OC_ASEGURADO.SEXO_ASEGURADO(nCodCia, nCodEmpresa, W.Cod_Asegurado);
+                     nEdad         := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, nCodEmpresa, W.Cod_Asegurado, dFecIniVig);
+                     cCodActividad := OC_ASEGURADO.ACTIVIDAD_ECONOMICA_ASEG(nCodCia, nCodEmpresa, W.Cod_Asegurado);
+                     cRiesgo       := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
+                     IF nEdad = 0 THEN
                         BEGIN
                         nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
                                                                                     W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
@@ -1073,20 +909,21 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
                      ELSE
                         BEGIN
                            nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
-                                                                           W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                  W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
                         EXCEPTION
-                        WHEN OTHERS THEN
-                           BEGIN
-                              nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
-                                                                                          W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
-                           EXCEPTION
                            WHEN OTHERS THEN
+                              BEGIN
+                                 nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
+                                                                                              W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                              EXCEPTION
+                                 WHEN OTHERS THEN
                               RAISE_APPLICATION_ERROR(-20200,SQLERRM||'POLIZA: ' ||nIdPolizaCalc ||' cod_asegurado: '|| W.Cod_Asegurado);
-                           END;
+                              END;
                         END;
                      END IF;
+
                      nPrimaMonedaTotPol := NVL(nPrimaMonedaTotPol,0) + (W.SumaAseg_Moneda * nTasa / W.FactorTasa);
-                  END IF;
+                 END IF;
                END LOOP;
             END LOOP;
          END IF;
@@ -1142,40 +979,27 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
                      END IF;
                   ELSE
                      nIdTarifa      := GT_TARIFA_CONTROL_VIGENCIAS.TARIFA_VIGENTE(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob, dFecIniVig);
-                     --
-                     OPEN c_DatosPersona ( nCodCia, nCodEmpresa, R.Cod_Asegurado );
-                     FETCH c_DatosPersona INTO cSexo, dFecNacimiento, cCodActividad;
-                     CLOSE c_DatosPersona;
-                     --                     
-                     IF cSexo IS NULL THEN
-                        cSexo := 'M';
-                        dFecNacimiento := TRUNC(SYSDATE);
-                        cCodActividad := NULL;
-                     END IF;
-                     --
-                     nEdad   := FLOOR((TRUNC(dFecIniVig) - TRUNC(dFecNacimiento)) / 365.25);
-                     cRiesgo := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
+
+                     cSexo              := OC_ASEGURADO.SEXO_ASEGURADO(nCodCia, nCodEmpresa, R.Cod_Asegurado);
+                     nEdad              := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, nCodEmpresa, R.Cod_Asegurado, dFecIniVig);
+                     cCodActividad      := OC_ASEGURADO.ACTIVIDAD_ECONOMICA_ASEG(nCodCia, nCodEmpresa, R.Cod_Asegurado);
+                     cRiesgo            := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
                      IF nEdad = 0 THEN
-                        BEGIN
-                           nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob,
-                                                                                       R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
-                        EXCEPTION
-                        WHEN OTHERS THEN
-                             RAISE_APPLICATION_ERROR(-20200,SQLERRM||'POLIZA: ' ||nIdPolizaProcCalc ||' cod_asegurado: '|| R.Cod_Asegurado);
-                        END;
+                        nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob,
+                                                                                              R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
                      ELSE
                         BEGIN
-                           nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob,
-                                                                           R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                           nTasa        := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob,
+                                                                                  R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
                         EXCEPTION
-                        WHEN OTHERS THEN
-                           BEGIN
-                              nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob,
-                                                                                          R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
-                           EXCEPTION
                            WHEN OTHERS THEN
-                              RAISE_APPLICATION_ERROR(-20200,SQLERRM||'POLIZA: ' ||nIdPolizaProcCalc ||' cod_asegurado: '|| R.Cod_Asegurado);
-                           END;
+                              BEGIN
+                                 nTasa  := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob,
+                                                                                              R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                              EXCEPTION
+                                 WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20200,SQLERRM);
+                              END;
                         END;
                      END IF;
                      nPrima_Moneda      := R.SumaAseg_Moneda * nTasa / R.FactorTasa;
@@ -1336,22 +1160,26 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
       END LOOP;
 
       IF cTipoDetalle = 'IND' THEN
-         --
          SELECT (NVL(nPrimaContable,0) * (NVL(SUM(MontoAsistLocal),0) / NVL(nPrimaMonedaTotPol,0))) + nPmaEmiBe1
-              , NVL(SUM(MontoAsistLocal),0) + NVL(nPmaEmiCo1,0)
-           INTO nPmaEmiBe1, nPmaEmiCo1
+           INTO nPmaEmiBe1
            FROM ASISTENCIAS_DETALLE_POLIZA
           WHERE CodCia         = nCodCia
             AND CodEmpresa     = nCodEmpresa
             AND IdPoliza       = nIdPoliza
             AND IDetPol        = nIDetPol
             AND StsAsistencia NOT IN (cStatus3, cStatus4, cStatus6);
-         --
+
+         SELECT NVL(SUM(MontoAsistLocal),0) + NVL(nPmaEmiCo1,0)
+           INTO nPmaEmiCo1
+           FROM ASISTENCIAS_DETALLE_POLIZA
+          WHERE CodCia         = nCodCia
+            AND CodEmpresa     = nCodEmpresa
+            AND IdPoliza       = nIdPoliza
+            AND IDetPol        = nIDetPol
+            AND StsAsistencia NOT IN (cStatus3, cStatus4, cStatus6);
       ELSE
-         --
          SELECT (NVL(nPrimaContable,0) * (NVL(SUM(MontoAsistLocal),0) / NVL(nPrimaMonedaTotPol,0))) + nPmaEmiBe1
-              , NVL(SUM(MontoAsistLocal),0) + NVL(nPmaEmiCo1,0)
-           INTO nPmaEmiBe1, nPmaEmiCo1
+           INTO nPmaEmiBe1
            FROM ASISTENCIAS_ASEGURADO
           WHERE CodCia         = nCodCia
             AND CodEmpresa     = nCodEmpresa
@@ -1359,21 +1187,31 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
             AND IDetPol        = nIDetPol
             AND Cod_Asegurado  = nCod_Asegurado
             AND StsAsistencia NOT IN (cStatus3, cStatus4, cStatus6);
-         --
+
+         SELECT NVL(SUM(MontoAsistLocal),0) + NVL(nPmaEmiCo1,0)
+           INTO nPmaEmiCo1
+           FROM ASISTENCIAS_ASEGURADO
+          WHERE CodCia         = nCodCia
+            AND CodEmpresa     = nCodEmpresa
+            AND IdPoliza       = nIdPoliza
+            AND IDetPol        = nIDetPol
+            AND Cod_Asegurado  = nCod_Asegurado
+            AND StsAsistencia NOT IN (cStatus3, cStatus4, cStatus6);
       END IF;
    END COBERTURAS;
 
-   PROCEDURE INSERTA_REGISTRO(nIdPoliza NUMBER, nIDetPol NUMBER, cIdTipoSeg VARCHAR2, cCodPais VARCHAR2, 
+   PROCEDURE INSERTA_REGISTRO( nIdPoliza NUMBER, nIDetPol NUMBER, cIdTipoSeg VARCHAR2, cCodPais VARCHAR2, 
                               cCodEstado VARCHAR2, cStsPoliza VARCHAR2, dFecFinVigPol DATE, cStsDetalle VARCHAR2,
                               dFecFinVig DATE, cTipoDetallePol VARCHAR2, cPoliza VARCHAR2, nCod_Asegurado NUMBER,
                               cPolConcentrada VARCHAR2, cIndAsegModelo VARCHAR2, nCantAsegModelo NUMBER,
                               cCerti VARCHAR2, cPlanPoliza VARCHAR2, cMoneda VARCHAR2, cIni_Vig VARCHAR2,
                               cFin_Vig VARCHAR2, cFecha_Alta VARCHAR2, cFecha_Baja VARCHAR2, cFecha_Nac VARCHAR2, 
                               cSexo VARCHAR2, cForma_Vta VARCHAR2, cTipoDividendo VARCHAR2, nMontoDividendo NUMBER,
-                              nEmision NUMBER, nAnioPoliza NUMBER, nPlazoPagoPrimas NUMBER, dFecIniVig DATE) IS
+                              nEmision NUMBER, nAnioPoliza NUMBER, nPlazoPagoPrimas NUMBER, dFecIniVig DATE,
+                              nCantAseg_1 NUMBER, nCantAseg_2  NUMBER, cCodEntrega VARCHAR2 ) IS
    BEGIN
       nContadorReg := nContadorReg + 1;
-      IF nContadorReg > 5000 THEN
+      IF nContadorReg > 500 THEN
          COMMIT;
          nContadorReg := 1;
       END IF;
@@ -1392,17 +1230,17 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
             AND CodEmpresa = nCodEmpresa
             AND IdTipoSeg  = cIdTipoSeg;
       EXCEPTION
-      WHEN NO_DATA_FOUND THEN
-         cPdo_Espera      := NULL;
-         nIniCob          := 2;
-         cSubTipoSeg      := NULL;
-         cModalPoliza     := NULL;
-         cTipoRiesgoAsoc  := NULL;
-         cTipo_Seg        := NULL;
-         nMtoFondoAdmin   := 0;
-         nMtoVencimiento  := 0;
-         nMtoRescate      := 0;
-         nSldoFondoInv    := 0;
+         WHEN NO_DATA_FOUND THEN
+            cPdo_Espera      := NULL;
+            nIniCob          := 2;
+            cSubTipoSeg      := NULL;
+            cModalPoliza     := NULL;
+            cTipoRiesgoAsoc  := NULL;
+            cTipo_Seg        := NULL;
+            nMtoFondoAdmin   := 0;
+            nMtoVencimiento  := 0;
+            nMtoRescate      := 0;
+            nSldoFondoInv    := 0;
       END;
 
       IF cCodPais = '001' THEN
@@ -1463,19 +1301,12 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
       nIdPolizaProc  := nIdPoliza;
       nIDetPolProc   := nIDetPol;
       COBERTURAS (nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, dFecIniVig);
-
+      
       IF cPolConcentrada = 1 THEN
          IF cIndAsegModelo = 'S' THEN
-            nCantAseg := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol);
-            SELECT nCantAseg - (COUNT(*) - 1)
-              INTO nCantAseg
-              FROM ASEGURADO_CERTIFICADO
-             WHERE IdPoliza   = nIdPoliza
-               AND IDetPol    = nIDetPol
-               AND CodCia     = nCodCia
-               AND Estado    IN ('SOL','XRE','EMI');
+            nCantAseg := nCantAseg_1;
          ELSE
-            nCantAseg := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol);
+            nCantAseg := nCantAseg_2;
          END IF;
       ELSIF cIndAsegModelo = 'S' THEN
          nCantAseg := NVL(nCantAsegModelo,0);
@@ -1614,17 +1445,37 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIGRP ( nCodCia      ENTREGAS_C
                  TRIM(TO_CHAR(nSACober35,'9999999999999999.99')) || cSeparador ||
                  TRIM(TO_CHAR(nSACober36,'9999999999999999.99')) || cSeparador ||
                  TRIM(TO_CHAR(nSACober37,'9999999999999999.99')) || cSeparador ||
-                 TRIM(TO_CHAR(nSACober38,'9999999999999999.99')) || cSeparador || CHR(13);
+                 TRIM(TO_CHAR(nSACober38,'9999999999999999.99')) || cSeparador;-- || CHR(13);
       --
-      nLinea := nLinea + 1;
-      OC_ARCHIVO.Escribir_Linea(cCadena, cIdUsr, nLinea);
-   END;
+      INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
+      VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
+   END INSERTA_REGISTRO;
 BEGIN
+   -- Elimina Registros de SESAS
+   DELETE TEMP_REPORTES_THONA
+   WHERE  CodCia     = nCodCia
+     AND  CodEmpresa = nCodEmpresa
+     AND  CodReporte = cCodEntrega
+     AND  CodUsuario = cIdUsr;
+   --
+   COMMIT;
+   --
    cCodPlantilla := OC_ENTREGAS_CNSF_CONFIG.PLANTILLA(nCodCia, nCodEmpresa, cCodEntrega);
    cSeparador    := OC_ENTREGAS_CNSF_CONFIG.SEPARADOR(nCodCia, nCodEmpresa, cCodEntrega);
+   nContadorReg  := 0;
+   --
+   --Inicializo variables de Afinación
+   nCodCiaAfina     := 0;
+   nCodEmpresaAfina := 0;
+   nIdPolizaAfina   := 0;
+   nIDetPolAfina    := 0;
+   nCantAseg_1      := 0;
+   nCantAseg_2      := 0; 
+   --
    FOR I IN  C_CAMPO  LOOP
-      cEncabezado := cEncabezado||I.NomCampo ||cSeparador;
+      cEncabezado := cEncabezado || I.NomCampo || cSeparador;
    END LOOP;
+   --
    cEncabezado := cEncabezado     ||
                   'Prima Cob. 1'  ||cSeparador || 'Prima Cob. 2'  ||cSeparador ||
                   'Prima Cob. 3'  ||cSeparador || 'Prima Cob. 4'  ||cSeparador ||
@@ -1664,145 +1515,165 @@ BEGIN
                   'SA Cob. 33'    ||cSeparador || 'SA Cob. 34'    ||cSeparador ||
                   'SA Cob. 35'    ||cSeparador || 'SA Cob. 36'    ||cSeparador ||
                   'SA Cob. 37'    ||cSeparador || 'SA Cob. 38'    ||cSeparador;
-
-   nLinea  := 1;
-   cCadena := SUBSTR(cEncabezado,1,LENGTH(cEncabezado)-1) || CHR(13);
-   OC_ARCHIVO.Escribir_Linea(cCadena, cIdUsr, nLinea);
-
-   nContadorReg  := 0;
    --
-   DELETE TEMP_POLIZAS_SESAS
-   COMMIT;
+   nLinea  := 1;
+   cCadena := SUBSTR(cEncabezado,1,LENGTH(cEncabezado)-1);
+   --
+   INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
+   VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
    --
    FOR W IN POL_IND_Q LOOP
+      --Afinación
+      IF nCodCiaAfina <> nCodCia OR nCodEmpresaAfina <> nCodEmpresa OR nIdPolizaAfina <> W.IdPoliza OR nIDetPolAfina <> W.IDetPol THEN
+         nCodCiaAfina     := nCodCia;
+         nCodEmpresaAfina := nCodEmpresa;
+         nIdPolizaAfina   := W.IdPoliza;
+         nIDetPolAfina    := W.IDetPol;
+         --
+         nCantAseg_1      := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, W.IdPoliza, W.IDetPol);
+         nCantAseg_2      := nCantAseg_1; 
+         --
+         SELECT nCantAseg_1 - (COUNT(*) - 1)
+           INTO nCantAseg_1
+           FROM ASEGURADO_CERTIFICADO
+          WHERE IdPoliza   = W.IdPoliza
+            AND IDetPol    = W.IDetPol
+            AND CodCia     = nCodCia
+            AND Estado    IN ('SOL','XRE','EMI');
+      END IF;
+      --
       INSERTA_REGISTRO(W.IdPoliza, W.IDetPol, W.IdTipoSeg, W.CodPais, W.CodEstado, 
                        W.StsPoliza, W.FecFinVigPol, W.StsDetalle, W.FecFinVig,
                        W.TipoDetalle, W.Poliza, W.Cod_Asegurado, W.PolConcentrada,
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, W.PlanPoliza,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig);
+                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
    END LOOP;
-   --
-   DELETE TEMP_POLIZAS_SESAS
    COMMIT;
+   --
+   --Inicializo variables de Afinación
+   nCodCiaAfina     := 0;
+   nCodEmpresaAfina := 0;
+   nIdPolizaAfina   := 0;
+   nIDetPolAfina    := 0;
+   nCantAseg_1      := 0;
+   nCantAseg_2      := 0; 
    --
    FOR W IN POL_COL_Q LOOP
+      --Afinación
+      IF nCodCiaAfina <> nCodCia OR nCodEmpresaAfina <> nCodEmpresa OR nIdPolizaAfina <> W.IdPoliza OR nIDetPolAfina <> W.IDetPol THEN
+         nCodCiaAfina     := nCodCia;
+         nCodEmpresaAfina := nCodEmpresa;
+         nIdPolizaAfina   := W.IdPoliza;
+         nIDetPolAfina    := W.IDetPol;
+         --
+         nCantAseg_1      := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, W.IdPoliza, W.IDetPol);
+         nCantAseg_2      := nCantAseg_1; 
+         --
+         SELECT nCantAseg_1 - (COUNT(*) - 1)
+           INTO nCantAseg_1
+           FROM ASEGURADO_CERTIFICADO
+          WHERE IdPoliza   = W.IdPoliza
+            AND IDetPol    = W.IDetPol
+            AND CodCia     = nCodCia
+            AND Estado    IN ('SOL','XRE','EMI');
+      END IF;
+      --
       INSERTA_REGISTRO(W.IdPoliza, W.IDetPol, W.IdTipoSeg, W.CodPais, W.CodEstado, 
                        W.StsPoliza, W.FecFinVigPol, W.StsDetalle, W.FecFinVig,
                        W.TipoDetalle, W.Poliza, W.Cod_Asegurado, W.PolConcentrada,
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, W.PlanPoliza,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig);
+                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
    END LOOP;
-   --
-   DELETE TEMP_POLIZAS_SESAS
    COMMIT;
+   --
+   --Inicializo variables de Afinación
+   nCodCiaAfina     := 0;
+   nCodEmpresaAfina := 0;
+   nIdPolizaAfina   := 0;
+   nIDetPolAfina    := 0;
+   nCantAseg_1      := 0;
+   nCantAseg_2      := 0; 
    --
    FOR W IN POL_IND_MOV_Q LOOP
+      --Afinación
+      IF nCodCiaAfina <> nCodCia OR nCodEmpresaAfina <> nCodEmpresa OR nIdPolizaAfina <> W.IdPoliza OR nIDetPolAfina <> W.IDetPol THEN
+         nCodCiaAfina     := nCodCia;
+         nCodEmpresaAfina := nCodEmpresa;
+         nIdPolizaAfina   := W.IdPoliza;
+         nIDetPolAfina    := W.IDetPol;
+         --
+         nCantAseg_1      := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, W.IdPoliza, W.IDetPol);
+         nCantAseg_2      := nCantAseg_1; 
+         --
+         SELECT nCantAseg_1 - (COUNT(*) - 1)
+           INTO nCantAseg_1
+           FROM ASEGURADO_CERTIFICADO
+          WHERE IdPoliza   = W.IdPoliza
+            AND IDetPol    = W.IDetPol
+            AND CodCia     = nCodCia
+            AND Estado    IN ('SOL','XRE','EMI');
+      END IF;
+      --
       INSERTA_REGISTRO(W.IdPoliza, W.IDetPol, W.IdTipoSeg, W.CodPais, W.CodEstado, 
                        W.StsPoliza, W.FecFinVigPol, W.StsDetalle, W.FecFinVig,
                        W.TipoDetalle, W.Poliza, W.Cod_Asegurado, W.PolConcentrada,
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, W.PlanPoliza,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig);
+                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
    END LOOP;
-
-   EXECUTE IMMEDIATE 'TRUNCATE TABLE TEMP_MOVTOS_SESAS';
-
-   INSERT INTO TEMP_MOVTOS_SESAS
-      SELECT P.NumPolUnico                                                                   Poliza
-           , TRIM(TO_CHAR(D.IdPoliza,'00000000')) || TRIM(TO_CHAR(D.IDetPol,'00000')) || TRIM(TO_CHAR(AC.Cod_Asegurado,'0000000')) Certi
-           , DECODE(P.Cod_Moneda,'PS','N',DECODE(P.Cod_Moneda,'US','E','I'))                 Moneda
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Ini_Vig
-           , TO_CHAR(D.FecFinVig,'YYYYMMDD')                                                 Fin_Vig
-           , TO_CHAR(D.FecIniVig,'YYYYMMDD')                                                 Fecha_Alta
-           , TO_CHAR(D.FecAnul,'YYYYMMDD')                                                   Fecha_Baja
-           , TO_CHAR(PN.FecNacimiento,'YYYYMMDD')                                            Fecha_Nac
-           , DECODE(PN.Sexo,'N',NULL,PN.Sexo)                                                Sexo
-           , P.FormaVenta                                                                    Forma_Vta
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                AnioPoliza
-           , SUBSTR(P.TipoDividendo,3,1)                                                     TipoDividendo
-           , 0                                                                               MontoDividendo
-           , DECODE(NVL(P.IndConcentrada,'N'),'N',0,1)                                       PolConcentrada
-           , DECODE(P.NumRenov,0,0,1)                                                        Emision
-           , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                                PlazoPagoPrimas
-           , PC.PlanPoliza
-           , PN.CodPaisRes                                                                   CodPais
-           , PN.CodProvRes                                                                   CodEstado
-           , P.IdPoliza
-           , P.StsPoliza
-           , P.FecIniVig
-           , P.FecFinVig                                                                     FecFinVigPol
-           , D.IdTipoSeg
-           , D.PlanCob
-           , D.IDetPol
-           , AC.Estado                                                                       StsDetalle
-           , D.FecFinVig
-           , D.IndAsegModelo
-           , NVL(D.CantAsegModelo,0)                                                         CantAsegModelo
-           , AC.Cod_Asegurado
-           , 'COL'                                                                           TipoDetalle
-        FROM DETALLE_POLIZA             D
-           , POLIZAS                    P
-           , ASEGURADO_CERTIFICADO     AC
-           , ASEGURADO                  A
-           , PERSONA_NATURAL_JURIDICA  PN
-           , PLAN_COBERTURAS           PC
-       WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
-         AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
-         AND A.Cod_Asegurado            = AC.Cod_Asegurado
-         AND AC.IDetPol                 = D.IDetPol
-         AND AC.IdPoliza                = D.IdPoliza
-         AND AC.CodCia                  = D.CodCia
-         AND D.FecFinVig                < dFecDesde
-         AND P.CodCia              = D.CodCia
-         AND P.CodEmpresa          = D.CodEmpresa
-         AND P.IdPoliza            = D.IdPoliza
-         AND SUBSTR(P.NumPolUnico, 1, 3) <> 'TRD' -- Infonacot
-         AND D.CodEmpresa          = nCodEmpresa
-         AND D.CodCia              = nCodCia
-         AND D.IDetPol             > 0
-         AND D.IdPoliza            > 0
-         AND PC.IdTipoSeg   = D.IdTipoSeg
-         AND PC.CodEmpresa  = D.CodEmpresa
-         AND PC.CodCia      = D.CodCia
-         AND PC.PlanCob     = D.PlanCob
-         AND PC.CodTipoPlan = '012'
-         AND EXISTS ( SELECT 'S' 
-                        FROM TRANSACCION           T
-                           , DETALLE_TRANSACCION  DT
-                       WHERE DT.IdTransaccion    = T.IdTransaccion
-                         AND DT.Valor1           = P.IdPoliza
-                         AND DT.Correlativo      > 0
-                         AND DT.CodSubProceso  NOT IN ('ESV','PAG')
-                         AND DT.CodCia           = T.CodCia
-                         AND T.CodCia            = D.CodCia
-                         AND T.CodEmpresa        = D.CodEmpresa
-                         AND T.IdTransaccion     > 0
-                         AND T.IdProceso        != 6
-                         AND T.FechaTransaccion >= dFecDesde);
    COMMIT;
    --
-   DELETE TEMP_POLIZAS_SESAS
-   COMMIT;
+   --Inicializo variables de Afinación
+   nCodCiaAfina     := 0;
+   nCodEmpresaAfina := 0;
+   nIdPolizaAfina   := 0;
+   nIDetPolAfina    := 0;
+   nCantAseg_1      := 0;
+   nCantAseg_2      := 0; 
    --
    FOR W IN POL_COL_MOV_Q LOOP
+      --Afinación
+      IF nCodCiaAfina <> nCodCia OR nCodEmpresaAfina <> nCodEmpresa OR nIdPolizaAfina <> W.IdPoliza OR nIDetPolAfina <> W.IDetPol THEN
+         nCodCiaAfina     := nCodCia;
+         nCodEmpresaAfina := nCodEmpresa;
+         nIdPolizaAfina   := W.IdPoliza;
+         nIDetPolAfina    := W.IDetPol;
+         --
+         nCantAseg_1      := OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, W.IdPoliza, W.IDetPol);
+         nCantAseg_2      := nCantAseg_1; 
+         --
+         SELECT nCantAseg_1 - (COUNT(*) - 1)
+           INTO nCantAseg_1
+           FROM ASEGURADO_CERTIFICADO
+          WHERE IdPoliza   = W.IdPoliza
+            AND IDetPol    = W.IDetPol
+            AND CodCia     = nCodCia
+            AND Estado    IN ('SOL','XRE','EMI');
+      END IF;
+      --
       INSERTA_REGISTRO(W.IdPoliza, W.IDetPol, W.IdTipoSeg, W.CodPais, W.CodEstado, 
                        W.StsPoliza, W.FecFinVigPol, W.StsDetalle, W.FecFinVig,
                        W.TipoDetalle, W.Poliza, W.Cod_Asegurado, W.PolConcentrada,
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, W.PlanPoliza,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig);
+                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
    END LOOP;
-   --
-   OC_ARCHIVO.Escribir_Linea('EOF', cIdUsr, 0);
    COMMIT;
+   --
+   cNomArchivo := OC_ENTREGAS_CNSF_CONFIG.NOMBRE_ARCHIVO(nCodCia, nCodEmpresa, cCodEntrega);
+   cNomArchZip := SUBSTR(cNomArchivo, 1, INSTR(cNomArchivo, '.')-1) || '.zip';
+   --
+   OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cNomArchivo, cNomArchZip );
+   OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cNomArchZip );
+   --
 EXCEPTION
-   WHEN OTHERS THEN
-      RAISE_APPLICATION_ERROR(-20200,SQLERRM);
+WHEN OTHERS THEN
+     RAISE_APPLICATION_ERROR(-20200,SQLERRM);
 END SESASEMISIONVIGRP;
 /
