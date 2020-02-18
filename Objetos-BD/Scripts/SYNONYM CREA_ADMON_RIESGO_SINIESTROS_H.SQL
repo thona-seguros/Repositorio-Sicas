@@ -1,0 +1,6 @@
+
+------------- SYNONYMS -----------------
+
+CREATE or replace PUBLIC SYNONYM ADMON_RIESGO_SINIESTROS_H  FOR ADMON_RIESGO_SINIESTROS_H ;
+/
+

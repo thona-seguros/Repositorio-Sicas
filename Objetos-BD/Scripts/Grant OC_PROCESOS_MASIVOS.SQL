@@ -1,0 +1,3 @@
+-- Grants for Package
+GRANT EXECUTE ON OC_PROCESOS_MASIVOS TO PUBLIC
+/

@@ -1,0 +1,316 @@
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ADMON_RIESGO_SINIESTROS IS
+
+PROCEDURE VALIDA(P_CODCIA                  NUMBER,
+                 P_CODEMPRESA              NUMBER,
+                 P_ID_PROCESO              NUMBER,
+                 P_IDPOLIZA                NUMBER,
+                 P_COD_ASEGURADO           NUMBER,
+                 P_IDSINIESTRO             NUMBER,
+                 P_NUM_BENEF               NUMBER,
+                 P_NOMBRE_COMPLETO         VARCHAR2,
+                 P_ST_RESOLUCION           VARCHAR2,              
+                 P_TIPO_DOC_IDENTIFICACION VARCHAR2,
+                 P_NUM_DOC_IDENTIFICACION  VARCHAR2,
+                 P_OBSERVACIONES           VARCHAR2, 
+                 P_USUARIO                 VARCHAR2,                
+                 P_MENSAJE                 IN OUT VARCHAR2);
+
+PROCEDURE INSERTA(
+      P_CODCIA      NUMBER    ,
+      P_CODEMPRESA      NUMBER    ,
+      P_ID_PROCESO      NUMBER  ,
+      P_IDPOLIZA        NUMBER    ,
+      P_STSPOLIZA       VARCHAR2   ,
+      P_CODCLIENTE      NUMBER,
+      P_NUMSINIESTRO    NUMBER    ,
+      P_ORIGEN          VARCHAR2,
+      P_TIPO_DOC_IDENTIFICACION  VARCHAR2,
+      P_NUM_DOC_IDENTIFICACION  VARCHAR2,
+      P_NOMBRE_BENEFICIARIO  VARCHAR2,
+      P_ST_RESOLUCION  VARCHAR2,
+      P_FE_ESTATUS  DATE ,
+      P_TP_RESOLUCION  VARCHAR2,
+      P_OBSERVACIONES  VARCHAR2,
+      P_FECHA_PROCESO    DATE    ,
+      P_USUARIO    VARCHAR2
+                  );
+
+END OC_ADMON_RIESGO_SINIESTROS;
+/
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_ADMON_RIESGO_SINIESTROS IS
+--
+PROCEDURE VALIDA(P_CODCIA                  NUMBER,
+                 P_CODEMPRESA              NUMBER,
+                 P_ID_PROCESO              NUMBER,
+                 P_IDPOLIZA                NUMBER,
+                 P_COD_ASEGURADO           NUMBER,
+                 P_IDSINIESTRO             NUMBER,
+                 P_NUM_BENEF               NUMBER,
+                 P_NOMBRE_COMPLETO         VARCHAR2,
+                 P_ST_RESOLUCION           VARCHAR2,              
+                 P_TIPO_DOC_IDENTIFICACION VARCHAR2,
+                 P_NUM_DOC_IDENTIFICACION  VARCHAR2,
+                 P_OBSERVACIONES           VARCHAR2, 
+                 P_USUARIO                 VARCHAR2,                               
+                 P_MENSAJE                 IN OUT VARCHAR2) IS  
+--                 
+P_TP_RESOLUCION   ADMON_RIESGO.TP_RESOLUCION%TYPE := '';
+W_MENSAJE         VARCHAR2(300);
+CCODACTIVIDAD     PERSONA_NATURAL_JURIDICA.CODACTIVIDAD%TYPE;
+P_IDTIPOSEG       TIPOS_DE_SEGUROS.IDTIPOSEG%TYPE;   
+--
+BEGIN
+  --
+  W_MENSAJE := '';
+  --
+  BEGIN
+    SELECT D.IDTIPOSEG
+      INTO P_IDTIPOSEG
+      FROM DETALLE_POLIZA D
+     WHERE D.IDPOLIZA = P_IDPOLIZA
+       AND D.CODCIA   = P_CODCIA
+       AND D.IDETPOL  = 1;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+         NULL;
+    WHEN OTHERS THEN
+         NULL;
+  END;
+  --
+  -- VALIDA SI ES EMPLEADO
+  --
+  IF OC_EMPLEADOS_FUNCIONARIOS.ES_EMPLEADO_FUNCIONARIO(P_CODCIA , P_TIPO_DOC_IDENTIFICACION, P_NUM_DOC_IDENTIFICACION) = 'S' THEN             
+     OC_ADMON_RIESGO_SINIESTROS.INSERTA(P_CODCIA,
+			      P_CODEMPRESA ,
+			      1 ,
+			      P_IDPOLIZA  ,
+			      'N/A' ,
+			      P_COD_ASEGURADO ,      
+			      P_IDSINIESTRO ,
+			      'EMPLEA'  ,
+			      P_TIPO_DOC_IDENTIFICACION	,
+			      P_NUM_DOC_IDENTIFICACION	,
+			      P_NOMBRE_COMPLETO	,
+			      'PEND'	,
+			      TRUNC(SYSDATE)	,
+			      ''	,
+			      'EMPLEADOS'	,
+			      TRUNC(SYSDATE)  ,
+			      P_USUARIO );       	     
+                   
+     W_MENSAJE := '!! ALERTA !!   LA PERSONA ES EMPLEADO  - ENVIADO A AUTORIZACION ';
+  END IF;
+  --
+  -- VALIDA SI ESTA EN LISTA DE REFERENCIA
+  --
+  IF OC_PERSONA_NATURAL_JURIDICA.EN_LISTA_DE_REFERENCIA(P_TIPO_DOC_IDENTIFICACION, P_NUM_DOC_IDENTIFICACION) = 'S' THEN
+     OC_ADMON_RIESGO_SINIESTROS.INSERTA(P_CODCIA,
+			      P_CODEMPRESA ,
+			      1 ,
+			      P_IDPOLIZA  ,
+			      'N/A' ,
+			      P_COD_ASEGURADO ,      
+			      P_IDSINIESTRO ,
+			      'LISTA'  ,
+			      P_TIPO_DOC_IDENTIFICACION	,
+			      P_NUM_DOC_IDENTIFICACION	,
+			      P_NOMBRE_COMPLETO	,
+			      'PEND'	,
+			      TRUNC(SYSDATE)	,
+			      ''	,
+			      'LISTA DE REFEERENCIA'	,
+			      TRUNC(SYSDATE)  ,
+			      P_USUARIO );       
+
+     W_MENSAJE := '!! ALERTA !!   LA PERSONA ESTA EN LISTA DE REFERENCIA  - ENVIADO A AUTORIZACION ';
+   END IF;
+  --
+  -- VALIDA SI ES AGENTE
+  --
+  IF OC_AGENTES.ES_AGENTE(P_TIPO_DOC_IDENTIFICACION, P_NUM_DOC_IDENTIFICACION) = 'S' THEN
+     OC_ADMON_RIESGO_SINIESTROS.INSERTA(P_CODCIA,
+			      P_CODEMPRESA ,
+			      1 ,
+			      P_IDPOLIZA  ,
+			      'N/A' ,
+			      P_COD_ASEGURADO ,      
+			      P_IDSINIESTRO ,
+			      'AGENTE'  ,
+			      P_TIPO_DOC_IDENTIFICACION	,
+			      P_NUM_DOC_IDENTIFICACION	,
+			      P_NOMBRE_COMPLETO	,
+			      'PEND'	,
+			      TRUNC(SYSDATE)	,
+			      ''	,
+			      'LA PERSONA ES AGENTE'	,
+			      TRUNC(SYSDATE)  ,
+			      P_USUARIO );         
+
+     W_MENSAJE := '!! ALERTA !!  LA PERSONA ES AGENTE - ENVIADO A AUTORIZACION  - ENVIADO A AUTORIZACION ';
+  END IF;
+  --
+  -- VALIDA SI ES CLIENTE DE ALTO RIESGO
+  --
+  IF OC_CLIENTES.ES_CLIENTE_ALTO(P_TIPO_DOC_IDENTIFICACION, P_NUM_DOC_IDENTIFICACION) = 'S' THEN
+     OC_ADMON_RIESGO_SINIESTROS.INSERTA(P_CODCIA,
+			      P_CODEMPRESA ,
+			      1 ,
+			      P_IDPOLIZA  ,
+			      'N/A' ,
+			      P_COD_ASEGURADO ,      
+			      P_IDSINIESTRO ,
+			      'CLIENT'  ,
+			      P_TIPO_DOC_IDENTIFICACION	,
+			      P_NUM_DOC_IDENTIFICACION	,
+			      P_NOMBRE_COMPLETO	,
+			      'PEND'	,
+			      TRUNC(SYSDATE)	,
+			      ''	,
+			      'LA PERSONA ES CLIENTE DE RIESGO'	,
+			      TRUNC(SYSDATE)  ,
+			      P_USUARIO );        
+
+     W_MENSAJE := '!! ALERTA !!  LA PERSONA ES CLIENTE DE RIESGO  - ENVIADO A AUTORIZACION ';
+  END IF;
+  --
+  -- VALIDA SI LA ACTIVIDAD ES DE ALTO RIESGO
+  -- 
+  CCODACTIVIDAD := OC_PERSONA_NATURAL_JURIDICA.ACTIVIDAD(P_TIPO_DOC_IDENTIFICACION, P_NUM_DOC_IDENTIFICACION);
+  --
+  IF OC_ACTIVIDADES_ECONOMICAS.TIPORIESGO(cCodActividad) = 'ALTO' THEN
+     OC_ADMON_RIESGO_SINIESTROS.INSERTA(P_CODCIA,
+			      P_CODEMPRESA ,
+			      1 ,
+			      P_IDPOLIZA  ,
+			      'N/A' ,
+			      P_COD_ASEGURADO ,      
+			      P_IDSINIESTRO ,
+			      'ACTIVI'  ,
+			      P_TIPO_DOC_IDENTIFICACION	,
+			      P_NUM_DOC_IDENTIFICACION	,
+			      P_NOMBRE_COMPLETO	,
+			      'PEND'	,
+			      TRUNC(SYSDATE)	,
+			      ''	,
+			      'LA PERSONA ES CLIENTE CON ACTIVIDAD DE RIESGO'	,
+			      TRUNC(SYSDATE)  ,
+			      P_USUARIO );    
+
+     W_MENSAJE := '!! ALERTA !!   LA PERSONA ES CLIENTE CON ACTIVIDAD DE RIESGO  - ENVIADO A AUTORIZACION ';
+  END IF;
+  --
+  -- VALIDA SI ES QUIEN ES QUIEN
+  --
+  IF OC_CAT_QEQ.ES_QEQ(P_TIPO_DOC_IDENTIFICACION,P_NUM_DOC_IDENTIFICACION) = 'S' THEN
+     OC_ADMON_RIESGO_SINIESTROS.INSERTA(P_CODCIA,
+			      P_CODEMPRESA ,
+			      1 ,
+			      P_IDPOLIZA  ,
+			      'N/A' ,
+			      P_COD_ASEGURADO ,      
+			      P_IDSINIESTRO ,
+			      'QEQ'  ,
+			      P_TIPO_DOC_IDENTIFICACION	,
+			      P_NUM_DOC_IDENTIFICACION	,
+			      P_NOMBRE_COMPLETO	,
+			      'PEND'	,
+			      TRUNC(SYSDATE)	,
+			      ''	,
+			      'LA PERSONA ESTA EN QUIEN ES QUIEN '	,
+			      TRUNC(SYSDATE)  ,
+			      P_USUARIO );    
+
+     W_MENSAJE := '!! ALERTA !!   LA PERSONA ESTA EN QUIEN ES QUIEN  - ENVIADO A AUTORIZACION ';
+   END IF;
+     --
+     P_MENSAJE := W_MENSAJE;
+     --
+
+     --   
+
+END VALIDA;
+
+PROCEDURE INSERTA(
+      P_CODCIA      NUMBER ,
+      P_CODEMPRESA      NUMBER ,
+      P_ID_PROCESO      NUMBER ,
+      P_IDPOLIZA        NUMBER ,
+      P_STSPOLIZA       VARCHAR2 ,
+      P_CODCLIENTE      NUMBER ,
+      P_NUMSINIESTRO    NUMBER ,
+      P_ORIGEN          VARCHAR2 ,
+      P_TIPO_DOC_IDENTIFICACION  VARCHAR2,
+      P_NUM_DOC_IDENTIFICACION  VARCHAR2,
+      P_NOMBRE_BENEFICIARIO  VARCHAR2,
+      P_ST_RESOLUCION  VARCHAR2,
+      P_FE_ESTATUS  DATE ,
+      P_TP_RESOLUCION  VARCHAR2,
+      P_OBSERVACIONES  VARCHAR2,
+      P_FECHA_PROCESO    DATE    ,
+      P_USUARIO    VARCHAR2
+                 ) IS
+--
+BEGIN
+  --
+  --INSERTA ADMON_RIESGO_SINIESTROS
+  --
+  INSERT INTO ADMON_RIESGO_SINIESTROS
+    (  CODCIA  ,
+       CODEMPRESA  ,
+       ID_PROCESO  ,
+       IDPOLIZA  ,
+       STSPOLIZA ,
+       CODCLIENTE ,
+       NUMSINIESTRO ,
+       ORIGEN ,
+       TIPO_DOC_IDENTIFICACION,
+       NUM_DOC_IDENTIFICACION,
+       NOMBRE_BENEFICIARIO,
+       ST_RESOLUCION,
+       FE_ESTATUS,
+       TP_RESOLUCION,
+       OBSERVACIONES,
+       FECHA_PROCESO ,
+       USUARIO )
+    VALUES
+    ( P_CODCIA  ,
+      P_CODEMPRESA ,
+      P_ID_PROCESO ,
+      P_IDPOLIZA  ,
+      P_STSPOLIZA ,
+      P_CODCLIENTE ,
+      P_NUMSINIESTRO ,
+      P_ORIGEN  ,
+      P_TIPO_DOC_IDENTIFICACION  ,
+      P_NUM_DOC_IDENTIFICACION  ,
+      P_NOMBRE_BENEFICIARIO  ,
+      P_ST_RESOLUCION  ,
+      P_FE_ESTATUS  ,
+      P_TP_RESOLUCION  ,
+      P_OBSERVACIONES  ,
+      P_FECHA_PROCESO  ,
+      P_USUARIO );
+  --
+ 
+
+      OC_ADMON_RIESGO_SINIESTROS_H.INSERTA( P_CODCIA  ,
+      P_CODEMPRESA ,
+      P_ID_PROCESO ,
+      P_IDPOLIZA  ,
+      P_STSPOLIZA ,
+      P_CODCLIENTE ,
+      P_NUMSINIESTRO ,
+      P_ORIGEN  ,
+      P_TIPO_DOC_IDENTIFICACION  ,
+      P_NUM_DOC_IDENTIFICACION  ,
+      P_NOMBRE_BENEFICIARIO  ,
+      P_ST_RESOLUCION  ,
+      P_FE_ESTATUS  ,
+      P_TP_RESOLUCION  ,
+      P_OBSERVACIONES  ,
+      P_FECHA_PROCESO  ,
+      P_USUARIO );
+END INSERTA;
+--
+
+END OC_ADMON_RIESGO_SINIESTROS;
