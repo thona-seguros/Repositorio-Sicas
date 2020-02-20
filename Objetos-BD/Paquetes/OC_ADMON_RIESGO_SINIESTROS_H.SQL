@@ -86,6 +86,7 @@ BEGIN
       P_FECHA_PROCESO  ,
       P_USUARIO );
   --
+     COMMIT;
      
 END INSERTA;
 --
