@@ -1,5 +1,5 @@
 CREATE OR REPLACE PACKAGE OC_PROCESOS_MASIVOS IS
------- SE INCLUYEN VALIDACIONES PARA PROVEEDORES SAT Y QEQ  JMMD
+------ SE INCLUYEN VALIDACIONES PARA PROVEEDORES SAT Y QEQ  JMMD20200224
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 PROCEDURE ACTUALIZA_STATUS(nIdProcMasivo NUMBER, cStsRegProceso VARCHAR2);
 PROCEDURE EMISION(nIdProcMasivo NUMBER);
@@ -91,7 +91,7 @@ CREATE OR REPLACE PACKAGE BODY OC_PROCESOS_MASIVOS IS
 --  01/09/2016  Agrego Rutina para Aseguramos que el IVA no rebase el 16% del monto a pagar      -- AEVS IVA
 --  28/02/2017  Rutina para constituir solo reserva en INFONACOT                                 -- JICO ASEGMAS
 --  16/02/2018  Cambio de numeracion por eliminacion de nombre completo                          -- JICO INFO1
---  01/10/2019  Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)     -- JMMD SAT
+--  01/10/2019  Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)     -- JMMD 20200224
 
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
@@ -10270,7 +10270,8 @@ BEGIN
                       FROM ADMON_RIESGO_SINIESTROS
                      WHERE TIPO_DOC_IDENTIFICACION = 'RFC'
                        AND NUM_DOC_IDENTIFICACION = cRFCProv 
-                       AND NOMBRE_BENEFICIARIO = cNombProv ;
+                       AND NOMBRE_BENEFICIARIO = cNombProv 
+        	       AND TRUNC(FE_ESTATUS) = TRUNC(SYSDATE);	       
                    EXCEPTION 
 		     WHEN NO_DATA_FOUND THEN	
 -----------------                
@@ -10305,7 +10306,7 @@ BEGIN
                      WHERE TIPO_DOC_IDENTIFICACION = 'RFC' 
                        AND NUM_DOC_IDENTIFICACION = cRFCProv 
                        AND NOMBRE_BENEFICIARIO = cNombProv
-                       AND  ST_RESOLUCION = 'PEND';	
+                       AND  ST_RESOLUCION != 'APRO';	
               		 			       
                     IF ncuantos > 0 THEN
                        cST_RESOLUCIO := 'PEND';
@@ -10314,7 +10315,7 @@ BEGIN
                     END IF;
 
                    IF cST_RESOLUCIO = 'PEND' THEN
-                        dbms_output.put_line('jmmd2 pruebas PLD existe en PLD : Persona encontrada en an el Catalogo de quien es quien.');
+                        dbms_output.put_line('jmmd2 pruebas PLD existe en PLD : Persona encontrada en el Catalogo de quien es quien.');
                         cMsjError := 'Persona encontrada en an el Catalogo de quien es quien.';
                         RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de quien es quien, requiere de autorizacion.');	       	  	
                    END IF; 
