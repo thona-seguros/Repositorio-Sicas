@@ -1,29 +1,31 @@
---
--- OC_GRUPO_ECONOMICO  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
---   GRUPO_ECONOMICO (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_GRUPO_ECONOMICO  IS
-   FUNCTION NOMBRE_GRUPO_ECONOMICO(nCodCia NUMBER, cCodGrupoEc VARCHAR2) RETURN VARCHAR2;
-
-   FUNCTION VALIDA_CREA(nCodCia NUMBER, cTipo_Doc_Identificacion VARCHAR2, 
-                        cNum_Doc_Identificacion VARCHAR2, nIdSolicitud NUMBER) RETURN VARCHAR2;
-
+--
+FUNCTION NOMBRE_GRUPO_ECONOMICO(nCodCia     NUMBER, 
+                                cCodGrupoEc VARCHAR2) RETURN VARCHAR2;
+--
+FUNCTION VALIDA_CREA(nCodCia                  NUMBER,
+                     cTipo_Doc_Identificacion VARCHAR2, 
+                     cNum_Doc_Identificacion  VARCHAR2,
+                     nIdSolicitud             NUMBER) RETURN VARCHAR2;
+--
+FUNCTION ALTA_AUTOMATICA(P_CODCLIENTE VARCHAR2,
+                         P_CODCIA     NUMBER) RETURN VARCHAR2;        
+--
 END OC_GRUPO_ECONOMICO;
+ 
+ 
+ 
+ 
 /
-
---
--- OC_GRUPO_ECONOMICO  (Package Body) 
---
---  Dependencies: 
---   OC_GRUPO_ECONOMICO (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_GRUPO_ECONOMICO IS
-FUNCTION NOMBRE_GRUPO_ECONOMICO(nCodCia NUMBER, cCodGrupoEc VARCHAR2) RETURN  VARCHAR2 IS
+--
+--
+-- BITACORA DE CAMBIOS
+--
+-- SE COLOCO EL PROCEDIMIENTO DE GENERACION AUTOMATICA       JICO   20191201
+--
+FUNCTION NOMBRE_GRUPO_ECONOMICO(nCodCia     NUMBER, 
+                                cCodGrupoEc VARCHAR2) RETURN  VARCHAR2 IS
 cNombre VARCHAR2(200);
 BEGIN
    BEGIN
@@ -43,8 +45,10 @@ BEGIN
    RETURN(cNombre);
 END NOMBRE_GRUPO_ECONOMICO;
 
-FUNCTION VALIDA_CREA(nCodCia NUMBER, cTipo_Doc_Identificacion VARCHAR2,
-                     cNum_Doc_Identificacion VARCHAR2, nIdSolicitud NUMBER) RETURN VARCHAR2 IS
+FUNCTION VALIDA_CREA(nCodCia                  NUMBER, 
+                     cTipo_Doc_Identificacion VARCHAR2,
+                     cNum_Doc_Identificacion  VARCHAR2, 
+                     nIdSolicitud             NUMBER) RETURN VARCHAR2 IS
 cCodGrupoEc       GRUPO_ECONOMICO.CodGrupoEc%TYPE;
 BEGIN
    BEGIN
@@ -73,5 +77,68 @@ BEGIN
    RETURN(cCodGrupoEc);
 END VALIDA_CREA;
 
+FUNCTION ALTA_AUTOMATICA(P_CODCLIENTE VARCHAR2,
+                         P_CODCIA     NUMBER) RETURN VARCHAR2 IS
+--
+CCODGRUPOEC                GRUPO_ECONOMICO.CODGRUPOEC%TYPE;
+CTIPO_DOC_IDENTIFICACION   CLIENTES.TIPO_DOC_IDENTIFICACION%TYPE;
+CNUM_DOC_IDENTIFICACION    CLIENTES.NUM_DOC_IDENTIFICACION%TYPE;
+NCODCLIENTE                CLIENTES.CODCLIENTE%TYPE;
+NGRABADOS                  NUMBER;
+--
+BEGIN
+  --
+  CCODGRUPOEC := '';
+  NGRABADOS   := 0;
+  NCODCLIENTE := TO_NUMBER(P_CODCLIENTE);
+  --
+  BEGIN
+    SELECT GE.CODGRUPOEC
+      INTO CCODGRUPOEC
+      FROM GRUPO_ECONOMICO GE
+     WHERE GE.CODGRUPOEC = P_CODCLIENTE;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+         CCODGRUPOEC := '';
+    WHEN OTHERS THEN
+         CCODGRUPOEC := '';
+  END;
+  --
+  IF CCODGRUPOEC IS NULL THEN
+     BEGIN
+       SELECT C.TIPO_DOC_IDENTIFICACION,
+              C.NUM_DOC_IDENTIFICACION
+         INTO CTIPO_DOC_IDENTIFICACION,
+              CNUM_DOC_IDENTIFICACION
+         FROM CLIENTES C
+        WHERE C.CODCLIENTE = NCODCLIENTE;
+     EXCEPTION
+       WHEN NO_DATA_FOUND THEN
+            NCODCLIENTE := 0;
+       WHEN OTHERS THEN
+            NCODCLIENTE := 0;
+     END;  
+     --
+     IF NCODCLIENTE != 0 THEN
+        INSERT INTO GRUPO_ECONOMICO GE
+          (CODGRUPOEC,        TIPO_DOC_IDENTIFICACION,          NUM_DOC_IDENTIFICACION, 
+           CODCIA,            OBSERVACIONES,                    ESTADO)
+        VALUES
+          (P_CODCLIENTE,      CTIPO_DOC_IDENTIFICACION,         CNUM_DOC_IDENTIFICACION,
+           P_CODCIA,          'ALTA AUTOMATICA',                'VALIDO');
+        --
+        NGRABADOS :=  SQL%ROWCOUNT;
+        --
+        IF NGRABADOS > 0 THEN
+           --
+          COMMIT;
+           --
+        END IF;
+     END IF;
+  END IF;
+  RETURN(NCODCLIENTE);
+END;
+--
+--
 END OC_GRUPO_ECONOMICO;
 /

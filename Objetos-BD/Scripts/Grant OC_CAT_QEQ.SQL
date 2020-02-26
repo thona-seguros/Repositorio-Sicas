@@ -1,0 +1,3 @@
+-- Grants for Package
+GRANT EXECUTE ON OC_CAT_QEQ TO PUBLIC
+/
