@@ -1,3 +1,4 @@
+--
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES IS
 
    FUNCTION VALIDAR_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2;
@@ -1183,91 +1184,102 @@ BEGIN
            GT_POLIZAS_TEXTO_COTIZACION.INSERTA(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza);
            GT_COTIZACIONES_CLAUSULAS.CREAR_CLAUSULAS_POL(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza);
 
-         -- Agentes
-         IF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 5 THEN
-            cOrigen  := 'U';
-         ELSIF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 4 THEN
-            cOrigen  := 'H';
-         ELSE
-            cOrigen  := 'C';
-         END IF;
+            --  CAPELE 20200227
+            UPDATE DETALLE_POLIZA P SET P.PORCCOMIS = X.PorcGtoAdqui
+            WHERE P.CODCIA      =   nCodCia
+              AND P.CODEMPRESA  =   nCodEmpresa
+              AND P.IDPOLIZA    =   nIdPoliza;
+            --
+            -- Agentes            
+            IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, X.CodAgente) <> 'S' THEN --  CAPELE 20200227
+             
+                 IF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 5 THEN
+                    cOrigen  := 'U';
+                 ELSIF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 4 THEN
+                    cOrigen  := 'H';
+                 ELSE
+                    cOrigen  := 'C';
+                 END IF;
 
-         BEGIN
-            INSERT INTO AGENTE_POLIZA
-                   (IdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen)
-            VALUES (nIdPoliza, nCodCia, X.CodAgente, 100, 'S', cOrigen);
-         EXCEPTION
-            WHEN OTHERS THEN
-               RAISE_APPLICATION_ERROR(-20200,'Error al Insertar el Agente de la Póliza.');
-           END;
+                 BEGIN
+                    INSERT INTO AGENTE_POLIZA
+                           (IdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen)
+                    VALUES (nIdPoliza, nCodCia, X.CodAgente, 100, 'S', cOrigen);
+                 EXCEPTION
+                    WHEN OTHERS THEN
+                       RAISE_APPLICATION_ERROR(-20200,'Error al Insertar el Agente de la Póliza.');
+                 END;
+            --
+                 OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, X.CodAgente, 100);
+                   nProporcAjust := 0;
+                 FOR Y IN AGEDIS_Q LOOP
+                    IF Y.CodNivel = 1 THEN
+                          nPorcComDis := X.PorcComisDir;
+                    ELSIF Y.CodNivel = 2 THEN
+                          nPorcComDis := X.PorcComisProm;
+                    ELSIF Y.CodNivel = 3 THEN
+                          nPorcComDis := X.PorcComisAgte;
+                    END IF;
 
-         OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, X.CodAgente, 100);
-           nProporcAjust := 0;
-         FOR Y IN AGEDIS_Q LOOP
-            IF Y.CodNivel = 1 THEN
-                  nPorcComDis := X.PorcComisDir;
-            ELSIF Y.CodNivel = 2 THEN
-                  nPorcComDis := X.PorcComisProm;
-            ELSIF Y.CodNivel = 3 THEN
-                  nPorcComDis := X.PorcComisAgte;
+                    IF NVL(X.PorcGtoAdqui,0) != 0 THEN
+                       IF cOrigen != 'H' THEN
+                          nProporcional := TRUNC(ROUND((Y.Porc_Com_Distribuida*100)/X.PorcGtoAdqui,2),2);
+                       ELSIF cOrigen = 'H' THEN
+                          nProporcional := TRUNC(ROUND((nPorcComDis*100)/X.PorcGtoAdqui,2),2);
+                       END IF;
+                    ELSE
+                       nProporcional := 100;
+                    END IF;
+
+                    nProporcAjust := nProporcAjust + nProporcional; 
+
+                    IF (nProporcAjust > 100 AND nProporcAjust <= 100.01) THEN
+                       nProporcAjust := nProporcAjust - 100;
+                       nProporcional := nProporcional - nProporcAjust;
+                    ELSIF (nProporcAjust < 100 AND nProporcAjust >= 99.99)  THEN
+                       nProporcAjust := nProporcAjust - 100;
+                       nProporcional := nProporcional + nProporcAjust;
+                    END IF;
+
+                    IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) = 'DIREC' THEN
+                       nPorcComDis    := 0;
+                       nPorcGtoAdqui  := 0;
+                    ELSE
+                       nPorcGtoAdqui := X.PorcGtoAdqui;
+                    END IF;
+
+                    UPDATE AGENTES_DISTRIBUCION_POLIZA
+                       SET Porc_Com_Distribuida = nPorcComDis,
+                           --Porc_Com_Poliza      = X.PorcGtoAdqui,
+                           Porc_Com_Poliza      = nPorcGtoAdqui,
+                           Porc_Com_proporcional = nProporcional
+                     WHERE CodCia           = nCodCia
+                       AND IdPoliza         = nIdPoliza
+                       AND Cod_Agente       = nCodAgente
+                       AND CodNivel         = Y.CodNivel
+                       AND Cod_Agente_Distr = Y.Cod_Agente_Distr;
+                 END LOOP;
+
+                 BEGIN
+                    OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
+                 EXCEPTION
+                    WHEN DUP_VAL_ON_INDEX THEN
+                       OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, nCodAgente, 100);
+                       OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
+                    WHEN OTHERS THEN
+                       RAISE_APPLICATION_ERROR(-20225,'Error en distribución de Agentes ' || SQLERRM);
+                 END;
             END IF;
-
-            IF NVL(X.PorcGtoAdqui,0) != 0 THEN
-               IF cOrigen != 'H' THEN
-                  nProporcional := TRUNC(ROUND((Y.Porc_Com_Distribuida*100)/X.PorcGtoAdqui,2),2);
-               ELSIF cOrigen = 'H' THEN
-                  nProporcional := TRUNC(ROUND((nPorcComDis*100)/X.PorcGtoAdqui,2),2);
-               END IF;
-            ELSE
-               nProporcional := 100;
-            END IF;
-
-            nProporcAjust := nProporcAjust + nProporcional; 
-
-            IF (nProporcAjust > 100 AND nProporcAjust <= 100.01) THEN
-               nProporcAjust := nProporcAjust - 100;
-               nProporcional := nProporcional - nProporcAjust;
-            ELSIF (nProporcAjust < 100 AND nProporcAjust >= 99.99)  THEN
-               nProporcAjust := nProporcAjust - 100;
-               nProporcional := nProporcional + nProporcAjust;
-            END IF;
-
-            IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) = 'DIREC' THEN
-               nPorcComDis    := 0;
-               nPorcGtoAdqui  := 0;
-            ELSE
-               nPorcGtoAdqui := X.PorcGtoAdqui;
-            END IF;
-
-            UPDATE AGENTES_DISTRIBUCION_POLIZA
-               SET Porc_Com_Distribuida = nPorcComDis,
-                   --Porc_Com_Poliza      = X.PorcGtoAdqui,
-                   Porc_Com_Poliza      = nPorcGtoAdqui,
-                   Porc_Com_proporcional = nProporcional
-             WHERE CodCia           = nCodCia
-               AND IdPoliza         = nIdPoliza
-               AND Cod_Agente       = nCodAgente
-               AND CodNivel         = Y.CodNivel
-               AND Cod_Agente_Distr = Y.Cod_Agente_Distr;
-         END LOOP;
-
-         BEGIN
-            OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
-         EXCEPTION
-            WHEN DUP_VAL_ON_INDEX THEN
-               OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, nCodAgente, 100);
-               OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
-            WHEN OTHERS THEN
-               RAISE_APPLICATION_ERROR(-20225,'Error en Distribución de Agentes ' || SQLERRM);
-         END;
-
-         UPDATE COTIZACIONES
-            SET IdPoliza = nIdPoliza
-          WHERE CodCia       = nCodCia
-            AND CodEmpresa   = nCodEmpresa
-            AND IdCotizacion = nIdCotizacion;
+        
+        UPDATE COTIZACIONES
+           SET IdPoliza = nIdPoliza
+         WHERE CodCia       = nCodCia
+           AND CodEmpresa   = nCodEmpresa
+           AND IdCotizacion = nIdCotizacion;
       END LOOP;
+      --
       RETURN(nIdPoliza);
+      --
    ELSE
       RAISE_APPLICATION_ERROR(-20200,'Error La Cotización está en Cotizacion o ya se encuentra en otra Póliza.' || SQLERRM);
       RETURN(0);
@@ -1275,6 +1287,7 @@ BEGIN
 EXCEPTION
    WHEN OTHERS THEN
       RAISE_APPLICATION_ERROR(-20200,'Error al Crear la Póliza de la Cotización '||SQLERRM);
+      RETURN(0);
 END CREAR_POLIZA;
 
 PROCEDURE SEND_MAIL(cCtaEnvio IN VARCHAR2, cPwdEmail IN VARCHAR2, cEmail IN VARCHAR2, cEmailDest IN VARCHAR2,cEmailCC IN VARCHAR2 DEFAULT NULL,
