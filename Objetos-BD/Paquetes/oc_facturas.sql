@@ -2806,8 +2806,8 @@ END VIGENCIA_FINAL;   -- FIN FINVIG  LARPLA
      select pnf.paen_cont_fin
        into vNumFACT
        from parametros_enum_fac pnf
-      where pnf.paen_id_fac = vIdProducto
-        FOR UPDATE OF pnf.paen_cont_fin;
+      where pnf.paen_id_fac = vIdProducto;
+        --FOR UPDATE OF pnf.paen_cont_fin;
 
  --  Actualizar al siguiente numero
       update parametros_enum_fac pe
