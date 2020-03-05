@@ -1191,7 +1191,7 @@ BEGIN
               AND P.IDPOLIZA    =   nIdPoliza;
             --
             -- Agentes            
-            IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, X.CodAgente) <> 'S' THEN --  CAPELE 20200227
+            
              
                  IF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 5 THEN
                     cOrigen  := 'U';
@@ -1209,8 +1209,10 @@ BEGIN
                     WHEN OTHERS THEN
                        RAISE_APPLICATION_ERROR(-20200,'Error al Insertar el Agente de la Póliza.');
                  END;
-            --
                  OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, X.CodAgente, 100);
+            --
+           -- IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, X.CodAgente) <> 'S' THEN --  CAPELE 20200227
+                 
                    nProporcAjust := 0;
                  FOR Y IN AGEDIS_Q LOOP
                     IF Y.CodNivel = 1 THEN
@@ -1260,16 +1262,17 @@ BEGIN
                        AND Cod_Agente_Distr = Y.Cod_Agente_Distr;
                  END LOOP;
 
-                 BEGIN
-                    OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
-                 EXCEPTION
-                    WHEN DUP_VAL_ON_INDEX THEN
-                       OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, nCodAgente, 100);
-                       OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
-                    WHEN OTHERS THEN
-                       RAISE_APPLICATION_ERROR(-20225,'Error en distribución de Agentes ' || SQLERRM);
-                 END;
-            END IF;
+           -- END IF;
+            
+         BEGIN
+            OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
+         EXCEPTION
+           WHEN DUP_VAL_ON_INDEX THEN
+              OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, nCodAgente, 100);
+              OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
+           WHEN OTHERS THEN
+              RAISE_APPLICATION_ERROR(-20225,'Error en distribución de Agentes ' || SQLERRM);
+         END;
         
         UPDATE COTIZACIONES
            SET IdPoliza = nIdPoliza
