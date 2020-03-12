@@ -10246,7 +10246,7 @@ BEGIN
                 cNombProv         := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,cSeparador));
                 cRegFiscal        := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,12,cSeparador));
 ------- JMMD20190927 VALIDACION DE REGISTROS EN SAT
-/*                dbms_output.put_line('jmmd pruebas sat cRFCProv : '||cRFCProv||' COMPAÑIA : '||X.CodCia);
+               dbms_output.put_line('jmmd pruebas sat cRFCProv : '||cRFCProv||' COMPAÑIA : '||X.CodCia);
                 IF SICAS_OC.OC_PROVEEDORES_SAT.ES_PROVEEDOR_SAT_DEFINITIVO(X.CodCia, cRFCProv) = 'S' THEN               
                     dbms_output.put_line('jmmd pruebas sat es proveedor sat definitivo : '||cRFCProv);
                     cMsjError := 'Persona encontrada en an el archivo de SAT DEFINITIVOS.';
@@ -10257,7 +10257,7 @@ BEGIN
                     dbms_output.put_line('jmmd pruebas sat es proveedor sat presuntos : '||cRFCProv);                
                     cMsjError := 'Persona encontrada en an el archivo de SAT PRESUNTOS.';
                     RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de SAT PRESUNTOS, requiere de autorizacion.');
-                END IF;              */               
+                END IF;                         
 -------
 ------- JMMD20191025 VALIDACION DE REGISTROS EN PLD
                 cFechaNacimiento := CALCULA_FECHA_NACIMIENTO(cRFCProv);
