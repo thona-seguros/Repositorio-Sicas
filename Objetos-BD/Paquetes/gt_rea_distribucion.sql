@@ -83,290 +83,309 @@ END GT_REA_DISTRIBUCION;
 --
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_REA_DISTRIBUCION IS
 
-PROCEDURE DISTRIBUYE_REASEGURO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, 
-                               nIdTransaccion NUMBER, dFecTransaccion DATE, cOrigen VARCHAR2) IS
-nIDetPol             DETALLE_POLIZA.IDetPol%TYPE;
-nIdEndoso            ENDOSOS.IdEndoso%TYPE;
-cCodRiesgoRea        COBERTURAS_DE_SEGUROS.CodRiesgoRea%TYPE;
-cCod_Moneda          COBERT_ACT.Cod_Moneda%TYPE;
-nSumaAsegPendDist    COBERT_ACT.SumaAseg_Moneda%TYPE;
-nPrimaPendDist       COBERT_ACT.Prima_Moneda%TYPE;
-nPorcDistrib         REA_DISTRIBUCION.PorcDistrib%TYPE;
-nSumaAsegDistrib     REA_DISTRIBUCION.SumaAsegDistrib%TYPE;
-nPrimaDistrib        REA_DISTRIBUCION.PrimaDistrib%TYPE;
-nIdDistribRea        REA_DISTRIBUCION.IdDistribRea%TYPE;
-nNumDistrib          REA_DISTRIBUCION.NumDistrib%TYPE;
-dFecIniVig           DETALLE_POLIZA.FecIniVig%TYPE;
-dFecFinVig           DETALLE_POLIZA.FecFinVig%TYPE;
-cCodEsquema          REA_ESQUEMAS_EMPRESAS.CodEsquema%TYPE;
-cCodEsquemaPol       REA_ESQUEMAS_EMPRESAS.CodEsquema%TYPE;
-nIdEsqContrato       REA_ESQUEMAS_EMPRESAS.IdEsqContrato%TYPE;
-nIdCapaContrato      REA_ESQUEMAS_EMPRESAS.IdCapaContrato%TYPE;
-nSumaAsegDistribEmp  REA_DISTRIBUCION_EMPRESAS.SumaAsegDistrib%TYPE; 
-nPrimaDistribEmp     REA_DISTRIBUCION_EMPRESAS.PrimaDistrib%TYPE;
-nMontoComision       REA_DISTRIBUCION_EMPRESAS.MontoComision%TYPE;
-nMontoReserva        REA_DISTRIBUCION_EMPRESAS.MontoReserva%TYPE;
-nPrimaDistribTot     REA_DISTRIBUCION_EMPRESAS.PrimaDistrib%TYPE;
-nSaldoInsoluto       REA_DISTRIBUCION_EMPRESAS.PrimaDistrib%TYPE;
-nFactorCreditos      REA_ESQUEMAS_FACT_CREDITOS.FactorCreditos%TYPE;
-nSumaCobertura       COBERT_ACT.SumaAseg_Moneda%TYPE;
-nFactorTarifa        REA_TARIFAS_REASEGURO_DET.FactorTarifa%TYPE;
-nFactorTarifaDiario  REA_TARIFAS_REASEGURO_DET.FactorTarifa%TYPE;
-cIndPolizaEspec      REA_RIESGOS.IndPolizaEspec%TYPE;
-dFecIniVigPol        POLIZAS.FecIniVig%TYPE;
-dFecFinVigPol        POLIZAS.FecFinVig%TYPE;
-cNaturalidad         PROPIEDADES_VALORES.Valor%TYPE;
-cStsDetalle          DETALLE_POLIZA.StsDetalle%TYPE;
-cStsEndoso           ENDOSOS.StsEndoso%TYPE;
-nDistrib             NUMBER;
-cExisteContrato      VARCHAR2(1);
-nEdadAsegurado       NUMBER(5);
-dFechaInicioCredito  DATE;
-nPlazoCredito        NUMBER(5);
-nMesesPrima          NUMBER(5);
-nDiasVigencia        NUMBER(5);
-
-CURSOR TRAN_Q IS
-   SELECT TO_NUMBER(NVL(Valor2,0)) IDetPol, MAX(TO_NUMBER(NVL(Valor3,0))) IdEndoso,
-          MAX(TRUNC(FechaTransaccion)) FechaTransaccion, MIN(DT.Correlativo) Correlativo,
-          MAX(T.IdProceso) IdProceso
-     FROM TRANSACCION T, DETALLE_TRANSACCION DT
-    WHERE DT.MtoLocal      != 0
-      AND UPPER(DT.Objeto) IN ('DETALLE_POLIZA', 'ENDOSOS')--, 'NOTAS_DE_CREDITO')
-      AND DT.CodEmpresa     = T.CodEmpresa
-      AND DT.CodCia         = T.CodCia
-      AND DT.IdTransaccion  = T.IdTransaccion
-      AND T.IdTransaccion   = nIdTransaccion
-      AND T.CodEmpresa      = nCodEmpresa
-      AND T.CodCia          = nCodCia
-    GROUP BY TO_NUMBER(NVL(Valor2,0));
-CURSOR COB_Q IS
-   SELECT DECODE(cIndPolizaEspec,'S',cCodRiesgoRea, CS.CodRiesgoRea) CodRiesgoRea, 
-          CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado, 
-          SUM(DECODE(NVL(CS.IndAcumulaPrimaRea,'N'),'S', C.Prima_Moneda, 0)) Prima_Moneda,
-          SUM(DECODE(NVL(CS.IndAcumulaSumaRea,'N'),'S', C.Suma_Asegurada_Moneda, 0)) SumaAseg_Moneda
-     FROM COBERTURAS C, COBERT_ACT CA, COBERTURAS_DE_SEGUROS CS
-    WHERE CS.CodCobert     = C.CodCobert
-      AND CS.PlanCob       = C.PlanCob
-      AND CS.IdTipoSeg     = C.IdTipoSeg
-      AND CS.CodEmpresa    = C.CodEmpresa
-      AND CS.CodCia        = C.CodCia
-      AND CS.CodRiesgoRea IS NOT NULL
-      AND C.CodCobert      = CA.CodCobert
-      AND C.IdEndoso       = nIdEndoso
-      AND C.IDetPol        = CA.IDetPol
-      AND C.IdPoliza       = CA.IdPoliza
-      AND C.CodEmpresa     = CA.CodEmpresa
-      AND C.CodCia         = CA.CodCia
-      AND CA.StsCobertura != 'SOL'
-      AND CA.IDetPol       = nIDetPol
-      AND CA.IdPoliza      = nIdPoliza
-      AND CA.CodEmpresa    = nCodEmpresa
-      AND CA.CodCia        = nCodCia
-      AND cIndPolizaEspec  = 'N'
-    GROUP BY CS.CodRiesgoRea, CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado
-    UNION ALL
-   SELECT DECODE(cIndPolizaEspec,'S',cCodRiesgoRea, CS.CodRiesgoRea) CodRiesgoRea, 
-          CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado, 
-          SUM(DECODE(NVL(CS.IndAcumulaPrimaRea,'N'),'S', C.Prima_Moneda, 0)) Prima_Moneda,
-          SUM(DECODE(NVL(CS.IndAcumulaSumaRea,'N'),'S', C.Suma_Asegurada_Moneda, 0)) SumaAseg_Moneda
-     FROM COBERTURA_ASEG C, COBERT_ACT_ASEG CA, COBERTURAS_DE_SEGUROS CS
-    WHERE CS.CodCobert     = C.CodCobert
-      AND CS.PlanCob       = C.PlanCob
-      AND CS.IdTipoSeg     = C.IdTipoSeg
-      AND CS.CodEmpresa    = C.CodEmpresa
-      AND CS.CodCia        = C.CodCia
-      AND CS.CodRiesgoRea IS NOT NULL
-      AND C.CodCobert      = CA.CodCobert
-      AND C.Cod_Asegurado  = CA.Cod_Asegurado
-      AND C.IdEndoso       = nIdEndoso
-      AND C.IDetPol        = CA.IDetPol
-      AND C.IdPoliza       = CA.IdPoliza
-      AND C.CodEmpresa     = CA.CodEmpresa
-      AND C.CodCia         = CA.CodCia
-      AND CA.StsCobertura != 'SOL'
-      AND CA.Cod_Asegurado > 0 
-      AND CA.IDetPol       = nIDetPol
-      AND CA.IdPoliza      = nIdPoliza
-      AND CA.CodEmpresa    = nCodEmpresa
-      AND CA.CodCia        = nCodCia
-      AND cIndPolizaEspec  = 'N'
-    GROUP BY CS.CodRiesgoRea, CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado
-    UNION ALL
-   SELECT DECODE(cIndPolizaEspec,'S',cCodRiesgoRea, CS.CodRiesgoRea) CodRiesgoRea, 
-          CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado, 
-          SUM(DECODE(NVL(CS.IndAcumulaPrimaRea,'N'),'S', C.Prima_Moneda, 0)) Prima_Moneda,
-          SUM(DECODE(NVL(CS.IndAcumulaSumaRea,'N'),'S', C.Suma_Asegurada_Moneda, 0)) SumaAseg_Moneda
-     FROM COBERTURAS C, COBERT_ACT CA, COBERTURAS_DE_SEGUROS CS
-    WHERE CS.CodCobert     = C.CodCobert
-      AND CS.PlanCob       = C.PlanCob
-      AND CS.IdTipoSeg     = C.IdTipoSeg
-      AND CS.CodEmpresa    = C.CodEmpresa
-      AND CS.CodCia        = C.CodCia
-      AND CS.CodRiesgoRea IS NOT NULL
-      AND C.CodCobert      = CA.CodCobert
-      AND C.IdEndoso       = nIdEndoso
-      AND C.IDetPol        = CA.IDetPol
-      AND C.IdPoliza       = CA.IdPoliza
-      AND C.CodEmpresa     = CA.CodEmpresa
-      AND C.CodCia         = CA.CodCia
-      AND CA.StsCobertura != 'SOL'
-      AND CA.IdEndoso      = nIdEndoso
-      AND CA.IDetPol       = nIDetPol
-      AND CA.IdPoliza      = nIdPoliza
-      AND CA.CodEmpresa    = nCodEmpresa
-      AND CA.CodCia        = nCodCia
-      AND cIndPolizaEspec  = 'S'
-      AND EXISTS (SELECT 'S'
-                    FROM REA_ESQUEMAS_POLIZA_COBERT
-                   WHERE CodCia          = nCodCia
-                     AND CodEsquema      = cCodEsquemaPol
-                     AND IdPoliza        = nIdPoliza
-                     AND CodCobert       = C.CodCobert
-                     AND IndCesionPrimas = 'S')
-    GROUP BY CS.CodRiesgoRea, CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado
-    UNION ALL
-   SELECT DECODE(cIndPolizaEspec,'S',cCodRiesgoRea, CS.CodRiesgoRea) CodRiesgoRea, 
-          CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado, 
-          SUM(DECODE(NVL(CS.IndAcumulaPrimaRea,'N'),'S', C.Prima_Moneda, 0)) Prima_Moneda,
-          SUM(DECODE(NVL(CS.IndAcumulaSumaRea,'N'),'S', C.Suma_Asegurada_Moneda, 0)) SumaAseg_Moneda
-     FROM COBERTURA_ASEG C, COBERT_ACT_ASEG CA, COBERTURAS_DE_SEGUROS CS
-    WHERE CS.CodCobert     = C.CodCobert
-      AND CS.PlanCob       = C.PlanCob
-      AND CS.IdTipoSeg     = C.IdTipoSeg
-      AND CS.CodEmpresa    = C.CodEmpresa
-      AND CS.CodCia        = C.CodCia
-      AND CS.CodRiesgoRea IS NOT NULL
-      AND C.CodCobert      = CA.CodCobert
-      AND C.Cod_Asegurado  = CA.Cod_Asegurado
-      AND C.IdEndoso       = nIdEndoso
-      AND C.IDetPol        = CA.IDetPol
-      AND C.IdPoliza       = CA.IdPoliza
-      AND C.CodEmpresa     = CA.CodEmpresa
-      AND C.CodCia         = CA.CodCia
-      AND CA.StsCobertura != 'SOL'
-      AND CA.Cod_Asegurado > 0 
-      AND CA.IdEndoso      = nIdEndoso
-      AND CA.IDetPol       = nIDetPol
-      AND CA.IdPoliza      = nIdPoliza
-      AND CA.CodEmpresa    = nCodEmpresa
-      AND CA.CodCia        = nCodCia
-      AND cIndPolizaEspec  = 'S'
-      AND EXISTS (SELECT 'S'
-                    FROM REA_ESQUEMAS_POLIZA_COBERT
-                   WHERE CodCia          = nCodCia
-                     AND CodEsquema      = cCodEsquemaPol
-                     AND IdPoliza        = nIdPoliza
-                     AND CodCobert       = C.CodCobert
-                     AND IndCesionPrimas = 'S')
-    GROUP BY CS.CodRiesgoRea, CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado;
-CURSOR DIST_Q IS
-   SELECT CA.CodCia, CA.CodEsquema, CA.IdEsqContrato, CA.IdCapaContrato,
-          CA.PorcEsqContrato, CA.LimiteMaxCapa, CO.CodMoneda, CO.CodRiesgo,
-          CO.CodContrato, CO.CodTarifaReaseg
-     FROM REA_ESQUEMAS_CONTRATOS CO, REA_ESQUEMAS_CAPAS CA
-    WHERE CA.FecVigInicial  <= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
-      AND CA.FecVigFinal    >= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
-      AND CA.StsCapaContrato = 'ACTIVO'
-      AND CA.IdEsqContrato   = CO.IdEsqContrato
-      AND CA.CodEsquema      = CO.CodEsquema
-      AND CA.CodCia          = CO.CodCia
-      AND CO.CodCia          = nCodCia
-      AND CO.CodRiesgo       = cCodRiesgoRea
-      AND CO.CodMoneda       = cCod_Moneda
-      AND CO.FecVigInicial  <= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
-      AND CO.FecVigFinal    >= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
-      AND CO.StsEsqContrato  = 'ACTIVO'
-      AND EXISTS (SELECT 'S'
-                    FROM REA_ESQUEMAS
-                   WHERE CodCia         = CO.CodCia
-                     AND CodEsquema     = CO.CodEsquema
-                     AND IndPolizas     = 'N'
-                     AND cCodEsquemaPol IS NULL)
-    UNION 
-   SELECT CA.CodCia, CA.CodEsquema, CA.IdEsqContrato, CA.IdCapaContrato,
-          CA.PorcEsqContrato, CA.LimiteMaxCapa, CO.CodMoneda, CO.CodRiesgo,
-          CO.CodContrato, CO.CodTarifaReaseg
-     FROM REA_ESQUEMAS_CONTRATOS CO, REA_ESQUEMAS_CAPAS CA
-    WHERE CA.FecVigInicial  <= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
-      AND CA.FecVigFinal    >= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
-      AND CA.StsCapaContrato = 'ACTIVO'
-      AND CA.IdEsqContrato   = CO.IdEsqContrato
-      AND CA.CodEsquema      = CO.CodEsquema
-      AND CA.CodCia          = CO.CodCia
-      AND CO.CodCia          = nCodCia
-      AND CO.CodRiesgo       = cCodRiesgoRea
-      AND CO.CodMoneda       = cCod_Moneda
-      AND CO.FecVigInicial  <= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
-      AND CO.FecVigFinal    >= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
-      AND CO.StsEsqContrato  = 'ACTIVO'
-      AND EXISTS (SELECT 'S'
-                    FROM REA_ESQUEMAS
-                   WHERE CodCia          = CO.CodCia
-                     AND CodEsquema      = CO.CodEsquema
-                     AND IndPolizas      = 'S'
-                     AND CodEsquema      = cCodEsquemaPol 
-                     AND cCodEsquemaPol IS NOT NULL)
-    ORDER BY IdEsqContrato, IdCapaContrato;
-CURSOR EMP_Q IS
-   SELECT CodEmpresaGremio, CodInterReaseg, PorcEmpresa, 
-          PorcComisBasica, PorcRvaPrimas, CuotaReaseg,
-          PrimaReaseg, IdEsqContrato, IdCapaContrato,
-          NVL(FactProrrateo,1) FactProrrateo
-     FROM REA_ESQUEMAS_EMPRESAS
-    WHERE CodCia         = nCodCia
-      AND CodEsquema     = cCodEsquema
-      AND IdEsqContrato  = nIdEsqContrato
-      AND IdCapaContrato = nIdCapaContrato
-      AND StsEsqEmpresa  = 'ACTIVO';
+PROCEDURE DISTRIBUYE_REASEGURO( nCodCia          NUMBER
+                              , nCodEmpresa      NUMBER
+                              , nIdPoliza        NUMBER
+                              , nIdTransaccion   NUMBER
+                              , dFecTransaccion  DATE
+                              , cOrigen VARCHAR2 ) IS
+   nIDetPol             DETALLE_POLIZA.IDetPol%TYPE;
+   nIdEndoso            ENDOSOS.IdEndoso%TYPE;
+   cCodRiesgoRea        COBERTURAS_DE_SEGUROS.CodRiesgoRea%TYPE;
+   cCod_Moneda          COBERT_ACT.Cod_Moneda%TYPE;
+   nSumaAsegPendDist    COBERT_ACT.SumaAseg_Moneda%TYPE;
+   nPrimaPendDist       COBERT_ACT.Prima_Moneda%TYPE;
+   nPorcDistrib         REA_DISTRIBUCION.PorcDistrib%TYPE;
+   nSumaAsegDistrib     REA_DISTRIBUCION.SumaAsegDistrib%TYPE;
+   nPrimaDistrib        REA_DISTRIBUCION.PrimaDistrib%TYPE;
+   nIdDistribRea        REA_DISTRIBUCION.IdDistribRea%TYPE;
+   nNumDistrib          REA_DISTRIBUCION.NumDistrib%TYPE;
+   dFecIniVig           DETALLE_POLIZA.FecIniVig%TYPE;
+   dFecFinVig           DETALLE_POLIZA.FecFinVig%TYPE;
+   cCodEsquema          REA_ESQUEMAS_EMPRESAS.CodEsquema%TYPE;
+   cCodEsquemaPol       REA_ESQUEMAS_EMPRESAS.CodEsquema%TYPE;
+   nIdEsqContrato       REA_ESQUEMAS_EMPRESAS.IdEsqContrato%TYPE;
+   nIdCapaContrato      REA_ESQUEMAS_EMPRESAS.IdCapaContrato%TYPE;
+   nSumaAsegDistribEmp  REA_DISTRIBUCION_EMPRESAS.SumaAsegDistrib%TYPE; 
+   nPrimaDistribEmp     REA_DISTRIBUCION_EMPRESAS.PrimaDistrib%TYPE;
+   nMontoComision       REA_DISTRIBUCION_EMPRESAS.MontoComision%TYPE;
+   nMontoReserva        REA_DISTRIBUCION_EMPRESAS.MontoReserva%TYPE;
+   nPrimaDistribTot     REA_DISTRIBUCION_EMPRESAS.PrimaDistrib%TYPE;
+   nSaldoInsoluto       REA_DISTRIBUCION_EMPRESAS.PrimaDistrib%TYPE;
+   nFactorCreditos      REA_ESQUEMAS_FACT_CREDITOS.FactorCreditos%TYPE;
+   nSumaCobertura       COBERT_ACT.SumaAseg_Moneda%TYPE;
+   nFactorTarifa        REA_TARIFAS_REASEGURO_DET.FactorTarifa%TYPE;
+   nFactorTarifaDiario  REA_TARIFAS_REASEGURO_DET.FactorTarifa%TYPE;
+   cIndPolizaEspec      REA_RIESGOS.IndPolizaEspec%TYPE;
+   dFecIniVigPol        POLIZAS.FecIniVig%TYPE;
+   dFecFinVigPol        POLIZAS.FecFinVig%TYPE;
+   cNaturalidad         PROPIEDADES_VALORES.Valor%TYPE;
+   cStsDetalle          DETALLE_POLIZA.StsDetalle%TYPE;
+   cStsEndoso           ENDOSOS.StsEndoso%TYPE;
+   nDistrib             NUMBER;
+   cExisteContrato      VARCHAR2(1);
+   nEdadAsegurado       NUMBER(5);
+   dFechaInicioCredito  DATE;
+   nPlazoCredito        NUMBER(5);
+   nMesesPrima          NUMBER(5);
+   nDiasVigencia        NUMBER(5);
+   --
+   cTextoLog            CLOB;
+   nContMovtos          NUMBER;
+   --
+   CURSOR TRAN_Q IS
+      SELECT TO_NUMBER(NVL(Valor2,0))       IDetPol
+           , MAX(TO_NUMBER(NVL(Valor3,0)))  IdEndoso
+           , MAX(TRUNC(FechaTransaccion))   FechaTransaccion
+           , MIN(DT.Correlativo)            Correlativo
+           , MAX(T.IdProceso)               IdProceso
+      FROM   TRANSACCION          T
+         ,   DETALLE_TRANSACCION  DT
+      WHERE  DT.MtoLocal      != 0
+        AND  UPPER(DT.Objeto) IN ('DETALLE_POLIZA', 'ENDOSOS')--, 'NOTAS_DE_CREDITO')
+        AND  DT.CodEmpresa     = T.CodEmpresa
+        AND  DT.CodCia         = T.CodCia
+        AND  DT.IdTransaccion  = T.IdTransaccion
+        AND  T.IdTransaccion   = nIdTransaccion
+        AND  T.CodEmpresa      = nCodEmpresa
+        AND  T.CodCia          = nCodCia
+      GROUP BY TO_NUMBER(NVL(Valor2,0));
+   --
+   CURSOR COB_Q IS
+      SELECT DECODE(cIndPolizaEspec,'S',cCodRiesgoRea, CS.CodRiesgoRea) CodRiesgoRea, 
+             CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado, 
+             SUM(DECODE(NVL(CS.IndAcumulaPrimaRea,'N'),'S', C.Prima_Moneda, 0)) Prima_Moneda,
+             SUM(DECODE(NVL(CS.IndAcumulaSumaRea,'N'),'S', C.Suma_Asegurada_Moneda, 0)) SumaAseg_Moneda
+        FROM COBERTURAS C, COBERT_ACT CA, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert     = C.CodCobert
+         AND CS.PlanCob       = C.PlanCob
+         AND CS.IdTipoSeg     = C.IdTipoSeg
+         AND CS.CodEmpresa    = C.CodEmpresa
+         AND CS.CodCia        = C.CodCia
+         AND CS.CodRiesgoRea IS NOT NULL
+         AND C.CodCobert      = CA.CodCobert
+         AND C.IdEndoso       = nIdEndoso
+         AND C.IDetPol        = CA.IDetPol
+         AND C.IdPoliza       = CA.IdPoliza
+         AND C.CodEmpresa     = CA.CodEmpresa
+         AND C.CodCia         = CA.CodCia
+         AND CA.StsCobertura != 'SOL'
+         AND CA.IDetPol       = nIDetPol
+         AND CA.IdPoliza      = nIdPoliza
+         AND CA.CodEmpresa    = nCodEmpresa
+         AND CA.CodCia        = nCodCia
+         AND cIndPolizaEspec  = 'N'
+       GROUP BY CS.CodRiesgoRea, CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado
+       UNION ALL
+      SELECT DECODE(cIndPolizaEspec,'S',cCodRiesgoRea, CS.CodRiesgoRea) CodRiesgoRea, 
+             CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado, 
+             SUM(DECODE(NVL(CS.IndAcumulaPrimaRea,'N'),'S', C.Prima_Moneda, 0)) Prima_Moneda,
+             SUM(DECODE(NVL(CS.IndAcumulaSumaRea,'N'),'S', C.Suma_Asegurada_Moneda, 0)) SumaAseg_Moneda
+        FROM COBERTURA_ASEG C, COBERT_ACT_ASEG CA, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert     = C.CodCobert
+         AND CS.PlanCob       = C.PlanCob
+         AND CS.IdTipoSeg     = C.IdTipoSeg
+         AND CS.CodEmpresa    = C.CodEmpresa
+         AND CS.CodCia        = C.CodCia
+         AND CS.CodRiesgoRea IS NOT NULL
+         AND C.CodCobert      = CA.CodCobert
+         AND C.Cod_Asegurado  = CA.Cod_Asegurado
+         AND C.IdEndoso       = nIdEndoso
+         AND C.IDetPol        = CA.IDetPol
+         AND C.IdPoliza       = CA.IdPoliza
+         AND C.CodEmpresa     = CA.CodEmpresa
+         AND C.CodCia         = CA.CodCia
+         AND CA.StsCobertura != 'SOL'
+         AND CA.Cod_Asegurado > 0 
+         AND CA.IDetPol       = nIDetPol
+         AND CA.IdPoliza      = nIdPoliza
+         AND CA.CodEmpresa    = nCodEmpresa
+         AND CA.CodCia        = nCodCia
+         AND cIndPolizaEspec  = 'N'
+       GROUP BY CS.CodRiesgoRea, CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado
+       UNION ALL
+      SELECT DECODE(cIndPolizaEspec,'S',cCodRiesgoRea, CS.CodRiesgoRea) CodRiesgoRea, 
+             CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado, 
+             SUM(DECODE(NVL(CS.IndAcumulaPrimaRea,'N'),'S', C.Prima_Moneda, 0)) Prima_Moneda,
+             SUM(DECODE(NVL(CS.IndAcumulaSumaRea,'N'),'S', C.Suma_Asegurada_Moneda, 0)) SumaAseg_Moneda
+        FROM COBERTURAS C, COBERT_ACT CA, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert     = C.CodCobert
+         AND CS.PlanCob       = C.PlanCob
+         AND CS.IdTipoSeg     = C.IdTipoSeg
+         AND CS.CodEmpresa    = C.CodEmpresa
+         AND CS.CodCia        = C.CodCia
+         AND CS.CodRiesgoRea IS NOT NULL
+         AND C.CodCobert      = CA.CodCobert
+         AND C.IdEndoso       = nIdEndoso
+         AND C.IDetPol        = CA.IDetPol
+         AND C.IdPoliza       = CA.IdPoliza
+         AND C.CodEmpresa     = CA.CodEmpresa
+         AND C.CodCia         = CA.CodCia
+         AND CA.StsCobertura != 'SOL'
+         AND CA.IdEndoso      = nIdEndoso
+         AND CA.IDetPol       = nIDetPol
+         AND CA.IdPoliza      = nIdPoliza
+         AND CA.CodEmpresa    = nCodEmpresa
+         AND CA.CodCia        = nCodCia
+         AND cIndPolizaEspec  = 'S'
+         AND EXISTS (SELECT 'S'
+                       FROM REA_ESQUEMAS_POLIZA_COBERT
+                      WHERE CodCia          = nCodCia
+                        AND CodEsquema      = cCodEsquemaPol
+                        AND IdPoliza        = nIdPoliza
+                        AND CodCobert       = C.CodCobert
+                        AND IndCesionPrimas = 'S')
+       GROUP BY CS.CodRiesgoRea, CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado
+       UNION ALL
+      SELECT DECODE(cIndPolizaEspec,'S',cCodRiesgoRea, CS.CodRiesgoRea) CodRiesgoRea, 
+             CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado, 
+             SUM(DECODE(NVL(CS.IndAcumulaPrimaRea,'N'),'S', C.Prima_Moneda, 0)) Prima_Moneda,
+             SUM(DECODE(NVL(CS.IndAcumulaSumaRea,'N'),'S', C.Suma_Asegurada_Moneda, 0)) SumaAseg_Moneda
+        FROM COBERTURA_ASEG C, COBERT_ACT_ASEG CA, COBERTURAS_DE_SEGUROS CS
+       WHERE CS.CodCobert     = C.CodCobert
+         AND CS.PlanCob       = C.PlanCob
+         AND CS.IdTipoSeg     = C.IdTipoSeg
+         AND CS.CodEmpresa    = C.CodEmpresa
+         AND CS.CodCia        = C.CodCia
+         AND CS.CodRiesgoRea IS NOT NULL
+         AND C.CodCobert      = CA.CodCobert
+         AND C.Cod_Asegurado  = CA.Cod_Asegurado
+         AND C.IdEndoso       = nIdEndoso
+         AND C.IDetPol        = CA.IDetPol
+         AND C.IdPoliza       = CA.IdPoliza
+         AND C.CodEmpresa     = CA.CodEmpresa
+         AND C.CodCia         = CA.CodCia
+         AND CA.StsCobertura != 'SOL'
+         AND CA.Cod_Asegurado > 0 
+         AND CA.IdEndoso      = nIdEndoso
+         AND CA.IDetPol       = nIDetPol
+         AND CA.IdPoliza      = nIdPoliza
+         AND CA.CodEmpresa    = nCodEmpresa
+         AND CA.CodCia        = nCodCia
+         AND cIndPolizaEspec  = 'S'
+         AND EXISTS (SELECT 'S'
+                       FROM REA_ESQUEMAS_POLIZA_COBERT
+                      WHERE CodCia          = nCodCia
+                        AND CodEsquema      = cCodEsquemaPol
+                        AND IdPoliza        = nIdPoliza
+                        AND CodCobert       = C.CodCobert
+                        AND IndCesionPrimas = 'S')
+       GROUP BY CS.CodRiesgoRea, CS.CodGrupoCobert, CA.Cod_Moneda, CA.Cod_Asegurado;
+   --
+   CURSOR DIST_Q IS
+      SELECT CA.CodCia, CA.CodEsquema, CA.IdEsqContrato, CA.IdCapaContrato,
+             CA.PorcEsqContrato, CA.LimiteMaxCapa, CO.CodMoneda, CO.CodRiesgo,
+             CO.CodContrato, CO.CodTarifaReaseg
+        FROM REA_ESQUEMAS_CONTRATOS CO, REA_ESQUEMAS_CAPAS CA
+       WHERE CA.FecVigInicial  <= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
+         AND CA.FecVigFinal    >= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
+         AND CA.StsCapaContrato = 'ACTIVO'
+         AND CA.IdEsqContrato   = CO.IdEsqContrato
+         AND CA.CodEsquema      = CO.CodEsquema
+         AND CA.CodCia          = CO.CodCia
+         AND CO.CodCia          = nCodCia
+         AND CO.CodRiesgo       = cCodRiesgoRea
+         AND CO.CodMoneda       = cCod_Moneda
+         AND CO.FecVigInicial  <= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
+         AND CO.FecVigFinal    >= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
+         AND CO.StsEsqContrato  = 'ACTIVO'
+         AND EXISTS (SELECT 'S'
+                       FROM REA_ESQUEMAS
+                      WHERE CodCia         = CO.CodCia
+                        AND CodEsquema     = CO.CodEsquema
+                        AND IndPolizas     = 'N'
+                        AND cCodEsquemaPol IS NULL)
+       UNION 
+      SELECT CA.CodCia, CA.CodEsquema, CA.IdEsqContrato, CA.IdCapaContrato,
+             CA.PorcEsqContrato, CA.LimiteMaxCapa, CO.CodMoneda, CO.CodRiesgo,
+             CO.CodContrato, CO.CodTarifaReaseg
+        FROM REA_ESQUEMAS_CONTRATOS CO, REA_ESQUEMAS_CAPAS CA
+       WHERE CA.FecVigInicial  <= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
+         AND CA.FecVigFinal    >= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
+         AND CA.StsCapaContrato = 'ACTIVO'
+         AND CA.IdEsqContrato   = CO.IdEsqContrato
+         AND CA.CodEsquema      = CO.CodEsquema
+         AND CA.CodCia          = CO.CodCia
+         AND CO.CodCia          = nCodCia
+         AND CO.CodRiesgo       = cCodRiesgoRea
+         AND CO.CodMoneda       = cCod_Moneda
+         AND CO.FecVigInicial  <= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
+         AND CO.FecVigFinal    >= TO_DATE(TO_CHAR(dFecIniVigPol,'DD/MM/YYYY HH:MI:SS'), 'DD/MM/YYYY HH:MI:SS')
+         AND CO.StsEsqContrato  = 'ACTIVO'
+         AND EXISTS (SELECT 'S'
+                       FROM REA_ESQUEMAS
+                      WHERE CodCia          = CO.CodCia
+                        AND CodEsquema      = CO.CodEsquema
+                        AND IndPolizas      = 'S'
+                        AND CodEsquema      = cCodEsquemaPol 
+                        AND cCodEsquemaPol IS NOT NULL)
+       ORDER BY IdEsqContrato, IdCapaContrato;
+   --
+   CURSOR EMP_Q IS
+      SELECT CodEmpresaGremio, CodInterReaseg, PorcEmpresa, 
+             PorcComisBasica, PorcRvaPrimas, CuotaReaseg,
+             PrimaReaseg, IdEsqContrato, IdCapaContrato,
+             NVL(FactProrrateo,1) FactProrrateo
+        FROM REA_ESQUEMAS_EMPRESAS
+       WHERE CodCia         = nCodCia
+         AND CodEsquema     = cCodEsquema
+         AND IdEsqContrato  = nIdEsqContrato
+         AND IdCapaContrato = nIdCapaContrato
+         AND StsEsqEmpresa  = 'ACTIVO';
 BEGIN
    SELECT COUNT(*)
-     INTO nDistrib
-     FROM REA_DISTRIBUCION
-    WHERE CodCia        = nCodCia
-      AND IdTransaccion = nIdTransaccion
-      AND IdPoliza      = nIdPoliza;
+   INTO   nDistrib
+   FROM   REA_DISTRIBUCION
+   WHERE  CodCia        = nCodCia
+     AND  IdPoliza      = nIdPoliza
+     AND  IdTransaccion = nIdTransaccion;
+   --
    IF NVL(nDistrib,0) = 0 THEN
       nIdDistribRea   := GT_REA_DISTRIBUCION.NUMERO_DISTRIBUCION(nCodCia);
       nNumDistrib     := 0;
       cCodEsquemaPol  := GT_REA_ESQUEMAS_POLIZAS.ESQUEMA_POLIZA(nCodCia, nIdPoliza);
       cCodRiesgoRea   := OC_POLIZAS.CODIGO_RIESGO_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza);
       cIndPolizaEspec := GT_REA_RIESGOS.INDICADORES(nCodCia, cCodRiesgoRea, 'POLESP');
+      --
       IF (GT_REA_ESQUEMAS.APLICA_DISTRIBUCION(nCodCia, cCodEsquemaPol) = 'TODOS' OR 
          (GT_REA_ESQUEMAS.APLICA_DISTRIBUCION(nCodCia, cCodEsquemaPol) = 'INICIAL' AND
-          cOrigen IN ('EMISION','ANULAPOL'))) THEN
-
+         cOrigen IN ('EMISION','ANULAPOL'))) THEN
+         --
          BEGIN
             SELECT FecIniVig, FecFinVig
-              INTO dFecIniVigPol, dFecFinVigPol
-              FROM POLIZAS
-             WHERE CodCia     = nCodCia
-               AND CodEmpresa = nCodEmpresa
-               AND IdPoliza   = nIdPoliza;
+            INTO   dFecIniVigPol, dFecFinVigPol
+            FROM   POLIZAS
+            WHERE  CodCia     = nCodCia
+              AND  CodEmpresa = nCodEmpresa
+              AND  IdPoliza   = nIdPoliza;
          EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-               RAISE_APPLICATION_ERROR (-20100,'No Existe Póliza No. '|| nIdPoliza);
+         WHEN NO_DATA_FOUND THEN
+            cTextoLog := 'No Existe Póliza No. '|| nIdPoliza;
+            OC_DISTRIBUCION_MASIVA_LOG.INSERTA_LOG( nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion, -20100, cTextoLog );
+            RAISE_APPLICATION_ERROR ( -20100, cTextoLog );
          END;
-
+         --
          FOR X IN TRAN_Q LOOP
-            nIDetPol    := X.IDetPol;
-            nIdEndoso   := X.IdEndoso;
-
+            nIDetPol  := X.IDetPol;
+            nIdEndoso := X.IdEndoso;
+            --
             -- Determina Fechas de Vigencia de Endoso o Detalle de Póliza
             IF nIdEndoso = 0 THEN
                BEGIN
                   SELECT FecIniVig, FecFinVig, StsDetalle
-                    INTO dFecIniVig, dFecFinVig, cStsDetalle
-                    FROM DETALLE_POLIZA
-                   WHERE CodCia     = nCodCia
-                     AND CodEmpresa = nCodEmpresa
-                     AND IdPoliza   = nIdPoliza
-                     AND IDetPol    = nIDetPol;
+                  INTO   dFecIniVig, dFecFinVig, cStsDetalle
+                  FROM   DETALLE_POLIZA
+                  WHERE  CodCia     = nCodCia
+                    AND  CodEmpresa = nCodEmpresa
+                    AND  IdPoliza   = nIdPoliza
+                    AND  IDetPol    = nIDetPol;
                EXCEPTION
-                  WHEN NO_DATA_FOUND THEN
-                     RAISE_APPLICATION_ERROR (-20100,'No Existe Detalle de Póliza '|| nIDetPol || ' para la Póliza ' || nIdPoliza);
+               WHEN NO_DATA_FOUND THEN
+                  cTextoLog := 'No Existe Detalle de Póliza '|| nIDetPol || ' para la Póliza ' || nIdPoliza;
+                  OC_DISTRIBUCION_MASIVA_LOG.INSERTA_LOG( nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion, -20100, cTextoLog );
+                  RAISE_APPLICATION_ERROR ( -20100, cTextoLog );
                END;
-               
+               --
                IF X.IdProceso IN (3, 7, 18) THEN 
                   cNaturalidad := '+';
                ELSIF cStsDetalle NOT IN ('ANU', 'EXC') THEN
@@ -377,73 +396,77 @@ BEGIN
             ELSE
                BEGIN
                   SELECT FecIniVig, FecFinVig, StsEndoso, OC_ENDOSO.NATURALIDAD(TipoEndoso)
-                    INTO dFecIniVig, dFecFinVig, cStsEndoso, cNaturalidad
-                    FROM ENDOSOS
-                   WHERE CodCia     = nCodCia
-                     AND CodEmpresa = nCodEmpresa
-                     AND IdPoliza   = nIdPoliza
-                     AND IDetPol    = nIDetPol
-                     AND IdEndoso   = nIdEndoso;
+                  INTO   dFecIniVig, dFecFinVig, cStsEndoso, cNaturalidad
+                  FROM   ENDOSOS
+                  WHERE  CodCia     = nCodCia
+                    AND  CodEmpresa = nCodEmpresa
+                    AND  IdPoliza   = nIdPoliza
+                    AND  IDetPol    = nIDetPol
+                    AND  IdEndoso   = nIdEndoso;
                EXCEPTION
-                  WHEN NO_DATA_FOUND THEN
-                     RAISE_APPLICATION_ERROR (-20100,'No Existe Endoso '|| nIdEndoso || ' para la Póliza ' || nIdPoliza);
+               WHEN NO_DATA_FOUND THEN
+                  cTextoLog := 'No Existe Endoso '|| nIdEndoso || ' para la Póliza ' || nIdPoliza;
+                  OC_DISTRIBUCION_MASIVA_LOG.INSERTA_LOG( nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion, -20100, cTextoLog );
+                  RAISE_APPLICATION_ERROR ( -20100, cTextoLog );
                END;
+               --
                IF cStsEndoso = 'ANU' THEN
                   cNaturalidad := '-';
                END IF;
             END IF;
             cExisteContrato  := 'N';
+            --Punto de control
+            --
+            nContMovtos := 0;
             FOR W IN COB_Q LOOP
-               cCodRiesgoRea     := W.CodRiesgoRea;
-               cCod_Moneda       := W.Cod_Moneda;
-               nSumaCobertura    := W.SumaAseg_Moneda;
+               nContMovtos    := 1; --Para indicar que entró al cursor y tiene movimientos
+               cCodRiesgoRea  := W.CodRiesgoRea;
+               cCod_Moneda    := W.Cod_Moneda;
+               nSumaCobertura := W.SumaAseg_Moneda;
+               --
                IF cCodEsquemaPol IS NULL THEN
-                  BEGIN
-                     SELECT MAX(CodEsquema)
-                       INTO cCodEsquema
-                       FROM REA_ESQUEMAS_CONTRATOS
-                      WHERE CodCia          = nCodCia
-                        AND CodRiesgo       = cCodRiesgoRea
-                        AND CodMoneda       = cCod_Moneda
-                        AND FecVigInicial  <= dFecTransaccion
-                        AND FecVigFinal    >= dFecTransaccion
-                        AND StsEsqContrato  = 'ACTIVO';
-                  END;
+                  SELECT MAX(CodEsquema)
+                  INTO   cCodEsquema
+                  FROM   REA_ESQUEMAS_CONTRATOS
+                  WHERE  CodCia          = nCodCia
+                    AND  CodRiesgo       = cCodRiesgoRea
+                    AND  CodMoneda       = cCod_Moneda
+                    AND  FecVigInicial  <= dFecTransaccion
+                    AND  FecVigFinal    >= dFecTransaccion
+                    AND  StsEsqContrato  = 'ACTIVO';
                ELSE
                   cCodEsquema   := cCodEsquemaPol;
                END IF;
+               --
                IF GT_REA_ESQUEMAS.TIPO_DISTRIBUCION(nCodCia, cCodEsquema) = 'SALINS' THEN
-                  nSaldoInsoluto      := GT_REA_ESQUEMAS_DATOS_CREDITO.SALDO_INSOLUTO(nCodCia, nCodEmpresa, cCodEsquema, 
-                                                                                      nIdPoliza, nIDetPol);
+                  nSaldoInsoluto      := GT_REA_ESQUEMAS_DATOS_CREDITO.SALDO_INSOLUTO(nCodCia, nCodEmpresa, cCodEsquema, nIdPoliza, nIDetPol);
                   nSumaAsegPendDist   := NVL(nSaldoInsoluto,0);
                   nSumaCobertura      := NVL(nSaldoInsoluto,0);
-                  dFechaInicioCredito := GT_REA_ESQUEMAS_DATOS_CREDITO.FECHA_INICIO_CREDITO(nCodCia, nCodEmpresa, cCodEsquema, 
-                                                                                            nIdPoliza, nIDetPol);
-                  nPlazoCredito       := GT_REA_ESQUEMAS_DATOS_CREDITO.PLAZO_DEL_CREDITO(nCodCia, nCodEmpresa, cCodEsquema, 
-                                                                                         nIdPoliza, nIDetPol);
-                  nMesesPrima         := NVL(nPlazoCredito,0) + 
-                                         GT_REA_ESQUEMAS_FACT_CREDITOS.PERIODO_VARIABLE(nCodCia, cCodEsquema, dFechaInicioCredito);
+                  dFechaInicioCredito := GT_REA_ESQUEMAS_DATOS_CREDITO.FECHA_INICIO_CREDITO(nCodCia, nCodEmpresa, cCodEsquema, nIdPoliza, nIDetPol);
+                  nPlazoCredito       := GT_REA_ESQUEMAS_DATOS_CREDITO.PLAZO_DEL_CREDITO(nCodCia, nCodEmpresa, cCodEsquema, nIdPoliza, nIDetPol);
+                  nMesesPrima         := NVL(nPlazoCredito,0) + GT_REA_ESQUEMAS_FACT_CREDITOS.PERIODO_VARIABLE(nCodCia, cCodEsquema, dFechaInicioCredito);
                   nFactorCreditos     := GT_REA_ESQUEMAS_FACT_CREDITOS.FACTOR_CREDITO(nCodCia, cCodEsquema, dFechaInicioCredito);
                   nPrimaPendDist      := ((NVL(nSaldoInsoluto,0) * nFactorCreditos) / 1000) * NVL(nMesesPrima,0);
                ELSE
                   nSumaAsegPendDist   := W.SumaAseg_Moneda;
                   nPrimaPendDist      := W.Prima_Moneda;
                END IF;
+               --
                nEdadAsegurado    := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, nCodEmpresa, W.Cod_Asegurado, dFecIniVig);
-
+               --
                IF cNaturalidad = '-' THEN
                   nSumaAsegPendDist   := nSumaAsegPendDist * -1;
                   nPrimaPendDist      := nPrimaPendDist * -1;
                   nSumaCobertura      := nSumaCobertura * -1;
                   nSaldoInsoluto      := nSaldoInsoluto * -1;
                END IF;
-
+               --
                FOR Z IN DIST_Q LOOP
                   cExisteContrato  := 'S';
                   nNumDistrib      := NVL(nNumDistrib,0) + 1;
                   nSumaAsegDistrib := (NVL(nSumaAsegPendDist,0) * (Z.PorcEsqContrato / 100));
                   nPrimaDistrib    := (NVL(nPrimaPendDist,0) * (Z.PorcEsqContrato / 100));
-
+                  --
                   IF ABS(nSumaAsegDistrib) > Z.LimiteMaxCapa AND Z.LimiteMaxCapa > 0 THEN
                      nSumaAsegDistrib := Z.LimiteMaxCapa;
                      IF cNaturalidad = '-' THEN
@@ -454,25 +477,20 @@ BEGIN
                   ELSE
                      nPorcDistrib     := (nSumaAsegDistrib / nSumaCobertura) * 100;
                   END IF;
-
+                  --
                   INSERT INTO REA_DISTRIBUCION
-                         (CodCia, IdDistribRea, NumDistrib, IdPoliza, IDetPol,
-                          IdEndoso, IdSiniestro, IdTransaccion, CodEsquema,
-                          IdEsqContrato, IdCapaContrato, CodRiesgoReaseg, FecVigInicial,
-                          FecVigFinal, FecMovDistrib, CodMoneda, PorcDistrib, SumaAsegDistrib,
-                          PrimaDistrib, MontoReserva, MtoSiniDistrib, CapacidadMaxima,
-                          IndTraspaso, StsDistribucion, FecStatus, Cod_Asegurado, CodGrupoCobert)
-                  VALUES (nCodCia, nIdDistribRea, nNumDistrib, nIdPoliza, nIDetPol,
-                          nIdEndoso, 0, nIdTransaccion, Z.CodEsquema,
-                          Z.IdEsqContrato, Z.IdCapaContrato, Z.CodRiesgo, dFecIniVig,
-                          dFecFinVig, dFecTransaccion, Z.CodMoneda, nPorcDistrib, nSumaAsegDistrib,
-                          nPrimaDistrib, 0, 0, Z.LimiteMaxCapa,
-                          'N', 'ACTIVA', TRUNC(SYSDATE), W.Cod_Asegurado, W.CodGrupoCobert);
-
+                         ( CodCia, IdDistribRea, NumDistrib, IdPoliza, IDetPol, IdEndoso, IdSiniestro, IdTransaccion, CodEsquema, IdEsqContrato, IdCapaContrato,
+                           CodRiesgoReaseg, FecVigInicial, FecVigFinal, FecMovDistrib, CodMoneda, PorcDistrib, SumaAsegDistrib, PrimaDistrib, MontoReserva,
+                           MtoSiniDistrib, CapacidadMaxima, IndTraspaso, StsDistribucion, FecStatus, Cod_Asegurado, CodGrupoCobert )
+                  VALUES ( nCodCia, nIdDistribRea, nNumDistrib, nIdPoliza, nIDetPol, nIdEndoso, 0, nIdTransaccion, Z.CodEsquema, Z.IdEsqContrato, Z.IdCapaContrato,
+                           Z.CodRiesgo, dFecIniVig, dFecFinVig, dFecTransaccion, Z.CodMoneda, nPorcDistrib, nSumaAsegDistrib, nPrimaDistrib, 0,
+                           0, Z.LimiteMaxCapa, 'N', 'ACTIVA', TRUNC(SYSDATE), W.Cod_Asegurado, W.CodGrupoCobert);
+                  --
                   -- Distribuye por Empresa del Gremio Reaseguradora lo Cedido al Contrato
                   cCodEsquema     := Z.CodEsquema;
                   nIdEsqContrato  := Z.IdEsqContrato;
                   nIdCapaContrato := Z.IdCapaContrato;
+                  --
                   FOR Y IN EMP_Q LOOP
                      nSumaAsegDistribEmp := NVL(nSumaAsegDistrib,0) * (Y.PorcEmpresa / 100);
                      IF GT_REA_ESQUEMAS.TIPO_DISTRIBUCION(nCodCia, cCodEsquema) = 'CUOTA' THEN
@@ -503,59 +521,93 @@ BEGIN
                      ELSE
                         nPrimaDistribEmp    := NVL(nPrimaDistrib,0) * (Y.PorcEmpresa / 100);
                      END IF;
-
+                     --
                      nMontoComision      := NVL(nPrimaDistribEmp,0) * (Y.PorcComisBasica / 100);
                      nMontoReserva       := NVL(nPrimaDistribEmp,0) * (Y.PorcRvaPrimas / 100);
+                     --
                      INSERT INTO REA_DISTRIBUCION_EMPRESAS
-                            (CodCia, IdDistribRea, NumDistrib, CodEmpresaGremio, CodInterReaseg,
-                             CodMoneda, PorcDistrib, SumaAsegDistrib, PrimaDistrib, MontoComision,
-                             MontoReserva, MtoSiniDistrib, IdLiquidacion, IntRvasLiberadas,
-                             ImpRvasLiberadas, FecLiberacionRvas, StsDistribEmpresa, FecStatus)
-                     VALUES (nCodCia, nIdDistribRea, nNumDistrib, Y.CodEmpresaGremio, Y.CodInterReaseg,
-                             Z.CodMoneda, Y.PorcEmpresa, nSumaAsegDistribEmp, nPrimaDistribEmp, nMontoComision,
-                             nMontoReserva, 0, NULL, 0,
-                             0, NULL, 'ACTIVA', TRUNC(SYSDATE));
+                            ( CodCia, IdDistribRea, NumDistrib, CodEmpresaGremio, CodInterReaseg, CodMoneda, PorcDistrib, SumaAsegDistrib, PrimaDistrib, MontoComision,
+                              MontoReserva, MtoSiniDistrib, IdLiquidacion, IntRvasLiberadas, ImpRvasLiberadas, FecLiberacionRvas, StsDistribEmpresa, FecStatus )
+                     VALUES ( nCodCia, nIdDistribRea, nNumDistrib, Y.CodEmpresaGremio, Y.CodInterReaseg, Z.CodMoneda, Y.PorcEmpresa, nSumaAsegDistribEmp, nPrimaDistribEmp, nMontoComision,
+                              nMontoReserva, 0, NULL, 0, 0, NULL, 'ACTIVA', TRUNC(SYSDATE));
                   END LOOP;
-
+                  --
                   /* Distribución Facultativa Heredada de Transaccion Anterior para Cancelaciones o Disminuciones
                   IF GT_REA_DISTRIBUCION_EMPRESAS.POSEE_DISTRIB_EMPRESAS(nCodCia, nIdDistribRea, nNumDistrib) = 'N' AND
                      GT_REA_TIPOS_CONTRATOS.CONTRATO_FACULTATIVO(nCodCia, X.CodContrato) = 'S' THEN
                   END IF;*/
-
+                  --
                   -- Actualiza Monto de Reserva
                   nMontoReserva    := GT_REA_DISTRIBUCION_EMPRESAS.MONTO_RESERVA(nCodCia, nIdDistribRea, nNumDistrib);
                   nPrimaDistribTot := GT_REA_DISTRIBUCION_EMPRESAS.PRIMA_DISTRIBUIDA(nCodCia, nIdDistribRea, nNumDistrib);
-
+                  --
                   UPDATE REA_DISTRIBUCION
-                     SET MontoReserva = nMontoReserva,
-                         PrimaDistrib = nPrimaDistribTot
-                   WHERE CodCia       = nCodCia
-                     AND IdDistribRea = nIdDistribRea
-                     AND NumDistrib   = nNumDistrib;
-
+                  SET    MontoReserva = nMontoReserva
+                    ,    PrimaDistrib = nPrimaDistribTot
+                  WHERE  CodCia       = nCodCia
+                    AND  IdDistribRea = nIdDistribRea
+                    AND  NumDistrib   = nNumDistrib;
+                  --
                   -- Controla si ya se distribuyó el 100% de la Suma Asegurada y Prima
                   nPrimaPendDist    := NVL(nPrimaPendDist,0) - NVL(nPrimaDistrib,0);
                   nSumaAsegPendDist := NVL(nSumaAsegPendDist,0) - NVL(nSumaAsegDistrib,0);
-                  IF ((NVL(nSumaAsegPendDist,0) <= 0 AND cNaturalidad = '+') OR
-                      (NVL(nSumaAsegPendDist,0) >= 0 AND cNaturalidad = '-')) THEN
+                  --
+                  IF ((NVL(nSumaAsegPendDist,0) <= 0 AND cNaturalidad = '+') OR (NVL(nSumaAsegPendDist,0) >= 0 AND cNaturalidad = '-')) THEN
                      EXIT;
                   END IF;
                END LOOP;
+               --
+               cTextoLog := NULL;
+               IF cCodEsquema IS NULL THEN
+                  cTextoLog := 'cCodEsquema, ';
+               END IF;
+               --
+               IF dFecIniVigPol IS NULL THEN
+                  cTextoLog := 'dFecIniVigPol, ';
+               END IF;
+               --
+               IF cCodRiesgoRea IS NULL THEN
+                  cTextoLog := 'cCodRiesgoRea, ';
+               END IF;
+               --
+               IF cCodEsquemaPol IS NULL THEN
+                  cTextoLog := 'cCodEsquemaPol, ';
+               END IF;
+               --
+               IF cCod_Moneda IS NULL THEN
+                  cTextoLog := 'cCod_Moneda, ';
+               END IF;
+               --
+               IF cTextoLog IS NOT NULL THEN
+                  cTextoLog := W.CodGrupoCobert || ' NO se ha Distribuido la Suma Asegurada, los siguientes campos vienen nulos: ' || cTextoLog ||
+                               ' Verifique la Configuración del Esquema de Reaseguro para el Riesgo ' || cCodRiesgoRea;
+                  OC_DISTRIBUCION_MASIVA_LOG.INSERTA_LOG( nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion, -20100, cTextoLog );
+                  RAISE_APPLICATION_ERROR ( -20100, cTextoLog );
+               END IF;
+               --
                IF NVL(nSumaAsegPendDist,0) != 0 AND cExisteContrato = 'S' THEN
-                  RAISE_APPLICATION_ERROR (-20100,W.CodGrupoCobert || ' NO se ha Distribuido toda la Suma Asegurada. ' || nSumaAsegPendDist || ' - ' || nSumaAsegDistrib || ' ' ||
-                                           'Verifique la Configuración del Esquema de Reaseguro para el Riesgo '||cCodRiesgoRea);
+                  cTextoLog := W.CodGrupoCobert || ' NO se ha Distribuido toda la Suma Asegurada. ' || nSumaAsegPendDist || ' - ' || nSumaAsegDistrib || ' ' ||
+                               'Verifique la Configuración del Esquema de Reaseguro para el Riesgo '||cCodRiesgoRea;
+                  OC_DISTRIBUCION_MASIVA_LOG.INSERTA_LOG( nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion, -20100, cTextoLog );
+                  RAISE_APPLICATION_ERROR ( -20100, cTextoLog );
                END IF;
             END LOOP;
+            --
+            IF nContMovtos = 0 THEN
+               cTextoLog := 'NO se ha Distribuido la Póliza/Transacción: ' || nIdPoliza || ' / ' || nIdTransaccion || ' No existen Asegurados/Coberturas';
+               OC_DISTRIBUCION_MASIVA_LOG.INSERTA_LOG( nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion, -20100, cTextoLog );
+               RAISE_APPLICATION_ERROR ( -20100, cTextoLog );
+            END IF;
          END LOOP;
       END IF;
    ELSE
-      RAISE_APPLICATION_ERROR (-20100,'Ya existe Distribución de Reaseguro de Póliza ' || nIdPoliza ||
-                               ' y Transacción No. ' || nIdTransaccion);
+      cTextoLog := 'Ya existe Distribución de Reaseguro de Póliza ' || nIdPoliza || ' y Transacción No. ' || nIdTransaccion;
+      OC_DISTRIBUCION_MASIVA_LOG.INSERTA_LOG( nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion, -20100, cTextoLog );
    END IF;
 EXCEPTION
-   WHEN OTHERS THEN
-      RAISE_APPLICATION_ERROR (-20100,'ERROR en Distribución de Reaseguro de Póliza No. ' || nIdPoliza || 
-                               ' y Certificado No. ' || nIDetPol || ' - ' || ' Transaccion '||nIdTransaccion||' - '|| SQLERRM);
+WHEN OTHERS THEN
+   cTextoLog := 'ERROR en Distribución de Reaseguro de Póliza No. ' || nIdPoliza || ' y Certificado No. ' || nIDetPol || ' - ' || ' Transaccion ' || nIdTransaccion || ' - ' || SQLERRM;
+   OC_DISTRIBUCION_MASIVA_LOG.INSERTA_LOG( nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion, -20100, cTextoLog );
 END DISTRIBUYE_REASEGURO;
 
 PROCEDURE DISTRIBUYE_SINIESTROS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSiniestro NUMBER,
