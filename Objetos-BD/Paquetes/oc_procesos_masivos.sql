@@ -1,5 +1,5 @@
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOS_MASIVOS IS
------- SE INCLUYEN VALIDACIONES PARA PROVEEDORES SAT Y QEQ  JMMD
+------ SE INCLUYEN VALIDACIONES PARA PROVEEDORES SAT Y QEQ (PLD)  JMMD  20200406
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 PROCEDURE ACTUALIZA_STATUS(nIdProcMasivo NUMBER, cStsRegProceso VARCHAR2);
 PROCEDURE EMISION(nIdProcMasivo NUMBER);
@@ -90,7 +90,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOS_MASIVOS IS
 --  01/09/2016  Agrego Rutina para Aseguramos que el IVA no rebase el 16% del monto a pagar      -- AEVS IVA
 --  28/02/2017  Rutina para constituir solo reserva en INFONACOT                                 -- JICO ASEGMAS
 --  16/02/2018  Cambio de numeracion por eliminacion de nombre completo                          -- JICO INFO1
---  01/10/2019  Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)     -- JMMD SAT
+--  01/10/2019  Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)     -- JMMD SAT y PLD 20200406
 
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
@@ -2326,10 +2326,10 @@ BEGIN
                      AND C.CodEmpresa     = D.CodEmpresa
                      AND C.IdCotizacion   = D.IdCotizacion;
                      --AND C.IDetCotizacion = D.IDetCotizacion;
-               EXCEPTION 
+               EXCEPTION
                   WHEN NO_DATA_FOUND THEN
-                     cIndEdadPromedio  := 'N'; 
-                     cIndCuotaPromedio := 'N'; 
+                     cIndEdadPromedio  := 'N';
+                     cIndCuotaPromedio := 'N';
                      cIndPrimaPromedio := 'N';
                END;
                /* Se quita temporalmente la carga de coberturas para agilizar el proceso de Emisión y solo se deja para Endosos*/
@@ -2341,7 +2341,7 @@ BEGIN
                         IF NVL(nIdSolicitud,0) = 0 THEN
 --                           OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,
 --                                                                nIdPoliza, nIDetPol, nTasaCambio, nCod_Asegurado);
-                           IF NVL(nIdCotizacion,0) = 0 THEN 
+                           IF NVL(nIdCotizacion,0) = 0 THEN
                               OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,nIdPoliza,
                                                                    nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0);
                            ELSE
@@ -2383,11 +2383,11 @@ BEGIN
                   END IF;
                ELSIF NVL(nIdCotizacion,0) != 0  AND (cIndEdadPromedio = 'S' OR cIndCuotaPromedio = 'S' OR cIndPrimaPromedio = 'S') THEN
                   --IF NVL(nIdCotizacion,0) != 0 THEN
-                     
-                     GT_TEMP_LISTADO_DECLARACIONES.GENERA_COBERTURAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso, nCod_Asegurado, 
-                                                                     nIdCotizacion, nIDetCotizacion, X.PlanCob, X.IdTipoSeg, cCodMoneda, 
+
+                     GT_TEMP_LISTADO_DECLARACIONES.GENERA_COBERTURAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso, nCod_Asegurado,
+                                                                     nIdCotizacion, nIDetCotizacion, X.PlanCob, X.IdTipoSeg, cCodMoneda,
                                                                      nSumaAsegurada);
-                  --END IF;                                                         
+                  --END IF;
                END IF;
             END IF;
 
@@ -10247,64 +10247,74 @@ BEGIN
                 cRegFiscal        := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,12,cSeparador));
 ------- JMMD20190927 VALIDACION DE REGISTROS EN SAT
                 dbms_output.put_line('jmmd pruebas sat cRFCProv : '||cRFCProv||' COMPAÑIA : '||X.CodCia);
-                IF SICAS_OC.OC_PROVEEDORES_SAT.ES_PROVEEDOR_SAT_DEFINITIVO(X.CodCia, cRFCProv) = 'S' THEN               
+                IF SICAS_OC.OC_PROVEEDORES_SAT.ES_PROVEEDOR_SAT_DEFINITIVO(X.CodCia, cRFCProv) = 'S' THEN
                     dbms_output.put_line('jmmd pruebas sat es proveedor sat definitivo : '||cRFCProv);
                     cMsjError := 'Persona encontrada en an el archivo de SAT DEFINITIVOS.';
                     RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de SAT DEFINITIVOS, requiere de autorizacion.');
-                END IF;                
-                
+                END IF;
+
                 IF SICAS_OC.OC_PROVEEDORES_SAT.ES_PROVEEDOR_SAT_PRESUNTOS(X.CodCia, cRFCProv) = 'S' THEN
-                    dbms_output.put_line('jmmd pruebas sat es proveedor sat presuntos : '||cRFCProv);                
+                    dbms_output.put_line('jmmd pruebas sat es proveedor sat presuntos : '||cRFCProv);
                     cMsjError := 'Persona encontrada en an el archivo de SAT PRESUNTOS.';
                     RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de SAT PRESUNTOS, requiere de autorizacion.');
-                END IF;                               
+                END IF;
 -------
 ------- JMMD20191025 VALIDACION DE REGISTROS EN PLD
 ----------
-               	BEGIN
-		  SELECT DESCVALLST
+                ---VALIDACION RFC BENEFICIARIO
+                cRFCBenef         := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,23,cSeparador));
+                cNombProvBenef    := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,24,cSeparador));
+
+                IF LENGTH(REPLACE(LTRIM(RTRIM(REPLACE(cRFCBenef,' '))),'-')) NOT between 12 and 13 THEN
+                    cMsjError := ' RFC De Beneficiario De Pago '||cRFCBenef||' No Cumple Con La Longitud Establecida De 13 Caracteres, Por Favor Valide';
+                    RAISE_APPLICATION_ERROR(-20225,'RFC De Beneficiario De Pago '||cRFCBenef||' No Cumple Con La Longitud Establecida De 13 Caracteres, Por Favor Valide');
+                END IF;
+----------
+                 BEGIN
+                  SELECT DESCVALLST
                     INTO nDiasautpld
                     FROM VALORES_DE_LISTAS
                    WHERE CODLISTA = 'DIASAUTPLD'
                      AND CODVALOR = 'ODC';
                 EXCEPTION
-                    WHEN OTHERS THEN 
+                    WHEN OTHERS THEN
                       nDiasautpld := 1;
                 END;
 ----------
                 cFechaNacimiento := CALCULA_FECHA_NACIMIENTO(cRFCProv);
-                dbms_output.put_line('jmmd pruebas PLD cRFCProv : '||cRFCProv||' NOMBRE : '||cNombProv);
-                IF OC_CAT_QEQ.ES_QEQ_SINIESTRO('RFC', cRFCProv, cNombProv, cFechaNacimiento ) = 'S' THEN
+                dbms_output.put_line('jmmd pruebas PLD cRFCBenef : '||cRFCBenef||' NOMBRE : '||cNombProvBenef);
+                IF OC_CAT_QEQ.ES_QEQ_SINIESTRO('RFC', cRFCBenef, cNombProvBenef, cFechaNacimiento ) = 'S' THEN
 -----------------
                    BEGIN
                     SELECT ST_RESOLUCION, TP_RESOLUCION
                       INTO cST_RESOLUCIO, cTP_RESOLUCION
                       FROM ADMON_RIESGO_SINIESTROS
                      WHERE TIPO_DOC_IDENTIFICACION = 'RFC'
-                       AND NUM_DOC_IDENTIFICACION = cRFCProv 
-                       AND NOMBRE_BENEFICIARIO = cNombProv 
-               	       AND TRUNC(FE_ESTATUS) >= TRUNC(SYSDATE - nDiasautpld);	 
-                   EXCEPTION 
-                     WHEN NO_DATA_FOUND THEN	
------------------                
+                       AND NUM_DOC_IDENTIFICACION = cRFCBenef
+                       AND NOMBRE_BENEFICIARIO = cNombProvBenef
+                        AND TRUNC(FE_ESTATUS) >= TRUNC(SYSDATE - nDiasautpld);
+                   EXCEPTION
+                     WHEN NO_DATA_FOUND THEN
+-----------------
+                     dbms_output.put_line('jmmd pruebas PLD cRFCBenef : '||cRFCBenef||' no encontrado en admon riesgo siniestros recientemente : '||cNombProvBenef);
                        OC_ADMON_RIESGO_SINIESTROS.INSERTA(
                               X.CodCia,
                               nCodEmpresa,
                               1 ,
                               nIdPoliza  ,
                               'N/A' ,
-                              nCodAsegurado ,      
+                              nCodAsegurado ,
                               nIdSiniestro ,
                               'QEQ'  ,
-                              'RFC'	,
-                              cRFCProv	,
-                              cNombProv	,
-                              'PEND'	,
-                              TRUNC(SYSDATE)	,
-                              ''	,
-                              'LA PERSONA ESTA EN PLD'	,
+                              'RFC'  ,
+                              cRFCBenef  ,
+                              cNombProvBenef  ,
+                              'PEND'  ,
                               TRUNC(SYSDATE)  ,
-                              USUSARIO );                         
+                              ''  ,
+                              'LA PERSONA ESTA EN PLD'  ,
+                              TRUNC(SYSDATE)  ,
+                              USUSARIO );
                         dbms_output.put_line('jmmd1 pruebas PLD existe en PLD :Persona encontrada en an el Catalogo de quien es quien. ');
                         cMsjError := 'Persona encontrada en an el Catalogo de quien es quien.';
                         RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de quien es quien, requiere de autorizacion.');
@@ -10315,11 +10325,11 @@ BEGIN
                     SELECT COUNT(*)
                       INTO ncuantos
                       FROM ADMON_RIESGO_SINIESTROS
-                     WHERE TIPO_DOC_IDENTIFICACION = 'RFC' 
-                       AND NUM_DOC_IDENTIFICACION = cRFCProv 
-                       AND NOMBRE_BENEFICIARIO = cNombProv
-                       AND  ST_RESOLUCION != 'APRO';	
-              		 			       
+                     WHERE TIPO_DOC_IDENTIFICACION = 'RFC'
+                       AND NUM_DOC_IDENTIFICACION = cRFCBenef
+                       AND NOMBRE_BENEFICIARIO = cNombProvBenef
+                       AND  ST_RESOLUCION != 'APRO';
+
                     IF ncuantos > 0 THEN
                        cST_RESOLUCIO := 'PEND';
                     ELSE
@@ -10329,12 +10339,12 @@ BEGIN
                    IF cST_RESOLUCIO = 'PEND' THEN
                         dbms_output.put_line('jmmd2 pruebas PLD existe en PLD : Persona encontrada en an el Catalogo de quien es quien.');
                         cMsjError := 'Persona encontrada en an el Catalogo de quien es quien.';
-                        RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de quien es quien, requiere de autorizacion.');	       	  	
-                   END IF; 
+                        RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de quien es quien, requiere de autorizacion.');
+                   END IF;
 
----------------                    
+---------------
                 END IF;
--------                
+-------
                 --- SIN VALIDACIONES
                 nMtoHono          := TO_NUMBER(LTRIM(REPLACE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,13,cSeparador),',')));
                 nMtoHosp          := TO_NUMBER(LTRIM(REPLACE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,14,cSeparador),',')));
@@ -11693,7 +11703,7 @@ BEGIN
       ELSE
          nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(W.CodCia, W.CodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
       END IF;
-      
+
       IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(W.CodCia, nIdPoliza, nIDetPol, nCod_Asegurado) = 'S' THEN
          nMontoAporteContrat := 0;
          nMontoAporteAseg    := 0;
