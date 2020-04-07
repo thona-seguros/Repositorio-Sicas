@@ -1,114 +1,3 @@
---
--- OC_POLIZAS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   PLAN_COBERTURAS (Table)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   PREEMISION (Table)
---   FACTURAS (Table)
---   FAI_FONDOS_DETALLE_POLIZA (Table)
---   FZ_DETALLE_FIANZAS (Table)
---   DATOS_PARTICULARES_BIENES (Table)
---   DATOS_PARTICULARES_PERSONAS (Table)
---   DATOS_PARTICULARES_VEHICULO (Table)
---   DATOS_PART_EMISION (Table)
---   DESCUENTOS (Table)
---   DETALLE_DESCUENTO (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
---   DETALLE_POLIZAS_TARJETAS (Table)
---   DETALLE_RECARGO (Table)
---   DETALLE_TRANSACCION (Table)
---   DOCUMENTO_POLIZA (Table)
---   ENDOSOS (Table)
---   EXAMEN (Table)
---   TAREA (Table)
---   TASAS_CAMBIO (Table)
---   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
---   GT_REA_DISTRIBUCION (Package)
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---   OC_DETALLE_POLIZA (Package)
---   OC_DETALLE_TRANSACCION (Package)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   AGENTES_DISTRIBUCION_POLIZA (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO (Table)
---   ASEGURADO_CERT (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   BENEFICIARIO (Table)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   INSPECCION (Table)
---   NOTAS_DE_CREDITO (Table)
---   TIPOS_DE_SEGUROS (Table)
---   TRANSACCION (Table)
---   OC_PROCESO_AUTORIZA_USUARIO (Package)
---   OC_SEGUIMIENTO (Package)
---   OC_SOLICITUD_EMISION (Package)
---   RESPONSABLE_PAGO_DET (Table)
---   RESPONSABLE_PAGO_POL (Table)
---   SINIESTRO (Table)
---   COMPROBANTES_CONTABLES (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLAUSULAS (Table)
---   CLAUSULAS_DETALLE (Table)
---   CLAUSULAS_PLAN_COBERTURAS (Table)
---   CLAUSULAS_POLIZA (Table)
---   CLAUSULAS_TIPOS_SEGUROS (Table)
---   CLIENTES (Table)
---   COBERTURAS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERTURA_ASEG (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   OC_ENDOSO (Package)
---   OC_FACTURAR (Package)
---   OC_FACTURAS (Package)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_TRANSACCION (Package)
---   PARAMETROS_EMISION (Table)
---   PARAMETROS_ENUM_POL (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_ADMON_RIESGO (Package)
---   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
---   OC_ASEGURADO (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_ASISTENCIAS_ASEGURADO (Package)
---   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
---   OC_BENEFICIARIO (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_CLAUSULAS_DETALLE (Package)
---   OC_CLAUSULAS_POLIZA (Package)
---   OC_CLIENTES (Package)
---   OC_COBERT_ACT (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   OC_COMISIONES (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   OC_COMPROBANTES_DETALLE (Package)
---   REA_DISTRIBUCION (Table)
---   RECARGOS (Table)
---   REQUISITOS (Table)
---   REQUISITOS_ENC_POLIZA (Table)
---   REQUISITOS_POLIZA (Table)
---   REQUISITOS_SEGUROS (Table)
---   GT_COTIZACIONES (Package)
---   OC_GENERALES (Package)
---   OC_MAIL (Package)
---   OC_MEDIOS_DE_COBRO (Package)
---   OC_NOTAS_DE_CREDITO (Package)
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---   OC_PLAN_COBERTURAS (Package)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
 
     FUNCTION F_GET_NUMPOL ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
@@ -160,7 +49,8 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
 
     FUNCTION FACTURA_ELECTRONICA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
 
-    PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
+--    PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
+    PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cmotivorehab varchar2);    
 
     PROCEDURE ANULAR_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFecAnul DATE,
                 cMotivAnul VARCHAR2, cCod_Moneda VARCHAR2, cTipoProceso VARCHAR2);
@@ -196,13 +86,6 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
     
 END OC_POLIZAS;
 /
-
---
--- OC_POLIZAS  (Package Body) 
---
---  Dependencies: 
---   OC_POLIZAS (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
 --
 -- BITACORA DE CAMBIO
@@ -212,6 +95,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
 -- SE AGREGO LA FUNCIONALIDA DE LARGO PLAZO                              JICO 10/04/2019  LARPLA
 -- SE AGREGO LA FUNCIONALIDA DE PREEMISIONO                              JICO 16/05/2019  PREEMI
 -- HOMOLOGACION                                                          JICO 01/10/2019 
+-- SE AGREGO LA FUNCIONALIDAD PARA MOVIMIENTOS_CANCELACION               JMMD /12/2019
 ----------------------------------------------------------------------  SEQ XDS
       --- Funcion para buscar el proximo numero de poliza  ---
 ----------------------------------------------------------------------
@@ -2977,7 +2861,8 @@ BEGIN
    RETURN(cIndFactElectronica);
 END FACTURA_ELECTRONICA;
 
-PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS
+--PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS  --ASI ESTABA EL ORIGINAL
+PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cmotivorehab varchar2) IS
 nIdTransaccionAnu     FACTURAS.IdTransaccionAnu%TYPE;
 nIdTransaccionAnuNc   FACTURAS.IdTransaccionAnu%TYPE;
 nIdTransaccionEmiNc   FACTURAS.IdTransaccionAnu%TYPE;
@@ -2989,25 +2874,50 @@ dFecAnul              POLIZAS.FecAnul%TYPE;
 nIdTransacNc          TRANSACCION.IdTransaccion%TYPE;
 nIdTransacNcRehab     TRANSACCION.IdTransaccion%TYPE;
 nTotNotaCredCanc      DETALLE_NOTAS_DE_CREDITO.Monto_Det_Moneda%TYPE;
+dfecnvarehab          DATE;
+----
+dFecSts               POLIZAS.FECSTS%TYPE;
 
 CURSOR ASEG_Q IS
    SELECT IDetPol, Cod_Asegurado
      FROM ASEGURADO_CERTIFICADO
-    WHERE IdPoliza = nIdPoliza;
-
+    WHERE CodCia   = nCodCia
+      AND IdPoliza = nIdPoliza
+------- JMMD 20191227
+      AND ESTADO   = 'ANU'
+      AND MOTIVANULEXCLU IN('FPA','CAFP')
+------- JMMD 20191227    
+    ;
 CURSOR DET_Q IS
    SELECT IDetPol, Cod_Asegurado, Prima_Moneda
      FROM DETALLE_POLIZA
     WHERE IdPoliza   = nIdPoliza
-      AND CodCia     = nCodCia;
-
+      AND CodCia     = nCodCia
+------ JMMD 20191227
+      AND StsDetalle = 'ANU'
+      AND MotivAnul  in('FPA','CAFP')
+------ JMMD 20191227      
+      ;
 CURSOR FACT_Q IS
    SELECT IdFactura
      FROM FACTURAS
     WHERE IdTransaccionAnu = nIdTransaccionAnu
       AND IdPoliza         = nIdPoliza
     ORDER BY IdFactura;
-
+------ JMMD20200115 NUEVO CURSOR A TRAVES DE LA TABLA DE MOVIMIENTOS CANCELACION
+CURSOR FACT_Q_NVO IS
+   SELECT F.IdFactura
+     FROM FACTURAS F,
+          MOVIMIENTOS_CANCELACION M
+    WHERE F.IdTransaccionAnu = nIdTransaccionAnu
+      AND F.IdPoliza         = nIdPoliza
+      AND M.IdPoliza         = F.IdPoliza
+      AND M.IdFactura        = F.Idfactura
+      AND m.FECHAPROCESO       = (SELECT MAX(M2.FECHAPROCESO)
+                                FROM MOVIMIENTOS_CANCELACION M2
+                               WHERE M2.IdPoliza         = M.IdPoliza)
+    ORDER BY F.IdFactura;
+------
 CURSOR NCR_Q IS
    SELECT IdNcr, CodCia, IdPoliza, IDetPol, IdEndoso
      FROM NOTAS_DE_CREDITO
@@ -3020,10 +2930,25 @@ CURSOR NCR_ANU_Q IS
      FROM NOTAS_DE_CREDITO
     WHERE IdPoliza         = nIdPoliza
       AND IdTransaccionAnu = nIdTransaccionAnuNc;
+------ JMMD20200115 NUEVO CURSOR A TRAVES DE LA TABLA DE MOVIMIENTOS CANCELACION
+CURSOR NCR_ANU_Q_NVO IS
+   SELECT NC.IdNCR
+     FROM NOTAS_DE_CREDITO NC,
+          MOVIMIENTOS_CANCELACION M
+    WHERE NC.IdTransaccionAnu = nIdTransaccionAnuNC
+      AND NC.IdPoliza         = nIdPoliza
+      AND M.IdPoliza         = NC.IdPoliza
+      AND M.IdFactura        = NC.IdNCR
+      AND m.FECHAPROCESO       = (SELECT MAX(M2.FECHAPROCESO)
+                                FROM MOVIMIENTOS_CANCELACION M2
+                               WHERE M2.IdPoliza         = M.IdPoliza)
+    ORDER BY NC.IdNCR;
+------          
 BEGIN
+      dbms_output.put_line('JMMD1 empieza proceso de rehabilitacion: ');
    BEGIN
-      SELECT StsPoliza, PrimaNeta_Moneda, FecAnul
-        INTO cStsPoliza, nPrimaNeta_Moneda, dFecAnul
+      SELECT StsPoliza, PrimaNeta_Moneda, FecAnul, FecSts
+        INTO cStsPoliza, nPrimaNeta_Moneda, dFecAnul, dFecSts 
         FROM POLIZAS
        WHERE CodCia    = nCodCia
          AND IdPoliza  = nIdPoliza;
@@ -3031,7 +2956,18 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20225,'NO existe la Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' para Rehabilitarla');
    END;
-
+------ JMMD202001 RECUPERA LA FECHA A PARTIR DE LA CUAL ENTRARA EN VIGOR EL NUEVO CURSOR INCLUYENDO LAS FACTURAS Y NOTAS DE CREDITO CANCELADAS    
+   BEGIN
+    SELECT TO_DATE(DESCVALLST)
+    INTO dfecnvarehab
+    FROM VALORES_DE_LISTAS
+    WHERE CODLISTA = 'FECNREHAB';   
+   EXCEPTION WHEN NO_DATA_FOUND THEN
+    dfecnvarehab := trunc(sysdate) + 1;
+   END;
+   
+   DBMS_OUTPUT.put_line('JMMD FECHA A PARTIR DE LA CUAL ENTRARA EL NUEVO CURSOR DE MOVIMIENTOS_CANCELACION  '||dfecnvarehab);
+------
    IF cStsPoliza = 'ANU' THEN
       UPDATE POLIZAS
          SET StsPoliza = 'EMI',
@@ -3082,10 +3018,21 @@ BEGIN
          AND TO_NUMBER(D.Valor2) != 0
          AND T.IdTransaccion      = D.IdTransaccion
          AND T.IdProceso          = 2;
-
-      FOR W IN FACT_Q LOOP
-         OC_FACTURAS.REHABILITACION(nCodCia, nCodEmpresa, W.IdFactura, nIdTransaccion);
-      END LOOP;
+-------- JMMD20200115 DECIDE SI TOMA EL NUEVO CURSOR A PARTIR DE LA TABLA DE MOVIMIENTOS_CANCELACION
+      IF TRUNC(dFecSts)  < dfecnvarehab THEN
+         DBMS_OUTPUT.put_line('JMMD SE VA POR EL VIEJO CURSOR DE MOVIMIENTOS_CANCELACION PARA FACTURAS');      
+-------- 
+          FOR W IN FACT_Q LOOP
+             OC_FACTURAS.REHABILITACION(nCodCia, nCodEmpresa, W.IdFactura, nIdTransaccion);
+          END LOOP;
+-------- JMMD20200115 DECIDE SI TOMA EL NUEVO CURSOR A PARTIR DE LA TABLA DE MOVIMIENTOS_CANCELACION
+      ELSE
+         DBMS_OUTPUT.put_line('JMMD SE VA POR EL NUEVO CURSOR DE MOVIMIENTOS_CANCELACION PARA FACTURAS');      
+          FOR W IN FACT_Q_NVO LOOP
+             OC_FACTURAS.REHABILITACION(nCodCia, nCodEmpresa, W.IdFactura, nIdTransaccion);
+          END LOOP;
+      END if;      
+--------      
 
       OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccion, '100');
       GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza,
@@ -3100,14 +3047,29 @@ BEGIN
          AND TO_NUMBER(D.Valor1) = nIdPoliza
          AND T.IdTransaccion     = D.IdTransaccion
          AND T.IdProceso         = 8;
+-------- JMMD20200115 DECIDE SI TOMA EL NUEVO CURSOR A PARTIR DE LA TABLA DE MOVIMIENTOS_CANCELACION
+      IF TRUNC(dFecSts)  < dfecnvarehab THEN
+         DBMS_OUTPUT.put_line('JMMD SE VA POR EL VIEJO CURSOR DE MOVIMIENTOS_CANCELACION PARA NOTAS DE CREDITO');      
+-------- 
+          FOR W IN NCR_ANU_Q LOOP
+             IF NVL(nIdTransacNcRehab,0) = 0 THEN
+                nIdTransacNcRehab := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 18, 'REHNCR');
+             END IF;
 
-      FOR W IN NCR_ANU_Q LOOP
-         IF NVL(nIdTransacNcRehab,0) = 0 THEN
-            nIdTransacNcRehab := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 18, 'REHNCR');
-         END IF;
+             OC_NOTAS_DE_CREDITO.REHABILITACION(nCodCia, nCodEmpresa, W.IdNcr, nIdTransacNcRehab);
+          END LOOP;
+-------- JMMD20200115 DECIDE SI TOMA EL NUEVO CURSOR A PARTIR DE LA TABLA DE MOVIMIENTOS_CANCELACION
+      ELSE
+         DBMS_OUTPUT.put_line('JMMD SE VA POR EL NUEVO CURSOR DE MOVIMIENTOS_CANCELACION PARA NOTAS DE CREDITO');      
+          FOR W IN NCR_ANU_Q_NVO LOOP
+             IF NVL(nIdTransacNcRehab,0) = 0 THEN
+                nIdTransacNcRehab := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 18, 'REHNCR');
+             END IF;
 
-         OC_NOTAS_DE_CREDITO.REHABILITACION(nCodCia, nCodEmpresa, W.IdNcr, nIdTransacNcRehab);
-      END LOOP;
+             OC_NOTAS_DE_CREDITO.REHABILITACION(nCodCia, nCodEmpresa, W.IdNcr, nIdTransacNcRehab);
+          END LOOP;
+      END if;      
+--------    
 
       IF nIdTransacNcRehab != 0 THEN
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacNcRehab, '100');
@@ -3150,7 +3112,8 @@ BEGIN
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacNc, 'C');
       END IF;
       --
-      OC_ENDOSO.ENDOSO_REHABILITACION(nCodCia, nCodEmpresa , nIdPoliza);  --ENDCAN
+--      OC_ENDOSO.ENDOSO_REHABILITACION(nCodCia, nCodEmpresa , nIdPoliza);  --ENDCAN  -- asi estaba
+      OC_ENDOSO.ENDOSO_REHABILITACION(nCodCia, nCodEmpresa , nIdPoliza, cmotivorehab);  --ENDCAN        
       --
    ELSE
       RAISE_APPLICATION_ERROR(-20225,'La Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' NO está Anulada para Rehabilitarse');
@@ -3203,7 +3166,17 @@ nFactProrrata        NUMBER(11,8);
 nDiasAnul            NUMBER(6);
 nCertEmi             NUMBER(10);
 nEndosos             NUMBER(5);
-
+---- JMMD20191220
+nSPV                 NUMBER := 0;
+nSPVNC               NUMBER := 0;
+nEndosoNvo           NUMBER;
+nLeidos              NUMBER := 0;
+nLeidosNC            NUMBER := 0;  
+cTipoEndosoOrigen    VARCHAR2(20);
+nIDENDOSOCANCREHAB   NUMBER;
+W_ID_TERMINAL        CONTROL_PROCESOS_AUTOMATICOS.ID_TERMINAL%TYPE;
+W_ID_USER            CONTROL_PROCESOS_AUTOMATICOS.ID_USER%TYPE;
+----
 CURSOR PRIMA_Q IS
    SELECT F.StsFact, F.IdFactura, NVL(D.Monto_Det_Moneda,0) Monto_Det_Moneda,
           D.Saldo_Det_Moneda, F.IdEndoso, F.FecVenc
@@ -3218,17 +3191,70 @@ CURSOR PRIMA_Q IS
       AND F.CodCia           = nCodCia;
 
 CURSOR FAC_Q IS
-   SELECT IdetPol, IdFactura, CodCia, CodCobrador, FolioFactElec
+   SELECT IdetPol, IdFactura, CodCia, CodCobrador, FolioFactElec,IdEndoso
      FROM FACTURAS
-    WHERE IdPoliza = nIdPoliza
-      AND StsFact  = 'EMI';
+    WHERE CodCia = nCodCia
+      AND IdPoliza = nIdPoliza
+      AND StsFact  = 'EMI'
+--- jmmd20191220
+   ORDER BY IDENDOSO, IDFACTURA
+---     
+     ;
 
 CURSOR NCR_Q IS
    SELECT IdNcr, CodCia, IdPoliza, IDetPol, IdEndoso, FolioFactElec
      FROM NOTAS_DE_CREDITO
     WHERE IdPoliza = nIdPoliza
-      AND StsNcr   = 'EMI';
+      AND Codcia   = nCodCia
+      AND StsNcr   = 'EMI'
+--- jmmd20191220
+   ORDER BY IDENDOSO, IDNCR
+---      
+     ;
+----------------- JMMD20191226
+CURSOR FAC_Q_DET(nNumDetF NUMBER) IS
+   SELECT IdetPol, IdFactura, CodCia, CodCobrador, FolioFactElec,IdEndoso
+     FROM FACTURAS
+    WHERE IdPoliza = nIdPoliza
+      AND IdetPol  = nNumDetF    
+      AND StsFact  = 'EMI'
+--- jmmd20191220
+   ORDER BY IDENDOSO, IDFACTURA
+---     
+     ;
 
+CURSOR NCR_Q_DET(nNumDetNC NUMBER) IS
+   SELECT IdNcr, CodCia, IdPoliza, IDetPol, IdEndoso, FolioFactElec
+     FROM NOTAS_DE_CREDITO
+    WHERE IdPoliza = nIdPoliza
+      AND Codcia   = nCodCia    
+      AND IdetPol  = nNumDetNC
+      AND StsNcr   = 'EMI'
+--- jmmd20191220
+   ORDER BY IDENDOSO, IDNCR
+---      
+     ;
+CURSOR FAC_Q_END(nNumEndF NUMBER) IS
+   SELECT IdetPol, IdFactura, CodCia, CodCobrador, FolioFactElec,IdEndoso
+     FROM FACTURAS
+    WHERE IdPoliza = nIdPoliza
+      AND IdEndoso = nNumEndF    
+      AND StsFact  = 'EMI'
+   ORDER BY IDENDOSO, IDFACTURA
+---     
+     ;
+
+CURSOR NCR_Q_END(nNumEndNC NUMBER) IS
+   SELECT IdNcr, CodCia, IdPoliza, IDetPol, IdEndoso, FolioFactElec
+     FROM NOTAS_DE_CREDITO
+    WHERE IdPoliza = nIdPoliza
+      AND Codcia   = nCodCia    
+      AND IdEndoso = nNumEndNC    
+      AND StsNcr   = 'EMI'
+   ORDER BY IDENDOSO, IDNCR
+---      
+     ;     
+-----------------
 CURSOR CPTO_PRIMAS_Q IS
    SELECT CS.CodCpto, SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
      FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
@@ -3240,6 +3266,7 @@ CURSOR CPTO_PRIMAS_Q IS
       AND C.StsCobertura  = 'EMI'
       AND C.IdPoliza      = nIdPoliza
       AND C.CodCia        = nCodCia
+      AND C.CODEMPRESA    = nCodEmpresa
     GROUP BY CS.CodCpto
     UNION
    SELECT CS.CodCpto, SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
@@ -3252,8 +3279,9 @@ CURSOR CPTO_PRIMAS_Q IS
       AND C.StsCobertura  = 'EMI'
       AND C.IdPoliza      = nIdPoliza
       AND C.CodCia        = nCodCia
+      AND C.CODEMPRESA    = nCodEmpresa
     GROUP BY CS.CodCpto;
-
+-----------------     
 CURSOR CPTO_ASIST_Q IS
    SELECT T.CodCptoServicio, SUM(A.MontoAsistLocal) MontoAsistLocal,
           SUM(A.MontoAsistMoneda) MontoAsistMoneda
@@ -3287,14 +3315,12 @@ CURSOR ASEG_Q IS
       AND Estado   = 'EMI';
 
 CURSOR DET_Q IS
-   SELECT IDetPol, IndDeclara, Cod_Asegurado,
-          IdTipoSeg, PlanCob
+   SELECT IDetPol, IndDeclara, Cod_Asegurado, IdTipoSeg, PlanCob, Prima_Moneda
      FROM DETALLE_POLIZA
     WHERE IdPoliza = nIdPoliza
       AND CodCia   = nCodCia
     UNION ALL
-   SELECT Correlativo IDetPol, '' IndDeclara, 0 Cod_Asegurado,
-          NULL IdTipoSeg, NULL PlanCob
+   SELECT Correlativo IDetPol, '' IndDeclara, 0 Cod_Asegurado, NULL IdTipoSeg, NULL PlanCob, 0 Prima_Moneda
      FROM FZ_DETALLE_FIANZAS
     WHERE IdPoliza = nIdPoliza
       AND CodCia   = nCodCia;
@@ -3342,6 +3368,23 @@ CURSOR FONDOS_Q IS -- GTC - 17-12-2018
       AND IdPoliza      = nIdPoliza
       AND CodCia        = nCodCia;
 BEGIN
+----- jmmd20191220
+
+  BEGIN
+    SELECT SYS_CONTEXT('userenv', 'terminal'),
+           USER
+      INTO W_ID_TERMINAL,
+           W_ID_USER
+      FROM DUAL;
+  END;
+  
+  BEGIN
+      select NVL(MAX(IDENDOSO),0) + 1
+      INTO nIDENDOSOCANCREHAB
+      from endosos
+      WHERE IDPOLIZA = nIdPoliza;
+  END ;  
+-----
    SELECT COUNT(*)
      INTO nEndosos
      FROM ENDOSOS
@@ -3353,7 +3396,9 @@ BEGIN
       RAISE_APPLICATION_ERROR(-20225,'Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
                               ' Tiene Endosos en SOLICITUD, debe Emitirlos o Eliminarlos antes de Anular');
    END IF;
-
+----
+------         dbms_output.put_line('JMMD1 : '||nIDENDOSOCANCREHAB);
+----
    SELECT FecIniVig, FecFinVig, CodCliente, IndFacturaPol,
           PorcComis, CodPlanPago, TipoPol, NumPolRef, IndFactElectronica
      INTO dFecIniVig, dFecFinVig, nCodCliente, cIndFacturaPol,
@@ -3398,11 +3443,16 @@ BEGIN
    cAnulaPoliza   := 'N';
    cAnulaSubgrupo := 'N';
    cAnulaEndoso   := 'N';
-
+-------------
    IF ((NVL(nTotPrimaPag,0) = 0 OR cIndFacturaPol = 'S') AND cFactPoliza = 'S') OR cTipoProceso = 'POLIZA' THEN
       cAnulaPoliza   := 'S';
+      dbms_output.put_line('JMMD cAnulaPoliza   := S'  );
    ELSIF cIndFacturaPol = 'N' AND cFactPoliza = 'S' THEN
-      SELECT COUNT(DISTINCT Cod_Asegurado)
+      dbms_output.put_line('JMMD cIndFacturaPol = N AND cFactPoliza = S'  );   
+--      SELECT COUNT(DISTINCT Cod_Asegurado)   ---- jmmd20191226 hay ocasiones en las que viene un mismo numero de aseurado entodos los subgrupos aún cuando facturen por subgrupo
+--                                             por lo que en ocasiones se iba a cancelar por poliza en lugar de subgrulpo
+      SELECT COUNT(DISTINCT idetpol)
+-------------
         INTO nCantAsegSubgrupo
         FROM DETALLE_POLIZA
        WHERE CodCia     = nCodCia
@@ -3411,6 +3461,8 @@ BEGIN
       IF nCantAsegSubgrupo = 1 THEN
          cAnulaPoliza   := 'S';
       ELSE
+-----------------
+         dbms_output.put_line('JMMD nCantAsegSubgrupo = '|| nCantAsegSubgrupo );      
          SELECT MIN(IdEndoso)
            INTO nIdEndoso
            FROM FACTURAS
@@ -3422,20 +3474,25 @@ BEGIN
                                  AND CodCia    = nCodCia
                                  AND FecVenc  <= dFecAnul
                                  AND StsFact   = 'EMI');
+         dbms_output.put_line('JMMD nIdEndoso = '|| nIdEndoso );             
          IF NVL(nIdEndoso,0) = 0 THEN
             cAnulaSubgrupo := 'S';
+            dbms_output.put_line('JMMD cAnulaSubgrupo   := S'  );            
          ELSE
             cAnulaEndoso   := 'S';
+            dbms_output.put_line('JMMD cAnulaEndoso   := S'  );            
          END IF;
       END IF;
    ELSIF cFactEndosos = 'S' THEN
       cAnulaEndoso   := 'S';
+      dbms_output.put_line('JMMD cAnulaEndoso2   := S'  );      
    END IF;
 
    IF cAnulaPoliza = 'S' THEN
       IF NVL(nTotPrimaPag,0) = 0 THEN
          -- Anula Notas de Crédito
          IF cTipoProceso IS NOT NULL THEN
+            dbms_output.put_line('JMMD POR ANULA POLIZA = S');         
             FOR X IN NCR_Q LOOP
                IF NVL(nIdTransacNc,0) = 0 THEN
                   nIdTransacNc := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, 'ANUNCR');
@@ -3456,6 +3513,49 @@ BEGIN
 
                OC_DETALLE_TRANSACCION.CREA(nIdTransacNc, nCodCia,  nCodEmpresa, 8, 'ANUNCR', 'NOTAS_DE_CREDITO',
                                            nIdPoliza, X.IDetPol, X.IdEndoso, X.IdNcr, nTotNotaCredCanc);
+----- jmmd20191220
+              IF nSPVNC = 0 THEN
+                 nSPVNC := 1;
+                 nEndosoNvo := X.IDENDOSO;
+                 
+                 BEGIN
+                   SELECT TIPOENDOSO
+                     INTO cTIPOENDOSOORIGEN
+                     FROM ENDOSOS
+                    WHERE IDPOLIZA = nIdPoliza
+                      AND IDENDOSO = X.IDENDOSO;
+                 EXCEPTION WHEN OTHERS THEN
+                   cTIPOENDOSOORIGEN := '   ';
+                 END;
+                 
+              END IF;
+
+              IF nEndosonvo = X.IDENDOSO THEN
+                 dbms_output.put_line('ENDOSO : '||X.IDENDOSO||' NOTA DE CREDITO: '||X.IDNCR);
+                 OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, X.IDETPOL, X.IDENDOSO,		
+                                                        cTIPOENDOSOORIGEN, 0, X.IDNCR, TRUNC(SYSDATE),
+                                                        nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;      
+              ELSE
+                 dbms_output.put_line('CAMBIO DE ENDOSO : '||nEndosonvo ||' POR ENDOSO NUEVO ' ||X.IDENDOSO||' NOTA DE CREDITO: '||X.IDNCR);
+                 nEndosonvo := X.IDENDOSO;
+                 BEGIN
+                   SELECT TIPOENDOSO
+                     INTO cTIPOENDOSOORIGEN
+                     FROM ENDOSOS
+                    WHERE IDPOLIZA = nIdPoliza
+                      AND IDENDOSO = X.IDENDOSO;
+                 EXCEPTION WHEN OTHERS THEN
+                   cTIPOENDOSOORIGEN := '   ';
+                 END;       
+         --        dbms_output.put_line('JMMD2 : ');           
+                 SICAS_OC.OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, X.IDETPOL, X.IDENDOSO,		
+                                                        cTIPOENDOSOORIGEN, 0, X.IDNCR, TRUNC(SYSDATE),
+                                                        nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;               
+              END IF;
+        -----               
+        ----         dbms_output.put_line('JMMD3 : '||nIDENDOSOCANCREHAB);
+--------                                           
+                                           
             END LOOP;
 
             IF NVL(nIdTransacNc,0) != 0 THEN
@@ -3488,6 +3588,50 @@ BEGIN
           OC_FACTURAS.ANULAR(X.CodCia, X.IdFactura, dFecAnulReal, cMotivAnul, X.CodCobrador, nIdTransacAnul);
           OC_DETALLE_TRANSACCION.CREA (nIdTransacAnul, nCodCia,  nCodEmpresa, 2, 'FAC', 'FACTURAS',
                                        nIdPoliza, X.IDetPol, NULL, X.IdFactura, NVL(nTotPrimaFact,0));
+-------
+               dbms_output.put_line('JMMD5 EN FACTURAS: ');
+      ----- jmmd20191220
+            IF nSPV = 0 THEN
+               nSPV := 1;
+               nEndosonvo := X.IDENDOSO;
+               
+               BEGIN
+                 SELECT TIPOENDOSO
+                   INTO cTIPOENDOSOORIGEN
+                   FROM ENDOSOS
+                  WHERE IDPOLIZA = nIdPoliza
+                    AND IDENDOSO = X.IDENDOSO;
+               EXCEPTION WHEN OTHERS THEN
+                 cTIPOENDOSOORIGEN := '   ';
+               END;
+               
+            END IF;
+               dbms_output.put_line('JMMD6 : ');
+            IF nEndosonvo = X.IDENDOSO THEN
+               dbms_output.put_line('JMMD6.1 : ');      
+               dbms_output.put_line('ENDOSO : '||X.IDENDOSO||' FACTURA: '||X.IDFACTURA);
+               OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, X.IDETPOL, X.IDENDOSO,		
+                                                      cTIPOENDOSOORIGEN, X.IDFACTURA, 0, TRUNC(SYSDATE),
+                                                      nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;   
+               dbms_output.put_line('JMMD6.2 : ');                                                         
+            ELSE
+               dbms_output.put_line('CAMBIO DE ENDOSO : '||nEndosonvo ||' POR ENDOSO NUEVO ' ||X.IDENDOSO||' FACTURA '||X.IDFACTURA);
+               nEndosoNvo := X.IDENDOSO;
+               BEGIN
+                 SELECT TIPOENDOSO
+                   INTO cTIPOENDOSOORIGEN
+                   FROM ENDOSOS
+                  WHERE IDPOLIZA = nIdPoliza
+                    AND IDENDOSO = X.IDENDOSO;
+               EXCEPTION WHEN OTHERS THEN
+                 cTIPOENDOSOORIGEN := '   ';
+               END;     
+               dbms_output.put_line('JMMD7 : ');             
+               OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, X.IDETPOL, X.IDENDOSO,		
+                                                      cTIPOENDOSOORIGEN, X.IDFACTURA, 0, TRUNC(SYSDATE),
+                                                      nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;               
+            END IF;
+      -----                                                                              
           cContabiliza := 'S';
       END LOOP;
 
@@ -3590,6 +3734,9 @@ BEGIN
       OC_CLAUSULAS_POLIZA.ANULAR_TODAS(nCodCia, nIdPoliza);
 
       FOR W IN DET_Q LOOP
+
+         OC_DETALLE_TRANSACCION.CREA(nIdTransacAnul, nCodCia,  nCodEmpresa, 2, 'CER', 'DETALLE_POLIZA', nIdPoliza, W.IDetPol, NULL, NULL, W.Prima_Moneda);
+
          -- GTC - 17-12-2018
          nIDetPol       := W.IDetPol;
          nCod_Asegurado := W.Cod_Asegurado;
@@ -3633,10 +3780,101 @@ BEGIN
       OC_ENDOSO.ENDOSO_ANULACION(nCodCia, nCodEmpresa , nIdPoliza , dFecAnulReal, cMotivAnul);  --ENDCAN
       --
    ELSIF cAnulaSubGrupo = 'S' THEN
+      dbms_output.put_line('JMMD POR ELSIF cAnulaSubGrupo = S');   
       FOR W IN DET_ANU_Q LOOP
+------- jmmd20191226
+          FOR Y IN NCR_Q_DET(W.IDETPOL) LOOP
+              IF nSPVNC = 0 THEN
+                 nSPVNC := 1;
+                 nEndosoNvo := Y.IDENDOSO;
+                 
+                 BEGIN
+                   SELECT TIPOENDOSO
+                     INTO cTIPOENDOSOORIGEN
+                     FROM ENDOSOS
+                    WHERE IDPOLIZA = nIdPoliza
+                      AND IDENDOSO = Y.IDENDOSO;
+                 EXCEPTION WHEN OTHERS THEN
+                   cTIPOENDOSOORIGEN := '   ';
+                 END;
+                 
+              END IF;
+
+              IF nEndosonvo = Y.IDENDOSO THEN
+                 dbms_output.put_line('ENDOSO : '||Y.IDENDOSO||' NOTA DE CREDITO: '||Y.IDNCR);
+                 OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, Y.IDETPOL, Y.IDENDOSO,		
+                                                        cTIPOENDOSOORIGEN, 0, Y.IDNCR, TRUNC(SYSDATE),
+                                                        nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;      
+              ELSE
+                 dbms_output.put_line('CAMBIO DE ENDOSO : '||nEndosonvo ||' POR ENDOSO NUEVO ' ||Y.IDENDOSO||' NOTA DE CREDITO: '||Y.IDNCR);
+                 nEndosonvo := Y.IDENDOSO;
+                 BEGIN
+                   SELECT TIPOENDOSO
+                     INTO cTIPOENDOSOORIGEN
+                     FROM ENDOSOS
+                    WHERE IDPOLIZA = nIdPoliza
+                      AND IDENDOSO = Y.IDENDOSO;
+                 EXCEPTION WHEN OTHERS THEN
+                   cTIPOENDOSOORIGEN := '   ';
+                 END;       
+         --        dbms_output.put_line('JMMD2 : ');           
+                 SICAS_OC.OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, Y.IDETPOL, Y.IDENDOSO,		
+                                                        cTIPOENDOSOORIGEN, 0, Y.IDNCR, TRUNC(SYSDATE),
+                                                        nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;               
+              END IF;
+        -----               
+        ----         dbms_output.put_line('JMMD3 : '||nIDENDOSOCANCREHAB);
+--------                                           
+          
+          END LOOP;
+          
+          FOR Z IN FAC_Q_DET(W.IDETPOL) LOOP
+            IF nSPV = 0 THEN
+               nSPV := 1;
+               nEndosonvo := Z.IDENDOSO;
+               
+               BEGIN
+                 SELECT TIPOENDOSO
+                   INTO cTIPOENDOSOORIGEN
+                   FROM ENDOSOS
+                  WHERE IDPOLIZA = nIdPoliza
+                    AND IDENDOSO = Z.IDENDOSO;
+               EXCEPTION WHEN OTHERS THEN
+                 cTIPOENDOSOORIGEN := '   ';
+               END;
+               
+            END IF;
+      ------         dbms_output.put_line('JMMD6 : ');
+            IF nEndosonvo = Z.IDENDOSO THEN
+      ------         dbms_output.put_line('JMMD6.1 : ');      
+      ------         dbms_output.put_line('ENDOSO : '||X.IDENDOSO||' FACTURA: '||X.IDFACTURA);
+               OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, Z.IDETPOL, Z.IDENDOSO,		
+                                                      cTIPOENDOSOORIGEN, Z.IDFACTURA, 0, TRUNC(SYSDATE),
+                                                      nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;      
+            ELSE
+               dbms_output.put_line('CAMBIO DE ENDOSO : '||nEndosonvo ||' POR ENDOSO NUEVO ' ||Z.IDENDOSO||' FACTURA '||Z.IDFACTURA);
+               nEndosoNvo := Z.IDENDOSO;
+               BEGIN
+                 SELECT TIPOENDOSO
+                   INTO cTIPOENDOSOORIGEN
+                   FROM ENDOSOS
+                  WHERE IDPOLIZA = nIdPoliza
+                    AND IDENDOSO = Z.IDENDOSO;
+               EXCEPTION WHEN OTHERS THEN
+                 cTIPOENDOSOORIGEN := '   ';
+               END;     
+               dbms_output.put_line('JMMD7 : ');             
+               OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, Z.IDETPOL, Z.IDENDOSO,		
+                                                      cTIPOENDOSOORIGEN, Z.IDFACTURA, 0, TRUNC(SYSDATE),
+                                                      nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;               
+            END IF;
+      -----                                       
+          END LOOP;    
+--------------      
          OC_DETALLE_POLIZA.ANULAR_DETALLE(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, dFecAnulReal,
                                           cMotivAnul, 'N', cCod_Moneda, cTipoProceso);
       END LOOP;
+     
       -- Valida si Debe Anular la Póliza si ya no tiene Certificados Emitidos
       SELECT COUNT(*)
         INTO nCertEmi
@@ -3654,11 +3892,106 @@ BEGIN
           WHERE IdPoliza  = nIdPoliza;
       END IF;
    ELSIF cAnulaEndoso = 'S' THEN
+      dbms_output.put_line('JMMD POR cAnulaEndoso = S');   
+    
       FOR W IN ENDO_Q LOOP
          OC_ENDOSO.ANULAR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, W.IdEndoso,
                           W.TipoEndoso, W.FecIniVig, cMotivAnul);
+-----------------aqui voy
+------- jmmd20191226
+          FOR Y IN NCR_Q_END(W.IdEndoso) LOOP
+              IF nSPVNC = 0 THEN
+                 nSPVNC := 1;
+                 nEndosoNvo := Y.IDENDOSO;
+                 
+                 BEGIN
+                   SELECT TIPOENDOSO
+                     INTO cTIPOENDOSOORIGEN
+                     FROM ENDOSOS
+                    WHERE IDPOLIZA = nIdPoliza
+                      AND IDENDOSO = Y.IDENDOSO;
+                 EXCEPTION WHEN OTHERS THEN
+                   cTIPOENDOSOORIGEN := '   ';
+                 END;
+                 
+              END IF;
+
+              IF nEndosonvo = Y.IDENDOSO THEN
+                 dbms_output.put_line('ENDOSO : '||Y.IDENDOSO||' NOTA DE CREDITO: '||Y.IDNCR);
+                 OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, Y.IDETPOL, Y.IDENDOSO,		
+                                                        cTIPOENDOSOORIGEN, 0, Y.IDNCR, TRUNC(SYSDATE),
+                                                        nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;      
+              ELSE
+                 dbms_output.put_line('CAMBIO DE ENDOSO : '||nEndosonvo ||' POR ENDOSO NUEVO ' ||Y.IDENDOSO||' NOTA DE CREDITO: '||Y.IDNCR);
+                 nEndosonvo := Y.IDENDOSO;
+                 BEGIN
+                   SELECT TIPOENDOSO
+                     INTO cTIPOENDOSOORIGEN
+                     FROM ENDOSOS
+                    WHERE IDPOLIZA = nIdPoliza
+                      AND IDENDOSO = Y.IDENDOSO;
+                 EXCEPTION WHEN OTHERS THEN
+                   cTIPOENDOSOORIGEN := '   ';
+                 END;       
+         --        dbms_output.put_line('JMMD2 : ');           
+                 SICAS_OC.OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, Y.IDETPOL, Y.IDENDOSO,		
+                                                        cTIPOENDOSOORIGEN, 0, Y.IDNCR, TRUNC(SYSDATE),
+                                                        nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;               
+              END IF;
+        -----               
+        ----         dbms_output.put_line('JMMD3 : '||nIDENDOSOCANCREHAB);
+--------                                           
+          
+          END LOOP;
+          
+          FOR Z IN FAC_Q_END(W.IdEndoso) LOOP
+            IF nSPV = 0 THEN
+               nSPV := 1;
+               nEndosonvo := Z.IDENDOSO;
+               
+               BEGIN
+                 SELECT TIPOENDOSO
+                   INTO cTIPOENDOSOORIGEN
+                   FROM ENDOSOS
+                  WHERE IDPOLIZA = nIdPoliza
+                    AND IDENDOSO = Z.IDENDOSO;
+               EXCEPTION WHEN OTHERS THEN
+                 cTIPOENDOSOORIGEN := '   ';
+               END;
+               
+            END IF;
+      ------         dbms_output.put_line('JMMD6 : ');
+            IF nEndosonvo = Z.IDENDOSO THEN
+      ------         dbms_output.put_line('JMMD6.1 : ');      
+      ------         dbms_output.put_line('ENDOSO : '||X.IDENDOSO||' FACTURA: '||X.IDFACTURA);
+               OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, Z.IDETPOL, Z.IDENDOSO,		
+                                                      cTIPOENDOSOORIGEN, Z.IDFACTURA, 0, TRUNC(SYSDATE),
+                                                      nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;      
+            ELSE
+               dbms_output.put_line('CAMBIO DE ENDOSO : '||nEndosonvo ||' POR ENDOSO NUEVO ' ||Z.IDENDOSO||' FACTURA '||Z.IDFACTURA);
+               nEndosoNvo := Z.IDENDOSO;
+               BEGIN
+                 SELECT TIPOENDOSO
+                   INTO cTIPOENDOSOORIGEN
+                   FROM ENDOSOS
+                  WHERE IDPOLIZA = nIdPoliza
+                    AND IDENDOSO = Z.IDENDOSO;
+               EXCEPTION WHEN OTHERS THEN
+                 cTIPOENDOSOORIGEN := '   ';
+               END;     
+               dbms_output.put_line('JMMD7 : ');             
+               OC_MOVIMIENTOS_CANCELACION.INSERTA(nCodCia, nIdPoliza, Z.IDETPOL, Z.IDENDOSO,		
+                                                      cTIPOENDOSOORIGEN, Z.IDFACTURA, 0, TRUNC(SYSDATE),
+                                                      nIDENDOSOCANCREHAB, 'ANU', W_ID_USER)   ;               
+            END IF;
+      -----                                       
+          
+          END LOOP;          
+-------                                          
+                          
       END LOOP;
    END IF;
+-----------------         
 EXCEPTION
    WHEN OTHERS THEN
       RAISE_APPLICATION_ERROR(-20225,'Error al Anular Póliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);

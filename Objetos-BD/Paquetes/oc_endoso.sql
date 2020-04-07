@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_ENDOSO IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
 
    FUNCTION CREAR (nIdPoliza NUMBER ) RETURN NUMBER;
    FUNCTION NATURALIDAD(cTipoEndoso VARCHAR2) RETURN VARCHAR2;
@@ -31,13 +31,15 @@ CREATE OR REPLACE PACKAGE OC_ENDOSO IS
    FUNCTION CAMBIO_POR_LISTADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
    FUNCTION VALIDA_CAMBIO_FORMA_DE_PAGO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER,
                                         cCodPlanPagoEndo VARCHAR2, nPrimaPendiente IN OUT NUMBER, cIndCalcDerechoEmis IN OUT VARCHAR2) RETURN VARCHAR2;
-   PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdEndoso NUMBER);
+   PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
+--   PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdEndoso NUMBER);   
    PROCEDURE ENDOSO_ANULACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFecAnulacion DATE, cMotivAnul VARCHAR2);
-   PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
+--   PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
+   PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cMotivoRehab VARCHAR2);   
    
 END OC_ENDOSO;
 /
-CREATE OR REPLACE PACKAGE BODY oc_endoso IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_endoso IS
 --
 -- BITACORA DE CAMBIO
 -- SE AGREGO LA FUNCIONALIDAD DE LAVADO DE DINERO  JICO 20180626     LAVDIN
@@ -1965,8 +1967,8 @@ BEGIN
    RETURN(cValidado);
 END VALIDA_CAMBIO_FORMA_DE_PAGO;
 
-PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdEndoso NUMBER) IS
-
+PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS
+--PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdEndoso NUMBER) IS
 nIdTransaccionAnu    FACTURAS.IdTransaccionAnu%TYPE;
 nIdTransaccionAnuNc  FACTURAS.IdTransaccionAnu%TYPE;
 nIdTransaccion       TRANSACCION.IdTransaccion%TYPE := 0;
@@ -1990,15 +1992,15 @@ CURSOR ASEG_Q IS
    SELECT IDetPol, Cod_Asegurado, IdEndoso, Estado
      FROM ASEGURADO_CERTIFICADO
     WHERE IdPoliza  = nIdPoliza
-      AND CodCia    = nCodCia
-      AND IdEndoso  = nIdendoso;
+      AND CodCia    = nCodCia;
+--      AND IdEndoso  = nIdendoso;
 
 CURSOR FACT_Q IS
    SELECT IdFactura
      FROM FACTURAS
     WHERE IdTransaccionAnu = nIdTransaccionAnu
       AND IdPoliza         = nIdPoliza
-      AND IdEndoso         = nIdEndoso
+--      AND IdEndoso         = nIdEndoso
       AND StsFact          = 'ANU'
    ORDER BY IdFactura;
 
@@ -2032,13 +2034,16 @@ BEGIN
         FROM ENDOSOS
        WHERE CodCia    = nCodCia
          AND IdPoliza  = nIdPoliza
-         AND IdEndoso  = nIdEndoso;
+--         AND IdEndoso  = nIdEndoso
+;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20225, 'No Existe el Endoso No. ' || TRIM(TO_CHAR(nIdEndoso)) ||
+--         RAISE_APPLICATION_ERROR(-20225, 'No Existe el Endoso No. ' || TRIM(TO_CHAR(nIdEndoso)) ||
+         RAISE_APPLICATION_ERROR(-20225, 'No Existe el Endoso No. ' ||         
                                  ' de la Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' para Rehabilitar.');
       WHEN OTHERS THEN
-         RAISE_APPLICATION_ERROR(-20225, 'Problemas para Recuperar el Endoso No. ' || TRIM(TO_CHAR(nIdEndoso)) ||
+--         RAISE_APPLICATION_ERROR(-20225, 'Problemas para Recuperar el Endoso No. ' || TRIM(TO_CHAR(nIdEndoso)) ||
+         RAISE_APPLICATION_ERROR(-20225, 'Problemas para Recuperar el Endoso No. '  ||         
                                  ' de la Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' ' || SQLERRM);
    END;
 
@@ -2069,10 +2074,12 @@ BEGIN
                 MotivAnul  = NULL,
                 FecSts     = TRUNC(SYSDATE)
           WHERE IdPoliza = nIdPoliza
-            AND IdEndoso = nIdEndoso;
+--            AND IdEndoso = nIdEndoso
+            ;
       END IF;
    ELSE
-      RAISE_APPLICATION_ERROR(-20225, ' El Endoso No. ' || nIdEndoso || ' de la Póliza No. ' ||
+--      RAISE_APPLICATION_ERROR(-20225, ' El Endoso No. ' || nIdEndoso || ' de la Póliza No. ' ||
+      RAISE_APPLICATION_ERROR(-20225, ' El Endoso No. ' || ' de la Póliza No. ' ||      
                               TRIM(TO_CHAR(nIdPoliza)) || ' NO está Anulado para Rehabilitarse');
    END IF;
 
@@ -2095,7 +2102,7 @@ BEGIN
          AND D.CodEmpresa        = nCodEmpresa
          AND TO_NUMBER(D.Valor1) = nIdPoliza
          AND TO_NUMBER(D.Valor2) = nIDetPol
-         AND TO_NUMBER(D.Valor3) = nIdEndoso
+--         AND TO_NUMBER(D.Valor3) = nIdEndoso
          AND T.IdTransaccion     = D.IdTransaccion
          AND T.IdProceso         = 8;
 
@@ -2103,7 +2110,8 @@ BEGIN
          IF NVL(nIdTransaccion,0) = 0 THEN
             nIdTransaccion := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 18, 'REHAB');
             OC_DETALLE_TRANSACCION.CREA(nIdTransaccion, nCodCia, nCodEmpresa, 18, 'REHAB',
-                                        'ENDOSOS', nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrimaNeta_Moneda);
+--                                        'ENDOSOS', nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrimaNeta_Moneda);
+                                        'ENDOSOS', nIdPoliza, nIDetPol, NULL, NULL, nPrimaNeta_Moneda);                                        
          END IF;
          OC_FACTURAS.REHABILITACION(nCodCia, nCodEmpresa, W.IdFactura, nIdTransaccion);
       END LOOP;
@@ -2120,7 +2128,7 @@ BEGIN
          AND D.CodEmpresa        = nCodEmpresa
          AND TO_NUMBER(D.Valor1) = nIdPoliza
          AND TO_NUMBER(D.Valor2) = nIDetPol
-         AND TO_NUMBER(D.Valor3) = nIdEndoso
+--         AND TO_NUMBER(D.Valor3) = nIdEndoso
          AND T.IdTransaccion     = D.IdTransaccion
          AND T.IdProceso         = 8;
 
@@ -2232,7 +2240,8 @@ BEGIN
   --
 END ENDOSO_ANULACION;
 --
-PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS    -- ENDCAN 
+--PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS    -- ENDCAN  
+PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cMotivoRehab VARCHAR2) IS    -- ENDCAN --JMMD20200129SE AGREGA MOTIVO DE REHABILITIACION
  nIDetPol          ENDOSOS.IDETPOL%TYPE;
  cTipoEndoso       ENDOSOS.TIPOENDOSO%TYPE;       
  cNumEndRef        ENDOSOS.NUMENDREF%TYPE;
@@ -2248,6 +2257,7 @@ PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NU
  cTerminal         VARCHAR2(20);
  nIdendoso         ENDOSOS.IDENDOSO%TYPE;
  CLINEA_T          VARCHAR2(500);
+ cDescendoso       ENDOSOS.DESCENDOSO%TYPE;
 BEGIN
   --
   BEGIN
@@ -2269,6 +2279,18 @@ BEGIN
     INTO nIdendoso
     FROM ENDOSOS
    WHERE IDPOLIZA = nIdPoliza;
+   ---------------------
+   BEGIN
+   SELECT DESCVALLST
+     INTO cDescendoso
+     FROM VALORES_DE_LISTAS
+    WHERE CODLISTA = 'MOTIVANU'
+      AND CODVALOR = cMotivoRehab;
+   EXCEPTION
+      WHEN OTHERS THEN
+         cDescendoso := 'S/D';
+   END;
+   ---------------------
   --
   -- INICIALIZA
   --     
@@ -2291,10 +2313,12 @@ BEGIN
   OC_ENDOSO.EMITIR(nCodCia,             nCodEmpresa,             nIdPoliza,
                    nIDetPol,            nIdendoso,               cTipoEndoso); 
   --    
+
   UPDATE ENDOSOS E
      SET E.DESCENDOSO = 'Póliza rehabilitada a partir del '||TO_CHAR(dFecIniVig,'DD')||
                         ' de '||TO_CHAR(dFecIniVig,'MONTH')||
-                        ' de '||TO_CHAR(dFecIniVig,'YYYY')
+                        ' de '||TO_CHAR(dFecIniVig,'YYYY')||'  --  Motivo de la Rehabilitacion:   '|| cDescendoso
+--                        ' de '||TO_CHAR(dFecIniVig,'YYYY')--||'  --  Motivo de la Rehabilitacion:   '|| cMotivoRehab                        
    WHERE E.IDPOLIZA = nIdPoliza
      AND E.IDENDOSO = nIdendoso;
   --

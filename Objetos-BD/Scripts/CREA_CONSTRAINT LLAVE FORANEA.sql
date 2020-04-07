@@ -1,0 +1,4 @@
+alter table MOVIMIENTOS_CANCELACION
+  add constraint FK_MOVCANREH_POLIZAS
+  foreign key (CODCIA,IDPOLIZA)
+  references POLIZAS (CODCIA,IDPOLIZA);
