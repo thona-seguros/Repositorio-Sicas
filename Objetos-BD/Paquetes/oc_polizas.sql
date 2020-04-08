@@ -2958,7 +2958,7 @@ BEGIN
    END;
 ------ JMMD202001 RECUPERA LA FECHA A PARTIR DE LA CUAL ENTRARA EN VIGOR EL NUEVO CURSOR INCLUYENDO LAS FACTURAS Y NOTAS DE CREDITO CANCELADAS    
    BEGIN
-    SELECT TO_DATE(DESCVALLST)
+    SELECT TO_DATE(DESCVALLST,'DD/MM/YYYY')
     INTO dfecnvarehab
     FROM VALORES_DE_LISTAS
     WHERE CODLISTA = 'FECNREHAB';   
@@ -3369,7 +3369,7 @@ CURSOR FONDOS_Q IS -- GTC - 17-12-2018
       AND CodCia        = nCodCia;
 BEGIN
 ----- jmmd20191220
-
+   dbms_output.put_line('JMMD INICIA PROCESO ');
   BEGIN
     SELECT SYS_CONTEXT('userenv', 'terminal'),
            USER
@@ -3397,7 +3397,7 @@ BEGIN
                               ' Tiene Endosos en SOLICITUD, debe Emitirlos o Eliminarlos antes de Anular');
    END IF;
 ----
-------         dbms_output.put_line('JMMD1 : '||nIDENDOSOCANCREHAB);
+   dbms_output.put_line('JMMD1 : '||nIDENDOSOCANCREHAB);
 ----
    SELECT FecIniVig, FecFinVig, CodCliente, IndFacturaPol,
           PorcComis, CodPlanPago, TipoPol, NumPolRef, IndFactElectronica
