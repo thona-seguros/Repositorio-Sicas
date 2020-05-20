@@ -394,7 +394,7 @@ CURSOR POL_IND_MOV_Q IS
       AND A.Cod_Asegurado            = D.Cod_Asegurado
       AND OC_ASEGURADO_CERTIFICADO.TIENE_ASEGURADOS(D.CodCia, D.IdPoliza, D.IDetPol, 0) = 'N'
       AND D.FecFinVig                < dFecDesde
-      AND EXISTS                   (SELECT 'S' 
+      AND EXISTS                   (SELECT /*+ INDEX(D SYS_C0031885) */ 'S' 
                                       FROM TRANSACCION T, DETALLE_TRANSACCION D
                                      WHERE D.IdTransaccion    = T.IdTransaccion
                                        AND D.CodCia           = T.CodCia
@@ -447,7 +447,7 @@ CURSOR POL_COL_MOV_Q IS
       AND AC.IdPoliza                = D.IdPoliza
       AND AC.CodCia                  = D.CodCia
       AND D.FecFinVig                < dFecDesde
-      AND EXISTS                   (SELECT 'S' 
+      AND EXISTS                   (SELECT /*+ INDEX(D SYS_C0031885) */ 'S' 
                                       FROM TRANSACCION T, DETALLE_TRANSACCION D
                                      WHERE D.IdTransaccion    = T.IdTransaccion
                                        AND D.CodCia           = T.CodCia
@@ -803,7 +803,7 @@ CURSOR POL_COL_MOV_Q IS
                   AND IdPoliza        = Z.IdPoliza;
             END IF;
 
-            SELECT NVL(SUM(DF.Monto_Det_Moneda), 0) + NVL(nPrimaContable,0)
+            SELECT /*+ INDEX(T SYS_C0032162) */ NVL(SUM(DF.Monto_Det_Moneda), 0) + NVL(nPrimaContable,0)
               INTO nPrimaContable
               FROM DETALLE_FACTURAS DF, FACTURAS F, TRANSACCION T
              WHERE T.FechaTransaccion >= dFecDesde
@@ -835,7 +835,7 @@ CURSOR POL_COL_MOV_Q IS
                AND F.Stsfact          IN ('ANU') 
                AND DF.IdFactura        = F.IdFactura;
 
-            SELECT NVL(SUM(DNC.Monto_Det_Moneda),0) + NVL(nMtoCptoNcrMoneda,0)
+            SELECT /*+ INDEX(T SYS_C0032162) */ NVL(SUM(DNC.Monto_Det_Moneda),0) + NVL(nMtoCptoNcrMoneda,0)
               INTO nMtoCptoNcrMoneda
               FROM DETALLE_NOTAS_DE_CREDITO DNC,
                    NOTAS_DE_CREDITO NC, TRANSACCION T
@@ -1445,10 +1445,10 @@ CURSOR POL_COL_MOV_Q IS
                  TRIM(TO_CHAR(nSACober35,'9999999999999999.99')) || cSeparador ||
                  TRIM(TO_CHAR(nSACober36,'9999999999999999.99')) || cSeparador ||
                  TRIM(TO_CHAR(nSACober37,'9999999999999999.99')) || cSeparador ||
-                 TRIM(TO_CHAR(nSACober38,'9999999999999999.99')) || cSeparador;-- || CHR(13);
+                 TRIM(TO_CHAR(nSACober38,'9999999999999999.99')) || cSeparador;
       --
-      INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
-      VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
+      OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
+      --
    END INSERTA_REGISTRO;
 BEGIN
    -- Elimina Registros de SESAS
@@ -1519,8 +1519,7 @@ BEGIN
    nLinea  := 1;
    cCadena := SUBSTR(cEncabezado,1,LENGTH(cEncabezado)-1);
    --
-   INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
-   VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
+   OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
    --
    FOR W IN POL_IND_Q LOOP
       --Afinación

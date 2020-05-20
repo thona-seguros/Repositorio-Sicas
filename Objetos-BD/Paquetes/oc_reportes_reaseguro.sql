@@ -1,8 +1,26 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.oc_reportes_reaseguro IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_REPORTES_REASEGURO IS
+   --
+   --Variables globales para la información del reporte
+   cTitulo1         VARCHAR2(4000);
+   cTitulo2         VARCHAR2(4000);
+   cTitulo3         VARCHAR2(4000);
+   cTitulo4         VARCHAR2(4000);
+   cEncabez         VARCHAR2(4000);
+   cRegistro        VARCHAR2(4000);
+   cError           VARCHAR2(2000);
+   nFila            NUMBER := 1;
+   --
+   FUNCTION NOMBRE_COMPANIA( nCodCia NUMBER ) RETURN VARCHAR2;
 
-   FUNCTION nombre_compania( nCodCia NUMBER ) RETURN VARCHAR2;
-
-   PROCEDURE transaccion_poliza( cIdPoliza          VARCHAR2
+   PROCEDURE INSERTA_ENCABEZADO( cFormato        VARCHAR2
+                               , nCodCia         NUMBER
+                               , nCodEmpresa     NUMBER
+                               , cCodReporte     VARCHAR2
+                               , cCodUser        VARCHAR2
+                               , cNomDirectorio  VARCHAR2
+                               , cNomArchivo     VARCHAR2 );
+                               
+   PROCEDURE TRANSACCION_POLIZA( cIdPoliza          VARCHAR2
                                , cIDetPol           VARCHAR2
                                , cIdEndoso          VARCHAR2
                                , nIdTransaccionIni  NUMBER
@@ -15,9 +33,14 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_reportes_reaseguro IS
                                , cDescIDetPol       VARCHAR2
                                , cDescIdEndoso      VARCHAR2
                                , cDescPoliza        VARCHAR2
-                               , cCodUser           VARCHAR2 );
+                               , nCodEmpresa        NUMBER
+                               , cCodUser           VARCHAR2
+                               , cNomArchivo        VARCHAR2
+                               , cNomArchZip        VARCHAR2
+                               , cNomDirectorio     VARCHAR2
+                               , cCodReporte        VARCHAR2 );
 
-   PROCEDURE reasegurador_poliza( cIdPoliza          VARCHAR2
+   PROCEDURE REASEGURADOR_POLIZA( cIdPoliza          VARCHAR2
                                 , cIDetPol           VARCHAR2
                                 , cIdEndoso          VARCHAR2
                                 , nIdTransaccionIni  NUMBER
@@ -31,9 +54,13 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_reportes_reaseguro IS
                                 , cDescIdEndoso      VARCHAR2
                                 , cDescPoliza        VARCHAR2
                                 , nCodEmpresa        NUMBER
-                                , cCodUser           VARCHAR2 );
+                                , cCodUser           VARCHAR2
+                                , cNomArchivo        VARCHAR2
+                                , cNomArchZip        VARCHAR2
+                                , cNomDirectorio     VARCHAR2
+                                , cCodReporte        VARCHAR2 );
 
-   PROCEDURE transaccion_siniestro( cIdSiniestro       VARCHAR2
+   PROCEDURE TRANSACCION_SINIESTRO( cIdSiniestro       VARCHAR2
                                   , nIdTransaccionIni  NUMBER
                                   , nIdTransaccionFin  NUMBER
                                   , dFecDesde          DATE
@@ -41,9 +68,14 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_reportes_reaseguro IS
                                   , cIdPoliza          VARCHAR2
                                   , nCodCia            NUMBER
                                   , cFormato           VARCHAR2
-                                  , cCodUser           VARCHAR2 );
+                                  , nCodEmpresa        NUMBER
+                                  , cCodUser           VARCHAR2
+                                  , cNomArchivo        VARCHAR2
+                                  , cNomArchZip        VARCHAR2
+                                  , cNomDirectorio     VARCHAR2
+                                  , cCodReporte        VARCHAR2 );
 
-   PROCEDURE reasegurador_siniestro( cIdSiniestro       VARCHAR2
+   PROCEDURE REASEGURADOR_SINIESTRO( cIdSiniestro       VARCHAR2
                                    , nIdTransaccionIni  NUMBER
                                    , nIdTransaccionFin  NUMBER
                                    , dFecDesde          DATE
@@ -51,9 +83,14 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_reportes_reaseguro IS
                                    , cIdPoliza          VARCHAR2
                                    , nCodCia            NUMBER
                                    , cFormato           VARCHAR2
-                                   , cCodUser           VARCHAR2 );
+                                   , nCodEmpresa        NUMBER
+                                   , cCodUser           VARCHAR2
+                                   , cNomArchivo        VARCHAR2
+                                   , cNomArchZip        VARCHAR2
+                                   , cNomDirectorio     VARCHAR2
+                                   , cCodReporte        VARCHAR2 );
 
-   PROCEDURE transaccion_esquema( cIdPoliza          VARCHAR2
+   PROCEDURE TRANSACCION_ESQUEMA( cIdPoliza          VARCHAR2
                                 , cCodEsquema        VARCHAR2
                                 , nIdTransaccionIni  NUMBER
                                 , nIdTransaccionFin  NUMBER
@@ -63,9 +100,14 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_reportes_reaseguro IS
                                 , cDescEsquema       VARCHAR2 
                                 , nCodCia            NUMBER
                                 , cFormato           VARCHAR2
-                                , cCodUser           VARCHAR2 );
+                                , nCodEmpresa        NUMBER
+                                , cCodUser           VARCHAR2
+                                , cNomArchivo        VARCHAR2
+                                , cNomArchZip        VARCHAR2
+                                , cNomDirectorio     VARCHAR2
+                                , cCodReporte        VARCHAR2 );
 
-   PROCEDURE reasegurador_esquema( cIdPoliza          VARCHAR2
+   PROCEDURE REASEGURADOR_ESQUEMA( cIdPoliza          VARCHAR2
                                  , cCodEsquema        VARCHAR2
                                  , nIdTransaccionIni  NUMBER
                                  , nIdTransaccionFin  NUMBER
@@ -76,9 +118,14 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_reportes_reaseguro IS
                                  , cDescIdEndoso      VARCHAR2
                                  , nCodCia            NUMBER
                                  , cFormato           VARCHAR2
-                                 , cCodUser           VARCHAR2 );
+                                 , nCodEmpresa        NUMBER
+                                 , cCodUser           VARCHAR2
+                                 , cNomArchivo        VARCHAR2
+                                 , cNomArchZip        VARCHAR2
+                                 , cNomDirectorio     VARCHAR2
+                                 , cCodReporte        VARCHAR2 );
 
-   PROCEDURE siniestro_recuperado( cIdPoliza           VARCHAR2
+   PROCEDURE SINIESTRO_RECUPERADO( cIdPoliza           VARCHAR2
                                  , cIdSiniestro        VARCHAR2
                                  , cCodEmpGrem         VARCHAR2
                                  , cIdTipoSeg          VARCHAR2
@@ -93,15 +140,26 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_reportes_reaseguro IS
                                  , cDescripRamo        VARCHAR2
                                  , nCodCia             NUMBER
                                  , cFormato            VARCHAR2
-                                 , cCodUser            VARCHAR2 );
+                                 , nCodEmpresa         NUMBER
+                                 , cCodUser            VARCHAR2
+                                 , cNomArchivo        VARCHAR2
+                                 , cNomArchZip        VARCHAR2
+                                 , cNomDirectorio     VARCHAR2
+                                 , cCodReporte        VARCHAR2 );
+                                 
+   PROCEDURE CALENDARIOS( nCodCia       NUMBER
+                        , dFecDesde     DATE
+                        , dFecHasta     DATE
+                        , cCodEsquema   VARCHAR2
+                        , cCodContrato  VARCHAR2
+                        , cFormato      VARCHAR2 );                                 
 
-
-END oc_reportes_reaseguro;
+END OC_REPORTES_REASEGURO;
 /
 
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_REPORTES_REASEGURO IS
 
-   FUNCTION nombre_compania( nCodCia NUMBER ) RETURN VARCHAR2 IS
+   FUNCTION NOMBRE_COMPANIA( nCodCia NUMBER ) RETURN VARCHAR2 IS
       cNomCia VARCHAR2(200);
    BEGIN
       SELECT NomCia
@@ -113,9 +171,54 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
    WHEN NO_DATA_FOUND THEN
       cNomCia := 'COMPA?IA - NO EXISTE!!!';
       RETURN(cNomCia);
-   END nombre_compania;
+   END NOMBRE_COMPANIA;
 
-   PROCEDURE transaccion_poliza( cIdPoliza          VARCHAR2
+   PROCEDURE INSERTA_ENCABEZADO( cFormato        VARCHAR2
+                               , nCodCia         NUMBER
+                               , nCodEmpresa     NUMBER
+                               , cCodReporte     VARCHAR2
+                               , cCodUser        VARCHAR2
+                               , cNomDirectorio  VARCHAR2
+                               , cNomArchivo     VARCHAR2 ) IS
+      --Variables globales para el manejo de los encabezados
+      nColsTotales     NUMBER := 0;
+      nColsLateral     NUMBER := 0;
+      nColsMerge       NUMBER := 0;
+      nColsCentro      NUMBER := 0;
+      nJustCentro      NUMBER := 3; 
+   BEGIN
+      nFila := 1;
+      --
+      IF cFormato = 'TEXTO' THEN 
+         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cTitulo1 );
+         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cTitulo2 );
+         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cTitulo3 );
+         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cTitulo4 );
+         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
+      ELSE
+         --Obtiene Número de Columnas Totales
+         nColsTotales := XLSX_BUILDER_PKG.EXCEL_CUENTA_COLUMNAS(cEncabez);
+         --
+         IF XLSX_BUILDER_PKG.EXCEL_CREAR_LIBRO(cNomDirectorio, cNomArchivo) THEN
+            IF XLSX_BUILDER_PKG.EXCEL_CREAR_HOJA(cCodReporte) THEN
+               --Titulos
+               nFila := XLSX_BUILDER_PKG.EXCEL_HEADER(nFila + 1, cTitulo1, nColsTotales, nJustCentro, nColsLateral, nColsCentro, nColsMerge);
+               nFila := XLSX_BUILDER_PKG.EXCEL_HEADER(nFila + 1, cTitulo2, nColsTotales, nJustCentro, nColsLateral, nColsCentro, nColsMerge);
+               nFila := XLSX_BUILDER_PKG.EXCEL_HEADER(nFila + 1, cTitulo3, nColsTotales, nJustCentro, nColsLateral, nColsCentro, nColsMerge);
+               nFila := XLSX_BUILDER_PKG.EXCEL_HEADER(nFila + 1, cTitulo4, nColsTotales, nJustCentro, nColsLateral, nColsCentro, nColsMerge);
+               --Encabezado
+               nFila := XLSX_BUILDER_PKG.EXCEL_ENCABEZADO(nFila + 2, cEncabez, 1);
+            END IF;
+         END IF;
+      END IF;
+   EXCEPTION 
+   WHEN OTHERS THEN 
+        cError := SQLERRM;
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20225, cError );
+   END INSERTA_ENCABEZADO;
+
+   PROCEDURE TRANSACCION_POLIZA( cIdPoliza          VARCHAR2
                                , cIDetPol           VARCHAR2
                                , cIdEndoso          VARCHAR2
                                , nIdTransaccionIni  NUMBER
@@ -128,16 +231,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                                , cDescIDetPol       VARCHAR2
                                , cDescIdEndoso      VARCHAR2
                                , cDescPoliza        VARCHAR2
-                               , cCodUser           VARCHAR2 ) IS
-      cLimitadorTxt     VARCHAR2(1)    :='|';
-      cLimitador        VARCHAR2(20)   :='</td>';
-      cCampoFormatC     VARCHAR2(4000) := '<td class=texto>';
-      cCampoFormatN     VARCHAR2(4000) := '<td class=numero>';
-      cCampoFormatD     VARCHAR2(4000) := '<td class=fecha>';
-      --
-      cEncabezado       VARCHAR2(1) := 'S';
-      nLinea            NUMBER := 1;
-      cCadena           VARCHAR2(4000);
+                               , nCodEmpresa        NUMBER
+                               , cCodUser           VARCHAR2
+                               , cNomArchivo        VARCHAR2
+                               , cNomArchZip        VARCHAR2
+                               , cNomDirectorio     VARCHAR2
+                               , cCodReporte        VARCHAR2 ) IS
+      --Variables Locales
       cNumPolUnico1     POLIZAS.NumPolUnico%TYPE;
       cCodContrato      REA_TIPOS_CONTRATOS.CodContrato%TYPE;
       cDescContrato     REA_TIPOS_CONTRATOS.NomContrato%TYPE;
@@ -147,10 +247,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
       cIndDistFacult    VARCHAR2(2) := 'NO';
       cDatosVehiculo    VARCHAR2(100);
       --
-      cNomCia           EMPRESAS.NOMCIA%TYPE;
-      --
       CURSOR DISTREA_Q IS
-         SELECT RD.IdDistribRea
+         SELECT /*+ INDEX(DT SYS_C0031885) */ RD.IdDistribRea
               , RD.NumDistrib
               , RD.CodGrupoCobert
               , RD.CodEsquema
@@ -161,7 +259,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
               , RD.SumaAsegDistrib
               , RD.PrimaDistrib
               , RD.MontoReserva
-              , OC_ASEGURADO.NOMBRE_ASEGURADO(RD.Codcia, DT.CodEmpresa, RD.Cod_Asegurado) NomAsegurado
+              , NVL(TRIM(PNJ3.Nombre) ||' ' || TRIM(PNJ3.Apellido_Paterno) || ' ' || TRIM(PNJ3.Apellido_Materno) || ' ' ||
+                DECODE(PNJ3.ApeCasada, NULL, '', ' de ' || PNJ3.ApeCasada), 'Asegurado - NO EXISTE!!!') NomAsegurado
               , NVL(RE.DescEsquema, 'Esquema de Reaseguro/Coaseguro ')                    Esquema
               , RD.CodRiesgoReaseg
               , RD.FecVigInicial
@@ -176,19 +275,30 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
               , P.NumPolUnico                                                             NumPolUnico1
               , REC.CodContrato
               , GT_REA_TIPOS_CONTRATOS.NOMBRE_CONTRATO(REC.CodCia, REC.CodContrato)       DescContrato
-           FROM TRANSACCION             TR
-              , DETALLE_TRANSACCION     DT
-              , REA_DISTRIBUCION        RD
-              , REA_ESQUEMAS            RE 
-              , POLIZAS                 P
-              , REA_ESQUEMAS_CONTRATOS  REC
-          WHERE TR.CodCia              = DT.CodCia
-            AND TR.IdTransaccion       = DT.IdTransaccion
-            AND RE.CODCIA(+)           = RD.CODCIA
-            AND RE.CODESQUEMA(+)       = RD.CODESQUEMA
-            AND TR.FechaTransaccion   >= NVL(dFecDesde,TR.FechaTransaccion)
-            AND TR.FechaTransaccion   <= NVL(dFecHasta,TR.FechaTransaccion)
+           FROM REA_DISTRIBUCION          RD
+              , DETALLE_TRANSACCION       DT
+              , TRANSACCION               TR
+              , REA_ESQUEMAS              RE 
+              , PERSONA_NATURAL_JURIDICA  PNJ3
+              , ASEGURADO                 A
+              , POLIZAS                   P
+              , REA_ESQUEMAS_CONTRATOS    REC
+          WHERE RD.CodCia             = DT.CodCia
+            AND RD.IdTransaccion      = DT.IdTransaccion
+            AND RD.IdPoliza           = DT.Valor1 
+            AND RD.IDetPol            = NVL(DT.Valor2,1) 
+            AND RD.IdEndoso           = NVL(DT.Valor3,0)
+            AND DT.Codcia             = nCodCia
+            AND DT.Codempresa         = nCodEmpresa
+            AND RE.CODCIA(+)          = RD.CODCIA
+            AND RE.CODESQUEMA(+)      = RD.CODESQUEMA
+            AND PNJ3.Tipo_Doc_Identificacion(+) = A.Tipo_Doc_Identificacion
+            AND PNJ3.Num_Doc_Identificacion(+)  = A.Num_Doc_Identificacion
+            AND A.CodCia(+)                     = RD.CODCIA
+            AND A.CodEmpresa(+)                 = nCodEmpresa
+            AND A.Cod_Asegurado(+)              = RD.COD_ASEGURADO
             AND DT.IdTransaccion BETWEEN NVL(nIdTransaccionIni,0) AND NVL(nIdTransaccionFin,99999999999999999999)
+            AND DT.MtoLocal          != 0
             AND UPPER(DT.Objeto)      IN ('DETALLE_POLIZA', 'ENDOSOS')
             AND ( ( NVL(DT.Valor1,'%') LIKE cIdPoliza AND cIdPoliza IS NOT NULL )
                   OR
@@ -199,105 +309,39 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                 )
             AND NVL(DT.Valor2,'%') LIKE cIDetPol
             AND NVL(DT.Valor3,'%') LIKE cIdEndoso
-            AND DT.MtoLocal        != 0
-            AND RD.CodCia           = DT.CodCia
-            AND RD.IdTransaccion    = DT.IdTransaccion
-            AND RD.IdPoliza         = DT.Valor1 
-            AND RD.IDetPol          = NVL(DT.Valor2,1) 
-            AND RD.IdEndoso         = NVL(DT.Valor3,0)
-            AND P.IdPoliza(+)       = RD.IdPoliza
-            AND P.CodCia(+)         = RD.CodCia
-            AND REC.CodCia              = RD.CodCia
-            AND REC.CodEsquema(+)       = RD.CodEsquema
-            AND REC.IdEsqContrato(+)    = RD.IdEsqContrato
+            AND TR.CodCia              = DT.CodCia
+            AND TR.Codempresa          = DT.Codempresa
+            AND TR.IdTransaccion       = DT.IdTransaccion
+            AND TR.Idtransaccion       = DT.Idtransaccion
+            AND TR.FechaTransaccion   >= NVL(dFecDesde,TR.FechaTransaccion)
+            AND TR.FechaTransaccion   <= NVL(dFecHasta,TR.FechaTransaccion)
+            AND P.IdPoliza(+)         = RD.IdPoliza
+            AND P.CodCia(+)           = RD.CodCia
+            AND REC.CodCia            = RD.CodCia
+            AND REC.CodEsquema(+)     = RD.CodEsquema
+            AND REC.IdEsqContrato(+)  = RD.IdEsqContrato
           ORDER BY RD.IdTransaccion, RD.IdDistribRea, RD.NumDistrib;
    --
    BEGIN
-      IF cFormato = 'TEXTO' THEN
-         nLinea  := 1;
-         cCadena := nombre_compania(nCodCia) || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'REPORTE DISTRIBUCIÓN DE REASEGURO DE LA TRANSACCION'||TO_CHAR(nIdTransaccionIni)||' A '||TO_CHAR(nIdTransaccionFin)||CHR(13)||
-                        'DE LA PÓLIZA '||TO_CHAR(cIdPoliza)||' DETALLE: '||cDescIDetPol||' ENDOSO: '||cDescIdEndoso;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         -- 
-         nLinea  := nLinea + 1;
-         cCadena := ' ' || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         -- 
-         nLinea  := nLinea + 1;
-         cCadena := 'No. de Póliza Único'        ||cLimitadorTxt||'Consecutivo'             ||cLimitadorTxt||'No. Detalle de Póliza'||cLimitadorTxt||
-                    'No. Endoso'                 ||cLimitadorTxt||'No. Distribución'        ||cLimitadorTxt||'Orden'                ||cLimitadorTxt||
-                    'Grupo Cobertura'            ||cLimitadorTxt||'Capacidad Máxima'        ||cLimitadorTxt||'% Distribución'       ||cLimitadorTxt||
-                    'Suma Aseg. Distribuida'     ||cLimitadorTxt||'Prima Distribuida'       ||cLimitadorTxt||'Monto de Reserva'     ||cLimitadorTxt||
-                    'Código Asegurado'           ||cLimitadorTxt||'Nombre Asegurado'        ||cLimitadorTxt||'Esquema de Reaseguro' ||cLimitadorTxt|| 
-                    'Contrato de Reaseguro'      ||cLimitadorTxt||'No. Capa Contrato'       ||cLimitadorTxt||'Riesgo de Reaseguro'  ||cLimitadorTxt||
-                    'Inicio Vigencia Transacción'||cLimitadorTxt||'Fin Vigencia Transacción'||cLimitadorTxt||'Fecha Distribución'   ||cLimitadorTxt|| 
-                    'Necesita Distribución Facultativa' || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      ELSE  
-         nLinea  := 1;
-         cCadena := '<html xmlns:o="urn:schemas-microsoft-com:office:office"'                                                                        ||chr(10)||
-                    ' xmlns:x="urn:schemas-microsoft-com:office:excel"'                                                                              ||chr(10)||
-                    ' xmlns="http://www.w3.org/TR/REC-html40">'                                                                                      ||chr(10)||
-                    ' <style id="libro">'                                                                                                            ||chr(10)||
-                    '   <!--table'                                                                                                                   ||chr(10)||
-                    '       {mso-displayed-decimal-separator:"\.";'                                                                                  ||chr(10)||
-                    '        mso-displayed-thousand-separator:"\,";}'                                                                                ||chr(10)||
-                    '        .texto'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"\@";}'                                                                                            ||chr(10)||
-                    '        .numero'                                                                                                                ||chr(10)||
-                    '          {mso-style-parent:texto; mso-number-format:"_-* \#\,\#\#0\.00_-\;\\-* \#\,\#\#0\.00_-\;_-* \0022-\0022??_-\;_-\@_-";}'||chr(10)||
-                    '        .fecha'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"dd\\-mmm\\-yyyy";}'                                                                               ||chr(10)||
-                    '    -->'                                                                                                                        ||chr(10)||
-                    ' </style><div id="libro">'                                                                                                      ||chr(10);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         -- 
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 0><tr><th>' || OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia) || '</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>REPORTE DISTRIBUCIÓN DE REASEGURO DE LA TRANSACCION '||TO_CHAR(nIdTransaccionIni)||
-                    ' A '||TO_CHAR(nIdTransaccionFin)||'</th></tr>'||CHR(10)||
-                    '<tr><th>DE LA PÓLIZA '||TO_CHAR(cDescPoliza)||'</th></tr>'||CHR(10)|| 
-                    '<tr><th>DEL DETALLE  '||TO_CHAR(cDescIDetPol)||'</th></tr>'||CHR(10)||
-                    '<tr><th>DEL ENDOSO   '||TO_CHAR(cDescIdEndoso)||'</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>  </th></tr></table>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Único</font></th>' ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo</font></th>'                               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle de Póliza</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Endoso</font></th>'                                ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Distribución</font></th>'                          || 
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Orden</font></th>'                                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Grupo Cobertura</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Capacidad Máxima</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Distribución</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Suma Aseg. Distribuida</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Prima Distribuida</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto de Reserva</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Asegurado</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Asegurado</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Esquema de Reaseguro</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contrato de Reaseguro</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Capa Contrato</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Riesgo de Reaseguro</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia Transacción</font></th>'               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia Transacción</font></th>'                  ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Distribución</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Necesita Distribución Facultativa</font></th><tr>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      END IF;
-
+      -- Elimina Registros del Reporte
+      DELETE TEMP_REPORTES_THONA
+      WHERE  CodCia     = nCodCia
+        AND  CodEmpresa = nCodEmpresa
+        AND  CodReporte = cCodReporte
+        AND  CodUsuario = cCodUser;
+      --
+      COMMIT;
+      --
+      cTitulo1 := NOMBRE_COMPANIA(nCodCia);
+      cTitulo2 := 'REPORTE DISTRIBUCIÓN DE REASEGURO DE LA TRANSACCION' || TO_CHAR(nIdTransaccionIni) || ' A ' || TO_CHAR(nIdTransaccionFin);
+      cTitulo3 := 'DE LA PÓLIZA ' || TO_CHAR(cIdPoliza) || ' DETALLE: ' || cDescIDetPol || ' ENDOSO: ' || cDescIdEndoso;
+      cTitulo4 := ' ';
+      cEncabez := 'No. de Póliza Único|Consecutivo|No. Detalle de Póliza|No. Endoso|No. Distribución|Orden|Grupo Cobertura|Capacidad Máxima|% Distribución|' ||
+                  'Suma Aseg. Distribuida|Prima Distribuida|Monto de Reserva|Código Asegurado|Nombre Asegurado|Esquema de Reaseguro|Contrato de Reaseguro|'  ||
+                  'No. Capa Contrato|Riesgo de Reaseguro|Inicio Vigencia Transacción|Fin Vigencia Transacción|Fecha Distribución|Necesita Distribución Facultativa'; 
+      --
+      INSERTA_ENCABEZADO( cFormato, nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo );
+      --
       FOR W IN DISTREA_Q LOOP
          cNumPolUnico1 := NVL(W.NumPolUnico1, 'NO EXISTE');
          cCodContrato  := W.CodContrato;
@@ -317,68 +361,57 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
             END IF;
          END IF;
          --
+         cRegistro := cNumPolUnico1                                   || '|' ||
+                      TO_CHAR(W.IdPoliza,'9999999999999')             || '|' ||
+                      TO_CHAR(W.IDetPol,'9999999999999')              || '|' ||
+                      TO_CHAR(W.IdEndoso,'9999999999999')             || '|' ||
+                      TO_CHAR(W.IdDistribRea,'9999999999999')         || '|' ||
+                      TO_CHAR(W.NumDistrib,'9999999999999')           || '|' ||
+                      W.CodGrupoCobert                                || '|' ||
+                      TO_CHAR(W.CapacidadMaxima,'99999999999990.00')  || '|' ||
+                      TO_CHAR(W.PorcDistrib,'9999999990.000000')      || '|' ||
+                      TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')  || '|' ||
+                      TO_CHAR(W.PrimaDistrib,'99999999999990.000000') || '|' ||
+                      TO_CHAR(W.MontoReserva,'99999999999990.000000') || '|' ||
+                      TO_CHAR(W.Cod_Asegurado,'9999999999999')        || '|' ||
+                      W.NomAsegurado                                  || '|' ||
+                      W.Esquema                                       || '|' ||
+                      cDescContrato                                   || '|' ||
+                      TO_CHAR(W.IdCapaContrato,'9999999999999')       || '|' ||
+                      W.CodRiesgoReaseg                               || '|' ||
+                      TO_CHAR(W.FecVigInicial,'DD/MM/YYYY')           || '|' ||
+                      TO_CHAR(W.FecVigFinal,'DD/MM/YYYY')             || '|' ||
+                      TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')           || '|' ||
+                      cIndDistFacult;
+         -- 
          IF cFormato = 'TEXTO' THEN
-            cCadena := cNumPolUnico1                                  ||cLimitadorTxt||
-                       TO_CHAR(W.IdPoliza,'9999999999999')            ||cLimitadorTxt||
-                       TO_CHAR(W.IDetPol,'9999999999999')             ||cLimitadorTxt||
-                       TO_CHAR(W.IdEndoso,'9999999999999')            ||cLimitadorTxt||
-                       TO_CHAR(W.IdDistribRea,'9999999999999')        ||cLimitadorTxt||
-                       TO_CHAR(W.NumDistrib,'9999999999999')          ||cLimitadorTxt||
-                       W.CodGrupoCobert                               ||cLimitadorTxt||
-                       TO_CHAR(W.CapacidadMaxima,'99999999999990.00') ||cLimitadorTxt||
-                       TO_CHAR(W.PorcDistrib,'9999999990.000000')     ||cLimitadorTxt||
-                       TO_CHAR(W.SumaAsegDistrib,'99999999999990.00') ||cLimitadorTxt||
-                       TO_CHAR(W.PrimaDistrib,'99999999999990.000000')||cLimitadorTxt||
-                       TO_CHAR(W.MontoReserva,'99999999999990.000000')||cLimitadorTxt||
-                       TO_CHAR(W.Cod_Asegurado,'9999999999999')       ||cLimitadorTxt||
-                       W.NomAsegurado                                 ||cLimitadorTxt||
-                       W.Esquema                                      ||cLimitadorTxt||
-                       cDescContrato                                  ||cLimitadorTxt||
-                       TO_CHAR(W.IdCapaContrato,'9999999999999')      ||cLimitadorTxt||
-                       W.CodRiesgoReaseg                              ||cLimitadorTxt||
-                       TO_CHAR(W.FecVigInicial,'DD/MM/YYYY')          ||cLimitadorTxt||
-                       TO_CHAR(W.FecVigFinal,'DD/MM/YYYY')            ||cLimitadorTxt||
-                       TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')          ||cLimitadorTxt||
-                       cIndDistFacult                                 ||CHR(13);
+            OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cRegistro );
          ELSE
-            cCadena := '<tr>'                                                         || 
-                       cCampoFormatC||cNumPolUnico1                                   ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdPoliza,'9999999999999')             ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IDetPol,'9999999999999')              ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdEndoso,'9999999999999')             ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdDistribRea,'9999999999999')         ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.NumDistrib,'9999999999999')           ||cLimitador||
-                       cCampoFormatC||W.CodGrupoCobert                                ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.CapacidadMaxima,'99999999999990.00')  ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PorcDistrib,'9999999990.000000')      ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')  ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PrimaDistrib,'99999999999990.000000') ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.MontoReserva,'99999999999990.000000') ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.Cod_Asegurado,'9999999999999')        ||cLimitador||
-                       cCampoFormatC||W.NomAsegurado                                  ||cLimitador||
-                       cCampoFormatC||W.Esquema                                       ||cLimitador||
-                       cCampoFormatC||cDescContrato                                   ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdCapaContrato,'9999999999999')       ||cLimitador||
-                       cCampoFormatC||W.CodRiesgoReaseg                               ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.FecVigInicial,'DD/MM/YYYY')           ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.FecVigFinal,'DD/MM/YYYY')             ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')           ||cLimitador||
-                       cCampoFormatC||cIndDistFacult                                  ||'</tr>';
+            nFila := XLSX_BUILDER_PKG.EXCEL_DETALLE(nFila + 1, cRegistro, 1);                                        
          END IF;
-         nLinea := nLinea + 1;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       END LOOP;
-      IF cFormato = 'EXCEL' THEN
-         OC_ARCHIVO.Escribir_Linea('</table></div></html>', cCodUser, 9999);
+      --
+      COMMIT;
+      -- 
+      IF cFormato = 'TEXTO' THEN
+         OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchivo, cNomArchZip );
+         OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+      ELSE
+         IF XLSX_BUILDER_PKG.EXCEL_GUARDA_LIBRO THEN
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchivo) THEN       
+               dbms_output.put_line('OK');
+            END IF;
+            OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+         END IF;
       END IF;
-      OC_ARCHIVO.Escribir_Linea('EOF', cCodUser, 0); 
    EXCEPTION 
    WHEN OTHERS THEN 
-      OC_ARCHIVO.Eliminar_Archivo(cCodUser);
-      RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Reaseguro Por Transacción de la Póliza: ' ||SQLERRM);
-   END transaccion_poliza;
+        cError := SQLERRM;
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Reaseguro Por Transacción de la Póliza: ' || cError);
+   END TRANSACCION_POLIZA;
 
-   PROCEDURE reasegurador_poliza( cIdPoliza          VARCHAR2
+   PROCEDURE REASEGURADOR_POLIZA( cIdPoliza          VARCHAR2
                                 , cIDetPol           VARCHAR2
                                 , cIdEndoso          VARCHAR2
                                 , nIdTransaccionIni  NUMBER
@@ -392,16 +425,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                                 , cDescIdEndoso      VARCHAR2
                                 , cDescPoliza        VARCHAR2
                                 , nCodEmpresa        NUMBER
-                                , cCodUser           VARCHAR2 ) IS
-      cLimitadorTxt       VARCHAR2(1)    :='|';
-      cLimitador          VARCHAR2(20)   :='</td>';
-      cCampoFormatC       VARCHAR2(4000) := '<td class=texto>';
-      cCampoFormatN       VARCHAR2(4000) := '<td class=numero>';
-      cCampoFormatD       VARCHAR2(4000) := '<td class=fecha>';
-      --
-      cEncabezado         VARCHAR2(1) := 'S';
-      nLinea              NUMBER := 1;
-      cCadena             VARCHAR2(4000);
+                                , cCodUser           VARCHAR2
+                                , cNomArchivo        VARCHAR2
+                                , cNomArchZip        VARCHAR2
+                                , cNomDirectorio     VARCHAR2
+                                , cCodReporte        VARCHAR2 ) IS
+      --Variables Locales
       cNumPolUnico1       POLIZAS.NumPolUnico%TYPE;
       cCodContrato        REA_TIPOS_CONTRATOS.CodContrato%TYPE;
       cDescContrato       REA_TIPOS_CONTRATOS.NomContrato%TYPE;
@@ -435,8 +464,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
       nFactorCesion       REA_ESQUEMAS_POLIZAS.FactorCesion%TYPE;
       nPrimaDeveng        REA_ESQUEMAS_POLIZAS.PrimasDirectas%TYPE := 0;
       --
+      nIdPoliza           POLIZAS.IdPoliza%TYPE;
+      nIdPolizaAfin       NUMBER;
+      nIDetpolAfin        NUMBER;
+      nCodCiaAfin         NUMBER;
+      cCodGrupoCobertAfin VARCHAR2(500);
+      --
       CURSOR DISTREA_Q IS
-         SELECT RD.IdDistribRea
+         SELECT /*+ INDEX(DT SYS_C0031885) */ RD.IdDistribRea
               , RD.NumDistrib
               , RD.CodGrupoCobert
               , RD.CodEsquema
@@ -569,133 +604,30 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                 , RDE.CODEMPRESAGREMIO
                 , RDE.CODINTERREASEG;
    BEGIN
-      IF cFormato = 'TEXTO' THEN  
-         nLinea := 1;
-         cCadena     := NOMBRE_COMPANIA(nCodCia) || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea := nLinea + 1;
-         cCadena     := 'REPORTE DISTRIBUCIÓN DE REASEGURO DETALLE POR REASEGURADOR, PÓLIZA: '||cDescPoliza||
-                        ' DETALLE: '||cDescIDetPol||' ENDOSO: '||cDescIdEndoso;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea := nLinea + 1;
-         cCadena     := ' ' || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'No. de Póliza Único'              ||cLimitadorTxt||'No. de Póliza Consecutivo'            ||cLimitadorTxt||'Inicio Vigencia Póliza'        ||cLimitadorTxt||
-                    'Fin Vigencia Póliza'              ||cLimitadorTxt||'No. Detalle de Póliza'                ||cLimitadorTxt||'Contratante'                   ||cLimitadorTxt||
-                    'Código Cliente'                   ||cLimitadorTxt||'No. Endoso'                           ||cLimitadorTxt||'No. Distribución'              ||cLimitadorTxt||
-                    'Orden'                            ||cLimitadorTxt||'Cobertura'                            ||cLimitadorTxt||'Desc. Cobertura'               ||cLimitadorTxt||
-                    'Código Asegurado'                 ||cLimitadorTxt||'Nombre Asegurado'                     ||cLimitadorTxt||'Fecha de Nacimiento'           ||cLimitadorTxt||
-                    'Edad'                             ||cLimitadorTxt||'Fecha Ingreso'                        ||cLimitadorTxt||'Esquema de Reaseguro'          ||cLimitadorTxt||
-                    'Contrato de Reaseguro'            ||cLimitadorTxt||'No. Capa Contrato'                    ||cLimitadorTxt||'Código Reasegurador'           ||cLimitadorTxt||
-                    'Nombre Reasegurador'              ||cLimitadorTxt||'Código Intermediario Reaseguro'       ||cLimitadorTxt||'Nombre Intermediario Reaseguro'||cLimitadorTxt||
-                    'Capacidad Máxima'                 ||cLimitadorTxt||'% Distribución'                       ||cLimitadorTxt||'Suma Asegurada Distribuida'    ||cLimitadorTxt||
-                    'Prima Distribuida'                ||cLimitadorTxt||'% Comisión de Reaseguro'              ||cLimitadorTxt||'Comisión Reaseguro'            ||cLimitadorTxt||
-                    'Monto 100% SA Cobertura'          ||cLimitadorTxt||'Monto 100% Prima Reaseguro Cobertura' ||cLimitadorTxt||'No. Liquidación'               ||cLimitadorTxt;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         cCadena := 'Fecha de Alta'                    ||cLimitadorTxt||'Endoso con el que se dió de Alta'     ||cLimitadorTxt||'Fecha de Baja'                 ||cLimitadorTxt||
-                    'Endoso con el que se dió de Baja' ||cLimitadorTxt||'Endoso con el que se dió de Alta'     ||cLimitadorTxt||'Tiene Siniestro'               ||cLimitadorTxt||
-                    'Fecha Cancelación'                ||cLimitadorTxt||'Prima Devengada'                      ||cLimitadorTxt||'Riesgo de Reaseguro'           ||cLimitadorTxt||
-                    'Fecha Distribución'               ||cLimitadorTxt||'No. de Transacción'                   ||cLimitadorTxt||'Descrip. Transacción'          ||cLimitadorTxt||
-                    'Año-Mes de Movimiento'            ||cLimitadorTxt||'Moneda'                               ||cLimitadorTxt||
-                    'Necesita Distribución Facultativa'||cLimitadorTxt||'Primas Directas'                      ||cLimitadorTxt||'Factor Reaseguro'              ||cLimitadorTxt||
-                    'Primas Cedidas'                   ||cLimitadorTxt||'Total Primas Reaseguro'               ||cLimitadorTxt||'Factor Cesión';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      ELSE
-         nLinea := 1;
-         cCadena := '<html xmlns:o="urn:schemas-microsoft-com:office:office"'                                                                        ||chr(10)||
-                    ' xmlns:x="urn:schemas-microsoft-com:office:excel"'                                                                              ||chr(10)||
-                    ' xmlns="http://www.w3.org/TR/REC-html40">'                                                                                      ||chr(10)||
-                    ' <style id="libro">'                                                                                                            ||chr(10)||
-                    '   <!--table'                                                                                                                   ||chr(10)||
-                    '       {mso-displayed-decimal-separator:"\.";'                                                                                  ||chr(10)||
-                    '        mso-displayed-thousand-separator:"\,";}'                                                                                ||chr(10)||
-                    '        .texto'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"\@";}'                                                                                            ||chr(10)||
-                    '        .numero'                                                                                                                ||chr(10)||
-                    '          {mso-style-parent:texto; mso-number-format:"_-* \#\,\#\#0\.00_-\;\\-* \#\,\#\#0\.00_-\;_-* \0022-\0022??_-\;_-\@_-";}'||chr(10)||
-                    '        .fecha'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"dd\\-mmm\\-yyyy";}'                                                                               ||chr(10)||
-                    '    -->'                                                                                                                        ||chr(10)||
-                    ' </style><div id="libro">'                                                                                                      ||chr(10);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 0><tr><th>' || OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia) || '</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>REPORTE DISTRIBUCIÓN DE REASEGURO DETALLE POR REASEGURADOR</th></tr>'||CHR(10)||
-                    '<tr><th>DE LA PÓLIZA '||TO_CHAR(cDescPoliza)||'</th></tr>'||CHR(10)|| 
-                    '<tr><th>DEL DETALLE  '||TO_CHAR(cDescIDetPol)||'</th></tr>'||CHR(10)||
-                    '<tr><th>DEL ENDOSO   '||TO_CHAR(cDescIdEndoso)||'</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>  </th></tr></table>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Único</font></th>' ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Consecutivo</font></th>'                 ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia Póliza</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia Póliza</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle de Póliza</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contratante</font></th>'                               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Cliente</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Endoso</font></th>'                                ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Distribución</font></th>'                          || 
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Orden</font></th>'                                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cobertura</font></th>'                                 ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Desc. Cobertura</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Asegurado</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Asegurado</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Nacimiento</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Edad</font></th>'                                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Ingreso</font></th>'                             ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Esquema de Reaseguro</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contrato de Reaseguro</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Capa Contrato</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Reasegurador</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Reasegurador</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Intermediario Reaseguro</font></th>'            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Intermediario Reaseguro</font></th>'            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Capacidad Máxima</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Distribución</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Suma Asegurada Distribuida</font></th>'                ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Prima Distribuida</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Comisión Reaseguro</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisión Reaseguro</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto 100% SA cobertura</font></th>'                   ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto 100% Prima Reaseguro Cobertura</font></th>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         cCadena := '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Liquidación</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Alta</font></th>'                             ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Endoso con el que se dió de Alta</font></th>'          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Baja</font></th>'                             ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Endoso con el que se dió de Baja</font></th>'          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tiene Siniestro</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Cancelación</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Prima Devengada</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Riesgo de Reaseguro</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Distribución</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Transacción</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descrip. Transacción</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Año-Mes de Movimiento</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>'                                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Necesita Distribución Facultativa</font></th>'         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Primas Directas</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Factor Reaseguro</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Primas Cedidas</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total Primas Reaseguro</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Factor Cesión</font></th><tr>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      END IF;
-            
+      -- Elimina Registros del Reporte
+      DELETE TEMP_REPORTES_THONA
+      WHERE  CodCia     = nCodCia
+        AND  CodEmpresa = nCodEmpresa
+        AND  CodReporte = cCodReporte
+        AND  CodUsuario = cCodUser;
+      --
+      COMMIT;
+      --
+      cTitulo1 := NOMBRE_COMPANIA(nCodCia);
+      cTitulo2 := 'REPORTE DISTRIBUCIÓN DE REASEGURO DETALLE POR REASEGURADOR, PÓLIZA: ' || cDescPoliza;
+      cTitulo3 := ' DETALLE: ' || cDescIDetPol || ' ENDOSO: ' || cDescIdEndoso;
+      cTitulo4 := ' ';
+      cEncabez := 'No. de Póliza Único|No. de Póliza Consecutivo|Inicio Vigencia Póliza|Fin Vigencia Póliza|No. Detalle de Póliza|Contratante|Código Cliente|' ||
+                  'No. Endoso|No. Distribución|Orden|Cobertura|Desc. Cobertura|Código Asegurado|Nombre Asegurado|Fecha de Nacimiento|Edad|Fecha Ingreso|'      ||
+                  'Esquema de Reaseguro|Contrato de Reaseguro|No. Capa Contrato|Código Reasegurador|Nombre Reasegurador|Código Intermediario Reaseguro|'       ||
+                  'Nombre Intermediario Reaseguro|Capacidad Máxima|% Distribución|Suma Asegurada Distribuida|Prima Distribuida|% Comisión de Reaseguro|'       ||
+                  'Comisión Reaseguro|Monto 100% SA Cobertura|Monto 100% Prima Reaseguro Cobertura|No. Liquidación|Fecha de Alta|Endoso con el que se dió de Alta|' ||
+                  'Fecha de Baja|Endoso con el que se dió de Baja|Tiene Siniestro|Fecha Cancelación|Prima Devengada|Riesgo de Reaseguro|Fecha Distribución|'   ||
+                  'No. de Transacción|Descrip. Transacción|Año-Mes de Movimiento|Moneda|Necesita Distribución Facultativa|Primas Directas|Factor Reaseguro|'   ||
+                  'Primas Cedidas|Total Primas Reaseguro|Factor Cesión'; 
+      --
+      INSERTA_ENCABEZADO( cFormato, nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo );
+      --
       FOR W IN DISTREA_Q LOOP
          cNumPolUnico1  := NVL(W.NumPolUnico1, 'NO EXISTE');
          dFecIniVig     := W.FecIniVig;
@@ -704,32 +636,76 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
          cNomCliente    := W.NomCliente;
          dFecEndosAlta  := W.FecEmision;
          dFecEndosBaja  := W.FecAnul;
-               --
-         BEGIN
-            SELECT DECODE(COUNT(*),0,'NO','SI')
-              INTO cTieneSiniestros
-              FROM SINIESTRO
-             WHERE CodCia   = W.CodCia
-               AND IdPoliza = W.IdPoliza;
-         END;
          --
-         BEGIN
-            SELECT DescCobert, SumaAsegMaxima, Prima_Cobert
-              INTO cNomCobert, nSumaAsegCobert, nPrimaCobert
-              FROM DETALLE_POLIZA DP, COBERTURAS_DE_SEGUROS CS
-             WHERE DP.IdPoliza   = W.IdPoliza
-               AND DP.IDetPol    = W.IDetPol
-               AND DP.CodCia     = W.CodCia
-               AND DP.CodCia     = CS.CodCia
-               AND DP.CodEmpresa = CS.CodEmpresa
-               AND DP.IdTipoSeg  = CS.IdTipoSeg
-               AND DP.PlanCob    = CS.PlanCob
-               AND CS.CodCobert  = W.CodGrupoCobert;
-         EXCEPTION
-         WHEN OTHERS THEN
-            cNomCobert      := 'NO EXISTE '||W.CodGrupoCobert;
-            nSumaAsegCobert := 0;
-         END;
+         IF nIdPoliza IS NULL THEN
+            nIdPoliza := W.IdPoliza;
+            --
+            SELECT DECODE(COUNT(*), 0, 'NO', 'SI')
+            INTO   cTieneSiniestros
+            FROM   SINIESTRO
+            WHERE  CodCia   = W.CodCia
+              AND  IdPoliza = W.IdPoliza;
+            --
+         ELSIF nIdPoliza <> W.IdPoliza THEN
+            nIdPoliza := W.IdPoliza;
+            --
+            SELECT DECODE(COUNT(*), 0, 'NO', 'SI')
+            INTO   cTieneSiniestros
+            FROM   SINIESTRO
+            WHERE  CodCia   = W.CodCia
+              AND  IdPoliza = W.IdPoliza;
+            --
+         END IF;
+         --
+         IF nIdPolizaAfin IS NULL AND nIDetpolAfin IS NULL AND nCodCiaAfin IS NULL AND cCodGrupoCobertAfin IS NULL THEN
+            nIdPolizaAfin       := W.IdPoliza;
+            nIDetpolAfin        := W.IDetPol;
+            nCodCiaAfin         := W.CodCia;
+            cCodGrupoCobertAfin := W.CodGrupoCobert;
+            --
+            BEGIN
+               SELECT DescCobert, SumaAsegMaxima, Prima_Cobert
+                 INTO cNomCobert, nSumaAsegCobert, nPrimaCobert
+                 FROM DETALLE_POLIZA DP, COBERTURAS_DE_SEGUROS CS
+                WHERE DP.IdPoliza   = W.IdPoliza
+                  AND DP.IDetPol    = W.IDetPol
+                  AND DP.CodCia     = W.CodCia
+                  AND DP.CodCia     = CS.CodCia
+                  AND DP.CodEmpresa = CS.CodEmpresa
+                  AND DP.IdTipoSeg  = CS.IdTipoSeg
+                  AND DP.PlanCob    = CS.PlanCob
+                  AND CS.CodCobert  = W.CodGrupoCobert;
+            EXCEPTION
+            WHEN OTHERS THEN
+               cNomCobert      := 'NO EXISTE '||W.CodGrupoCobert;
+               nSumaAsegCobert := 0;
+            END;
+            --
+         ELSIF nIdPolizaAfin <> W.IdPoliza OR nIDetpolAfin <> W.IDetPol OR nCodCiaAfin <> W.CodCia OR cCodGrupoCobertAfin <> W.CodGrupoCobert THEN
+            nIdPolizaAfin       := W.IdPoliza;
+            nIDetpolAfin        := W.IDetPol;
+            nCodCiaAfin         := W.CodCia;
+            cCodGrupoCobertAfin := W.CodGrupoCobert;
+            --
+            BEGIN
+               SELECT DescCobert, SumaAsegMaxima, Prima_Cobert
+                 INTO cNomCobert, nSumaAsegCobert, nPrimaCobert
+                 FROM DETALLE_POLIZA DP, COBERTURAS_DE_SEGUROS CS
+                WHERE DP.IdPoliza   = W.IdPoliza
+                  AND DP.IDetPol    = W.IDetPol
+                  AND DP.CodCia     = W.CodCia
+                  AND DP.CodCia     = CS.CodCia
+                  AND DP.CodEmpresa = CS.CodEmpresa
+                  AND DP.IdTipoSeg  = CS.IdTipoSeg
+                  AND DP.PlanCob    = CS.PlanCob
+                  AND CS.CodCobert  = W.CodGrupoCobert;
+            EXCEPTION
+            WHEN OTHERS THEN
+               cNomCobert      := 'NO EXISTE '||W.CodGrupoCobert;
+               nSumaAsegCobert := 0;
+            END;
+            --
+         END IF;
          --
          cCodContrato       := W.CodContrato;
          cDescContrato      := NVL(W.DescContrato, 'NO EXISTE CONTRATO');
@@ -779,143 +755,88 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                cIndDistFacult := 'SI';
             END IF;
          END IF;
-        
-         nLinea := nLinea + 1;
+         --
+         cRegistro := cNumPolUnico1                                    || '|' ||
+                      TO_CHAR(W.IdPoliza,'9999999999999')              || '|' ||
+                      TO_CHAR(dFecIniVig,'DD/MM/YYYY')                 || '|' ||
+                      TO_CHAR(dFecFinVig,'DD/MM/YYYY')                 || '|' ||
+                      TO_CHAR(W.IDetPol,'9999999999999')               || '|' ||
+                      cNomCliente                                      || '|' ||
+                      TO_CHAR(nCodCliente,'9999999999999')             || '|' ||
+                      TO_CHAR(W.IdEndoso,'9999999999999')              || '|' ||
+                      TO_CHAR(W.IdDistribRea,'9999999999999')          || '|' ||
+                      TO_CHAR(W.NumDistrib,'9999999999999')            || '|' ||
+                      W.CodGrupoCobert                                 || '|' ||
+                      cNomCobert                                       || '|' ||
+                      TO_CHAR(W.Cod_Asegurado,'9999999999999')         || '|' ||
+                      W.NomAsegurado                                   || '|' ||
+                      TO_CHAR(W.FecNacimiento,'DD/MM/YYYY')            || '|' ||
+                      TO_CHAR(nEdadAseg,'9999999999999')               || '|' ||
+                      TO_CHAR(dFecIngreso,'DD/MM/YYYY')                || '|' ||
+                      W.Esquema                                        || '|' ||
+                      cDescContrato                                    || '|' ||
+                      TO_CHAR(W.IdCapaContrato,'9999999999999')        || '|' ||
+                      TO_CHAR(W.CodEmpresaGremio,'9999999999999')      || '|' ||
+                      W.NombreReasegurador                             || '|' ||
+                      TO_CHAR(W.CodInterReaseg,'9999999999999')        || '|' ||
+                      W.NomInterReaseg                                 || '|' ||
+                      TO_CHAR(W.CapacidadMaxima,'99999999999990.00')   || '|' ||
+                      TO_CHAR(W.PorcDistrib,'9999999990.000000')       || '|' ||
+                      TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')   || '|' ||
+                      TO_CHAR(W.PrimaDistrib,'99999999999990.000000')  || '|' ||
+                      TO_CHAR(W.PorcComis,'9999999990.000000')         || '|' ||
+                      TO_CHAR(W.MontoComision,'99999999999990.00')     || '|' ||
+                      TO_CHAR(nSumaAsegCobert,'99999999999990.00')     || '|' ||
+                      TO_CHAR(nPrimaCobert,'99999999999990.00')        || '|' ||
+                      TO_CHAR(W.IdLiquidacion,'9999999999999')         || '|' ||
+                      TO_CHAR(dFecEndosAlta,'DD/MM/YYYY')              || '|' ||
+                      TO_CHAR(nIdEndosoAlta,'9999999999999')           || '|' ||
+                      TO_CHAR(dFecEndosBaja,'DD/MM/YYYY')              || '|' ||
+                      TO_CHAR(nIdEndosoBaja,'9999999999999')           || '|' ||
+                      cTieneSiniestros                                 || '|' ||
+                      TO_CHAR(dFecEndosAlta,'DD/MM/YYYY')              || '|' || -- Fec Cancelacion
+                      TO_CHAR(nPrimaDeveng,'99999999999990.00')        || '|' || -- Prima Devengada
+                      W.CodRiesgoReaseg                                || '|' ||
+                      TO_CHAR(W.FecMovDistrib,'DD/MM/RRRR')            || '|' ||
+                      TO_CHAR(W.IdTransaccion,'9999999999999')         || '|' ||
+                      W.Proceso                                        || '|' ||
+                      TO_CHAR(W.FechaTransaccion,'RRRR/MM')            || '|' ||
+                      W.Moneda                                         || '|' ||
+                      cIndDistFacult                                   || '|' || -- Falta Definir
+                      TO_CHAR(nPrimasDirectas,'99999999999990.00')     || '|' || -- Falta Definir
+                      TO_CHAR(nFactorReaseg,'99999999999990.00')       || '|' || -- Falta Definir
+                      TO_CHAR(nPrimasCedidas,'99999999999990.00')      || '|' || -- Falta Definir
+                      TO_CHAR(nTotalPrimasReaseg,'99999999999990.00')  || '|' || -- Falta Definir
+                      TO_CHAR(nFactorCesion,'99999999999990.00');                -- Falta Definir
+         -- 
          IF cFormato = 'TEXTO' THEN
-            cCadena := cNumPolUnico1                                     ||cLimitadorTxt||
-                       TO_CHAR(W.IdPoliza,'9999999999999')              ||cLimitadorTxt||
-                       TO_CHAR(dFecIniVig,'DD/MM/YYYY')                 ||cLimitadorTxt||
-                       TO_CHAR(dFecFinVig,'DD/MM/YYYY')                 ||cLimitadorTxt||
-                       TO_CHAR(W.IDetPol,'9999999999999')               ||cLimitadorTxt||
-                       cNomCliente                                      ||cLimitadorTxt||
-                       TO_CHAR(nCodCliente,'9999999999999')             ||cLimitadorTxt||
-                       TO_CHAR(W.IdEndoso,'9999999999999')              ||cLimitadorTxt||
-                       TO_CHAR(W.IdDistribRea,'9999999999999')          ||cLimitadorTxt||
-                       TO_CHAR(W.NumDistrib,'9999999999999')            ||cLimitadorTxt||
-                       W.CodGrupoCobert                                 ||cLimitadorTxt||
-                       cNomCobert                                       ||cLimitadorTxt||
-                       TO_CHAR(W.Cod_Asegurado,'9999999999999')         ||cLimitadorTxt||
-                       W.NomAsegurado                                   ||cLimitadorTxt||
-                       TO_CHAR(W.FecNacimiento,'DD/MM/YYYY')            ||cLimitadorTxt||
-                       TO_CHAR(nEdadAseg,'9999999999999')               ||cLimitadorTxt||
-                       TO_CHAR(dFecIngreso,'DD/MM/YYYY')                ||cLimitadorTxt||
-                       W.Esquema                                        ||cLimitadorTxt||
-                       cDescContrato                                    ||cLimitadorTxt||
-                       TO_CHAR(W.IdCapaContrato,'9999999999999')        ||cLimitadorTxt||
-                       TO_CHAR(W.CodEmpresaGremio,'9999999999999')      ||cLimitadorTxt||
-                       W.NombreReasegurador                             ||cLimitadorTxt||
-                       TO_CHAR(W.CodInterReaseg,'9999999999999')        ||cLimitadorTxt||
-                       W.NomInterReaseg                                 ||cLimitadorTxt||
-                       TO_CHAR(W.CapacidadMaxima,'99999999999990.00')   ||cLimitadorTxt||
-                       TO_CHAR(W.PorcDistrib,'9999999990.000000')       ||cLimitadorTxt||
-                       TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')   ||cLimitadorTxt||
-                       TO_CHAR(W.PrimaDistrib,'99999999999990.000000')  ||cLimitadorTxt||
-                       TO_CHAR(W.PorcComis,'9999999990.000000')         ||cLimitadorTxt||
-                       TO_CHAR(W.MontoComision,'99999999999990.00')     ||cLimitadorTxt||
-                       TO_CHAR(nSumaAsegCobert,'99999999999990.00')     ||cLimitadorTxt||
-                       TO_CHAR(nPrimaCobert,'99999999999990.00')        ||cLimitadorTxt;
-                       -- NO VA TO_CHAR(W.MontoReserva,'99999999999990.000000') ||cLimitadorTxt||
-
-            OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-
-            cCadena := TO_CHAR(W.IdLiquidacion,'9999999999999')         ||cLimitadorTxt||
-                       TO_CHAR(dFecEndosAlta,'DD/MM/YYYY')              ||cLimitadorTxt||
-                       TO_CHAR(nIdEndosoAlta,'9999999999999')           ||cLimitadorTxt||
-                       TO_CHAR(dFecEndosBaja,'DD/MM/YYYY')              ||cLimitadorTxt||
-                       TO_CHAR(nIdEndosoBaja,'9999999999999')           ||cLimitadorTxt||
-                       cTieneSiniestros                                 ||cLimitadorTxt||
-                       --TO_CHAR(W.FecLiberacionRvas,'DD/MM/YYYY')       ||cLimitadorTxt||-- NO VA
-                       --TO_CHAR(W.ImpRvasLiberadas,'99999999999990.00') ||cLimitadorTxt||-- NO VA
-                       TO_CHAR(dFecEndosAlta,'DD/MM/YYYY')              ||cLimitadorTxt||-- Fec Cancelacion
-                       TO_CHAR(nPrimaDeveng,'99999999999990.00')        ||cLimitadorTxt||-- Prima Devengada
-                       W.CodRiesgoReaseg                                ||cLimitadorTxt||
-                       TO_CHAR(W.FecMovDistrib,'DD/MM/RRRR')            ||cLimitadorTxt||
-                       TO_CHAR(W.IdTransaccion,'9999999999999')         ||cLimitadorTxt||
-                       W.Proceso                                        ||cLimitadorTxt||
-                       TO_CHAR(W.FechaTransaccion,'RRRR/MM')            ||cLimitadorTxt||
-                       W.Moneda                                         ||cLimitadorTxt||
-                       cIndDistFacult                                   ||cLimitadorTxt|| -- Falta Definir
-                       TO_CHAR(nPrimasDirectas,'99999999999990.00')     ||cLimitadorTxt|| -- Falta Definir
-                       TO_CHAR(nFactorReaseg,'99999999999990.00')       ||cLimitadorTxt|| -- Falta Definir
-                       TO_CHAR(nPrimasCedidas,'99999999999990.00')      ||cLimitadorTxt|| -- Falta Definir
-                       TO_CHAR(nTotalPrimasReaseg,'99999999999990.00')  ||cLimitadorTxt|| -- Falta Definir
-                       TO_CHAR(nFactorCesion,'99999999999990.00');  -- Falta Definir
-               cCadena := cCadena || CHR(13);
+            OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cRegistro );
          ELSE
-            cCadena := '<tr>'                                                          || 
-                       cCampoFormatC||cNumPolUnico1                                    ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdPoliza,'9999999999990')              ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecIniVig,'DD/MM/YYYY')                 ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecFinVig,'DD/MM/YYYY')                 ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IDetPol,'9999999999990')               ||cLimitador||
-                       cCampoFormatC||cNomCliente                                      ||cLimitador||
-                       cCampoFormatC||TO_CHAR(nCodCliente,'9999999999999')             ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdEndoso,'9999999999990')              ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdDistribRea,'9999999999990')          ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.NumDistrib,'9999999999990')            ||cLimitador||
-                       cCampoFormatC||W.CodGrupoCobert                                 ||cLimitador||
-                       cCampoFormatC||cNomCobert                                       ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.Cod_Asegurado,'9999999999990')         ||cLimitador||
-                       cCampoFormatC||W.NomAsegurado                                   ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.FecNacimiento,'DD/MM/YYYY')            ||cLimitador||
-                       cCampoFormatC||TO_CHAR(nEdadAseg,'9999999999999')               ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecIngreso,'DD/MM/YYYY')                ||cLimitador||
-                       cCampoFormatC||W.Esquema                                        ||cLimitador||
-                       cCampoFormatC||cDescContrato                                    ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdCapaContrato,'9999999999990')        ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.CodEmpresaGremio,'9999999999990')      ||cLimitador||
-                       cCampoFormatC||W.NombreReasegurador                             ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.CodInterReaseg,'9999999999990')        ||cLimitador||
-                       cCampoFormatC||W.NomInterReaseg                                 ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.CapacidadMaxima,'99999999999990.00')   ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PorcDistrib,'9999999990.000000')       ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')   ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PrimaDistrib,'99999999999990.000000')  ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PorcComis,'9999999990.000000')         ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.MontoComision,'99999999999990.000000') ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nSumaAsegCobert,'99999999999990.00')     ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nPrimaCobert,'99999999999990.00')        ||cLimitador;
-
-            OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-
-                       --cCampoFormatN||TO_CHAR(W.MontoReserva,'99999999999990.000000') ||cLimitador||-- NO VA
-            cCadena := cCampoFormatC||TO_CHAR(W.IdLiquidacion,'9999999999990')         ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecEndosAlta,'DD/MM/YYYY')              ||cLimitador||
-                       cCampoFormatC||TO_CHAR(nIdEndosoAlta,'9999999999999')           ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecEndosBaja,'DD/MM/YYYY')              ||cLimitador||
-                       cCampoFormatC||TO_CHAR(nIdEndosoBaja,'9999999999999')           ||cLimitador||
-                       cCampoFormatC||cTieneSiniestros                                 ||cLimitador||
-                       --cCampoFormatC||TO_CHAR(W.FecLiberacionRvas,'DD/MM/YYYY')        ||cLimitador||-- NO VA
-                       --cCampoFormatN||TO_CHAR(W.ImpRvasLiberadas,'99999999999990.00')  ||cLimitador||-- NO VA
-                       cCampoFormatC||TO_CHAR(dFecEndosAlta,'DD/MM/YYYY')              ||cLimitador||-- Fec Cancelacion
-                       cCampoFormatN||TO_CHAR(nPrimaDeveng,'99999999999990.00')        ||cLimitador||-- Prima Devengada
-                       cCampoFormatC||W.CodRiesgoReaseg                                ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.FecMovDistrib,'DD/MM/RRRR')            ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdTransaccion,'9999999999990')         ||cLimitador||
-                       cCampoFormatC||W.Proceso                                        ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.FechaTransaccion,'RRRR/MM')            ||cLimitador||
-                       cCampoFormatC||W.Moneda                                         ||cLimitador||
-                       cCampoFormatC||cIndDistFacult                                   ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nPrimasDirectas,'99999999999990.00')     ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nFactorReaseg,'99999999999990.00')       ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nPrimasCedidas,'99999999999990.00')      ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nTotalPrimasReaseg,'99999999999990.00')  ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nFactorCesion,'99999999999990.00')       ||cLimitador;
-               cCadena := cCadena || '</tr>';
+            nFila := XLSX_BUILDER_PKG.EXCEL_DETALLE(nFila + 1, cRegistro, 1);                                        
          END IF;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       END LOOP;
-      IF cFormato = 'EXCEL' THEN
-         OC_ARCHIVO.Escribir_Linea('</table></div></html>', cCodUser, 9999);
+      --
+      COMMIT;
+      -- 
+      IF cFormato = 'TEXTO' THEN
+         OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchivo, cNomArchZip );
+         OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+      ELSE
+         IF XLSX_BUILDER_PKG.EXCEL_GUARDA_LIBRO THEN
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchivo) THEN       
+               dbms_output.put_line('OK');
+            END IF;
+            OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+         END IF;
       END IF;
-      OC_ARCHIVO.Escribir_Linea('EOF', cCodUser, 0); 
-   EXCEPTION 
-   WHEN OTHERS THEN 
-      OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Detalle Por Reasegurador de la Poliza' ||SQLERRM);
-   END reasegurador_poliza;
+   EXCEPTION
+   WHEN OTHERS THEN
+        cError := SQLERRM;
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Detalle Por Reasegurador de la Poliza' || cError);
+   END REASEGURADOR_POLIZA;
 
-   PROCEDURE transaccion_siniestro( cIdSiniestro       VARCHAR2
+   PROCEDURE TRANSACCION_SINIESTRO( cIdSiniestro       VARCHAR2
                                   , nIdTransaccionIni  NUMBER
                                   , nIdTransaccionFin  NUMBER
                                   , dFecDesde          DATE
@@ -923,16 +844,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                                   , cIdPoliza          VARCHAR2
                                   , nCodCia            NUMBER
                                   , cFormato           VARCHAR2
-                                  , cCodUser           VARCHAR2 ) IS
-      cLimitadorTxt    VARCHAR2(1)    :='|';
-      cLimitador       VARCHAR2(20)   :='</td>';
-      cCampoFormatC    VARCHAR2(4000) := '<td class=texto>';
-      cCampoFormatN    VARCHAR2(4000) := '<td class=numero>';
-      cCampoFormatD    VARCHAR2(4000) := '<td class=fecha>';
-      --
-      cEncabezado      VARCHAR2(1) := 'S';
-      nLinea           NUMBER := 1;
-      cCadena          VARCHAR2(4000);
+                                  , nCodEmpresa        NUMBER
+                                  , cCodUser           VARCHAR2
+                                  , cNomArchivo        VARCHAR2
+                                  , cNomArchZip        VARCHAR2
+                                  , cNomDirectorio     VARCHAR2
+                                  , cCodReporte        VARCHAR2 ) IS
+      --Variables Locales
       cNumPolUnico     POLIZAS.NumPolUnico%TYPE;
       cCodContrato     REA_TIPOS_CONTRATOS.CodContrato%TYPE;
       cDescContrato    REA_TIPOS_CONTRATOS.NomContrato%TYPE;
@@ -947,7 +865,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
       cDescTitulo      VARCHAR(100);
       --
       CURSOR DISTREA_Q IS
-         SELECT DISTINCT RD.IdDistribRea
+         SELECT /*+ INDEX(DT SYS_C0031885) */ DISTINCT RD.IdDistribRea
               , RD.NumDistrib
               , RD.CodGrupoCobert
               , RD.CodEsquema
@@ -996,89 +914,32 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
             AND S.IdPoliza(+)          = RD.IdPoliza
           ORDER BY RD.IdTransaccion, RD.IdDistribRea, RD.NumDistrib;
    BEGIN
+      -- Elimina Registros del Reporte
+      DELETE TEMP_REPORTES_THONA
+      WHERE  CodCia     = nCodCia
+        AND  CodEmpresa = nCodEmpresa
+        AND  CodReporte = cCodReporte
+        AND  CodUsuario = cCodUser;
+      --
+      COMMIT;
+      --
       IF cIdSiniestro = '%' THEN
          cDescTitulo := 'TODOS';
       ELSE
          cDescTitulo := cIdSiniestro;
       END IF;
       -- 
-      IF cFormato = 'TEXTO' THEN 
-         nLinea  := 1;
-         cCadena := NOMBRE_COMPANIA(nCodCia) || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'REPORTE DISTRIBUCIÓN DE REASEGURO DE LA TRANSACCION'||TO_CHAR(nIdTransaccionIni)||' A '||TO_CHAR(nIdTransaccionFin)||CHR(13)||
-                    'DEL SINIESTRO '||cDescTitulo;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         -- 
-         nLinea  := nLinea + 1;
-         cCadena := ' ' || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         -- 
-         nLinea  := nLinea + 1;
-         cCadena := 'No. de Póliza Único'  ||cLimitadorTxt||'Consecutivo'           ||cLimitadorTxt||'No. Detalle de Póliza'  ||cLimitadorTxt||
-                    'No. Siniestro'        ||cLimitadorTxt||'No. Transacción'       ||cLimitadorTxt||'No. Distribución'       ||cLimitadorTxt||
-                    'Orden'                ||cLimitadorTxt||'% Distribución'        ||cLimitadorTxt||'Monto Cedido'           ||cLimitadorTxt||
-                    'Esquema de Reaseguro' ||cLimitadorTxt||'Contrato de Reaseguro' ||cLimitadorTxt||'No. Capa Contrato'      ||cLimitadorTxt||
-                    'Fecha Distribución'   ||cLimitadorTxt||'Cobertura Afectada'    ||cLimitadorTxt||'Fecha Ocurrencia'       ||cLimitadorTxt||
-                    'Monto de Gastos'      ||cLimitadorTxt||'Monto Daño Cobertura'  ||cLimitadorTxt||'Total Reservado'        ||cLimitadorTxt||
-                    'Status Siniestro'     ||cLimitadorTxt|| CHR(13); 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      ELSE  
-         cCadena := '<html xmlns:o="urn:schemas-microsoft-com:office:office"'                                                                        ||chr(10)||
-                    ' xmlns:x="urn:schemas-microsoft-com:office:excel"'                                                                              ||chr(10)||
-                    ' xmlns="http://www.w3.org/TR/REC-html40">'                                                                                      ||chr(10)||
-                    ' <style id="libro">'                                                                                                            ||chr(10)||
-                    '   <!--table'                                                                                                                   ||chr(10)||
-                    '       {mso-displayed-decimal-separator:"\.";'                                                                                  ||chr(10)||
-                    '        mso-displayed-thousand-separator:"\,";}'                                                                                ||chr(10)||
-                    '        .texto'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"\@";}'                                                                                            ||chr(10)||
-                    '        .numero'                                                                                                                ||chr(10)||
-                    '          {mso-style-parent:texto; mso-number-format:"_-* \#\,\#\#0\.00_-\;\\-* \#\,\#\#0\.00_-\;_-* \0022-\0022??_-\;_-\@_-";}'||chr(10)||
-                    '        .fecha'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"dd\\-mmm\\-yyyy";}'                                                                               ||chr(10)||
-                    '    -->'                                                                                                                        ||chr(10)||
-                    ' </style><div id="libro">'                                                                                                      ||chr(10);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         -- 
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 0><tr><th>' || OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia) || '</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         -- 
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>REPORTE DISTRIBUCIÓN DE REASEGURO DE LA TRANSACCION'||TO_CHAR(nIdTransaccionIni)||' A '||TO_CHAR(nIdTransaccionFin)||'</th></tr>'||CHR(10)||
-                    '<tr><th>DEL SINIESTRO '||cDescTitulo||'</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         -- 
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>  </th></tr></table>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         -- 
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Único</font></th>' ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo</font></th>'                               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle de Póliza</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Siniestro</font></th>'                             ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Transacción</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Distribución</font></th>'                          || 
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Orden</font></th>'                                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Distribución</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto Cedido</font></th>'                              ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Esquema de Reaseguro</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contrato de Reaseguro</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Capa Contrato</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Distribución</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cobertura Afectada</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Ocurrencia</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto de Gastos</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto Daño Cobertura</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total Reservado</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status Siniestro</font></th>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      END IF;
-      --     
+      cTitulo1 := NOMBRE_COMPANIA(nCodCia);
+      cTitulo2 := 'REPORTE DISTRIBUCIÓN DE REASEGURO DE LA TRANSACCION' || TO_CHAR(nIdTransaccionIni) || ' A ' || TO_CHAR(nIdTransaccionFin);
+      cTitulo3 := 'DEL SINIESTRO ' || cDescTitulo;
+      cTitulo4 := ' ';
+      cEncabez := 'No. de Póliza Único|Consecutivo|No. Detalle de Póliza|No. Siniestro|No. Transacción|No. Distribución|Orden|% Distribución|Monto Cedido|' ||
+                  'Esquema de Reaseguro|Contrato de Reaseguro|No. Capa Contrato|Fecha Distribución|Cobertura Afectada|Fecha Ocurrencia|Monto de Gastos|'    ||
+                  'Monto Daño Cobertura|Total Reservado|Status Siniestro'; 
+      nFila    := 1;
+      --
+      INSERTA_ENCABEZADO( cFormato, nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo );
+      --
       FOR W IN DISTREA_Q LOOP
          cNumPolUnico    := NVL(W.NumPolUnico, 'NO EXISTE');
          cCodContrato    := W.CodContrato;
@@ -1090,7 +951,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
          --
          IF OC_SINIESTRO.SINIESTRO_DE_ASEGURADO(W.CodCia, W.IdPoliza, W.IDetPol, W.IdSiniestro) = 'N' THEN
             BEGIN
-               SELECT CodCobert, SUM(Monto_Reservado_Moneda) MontoReserva
+               SELECT CodCobert , SUM(Monto_Reservado_Moneda)
                  INTO cCodCobert, nMontoReserva
                  FROM COBERTURA_SINIESTRO
                 WHERE IdPoliza      = W.IdPoliza
@@ -1140,65 +1001,56 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
               AND CodEmpresaGremio != '00001'; -- Thona Seguros.
          END;
          --
+         --Armo el registro detalle
+         --TO_CHAR(W.MontoReserva,'99999999999990.000000') || '|' || Se cambia temporalmente por el cálculo del MontoCedido
+         cRegistro := cNumPolUnico                                 || '|' ||
+                      TO_CHAR(W.IdPoliza,'9999999999999')          || '|' ||
+                      TO_CHAR(W.IDetPol,'9999999999999')           || '|' ||
+                      TO_CHAR(W.IdSiniestro,'9999999999999')       || '|' ||
+                      TO_CHAR(W.IdTransaccion,'9999999999999')     || '|' ||
+                      TO_CHAR(W.IdDistribRea,'9999999999999')      || '|' ||
+                      TO_CHAR(W.NumDistrib,'9999999999999')        || '|' ||
+                      TO_CHAR(W.PorcDistrib,'9999999990.000000')   || '|' ||
+                      TO_CHAR(nMtoCedido,'99999999999990.000000')  || '|' ||
+                      W.Esquema                                    || '|' ||
+                      cDescContrato                                || '|' ||
+                      TO_CHAR(W.IdCapaContrato,'9999999999999')    || '|' ||
+                      TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')        || '|' ||
+                      cCodCobert                                   || '|' ||
+                      TO_CHAR(dFec_Ocurrencia,'DD/MM/YYYY')        || '|' ||
+                      TO_CHAR(nTotalGastos,'99999999999990.00')    || '|' ||
+                      TO_CHAR(nMontoReserva,'99999999999990.00')   || '|' ||
+                      TO_CHAR(nTotalReservado,'99999999999990.00') || '|' ||
+                      cSts_Siniestro;
+         -- 
          IF cFormato = 'TEXTO' THEN
-            cCadena := cNumPolUnico                                    ||cLimitadorTxt||
-                       TO_CHAR(W.IdPoliza,'9999999999999')             ||cLimitadorTxt||
-                       TO_CHAR(W.IDetPol,'9999999999999')              ||cLimitadorTxt||
-                       TO_CHAR(W.IdSiniestro,'9999999999999')          ||cLimitadorTxt||
-                       TO_CHAR(W.IdTransaccion,'9999999999999')        ||cLimitadorTxt||
-                       TO_CHAR(W.IdDistribRea,'9999999999999')         ||cLimitadorTxt||
-                       TO_CHAR(W.NumDistrib,'9999999999999')           ||cLimitadorTxt||
-                       TO_CHAR(W.PorcDistrib,'9999999990.000000')      ||cLimitadorTxt||
-                       --TO_CHAR(W.MontoReserva,'99999999999990.000000') ||cLimitadorTxt|| Se cambia temporalmente por el cálculo del MontoCedido
-                       TO_CHAR(nMtoCedido,'99999999999990.000000')     ||cLimitadorTxt||
-                       W.Esquema                                       ||cLimitadorTxt||
-                       cDescContrato                                   ||cLimitadorTxt||
-                       TO_CHAR(W.IdCapaContrato,'9999999999999')       ||cLimitadorTxt||
-                       TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')           ||cLimitadorTxt||
-                       cCodCobert                                      ||cLimitadorTxt||
-                       TO_CHAR(dFec_Ocurrencia,'DD/MM/YYYY')           ||cLimitadorTxt||
-                       TO_CHAR(nTotalGastos,'99999999999990.00')       ||cLimitadorTxt||
-                       TO_CHAR(nMontoReserva,'99999999999990.00')      ||cLimitadorTxt||
-                       TO_CHAR(nTotalReservado,'99999999999990.00')    ||cLimitadorTxt||
-                       cSts_Siniestro                                  ||CHR(13); 
+            OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cRegistro );
          ELSE
-            cCadena := '<tr>'                                                         || 
-                       cCampoFormatC||cNumPolUnico                                    ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdPoliza,'9999999999990')             ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IDetPol,'9999999999990')              ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdSiniestro,'9999999999990')          ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdTransaccion,'9999999999990')        ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdDistribRea,'9999999999990')         ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.NumDistrib,'9999999999990')           ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PorcDistrib,'9999999990.000000')      ||cLimitador||
-                       --cCampoFormatN||TO_CHAR(W.MontoReserva,'99999999999990.000000') ||cLimitador|| Se cambia temporalmente por el cálculo del MontoCedido
-                       cCampoFormatN||TO_CHAR(nMtoCedido,'99999999999990.000000')     ||cLimitador||
-                       cCampoFormatC||W.Esquema                                       ||cLimitador||
-                       cCampoFormatC||cDescContrato                                   ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdCapaContrato,'9999999999990')       ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')           ||cLimitador||
-                       cCampoFormatC||cCodCobert                                      ||cLimitador||
-                       cCampoFormatD||TO_CHAR(dFec_Ocurrencia,'DD/MM/YYYY')           ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nTotalGastos,'99999999999990.00')       ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nMontoReserva,'99999999999990.00')      ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nTotalReservado,'99999999999990.00')    ||cLimitador||
-                       cCampoFormatC||cSts_Siniestro                                  ||'</tr>';
+            nFila := XLSX_BUILDER_PKG.EXCEL_DETALLE(nFila + 1, cRegistro, 1);                                        
          END IF;
-         nLinea := nLinea + 1;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       END LOOP;
       --
-      IF cFormato = 'EXCEL' THEN
-         OC_ARCHIVO.Escribir_Linea('</table></div></html>', cCodUser, 9999);
+      COMMIT;
+      -- 
+      IF cFormato = 'TEXTO' THEN
+         OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchivo, cNomArchZip );
+         OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+      ELSE
+         IF XLSX_BUILDER_PKG.EXCEL_GUARDA_LIBRO THEN
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchivo) THEN       
+               dbms_output.put_line('OK');
+            END IF;
+            OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+         END IF;
       END IF;
-      OC_ARCHIVO.Escribir_Linea('EOF', cCodUser, 0); 
-   EXCEPTION 
-   WHEN OTHERS THEN 
-      OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Reaseguro Por Transacción del Siniestro: ' ||SQLERRM);
-   END transaccion_siniestro;
+   EXCEPTION
+   WHEN OTHERS THEN
+        cError := SQLERRM;
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Reaseguro Por Transacción del Siniestro: ' || cError);
+   END TRANSACCION_SINIESTRO;
 
-   PROCEDURE reasegurador_siniestro( cIdSiniestro       VARCHAR2
+   PROCEDURE REASEGURADOR_SINIESTRO( cIdSiniestro       VARCHAR2
                                    , nIdTransaccionIni  NUMBER
                                    , nIdTransaccionFin  NUMBER
                                    , dFecDesde          DATE
@@ -1206,15 +1058,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                                    , cIdPoliza          VARCHAR2
                                    , nCodCia            NUMBER
                                    , cFormato           VARCHAR2
-                                   , cCodUser           VARCHAR2 ) IS
-      cLimitadorTxt       VARCHAR2(1)    :='|';
-      cLimitador          VARCHAR2(20)   :='</td>';
-      cCampoFormatC       VARCHAR2(4000) := '<td class=texto>';
-      cCampoFormatN       VARCHAR2(4000) := '<td class=numero>';
-      cCampoFormatD       VARCHAR2(4000) := '<td class=fecha>';
-      cEncabezado         VARCHAR2(1) := 'S';
-      nLinea              NUMBER := 1;
-      cCadena             VARCHAR2(4000);
+                                   , nCodEmpresa        NUMBER
+                                   , cCodUser           VARCHAR2
+                                   , cNomArchivo        VARCHAR2
+                                   , cNomArchZip        VARCHAR2
+                                   , cNomDirectorio     VARCHAR2
+                                   , cCodReporte        VARCHAR2 ) IS
+      --Variables Locales
       cNumPolUnico        POLIZAS.NumPolUnico%TYPE;
       cCodContrato        REA_TIPOS_CONTRATOS.CodContrato%TYPE;
       cDescContrato       REA_TIPOS_CONTRATOS.NomContrato%TYPE;
@@ -1251,7 +1101,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
       nIdSiniestro        SINIESTRO.IdSiniestro%TYPE;
       --
       CURSOR DISTREA_Q IS
-         SELECT DISTINCT RD.IdDistribRea
+         SELECT /*+ INDEX(DT SYS_C0031885) */ DISTINCT RD.IdDistribRea
               , RD.NumDistrib
               , RD.CodGrupoCobert
               , RD.CodEsquema
@@ -1360,133 +1210,35 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                 , RDE.CodEmpresaGremio
                 , RDE.CodInterReaseg;
    BEGIN
+      -- Elimina Registros del Reporte
+      DELETE TEMP_REPORTES_THONA
+      WHERE  CodCia     = nCodCia
+        AND  CodEmpresa = nCodEmpresa
+        AND  CodReporte = cCodReporte
+        AND  CodUsuario = cCodUser;
+      --
+      COMMIT;
+      --
       IF cIdSiniestro = '%' THEN
           cDescTitulo := 'TODOS';
       ELSE
           cDescTitulo := cIdSiniestro;
       END IF;
-        
-      IF cFormato = 'TEXTO' THEN  
-         nLinea  := 1;
-         cCadena := NOMBRE_COMPANIA(nCodCia) || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'REPORTE DISTRIBUCIÓN DE REASEGURO DETALLE POR REASEGURADOR'||CHR(13)||
-                    'DEL SINIESTRO '||cDescTitulo;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := ' ' || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'No. de Póliza Único'           ||cLimitadorTxt||'No. de Póliza Consecutivo'      ||cLimitadorTxt||'Inicio Vigencia Póliza'         ||cLimitadorTxt||
-                    'Fin Vigencia Póliza'           ||cLimitadorTxt||'No. Detalle de Póliza'          ||cLimitadorTxt||'Contratante'                    ||cLimitadorTxt||
-                    'Código Cliente'                ||cLimitadorTxt||'No. Siniestro'                  ||cLimitadorTxt||'No. Transacción'                ||cLimitadorTxt||
-                    'No. Distribución'              ||cLimitadorTxt||'Orden'                          ||cLimitadorTxt||'Esquema de Reaseguro'           ||cLimitadorTxt||
-                    'Contrato de Reaseguro'         ||cLimitadorTxt||'No. Capa Contrato'              ||cLimitadorTxt||'Código Reasegurador'            ||cLimitadorTxt||
-                    'Nombre Reasegurador'           ||cLimitadorTxt||'Código Intermediario Reaseguro' ||cLimitadorTxt||'Nombre Intermediario Reaseguro' ||cLimitadorTxt||
-                    '% Distribución'                ||cLimitadorTxt||'Total Cedido'                   ||cLimitadorTxt||'No. Liquidación'                ||cLimitadorTxt||
-                    'Cobertura Afectada'            ||cLimitadorTxt||'Desc. Cobertura Afectada'       ||cLimitadorTxt||'Fecha Notificación'             ||cLimitadorTxt||
-                    'Fecha Registro'                ||cLimitadorTxt||'Fecha Ocurrencia'               ||cLimitadorTxt||'Tipo de Siniestro'              ||cLimitadorTxt||
-                    'Descripción Tipo de Siniestro' ||cLimitadorTxt||'Código Causa Siniestro'         ||cLimitadorTxt||'Descripción Causa Siniestro'    ||cLimitadorTxt||
-                    'No. Endoso Afectado'           ||cLimitadorTxt||'Monto de Gastos'                ||cLimitadorTxt||'Monto Daño Cobertura'           ||cLimitadorTxt||
-                    'Total Reservado'               ||cLimitadorTxt||'Status Siniestro'               ||cLimitadorTxt||'Año-Mes de Movimiento'          ||cLimitadorTxt||
-                    'Monto de Reserva'              ||cLimitadorTxt||'Fecha Reserva'                  ||cLimitadorTxt||'Monto Pagado'                   ||cLimitadorTxt||
-                    'Fecha Pago'                    ||cLimitadorTxt||'Código Asegurado'               ||cLimitadorTxt||'Nombre Asegurado'               ||cLimitadorTxt||
-                    'Fecha de Nacimiento'           ||cLimitadorTxt||'Certificado'                    ||cLimitadorTxt||'Esquema de Reaseguro'           ||cLimitadorTxt||
-                    'Contrato de Reaseguro'         ||cLimitadorTxt||'No. Capa Contrato'              ||cLimitadorTxt||'Riesgo de Reaseguro'            ||cLimitadorTxt||
-                    'Fecha Distribución'            ||cLimitadorTxt||'Moneda'                         ||cLimitadorTxt||'Código de la Transacción'       ||cLimitadorTxt||
-                    'Nombre de la Transacción'      ||cLimitadorTxt||CHR(13); 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      ELSE  
-         cCadena := '<html xmlns:o="urn:schemas-microsoft-com:office:office"'                                                                        ||chr(10)||
-                    ' xmlns:x="urn:schemas-microsoft-com:office:excel"'                                                                              ||chr(10)||
-                    ' xmlns="http://www.w3.org/TR/REC-html40">'                                                                                      ||chr(10)||
-                    ' <style id="libro">'                                                                                                            ||chr(10)||
-                    '   <!--table'                                                                                                                   ||chr(10)||
-                    '       {mso-displayed-decimal-separator:"\.";'                                                                                  ||chr(10)||
-                    '        mso-displayed-thousand-separator:"\,";}'                                                                                ||chr(10)||
-                    '        .texto'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"\@";}'                                                                                            ||chr(10)||
-                    '        .numero'                                                                                                                ||chr(10)||
-                    '          {mso-style-parent:texto; mso-number-format:"_-* \#\,\#\#0\.00_-\;\\-* \#\,\#\#0\.00_-\;_-* \0022-\0022??_-\;_-\@_-";}'||chr(10)||
-                    '        .fecha'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"dd\\-mmm\\-yyyy";}'                                                                               ||chr(10)||
-                    '    -->'                                                                                                                        ||chr(10)||
-                    ' </style><div id="libro">'                                                                                                      ||chr(10);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 0><tr><th>' || OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia) || '</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>REPORTE DISTRIBUCIÓN DE REASEGURO DETALLE POR REASEGURADOR</th></tr>'||CHR(10)||
-                    '<tr><th>DEL SINIESTRO '||cDescTitulo||'</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>  </th></tr></table>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Único</font></th>' ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Consecutivo</font></th>'                 ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia Póliza</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia Póliza</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle de Póliza</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contratante</font></th>'                               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Cliente</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Siniestro</font></th>'                             ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Transacción</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Distribución</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Orden</font></th>'                                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Esquema de Reaseguro</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contrato de Reaseguro</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Capa Contrato</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Reasegurador</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Reasegurador</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Intermediario Reaseguro</font></th>'            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Intermediario Reaseguro</font></th>'            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Distribución</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total Cedido</font></th>'                              ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Liquidación</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cobertura Afectada</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Desc. Cobertura Afectada</font></th>'                  ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Notificación</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Registro</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Ocurrencia</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo de Siniestro</font></th>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         cCadena := '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripción Tipo de Siniestro</font></th>'             ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Causa Siniestro</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripción Causa Siniestro</font></th>'               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripción del Siniestro</font></th>'                 ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Endoso Afectado</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto de Gastos</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto Daño Cobertura</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total Reservado</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status Siniestro</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Año-Mes de Movimiento</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto de Reserva</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Reserva</font></th>'                             ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto Pagado</font></th>'                              ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Pago</font></th>'                                ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Asegurado</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Asegurado</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Nacimiento</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Certificado</font></th>'                               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Riesgo de Reaseguro</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Distribución</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>'                                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código de la Transacción</font></th>'                  ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre de la Transacción</font></th>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      END IF;
-
+      --
+      cTitulo1 := NOMBRE_COMPANIA(nCodCia);
+      cTitulo2 := 'REPORTE DISTRIBUCIÓN DE REASEGURO DETALLE POR REASEGURADOR';
+      cTitulo3 := 'DEL SINIESTRO '||cDescTitulo;
+      cTitulo4 := ' ';
+      cEncabez := 'No. de Póliza Único|No. de Póliza Consecutivo|Inicio Vigencia Póliza|Fin Vigencia Póliza|No. Detalle de Póliza|Contratante|Código Cliente|No. Siniestro|' ||
+                  'No. Transacción|No. Distribución|Orden|Esquema de Reaseguro|Contrato de Reaseguro|No. Capa Contrato|Código Reasegurador|Nombre Reasegurador|'             ||
+                  'Código Intermediario Reaseguro|Nombre Intermediario Reaseguro|% Distribución|Total Cedido|No. Liquidación|Cobertura Afectada|Desc. Cobertura Afectada|'   ||
+                  'Fecha Notificación|Fecha Registro|Fecha Ocurrencia|Tipo de Siniestro|Descripción Tipo de Siniestro|Código Causa Siniestro|Descripción Causa Siniestro|'   ||
+                  'No. Endoso Afectado|Monto de Gastos|Monto Daño Cobertura|Total Reservado|Status Siniestro|Año-Mes de Movimiento|Monto de Reserva|Fecha Reserva|'          ||
+                  'Monto Pagado|Fecha Pago|Código Asegurado|Nombre Asegurado|Fecha de Nacimiento|Certificado|Esquema de Reaseguro|Contrato de Reaseguro|No. Capa Contrato|'  ||
+                  'Riesgo de Reaseguro|Fecha Distribución|Moneda|Código de la Transacción|Nombre de la Transacción'; 
+      --
+      INSERTA_ENCABEZADO( cFormato, nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo );
+      --
       FOR W IN DISTREA_Q LOOP
          cNumPolUnico     := W.NumPolUnico;
          dFecIniVig       := W.FecIniVig;
@@ -1552,22 +1304,22 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                   AND IdTransaccion = W.IdTransaccion;
             EXCEPTION
             WHEN NO_DATA_FOUND THEN
-               BEGIN
-                  SELECT Monto_Moneda * -1, FecPago
+                 BEGIN
+                    SELECT Monto_Moneda * -1, FecPago
                     INTO nMontoPagado, dFecPago
                     FROM APROBACIONES
-                   WHERE IdPoliza          = W.IdPoliza
-                     AND IdSiniestro       = W.IdSiniestro
-                     AND IdTransaccionAnul = W.IdTransaccion;
-               EXCEPTION
-               WHEN NO_DATA_FOUND THEN
-                  nMontoPagado := 0;
-                  dFecPago     := NULL;
-               WHEN TOO_MANY_ROWS THEN
-                  RAISE_APPLICATION_ERROR(-20225,'Existen Varias Aprobaciones con Transacción '|| W.IdTransaccion || ' del Siniestro ' || W.IdSiniestro);
-               END;
+                    WHERE IdPoliza          = W.IdPoliza
+                      AND IdSiniestro       = W.IdSiniestro
+                      AND IdTransaccionAnul = W.IdTransaccion;
+                 EXCEPTION
+                 WHEN NO_DATA_FOUND THEN
+                      nMontoPagado := 0;
+                      dFecPago     := NULL;
+                 WHEN TOO_MANY_ROWS THEN
+                      RAISE_APPLICATION_ERROR(-20225,'Existen Varias Aprobaciones con Transacción '|| W.IdTransaccion || ' del Siniestro ' || W.IdSiniestro);
+                 END;
             WHEN TOO_MANY_ROWS THEN
-               RAISE_APPLICATION_ERROR(-20225,'Existen Varias Aprobaciones con Transacción '|| W.IdTransaccion || ' del Siniestro ' || W.IdSiniestro);
+                 RAISE_APPLICATION_ERROR(-20225,'Existen Varias Aprobaciones con Transacción '|| W.IdTransaccion || ' del Siniestro ' || W.IdSiniestro);
             END;
             --
             cCodTransac     := 'SINTRA';
@@ -1587,10 +1339,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                      AND IdDetAprob     = 1;
                EXCEPTION
                WHEN NO_DATA_FOUND THEN
-                  cCodTransac     := 'SINTRA';
-                  cDescCodTransac := 'SIN TRANSACCION';
+                    cCodTransac     := 'SINTRA';
+                    cDescCodTransac := 'SIN TRANSACCION';
                WHEN TOO_MANY_ROWS THEN
-                  RAISE_APPLICATION_ERROR(-20225,'Existen Varias Detalles de Aprobaciones con Transacción '|| W.IdTransaccion || ' del Siniestro ' || W.IdSiniestro);
+                    RAISE_APPLICATION_ERROR(-20225,'Existen Varias Detalles de Aprobaciones con Transacción '|| W.IdTransaccion || ' del Siniestro ' || W.IdSiniestro);
                END;
             ELSIF nMontoPagado < 0 THEN
                BEGIN
@@ -1606,10 +1358,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                      AND IdDetAprob     = 1;
                EXCEPTION
                WHEN NO_DATA_FOUND THEN
-                  cCodTransac     := 'SINTRA';
-                  cDescCodTransac := 'SIN TRANSACCION';
+                    cCodTransac     := 'SINTRA';
+                    cDescCodTransac := 'SIN TRANSACCION';
                WHEN TOO_MANY_ROWS THEN
-                  RAISE_APPLICATION_ERROR(-20225,'Existen Varias Detalles de Aprobaciones con Transacción '|| W.IdTransaccion || ' del Siniestro ' || W.IdSiniestro);
+                    RAISE_APPLICATION_ERROR(-20225,'Existen Varias Detalles de Aprobaciones con Transacción '|| W.IdTransaccion || ' del Siniestro ' || W.IdSiniestro);
                END;
             END IF;
          ELSE
@@ -1624,9 +1376,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                   AND Cod_Asegurado = nCod_Asegurado;
             EXCEPTION
             WHEN NO_DATA_FOUND THEN
-               cCodCobert    := W.CodGrupoCobert;
-               nMontoReserva := 0;
-               dFecRes       := NULL;
+                 cCodCobert    := W.CodGrupoCobert;
+                 nMontoReserva := 0;
+                 dFecRes       := NULL;
             WHEN TOO_MANY_ROWS THEN
                BEGIN
                   SELECT CA.CodCobert, CA.Monto_Reservado_Moneda, CA.FecRes, CA.CodTransac,
@@ -1647,13 +1399,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                                     AND CodGrupoCobert = W.CodGrupoCobert);
                EXCEPTION
                WHEN NO_DATA_FOUND THEN
-                  cCodCobert    := W.CodGrupoCobert;
-                  nMontoReserva := 0;
-                  dFecRes       := NULL;
+                    cCodCobert    := W.CodGrupoCobert;
+                    nMontoReserva := 0;
+                    dFecRes       := NULL;
                WHEN TOO_MANY_ROWS THEN
-                  cCodCobert    := W.CodGrupoCobert;
-                  nMontoReserva := 0;
-                  dFecRes       := NULL;
+                    cCodCobert    := W.CodGrupoCobert;
+                    nMontoReserva := 0;
+                    dFecRes       := NULL;
                END;
             END;
             --
@@ -1756,130 +1508,86 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
          END;
          -- Monto Cedido Fuera
          --nMtoCedido := nTotalReservado * (W.PorcDistrib/100);
-         nLinea := nLinea + 1;
+         cRegistro := cNumPolUnico                                      || '|' ||
+                      TO_CHAR(W.IdPoliza,'9999999999999')               || '|' ||
+                      TO_CHAR(dFecIniVig,'DD/MM/YYYY')                  || '|' ||
+                      TO_CHAR(dFecFinVig,'DD/MM/YYYY')                  || '|' ||
+                      TO_CHAR(W.IDetPol,'9999999999999')                || '|' ||
+                      cNomCliente                                       || '|' ||
+                      TO_CHAR(nCodCliente,'9999999999999')              || '|' ||
+                      TO_CHAR(W.IdSiniestro,'9999999999999')            || '|' ||
+                      TO_CHAR(W.IdTransaccion,'9999999999999')          || '|' ||
+                      TO_CHAR(W.IdDistribRea,'9999999999999')           || '|' ||
+                      TO_CHAR(W.NumDistrib,'9999999999999')             || '|' ||
+                      W.Esquema                                         || '|' ||
+                      cDescContrato                                     || '|' ||
+                      TO_CHAR(W.IdCapaContrato,'9999999999999')         || '|' ||
+                      TO_CHAR(W.CodEmpresaGremio,'9999999999999')       || '|' ||
+                      W.NombreReasegurador                              || '|' ||
+                      TO_CHAR(W.CodInterReaseg,'9999999999999')         || '|' ||
+                      W.NomInterReaseg                                  || '|' ||
+                      TO_CHAR(W.PorcDistrib,'9999999990.000000')        || '|' ||
+                      --TO_CHAR(W.MontoReserva,'99999999999990.000000') || '|' || Se cambia temporalmente por el cálculo del MontoCedido
+                      TO_CHAR(W.MtoSiniDistrib,'99999999999990.000000') || '|' ||
+                      TO_CHAR(W.IdLiquidacion,'9999999999999')          || '|' ||
+                      cCodCobert                                        || '|' ||
+                      cNomCobert                                        || '|' ||
+                      TO_CHAR(dFecNotificacion,'DD/MM/YYYY')            || '|' ||
+                      TO_CHAR(dFecRegistro,'DD/MM/YYYY')                || '|' ||
+                      TO_CHAR(dFec_Ocurrencia,'DD/MM/YYYY')             || '|' ||
+                      cTipoSiniestro                                    || '|' ||
+                      cDescTipoSini                                     || '|' ||
+                      cCausaSiniestro                                   || '|' ||
+                      cDescCausaSini                                    || '|' ||
+                      cDesc_Siniestro                                   || '|' ||
+                      TO_CHAR(W.IdEndoso,'99999999999999')              || '|' ||
+                      TO_CHAR(nTotalGastos,'99999999999990.00')         || '|' ||
+                      TO_CHAR(nMontoReserva,'99999999999990.00')        || '|' ||
+                      TO_CHAR(nTotalReservado,'99999999999990.00')      || '|' ||
+                      cSts_Siniestro                                    || '|' ||
+                      TO_CHAR(W.FechaTransaccion,'YYYY-MM')             || '|' ||
+                      TO_CHAR(nMontoReserva,'99999999999990.00')        || '|' ||
+                      TO_CHAR(dFecRes,'DD/MM/YYYY')                     || '|' ||
+                      TO_CHAR(nMontoPagado,'99999999999990.00')         || '|' ||
+                      TO_CHAR(dFecPago,'DD/MM/YYYY')                    || '|' ||
+                      TO_CHAR(nCod_Asegurado,'99999999999990')          || '|' ||
+                      cNomAsegurado                                     || '|' ||
+                      TO_CHAR(dFecNacAseg,'DD/MM/YYYY')                 || '|' ||
+                      TO_CHAR(W.IDetPol,'9999999999999')                || '|' ||
+                      W.CodRiesgoReaseg                                 || '|' ||
+                      TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')             || '|' ||
+                      W.Moneda                                          || '|' ||
+                      cCodTransac                                       || '|' ||
+                      cDescCodTransac;
+        -- 
          IF cFormato = 'TEXTO' THEN
-            cCadena := cNumPolUnico                                      ||cLimitadorTxt||
-                       TO_CHAR(W.IdPoliza,'9999999999999')               ||cLimitadorTxt||
-                       TO_CHAR(dFecIniVig,'DD/MM/YYYY')                  ||cLimitadorTxt||
-                       TO_CHAR(dFecFinVig,'DD/MM/YYYY')                  ||cLimitadorTxt||
-                       TO_CHAR(W.IDetPol,'9999999999999')                ||cLimitadorTxt||
-                       cNomCliente                                       ||cLimitadorTxt||
-                       TO_CHAR(nCodCliente,'9999999999999')              ||cLimitadorTxt||
-                       TO_CHAR(W.IdSiniestro,'9999999999999')            ||cLimitadorTxt||
-                       TO_CHAR(W.IdTransaccion,'9999999999999')          ||cLimitadorTxt||
-                       TO_CHAR(W.IdDistribRea,'9999999999999')           ||cLimitadorTxt||
-                       TO_CHAR(W.NumDistrib,'9999999999999')             ||cLimitadorTxt||
-                       W.Esquema                                         ||cLimitadorTxt||
-                       cDescContrato                                     ||cLimitadorTxt||
-                       TO_CHAR(W.IdCapaContrato,'9999999999999')         ||cLimitadorTxt||
-                       TO_CHAR(W.CodEmpresaGremio,'9999999999999')       ||cLimitadorTxt||
-                       W.NombreReasegurador                              ||cLimitadorTxt||
-                       TO_CHAR(W.CodInterReaseg,'9999999999999')         ||cLimitadorTxt||
-                       W.NomInterReaseg                                  ||cLimitadorTxt||
-                       TO_CHAR(W.PorcDistrib,'9999999990.000000')        ||cLimitadorTxt||
-                       --TO_CHAR(W.MontoReserva,'99999999999990.000000') ||cLimitadorTxt|| Se cambia temporalmente por el cálculo del MontoCedido
-                       TO_CHAR(W.MtoSiniDistrib,'99999999999990.000000') ||cLimitadorTxt||
-                       TO_CHAR(W.IdLiquidacion,'9999999999999')          ||cLimitadorTxt||
-                       cCodCobert                                        ||cLimitadorTxt||
-                       cNomCobert                                        ||cLimitadorTxt||
-                       TO_CHAR(dFecNotificacion,'DD/MM/YYYY')            ||cLimitadorTxt||
-                       TO_CHAR(dFecRegistro,'DD/MM/YYYY')                ||cLimitadorTxt||
-                       TO_CHAR(dFec_Ocurrencia,'DD/MM/YYYY')             ||cLimitadorTxt||
-                       cTipoSiniestro                                    ||cLimitadorTxt;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-
-         cCadena :=    cDescTipoSini                                     ||cLimitadorTxt||
-                       cCausaSiniestro                                   ||cLimitadorTxt||
-                       cDescCausaSini                                    ||cLimitadorTxt||
-                       cDesc_Siniestro                                   ||cLimitadorTxt||
-                       TO_CHAR(W.IdEndoso,'99999999999999')              ||cLimitadorTxt||
-                       TO_CHAR(nTotalGastos,'99999999999990.00')         ||cLimitadorTxt||
-                       TO_CHAR(nMontoReserva,'99999999999990.00')        ||cLimitadorTxt||
-                       TO_CHAR(nTotalReservado,'99999999999990.00')      ||cLimitadorTxt||
-                       cSts_Siniestro                                    ||cLimitadorTxt||
-                       TO_CHAR(W.FechaTransaccion,'YYYY-MM')             ||cLimitadorTxt||
-                       TO_CHAR(nMontoReserva,'99999999999990.00')        ||cLimitadorTxt||
-                       TO_CHAR(dFecRes,'DD/MM/YYYY')                     ||cLimitadorTxt||
-                       TO_CHAR(nMontoPagado,'99999999999990.00')         ||cLimitadorTxt||
-                       TO_CHAR(dFecPago,'DD/MM/YYYY')                    ||cLimitadorTxt||
-                       TO_CHAR(nCod_Asegurado,'99999999999990')          ||cLimitadorTxt||
-                       cNomAsegurado                                     ||cLimitadorTxt||
-                       TO_CHAR(dFecNacAseg,'DD/MM/YYYY')                 ||cLimitadorTxt||
-                       TO_CHAR(W.IDetPol,'9999999999999')                ||cLimitadorTxt||
-                       W.CodRiesgoReaseg                                 ||cLimitadorTxt||
-                       TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')             ||cLimitadorTxt||
-                       W.Moneda                                          ||cLimitadorTxt||
-                       cCodTransac                                       ||cLimitadorTxt||
-                       cDescCodTransac                                   ||CHR(13);
+            OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cRegistro );
          ELSE
-            cCadena := '<tr>'                                                           ||cLimitador|| 
-                       cCampoFormatC||cNumPolUnico                                      ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdPoliza,'9999999999990')               ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecIniVig,'DD/MM/YYYY')                  ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecFinVig,'DD/MM/YYYY')                  ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IDetPol,'9999999999990')                ||cLimitador||
-                       cCampoFormatC||cNomCliente                                       ||cLimitador||
-                       cCampoFormatC||TO_CHAR(nCodCliente,'99999999999990')             ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdSiniestro,'9999999999990')            ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdTransaccion,'9999999999990')          ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdDistribRea,'9999999999990')           ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.NumDistrib,'9999999999990')             ||cLimitador||
-                       cCampoFormatC||W.Esquema                                         ||cLimitador||
-                       cCampoFormatC||cDescContrato                                     ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdCapaContrato,'9999999999990')         ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.CodEmpresaGremio,'9999999999990')       ||cLimitador||
-                       cCampoFormatC||W.NombreReasegurador                              ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.CodInterReaseg,'9999999999990')         ||cLimitador||
-                       cCampoFormatC||W.NomInterReaseg                                  ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PorcDistrib,'9999999990.000000')        ||cLimitador||
-                       --cCampoFormatN||TO_CHAR(W.MontoReserva,'99999999999990.000000') ||cLimitador|| Se cambia temporalmente por el cálculo del MontoCedido
-                       cCampoFormatN||TO_CHAR(W.MtoSiniDistrib,'99999999999990.000000') ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdLiquidacion,'9999999999990')          ||cLimitador||
-                       cCampoFormatC||cCodCobert                                        ||cLimitador||
-                       cCampoFormatC||cNomCobert                                        ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecNotificacion,'DD/MM/YYYY')            ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecRegistro,'DD/MM/YYYY')                ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFec_Ocurrencia,'DD/MM/YYYY')             ||cLimitador||
-                       cCampoFormatC||cTipoSiniestro                                    ||cLimitador;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-
-         cCadena :=    cCampoFormatC||cDescTipoSini                                     ||cLimitador||
-                       cCampoFormatC||cCausaSiniestro                                   ||cLimitador||
-                       cCampoFormatC||cDescCausaSini                                    ||cLimitador||
-                       cCampoFormatC||cDesc_Siniestro                                   ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdEndoso,'999999999999990')             ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nTotalGastos,'99999999999990.00')         ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nMontoReserva,'99999999999990.00')        ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nTotalReservado,'99999999999990.00')      ||cLimitador||
-                       cCampoFormatC||cSts_Siniestro                                    ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.FechaTransaccion,'YYYY-MM')             ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nMontoReserva,'99999999999990.00')        ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecRes,'DD/MM/YYYY')                     ||cLimitador||
-                       cCampoFormatN||TO_CHAR(nMontoPagado,'99999999999990.00')         ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecPago,'DD/MM/YYYY')                    ||cLimitador||
-                       cCampoFormatC||TO_CHAR(nCod_Asegurado,'99999999999990')          ||cLimitador||
-                       cCampoFormatC||cNomAsegurado                                     ||cLimitador||
-                       cCampoFormatC||TO_CHAR(dFecNacAseg,'DD/MM/YYYY')                 ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IDetPol,'9999999999999')                ||cLimitador||
-                       cCampoFormatC||W.CodRiesgoReaseg                                 ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')             ||cLimitador||
-                       cCampoFormatC||W.Moneda                                          ||cLimitador||
-                       cCampoFormatC||cCodTransac                                       ||cLimitador||
-                       cCampoFormatC||cDescCodTransac                                   ||'</tr>';
+            nFila := XLSX_BUILDER_PKG.EXCEL_DETALLE(nFila + 1, cRegistro, 1);                                        
          END IF;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       END LOOP;
-      IF cFormato = 'EXCEL' THEN
-         OC_ARCHIVO.Escribir_Linea('</table></div></html>', cCodUser, 9999);
+      --
+      COMMIT;
+      -- 
+      IF cFormato = 'TEXTO' THEN
+         OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchivo, cNomArchZip );
+         OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+      ELSE
+         IF XLSX_BUILDER_PKG.EXCEL_GUARDA_LIBRO THEN
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchivo) THEN       
+               dbms_output.put_line('OK');
+            END IF;
+            OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+         END IF;
       END IF;
-      OC_ARCHIVO.Escribir_Linea('EOF', cCodUser, 0); 
-   EXCEPTION 
-   WHEN OTHERS THEN 
-      OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Detalle Por Reasegurador del Siniestro: '|| nIdSiniestro || '-' ||SQLERRM);
-   END reasegurador_siniestro;
+   EXCEPTION
+   WHEN OTHERS THEN
+        cError := SQLERRM;
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Detalle Por Reasegurador del Siniestro: '|| nIdSiniestro || '-' || cError);
+   END REASEGURADOR_SINIESTRO;
 
-   PROCEDURE transaccion_esquema( cIdPoliza          VARCHAR2
+   PROCEDURE TRANSACCION_ESQUEMA( cIdPoliza          VARCHAR2
                                 , cCodEsquema        VARCHAR2
                                 , nIdTransaccionIni  NUMBER
                                 , nIdTransaccionFin  NUMBER
@@ -1889,16 +1597,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                                 , cDescEsquema       VARCHAR2 
                                 , nCodCia            NUMBER
                                 , cFormato           VARCHAR2
-                                , cCodUser           VARCHAR2 ) IS
-      cLimitadorTxt     VARCHAR2(1)    :='|';
-      cLimitador        VARCHAR2(20)   :='</td>';
-      cCampoFormatC     VARCHAR2(4000) := '<td class=texto>';
-      cCampoFormatN     VARCHAR2(4000) := '<td class=numero>';
-      cCampoFormatD     VARCHAR2(4000) := '<td class=fecha>';
-      --
-      cEncabezado       VARCHAR2(1) := 'S';
-      nLinea            NUMBER := 1;
-      cCadena           VARCHAR2(4000);
+                                , nCodEmpresa        NUMBER
+                                , cCodUser           VARCHAR2
+                                , cNomArchivo        VARCHAR2
+                                , cNomArchZip        VARCHAR2
+                                , cNomDirectorio     VARCHAR2
+                                , cCodReporte        VARCHAR2 ) IS
       cNumPolUnico      POLIZAS.NumPolUnico%TYPE;
       cCodContrato      REA_TIPOS_CONTRATOS.CodContrato%TYPE;
       cDescContrato     REA_TIPOS_CONTRATOS.NomContrato%TYPE;
@@ -1909,7 +1613,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
       cDatosVehiculo    VARCHAR2(100);
       --
       CURSOR DISTREA_Q IS
-         SELECT RD.IdDistribRea
+         SELECT /*+ INDEX(DT SYS_C0031885) */ RD.IdDistribRea
               , RD.NumDistrib
               , RD.CodGrupoCobert
               , RD.CodEsquema
@@ -1968,100 +1672,30 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
             AND REC.CodEsquema(+)      = RD.CodEsquema
             AND REC.IdEsqContrato(+)   = RD.IdEsqContrato;
    BEGIN
-      IF cFormato = 'TEXTO' THEN
-         nLinea  := 1;
-         cCadena := NOMBRE_COMPANIA(nCodCia) || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'REPORTE DISTRIBUCIÓN DE REASEGURO POR ESQUEMA DE LA TRANSACCION'||TO_CHAR(nIdTransaccionIni)||' A '||TO_CHAR(nIdTransaccionFin)||CHR(13)||
-                    'DE LA PÓLIZA '||TO_CHAR(cIdPoliza)||' ESQUEMA: '||cDescEsquema;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := ' ' || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'No. de Póliza Único'              ||cLimitadorTxt||'Consecutivo'             ||cLimitadorTxt||'No. Detalle de Póliza'||cLimitadorTxt||
-                    'No. Endoso'                       ||cLimitadorTxt||'No. Distribución'        ||cLimitadorTxt||'Orden'                ||cLimitadorTxt||
-                    'Grupo Cobertura'                  ||cLimitadorTxt||'Capacidad Máxima'        ||cLimitadorTxt||'% Distribución'       ||cLimitadorTxt||
-                    'Suma Aseg. Distribuida'           ||cLimitadorTxt||'Prima Distribuida'       ||cLimitadorTxt||'Monto de Reserva'     ||cLimitadorTxt||
-                    'Código Asegurado'                 ||cLimitadorTxt||'Nombre Asegurado'        ||cLimitadorTxt||'Esquema de Reaseguro' ||cLimitadorTxt|| 
-                    'Contrato de Reaseguro'            ||cLimitadorTxt||'No. Capa Contrato'       ||cLimitadorTxt||'Riesgo de Reaseguro'  ||cLimitadorTxt||
-                    'Inicio Vigencia Transacción'      ||cLimitadorTxt||'Fin Vigencia Transacción'||cLimitadorTxt||'Fecha Distribución'   ||cLimitadorTxt|| 
-                    'Necesita Distribución Facultativa'||cLimitadorTxt||'Primas Directas'         ||cLimitadorTxt||'Factor Reaseguro'     ||cLimitadorTxt||
-                    'Primas Cedidas'                   ||cLimitadorTxt||'Total Primas Reaseguro'  ||cLimitadorTxt||'Factor Cesion'        ||CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      ELSE  
-         cCadena := '<html xmlns:o="urn:schemas-microsoft-com:office:office"'                                                                        ||chr(10)||
-                    ' xmlns:x="urn:schemas-microsoft-com:office:excel"'                                                                              ||chr(10)||
-                    ' xmlns="http://www.w3.org/TR/REC-html40">'                                                                                      ||chr(10)||
-                    ' <style id="libro">'                                                                                                            ||chr(10)||
-                    '   <!--table'                                                                                                                   ||chr(10)||
-                    '       {mso-displayed-decimal-separator:"\.";'                                                                                  ||chr(10)||
-                    '        mso-displayed-thousand-separator:"\,";}'                                                                                ||chr(10)||
-                    '        .texto'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"\@";}'                                                                                            ||chr(10)||
-                    '        .numero'                                                                                                                ||chr(10)||
-                    '          {mso-style-parent:texto; mso-number-format:"_-* \#\,\#\#0\.00_-\;\\-* \#\,\#\#0\.00_-\;_-* \0022-\0022??_-\;_-\@_-";}'||chr(10)||
-                    '        .fecha'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"dd\\-mmm\\-yyyy";}'                                                                               ||chr(10)||
-                    '    -->'                                                                                                                        ||chr(10)||
-                    ' </style><div id="libro">'                                                                                                      ||chr(10);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 0><tr><th>' || OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia) || '</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>REPORTE DISTRIBUCIÓN DE REASEGURO POR ESQUEMA DE LA TRANSACCION '||TO_CHAR(nIdTransaccionIni)||
-                    ' A '||TO_CHAR(nIdTransaccionFin)||'</th></tr>'||CHR(10)||
-                    '<tr><th>DE LA PÓLIZA '||TO_CHAR(cDescPoliza)||'</th></tr>'||CHR(10)|| 
-                    '<tr><th>ESQUEMA  '||TO_CHAR(cDescEsquema)||'</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>  </th></tr></table>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Único</font></th>' ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo</font></th>'                               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle de Póliza</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Endoso</font></th>'                                ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Distribución</font></th>'                          || 
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Orden</font></th>'                                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Grupo Cobertura</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Capacidad Máxima</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Distribución</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Suma Aseg. Distribuida</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Prima Distribuida</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto de Reserva</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Asegurado</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre asegurado</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Esquema de Reaseguro</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contrato de Reaseguro</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Capa Contrato</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Riesgo de Reaseguro</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia Transaccion</font></th>'               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia Transaccion</font></th>'                  ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Distribución</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Necesita Distribucion Facultativa</font></th>'         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Primas Directas</font></th>'                           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Factor de Reaseguro</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Primas Cedidas</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total Primas Reaseguro</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Factor Cesión</font></th>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      END IF;
+      -- Elimina Registros del Reporte
+      DELETE TEMP_REPORTES_THONA
+      WHERE  CodCia     = nCodCia
+        AND  CodEmpresa = nCodEmpresa
+        AND  CodReporte = cCodReporte
+        AND  CodUsuario = cCodUser;
+      --
+      COMMIT;
+      --
+      cTitulo1 := NOMBRE_COMPANIA(nCodCia);
+      cTitulo2 := 'REPORTE DISTRIBUCIÓN DE REASEGURO POR ESQUEMA DE LA TRANSACCION' || TO_CHAR(nIdTransaccionIni) || ' A ' || TO_CHAR(nIdTransaccionFin);
+      cTitulo3 := 'DE LA PÓLIZA ' || TO_CHAR(cIdPoliza) || ' ESQUEMA: ' || cDescEsquema;
+      cTitulo4 := ' ';
+      cEncabez := 'No. de Póliza Único|Consecutivo|No. Detalle de Póliza|No. Endoso|No. Distribución|Orden|Grupo Cobertura|Capacidad Máxima|% Distribución|' ||
+                  'Suma Aseg. Distribuida|Prima Distribuida|Monto de Reserva|Código Asegurado|Nombre Asegurado|Esquema de Reaseguro|Contrato de Reaseguro|'  ||
+                  'No. Capa Contrato|Riesgo de Reaseguro|Inicio Vigencia Transacción|Fin Vigencia Transacción|Fecha Distribución|Necesita Distribución Facultativa|' ||
+                  'Primas Directas|Factor Reaseguro|Primas Cedidas|Total Primas Reaseguro|Factor Cesion'; 
+      --
+      INSERTA_ENCABEZADO( cFormato, nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo );
       --
       FOR W IN DISTREA_Q LOOP
          cNumPolUnico  := NVL(W.NumPolUnico, 'NO EXISTE');
          cCodContrato  := W.CodContrato;
          cDescContrato := NVL(W.DescContrato, 'NO EXISTE CONTRATO');
-         
          -- 
          IF GT_REA_TIPOS_CONTRATOS.CONTRATO_FACULTATIVO(nCodCia, cCodContrato) = 'S' THEN
             SELECT NVL(SUM(SumaAsegDistrib),0), NVL(SUM(PrimaDistrib),0)
@@ -2077,79 +1711,62 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
             END IF;
          END IF;
          --         
+         cRegistro := cNumPolUnico                                     || '|' ||
+                      TO_CHAR(W.IdPoliza,'9999999999999')              || '|' ||
+                      TO_CHAR(W.IDetPol,'9999999999999')               || '|' ||
+                      TO_CHAR(W.IdEndoso,'9999999999999')              || '|' ||
+                      TO_CHAR(W.IdDistribRea,'9999999999999')          || '|' ||
+                      TO_CHAR(W.NumDistrib,'9999999999999')            || '|' ||
+                      W.CodGrupoCobert                                 || '|' ||
+                      TO_CHAR(W.CapacidadMaxima,'99999999999990.00')   || '|' ||
+                      TO_CHAR(W.PorcDistrib,'9999999990.000000')       || '|' ||
+                      TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')   || '|' ||
+                      TO_CHAR(W.PrimaDistrib,'99999999999990.000000')  || '|' ||
+                      TO_CHAR(W.MontoReserva,'99999999999990.000000')  || '|' ||
+                      TO_CHAR(W.Cod_Asegurado,'9999999999999')         || '|' ||
+                      W.NomAsegurado                                   || '|' ||
+                      W.Esquema                                        || '|' ||
+                      cDescContrato                                    || '|' ||
+                      TO_CHAR(W.IdCapaContrato,'9999999999999')        || '|' ||
+                      W.CodRiesgoReaseg                                || '|' ||
+                      TO_CHAR(W.FecVigInicial,'DD/MM/YYYY')            || '|' ||
+                      TO_CHAR(W.FecVigFinal,'DD/MM/YYYY')              || '|' ||
+                      TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')            || '|' ||
+                      cIndDistFacult                                   || '|' ||
+                      TO_CHAR(W.PrimasDirectas,'99999999999990.00')    || '|' ||
+                      TO_CHAR(W.FactorReaseg,'90.9999999999')          || '|' ||
+                      TO_CHAR(W.PrimasCedidas,'99999999999990.00')     || '|' ||
+                      TO_CHAR(W.TotalPrimasReaseg,'99999999999990.00') || '|' ||
+                      TO_CHAR(W.FactorCesion,'90.9999999999');
+        -- 
          IF cFormato = 'TEXTO' THEN
-            cCadena := cNumPolUnico                                     ||cLimitadorTxt||
-                       TO_CHAR(W.IdPoliza,'9999999999999')              ||cLimitadorTxt||
-                       TO_CHAR(W.IDetPol,'9999999999999')               ||cLimitadorTxt||
-                       TO_CHAR(W.IdEndoso,'9999999999999')              ||cLimitadorTxt||
-                       TO_CHAR(W.IdDistribRea,'9999999999999')          ||cLimitadorTxt||
-                       TO_CHAR(W.NumDistrib,'9999999999999')            ||cLimitadorTxt||
-                       W.CodGrupoCobert                                 ||cLimitadorTxt||
-                       TO_CHAR(W.CapacidadMaxima,'99999999999990.00')   ||cLimitadorTxt||
-                       TO_CHAR(W.PorcDistrib,'9999999990.000000')       ||cLimitadorTxt||
-                       TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')   ||cLimitadorTxt||
-                       TO_CHAR(W.PrimaDistrib,'99999999999990.000000')  ||cLimitadorTxt||
-                       TO_CHAR(W.MontoReserva,'99999999999990.000000')  ||cLimitadorTxt||
-                       TO_CHAR(W.Cod_Asegurado,'9999999999999')         ||cLimitadorTxt||
-                       W.NomAsegurado                                   ||cLimitadorTxt||
-                       W.Esquema                                        ||cLimitadorTxt||
-                       cDescContrato                                    ||cLimitadorTxt||
-                       TO_CHAR(W.IdCapaContrato,'9999999999999')        ||cLimitadorTxt||
-                       W.CodRiesgoReaseg                                ||cLimitadorTxt||
-                       TO_CHAR(W.FecVigInicial,'DD/MM/YYYY')            ||cLimitadorTxt||
-                       TO_CHAR(W.FecVigFinal,'DD/MM/YYYY')              ||cLimitadorTxt||
-                       TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')            ||cLimitadorTxt||
-                       cIndDistFacult                                   ||cLimitadorTxt||
-                       TO_CHAR(W.PrimasDirectas,'99999999999990.00')    ||cLimitadorTxt||
-                       TO_CHAR(W.FactorReaseg,'90.9999999999')          ||cLimitadorTxt||
-                       TO_CHAR(W.PrimasCedidas,'99999999999990.00')     ||cLimitadorTxt||
-                       TO_CHAR(W.TotalPrimasReaseg,'99999999999990.00') ||cLimitadorTxt||
-                       TO_CHAR(W.FactorCesion,'90.9999999999')          ||CHR(13);
+            OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cRegistro );
          ELSE
-            cCadena    := '<tr>'                                                          || 
-                          cCampoFormatC||cNumPolUnico                                     ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.IdPoliza,'9999999999999')              ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.IDetPol,'9999999999999')               ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.IdEndoso,'9999999999999')              ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.IdDistribRea,'9999999999999')          ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.NumDistrib,'9999999999999')            ||cLimitador||
-                          cCampoFormatC||W.CodGrupoCobert                                 ||cLimitador||
-                          cCampoFormatN||TO_CHAR(W.CapacidadMaxima,'99999999999990.00')   ||cLimitador||
-                          cCampoFormatN||TO_CHAR(W.PorcDistrib,'9999999990.000000')       ||cLimitador||
-                          cCampoFormatN||TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')   ||cLimitador||
-                          cCampoFormatN||TO_CHAR(W.PrimaDistrib,'99999999999990.000000')  ||cLimitador||
-                          cCampoFormatN||TO_CHAR(W.MontoReserva,'99999999999990.000000')  ||cLimitador||
-                          cCampoFormatN||TO_CHAR(W.Cod_Asegurado,'9999999999999')         ||cLimitador||
-                          cCampoFormatC||W.NomAsegurado                                   ||cLimitador||
-                          cCampoFormatC||W.Esquema                                        ||cLimitador||
-                          cCampoFormatC||cDescContrato                                    ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.IdCapaContrato,'9999999999999')        ||cLimitador||
-                          cCampoFormatC||W.CodRiesgoReaseg                                ||cLimitador||
-                          cCampoFormatD||TO_CHAR(W.FecVigInicial,'DD/MM/YYYY')            ||cLimitador||
-                          cCampoFormatD||TO_CHAR(W.FecVigFinal,'DD/MM/YYYY')              ||cLimitador||
-                          cCampoFormatD||TO_CHAR(W.FecMovDistrib,'DD/MM/YYYY')            ||cLimitador||
-                          cCampoFormatC||cIndDistFacult                                   ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.PrimasDirectas,'99999999999990.00')    ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.FactorReaseg,'90.9999999999')          ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.PrimasCedidas,'99999999999990.00')     ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.TotalPrimasReaseg,'99999999999990.00') ||cLimitador||
-                          cCampoFormatC||TO_CHAR(W.FactorCesion,'90.9999999999')          ||'</tr>';
+            nFila := XLSX_BUILDER_PKG.EXCEL_DETALLE(nFila + 1, cRegistro, 1);                                        
          END IF;
-         --
-         nLinea := nLinea + 1;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       END LOOP;
-      IF cFormato = 'EXCEL' THEN
-         OC_ARCHIVO.Escribir_Linea('</table></div></html>', cCodUser, 9999);
+      --
+      COMMIT;
+      -- 
+      IF cFormato = 'TEXTO' THEN
+         OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchivo, cNomArchZip );
+         OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+      ELSE
+         IF XLSX_BUILDER_PKG.EXCEL_GUARDA_LIBRO THEN
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchivo) THEN       
+               dbms_output.put_line('OK');
+            END IF;
+            OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+         END IF;
       END IF;
-      OC_ARCHIVO.Escribir_Linea('EOF', cCodUser, 0); 
-   EXCEPTION 
-   WHEN OTHERS THEN 
-      OC_ARCHIVO.Eliminar_Archivo(cCodUser);
-      RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Reaseguro Por Transacción de la Póliza: ' ||SQLERRM);
-   END transaccion_esquema;
+   EXCEPTION
+   WHEN OTHERS THEN
+        cError := SQLERRM;
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Reaseguro Por Transacción de la Póliza: ' || cError);
+   END TRANSACCION_ESQUEMA;
 
-   PROCEDURE reasegurador_esquema( cIdPoliza          VARCHAR2
+   PROCEDURE REASEGURADOR_ESQUEMA( cIdPoliza          VARCHAR2
                                  , cCodEsquema        VARCHAR2
                                  , nIdTransaccionIni  NUMBER
                                  , nIdTransaccionFin  NUMBER
@@ -2160,16 +1777,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                                  , cDescIdEndoso      VARCHAR2
                                  , nCodCia            NUMBER
                                  , cFormato           VARCHAR2
-                                 , cCodUser           VARCHAR2 ) IS
-      cLimitadorTxt     VARCHAR2(1)    :='|';
-      cLimitador        VARCHAR2(20)   :='</td>';
-      cCampoFormatC     VARCHAR2(4000) := '<td class=texto>';
-      cCampoFormatN     VARCHAR2(4000) := '<td class=numero>';
-      cCampoFormatD     VARCHAR2(4000) := '<td class=fecha>';
-      --
-      cEncabezado       VARCHAR2(1) := 'S';
-      nLinea            NUMBER := 1;
-      cCadena           VARCHAR2(4000);
+                                 , nCodEmpresa        NUMBER
+                                 , cCodUser           VARCHAR2
+                                 , cNomArchivo        VARCHAR2
+                                 , cNomArchZip        VARCHAR2
+                                 , cNomDirectorio     VARCHAR2
+                                 , cCodReporte        VARCHAR2 ) IS
       cNumPolUnico      POLIZAS.NumPolUnico%TYPE;
       cCodContrato      REA_TIPOS_CONTRATOS.CodContrato%TYPE;
       cDescContrato     REA_TIPOS_CONTRATOS.NomContrato%TYPE;
@@ -2189,7 +1802,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
       cExisteVehiculo   VARCHAR2(1);
       --
       CURSOR DISTREA_Q IS
-         SELECT RD.IdDistribRea
+         SELECT /*+ INDEX(DT SYS_C0031885) */ RD.IdDistribRea
               , RD.NumDistrib
               , RD.CodGrupoCobert
               , RD.CodEsquema
@@ -2263,185 +1876,91 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
             AND REC.CodEsquema(+)      = RD.CodEsquema
             AND REC.IdEsqContrato(+)   = RD.IdEsqContrato;
    BEGIN
-      IF cFormato = 'TEXTO' THEN  
-         nLinea := 1;
-         cCadena     := NOMBRE_COMPANIA(nCodCia) || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'REPORTE DISTRIBUCIÓN DE REASEGURO DETALLE POR ESQUEMA, PÓLIZA: '||cDescPoliza||
-                    ' DETALLE: '||cDescIDetPol||' ENDOSO: '||cDescIdEndoso;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := ' ' || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'No. de Póliza Único'           ||cLimitadorTxt||'Consecutivo'              ||cLimitadorTxt||'No. Detalle de Póliza'         ||cLimitadorTxt||
-                    'No. Endoso'                    ||cLimitadorTxt||'No. Distribución'         ||cLimitadorTxt||'Orden'                         ||cLimitadorTxt||
-                    'Grupo Cobertura'               ||cLimitadorTxt||'Código Asegurado'         ||cLimitadorTxt||'Nombre Asegurado'              ||cLimitadorTxt||
-                    'Esquema de Reaseguro'          ||cLimitadorTxt||'Contrato de Reaseguro'    ||cLimitadorTxt||'No. Capa Contrato'             ||cLimitadorTxt||
-                    'Código Reasegurador'           ||cLimitadorTxt||'Nombre Reasegurador'      ||cLimitadorTxt||'Código Intermediario Reaseguro'||cLimitadorTxt||
-                    'Nombre Intermediario Reaseguro'||cLimitadorTxt||'% Distribución'           ||cLimitadorTxt||'Suma Asegurada Distribuida'    ||cLimitadorTxt||
-                    'Prima Distribuida'             ||cLimitadorTxt||'Comisión Reaseguro'       ||cLimitadorTxt||'Total Reserva'                 ||cLimitadorTxt||
-                    'No. Liquidación'               ||cLimitadorTxt||'Fecha Liberación Reservas'||cLimitadorTxt||'Impuestos Reserva Liberada'    ||cLimitadorTxt||
-                    'Intereses Reserva Liberada'    ||cLimitadorTxt||'Primas Directas'          ||cLimitadorTxt||'Factor de Reaseguro'           ||cLimitadorTxt||
-                    'Primas Cedidas'                ||cLimitadorTxt||'Total de Primas Reaseguro'||cLimitadorTxt||'Factor Cesión';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      ELSE  
-         cCadena := '<html xmlns:o="urn:schemas-microsoft-com:office:office"'                                                                        ||chr(10)||
-                    ' xmlns:x="urn:schemas-microsoft-com:office:excel"'                                                                              ||chr(10)||
-                    ' xmlns="http://www.w3.org/TR/REC-html40">'                                                                                      ||chr(10)||
-                    ' <style id="libro">'                                                                                                            ||chr(10)||
-                    '   <!--table'                                                                                                                   ||chr(10)||
-                    '       {mso-displayed-decimal-separator:"\.";'                                                                                  ||chr(10)||
-                    '        mso-displayed-thousand-separator:"\,";}'                                                                                ||chr(10)||
-                    '        .texto'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"\@";}'                                                                                            ||chr(10)||
-                    '        .numero'                                                                                                                ||chr(10)||
-                    '          {mso-style-parent:texto; mso-number-format:"_-* \#\,\#\#0\.00_-\;\\-* \#\,\#\#0\.00_-\;_-* \0022-\0022??_-\;_-\@_-";}'||chr(10)||
-                    '        .fecha'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"dd\\-mmm\\-yyyy";}'                                                                               ||chr(10)||
-                    '    -->'                                                                                                                        ||chr(10)||
-                    ' </style><div id="libro">'                                                                                                      ||chr(10);
-          OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-          nLinea  := nLinea + 1;
-          cCadena := '<table border = 0><tr><th>' || OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia) || '</th></tr>'; 
-          OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-          nLinea  := nLinea + 1;
-          cCadena := '<tr><th>REPORTE DISTRIBUCIÓN DE REASEGURO DETALLE POR ESQUEMA</th></tr>'||CHR(10)||
-                     '<tr><th>PÓLIZA '||TO_CHAR(cDescPoliza)||'</th></tr>'||CHR(10)|| 
-                     '<tr><th>DETALLE  '||TO_CHAR(cDescIDetPol)||'</th></tr>'||CHR(10)||
-                     '<tr><th>ENDOSO   '||TO_CHAR(cDescIdEndoso)||'</th></tr>'; 
-          OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-          nLinea  := nLinea + 1;
-          cCadena := '<tr><th>  </th></tr></table>'; 
-          OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-          nLinea  := nLinea + 1;
-          cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Único</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo</font></th>'                               ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle de Póliza</font></th>'                     ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Endoso</font></th>'                                ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Distribución</font></th>'                          || 
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Orden</font></th>'                                     ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Grupo Cobertura</font></th>'                           ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Asegurado</font></th>'                          ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Asegurado</font></th>'                          ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Esquema de Reaseguro</font></th>'                      ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contrato de Reaseguro</font></th>'                     ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Capa Contrato</font></th>'                         ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Reasegurador</font></th>'                       ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Reasegurador</font></th>'                       ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Intermediario Reaseguro</font></th>'            ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Intermediario Reaseguro</font></th>'            ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Distribución</font></th>'                            ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Suma Asegurada Distribuida</font></th>'                ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Prima Distribuida</font></th>'                         ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisión Reaseguro</font></th>'                        ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total Reserva</font></th>'                             ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Liquidación</font></th>'                           ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Liberación Reservas</font></th>'                 ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Impuestos Reserva Liberada</font></th>'                ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Intereses Reserva Liberada</font></th>'                ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Primas Directas</font></th>'                           ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Factor Reaseguro</font></th>'                          ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Primas Cedidas</font></th>'                            ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total Primas Reaseguro</font></th>'                    ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Factor Cesión</font></th>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      END IF;
-           
+      -- Elimina Registros del Reporte
+      DELETE TEMP_REPORTES_THONA
+      WHERE  CodCia     = nCodCia
+        AND  CodEmpresa = nCodEmpresa
+        AND  CodReporte = cCodReporte
+        AND  CodUsuario = cCodUser;
+      --
+      COMMIT;
+      --
+      cTitulo1 := NOMBRE_COMPANIA(nCodCia);
+      cTitulo2 := 'REPORTE DISTRIBUCIÓN DE REASEGURO DETALLE POR ESQUEMA, PÓLIZA: ' || cDescPoliza;
+      cTitulo3 := ' DETALLE: ' || cDescIDetPol || ' ENDOSO: ' || cDescIdEndoso;
+      cTitulo4 := ' ';
+      cEncabez := 'No. de Póliza Único|Consecutivo|No. Detalle de Póliza|No. Endoso|No. Distribución|Orden|Grupo Cobertura|Código Asegurado|Nombre Asegurado|'   ||
+                  'Esquema de Reaseguro|Contrato de Reaseguro|No. Capa Contrato|Código Reasegurador|Nombre Reasegurador|Código Intermediario Reaseguro|'         ||
+                  'Nombre Intermediario Reaseguro|% Distribución|Suma Asegurada Distribuida|Prima Distribuida|Comisión Reaseguro|Total Reserva|No. Liquidación|' ||
+                  'Fecha Liberación Reservas|Impuestos Reserva Liberada|Intereses Reserva Liberada|Primas Directas|Factor de Reaseguro|Primas Cedidas|'          ||
+                  'Total de Primas Reaseguro|Factor Cesión'; 
+      --
+      INSERTA_ENCABEZADO( cFormato, nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo );
+      --
       FOR W IN DISTREA_Q LOOP
          cNumPolUnico  := NVL(W.NumPolUnico, 'NO EXISTE');
          cCodContrato  := W.CodContrato;
          cDescContrato := NVL(W.DescContrato, 'NO EXISTE CONTRATO');
          --
+         cRegistro := cNumPolUnico                                     || '|' ||
+                      TO_CHAR(W.IdPoliza,'9999999999999')              || '|' ||
+                      TO_CHAR(W.IDetPol,'9999999999999')               || '|' ||
+                      TO_CHAR(W.IdEndoso,'9999999999999')              || '|' ||
+                      TO_CHAR(W.IdDistribRea,'9999999999999')          || '|' ||
+                      TO_CHAR(W.NumDistrib,'9999999999999')            || '|' ||
+                      W.CodGrupoCobert                                 || '|' ||
+                      TO_CHAR(W.Cod_Asegurado,'9999999999999')         || '|' ||
+                      W.NomAsegurado                                   || '|' ||
+                      W.Esquema                                        || '|' ||
+                      cDescContrato                                    || '|' ||
+                      TO_CHAR(W.IdCapaContrato,'9999999999999')        || '|' ||
+                      TO_CHAR(W.CodEmpresaGremio,'9999999999999')      || '|' ||
+                      W.NombreReasegurador                             || '|' ||
+                      TO_CHAR(W.CodInterReaseg,'9999999999999')        || '|' ||
+                      W.NomInterReaseg                                 || '|' ||
+                      TO_CHAR(W.PorcDistrib,'9999999990.000000')       || '|' ||
+                      TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')   || '|' ||
+                      TO_CHAR(W.PrimaDistrib,'99999999999990.000000')  || '|' ||
+                      TO_CHAR(W.MontoComision,'99999999999990.000000') || '|' ||
+                      TO_CHAR(W.MontoReserva,'99999999999990.000000')  || '|' ||
+                      TO_CHAR(W.IdLiquidacion,'9999999999999')         || '|' ||
+                      TO_CHAR(W.FecLiberacionRvas,'DD/MM/YYYY')        || '|' ||
+                      TO_CHAR(W.ImpRvasLiberadas,'99999999999990.00')  || '|' ||
+                      TO_CHAR(W.IntRvasLiberadas,'99999999999990.00')  || '|' ||
+                      TO_CHAR(W.PrimasDirectas,'99999999999990.00')    || '|' ||
+                      TO_CHAR(W.FactorReaseg,'90.9999999999')          || '|' ||
+                      TO_CHAR(W.PrimasCedidas,'99999999999990.00')     || '|' ||
+                      TO_CHAR(W.TotalPrimasReaseg,'99999999999990.00') || '|' ||
+                      TO_CHAR(W.FactorCesion,'90.9999999999');
+        -- 
          IF cFormato = 'TEXTO' THEN
-            cCadena := cNumPolUnico                                    ||cLimitadorTxt||
-                       TO_CHAR(W.IdPoliza,'9999999999999')             ||cLimitadorTxt||
-                       TO_CHAR(W.IDetPol,'9999999999999')              ||cLimitadorTxt||
-                       TO_CHAR(W.IdEndoso,'9999999999999')             ||cLimitadorTxt||
-                       TO_CHAR(W.IdDistribRea,'9999999999999')         ||cLimitadorTxt||
-                       TO_CHAR(W.NumDistrib,'9999999999999')           ||cLimitadorTxt||
-                       W.CodGrupoCobert                                ||cLimitadorTxt||
-                       TO_CHAR(W.Cod_Asegurado,'9999999999999')        ||cLimitadorTxt||
-                       W.NomAsegurado                                  ||cLimitadorTxt||
-                       W.Esquema                                       ||cLimitadorTxt||
-                       cDescContrato                                   ||cLimitadorTxt||
-                       TO_CHAR(W.IdCapaContrato,'9999999999999')       ||cLimitadorTxt||
-                       TO_CHAR(W.CodEmpresaGremio,'9999999999999')     ||cLimitadorTxt||
-                       W.NombreReasegurador                            ||cLimitadorTxt||
-                       TO_CHAR(W.CodInterReaseg,'9999999999999')       ||cLimitadorTxt||
-                       W.NomInterReaseg                                ||cLimitadorTxt||
-                       TO_CHAR(W.PorcDistrib,'9999999990.000000')      ||cLimitadorTxt||
-                       TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')  ||cLimitadorTxt||
-                       TO_CHAR(W.PrimaDistrib,'99999999999990.000000') ||cLimitadorTxt||
-                       TO_CHAR(W.MontoComision,'99999999999990.000000')||cLimitadorTxt||
-                       TO_CHAR(W.MontoReserva,'99999999999990.000000') ||cLimitadorTxt||
-                       TO_CHAR(W.IdLiquidacion,'9999999999999')        ||cLimitadorTxt||
-                       TO_CHAR(W.FecLiberacionRvas,'DD/MM/YYYY')       ||cLimitadorTxt||
-                       TO_CHAR(W.ImpRvasLiberadas,'99999999999990.00') ||cLimitadorTxt||
-                       TO_CHAR(W.IntRvasLiberadas,'99999999999990.00') ||cLimitadorTxt||
-                       TO_CHAR(W.PrimasDirectas,'99999999999990.00')   ||cLimitadorTxt||
-                       TO_CHAR(W.FactorReaseg,'90.9999999999')         ||cLimitadorTxt||
-                       TO_CHAR(W.PrimasCedidas,'99999999999990.00')    ||cLimitadorTxt||
-                       TO_CHAR(W.TotalPrimasReaseg,'99999999999990.00')||cLimitadorTxt||
-                       TO_CHAR(W.FactorCesion,'90.9999999999');
- 
-            cCadena := cCadena || CHR(13);
+            OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cRegistro );
          ELSE
-            cCadena := '<tr>'                                                         || 
-                       cCampoFormatC||cNumPolUnico                                    ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdPoliza,'9999999999990')             ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IDetPol,'9999999999990')              ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdEndoso,'9999999999990')             ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdDistribRea,'9999999999990')         ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.NumDistrib,'9999999999990')           ||cLimitador||
-                       cCampoFormatC||W.CodGrupoCobert                                ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.Cod_Asegurado,'9999999999990')        ||cLimitador||
-                       cCampoFormatC||W.NomAsegurado                                  ||cLimitador||
-                       cCampoFormatC||W.Esquema                                       ||cLimitador||
-                       cCampoFormatC||cDescContrato                                   ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdCapaContrato,'9999999999990')       ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.CodEmpresaGremio,'9999999999990')     ||cLimitador||
-                       cCampoFormatC||W.NombreReasegurador                            ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.CodInterReaseg,'9999999999990')       ||cLimitador||
-                       cCampoFormatC||W.NomInterReaseg                                ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PorcDistrib,'9999999990.000000')      ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.SumaAsegDistrib,'99999999999990.00')  ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PrimaDistrib,'99999999999990.000000') ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.MontoComision,'99999999999990.000000')||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.MontoReserva,'99999999999990.000000') ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdLiquidacion,'9999999999990')        ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.FecLiberacionRvas,'DD/MM/YYYY')       ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.ImpRvasLiberadas,'99999999999990.00') ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.IntRvasLiberadas,'99999999999990.00') ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PrimasDirectas,'99999999999990.00')   ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.FactorReaseg,'90.999999999')          ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.PrimasCedidas,'99999999999990.00')    ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.TotalPrimasReaseg,'99999999999990.00')||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.FactorCesion,'90.999999999')          ||cLimitador;
-            cCadena := cCadena || '</tr>';
+            nFila := XLSX_BUILDER_PKG.EXCEL_DETALLE(nFila + 1, cRegistro, 1);                                        
          END IF;
-         nLinea := nLinea + 1;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       END LOOP;
-      IF cFormato = 'EXCEL' THEN
-         OC_ARCHIVO.Escribir_Linea('</table></div></html>', cCodUser, 9999);
+      --
+      COMMIT;
+      -- 
+      IF cFormato = 'TEXTO' THEN
+         OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchivo, cNomArchZip );
+         OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+      ELSE
+         IF XLSX_BUILDER_PKG.EXCEL_GUARDA_LIBRO THEN
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchivo) THEN       
+               dbms_output.put_line('OK');
+            END IF;
+            OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+         END IF;
       END IF;
-      OC_ARCHIVO.Escribir_Linea('EOF', cCodUser, 0); 
-   EXCEPTION 
-   WHEN OTHERS THEN 
-      OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Detalle Por Reasegurador' ||SQLERRM);
-   END reasegurador_esquema;
+   EXCEPTION
+   WHEN OTHERS THEN
+        cError := SQLERRM;
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Detalle Por Reasegurador' || cError);
+   END REASEGURADOR_ESQUEMA;
 
-   PROCEDURE siniestro_recuperado( cIdPoliza           VARCHAR2
+   PROCEDURE SINIESTRO_RECUPERADO( cIdPoliza           VARCHAR2
                                  , cIdSiniestro        VARCHAR2
                                  , cCodEmpGrem         VARCHAR2
                                  , cIdTipoSeg          VARCHAR2
@@ -2456,25 +1975,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
                                  , cDescripRamo        VARCHAR2
                                  , nCodCia             NUMBER
                                  , cFormato            VARCHAR2
-                                 , cCodUser            VARCHAR2 ) IS
-
-      cLimitadorTxt       VARCHAR2(1)    :='|';
-      cLimitador          VARCHAR2(20)   :='</td>';
-      cCampoFormatC       VARCHAR2(4000) := '<td class=texto>';
-      cCampoFormatN       VARCHAR2(4000) := '<td class=numero>';
-      cCampoFormatD       VARCHAR2(4000) := '<td class=fecha>';
-      --
-      cEncabezado         VARCHAR2(1) := 'S';
-      nLinea              NUMBER := 1;
-      cCadena             VARCHAR2(4000);
-      --
+                                 , nCodEmpresa         NUMBER
+                                 , cCodUser            VARCHAR2
+                                 , cNomArchivo         VARCHAR2
+                                 , cNomArchZip         VARCHAR2
+                                 , cNomDirectorio      VARCHAR2
+                                 , cCodReporte         VARCHAR2 ) IS
       dFec_Resva          DATE;
       dFec_Pago           DATE;
       cDescStsSinies      VARCHAR2(50);
       nSiniestro          SINIESTRO.IdSiniestro%TYPE;
       --
       CURSOR DISTREA_Q IS
-         SELECT DISTINCT S.CodCia
+         SELECT /*+ INDEX(DT SYS_C0031885) */ DISTINCT S.CodCia
               , S.IdSiniestro
               , S.NumSinNom Nomencl
               , S.NumSiniRef                                                            Referencia
@@ -2538,159 +2051,37 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
             AND E.CodEmpresaGremio LIKE cCodEmpGrem
             AND S.Sts_Siniestro    LIKE cStsSiniestro;
    BEGIN
+      -- Elimina Registros del Reporte
+      DELETE TEMP_REPORTES_THONA
+      WHERE  CodCia     = nCodCia
+        AND  CodEmpresa = nCodEmpresa
+        AND  CodReporte = cCodReporte
+        AND  CodUsuario = cCodUser;
+      --
+      COMMIT;
+      --
       IF cStsSiniestro = '%' THEN
-          cDescStsSinies := 'Todos los Siniestros';
+         cDescStsSinies := 'Todos los Siniestros';
       ELSIF cStsSiniestro = 'EMI' THEN
-             cDescStsSinies := 'Siniestros Ocurridos';
+         cDescStsSinies := 'Siniestros Ocurridos';
       ELSIF cStsSiniestro = 'PGP' THEN
-             cDescStsSinies := 'Siniestros Pendientes de Pago';
+         cDescStsSinies := 'Siniestros Pendientes de Pago';
       ELSIF cStsSiniestro = 'PGT' THEN
-             cDescStsSinies := 'Siniestros Totalmente Pagados';
+         cDescStsSinies := 'Siniestros Totalmente Pagados';
       END IF;
       --
-      IF cFormato = 'TEXTO' THEN  
-         nLinea  := 1;
-         cCadena := NOMBRE_COMPANIA(nCodCia) || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'REPORTE DISTRIBUCION SINIESTROS RECUPERADOS';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'INTERMEDIARIO DE REASEGURO / SUCRIPTOR FACULTADO: '||TO_CHAR(cDescIntermediario);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'TIPO DE CONTRATO: '||TO_CHAR(cDescEsquema);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'CONTRATO: '||TO_CHAR(cDescContrato);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'RAMO: '||TO_CHAR(cDescripRamo);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'PERIODO: '||TO_CHAR(dFecDesde,'DD/MM/YYYY')||' AL '||TO_CHAR(dFecHasta,'DD/MM/YYYY');
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := 'ESTADO DEL SINIESTRO: '||cDescStsSinies;
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         --
-         nLinea  := nLinea + 1;
-         cCadena := ' ' || CHR(13);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
-         nLinea  := nLinea + 1;
-         cCadena := 'No. de Siniestro'        ||cLimitadorTxt||'No. Siniestro - Nomenclatura' ||cLimitadorTxt||'No. Referencia / Siniestro' ||cLimitadorTxt||
-                    'Contratante'             ||cLimitadorTxt||'No. de Póliza Único'          ||cLimitadorTxt||'No. de Póliza Consecutivo'  ||cLimitadorTxt||
-                    'Inicio Vigencia Póliza'  ||cLimitadorTxt||'Fin Vigencia Póliza'          ||cLimitadorTxt||'Fecha Notificación'         ||cLimitadorTxt||
-                    'Fecha Registro'          ||cLimitadorTxt||'Fecha Ocurrencia'             ||cLimitadorTxt||'Estatus Siniestro'          ||cLimitadorTxt||
-                    'Codigo Causa Siniestro'  ||cLimitadorTxt||'Descripcion Causa Siniestro'  ||cLimitadorTxt||'No. Endoso Afectado'        ||cLimitadorTxt||
-                    'No. Distribución'        ||cLimitadorTxt||'Orden'                        ||cLimitadorTxt||'Grupo Cobertura Afectada'   ||cLimitadorTxt||
-                    'Capacidad Máxima'        ||cLimitadorTxt||'% Distribución'               ||cLimitadorTxt||'Suma Aseg. Distribuida'     ||cLimitadorTxt||
-                    'Año-Mes de Movimiento'   ||cLimitadorTxt||'Monto de Reserva'             ||cLimitadorTxt||'Fecha Reserva'              ||cLimitadorTxt||
-                    'Monto de Pagado'         ||cLimitadorTxt||'Fecha Pago'                   ||cLimitadorTxt||'Código Asegurado'           ||cLimitadorTxt||
-                    'Nombre Asegurado'        ||cLimitadorTxt||'Fecha de Nacimiento'          ||cLimitadorTxt||'Certificado'                ||cLimitadorTxt||
-                    'Esquema de Reaseguro'    ||cLimitadorTxt||'Contrato de Reaseguro'        ||cLimitadorTxt||'No. Capa Contrato'          ||cLimitadorTxt||
-                    'Riesgo de Reaseguro'     ||cLimitadorTxt||'Fecha Distribución'           ||cLimitadorTxt||'Moneda'                     ||cLimitadorTxt|| CHR(13); 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      ELSE  
-         cCadena := '<html xmlns:o="urn:schemas-microsoft-com:office:office"'                                                                        ||chr(10)||
-                    ' xmlns:x="urn:schemas-microsoft-com:office:excel"'                                                                              ||chr(10)||
-                    ' xmlns="http://www.w3.org/TR/REC-html40">'                                                                                      ||chr(10)||
-                    ' <style id="libro">'                                                                                                            ||chr(10)||
-                    '   <!--table'                                                                                                                   ||chr(10)||
-                    '       {mso-displayed-decimal-separator:"\.";'                                                                                  ||chr(10)||
-                    '        mso-displayed-thousand-separator:"\,";}'                                                                                ||chr(10)||
-                    '        .texto'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"\@";}'                                                                                            ||chr(10)||
-                    '        .numero'                                                                                                                ||chr(10)||
-                    '          {mso-style-parent:texto; mso-number-format:"_-* \#\,\#\#0\.00_-\;\\-* \#\,\#\#0\.00_-\;_-* \0022-\0022??_-\;_-\@_-";}'||chr(10)||
-                    '        .fecha'                                                                                                                 ||chr(10)||
-                    '          {mso-number-format:"dd\\-mmm\\-yyyy";}'                                                                               ||chr(10)||
-                    '    -->'                                                                                                                        ||chr(10)||
-                    ' </style><div id="libro">'                                                                                                      ||chr(10);
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 0><tr><th>' || OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia) || '</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>REPORTE DISTRIBUCION SINIESTROS RECUPERADOS</th></tr>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>INTERMEDIARIO DE REASEGURO / SUCRIPTOR FACULTADO: '||TO_CHAR(cDescIntermediario)||'</th></tr>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>TIPO DE CONTRATO: '||TO_CHAR(cDescEsquema)||'</th></tr>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>CONTRATO: '||TO_CHAR(cDescContrato)||'</th></tr>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>RAMO: '||TO_CHAR(cDescripRamo)||'</th></tr>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>PERIODO: '||TO_CHAR(dFecDesde,'DD/MM/YYYY')||' AL '||TO_CHAR(dFecHasta,'DD/MM/YYYY')||'</th></tr>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>ESTADO DEL SINIESTRO: '||cDescStsSinies||'</th></tr>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<tr><th>  </th></tr></table>'; 
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-         --
-         nLinea  := nLinea + 1;
-         cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Siniestro</font></th>' ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Siniestro - Nomenclatura</font></th>'           ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Referencia / Siniestro</font></th>'             ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contratante</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Único</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Póliza Consecutivo</font></th>'              ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia Póliza</font></th>'                 ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia Póliza</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Notificacion</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Registro</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Ocurrencia</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Estatus Siniestro</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Codigo Causa Siniestro</font></th>'                 ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripcion Causa Siniestro</font></th>'            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Endoso Afectado</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Distribución</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Orden</font></th>'                                  ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Grupo Cobertura Afectada</font></th>'               ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Capacidad Máxima</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Distribución</font></th>'                         ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Suma Aseg. Distribuida</font></th>'                 ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Año-Mes de Movimiento</font></th>'                  ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto de Reserva</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Reserva</font></th>'                          ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto de Pagado</font></th>'                        ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Pago</font></th>'                             ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Asegurado</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Asegurado</font></th>'                       ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Nacimiento</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Certificado</font></th>'                            ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Esquema de Reaseguro</font></th>'                   ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contrato de Reaseguro</font></th>'                  ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Capa Contrato</font></th>'                      ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Riesgo de Reaseguro</font></th>'                    ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Distribución</font></th>'                     ||
-                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>';
-         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      END IF;
+      cTitulo1 := NOMBRE_COMPANIA(nCodCia);
+      cTitulo2 := 'REPORTE DISTRIBUCION SINIESTROS RECUPERADOS INTERMEDIARIO DE REASEGURO / SUCRIPTOR FACULTADO: ' || TO_CHAR(cDescIntermediario);
+      cTitulo3 := 'TIPO DE CONTRATO: ' || TO_CHAR(cDescEsquema) || '  CONTRATO: ' || TO_CHAR(cDescContrato) || '  RAMO: '||TO_CHAR(cDescripRamo) || '  PERIODO: '||
+                  TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' AL ' || TO_CHAR(dFecHasta,'DD/MM/YYYY') || '  ESTADO DEL SINIESTRO: ' || cDescStsSinies;
+      cTitulo4 := ' ';
+      cEncabez := 'No. de Siniestro|No. Siniestro - Nomenclatura|No. Referencia / Siniestro|Contratante|No. de Póliza Único|No. de Póliza Consecutivo|'       ||
+                  'Inicio Vigencia Póliza|Fin Vigencia Póliza|Fecha Notificación|Fecha Registro|Fecha Ocurrencia|Estatus Siniestro|Codigo Causa Siniestro|'   ||
+                  'Descripcion Causa Siniestro|No. Endoso Afectado|No. Distribución|Orden|Grupo Cobertura Afectada|Capacidad Máxima|% Distribución|'          ||
+                  'Suma Aseg. Distribuida|Año-Mes de Movimiento|Monto de Reserva|Fecha Reserva|Monto de Pagado|Fecha Pago|Código Asegurado|Nombre Asegurado|' ||
+                  'Fecha de Nacimiento|Certificado|Esquema de Reaseguro|Contrato de Reaseguro|No. Capa Contrato|Riesgo de Reaseguro|Fecha Distribución|Moneda'; 
+      --
+      INSERTA_ENCABEZADO( cFormato, nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo );
       --
       FOR W IN DISTREA_Q LOOP
          nSiniestro := W.IdSiniestro;
@@ -2748,94 +2139,361 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_reportes_reaseguro IS
             END;
          END IF;
          --
+         cRegistro := TO_CHAR(W.IdSiniestro,'9999999999999')     || '|' ||
+                      W.Nomencl                                  || '|' ||
+                      W.Referencia                               || '|' ||
+                      W.Contratante                              || '|' ||
+                      W.Num_Pol_Unic                             || '|' ||
+                      TO_CHAR(W.IdPoliza,'9999999999999')        || '|' ||
+                      TO_CHAR(W.Pol_Fec_Ini_Vig,'DD/MM/YYYY')    || '|' ||
+                      TO_CHAR(W.Pol_Fec_Fin_Vig,'DD/MM/YYYY')    || '|' ||
+                      TO_CHAR(W.Fec_Notif,'DD/MM/YYYY')          || '|' ||
+                      TO_CHAR(W.Fec_Registro,'DD/MM/YYYY')       || '|' ||
+                      TO_CHAR(W.Fec_Ocurr,'DD/MM/YYYY')          || '|' ||
+                      W.Estatus_Sini                             || '|' ||
+                      TO_CHAR(W.Cod_Caus_Sini,'9999999999999')   || '|' ||
+                      W.Desc_Causa_Sini                          || '|' ||
+                      TO_CHAR(W.IdEndoso,'9999999999999')        || '|' ||
+                      TO_CHAR(W.No_Distrib,'9999999999999')      || '|' ||
+                      TO_CHAR(W.Orden,'9999999999999')           || '|' ||
+                      W.Gpo_Cob_Afect                            || '|' ||
+                      TO_CHAR(W.Cap_Max,'99999999990.00')        || '|' ||
+                      TO_CHAR(W.Porc_Distrib,'9999990.000000')   || '|' ||
+                      TO_CHAR(W.Sum_Aseg_Distr,'99999999990.00') || '|' ||
+                      W.Ano_Mes_Mov                              || '|' ||
+                      TO_CHAR(W.Mto_Resva,'99999999990.00')      || '|' ||
+                      TO_CHAR(dFec_Resva,'DD/MM/YYYY')           || '|' ||
+                      TO_CHAR(W.Mto_Pago,'99999999990.00')       || '|' ||
+                      TO_CHAR(dFec_Pago,'DD/MM/YYYY')            || '|' ||
+                      TO_CHAR(W.Cod_Aseg,'9999999999999')        || '|' ||
+                      W.Asegurado                                || '|' ||
+                      TO_CHAR(W.Fec_Nac_Aseg,'DD/MM/YYYY')       || '|' ||
+                      TO_CHAR(W.Certificado,'9999999999999')     || '|' ||
+                      W.Esq_Reaseg                               || '|' ||
+                      W.Cto_Reaseg                               || '|' ||
+                      TO_CHAR(W.Capa_Cto,'9999999999999')        || '|' ||
+                      W.Riesgo_Reaseg                            || '|' ||
+                      W.Fec_Distrib                              || '|' ||
+                      W.Moneda;
+        -- 
          IF cFormato = 'TEXTO' THEN
-            cCadena := TO_CHAR(W.IdSiniestro,'9999999999999')     ||cLimitadorTxt||
-                       W.Nomencl                                  ||cLimitadorTxt||
-                       W.Referencia                               ||cLimitadorTxt||
-                       W.Contratante                              ||cLimitadorTxt||
-                       W.Num_Pol_Unic                             ||cLimitadorTxt||
-                       TO_CHAR(W.IdPoliza,'9999999999999')        ||cLimitadorTxt||
-                       TO_CHAR(W.Pol_Fec_Ini_Vig,'DD/MM/YYYY')    ||cLimitadorTxt||
-                       TO_CHAR(W.Pol_Fec_Fin_Vig,'DD/MM/YYYY')    ||cLimitadorTxt||
-                       TO_CHAR(W.Fec_Notif,'DD/MM/YYYY')          ||cLimitadorTxt||
-                       TO_CHAR(W.Fec_Registro,'DD/MM/YYYY')       ||cLimitadorTxt||
-                       TO_CHAR(W.Fec_Ocurr,'DD/MM/YYYY')          ||cLimitadorTxt||
-                       W.Estatus_Sini                             ||cLimitadorTxt||
-                       TO_CHAR(W.Cod_Caus_Sini,'9999999999999')   ||cLimitadorTxt||
-                       W.Desc_Causa_Sini                          ||cLimitadorTxt||
-                       TO_CHAR(W.IdEndoso,'9999999999999')        ||cLimitadorTxt||
-                       TO_CHAR(W.No_Distrib,'9999999999999')      ||cLimitadorTxt||
-                       TO_CHAR(W.Orden,'9999999999999')           ||cLimitadorTxt||
-                       W.Gpo_Cob_Afect                            ||cLimitadorTxt||
-                       TO_CHAR(W.Cap_Max,'99999999990.00')        ||cLimitadorTxt||
-                       TO_CHAR(W.Porc_Distrib,'9999990.000000')   ||cLimitadorTxt||
-                       TO_CHAR(W.Sum_Aseg_Distr,'99999999990.00') ||cLimitadorTxt||
-                       W.Ano_Mes_Mov                              ||cLimitadorTxt||
-                       TO_CHAR(W.Mto_Resva,'99999999990.00')      ||cLimitadorTxt||
-                       TO_CHAR(dFec_Resva,'DD/MM/YYYY')           ||cLimitadorTxt||
-                       TO_CHAR(W.Mto_Pago,'99999999990.00')       ||cLimitadorTxt||
-                       TO_CHAR(dFec_Pago,'DD/MM/YYYY')            ||cLimitadorTxt||
-                       TO_CHAR(W.Cod_Aseg,'9999999999999')        ||cLimitadorTxt||
-                       W.Asegurado                                ||cLimitadorTxt||
-                       TO_CHAR(W.Fec_Nac_Aseg,'DD/MM/YYYY')       ||cLimitadorTxt||
-                       TO_CHAR(W.Certificado,'9999999999999')     ||cLimitadorTxt||
-                       W.Esq_Reaseg                               ||cLimitadorTxt||
-                       W.Cto_Reaseg                               ||cLimitadorTxt||
-                       TO_CHAR(W.Capa_Cto,'9999999999999')        ||cLimitadorTxt||
-                       W.Riesgo_Reaseg                            ||cLimitadorTxt||
-                       W.Fec_Distrib                              ||cLimitadorTxt||
-                       W.Moneda                                   ||CHR(13);
+            OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cRegistro );
          ELSE
-            cCadena := '<tr>'                                                    ||cLimitador|| 
-                       cCampoFormatC||TO_CHAR(W.IdSiniestro,'9999999999990')     ||cLimitador||
-                       cCampoFormatC||W.Nomencl                                  ||cLimitador||
-                       cCampoFormatC||W.Referencia                               ||cLimitador||
-                       cCampoFormatC||W.Contratante                              ||cLimitador||
-                       cCampoFormatC||W.Num_Pol_Unic                             ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdPoliza,'9999999999990')        ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.Pol_Fec_Ini_Vig,'DD/MM/YYYY')    ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.Pol_Fec_Fin_Vig,'DD/MM/YYYY')    ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.Fec_Notif,'DD/MM/YYYY')          ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.Fec_Registro,'DD/MM/YYYY')       ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.Fec_Ocurr,'DD/MM/YYYY')          ||cLimitador||
-                       cCampoFormatC||W.Estatus_Sini                             ||cLimitador||
-                       cCampoFormatC||W.Cod_Caus_Sini                            ||cLimitador||
-                       cCampoFormatC||W.Desc_Causa_Sini                          ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.IdEndoso,'9999999999990')        ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.No_Distrib,'9999999999990')      ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.Orden,'9999999999990')           ||cLimitador||
-                       cCampoFormatC||W.Gpo_Cob_Afect                            ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.Cap_Max,'99999999990.00')        ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.Porc_Distrib,'9999990.000000')   ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.Sum_Aseg_Distr,'99999999990.00') ||cLimitador||
-                       cCampoFormatC||W.Ano_Mes_Mov                              ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.Mto_Resva,'99999999990.00')      ||cLimitador||
-                       cCampoFormatD||TO_CHAR(dFec_Resva,'DD/MM/YYYY')           ||cLimitador||
-                       cCampoFormatN||TO_CHAR(W.Mto_Pago,'99999999990.00')       ||cLimitador||
-                       cCampoFormatD||TO_CHAR(dFec_Pago,'DD/MM/YYYY')            ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.Cod_Aseg,'9999999999990')        ||cLimitador||
-                       cCampoFormatC||W.Asegurado                                ||cLimitador||
-                       cCampoFormatD||TO_CHAR(W.Fec_Nac_Aseg,'DD/MM/YYYY')       ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.Certificado,'9999999999990')     ||cLimitador||
-                       cCampoFormatC||W.Esq_Reaseg                               ||cLimitador||
-                       cCampoFormatC||W.Cto_Reaseg                               ||cLimitador||
-                       cCampoFormatC||TO_CHAR(W.Capa_Cto,'9999999999990')        ||cLimitador||
-                       cCampoFormatC||W.Riesgo_Reaseg                            ||cLimitador||
-                       cCampoFormatC||W.Fec_Distrib                              ||cLimitador||
-                       cCampoFormatC||W.Moneda                                   ||'</tr>';
+            nFila := XLSX_BUILDER_PKG.EXCEL_DETALLE(nFila + 1, cRegistro, 1);                                        
+         END IF;
+      END LOOP;
+      --
+      COMMIT;
+      -- 
+      IF cFormato = 'TEXTO' THEN
+         OC_REPORTES_THONA.GENERA_REPORTE( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchivo, cNomArchZip );
+         OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+      ELSE
+         IF XLSX_BUILDER_PKG.EXCEL_GUARDA_LIBRO THEN
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchivo) THEN       
+               dbms_output.put_line('OK');
+            END IF;
+            OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+         END IF;
+      END IF;
+   EXCEPTION
+   WHEN OTHERS THEN
+        cError := SQLERRM;
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Siniestros Recuperados: Siniestro' || nSiniestro || ' ' || cError);
+   END SINIESTRO_RECUPERADO;
+   
+   PROCEDURE CALENDARIOS( nCodCia       NUMBER
+                        , dFecDesde     DATE
+                        , dFecHasta     DATE
+                        , cCodEsquema   VARCHAR2
+                        , cCodContrato  VARCHAR2
+                        , cFormato      VARCHAR2 ) IS
+   cLimitador           VARCHAR2(20);
+   cLimitadorTxt        VARCHAR2(1)    :='|';
+   cCampoFormatC        VARCHAR2(4000) := '<td class=texto>';
+   cCampoFormatN        VARCHAR2(4000) := '<td class=numero>';
+   cCampoFormatD        VARCHAR2(4000) := '<td class=fecha>';
+   --
+   nLinea               NUMBER := 1;
+   cCadena              VARCHAR2(10000);
+   cCodUser             USUARIOS.CodUsuario%TYPE;
+   --
+   cDescEsquema         REA_ESQUEMAS.DescEsquema%TYPE;
+   cNomContrato         REA_TIPOS_CONTRATOS.NomContrato%TYPE;
+
+   CURSOR CAL_Q IS
+      SELECT E.CodEsquema, E.DescEsquema, E.TipoEsquema, E.FecIniEsquema, E.FecFinEsquema,
+             C.CodContrato, GT_REA_TIPOS_CONTRATOS.NOMBRE_CONTRATO(E.CodCia, C.CodContrato) DescContrato,
+             C.CodRiesgo, GT_REA_RIESGOS.DESCRIPCION_RIESGO(E.CodCia, C.CodRiesgo) DescRiesgo,
+             C.FecVigInicial FecIniContrato, C.FecVigFinal FecFinContrato, EC.IdCapaContrato, 
+             EC.FecVigInicial FecIniCapaContrato, EC.FecVigFinal FecFinCapaContrato, EC.PorcCapa,
+             EE.CodEmpresaGremio, GT_REA_EMPRESAS_GREMIO.NOMBRE_EMPRESA(E.CodCia, EE.CodEmpresaGremio) NombreEmpresaGremio,
+             EE.PorcEmpresa, EE.CodInterReaseg, GT_REA_EMPRESAS_GREMIO.NOMBRE_EMPRESA(E.CodCia, EE.CodInterReaseg) NombreInterReaseg, 
+             REC.IdCalendario, REC.FecEnvioEstadoCta, REC.FechaPago, REC.FecRealEntrega, RC.IdAlerta,
+             RC.Tipo TipoAlerta, RC.Dias NumDiasAlerta, RC.Repeticion Repite, RC.Correos
+        FROM REA_ESQUEMAS E, REA_ESQUEMAS_CONTRATOS C, 
+             REA_ESQUEMAS_CAPAS EC, REA_ESQUEMAS_EMPRESAS EE,
+             REA_EMPRESAS_GREMIO EG, PERSONA_NATURAL_JURIDICA PJ,
+             REA_ESQUEMAS_CALENDARIO REC, REA_CORREO_ALERTAS RC
+       WHERE E.CodCia                     = nCodCia
+         AND (REC.FecEnvioEstadoCta      >= NVL(dFecDesde,REC.FecEnvioEstadoCta)
+         AND REC.FecEnvioEstadoCta       <= NVL(dFecHasta,REC.FecEnvioEstadoCta)
+          OR REC.FechaPago               >= NVL(dFecDesde,REC.FechaPago)
+         AND REC.FechaPago               <= NVL(dFecHasta,REC.FechaPago))
+         AND ((E.CodEsquema               = cCodEsquema AND cCodEsquema != '%')
+          OR  (E.CodEsquema            LIKE cCodEsquema AND cCodEsquema = '%'))
+         AND ((C.CodContrato              = cCodContrato AND cCodContrato != '%')
+          OR  (C.CodContrato           LIKE cCodContrato AND cCodContrato = '%'))
+         AND E.StsEsquema                 = 'ACTIVO'
+         AND E.CodCia                     = C.CodCia
+         AND E.CodEsquema                 = C.CodEsquema
+         AND C.CodCia                     = EC.CodCia
+         AND C.CodEsquema                 = EC.CodEsquema
+         AND C.IdEsqContrato              = EC.IdEsqContrato
+         AND EC.CodCia                    = EE.CodCia
+         AND EC.CodEsquema                = EE.CodEsquema
+         AND EC.IdEsqContrato             = EE.IdEsqContrato
+         AND EC.IdCapaContrato            = EE.IdCapaContrato
+         AND EE.CodCia                    = EG.CodCia
+         AND EE.CodEmpresaGremio          = EG.CodEmpresaGremio
+         AND EG.Tipo_Doc_Identificacion   = PJ.Tipo_Doc_Identificacion
+         AND EG.Num_Doc_Identificacion    = PJ.Num_Doc_Identificacion
+         AND EE.CodCia                    = REC.CodCia
+         AND EE.CodEsquema                = REC.CodEsquema
+         AND EE.IdEsqContrato             = REC.IdEsqContrato
+         AND EE.IdCapaContrato            = REC.IdCapaContrato
+         AND EE.CodEmpresaGremio          = REC.CodEmpresaGremio
+         AND REC.CodCia                   = RC.CodCia(+)
+         AND REC.CodEsquema               = RC.CodEsquema(+)
+         AND REC.IdEsqContrato            = RC.IdEsqContrato(+)
+         AND REC.IdCapaContrato           = RC.IdCapaContrato(+)
+         AND REC.CodEmpresaGremio         = RC.CodEmpresaGremio(+)
+         AND REC.IdCalendario             = RC.IdCalendario(+)
+       ORDER BY EC.IdEsqContrato, EE.CodEmpresaGremio, REC.IdCalendario;
+   BEGIN
+      SELECT USER INTO cCodUser FROM DUAL;
+       
+      IF NVL(cCodEsquema,'%') != '%' THEN
+         cDescEsquema := GT_REA_ESQUEMAS.NOMBRE_ESQUEMA(nCodCia, cCodEsquema);
+      END IF;
+       
+      IF NVL(cCodContrato,'%') != '%' THEN
+         cNomContrato := GT_REA_TIPOS_CONTRATOS.NOMBRE_CONTRATO(nCodCia, cCodContrato);
+      END IF;
+       
+      IF cFormato = 'TEXTO' THEN
+         cLimitador := '|'; 
+         nLinea      := 1;
+         cCadena     := NOMBRE_COMPANIA(nCodCia) || CHR(13);
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
+         --
+         nLinea  := nLinea + 1;
+         cCadena := 'REPORTE CALENDARIOS';
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
+         --
+         nLinea  := nLinea + 1;
+         cCadena := 'TIPO DE CONTRATO: '||TO_CHAR(cDescEsquema);
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
+         --
+         nLinea  := nLinea + 1;
+         cCadena := 'CONTRATO: '||TO_CHAR(cNomContrato);
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
+         --
+         nLinea  := nLinea + 1;
+         cCadena := 'PERIODO: '||TO_CHAR(dFecDesde,'DD/MM/YYYY')||' AL '||TO_CHAR(dFecHasta,'DD/MM/YYYY');
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
+         --
+         nLinea  := nLinea + 1;
+         cCadena := ' ' || CHR(13);
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
+         nLinea  := nLinea + 1;
+         cCadena := 'Código Esquema'                     ||cLimitador||
+                    'Descripción Esquema'                ||cLimitador||
+                    'Tipo Esquema'                       ||cLimitador||
+                    'Inicio Vigencia Esquema'            ||cLimitador||
+                    'Fin Vigencia Esquema'               ||cLimitador||
+                    'Código Contrato'                    ||cLimitador||
+                    'Descripción Contrato'               ||cLimitador||
+                    'Código Riesgo'                      ||cLimitador||
+                    'Descripción Riesgo'                 ||cLimitador||
+                    'Inicio Vigencia Contrato'           ||cLimitador||
+                    'Fin Vigencia Contrato'              ||cLimitador||
+                    'Número Capa Contrato'               ||cLimitador||
+                    'Inicio Vigencia Capa Contrato'      ||cLimitador||
+                    'Fin Vigencia Capa Contrato'         ||cLimitador||
+                    '% Capa'                             ||cLimitador||
+                    'Código Empresa Capa'                ||cLimitador||
+                    'Nombre Empresa Capa'                ||cLimitador||
+                    '% Distribución Empresa Capa'        ||cLimitador||
+                    'Código Intermediario Reaseguro'     ||cLimitador||
+                    'Nombre Intermediario'               ||cLimitador||
+                    'Número Calendario'                  ||cLimitador||
+                    'Fecha Envío Estado de Cuenta'       ||cLimitador||
+                    'Fecha Pago'                         ||cLimitador||
+                    'Fecha Real Entrega'                 ||cLimitador||
+                    'Número Alerta'                      ||cLimitador||
+                    'Tipo Alerta'                        ||cLimitador||
+                    'Días Ejecución Alerta'              ||cLimitador||
+                    'Indica Repite Alerta'               ||cLimitador||
+                    'Correos Destinatarios Alerta'       ||CHR(13); 
+      ELSE
+         cLimitador  := '</td>';
+         nLinea      := 1;
+         cCadena     := '<html xmlns:o="urn:schemas-microsoft-com:office:office"'                                                                       ||chr(10)||
+                       ' xmlns:x="urn:schemas-microsoft-com:office:excel"'                                                                              ||chr(10)||
+                       ' xmlns="http://www.w3.org/TR/REC-html40">'                                                                                      ||chr(10)||
+                       ' <style id="libro">'                                                                                                            ||chr(10)||
+                       '   <!--table'                                                                                                                   ||chr(10)||
+                       '       {mso-displayed-decimal-separator:"\.";'                                                                                  ||chr(10)||
+                       '        mso-displayed-thousand-separator:"\,";}'                                                                                ||chr(10)||
+                       '        .texto'                                                                                                                 ||chr(10)||
+                       '          {mso-number-format:"\@";}'                                                                                            ||chr(10)||
+                       '        .numero'                                                                                                                ||chr(10)||
+                       '          {mso-style-parent:texto; mso-number-format:"_-* \#\,\#\#0\.00_-\;\\-* \#\,\#\#0\.00_-\;_-* \0022-\0022??_-\;_-\@_-";}'||chr(10)||
+                       '        .fecha'                                                                                                                 ||chr(10)||
+                       '          {mso-number-format:"dd\\-mmm\\-yyyy";}'                                                                               ||chr(10)||
+                       '    -->'                                                                                                                        ||chr(10)||
+                       ' </style><div id="libro">'                                                                                                      ||chr(10);
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
+         --
+         nLinea  := nLinea + 1;
+         cCadena := '<table border = 0><tr><th>' || OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia) || '</th></tr>'; 
+         --
+         nLinea  := nLinea + 1;
+         cCadena := '<tr><th>REPORTE CALENDARIOS </th></tr>';
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
+         --
+               
+         IF NVL(cCodEsquema,'%') != '%' THEN
+            nLinea  := nLinea + 1;
+            cCadena := '<tr><th>TIPO DE CONTRATO: '||TO_CHAR(cDescEsquema)||'</th></tr>';
+            OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
+         END IF;
+         --
+         IF NVL(cCodContrato,'%') != '%' THEN
+            nLinea  := nLinea + 1;
+            cCadena := '<tr><th>CONTRATO: '||TO_CHAR(cNomContrato)||'</th></tr>';
+            OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
+         END IF;
+         --
+         nLinea  := nLinea + 1;
+         cCadena := '<tr><th>PERIODO: '||TO_CHAR(dFecDesde,'DD/MM/YYYY')||' AL '||TO_CHAR(dFecHasta,'DD/MM/YYYY')||'</th></tr>';
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
+         --
+         nLinea  := nLinea + 1;
+         cCadena := '<tr><th>  </th></tr></table>'; 
+         OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
+         --
+         nLinea  := nLinea + 1;
+         cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Esquema</font></th>'   ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripción Esquema</font></th>'                    ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Esquema</font></th>'                           ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia Esquema</font></th>'                ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia Esquema</font></th>'                   ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Contrato</font></th>'                        ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripción Contrato</font></th>'                   ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Riesgo</font></th>'                          ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripción Riesgo</font></th>'                     ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia Contrato</font></th>'               ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia Contrato</font></th>'                  ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Número Capa Contrato</font></th>'                   ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia Capa Contrato</font></th>'          ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia Capa Contrato</font></th>'             ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Capa</font></th>'                                 ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Empresa Capa</font></th>'                    ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Empresa Capa</font></th>'                    ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Distribución Empresa Capa</font></th>'            ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Código Intermediario Reaseguro</font></th>'         ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Intermediario</font></th>'                   ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Número Calendario</font></th>'                      ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Envío Estado de Cuenta</font></th>'           ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Pago</font></th>'                             ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Real Entrega</font></th>'                     ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Número Alerta</font></th>'                          ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Alerta</font></th>'                            ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Días Ejecución Alerta</font></th>'                  ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Indica Repite Alerta</font></th>'                   ||
+                    '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Correos Destinatarios Alerta</font></th>'                     
+                    ;
+      END IF;
+      OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
+      FOR W IN CAL_Q LOOP 
+         IF cFormato = 'TEXTO' THEN
+            cCadena := W.CodEsquema                               ||cLimitador||
+                       W.DescEsquema                              ||cLimitador||
+                       W.TipoEsquema                              ||cLimitador||
+                       TO_CHAR(W.FecIniEsquema,'DD/MM/RRRR')      ||cLimitador||
+                       TO_CHAR(W.FecFinEsquema,'DD/MM/RRRR')      ||cLimitador||
+                       W.CodContrato                              ||cLimitador||
+                       W.DescContrato                             ||cLimitador||
+                       W.CodRiesgo                                ||cLimitador||
+                       W.DescRiesgo                               ||cLimitador||
+                       TO_CHAR(W.FecIniContrato,'DD/MM/RRRR')     ||cLimitador||
+                       TO_CHAR(W.FecFinContrato,'DD/MM/RRRR')     ||cLimitador||
+                       TO_CHAR(W.IdCapaContrato,'9999999999990')  ||cLimitador||
+                       TO_CHAR(W.FecIniCapaContrato,'DD/MM/RRRR') ||cLimitador||
+                       TO_CHAR(W.FecFinCapaContrato,'DD/MM/RRRR') ||cLimitador||
+                       TO_CHAR(W.PorcCapa,'9999990.000000')       ||cLimitador||
+                       W.CodEmpresaGremio                         ||cLimitador||
+                       W.NombreEmpresaGremio                      ||cLimitador||
+                       TO_CHAR(W.PorcEmpresa,'9999990.000000')    ||cLimitador||
+                       W.CodInterReaseg                           ||cLimitador||
+                       W.NombreInterReaseg                        ||cLimitador||
+                       TO_CHAR(W.IdCalendario)                    ||cLimitador||
+                       TO_CHAR(W.FecEnvioEstadoCta,'DD/MM/RRRR')  ||cLimitador||
+                       TO_CHAR(W.FechaPago,'DD/MM/RRRR')          ||cLimitador||
+                       TO_CHAR(W.FecRealEntrega,'DD/MM/RRRR')     ||cLimitador||
+                       TO_CHAR(W.IdAlerta)                        ||cLimitador||
+                       W.TipoAlerta                               ||cLimitador||
+                       TO_CHAR(W.NumDiasAlerta)                   ||cLimitador||
+                       W.Repite                                   ||cLimitador|| 
+                       W.Correos                                  ||CHR(13);
+         ELSE
+            cCadena := '<tr>'                                                    ||cLimitador||
+                       cCampoFormatC||W.CodEsquema                               ||cLimitador||
+                       cCampoFormatC||W.DescEsquema                              ||cLimitador||
+                       cCampoFormatC||W.TipoEsquema                              ||cLimitador||
+                       cCampoFormatD||TO_CHAR(W.FecIniEsquema,'DD/MM/RRRR')      ||cLimitador||
+                       cCampoFormatD||TO_CHAR(W.FecFinEsquema,'DD/MM/RRRR')      ||cLimitador||
+                       cCampoFormatC||W.CodContrato                              ||cLimitador||
+                       cCampoFormatC||W.DescContrato                             ||cLimitador||
+                       cCampoFormatC||W.CodRiesgo                                ||cLimitador||
+                       cCampoFormatC||W.DescRiesgo                               ||cLimitador||
+                       cCampoFormatD||TO_CHAR(W.FecIniContrato,'DD/MM/RRRR')     ||cLimitador||
+                       cCampoFormatD||TO_CHAR(W.FecFinContrato,'DD/MM/RRRR')     ||cLimitador||
+                       cCampoFormatN||TO_CHAR(W.IdCapaContrato,'9999999999990')  ||cLimitador||
+                       cCampoFormatD||TO_CHAR(W.FecIniCapaContrato,'DD/MM/RRRR') ||cLimitador||
+                       cCampoFormatD||TO_CHAR(W.FecFinCapaContrato,'DD/MM/RRRR') ||cLimitador||
+                       cCampoFormatN||TO_CHAR(W.PorcCapa,'9999990.000000')       ||cLimitador||
+                       cCampoFormatC||W.CodEmpresaGremio                         ||cLimitador||
+                       cCampoFormatC||W.NombreEmpresaGremio                      ||cLimitador||
+                       cCampoFormatN||TO_CHAR(W.PorcEmpresa,'9999990.000000')    ||cLimitador||
+                       cCampoFormatC||W.CodInterReaseg                           ||cLimitador||
+                       cCampoFormatC||W.NombreInterReaseg                        ||cLimitador||
+                       cCampoFormatC||TO_CHAR(W.IdCalendario)                    ||cLimitador||
+                       cCampoFormatD||TO_CHAR(W.FecEnvioEstadoCta,'DD/MM/RRRR')  ||cLimitador||
+                       cCampoFormatD||TO_CHAR(W.FechaPago,'DD/MM/RRRR')          ||cLimitador||
+                       cCampoFormatD||TO_CHAR(W.FecRealEntrega,'DD/MM/RRRR')     ||cLimitador||
+                       cCampoFormatN||TO_CHAR(W.IdAlerta)                        ||cLimitador||
+                       cCampoFormatC||W.TipoAlerta                               ||cLimitador||
+                       cCampoFormatN||TO_CHAR(W.NumDiasAlerta)                   ||cLimitador||
+                       cCampoFormatC||W.Repite                                   ||cLimitador|| 
+                       cCampoFormatC||W.Correos                                  ||'</tr>';
          END IF;
          nLinea := nLinea + 1;
          OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       END LOOP;
-      --
+      
       IF cFormato = 'EXCEL' THEN
          OC_ARCHIVO.Escribir_Linea('</table></div></html>', cCodUser, 9999);
       END IF;
       OC_ARCHIVO.Escribir_Linea('EOF', cCodUser, 0); 
    EXCEPTION 
-   WHEN OTHERS THEN 
-      OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Siniestros Recuperados: Siniestro'||nSiniestro||' '||SQLERRM);
-   END siniestro_recuperado;
-END oc_reportes_reaseguro;
+      WHEN OTHERS THEN 
+         OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
+         RAISE_APPLICATION_ERROR(-20225,'Error en Generación de Reporte Calendarios '||' '||SQLERRM);   
+   END CALENDARIOS;
+
+END OC_REPORTES_REASEGURO;
 /

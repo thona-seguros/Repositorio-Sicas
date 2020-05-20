@@ -15,6 +15,12 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_REPORTES_THONA IS
    FUNCTION EXISTE_ARCHIVO( cDirectorio  VARCHAR2
                           , cNomArchivo  VARCHAR2 ) RETURN BOOLEAN;
 
+   PROCEDURE INSERTAR_REGISTRO( nCodCia      TEMP_REPORTES_THONA.CODCIA%TYPE
+                              , nCodEmpresa  TEMP_REPORTES_THONA.CODEMPRESA%TYPE
+                              , cCodReporte  TEMP_REPORTES_THONA.CODREPORTE%TYPE
+                              , cCodUsuario  TEMP_REPORTES_THONA.CODUSUARIO%TYPE
+                              , cCadena      TEMP_REPORTES_THONA.LINEA%TYPE );
+
 END OC_REPORTES_THONA;  
 /
 
@@ -105,6 +111,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_REPORTES_THONA IS
                        , block_size  => bBlockSize );
       RETURN bFileExists;
    END EXISTE_ARCHIVO;
+
+   PROCEDURE INSERTAR_REGISTRO( nCodCia      TEMP_REPORTES_THONA.CODCIA%TYPE
+                              , nCodEmpresa  TEMP_REPORTES_THONA.CODEMPRESA%TYPE
+                              , cCodReporte  TEMP_REPORTES_THONA.CODREPORTE%TYPE
+                              , cCodUsuario  TEMP_REPORTES_THONA.CODUSUARIO%TYPE
+                              , cCadena      TEMP_REPORTES_THONA.LINEA%TYPE ) IS
+   BEGIN
+      INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
+      VALUES ( nCodCia, nCodEmpresa, cCodReporte, cCodUsuario, cCadena );
+   EXCEPTION
+   WHEN OTHERS THEN 
+        RAISE_APPLICATION_ERROR( -20225, 'Error al insertar en TEMP_REPORTES_THONA: ' || SQLERRM );   
+   END INSERTAR_REGISTRO;
 
 END OC_REPORTES_THONA;
 /
