@@ -17,6 +17,7 @@ PROCEDURE COPIAR(nCodCia NUMBER, nIdPoliza NUMBER);
 PROCEDURE BORRAR_REGISTRO(nCodCia NUMBER, nIdPoliza NUMBER);
 PROCEDURE COPIAR_DETALLE(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER);
 PROCEDURE RECALCULA_COMISION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nCod_Agente NUMBER);
+PROCEDURE ACTUALIZA_COMISION_DIST(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nCod_Agente NUMBER, nPorcComDist NUMBER);
 
 END OC_AGENTES_DISTRIBUCION_POLIZA;
 /
@@ -137,6 +138,7 @@ BEGIN
          AND CodEmpresa = nCodEmpresa
          AND IdPoliza   = nIdPoliza;
    END;
+   OC_AGENTES_DISTRIBUCION_POLIZA.ACTUALIZA_COMISION_DIST(nCodCia, nCodEmpresa, nIdPoliza, nCod_Agente, nPorc_Com_Poliza);
    BEGIN
       SELECT Porc_Comision_Plan, Porc_Com_Distribuida
         INTO nPorc_Comision_Plan, nPorc_Com_Distribuida
@@ -152,13 +154,21 @@ BEGIN
    END IF;
    
    UPDATE AGENTES_DISTRIBUCION_POLIZA
-      SET Porc_Com_Distribuida   = nPorc_Com_Poliza,
-          Porc_Com_Proporcional  = nPorc_Com_Proporcional
+      SET Porc_Com_Proporcional  = nPorc_Com_Proporcional
     WHERE CodCia     = nCodCia
       AND IdPoliza   = nIdPoliza
       AND Cod_Agente = nCod_Agente;
       
 END RECALCULA_COMISION;
+
+PROCEDURE ACTUALIZA_COMISION_DIST(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nCod_Agente NUMBER, nPorcComDist NUMBER) IS
+BEGIN
+   UPDATE AGENTES_DISTRIBUCION_POLIZA
+      SET Porc_Com_Distribuida   = nPorcComDist
+    WHERE CodCia     = nCodCia
+      AND IdPoliza   = nIdPoliza
+      AND Cod_Agente = nCod_Agente;
+END;
 
 END OC_AGENTES_DISTRIBUCION_POLIZA;
 /
