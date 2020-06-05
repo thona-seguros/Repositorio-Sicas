@@ -13,9 +13,12 @@
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_AGENTES_DISTRIBUCION_POLIZA IS
 
-  PROCEDURE COPIAR(nCodCia NUMBER, nIdPoliza NUMBER);
-  PROCEDURE BORRAR_REGISTRO(nCodCia NUMBER, nIdPoliza NUMBER);
-  PROCEDURE COPIAR_DETALLE(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER);
+PROCEDURE COPIAR(nCodCia NUMBER, nIdPoliza NUMBER);
+PROCEDURE BORRAR_REGISTRO(nCodCia NUMBER, nIdPoliza NUMBER);
+PROCEDURE COPIAR_DETALLE(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER);
+PROCEDURE RECALCULA_COMISION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nCod_Agente NUMBER);
+PROCEDURE ACTUALIZA_COMISION_DIST(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nCod_Agente NUMBER, nPorcComDist NUMBER);
+
 END OC_AGENTES_DISTRIBUCION_POLIZA;
 /
 
@@ -120,6 +123,52 @@ BEGIN
       END LOOP;
    END LOOP;
 END COPIAR_DETALLE;
+
+PROCEDURE RECALCULA_COMISION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nCod_Agente NUMBER) IS
+nPorc_Com_Poliza        POLIZAS.PorcGtoAdqui%TYPE;
+nPorc_Comision_Plan     AGENTES_DISTRIBUCION_POLIZA.Porc_Comision_Plan%TYPE;
+nPorc_Com_Proporcional  AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
+nPorc_com_distribuida   AGENTES_DISTRIBUCION_POLIZA.Porc_com_distribuida%TYPE;
+BEGIN
+   BEGIN
+      SELECT NVL(PorcGtoAdqui,0)
+        INTO nPorc_Com_Poliza
+        FROM POLIZAS 
+       WHERE CodCia     = nCodCia
+         AND CodEmpresa = nCodEmpresa
+         AND IdPoliza   = nIdPoliza;
+   END;
+   OC_AGENTES_DISTRIBUCION_POLIZA.ACTUALIZA_COMISION_DIST(nCodCia, nCodEmpresa, nIdPoliza, nCod_Agente, nPorc_Com_Poliza);
+   BEGIN
+      SELECT Porc_Comision_Plan, Porc_Com_Distribuida
+        INTO nPorc_Comision_Plan, nPorc_Com_Distribuida
+        FROM AGENTES_DISTRIBUCION_POLIZA
+       WHERE CodCia     = nCodCia
+         AND IdPoliza   = nIdPoliza
+         AND Cod_Agente = nCod_Agente;
+   END;
+   IF nPorc_Com_Poliza <> nPorc_Comision_Plan THEN
+      nPorc_Com_Proporcional := nPorc_Com_Distribuida / nPorc_Com_Poliza * 100;
+   ELSE
+      nPorc_Com_Proporcional := TRUNC(ROUND((nPorc_Com_Distribuida * 100) / nPorc_Com_Poliza,2),2);
+   END IF;
+   
+   UPDATE AGENTES_DISTRIBUCION_POLIZA
+      SET Porc_Com_Proporcional  = nPorc_Com_Proporcional
+    WHERE CodCia     = nCodCia
+      AND IdPoliza   = nIdPoliza
+      AND Cod_Agente = nCod_Agente;
+      
+END RECALCULA_COMISION;
+
+PROCEDURE ACTUALIZA_COMISION_DIST(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nCod_Agente NUMBER, nPorcComDist NUMBER) IS
+BEGIN
+   UPDATE AGENTES_DISTRIBUCION_POLIZA
+      SET Porc_Com_Distribuida   = nPorcComDist
+    WHERE CodCia     = nCodCia
+      AND IdPoliza   = nIdPoliza
+      AND Cod_Agente = nCod_Agente;
+END;
 
 END OC_AGENTES_DISTRIBUCION_POLIZA;
 /
