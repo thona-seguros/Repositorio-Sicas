@@ -244,84 +244,84 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_REPORTES_COTIZACIONES IS
             cStsPoliza   := NULL;
          END IF;
          --
-         cRegistro := TO_CHAR(x.IdCotizacion,'9999999990')                || '|' ||
-                      x.NumUnicoCotizacion                                || '|' ||
-                      x.CodCotizador                                      || '|' ||
-                      x.DescCotizador                                     || '|' ||
-                      x.NumCotizacionRef                                  || '|' ||
-                      x.NumCotizacionAnt                                  || '|' ||
-                      x.StsCotizacion                                     || '|' ||
-                      TO_CHAR(x.FecStatus,'DD/MM/YYYY')                   || '|' ||
-                      x.NombreContratante                                 || '|' ||
-                      TO_CHAR(x.FecCotizacion,'DD/MM/YYYY')               || '|' ||
-                      TO_CHAR(x.FecVenceCotizacion,'DD/MM/YYYY')          || '|' ||
-                      TO_CHAR(x.FecIniVigCot,'DD/MM/YYYY')                || '|' ||
-                      TO_CHAR(x.FecFinVigCot,'DD/MM/YYYY')                || '|' ||
-                      x.HorasVig                                          || '|' ||
-                      x.NumDiasRetroactividad                             || '|' ||
-                      x.Cod_Moneda                                        || '|' ||
-                      TO_CHAR(x.SumaAsegCotLocal,'999,999,999,990.00')    || '|' ||
-                      TO_CHAR(x.SumaAsegCotMoneda,'999,999,999,990.00')   || '|' ||
-                      TO_CHAR(x.PrimaCotLocal,'999,999,999,990.00')       || '|' ||
-                      TO_CHAR(x.PrimaCotMoneda,'999,999,999,990.00')      || '|' ||
-                      x.IdTipoSeg || '-' || x.DescIdTipoSeg               || '|' ||
-                      x.PlanCob || '-' || x.DescTipoPlan                  || '|' ||
-                      TO_CHAR(x.CodAgente,'9999999990')                   || '|' ||
-                      x.NombreAgente                                      || '|' ||
-                      x.CodPlanPago || '-' || x.DescPlanPago              || '|' ||
-                      TO_CHAR(x.IdPoliza,'9999999999990')                 || '|' ||
-                      TO_CHAR(x.PorcDescuento,'990.000000')               || '|' ||
-                      TO_CHAR(x.PorcGtoAdmin,'990.000000')                || '|' ||
-                      TO_CHAR(x.PorcGtoAdqui,'990.000000')                || '|' ||
-                      TO_CHAR(x.PorcUtilidad,'990.000000')                || '|' ||
-                      TO_CHAR(x.FactorAjuste,'990.000000')                || '|' ||
-                      TO_CHAR(x.MontoDeducible,'990.000000')              || '|' ||
-                      TO_CHAR(x.FactFormulaDeduc,'990.000000')            || '|' ||
-                      TO_CHAR(x.PorcVariacionEmi,'990.000000')            || '|' ||
-                      x.IndAsegModelo                                     || '|' ||
-                      x.IndCensoSubgrupo                                  || '|' ||
-                      x.IndListadoAseg                                    || '|' ||
-                      x.IndExtraPrima                                     || '|' ||
-                      x.TipoAdministracion || '-' || x.DescAdministracion || '|' ||
-                      x.CodRiesgoRea || '-' || x.DescRiesgoReaseguro      || '|' ||
-                      x.CodTipoBono || '-' || x.ClaseBono                 || '|' ||
-                      x.DescPoliticaSumasAseg                             || '|' ||
-                      x.DescPoliticaEdades                                || '|' ||
-                      x.DescTipoIdentAseg                                 || '|' ||
-                      x.AsegEnIncapacidad                                 || '|' ||
-                      x.CodUsuario || '-' || x.NombreUsuario              || '|' ||
-                      x.ADN                                               || '|' ||
-                      TO_CHAR(x.FecSolicitud,'DD/MM/YYYY')                || '|' ||
-                      x.HoraSolicitud                                     || '|' ||
-                      TO_CHAR(x.CantAsegurados,'999,999,990')             || '|' ||
-                      cNumPolUnico                                        || '|' ||
-                      cStsPoliza                                          || '|' ||
-                      x.TipoCotizacion                                    || '|' ||
-                      x.CanalFormaVenta                                   || '|' ||
-                      TO_CHAR(x.SAMIAutorizado,'999,999,999,990.00')      || '|' ||
-                      x.NumPolRenovacion                                  || '|' ||
-                      TO_CHAR(x.PromedioSumaAseg,'999,999,999,990.00')    || '|' ||
-                      TO_CHAR(x.SumaAsegSAMI,'999,999,999,990.00')        || '|' ||
-                      x.AsegAdheridosPor                                  || '|' ||
-                      TO_CHAR(x.PorcenContributorio,'990.000000')         || '|' ||
-                      x.FuenteRecursosPrima                               || '|' ||
-                      x.TipoProrrata                                      || '|' ||
-                      TO_CHAR(x.PorcComisDir,'990.000000')                || '|' ||
-                      TO_CHAR(x.PorcComisProm,'990.000000')               || '|' ||
-                      TO_CHAR(x.PorcComisAgte,'990.000000')               || '|' ||
-                      x.IndConvenciones                                   || '|' ||
-                      TO_CHAR(x.PorcConvenciones,'990.000000')            || '|' ||
-                      x.DescGiroNegocio                                   || '|' ||
-                      x.TextoSuscriptor                                   || '|' ||
-                      x.DescActividadAseg                                 || '|' ||
-                      x.DescFormulaDividendos                             || '|' ||
-                      x.DescCuotasPrimaNiv                                || '|' ||
-                      x.EsContributorio                                   || '|' ||
-                      x.GiroNegocio                                       || '|' ||
-                      x.TipoNegocio                                       || '|' ||
-                      x.FuenteRecursos                                    || '|' ||
-                      x.CodPaqComercial                                   || '|' ||
-                      x.Categoria;
+         cRegistro := TO_CHAR(x.IdCotizacion,'9999999990')                                     || '|' ||
+                      REPLACE(x.NumUnicoCotizacion, '|', '@')                                  || '|' ||
+                      REPLACE(x.CodCotizador, '|', '@')                                        || '|' ||
+                      REPLACE(x.DescCotizador, '|', '@')                                       || '|' ||
+                      REPLACE(x.NumCotizacionRef, '|', '@')                                    || '|' ||
+                      REPLACE(x.NumCotizacionAnt, '|', '@')                                    || '|' ||
+                      REPLACE(x.StsCotizacion, '|', '@')                                       || '|' ||
+                      TO_CHAR(x.FecStatus,'DD/MM/YYYY')                                        || '|' ||
+                      REPLACE(x.NombreContratante, '|', '@')                                   || '|' ||
+                      TO_CHAR(x.FecCotizacion,'DD/MM/YYYY')                                    || '|' ||
+                      TO_CHAR(x.FecVenceCotizacion,'DD/MM/YYYY')                               || '|' ||
+                      TO_CHAR(x.FecIniVigCot,'DD/MM/YYYY')                                     || '|' ||
+                      TO_CHAR(x.FecFinVigCot,'DD/MM/YYYY')                                     || '|' ||
+                      REPLACE(x.HorasVig, '|', '@')                                            || '|' ||
+                      REPLACE(x.NumDiasRetroactividad, '|', '@')                               || '|' ||
+                      REPLACE(x.Cod_Moneda, '|', '@')                                          || '|' ||
+                      TO_CHAR(x.SumaAsegCotLocal,'999,999,999,990.00')                         || '|' ||
+                      TO_CHAR(x.SumaAsegCotMoneda,'999,999,999,990.00')                        || '|' ||
+                      TO_CHAR(x.PrimaCotLocal,'999,999,999,990.00')                            || '|' ||
+                      TO_CHAR(x.PrimaCotMoneda,'999,999,999,990.00')                           || '|' ||
+                      REPLACE((x.IdTipoSeg || '-' || x.DescIdTipoSeg), '|', '@')               || '|' ||
+                      REPLACE((x.PlanCob || '-' || x.DescTipoPlan), '|', '@')                  || '|' ||
+                      TO_CHAR(x.CodAgente,'9999999990')                                        || '|' ||
+                      REPLACE(x.NombreAgente, '|', '@')                                        || '|' ||
+                      REPLACE((x.CodPlanPago || '-' || x.DescPlanPago), '|', '@')              || '|' ||
+                      TO_CHAR(x.IdPoliza,'9999999999990')                                      || '|' ||
+                      TO_CHAR(x.PorcDescuento,'990.000000')                                    || '|' ||
+                      TO_CHAR(x.PorcGtoAdmin,'990.000000')                                     || '|' ||
+                      TO_CHAR(x.PorcGtoAdqui,'990.000000')                                     || '|' ||
+                      TO_CHAR(x.PorcUtilidad,'990.000000')                                     || '|' ||
+                      TO_CHAR(x.FactorAjuste,'990.000000')                                     || '|' ||
+                      TO_CHAR(x.MontoDeducible,'990.000000')                                   || '|' ||
+                      TO_CHAR(x.FactFormulaDeduc,'990.000000')                                 || '|' ||
+                      TO_CHAR(x.PorcVariacionEmi,'990.000000')                                 || '|' ||
+                      REPLACE(x.IndAsegModelo, '|', '@')                                       || '|' ||
+                      REPLACE(x.IndCensoSubgrupo, '|', '@')                                    || '|' ||
+                      REPLACE(x.IndListadoAseg, '|', '@')                                      || '|' ||
+                      REPLACE(x.IndExtraPrima, '|', '@')                                       || '|' ||
+                      REPLACE((x.TipoAdministracion || '-' || x.DescAdministracion), '|', '@') || '|' ||
+                      REPLACE((x.CodRiesgoRea || '-' || x.DescRiesgoReaseguro), '|', '@')      || '|' ||
+                      REPLACE((x.CodTipoBono || '-' || x.ClaseBono), '|', '@')                 || '|' ||
+                      REPLACE(x.DescPoliticaSumasAseg, '|', '@')                               || '|' ||
+                      REPLACE(x.DescPoliticaEdades, '|', '@')                                  || '|' ||
+                      REPLACE(x.DescTipoIdentAseg, '|', '@')                                   || '|' ||
+                      REPLACE(x.AsegEnIncapacidad, '|', '@')                                   || '|' ||
+                      REPLACE((x.CodUsuario || '-' || x.NombreUsuario), '|', '@')              || '|' ||
+                      REPLACE(x.ADN, '|', '@')                                                 || '|' ||
+                      TO_CHAR(x.FecSolicitud,'DD/MM/YYYY')                                     || '|' ||
+                      REPLACE(x.HoraSolicitud, '|', '@')                                       || '|' ||
+                      TO_CHAR(x.CantAsegurados,'999,999,990')                                  || '|' ||
+                      REPLACE(cNumPolUnico, '|', '@')                                          || '|' ||
+                      REPLACE(cStsPoliza, '|', '@')                                            || '|' ||
+                      REPLACE(x.TipoCotizacion, '|', '@')                                      || '|' ||
+                      REPLACE(x.CanalFormaVenta, '|', '@')                                     || '|' ||
+                      TO_CHAR(x.SAMIAutorizado,'999,999,999,990.00')                           || '|' ||
+                      REPLACE(x.NumPolRenovacion, '|', '@')                                    || '|' ||
+                      TO_CHAR(x.PromedioSumaAseg,'999,999,999,990.00')                         || '|' ||
+                      TO_CHAR(x.SumaAsegSAMI,'999,999,999,990.00')                             || '|' ||
+                      REPLACE(x.AsegAdheridosPor, '|', '@')                                    || '|' ||
+                      TO_CHAR(x.PorcenContributorio,'990.000000')                              || '|' ||
+                      REPLACE(x.FuenteRecursosPrima, '@')                                      || '|' ||
+                      REPLACE(x.TipoProrrata, '|', '@')                                        || '|' ||
+                      TO_CHAR(x.PorcComisDir,'990.000000')                                     || '|' ||
+                      TO_CHAR(x.PorcComisProm,'990.000000')                                    || '|' ||
+                      TO_CHAR(x.PorcComisAgte,'990.000000')                                    || '|' ||
+                      REPLACE(x.IndConvenciones, '|', '@')                                     || '|' ||
+                      TO_CHAR(x.PorcConvenciones,'990.000000')                                 || '|' ||
+                      REPLACE(x.DescGiroNegocio, '|', '@')                                     || '|' ||
+                      REPLACE(x.TextoSuscriptor, '|', '@')                                     || '|' ||
+                      REPLACE(x.DescActividadAseg, '|', '@')                                   || '|' ||
+                      REPLACE(x.DescFormulaDividendos, '|', '@')                               || '|' ||
+                      REPLACE(x.DescCuotasPrimaNiv, '|', '@')                                  || '|' ||
+                      REPLACE(x.EsContributorio, '|', '@')                                     || '|' ||
+                      REPLACE(x.GiroNegocio, '|', '@')                                         || '|' ||
+                      REPLACE(x.TipoNegocio, '|', '@')                                         || '|' ||
+                      REPLACE(x.FuenteRecursos, '|', '@')                                      || '|' ||
+                      REPLACE(x.CodPaqComercial, '|', '@')                                     || '|' ||
+                      REPLACE(x.Categoria, '|', '@');
          --
          nFila := XLSX_BUILDER_PKG.EXCEL_DETALLE(nFila + 1, cRegistro, 1);                                        
       END LOOP;
