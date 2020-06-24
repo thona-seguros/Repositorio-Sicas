@@ -1,5 +1,6 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOS_MASIVOS IS
+CREATE OR REPLACE PACKAGE OC_PROCESOS_MASIVOS IS
 ------ SE INCLUYEN VALIDACIONES PARA PROVEEDORES SAT Y QEQ (PLD)  JMMD  20200406
+------  24/06/2020  Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPérez)     -- JMMD SAT y PLD 20200624
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 PROCEDURE ACTUALIZA_STATUS(nIdProcMasivo NUMBER, cStsRegProceso VARCHAR2);
 PROCEDURE EMISION(nIdProcMasivo NUMBER);
@@ -66,7 +67,7 @@ PROCEDURE COBRANZA_APORTES_ASEG_FONDOS(nIdProcMasivo NUMBER);
 
 END OC_PROCESOS_MASIVOS;
 /
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOS_MASIVOS IS
+CREATE OR REPLACE PACKAGE BODY OC_PROCESOS_MASIVOS IS
 --
 --  MODIFICACION
 --  17/02/2016  SE ELIMINO LA RUTINA DE REQUESITOS                                               -- JICO REQ
@@ -87,11 +88,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOS_MASIVOS IS
 --              LayOut Corto a peticion de  Manuel palacios                                      -- AEVS PORFINSALES
 --  03/08/2016  SE PROGRAMA EL GRABADO                                                           -- JICO GRABA
 --  16/08/2016  Agrego rutina de actualizacion de la tabla PROCESOS_MASIVOS_SEGUIMIENTO          -- AEVS PROCMACSEG
---  01/09/2016  Agrego Rutina para Aseguramos que el IVA no rebase el 16% del monto a pagar      -- AEVS IVA
---  28/02/2017  Rutina para constituir solo reserva en INFONACOT                                 -- JICO ASEGMAS
---  16/02/2018  Cambio de numeracion por eliminacion de nombre completo                          -- JICO INFO1
---  01/10/2019  Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)     -- JMMD SAT y PLD 20200406
-
+--  01/09/2016  Agrego Rutina para Aseguramos que el IVA no rebase el 16% del monto a pagar             -- AEVS IVA
+--  28/02/2017  Rutina para constituir solo reserva en INFONACOT                                        -- JICO ASEGMAS
+--  16/02/2018  Cambio de numeracion por eliminacion de nombre completo                                 -- JICO INFO1
+--  01/10/2019  Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)            -- JMMD SAT y PLD 20200406
+--  24/06/2020  Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPérez)     -- JMMD SAT y PLD 20200624
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
    IF cTipoProceso = 'EMISIO' THEN
@@ -10292,7 +10293,10 @@ BEGIN
                      WHERE TIPO_DOC_IDENTIFICACION = 'RFC'
                        AND NUM_DOC_IDENTIFICACION = cRFCBenef
                        AND NOMBRE_BENEFICIARIO = cNombProvBenef
-                        AND TRUNC(FE_ESTATUS) >= TRUNC(SYSDATE - nDiasautpld);
+                        AND TRUNC(FE_ESTATUS) >= TRUNC(SYSDATE - nDiasautpld)
+----------
+                        AND NUMSINIESTRO = nIdSiniestro ;
+----------                        
                    EXCEPTION
                      WHEN NO_DATA_FOUND THEN
 -----------------
@@ -10328,7 +10332,10 @@ BEGIN
                      WHERE TIPO_DOC_IDENTIFICACION = 'RFC'
                        AND NUM_DOC_IDENTIFICACION = cRFCBenef
                        AND NOMBRE_BENEFICIARIO = cNombProvBenef
-                       AND  ST_RESOLUCION != 'APRO';
+                       AND  ST_RESOLUCION != 'APRO'
+---------- JMMD24062020
+                       AND NUMSINIESTRO = nIdSiniestro ;
+---------- JMMD24062020                              
 
                     IF ncuantos > 0 THEN
                        cST_RESOLUCIO := 'PEND';
