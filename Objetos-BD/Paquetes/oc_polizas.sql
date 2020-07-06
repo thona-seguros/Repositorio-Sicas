@@ -1,114 +1,3 @@
---
--- OC_POLIZAS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   PLAN_COBERTURAS (Table)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   PREEMISION (Table)
---   FACTURAS (Table)
---   FAI_FONDOS_DETALLE_POLIZA (Table)
---   FZ_DETALLE_FIANZAS (Table)
---   DATOS_PARTICULARES_BIENES (Table)
---   DATOS_PARTICULARES_PERSONAS (Table)
---   DATOS_PARTICULARES_VEHICULO (Table)
---   DATOS_PART_EMISION (Table)
---   DESCUENTOS (Table)
---   DETALLE_DESCUENTO (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
---   DETALLE_POLIZAS_TARJETAS (Table)
---   DETALLE_RECARGO (Table)
---   DETALLE_TRANSACCION (Table)
---   DOCUMENTO_POLIZA (Table)
---   ENDOSOS (Table)
---   EXAMEN (Table)
---   TAREA (Table)
---   TASAS_CAMBIO (Table)
---   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
---   GT_REA_DISTRIBUCION (Package)
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---   OC_DETALLE_POLIZA (Package)
---   OC_DETALLE_TRANSACCION (Package)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   AGENTES_DISTRIBUCION_POLIZA (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO (Table)
---   ASEGURADO_CERT (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   BENEFICIARIO (Table)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   INSPECCION (Table)
---   NOTAS_DE_CREDITO (Table)
---   TIPOS_DE_SEGUROS (Table)
---   TRANSACCION (Table)
---   OC_PROCESO_AUTORIZA_USUARIO (Package)
---   OC_SEGUIMIENTO (Package)
---   OC_SOLICITUD_EMISION (Package)
---   RESPONSABLE_PAGO_DET (Table)
---   RESPONSABLE_PAGO_POL (Table)
---   SINIESTRO (Table)
---   COMPROBANTES_CONTABLES (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLAUSULAS (Table)
---   CLAUSULAS_DETALLE (Table)
---   CLAUSULAS_PLAN_COBERTURAS (Table)
---   CLAUSULAS_POLIZA (Table)
---   CLAUSULAS_TIPOS_SEGUROS (Table)
---   CLIENTES (Table)
---   COBERTURAS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERTURA_ASEG (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   OC_ENDOSO (Package)
---   OC_FACTURAR (Package)
---   OC_FACTURAS (Package)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_TRANSACCION (Package)
---   PARAMETROS_EMISION (Table)
---   PARAMETROS_ENUM_POL (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_ADMON_RIESGO (Package)
---   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
---   OC_ASEGURADO (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_ASISTENCIAS_ASEGURADO (Package)
---   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
---   OC_BENEFICIARIO (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_CLAUSULAS_DETALLE (Package)
---   OC_CLAUSULAS_POLIZA (Package)
---   OC_CLIENTES (Package)
---   OC_COBERT_ACT (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   OC_COMISIONES (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   OC_COMPROBANTES_DETALLE (Package)
---   REA_DISTRIBUCION (Table)
---   RECARGOS (Table)
---   REQUISITOS (Table)
---   REQUISITOS_ENC_POLIZA (Table)
---   REQUISITOS_POLIZA (Table)
---   REQUISITOS_SEGUROS (Table)
---   GT_COTIZACIONES (Package)
---   OC_GENERALES (Package)
---   OC_MAIL (Package)
---   OC_MEDIOS_DE_COBRO (Package)
---   OC_NOTAS_DE_CREDITO (Package)
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---   OC_PLAN_COBERTURAS (Package)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
 
     FUNCTION F_GET_NUMPOL ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
@@ -196,13 +85,6 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
     
 END OC_POLIZAS;
 /
-
---
--- OC_POLIZAS  (Package Body) 
---
---  Dependencies: 
---   OC_POLIZAS (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
 --
 -- BITACORA DE CAMBIO
@@ -212,6 +94,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
 -- SE AGREGO LA FUNCIONALIDA DE LARGO PLAZO                              JICO 10/04/2019  LARPLA
 -- SE AGREGO LA FUNCIONALIDA DE PREEMISIONO                              JICO 16/05/2019  PREEMI
 -- HOMOLOGACION                                                          JICO 01/10/2019 
+-- PARCHE PARA CLAUSULAS DE POLIZA CHEDRAUI MIENTRAS COLOCAN UN IDENTIFICADOR  JICO 11/06/2020  CHEDRAUI
 ----------------------------------------------------------------------  SEQ XDS
       --- Funcion para buscar el proximo numero de poliza  ---
 ----------------------------------------------------------------------
@@ -3671,6 +3554,7 @@ nCod_Clausula   CLAUSULAS_DETALLE.Cod_Clausula%TYPE;
 cTextoClausula  CLAUSULAS.TextoClausula%TYPE;
 dFecIniVig      POLIZAS.FecIniVig%TYPE;
 dFecFinVig      POLIZAS.FecFinVig%TYPE;
+NEXISTE         NUMBER  := 0;   --CHEDRAUI
 
 CURSOR DET_Q IS
    SELECT DISTINCT IdTipoSeg, PlanCob
@@ -3726,36 +3610,55 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20225,'No. de Póliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' NO Existe');
    END;
-
+-- CHEDRAUI INICIO
+   NEXISTE := 0;  
+   BEGIN
+      SELECT 1
+        INTO NEXISTE
+        FROM POLIZAS 
+       WHERE IdPoliza   = nIdPoliza
+         AND CodEmpresa = nCodEmpresa
+         AND CodCia     = nCodCia
+         AND NUMPOLUNICO LIKE '%CHEDRAUI%';
+   EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+          NEXISTE := 0;
+     WHEN OTHERS THEN
+          NEXISTE := 0;
+   END;
+   -- 
+-- CHEDRAUI FIN
+ IF NEXISTE = 0 THEN   --CGEDRAUI
    FOR Y IN DET_Q LOOP
       cIdTipoSeg := Y.IdTipoSeg;
       cPlanCob   := Y.PlanCob;
       FOR X IN CLAU_Q LOOP
-         SELECT NVL(MAX(Cod_Clausula),0) + 1
-           INTO nCod_Clausula
-           FROM CLAUSULAS_POLIZA
-          WHERE CodCia    = nCodCia
-            AND IdPoliza  = nIdPoliza;
-
-            BEGIN
-               SELECT TextoClausula
-                 INTO cTextoClausula
-                FROM CLAUSULAS
-               WHERE CodCia      = nCodCia
-                 AND CodEmpresa  = nCodEmpresa
-                 AND CodClausula = X.CodClausula;
-            EXCEPTION
-                 WHEN NO_DATA_FOUND THEN
-                    cTextoClausula := NULL;
-            END;
-
-         INSERT INTO CLAUSULAS_POLIZA
+          SELECT NVL(MAX(Cod_Clausula),0) + 1
+            INTO nCod_Clausula
+            FROM CLAUSULAS_POLIZA
+           WHERE CodCia    = nCodCia
+             AND IdPoliza  = nIdPoliza;
+          --
+          BEGIN
+            SELECT TextoClausula
+              INTO cTextoClausula
+             FROM CLAUSULAS
+            WHERE CodCia      = nCodCia
+              AND CodEmpresa  = nCodEmpresa
+              AND CodClausula = X.CodClausula;
+          EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                 cTextoClausula := NULL;
+          END;
+          --
+          INSERT INTO CLAUSULAS_POLIZA
                 (CodCia, IdPoliza, Cod_Clausula, Tipo_Clausula,
                  Texto, Inicio_Vigencia, Fin_Vigencia, Estado)
          VALUES (nCodCia, nIdPoliza, nCod_Clausula, X.CodClausula,
                  cTextoClausula, dFecIniVig, dFecFinVig, 'SOLICI');
       END LOOP;
    END LOOP;
+ END IF; --CGEDRAUI
 END INSERTA_CLAUSULAS;
 
 FUNCTION PLAN_DE_PAGOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS

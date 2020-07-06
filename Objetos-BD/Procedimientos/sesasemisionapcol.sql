@@ -389,7 +389,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
          AND PC.CodCia      = D.CodCia
          AND PC.PlanCob     = D.PlanCob
          AND PC.CodTipoPlan = '033'
-         AND EXISTS ( SELECT 'S' 
+         AND EXISTS ( SELECT /*+ INDEX(X SYS_C0031885) */ 'S' 
                         FROM TRANSACCION          T
                            , DETALLE_TRANSACCION  X
                        WHERE X.IdTransaccion     = T.IdTransaccion
@@ -462,7 +462,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
          AND PC.CodCia      = D.CodCia
          AND PC.PlanCob     = D.PlanCob
          AND PC.CodTipoPlan = '033'
-         AND EXISTS ( SELECT 'S' 
+         AND EXISTS ( SELECT /*+ INDEX(DT SYS_C0031885) */ 'S' 
                         FROM TRANSACCION         T
                            , DETALLE_TRANSACCION DT
                        WHERE DT.IdTransaccion    = T.IdTransaccion
@@ -935,7 +935,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
                   AND IdPoliza        = Z.IdPoliza;
             END IF;
  
-             SELECT NVL(SUM(DF.Monto_Det_Moneda), 0) + NVL(nPrimaContable,0)
+             SELECT /*+ INDEX(T SYS_C0032162) */ NVL(SUM(DF.Monto_Det_Moneda), 0) + NVL(nPrimaContable,0)
               INTO nPrimaContable
               FROM DETALLE_FACTURAS DF, FACTURAS F, TRANSACCION T
              WHERE T.FechaTransaccion >= dFecDesde
@@ -968,7 +968,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
                AND F.Stsfact          IN ('ANU') 
                AND DF.IdFactura        = F.IdFactura;
 
-            SELECT NVL(SUM(DNC.Monto_Det_Moneda),0) + NVL(nMtoCptoNcrMoneda,0)
+            SELECT /*+ INDEX(T SYS_C0032162) */ NVL(SUM(DNC.Monto_Det_Moneda),0) + NVL(nMtoCptoNcrMoneda,0)
               INTO nMtoCptoNcrMoneda
               FROM DETALLE_NOTAS_DE_CREDITO DNC,
                    NOTAS_DE_CREDITO NC, TRANSACCION T
@@ -1553,8 +1553,8 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
                  TRIM(TO_CHAR(nSACober37,'9999999999999999.99')) || cSeparador ||
                  TRIM(TO_CHAR(nSACober38,'9999999999999999.99')) || cSeparador;
       --
-      INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
-      VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
+      OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
+      --
    END INSERTA_REGISTRO;
 BEGIN
    -- Elimina Registros de SESAS
@@ -1625,10 +1625,9 @@ BEGIN
    nLinea  := 1;
    cCadena := SUBSTR(cEncabezado,1,LENGTH(cEncabezado)-1);
    --
-   INSERT INTO TEMP_REPORTES_THONA( CodCia, CodEmpresa, CodReporte, CodUsuario, Linea )
-   VALUES ( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
+   OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodEntrega, cIdUsr, cCadena );
    --
-   DELETE TEMP_POLIZAS_SESAS
+   DELETE TEMP_POLIZAS_SESAS;
    COMMIT;
    --
    FOR W IN POL_IND_Q LOOP
