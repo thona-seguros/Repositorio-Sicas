@@ -4,8 +4,8 @@
 --  Dependencies: 
 --   P (Synonym)
 --   POLIZAS (Table)
---   FACTURAS (Table)
 --   DETALLE_POLIZA (Table)
+--   FACTURAS (Table)
 --
 CREATE OR REPLACE FORCE VIEW SICAS_OC.DETALLE_FILIAL
 (IDTIPOSEG, CODFILIAL, SUMA_ASEG_LOCAL, PRIMA_LOCAL, CODCIA, 
@@ -21,4 +21,18 @@ P.CodCia, P.CodEmpresa,P.IdPoliza,F.IdFactura ,F.NumCuota
  GROUP BY D.IDTIPOSEG, P.CodFilial,P.CodCia, P.CodEmpresa,p.IdPoliza,F.IdFactura,F.NumCuota,F.MONTO_FACT_LOCAL
 
 )
+/
+
+
+--
+-- DETALLE_FILIAL  (Synonym) 
+--
+--  Dependencies: 
+--   DETALLE_FILIAL (View)
+--
+CREATE OR REPLACE PUBLIC SYNONYM DETALLE_FILIAL FOR SICAS_OC.DETALLE_FILIAL
+/
+
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON SICAS_OC.DETALLE_FILIAL TO PUBLIC
 /

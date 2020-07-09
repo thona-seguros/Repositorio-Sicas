@@ -2,23 +2,23 @@
 -- VW_REPORTE360  (View) 
 --
 --  Dependencies: 
+--   VALORES_DE_LISTAS (Table)
+--   OC_AGENTES (Package)
+--   SINIESTRO (Table)
 --   PLAN_DE_PAGOS (Table)
 --   POLIZAS (Table)
---   FACTURAS (Table)
 --   DETALLE_FACTURAS (Table)
---   DETALLE_POLIZA (Table)
---   DETALLE_TRANSACCION (Table)
---   AGENTES (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   TRANSACCION (Table)
---   VALORES_DE_LISTAS (Table)
---   SINIESTRO (Table)
---   COMISIONES (Table)
---   CLIENTES (Table)
 --   OC_VALORES_DE_LISTAS (Package)
 --   PERSONA_NATURAL_JURIDICA (Table)
---   OC_AGENTES (Package)
+--   AGENTES (Table)
+--   AGENTES_DISTRIBUCION_COMISION (Table)
+--   CLIENTES (Table)
+--   COMISIONES (Table)
 --   OC_PLAN_COBERTURAS (Package)
+--   DETALLE_POLIZA (Table)
+--   DETALLE_TRANSACCION (Table)
+--   FACTURAS (Table)
+--   TRANSACCION (Table)
 --
 CREATE OR REPLACE FORCE VIEW SICAS_OC.VW_REPORTE360
 (RECIBO, POLIZA, IDPOLIZA, NOMBRE_CONTRATANTE, PERIODICIDAD_PAGO, 
@@ -357,4 +357,18 @@ AS
                                                        tend.idtransaccion
                                                 AND treh.idtransaccion
                                                        IS NOT NULL)))))
+/
+
+
+--
+-- VW_REPORTE360  (Synonym) 
+--
+--  Dependencies: 
+--   VW_REPORTE360 (View)
+--
+CREATE OR REPLACE PUBLIC SYNONYM VW_REPORTE360 FOR SICAS_OC.VW_REPORTE360
+/
+
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON SICAS_OC.VW_REPORTE360 TO PUBLIC
 /

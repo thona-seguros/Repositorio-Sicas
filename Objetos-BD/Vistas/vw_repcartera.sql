@@ -2,19 +2,19 @@
 -- VW_REPCARTERA  (View) 
 --
 --  Dependencies: 
---   POLIZAS (Table)
---   FACTURAS (Table)
---   DETALLE_POLIZA (Table)
---   OC_DETALLE_FACTURAS (Package)
---   AGENTES (Table)
---   AGENTE_POLIZA (Table)
---   OC_VALORES_DE_LISTAS (Package)
 --   OC_AGENTES (Package)
 --   OC_AGE_DISTRIBUCION_COMISION (Package)
---   OC_CLIENTES (Package)
---   OC_COMISIONES (Package)
+--   POLIZAS (Table)
+--   OC_VALORES_DE_LISTAS (Package)
+--   AGENTES (Table)
+--   AGENTE_POLIZA (Table)
+--   OC_DETALLE_FACTURAS (Package)
 --   OC_PLAN_COBERTURAS (Package)
 --   OC_PLAN_DE_PAGOS (Package)
+--   OC_CLIENTES (Package)
+--   OC_COMISIONES (Package)
+--   DETALLE_POLIZA (Table)
+--   FACTURAS (Table)
 --
 CREATE OR REPLACE FORCE VIEW SICAS_OC.VW_REPCARTERA
 (CODCIA, CODEMPRESA, CONSECUTIVO, POLIZA, AGRUPADOR, 
@@ -78,4 +78,18 @@ SELECT P.CodCia, P.CodEmpresa, P.IdPoliza Consecutivo,
        AND AP.Cod_Agente    = A.Cod_Agente
        AND A.CodCia         = P.CodCia
      GROUP BY P.IdPoliza, P.NumPolUnico, P.CodAgrupador, DP.IdTipoSeg, DP.PlanCob, P.CodCliente, P.FecIniVig, P.FecFinVig, P.CodCia, P.CodEmpresa, P.CodPlanPago, DP.IDetPol, P.StsPoliza, P.MotivAnul, P.FecSts, F.StsFact, A.Cod_Agente
+/
+
+
+--
+-- VW_REPCARTERA  (Synonym) 
+--
+--  Dependencies: 
+--   VW_REPCARTERA (View)
+--
+CREATE OR REPLACE PUBLIC SYNONYM VW_REPCARTERA FOR SICAS_OC.VW_REPCARTERA
+/
+
+
+GRANT SELECT ON SICAS_OC.VW_REPCARTERA TO PUBLIC
 /
