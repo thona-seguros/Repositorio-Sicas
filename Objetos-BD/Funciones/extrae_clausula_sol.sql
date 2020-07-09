@@ -20,3 +20,12 @@ EXCEPTION
         RETURN 'Error occurred on rowid: '||rowid_of_long||' '||SQLERRM;
 END;
 /
+
+--
+-- EXTRAE_CLAUSULA_SOL  (Synonym) 
+--
+--  Dependencies: 
+--   EXTRAE_CLAUSULA_SOL (Function)
+--
+CREATE OR REPLACE PUBLIC SYNONYM EXTRAE_CLAUSULA_SOL FOR SICAS_OC.EXTRAE_CLAUSULA_SOL
+/

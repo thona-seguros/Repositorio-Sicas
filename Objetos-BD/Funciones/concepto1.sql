@@ -19,3 +19,16 @@ begin
     return(resultado);
 end;
 /
+
+--
+-- CONCEPTO1  (Synonym) 
+--
+--  Dependencies: 
+--   CONCEPTO1 (Function)
+--
+CREATE OR REPLACE PUBLIC SYNONYM CONCEPTO1 FOR SICAS_OC.CONCEPTO1
+/
+
+
+GRANT EXECUTE ON SICAS_OC.CONCEPTO1 TO PUBLIC
+/

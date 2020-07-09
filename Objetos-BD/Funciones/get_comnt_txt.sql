@@ -19,3 +19,12 @@ EXCEPTION
         RETURN 'Error occurred on rowid: '||rowid_of_long||' '||SQLERRM;
 END;
 /
+
+--
+-- GET_COMNT_TXT  (Synonym) 
+--
+--  Dependencies: 
+--   GET_COMNT_TXT (Function)
+--
+CREATE OR REPLACE PUBLIC SYNONYM GET_COMNT_TXT FOR SICAS_OC.GET_COMNT_TXT
+/
