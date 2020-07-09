@@ -61,3 +61,16 @@ END;
    -- Enter further code below as specified in the Package spec.
 END;
 /
+
+--
+-- OC_DOCUMENTO  (Synonym) 
+--
+--  Dependencies: 
+--   OC_DOCUMENTO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_DOCUMENTO FOR SICAS_OC.OC_DOCUMENTO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_DOCUMENTO TO PUBLIC
+/

@@ -5,6 +5,7 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   XMLTYPE (Type)
+--   UTL_HTTP (Synonym)
 --   DUAL (Synonym)
 --   DBMS_LOB (Synonym)
 --   DBMS_LOCK (Synonym)
@@ -16,7 +17,6 @@
 --   XMLTYPE (Synonym)
 --   XMLTYPE (Synonym)
 --   PLITBLM (Synonym)
---   UTL_HTTP (Synonym)
 --   WEB_SERVICES (Table)
 --   WEB_SERVICES_XML (Table)
 --   WEB_SERVICES_XML_NODOS (Table)
@@ -775,4 +775,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
     End Similitud_Porcentual;
     --
 END GT_WEB_SERVICES;
+/
+
+--
+-- GT_WEB_SERVICES  (Synonym) 
+--
+--  Dependencies: 
+--   GT_WEB_SERVICES (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM GT_WEB_SERVICES FOR SICAS_OC.GT_WEB_SERVICES
+/
+
+
+GRANT EXECUTE ON SICAS_OC.GT_WEB_SERVICES TO PUBLIC
 /

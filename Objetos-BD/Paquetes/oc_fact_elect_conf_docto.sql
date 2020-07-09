@@ -4,40 +4,40 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   STANDARD (Package)
+--   UTL_HTTP (Synonym)
 --   DBMS_LOB (Synonym)
 --   DBMS_LOCK (Synonym)
 --   DBMS_OUTPUT (Synonym)
 --   DBMS_STANDARD (Package)
---   UTL_HTTP (Synonym)
+--   NOTAS_DE_CREDITO (Table)
+--   OC_AGE_DISTRIBUCION_COMISION (Package)
 --   POLIZAS (Table)
+--   OC_DET_FACT_ELECT_CONF_DOCTO (Package)
+--   OC_EJECUTIVO_COMERCIAL (Package)
+--   OC_EMPRESAS (Package)
+--   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
+--   CORREOS_ELECTRONICOS_PNJ (Table)
+--   DETALLE_FACTURAS (Table)
+--   DETALLE_FACT_ELECT_CONF_DOCTO (Table)
+--   DETALLE_NOTAS_DE_CREDITO (Table)
+--   OC_USUARIOS (Package)
+--   OC_VALORES_DE_LISTAS (Package)
+--   PERSONA_NATURAL_JURIDICA (Table)
+--   AGENTES (Table)
+--   AGENTE_POLIZA (Table)
+--   ASEGURADO (Table)
+--   OC_DDL_OBJETOS (Package)
+--   CATALOGO_DE_CONCEPTOS (Table)
+--   OC_GENERALES (Package)
+--   OC_MAIL (Package)
+--   OC_POLIZAS (Package)
+--   OC_ASEGURADO (Package)
+--   OC_CLIENTES (Package)
+--   DETALLE_POLIZA (Table)
 --   FACTURAS (Table)
 --   FACT_ELECT_CONF_DOCTO (Table)
 --   FACT_ELECT_DETALLE_TIMBRE (Table)
 --   FACT_ELECT_REGISTROS_XML (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_FACT_ELECT_CONF_DOCTO (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
---   OC_DDL_OBJETOS (Package)
---   OC_DET_FACT_ELECT_CONF_DOCTO (Package)
---   AGENTES (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO (Table)
---   NOTAS_DE_CREDITO (Table)
---   CORREOS_ELECTRONICOS_PNJ (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   OC_EJECUTIVO_COMERCIAL (Package)
---   OC_EMPRESAS (Package)
---   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
---   OC_USUARIOS (Package)
---   OC_VALORES_DE_LISTAS (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_AGE_DISTRIBUCION_COMISION (Package)
---   OC_ASEGURADO (Package)
---   OC_CLIENTES (Package)
---   OC_GENERALES (Package)
---   OC_MAIL (Package)
---   OC_POLIZAS (Package)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     cLineaCom        VARCHAR2(1000) := NULL;
@@ -439,15 +439,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
         nIdFactura         NUMBER;
         nIdNcr             NUMBER;
         cLinea             VARCHAR2(100);
-        
+
     BEGIN
         nIdFactura :=  nvl(PnIdFactura, 0);
         nIdNcr :=  nvl(PnIdNcr, 0);
-          
+
         DELETE FROM FACT_ELECT_REGISTROS_XML X
          WHERE NVL(X.IdFactura, 0) = nIdFactura
            AND NVL(X.IdNcr, 0)     = nIdNcr;
-       
+
 
         IF NVL(nIdFactura,0) != 0 AND cProceso != 'CAN' THEN
             UPDATE FACTURAS
@@ -483,7 +483,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
         END IF;
         UTL_HTTP.set_wallet('file:'||cPathWallet,cPwdWallet);
         IF cProceso IN ('EMI','PAG') THEN
-            cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia, '023');
+            cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia, '023');             
             cSoapRequest :=
             '<soapenv:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
                 <soapenv:Body>
@@ -520,7 +520,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                        AND N.IdNcr     = nIdNcr
                      GROUP BY IdPoliza,CodCliente;
                 END IF;
-                
+
                 IF OC_POLIZAS.FACTURA_POR_POLIZA(nCodCia, nCodEmpresa, nIdPoliza) = 'S' THEN
                    cRFC := OC_CLIENTES.IDENTIFICACION_TRIBUTARIA(cCodCliente);
                 ELSE
@@ -642,7 +642,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
         bPdf := FALSE;
         cClobPDF := '';
         cLinea := 'Linea 2';
-                
+
         -- RECUPERA LA RESPUESTA DEL WEBSERVICE Y LA ALMACENA EN UNA TABLA FISICA
         WHILE nPos <= BreqLength
         LOOP
@@ -720,7 +720,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
             ELSIF  cProceso = 'CAN' THEN
                 cUuidCancelado := cDocto;
             END IF;
-            
+
             IF  cProceso != 'CAN' THEN
                 BEGIN
                     SELECT COUNT(*) INTO nErrDesc FROM FACT_ELECT_REGISTROS_XML 
@@ -1031,4 +1031,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     END DESTINATARIOS;
 
 END OC_FACT_ELECT_CONF_DOCTO;
+/
+
+--
+-- OC_FACT_ELECT_CONF_DOCTO  (Synonym) 
+--
+--  Dependencies: 
+--   OC_FACT_ELECT_CONF_DOCTO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_FACT_ELECT_CONF_DOCTO FOR SICAS_OC.OC_FACT_ELECT_CONF_DOCTO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_FACT_ELECT_CONF_DOCTO TO PUBLIC
 /

@@ -1,3 +1,37 @@
+--
+-- TH_CAMBIO_VIGENCIA  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DUAL (Table)
+--   DBMS_OUTPUT (Synonym)
+--   DBMS_STANDARD (Package)
+--   NIVEL (Table)
+--   NIVEL_PLAN_COBERTURA (Table)
+--   OC_ADMON_RIESGO (Package)
+--   POLIZAS (Table)
+--   OC_DETALLE_TRANSACCION (Package)
+--   OC_ENDOSO (Package)
+--   OC_ENDOSO_TEXTO (Package)
+--   OC_FACTURAR (Package)
+--   OC_TRANSACCION (Package)
+--   AGENTES (Table)
+--   AGENTES_DETALLES_POLIZAS (Table)
+--   AGENTES_DISTRIBUCION_COMISION (Table)
+--   AGENTES_DISTRIBUCION_POLIZA (Table)
+--   AGENTES_DISTRIBUCION_POLIZA_T (Table)
+--   AGENTE_POLIZA (Table)
+--   AGENTE_POLIZA_T (Table)
+--   ASEGURADO (Table)
+--   RENO_CTRL (Table)
+--   CAMCAR_PORCEN (Table)
+--   COMISION_PLACOB_LARPLA (Table)
+--   OC_COMPROBANTES_CONTABLES (Package)
+--   DETALLE_POLIZA (Table)
+--   ENDOSOS (Table)
+--   TRANSACCION (Table)
+--
 CREATE OR REPLACE PACKAGE SICAS_OC.TH_CAMBIO_VIGENCIA IS
 
 FUNCTION VALIDA_POLIZA(nCODCIA NUMBER, nCODEMPRESA NUMBER, nIDPOLIZA NUMBER, cNUREMESA VARCHAR2, PMENSAJE OUT VARCHAR2, nIdendoso OUT NUMBER) RETURN VARCHAR2;
@@ -7,22 +41,29 @@ PROCEDURE EMITIR_VIGENCIA_POLIZA(nCODCIA NUMBER, nCODEMPRESA NUMBER, nIDPOLIZA N
 PROCEDURE GENERA_COMISIONES_LARPLA(nCODCIA NUMBER, nCODEMPRESA NUMBER, nIDPOLIZA NUMBER, cCod_Agente NUMBER, NPORCAPL NUMBER, nAÑO_POLIZA NUMBER, nIdendoso OUT NUMBER);
 
 PROCEDURE ENDOSO_CAMBIO_VIGENCIA (nCODCIA NUMBER, nCODEMPRESA NUMBER, nIDPOLIZA NUMBER, nAÑO_POLIZA NUMBER, nIdendoso OUT NUMBER);
-    
+
 END TH_CAMBIO_VIGENCIA;
 /
+
+--
+-- TH_CAMBIO_VIGENCIA  (Package Body) 
+--
+--  Dependencies: 
+--   TH_CAMBIO_VIGENCIA (Package)
+--
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.TH_CAMBIO_VIGENCIA IS
 --
 -- BITACORA DE CAMBIO
--- 
+--
 FUNCTION VALIDA_POLIZA(nCODCIA NUMBER, nCODEMPRESA NUMBER, nIDPOLIZA NUMBER, cNUREMESA VARCHAR2, PMENSAJE OUT VARCHAR2,nIdendoso OUT NUMBER) RETURN VARCHAR2 IS
 --
 nPorc_Com_Proporcional      AGENTES_DISTRIBUCION_COMISION.Porc_Com_Proporcional%TYPE;
 nPorc_Com_Distribuida       AGENTES_DISTRIBUCION_COMISION.Porc_Com_Distribuida%TYPE;
 nEmite                      VARCHAR2(1);
-cMensaje                    VARCHAR2(300);                   
+cMensaje                    VARCHAR2(300);
 --
 cPLDSTAPROBADA              RENO_CTRL.PLDSTAPROBADA%TYPE;
-cST_RENOVA                  RENO_CTRL.ST_RENOVA%TYPE; 
+cST_RENOVA                  RENO_CTRL.ST_RENOVA%TYPE;
 nCODCLIENTE                 POLIZAS.CodCliente%TYPE;
 nAÑO_POLIZA_SIGUENTE        NUMBER := 0;
 dFECRENOVACION              POLIZAS.FECRENOVACION%TYPE;
@@ -30,23 +71,23 @@ nCOD_AGENTE                 AGENTES_DISTRIBUCION_POLIZA.COD_AGENTE%TYPE;
 nPORC_COMISION              AGENTES_DISTRIBUCION_POLIZA.PORC_COMISION_AGENTE%TYPE;
 --
 CURSOR DET_Q IS
-   SELECT D.CodEmpresa,               D.Cod_Asegurado, 
+   SELECT D.CodEmpresa,               D.Cod_Asegurado,
           D.IDetPol,                  D.PorcComis,
-          D.IndFactElectronica,       D.FecIniVig, 
-          D.FecFinVig,                A.Tipo_Doc_Identificacion, 
-          A.Num_Doc_IDentificacion,   D.IdTipoSeg, 
+          D.IndFactElectronica,       D.FecIniVig,
+          D.FecFinVig,                A.Tipo_Doc_Identificacion,
+          A.Num_Doc_IDentificacion,   D.IdTipoSeg,
           D.PlanCob,                  D.IdFormaCobro
      FROM DETALLE_POLIZA D, ASEGURADO A
     WHERE A.Cod_Asegurado = D.Cod_Asegurado
       AND D.CodCia        = nCodCia
       AND D.IdPoliza      = nIdPoliza
       AND D.StsDetalle   IN ('EMI');  --POR SER CAMBIO DE VIGENCIA
---      
+--
 CURSOR AGT_Q IS
-   SELECT DISTINCT Cod_Agente,  
-          Cod_Agente_Distr, 
+   SELECT DISTINCT Cod_Agente,
+          Cod_Agente_Distr,
           Porc_Comision_Agente,
-          Porc_Com_Distribuida,  
+          Porc_Com_Distribuida,
           Porc_Com_Proporcional,
           CODNIVEL,
           PORC_COM_POLIZA,
@@ -57,7 +98,7 @@ CURSOR AGT_Q IS
 BEGIN
   --
   nEmite := 'N';
-  --  
+  --
   SELECT P.CodCliente,
          NVL(P.Pldstaprobada,'N'),
          P.StsPoliza,
@@ -85,13 +126,13 @@ BEGIN
      AND AP.IDPOLIZA = P.IDPOLIZA
      AND AP.CODCIA   = P.CODCIA;
   --
-  IF cST_RENOVA = 'PLD'  THEN                             
+  IF cST_RENOVA = 'PLD'  THEN
      PMENSAJE := 'La poliza es PLD';
-     RAISE_APPLICATION_ERROR(-20200,PMENSAJE); 
-  ELSIF cST_RENOVA = 'ANU'  THEN                         
+     RAISE_APPLICATION_ERROR(-20200,PMENSAJE);
+  ELSIF cST_RENOVA = 'ANU'  THEN
      PMENSAJE := 'La poliza esta anulada';
-     RAISE_APPLICATION_ERROR(-20200,PMENSAJE); 
-  END IF;                                                  
+     RAISE_APPLICATION_ERROR(-20200,PMENSAJE);
+  END IF;
   -- LAVDIN
   IF NVL(nCODCLIENTE,0) != 0 THEN
      IF cPLDSTAPROBADA = 'N'  THEN
@@ -106,7 +147,7 @@ BEGIN
   --
   -- RECALCULA LAS COMISIONES
   --
-  IF PMENSAJE IS NULL THEN 
+  IF PMENSAJE IS NULL THEN
      GENERA_COMISIONES_LARPLA(nCODCIA, nCODEMPRESA, nIDPOLIZA, NCOD_AGENTE, NPORC_COMISION, nAÑO_POLIZA_SIGUENTE,nIdendoso);
      --
      FOR W IN DET_Q LOOP
@@ -158,15 +199,15 @@ cIndPolCol       POLIZAS.IndPolCol%TYPE;
 cIndFactPeriodo  POLIZAS.IndFactPeriodo%TYPE;
 cIndFacturaPol   POLIZAS.IndFacturaPol%TYPE;
 nNum_Cotizacion  POLIZAS.Num_Cotizacion%TYPE;
-NIDENDOSO        ENDOSOS.IDENDOSO%TYPE;  
+NIDENDOSO        ENDOSOS.IDENDOSO%TYPE;
 --
 CURSOR DET_Q IS
    SELECT IDetPol, IndDeclara, Cod_Asegurado, HabitoTarifa
      FROM DETALLE_POLIZA
     WHERE IdPoliza = nIdPoliza
       AND CodCia   = nCodCia;
-      
---      
+
+--
 BEGIN
    SELECT TipoPol,         CodPlanPago,      NumPolRef,   IndPolCol,
           IndFactPeriodo,  IndFacturaPol,    Num_Cotizacion
@@ -177,7 +218,7 @@ BEGIN
       AND CodCia   = nCodCia;
    --
    IF TH_CAMBIO_VIGENCIA.VALIDA_POLIZA(nCODCIA , nCODEMPRESA , nIDPOLIZA , cNUREMESA, PMENSAJE, NIDENDOSO) = 'S' THEN
-DBMS_OUTPUT.PUT_LINE('SI EMITE ');          
+DBMS_OUTPUT.PUT_LINE('SI EMITE ');
       FOR X IN DET_Q LOOP
          nPorcAgtes := 0;
          BEGIN
@@ -223,7 +264,7 @@ DBMS_OUTPUT.PUT_LINE('SI EMITE ');
 --            END IF;
 --         END IF;
 --      END IF;
-      -- 
+      --
       OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransac, 'C');
       --
       -- ACTUALIZA DETALLE DE POLIZA
@@ -283,9 +324,9 @@ CURSOR DET_Q IS
 BEGIN
   --
   BEGIN
-    SELECT Origen,  
+    SELECT Origen,
            Porc_Comision
-      INTO cOrigen, 
+      INTO cOrigen,
            nPorc_Comision
       FROM AGENTE_POLIZA
      WHERE IdPoliza   = nIdPoliza
@@ -297,9 +338,9 @@ BEGIN
   END;
   --
   BEGIN
-    SELECT DISTINCT IdTipoSeg, 
+    SELECT DISTINCT IdTipoSeg,
            PlanCob
-      INTO cIdTipoSeg,         
+      INTO cIdTipoSeg,
            cPlanCob
       FROM DETALLE_POLIZA
      WHERE IDPOLIZA = nIdPoliza;
@@ -314,7 +355,7 @@ BEGIN
       INTO nComPoliza,
            nComisionTotalPlan
       FROM COMISION_PLACOB_LARPLA L
-     WHERE IDTIPOSEG = cIdTipoSeg 
+     WHERE IDTIPOSEG = cIdTipoSeg
        AND PLANCOB   = cPlanCob
        AND ID_AÑO    = nAÑO_POLIZA;
   EXCEPTION
@@ -333,14 +374,14 @@ BEGIN
   END;
   --
   BEGIN
-    SELECT 'S',                 AG.Cod_Agente, 
-           AG.Cod_Agente_Jefe,  CPL.CODNIVEL, 
+    SELECT 'S',                 AG.Cod_Agente,
+           AG.Cod_Agente_Jefe,  CPL.CODNIVEL,
            CPL.PORCCOMISION,    CPL.PLANCOB
-      INTO cJefe,               nCodagente, 
-           nJefe,               nNivel, 
+      INTO cJefe,               nCodagente,
+           nJefe,               nNivel,
            nComAgenteNivel,     cPlanCob
-      FROM AGENTES AG,  
-           AGENTES JF,  
+      FROM AGENTES AG,
+           AGENTES JF,
            COMISION_PLACOB_LARPLA CPL
      WHERE AG.Cod_Agente = JF.Cod_Agente
        AND AG.CodNivel   = CPL.CODNIVEL
@@ -348,7 +389,7 @@ BEGIN
        AND CPL.ORIGEN    = cOrigen
        AND CPL.IDTIPOSEG = cIdTipoSeg
        AND CPL.PLANCOB   = cPlanCob
-       AND CPL.ID_AÑO    = nAÑO_POLIZA;       
+       AND CPL.ID_AÑO    = nAÑO_POLIZA;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inválido favor revisar Configuración'|| SQLERRM);
@@ -366,7 +407,7 @@ BEGIN
      nProporcional := 100;
   END IF;
   --
-  -- RESPALDO DE INFORMACION 
+  -- RESPALDO DE INFORMACION
   --
   FOR R IN RESPALDO LOOP
      INSERT INTO CAMCAR_PORCEN
@@ -391,7 +432,7 @@ BEGIN
    WHERE CODCIA     = nCodCia
      AND IDPOLIZA   = nIdPoliza
      AND COD_AGENTE = cCod_Agente;
-  -- 
+  --
   DELETE AGENTES_DISTRIBUCION_COMISION ADC
    WHERE CODCIA     = nCodCia
      AND IDPOLIZA   = nIdPoliza
@@ -400,11 +441,11 @@ BEGIN
   -- CALCULO DE COMISIONES SIGUIENTE AÑO
   --
   INSERT INTO AGENTES_DISTRIBUCION_POLIZA
-    (CodCia,               IdPoliza,           Cod_Agente, 
+    (CodCia,               IdPoliza,           Cod_Agente,
      CodNivel,             Cod_Agente_Distr,   Porc_Comision_Agente,
-     Porc_Com_Distribuida, Porc_Comision_Plan, Porc_Com_Proporcional, 
+     Porc_Com_Distribuida, Porc_Comision_Plan, Porc_Com_Proporcional,
      Cod_Agente_Jefe,      Porc_Com_Poliza,    Origen)
-  VALUES 
+  VALUES
     (nCodCia,              nIdPoliza,          cCod_Agente,
      nNivel,               nCodAgente,         nPorcApl,
      nComAgenteNivel,      nComisionTotalPlan, nProporcional,
@@ -414,12 +455,12 @@ BEGIN
   --
   WHILE cJefe = 'S' LOOP
     BEGIN
-      SELECT AG.Cod_Agente,    AG.Cod_Agente_Jefe,  
+      SELECT AG.Cod_Agente,    AG.Cod_Agente_Jefe,
              CPL.CODNIVEL,     CPL.PORCCOMISION
-        INTO nCodAgente,       nnJefe,  
+        INTO nCodAgente,       nnJefe,
              nNivel,           nComAgenteNivel
-        FROM AGENTES AG,  
-             AGENTES JF,  
+        FROM AGENTES AG,
+             AGENTES JF,
              COMISION_PLACOB_LARPLA CPL
        WHERE AG.Cod_Agente = JF.Cod_Agente
          AND AG.CodNivel   = CPL.CODNIVEL
@@ -427,7 +468,7 @@ BEGIN
          AND CPL.ORIGEN    = cOrigen
          AND CPL.IDTIPOSEG = cIdTipoSeg
          AND CPL.PLANCOB   = cPlanCob
-         AND CPL.ID_AÑO    = nAÑO_POLIZA;     
+         AND CPL.ID_AÑO    = nAÑO_POLIZA;
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
            cJefe           := 'N';
@@ -445,7 +486,7 @@ BEGIN
        EXIT;
     END IF;
     --
-    WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL + nProporcional; 
+    WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL + nProporcional;
     --
     IF (WPORC_COM_PROPORCIONAL > 100 AND WPORC_COM_PROPORCIONAL <= 100.01) THEN
         WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL - 100;
@@ -457,11 +498,11 @@ BEGIN
     END IF;
     --
     INSERT INTO AGENTES_DISTRIBUCION_POLIZA
-      (codcia,               idpoliza,           cod_agente,           
-       codnivel,             cod_agente_distr,   porc_comision_agente, 
+      (codcia,               idpoliza,           cod_agente,
+       codnivel,             cod_agente_distr,   porc_comision_agente,
        porc_com_distribuida, porc_comision_plan, porc_com_proporcional,
        cod_agente_jefe,      porc_com_poliza,    Origen)
-    VALUES 
+    VALUES
       (nCodCia,              nIdPoliza,          cCod_Agente,
        nNivel,               nJefe,              nPorcApl,
        nComAgenteNivel,      nComisionTotalPlan, nProporcional,
@@ -470,11 +511,11 @@ BEGIN
     nJefe := nnJefe;
     --
   END LOOP;
-  -- 
+  --
   -- AGENTES_DISTRIBUCION_COMISION
   --
   --
-  FOR D IN DET_Q LOOP  
+  FOR D IN DET_Q LOOP
       --
       WPORC_COM_DISTRIBUIDA := 0;
       --
@@ -487,7 +528,7 @@ BEGIN
           VALUES
            (R.CODCIA,                R.IDPOLIZA,              D.IDETPOL,
             R.CODNIVEL,              R.COD_AGENTE,            R.COD_AGENTE_DISTR,
-            R.PORC_COMISION_PLAN,    R.PORC_COMISION_AGENTE,  R.PORC_COM_DISTRIBUIDA, 
+            R.PORC_COMISION_PLAN,    R.PORC_COMISION_AGENTE,  R.PORC_COM_DISTRIBUIDA,
             R.PORC_COM_PROPORCIONAL, R.COD_AGENTE_JEFE,       R.ORIGEN);
           --
           WPORC_COM_DISTRIBUIDA := WPORC_COM_DISTRIBUIDA + R.PORC_COM_DISTRIBUIDA;
@@ -504,7 +545,7 @@ BEGIN
       -- ACTUALIZA DETALLE DE POLIZA
       --
       UPDATE POLIZAS P
-         SET P.STSPOLIZA = 'XRE'   
+         SET P.STSPOLIZA = 'XRE'
        WHERE P.IdPoliza = nIdPoliza
          AND P.CodCia   = nCodCia;
       --
@@ -522,9 +563,9 @@ END GENERA_COMISIONES_LARPLA;
 --
 --
 PROCEDURE ENDOSO_CAMBIO_VIGENCIA (nCODCIA NUMBER, nCODEMPRESA NUMBER, nIDPOLIZA NUMBER, nAÑO_POLIZA NUMBER, nIdendoso OUT NUMBER) IS
-      
+
  nIDetPol          ENDOSOS.IDETPOL%TYPE;
- cTipoEndoso       ENDOSOS.TIPOENDOSO%TYPE;       
+ cTipoEndoso       ENDOSOS.TIPOENDOSO%TYPE;
  cNumEndRef        ENDOSOS.NUMENDREF%TYPE;
  dFecIniVig        ENDOSOS.FECINIVIG%TYPE;
  dFecFinVig        ENDOSOS.FECFINVIG%TYPE;
@@ -541,24 +582,24 @@ PROCEDURE ENDOSO_CAMBIO_VIGENCIA (nCODCIA NUMBER, nCODEMPRESA NUMBER, nIDPOLIZA 
  CLINEA            VARCHAR2(20);
  CLINEA_T          VARCHAR2(500);
 BEGIN
-	--
+  --
   CMOTIVO_ENDOSO := '034';  -- EN CATALOGO 'CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES'
   --
   BEGIN
-	  SELECT P.FECRENOVACION,
+    SELECT P.FECRENOVACION,
            ADD_MONTHS(P.FECRENOVACION,12)
-	    INTO dFecIniVig,
+      INTO dFecIniVig,
            dFecFinVig
       FROM POLIZAS P
      WHERE IDPOLIZA = nIDPOLIZA
        AND CODCIA   = nCODCIA;
-	EXCEPTION
-	  WHEN OTHERS THEN 
-	       NULL;
-	END;
-	--
-  SELECT USER,     USERENV('TERMINAL') 
-    INTO cUsuario, cTerminal 
+  EXCEPTION
+    WHEN OTHERS THEN
+         NULL;
+  END;
+  --
+  SELECT USER,     USERENV('TERMINAL')
+    INTO cUsuario, cTerminal
     FROM SYS.DUAL;
   --
   SELECT NVL(MAX(IdEndoso),0) + 1
@@ -575,10 +616,10 @@ BEGIN
   nPorcComis        := 0;
   dFecExc           := '';
   --
-  OC_ENDOSO.INSERTA(nCodCia,            nCodEmpresa,             nIdPoliza, 
-                    nIDetPol,           nIdendoso,               cTipoEndoso,    
+  OC_ENDOSO.INSERTA(nCodCia,            nCodEmpresa,             nIdPoliza,
+                    nIDetPol,           nIdendoso,               cTipoEndoso,
                     cNumEndRef,         dFecIniVig,              dFecFinVig,
-                    cCodPlan,           nSuma_Aseg_Moneda,       nPrima_Moneda,      
+                    cCodPlan,           nSuma_Aseg_Moneda,       nPrima_Moneda,
                     nPorcComis,         CMOTIVO_ENDOSO,          dFecExc);
   --
   UPDATE ENDOSOS E
@@ -588,21 +629,21 @@ BEGIN
          FecSts    = TRUNC(SYSDATE)
    WHERE E.IDPOLIZA = nIdPoliza
      AND E.IDENDOSO = nIdendoso;
-  --            
+  --
   -- COMPLEMENTA TEXTO
   --
   BEGIN
-    SELECT AP.COD_AGENTE,  AP.COD_AGENTE   
+    SELECT AP.COD_AGENTE,  AP.COD_AGENTE
       INTO CAGENTE,        CCOD_AGENTE_JEFE
       FROM AGENTE_POLIZA_T AP
      WHERE AP.IDPOLIZA = nIdPoliza;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
-         CCOD_AGENTE_JEFE := 0;   
+         CCOD_AGENTE_JEFE := 0;
     WHEN OTHERS THEN
-         CCOD_AGENTE_JEFE := 0;   
+         CCOD_AGENTE_JEFE := 0;
   END;
-  --  
+  --
   CLINEA_T := CHR(10)||'Comisiones a partir del '||dFecIniVig||' para el año poliza '||nAÑO_POLIZA||CHR(10);
   --
   WHILE CCOD_AGENTE_JEFE > 0 LOOP
@@ -613,10 +654,10 @@ BEGIN
                  ADP.COD_AGENTE_JEFE
             INTO CLINEA,
                  CCOD_AGENTE_JEFE
-            FROM AGENTES_DISTRIBUCION_POLIZA_T ADP  
-           WHERE ADP.IDPOLIZA         = nIdPoliza    
+            FROM AGENTES_DISTRIBUCION_POLIZA_T ADP
+           WHERE ADP.IDPOLIZA         = nIdPoliza
              AND ADP.COD_AGENTE       = CAGENTE
-             AND ADP.COD_AGENTE_DISTR = CCOD_AGENTE_JEFE;       
+             AND ADP.COD_AGENTE_DISTR = CCOD_AGENTE_JEFE;
         EXCEPTION
           WHEN NO_DATA_FOUND THEN
                CCOD_AGENTE_JEFE := 0;
@@ -625,13 +666,26 @@ BEGIN
         END;
         --
         CLINEA_T := CLINEA_T||CLINEA;
-        --        
+        --
   END LOOP;
   --
-  OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdendoso, CLINEA_T);                               
+  OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdendoso, CLINEA_T);
   --
 END;
 --
 --
 END TH_CAMBIO_VIGENCIA;
+/
+
+--
+-- TH_CAMBIO_VIGENCIA  (Synonym) 
+--
+--  Dependencies: 
+--   TH_CAMBIO_VIGENCIA (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM TH_CAMBIO_VIGENCIA FOR SICAS_OC.TH_CAMBIO_VIGENCIA
+/
+
+
+GRANT EXECUTE ON SICAS_OC.TH_CAMBIO_VIGENCIA TO PUBLIC
 /

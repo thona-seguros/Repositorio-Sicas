@@ -4,9 +4,6 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   STANDARD (Package)
---   DBMS_LOB (Synonym)
---   DBMS_OUTPUT (Synonym)
---   PLITBLM (Synonym)
 --   UTL_ENCODE (Synonym)
 --   UTL_FILE (Synonym)
 --   UTL_RAW (Synonym)
@@ -14,6 +11,9 @@
 --   UTL_SMTP (Synonym)
 --   UTL_TCP (Synonym)
 --   UTL_TCP (Synonym)
+--   DBMS_LOB (Synonym)
+--   DBMS_OUTPUT (Synonym)
+--   PLITBLM (Synonym)
 --   OC_GENERALES (Package)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_MAIL IS
@@ -671,4 +671,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_MAIL IS
          DBMS_LOB.FILECLOSE (FIL);
    END;
 END OC_MAIL;
+/
+
+--
+-- OC_MAIL  (Synonym) 
+--
+--  Dependencies: 
+--   OC_MAIL (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_MAIL FOR SICAS_OC.OC_MAIL
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_MAIL TO PUBLIC
 /

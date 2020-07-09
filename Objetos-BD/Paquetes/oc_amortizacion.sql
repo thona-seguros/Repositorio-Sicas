@@ -5,13 +5,13 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   DUAL (Synonym)
+--   INFO_ALTBAJ (Table)
 --   POLIZAS (Table)
 --   DATOS_PART_EMISION (Table)
---   DETALLE_POLIZA (Table)
---   TB_AMORTI (Table)
---   INFO_ALTBAJ (Table)
 --   COBERTURAS (Table)
 --   COBERT_ACT (Table)
+--   TB_AMORTI (Table)
+--   DETALLE_POLIZA (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_AMORTIZACION IS
 
@@ -421,4 +421,13 @@ END;
 END;
 
 END OC_AMORTIZACION;
+/
+
+--
+-- OC_AMORTIZACION  (Synonym) 
+--
+--  Dependencies: 
+--   OC_AMORTIZACION (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_AMORTIZACION FOR SICAS_OC.OC_AMORTIZACION
 /

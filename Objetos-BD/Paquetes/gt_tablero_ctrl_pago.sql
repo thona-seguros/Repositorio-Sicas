@@ -6,41 +6,41 @@
 --   STANDARD (Package)
 --   DBMS_STANDARD (Package)
 --   XMLTYPE (Synonym)
+--   NOTAS_DE_CREDITO (Table)
+--   OC_AGENTES (Package)
+--   GT_WEB_SERVICES (Package)
+--   INFO_SINIESTRO (Table)
+--   MEDIOS_DE_PAGO (Table)
+--   SINIESTRO (Table)
 --   POLIZAS (Table)
 --   PROCESOS_MASIVOS_SEGUIMIENTO (Table)
 --   PROCESO_AUTORIZA_USUARIO (Table)
+--   GT_DETALLE_TABLERO_CTRL_PAGO (Package)
 --   DETALLE_NOTAS_DE_CREDITO (Table)
+--   PERSONA_NATURAL_JURIDICA (Table)
+--   AGENTES (Table)
+--   APROBACIONES (Table)
+--   APROBACION_ASEG (Table)
+--   BENEF_SIN (Table)
+--   OC_DETALLE_APROBACION (Package)
+--   OC_DETALLE_APROBACION_ASEG (Package)
+--   CLIENTES (Table)
+--   COMPROBANTES_CONTABLES (Table)
+--   COMPROBANTES_DETALLE (Table)
+--   TABLERO_CTRL_PAGO (Table)
+--   TABLERO_CTRL_PAGO (Table)
+--   TASAS_CAMBIO (Table)
+--   OC_MONEDA (Package)
+--   OC_POLIZAS (Package)
+--   OC_CATALOGO_DE_CONCEPTOS (Package)
+--   OC_CLIENTES (Package)
 --   DETALLE_SINIESTRO (Table)
 --   DETALLE_SINIESTRO_ASEG (Table)
 --   DETALLE_TABLERO_CTRL_PAGO (Table)
 --   DETALLE_TRANSACCION (Table)
 --   ENTIDAD_FINANCIERA (Table)
---   TABLERO_CTRL_PAGO (Table)
---   TABLERO_CTRL_PAGO (Table)
---   TASAS_CAMBIO (Table)
---   GT_WEB_SERVICES (Package)
---   OC_DETALLE_APROBACION (Package)
---   OC_DETALLE_APROBACION_ASEG (Package)
---   AGENTES (Table)
---   APROBACIONES (Table)
---   APROBACION_ASEG (Table)
---   BENEF_SIN (Table)
---   GT_DETALLE_TABLERO_CTRL_PAGO (Package)
---   INFO_SINIESTRO (Table)
---   MEDIOS_DE_PAGO (Table)
---   NOTAS_DE_CREDITO (Table)
 --   TIPOS_DE_SEGUROS (Table)
 --   TRANSACCION (Table)
---   SINIESTRO (Table)
---   COMPROBANTES_CONTABLES (Table)
---   COMPROBANTES_DETALLE (Table)
---   CLIENTES (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_AGENTES (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_CLIENTES (Package)
---   OC_MONEDA (Package)
---   OC_POLIZAS (Package)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_TABLERO_CTRL_PAGO IS
 
@@ -289,6 +289,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
                                                                ,GT_WEB_SERVICES.ExtraeDatos_XmlDom('cuenta')
                                                                ,GT_WEB_SERVICES.ExtraeDatos_XmlDom('referencia')
                                                                ,GT_WEB_SERVICES.ExtraeDatos_XmlDom('fechapago')
+                                                               ,GT_WEB_SERVICES.ExtraeDatos_XmlDom('tipo_pago')                                                               
                                                                );
                     IF MOD(nReg, 10) = 0 THEN
                         COMMIT;
@@ -505,7 +506,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
          NVL(BES.ENT_FINANCIERA , decode(NVL(BES.NUMCUENTABANCARIA,BES.CUENTA_CLAVE) , null, 0, '4000'))                                            CTA_BANCO,
          NVL(BES.NUMCUENTABANCARIA,BES.CUENTA_CLAVE)                            CLAVE,
          1                                                                      PLAZA_CTA,
-         nvl(DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','1','CHEQUE','0'), '0')  TIPO_PAGO,      
+         nvl(DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','0','CHEQUE','1'), '0')  TIPO_PAGO,      
          9                                                                      FUENTE,
          '0'                                                                    FOLIO_SOLICITUD,
          '0'                                                                    ERROR,
@@ -606,7 +607,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
          NVL(BES.ENT_FINANCIERA , decode(NVL(BES.NUMCUENTABANCARIA,BES.CUENTA_CLAVE) , null, 0, '4000'))                                            CTA_BANCO,
          NVL(BES.NUMCUENTABANCARIA,BES.CUENTA_CLAVE)                            CLAVE,
          1                                                                      PLAZA_CTA,
-         DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','1','CHEQUE','0')        TIPO_PAGO,      
+         DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','0','CHEQUE','1')        TIPO_PAGO,      
          9                                                                      FUENTE,
          '0'                                                                    FOLIO_SOLICITUD,
          '0'                                                                    ERROR,
@@ -697,7 +698,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
          NVL(BES.ENT_FINANCIERA , decode(NVL(BES.NUMCUENTABANCARIA,BES.CUENTA_CLAVE) , null, 0, '4000'))                                            CTA_BANCO,
          NVL(BES.NUMCUENTABANCARIA, BES.CUENTA_CLAVE)                           CLAVE,
          1                                                                      PLAZA_CTA,
-         DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','1','CHEQUE','0')        TIPO_PAGO,      
+         DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','0','CHEQUE','1')        TIPO_PAGO,      
          9                                                                      FUENTE,
          '0'                                                                    FOLIO_SOLICITUD,
          '0'                                                                    ERROR,
@@ -967,7 +968,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
                           TRUNC(T.FechaTransaccion) FechaTransaccion, 
                          NVL(BES.ENT_FINANCIERA , decode(NVL(BES.NUMCUENTABANCARIA,BES.CUENTA_CLAVE) , null, 0, '4000'))                                            CTA_BANCO,
                          NVL(BES.NUMCUENTABANCARIA,BES.CUENTA_CLAVE)                            CLAVE,
-                         DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','1','CHEQUE','0')        TIPO_PAGO,      
+                         DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','0','CHEQUE','1')        TIPO_PAGO,      
                         'Siniestro(WS)-P:'||A.IDPOLIZA || '.' || A.IDSINIESTRO || '.' || A.IDDETSIN || '.' ||A.NUM_APROBACION ||'.'|| NULL  REFERENCIA,          
                           C.NUMCOMPROB,
                           A.Num_Aprobacion, 
@@ -1028,7 +1029,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
                           TRUNC(T.FechaTransaccion) FechaTransaccion, 
                          NVL(BES.ENT_FINANCIERA , decode(NVL(BES.NUMCUENTABANCARIA,BES.CUENTA_CLAVE) , null, 0, '4000'))                                            CTA_BANCO,
                          NVL(BES.NUMCUENTABANCARIA,BES.CUENTA_CLAVE)                            CLAVE,
-                         DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','1','CHEQUE','0')        TIPO_PAGO,      
+                         DECODE(BES.TIPO_PAGO,'TRANSFERENCIA BANCARIA','0','CHEQUE','1')        TIPO_PAGO,      
                         'Siniestro(WS)-P:'||A.IDPOLIZA || '.' || A.IDSINIESTRO || '.' || A.IDDETSIN || '.' ||A.NUM_APROBACION ||'.'|| A.COD_ASEGURADO  REFERENCIA,          
                           C.NUMCOMPROB,
                           A.Num_Aprobacion, 
@@ -1132,4 +1133,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CTRL_PAGO IS
     END CREA_LOTE_FONDEO_COLECTIVOS;    
     --          
 END GT_TABLERO_CTRL_PAGO;
+/
+
+--
+-- GT_TABLERO_CTRL_PAGO  (Synonym) 
+--
+--  Dependencies: 
+--   GT_TABLERO_CTRL_PAGO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM GT_TABLERO_CTRL_PAGO FOR SICAS_OC.GT_TABLERO_CTRL_PAGO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.GT_TABLERO_CTRL_PAGO TO PUBLIC
 /

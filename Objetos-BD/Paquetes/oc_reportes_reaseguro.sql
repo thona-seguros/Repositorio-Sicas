@@ -1,3 +1,66 @@
+--
+-- OC_REPORTES_REASEGURO  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DUAL (Synonym)
+--   DBMS_OUTPUT (Synonym)
+--   DBMS_STANDARD (Package)
+--   USUARIOS (Table)
+--   VALORES_DE_LISTAS (Table)
+--   XLSX_BUILDER_PKG (Package)
+--   ZIP_UTIL_PKG (Package)
+--   OC_ARCHIVO (Package)
+--   MARCA (Table)
+--   MODELO (Table)
+--   MONEDA (Table)
+--   SINIESTRO (Table)
+--   POLIZAS (Table)
+--   PROC_TAREA (Table)
+--   OC_EMPRESAS (Package)
+--   DETALLE_APROBACION (Table)
+--   DETALLE_APROBACION_ASEG (Table)
+--   OC_VALORES_DE_LISTAS (Package)
+--   PAGOS_POR_OTROS_CONCEPTOS (Table)
+--   PERSONA_NATURAL_JURIDICA (Table)
+--   APROBACIONES (Table)
+--   APROBACION_ASEG (Table)
+--   ASEGURADO (Table)
+--   REA_CORREO_ALERTAS (Table)
+--   REA_DISTRIBUCION (Table)
+--   REA_DISTRIBUCION_EMPRESAS (Table)
+--   REA_EMPRESAS_GREMIO (Table)
+--   REA_ESQUEMAS (Table)
+--   REA_ESQUEMAS_CALENDARIO (Table)
+--   REA_ESQUEMAS_CAPAS (Table)
+--   REA_ESQUEMAS_CONTRATOS (Table)
+--   REA_ESQUEMAS_EMPRESAS (Table)
+--   REA_ESQUEMAS_POLIZAS (Table)
+--   REA_TIPOS_CONTRATOS (Table)
+--   OC_CONFIG_TRANSAC_SINIESTROS (Package)
+--   COBERTURAS_DE_SEGUROS (Table)
+--   COBERTURA_SINIESTRO (Table)
+--   COBERTURA_SINIESTRO_ASEG (Table)
+--   TEMP_REPORTES_THONA (Table)
+--   OC_MONEDA (Package)
+--   OC_ASEGURADO (Package)
+--   OC_CLIENTES (Package)
+--   OC_COBERTURAS_DE_SEGUROS (Package)
+--   DETALLE_POLIZA (Table)
+--   DETALLE_TRANSACCION (Table)
+--   EMPRESAS (Table)
+--   ENDOSOS (Table)
+--   FACTURAS (Table)
+--   OC_REPORTES_THONA (Package)
+--   OC_SINIESTRO (Package)
+--   GT_REA_EMPRESAS_GREMIO (Package)
+--   GT_REA_ESQUEMAS (Package)
+--   GT_REA_ESQUEMAS_EMPRESAS (Package)
+--   GT_REA_RIESGOS (Package)
+--   GT_REA_TIPOS_CONTRATOS (Package)
+--   TRANSACCION (Table)
+--
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_REPORTES_REASEGURO IS
    --
    --Variables globales para la información del reporte
@@ -157,6 +220,12 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_REPORTES_REASEGURO IS
 END OC_REPORTES_REASEGURO;
 /
 
+--
+-- OC_REPORTES_REASEGURO  (Package Body) 
+--
+--  Dependencies: 
+--   OC_REPORTES_REASEGURO (Package)
+--
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_REPORTES_REASEGURO IS
 
    FUNCTION NOMBRE_COMPANIA( nCodCia NUMBER ) RETURN VARCHAR2 IS
@@ -190,10 +259,6 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_REPORTES_REASEGURO IS
       nFila := 1;
       --
       IF cFormato = 'TEXTO' THEN 
-         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cTitulo1 );
-         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cTitulo2 );
-         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cTitulo3 );
-         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cTitulo4 );
          OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
       ELSE
          --Obtiene Número de Columnas Totales
@@ -2496,4 +2561,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_REPORTES_REASEGURO IS
    END CALENDARIOS;
 
 END OC_REPORTES_REASEGURO;
+/
+
+--
+-- OC_REPORTES_REASEGURO  (Synonym) 
+--
+--  Dependencies: 
+--   OC_REPORTES_REASEGURO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_REPORTES_REASEGURO FOR SICAS_OC.OC_REPORTES_REASEGURO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_REPORTES_REASEGURO TO PUBLIC
 /

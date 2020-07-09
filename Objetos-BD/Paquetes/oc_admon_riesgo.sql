@@ -1,4 +1,30 @@
-CREATE OR REPLACE PACKAGE OC_ADMON_RIESGO IS
+--
+-- OC_ADMON_RIESGO  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DUAL (Synonym)
+--   OC_ACTIVIDADES_ECONOMICAS (Package)
+--   OC_ADMON_RIESGO_H (Package)
+--   OC_AGENTES (Package)
+--   POLIZAS (Table)
+--   OC_EMPLEADOS_FUNCIONARIOS (Package)
+--   OC_TIPOS_DE_SEGUROS (Package)
+--   PERSONA_NATURAL_JURIDICA (Table)
+--   ADMON_RIESGO (Table)
+--   ASEGURADO (Table)
+--   ASEGURADO_CERTIFICADO (Table)
+--   RENO_CTRL (Table)
+--   CLIENTES (Table)
+--   OC_PERSONA_NATURAL_JURIDICA (Package)
+--   OC_CAT_QEQ (Package)
+--   OC_CLIENTES (Package)
+--   DETALLE_POLIZA (Table)
+--   ENDOSOS (Table)
+--   TIPOS_DE_SEGUROS (Table)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ADMON_RIESGO IS
 
 PROCEDURE VALIDA(P_CODCIA                  NUMBER,
                  P_CODEMPRESA              NUMBER,
@@ -6,10 +32,10 @@ PROCEDURE VALIDA(P_CODCIA                  NUMBER,
                  P_IDPOLIZA                NUMBER,
                  P_CLIENTE                 NUMBER,
                  P_ASEGURADO               NUMBER,
-                 P_ST_RESOLUCION           VARCHAR2,              
+                 P_ST_RESOLUCION           VARCHAR2,
                  P_TIPO_DOC_IDENTIFICACION VARCHAR2,
                  P_NUM_DOC_IDENTIFICACION  VARCHAR2,
-                 P_OBSERVACIONES           VARCHAR2,                 
+                 P_OBSERVACIONES           VARCHAR2,
                  P_MENSAJE                 IN OUT VARCHAR2);
 
 PROCEDURE INSERTA(P_CODCIA                  NUMBER,
@@ -27,27 +53,34 @@ PROCEDURE INSERTA(P_CODCIA                  NUMBER,
 
 PROCEDURE VALIDA_PERSONAS_POLIZA(P_IDPOLIZA   NUMBER,
                                  P_MENSAJE    IN OUT VARCHAR2);
-                                 
+
 PROCEDURE VALIDA_PERSONAS_ENDOSO(P_CODCIA     NUMBER,
                                  P_IDPOLIZA   NUMBER,
                                  P_ENDOSO     NUMBER,
                                  P_MENSAJE    IN OUT VARCHAR2);
 
-FUNCTION EXISTE_POLIZA_PLD(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2;                                 
+FUNCTION EXISTE_POLIZA_PLD(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2;
 
 PROCEDURE VALIDA_PERSONAS_LARGO_PLAZO(P_IDPOLIZA   NUMBER,
                                       P_MENSAJE    IN OUT VARCHAR2);
-                                 
-FUNCTION POLIZA_BLOQUEADA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2;                                 
-                                                   
+
+FUNCTION POLIZA_BLOQUEADA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2;
+
 END OC_ADMON_RIESGO;
 /
-CREATE OR REPLACE PACKAGE BODY OC_ADMON_RIESGO IS
+
+--
+-- OC_ADMON_RIESGO  (Package Body) 
+--
+--  Dependencies: 
+--   OC_ADMON_RIESGO (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_ADMON_RIESGO IS
 --
 -- BITACORA DE CAMBIO
 -- ALTA   JICO 20170518
 -- CAMBIO JICO 20170628 PARAMETRIZACION DE ESTATUS
--- CAMBIO JICO 20170814 SE AGREGO LA BUSQUEDA POR TIPO DE SEGURO 
+-- CAMBIO JICO 20170814 SE AGREGO LA BUSQUEDA POR TIPO DE SEGURO
 -- CAMBIO JICO 20170901 SE AGREGO LA FUNCIONALIDAD DE ENDOSOS
 -- CAMBIO JICO 20190809 SE AGREGO LA FUNCIONALIDAD DE AÑOS SUBSECUENTES LARGO PLAZO
 --
@@ -57,17 +90,17 @@ PROCEDURE VALIDA(P_CODCIA                  NUMBER,
                  P_IDPOLIZA                NUMBER,
                  P_CLIENTE                 NUMBER,
                  P_ASEGURADO               NUMBER,
-                 P_ST_RESOLUCION           VARCHAR2,              
+                 P_ST_RESOLUCION           VARCHAR2,
                  P_TIPO_DOC_IDENTIFICACION VARCHAR2,
                  P_NUM_DOC_IDENTIFICACION  VARCHAR2,
-                 P_OBSERVACIONES           VARCHAR2,                 
+                 P_OBSERVACIONES           VARCHAR2,
                  P_MENSAJE                 IN OUT VARCHAR2
-                 ) IS  
---                 
+                 ) IS
+--
 P_TP_RESOLUCION   ADMON_RIESGO.TP_RESOLUCION%TYPE := '';
 W_MENSAJE         VARCHAR2(300);
 CCODACTIVIDAD     PERSONA_NATURAL_JURIDICA.CODACTIVIDAD%TYPE;
-P_IDTIPOSEG       TIPOS_DE_SEGUROS.IDTIPOSEG%TYPE;   
+P_IDTIPOSEG       TIPOS_DE_SEGUROS.IDTIPOSEG%TYPE;
 --
 BEGIN
   --
@@ -89,7 +122,7 @@ BEGIN
   --
   -- VALIDA SI ES EMPLEADO
   --
-  IF OC_EMPLEADOS_FUNCIONARIOS.ES_EMPLEADO_FUNCIONARIO(P_CODCIA , P_TIPO_DOC_IDENTIFICACION, P_NUM_DOC_IDENTIFICACION) = 'S' THEN 
+  IF OC_EMPLEADOS_FUNCIONARIOS.ES_EMPLEADO_FUNCIONARIO(P_CODCIA , P_TIPO_DOC_IDENTIFICACION, P_NUM_DOC_IDENTIFICACION) = 'S' THEN
      OC_ADMON_RIESGO.INSERTA(P_CODCIA,
                              P_CODEMPRESA,
                              P_ID_PROCESO,
@@ -164,7 +197,7 @@ BEGIN
   END IF;
   --
   -- VALIDA SI LA ACTIVIDAD ES DE ALTO RIESGO
-  -- 
+  --
   CCODACTIVIDAD := OC_PERSONA_NATURAL_JURIDICA.ACTIVIDAD(P_TIPO_DOC_IDENTIFICACION, P_NUM_DOC_IDENTIFICACION);
   --
   IF OC_ACTIVIDADES_ECONOMICAS.TIPORIESGO(cCodActividad) = 'ALTO' THEN
@@ -220,13 +253,13 @@ BEGIN
                              P_OBSERVACIONES
                             );
      W_MENSAJE := '!! ALERTA !!   EL PRODUCTO ES DE ALTO RIESGO - ENVIADO A AUTORIZACION ';
-  END IF; 
+  END IF;
   --
-  -- CAMBIO ST DE POLIZAS                            
+  -- CAMBIO ST DE POLIZAS
   --
   IF W_MENSAJE IS NOT NULL THEN
      IF P_ST_RESOLUCION = 'PEND' THEN  -- ORIGEN POLIZA
-        UPDATE POLIZAS 
+        UPDATE POLIZAS
            SET STSPOLIZA      = 'PLD',
                PLDSTBLOQUEADA = 'S'
          WHERE IDPOLIZA  = P_IDPOLIZA
@@ -234,7 +267,7 @@ BEGIN
            AND STSPOLIZA IN ('SOL','XRE');
      END IF;
      IF P_ST_RESOLUCION = 'PENT' THEN  -- ORIGEN ENDOSOS
-        UPDATE ENDOSOS  
+        UPDATE ENDOSOS
            SET STSENDOSO      = 'PLD',
                PLDSTBLOQUEADA = 'S'
          WHERE IDPOLIZA  = P_IDPOLIZA
@@ -242,7 +275,7 @@ BEGIN
            AND STSENDOSO IN ('SOL');
      END IF;
      IF P_ST_RESOLUCION = 'PENC' THEN  -- ORIGEN LARGO PLAZO
-        UPDATE RENO_CTRL R 
+        UPDATE RENO_CTRL R
            SET ST_RENOVA      = 'PLD',
                PLDSTBLOQUEADA = 'S'
          WHERE R.ID_POLIZA  = P_IDPOLIZA
@@ -252,7 +285,7 @@ BEGIN
      P_MENSAJE := W_MENSAJE;
      --
      COMMIT;
-     --   
+     --
   END IF;
   --
 END VALIDA;
@@ -267,16 +300,16 @@ PROCEDURE INSERTA(P_CODCIA                  NUMBER,
                   P_ORIGEN                  VARCHAR2,
                   P_ST_RESOLUCION           VARCHAR2,
                   P_TIPO_DOC_IDENTIFICACION VARCHAR2,
-                  P_NUM_DOC_IDENTIFICACION  VARCHAR2,  
+                  P_NUM_DOC_IDENTIFICACION  VARCHAR2,
                   P_TP_RESOLUCION           VARCHAR2,
                   P_OBSERVACIONES           VARCHAR2) IS
 --
  W_NOMBRE ADMON_RIESGO.NOMBRE%TYPE;
  W_USUARIO VARCHAR2(15);
 --
-BEGIN  
+BEGIN
   --
-  SELECT USER 
+  SELECT USER
     INTO W_USUARIO
     FROM DUAL;
   --
@@ -284,8 +317,8 @@ BEGIN
   --
   --INSERTA ADMON_RIESGO
   --
-  INSERT INTO ADMON_RIESGO 
-    (CODEMPRESA,                          CODCIA,        
+  INSERT INTO ADMON_RIESGO
+    (CODEMPRESA,                          CODCIA,
      ID_PROCESO,                          IDPOLIZA,
      STSPOLIZA,                           CODCLIENTE,
      CODASEGURADO,
@@ -296,7 +329,7 @@ BEGIN
      FECHA_PROCESO,                       USUARIO
     )
     VALUES
-    (P_CODEMPRESA,                        P_CODCIA,        
+    (P_CODEMPRESA,                        P_CODCIA,
      P_ID_PROCESO,                        P_IDPOLIZA,
      'N/A',                               P_CLIENTE,
      P_ASEGURADO,
@@ -318,7 +351,7 @@ BEGIN
                             P_ORIGEN,
                             P_ST_RESOLUCION,
                             P_TP_RESOLUCION);
-                            
+
   --
 END INSERTA;
 --
@@ -381,20 +414,20 @@ SELECT DP.CODCIA CIA,
 BEGIN
   --
   FOR S IN POLIZA LOOP
-      MENSAJE:= '';  
+      MENSAJE:= '';
       OC_ADMON_RIESGO.VALIDA(S.CIA,
                              S.EMPRESA,
                              1,  --ES EL P_ID_PROCESO
                              S.IDPOLIZA,
                              S.CODCLIENTE,
                              S.COD_ASEGURADO,
-                             'PEND',              
+                             'PEND',
                              S.TIPO_DOC_IDENTIFICACION,
                              S.NUM_DOC_IDENTIFICACION,
                              'POLIZA      - ',
                              MENSAJE
                             );
-      --                                          
+      --
       IF MENSAJE IS NOT NULL THEN
          P_MENSAJE := MENSAJE;
       END IF;
@@ -428,20 +461,20 @@ SELECT AC.CODCIA CIA,
 BEGIN
   --
   FOR E IN ENDOSO LOOP
-      MENSAJE:= '';  
+      MENSAJE:= '';
       OC_ADMON_RIESGO.VALIDA(E.CIA,
                              E.EMPRESA,
                              1,
                              E.IDPOLIZA,
                              E.IDENDOSO,
                              E.COD_ASEGURADO,
-                             'PENT',              
+                             'PENT',
                              E.TIPO_DOC_IDENTIFICACION,
                              E.NUM_DOC_IDENTIFICACION,
                              'ENDOSO      - '||E.IDENDOSO,
                              MENSAJE
                             );
-      --                                          
+      --
       IF MENSAJE IS NOT NULL THEN
          P_MENSAJE := MENSAJE;
       END IF;
@@ -527,20 +560,20 @@ SELECT DP.CODCIA CIA,
 BEGIN
   --
   FOR S IN POLIZA LOOP
-      MENSAJE:= '';  
+      MENSAJE:= '';
       OC_ADMON_RIESGO.VALIDA(S.CIA,
                              S.EMPRESA,
                              1,  --ES EL P_ID_PROCESO
                              S.IDPOLIZA,
                              S.CODCLIENTE,
                              S.COD_ASEGURADO,
-                             'PENC',              
+                             'PENC',
                              S.TIPO_DOC_IDENTIFICACION,
                              S.NUM_DOC_IDENTIFICACION,
                              'LARGO_PLAZO - ',
                              MENSAJE
                             );
-      -- 
+      --
       IF MENSAJE IS NOT NULL THEN
          P_MENSAJE := MENSAJE;
       END IF;
@@ -569,4 +602,17 @@ BEGIN
 END POLIZA_BLOQUEADA;
 
 END OC_ADMON_RIESGO;
+/
+
+--
+-- OC_ADMON_RIESGO  (Synonym) 
+--
+--  Dependencies: 
+--   OC_ADMON_RIESGO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_ADMON_RIESGO FOR SICAS_OC.OC_ADMON_RIESGO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_ADMON_RIESGO TO PUBLIC
 /

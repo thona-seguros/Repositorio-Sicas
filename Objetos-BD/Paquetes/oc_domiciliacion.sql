@@ -4,45 +4,45 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   STANDARD (Package)
---   DBMS_STANDARD (Package)
 --   UTL_FILE (Synonym)
+--   DBMS_STANDARD (Package)
+--   USUARIOS (Table)
+--   NOTIFICAREGISTRO (Procedure)
+--   OC_ADICIONALES_EMPRESA (Package)
+--   MEDIOS_DE_COBRO (Table)
 --   POLIZAS (Table)
---   FACTURAS (Table)
 --   FAI_CONFIG_APORTE_FONDO_DET (Table)
 --   FAI_FONDOS_DETALLE_POLIZA (Table)
---   DETALLE_DOMICI_REFERE (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_POLIZA (Table)
---   DOMICILIACION (Table)
---   EMPRESAS_DE_SEGUROS (Table)
---   OC_DETALLE_POLIZA (Package)
 --   OC_DETALLE_TRANSACCION (Package)
---   GT_FAI_CONFIG_APORTE_FONDO_DET (Package)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   MEDIOS_DE_COBRO (Table)
---   NOTIFICAREGISTRO (Procedure)
---   TRANSACCION (Table)
---   USUARIOS (Table)
---   OC_REGISTRO_EXCEPCION (Package)
---   CONFIGURACION_DOMICILIACION (Table)
---   CORREOS_DOMICILIACION (Table)
---   CLIENTES (Table)
 --   OC_EMPRESAS (Package)
 --   OC_FACTURAS (Package)
 --   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
+--   GT_FAI_CONFIG_APORTE_FONDO_DET (Package)
+--   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
+--   CONFIGURACION_DOMICILIACION (Table)
+--   CORREOS_DOMICILIACION (Table)
+--   DETALLE_DOMICI_REFERE (Table)
+--   DETALLE_FACTURAS (Table)
 --   OC_TIPOS_DE_SEGUROS (Package)
 --   OC_TRANSACCION (Package)
 --   OC_VALORES_DE_LISTAS (Package)
 --   PERSONA_NATURAL_JURIDICA (Table)
---   OC_ADICIONALES_EMPRESA (Package)
---   OC_CLIENTES (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   OC_CONFIGURACION_DOMICILIACION (Package)
 --   REGISTRO_EXCEPCION (Table)
+--   OC_CONFIGURACION_DOMICILIACION (Package)
+--   OC_DETALLE_POLIZA (Package)
+--   CLIENTES (Table)
 --   OC_GENERALES (Package)
 --   OC_LOG_TRANSAC_DOM (Package)
 --   OC_MAIL (Package)
 --   OC_POLIZAS (Package)
+--   OC_CLIENTES (Package)
+--   OC_COMPROBANTES_CONTABLES (Package)
+--   DETALLE_POLIZA (Table)
+--   DOMICILIACION (Table)
+--   EMPRESAS_DE_SEGUROS (Table)
+--   FACTURAS (Table)
+--   OC_REGISTRO_EXCEPCION (Package)
+--   TRANSACCION (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_DOMICILIACION IS
   PROCEDURE PROVISION_FACTURAS_VENC(nCodCia NUMBER, dFecha date, P_CodEntidad Varchar2, P_IdProceso NUMBER);
@@ -309,6 +309,7 @@ BEGIN
                FROM POLIZAS P,DETALLE_POLIZA DP
               WHERE P.CodCia     = nCodCia
                 AND P.IdPoliza   = D.IdPoliza
+                AND DP.IDetPol   = D.IDetPol
                 AND P.CodCia     = DP.CodCia
                 AND P.CodEmpresa = DP.CodEmpresa
                 AND P.IdPoliza   = DP.IdPoliza;
@@ -1006,4 +1007,17 @@ EXCEPTION
 END REPORTE_COBRANZA_DIARIA;
 
 END OC_DOMICILIACION;
+/
+
+--
+-- OC_DOMICILIACION  (Synonym) 
+--
+--  Dependencies: 
+--   OC_DOMICILIACION (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_DOMICILIACION FOR SICAS_OC.OC_DOMICILIACION
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_DOMICILIACION TO PUBLIC
 /

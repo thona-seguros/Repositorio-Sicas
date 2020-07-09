@@ -5,15 +5,15 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   DBMS_STANDARD (Package)
---   FACTURAS (Table)
 --   FZ_DETALLE_FIANZAS (Table)
+--   OC_EMPRESAS (Package)
 --   DETALLE_COBRADOR (Table)
+--   COMISION_COBRADOR (Table)
+--   TASAS_CAMBIO (Table)
+--   OC_GENERALES (Package)
 --   DETALLE_POLIZA (Table)
 --   EMPRESAS (Table)
---   TASAS_CAMBIO (Table)
---   COMISION_COBRADOR (Table)
---   OC_EMPRESAS (Package)
---   OC_GENERALES (Package)
+--   FACTURAS (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_COMISION_COBRADOR IS
 
@@ -120,11 +120,14 @@ BEGIN
       END;
    END   IF;
    IF nMto_Local != 0 OR nMto_Moneda != 0 THEN 
-      INSERT INTO COMISION_COBRADOR
-            (IdComision, CodCobrador, IdFactura, Fecha_Pago, Recibo_Pago, 
-             Monto_Local, Monto_Moneda, Fecha_Liquidado, StsComision)
-      VALUES(nIdComision, nCodCobrador, nIdFactura, dFecSts, cRecibo,
-             nMto_Local, nMto_Moneda, NULL, 'EMI');
+      BEGIN
+         INSERT INTO COMISION_COBRADOR
+               (IdComision, CodCobrador, IdFactura, Fecha_Pago, Recibo_Pago, 
+                Monto_Local, Monto_Moneda, Fecha_Liquidado, StsComision)
+         VALUES(nIdComision, nCodCobrador, nIdFactura, dFecSts, cRecibo,
+                nMto_Local, nMto_Moneda, NULL, 'EMI');
+         COMMIT;
+      END;             
    END IF;     
 END PROC_PAGA_COMI_COBRA;
 
@@ -139,4 +142,17 @@ BEGIN
 END ANULAR_COMISION;
 
 END OC_COMISION_COBRADOR;
+/
+
+--
+-- OC_COMISION_COBRADOR  (Synonym) 
+--
+--  Dependencies: 
+--   OC_COMISION_COBRADOR (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_COMISION_COBRADOR FOR SICAS_OC.OC_COMISION_COBRADOR
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_COMISION_COBRADOR TO PUBLIC
 /

@@ -4,9 +4,9 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   STANDARD (Package)
+--   UTL_RAW (Synonym)
 --   DBMS_LOB (Synonym)
 --   DBMS_STANDARD (Package)
---   UTL_RAW (Synonym)
 --   TEMP_GEN_ARCHIVO (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_ARCHIVO IS
@@ -137,4 +137,17 @@ END ENCABEZADO_HTML;
 
 
 end OC_archivo;
+/
+
+--
+-- OC_ARCHIVO  (Synonym) 
+--
+--  Dependencies: 
+--   OC_ARCHIVO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_ARCHIVO FOR SICAS_OC.OC_ARCHIVO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_ARCHIVO TO PUBLIC
 /

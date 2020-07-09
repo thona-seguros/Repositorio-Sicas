@@ -8,49 +8,49 @@
 --   DBMS_STANDARD (Package)
 --   PLAN_DE_PAGOS (Table)
 --   POLIZAS (Table)
---   FACTURAS (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_POLIZA (Table)
---   EAD_CONTROL_ASEGURADOS (Table)
---   ENDOSOS (Table)
---   ENDOSO_TEXTO (Table)
---   TASAS_CAMBIO (Table)
---   OC_DETALLE_POLIZA (Package)
 --   OC_DETALLE_TRANSACCION (Package)
+--   OC_ENDOSO (Package)
+--   OC_ENDOSO_TEXTO (Package)
+--   OC_FACTURAS (Package)
+--   GT_COTIZACIONES_COBERT_MASTER (Package)
+--   GT_EAD_CONTROL_ASEGURADOS (Package)
+--   GT_EAD_CONTROL_ASEG_COBERT (Package)
+--   COTIZACIONES (Table)
+--   COTIZACIONES_COBERT_MASTER (Table)
+--   COTIZACIONES_DETALLE (Table)
+--   DETALLE_FACTURAS (Table)
+--   OC_TRANSACCION (Package)
+--   OC_USUARIOS (Package)
+--   PERSONA_NATURAL_JURIDICA (Table)
 --   APARTADO_POSTAL (Table)
 --   ASEGURADO (Table)
 --   ASEGURADO_CERTIFICADO (Table)
 --   ASISTENCIAS_ASEGURADO (Table)
 --   ASISTENCIAS_DETALLE_POLIZA (Table)
---   GT_EAD_CONTROL_ASEGURADOS (Package)
---   GT_EAD_CONTROL_ASEG_COBERT (Package)
---   TEMP_LISTADO_DECLARACIONES (Table)
---   TRANSACCION (Table)
---   COLONIA (Table)
---   COMPROBANTES_CONTABLES (Table)
---   COMPROBANTES_DETALLE (Table)
---   COTIZACIONES (Table)
---   COTIZACIONES_COBERT_MASTER (Table)
---   COTIZACIONES_DETALLE (Table)
+--   OC_DETALLE_POLIZA (Package)
 --   CATALOGO_DE_CONCEPTOS (Table)
 --   COBERTURAS (Table)
 --   COBERT_ACT_ASEG (Table)
---   OC_ENDOSO (Package)
---   OC_ENDOSO_TEXTO (Package)
---   OC_FACTURAS (Package)
---   OC_TRANSACCION (Package)
---   OC_USUARIOS (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
+--   COLONIA (Table)
+--   COMPROBANTES_CONTABLES (Table)
+--   COMPROBANTES_DETALLE (Table)
+--   TASAS_CAMBIO (Table)
+--   TEMP_LISTADO_DECLARACIONES (Table)
+--   OC_GENERALES (Package)
+--   OC_PERSONA_NATURAL_JURIDICA (Package)
+--   OC_PLAN_DE_PAGOS (Package)
+--   OC_POLIZAS (Package)
 --   OC_ASEGURADO (Package)
 --   OC_ASEGURADO_CERTIFICADO (Package)
 --   OC_COBERTURAS_DE_SEGUROS (Package)
 --   OC_COBERT_ACT_ASEG (Package)
 --   OC_COMPROBANTES_CONTABLES (Package)
---   GT_COTIZACIONES_COBERT_MASTER (Package)
---   OC_GENERALES (Package)
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---   OC_PLAN_DE_PAGOS (Package)
---   OC_POLIZAS (Package)
+--   DETALLE_POLIZA (Table)
+--   EAD_CONTROL_ASEGURADOS (Table)
+--   ENDOSOS (Table)
+--   ENDOSO_TEXTO (Table)
+--   FACTURAS (Table)
+--   TRANSACCION (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_TEMP_LISTADO_DECLARACIONES AS
 
@@ -1218,6 +1218,7 @@ BEGIN
                                                                NULL, NULL, NULL);
                END IF;
                IF NVL(nIdCotizacion,0) > 0 THEN
+                  --
                   GT_TEMP_LISTADO_DECLARACIONES.GENERA_COBERTURAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso, nCodAseguradoAltas, nIdCotizacion, nIDetCotizacion, cPlanCob, cIdTipoSeg, cCodMoneda, X.SumaAsegurada);
                ELSE
                   OC_ASEGURADO_CERTIFICADO.INSERTA (nCodCia, nIdPoliza, nIdetPol, nCodAseguradoAltas, nIdEndoso);
@@ -1448,11 +1449,46 @@ BEGIN
         INTO nNumPagos
         FROM DUAL;
    END;
-   INSERT INTO ASEGURADO_CERTIFICADO
-         (CodCia, IdPoliza, IDetPol, Cod_Asegurado, Estado, SumaAseg, 
-          PrimaNeta, IdEndoso, SumaAseg_Moneda, PrimaNeta_Moneda)
-   VALUES(nCodCia, nIdPoliza, nIDetPol, nCodAsegurado, 'SOL', nSumaAsegLocal, 
-          nPrimaNeta, nIdEndoso, nSumaAsegMoneda, nPrimaNeta_Mon);
+   
+---------------------------------  CAPELE 20191120
+--            --  SOLO ESTABA EL INSERT Y MARCA ERROR YA QUE EL ENDOSO NO ES PARTE DE LA PK     
+--            DECLARE
+--                Existe  number := 0;                               
+--            BEGIN
+--                SELECT COUNT(*)
+--                  INTO Existe
+--                  FROM ASEGURADO_CERTIFICADO
+--                 WHERE CodCia        = nCodCia
+--                   AND IdPoliza      = nIdPoliza
+--                   AND IdetPol       = nIDetPol
+--                   AND Cod_Asegurado = nCodAsegurado
+--                   AND ESTADO = 'ANU';
+--                --
+--                IF EXISTE > 0 THEN
+--                    DELETE FROM COBERT_ACT_ASEG
+--                     WHERE CodCia        = nCodCia
+--                       AND IdPoliza      = nIdPoliza
+--                       AND IdetPol       = nIDetPol
+--                       AND Cod_Asegurado = nCodAsegurado;
+--                    --
+--                    DELETE FROM ASEGURADO_CERTIFICADO
+--                     WHERE CodCia        = nCodCia
+--                       AND IdPoliza      = nIdPoliza
+--                       AND IdetPol       = nIDetPol
+--                       AND Cod_Asegurado = nCodAsegurado;
+--                END IF;
+--            END;                
+--                --
+-------------------------------------------------------------------------------------------------                      
+--   
+   
+   IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO_CP(nCodCia, nIdPoliza, nIDetPol, nCodAsegurado, nIdEndoso) = 'N' THEN
+      INSERT INTO ASEGURADO_CERTIFICADO
+            (CodCia, IdPoliza, IDetPol, Cod_Asegurado, Estado, SumaAseg, 
+             PrimaNeta, IdEndoso, SumaAseg_Moneda, PrimaNeta_Moneda)
+      VALUES(nCodCia, nIdPoliza, nIDetPol, nCodAsegurado, 'SOL', nSumaAsegLocal, 
+             nPrimaNeta, nIdEndoso, nSumaAsegMoneda, nPrimaNeta_Mon);
+   END IF;
           
    IF GT_EAD_CONTROL_ASEGURADOS.EXISTE_ASEGURADO_HIST(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, nIdEndoso) = 'S' THEN
       dFecIniVig := OC_POLIZAS.INICIO_VIGENCIA(nCodCia, nCodEmpresa, nIdPoliza);
@@ -2433,4 +2469,17 @@ BEGIN
 END ACTUALIZA_ENDOSO_HIST;                    
 
 END GT_TEMP_LISTADO_DECLARACIONES;
+/
+
+--
+-- GT_TEMP_LISTADO_DECLARACIONES  (Synonym) 
+--
+--  Dependencies: 
+--   GT_TEMP_LISTADO_DECLARACIONES (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM GT_TEMP_LISTADO_DECLARACIONES FOR SICAS_OC.GT_TEMP_LISTADO_DECLARACIONES
+/
+
+
+GRANT EXECUTE ON SICAS_OC.GT_TEMP_LISTADO_DECLARACIONES TO PUBLIC
 /

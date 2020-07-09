@@ -1,3 +1,20 @@
+--
+-- OC_REPORTES_THONA  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   UTL_FILE (Synonym)
+--   DBMS_LOB (Synonym)
+--   DBMS_OUTPUT (Synonym)
+--   DBMS_STANDARD (Package)
+--   ZIP_UTIL_PKG (Package)
+--   OC_VALORES_DE_LISTAS (Package)
+--   TEMP_ARCHIVOS_THONA (Table)
+--   TEMP_ARCHIVOS_THONA (Table)
+--   TEMP_REPORTES_THONA (Table)
+--   TEMP_REPORTES_THONA (Table)
+--
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_REPORTES_THONA IS
    PROCEDURE GENERA_REPORTE( nCodCia      TEMP_REPORTES_THONA.CODCIA%TYPE
                            , nCodEmpresa  TEMP_REPORTES_THONA.CODEMPRESA%TYPE
@@ -21,9 +38,15 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_REPORTES_THONA IS
                               , cCodUsuario  TEMP_REPORTES_THONA.CODUSUARIO%TYPE
                               , cCadena      TEMP_REPORTES_THONA.LINEA%TYPE );
 
-END OC_REPORTES_THONA;  
+END OC_REPORTES_THONA;
 /
 
+--
+-- OC_REPORTES_THONA  (Package Body) 
+--
+--  Dependencies: 
+--   OC_REPORTES_THONA (Package)
+--
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_REPORTES_THONA IS
    PROCEDURE GENERA_REPORTE( nCodCia      TEMP_REPORTES_THONA.CODCIA%TYPE
                            , nCodEmpresa  TEMP_REPORTES_THONA.CODEMPRESA%TYPE

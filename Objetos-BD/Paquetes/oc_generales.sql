@@ -6,16 +6,16 @@
 --   STANDARD (Package)
 --   DUAL (Synonym)
 --   DBMS_STANDARD (Package)
---   EMPRESAS (Table)
---   TASAS_CAMBIO (Table)
---   AGENTES (Table)
---   ASEGURADO (Table)
---   MONEDA (Table)
 --   USUARIOS (Table)
 --   VALORES_DE_LISTAS (Table)
---   CLIENTES (Table)
+--   MONEDA (Table)
 --   PARAMETROS_GLOBALES (Table)
 --   PERSONA_NATURAL_JURIDICA (Table)
+--   AGENTES (Table)
+--   ASEGURADO (Table)
+--   CLIENTES (Table)
+--   TASAS_CAMBIO (Table)
+--   EMPRESAS (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.oc_generales IS
 --
@@ -474,4 +474,17 @@ END CODCIA_USUARIO;
 
 
 END OC_GENERALES;
+/
+
+--
+-- OC_GENERALES  (Synonym) 
+--
+--  Dependencies: 
+--   OC_GENERALES (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_GENERALES FOR SICAS_OC.OC_GENERALES
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_GENERALES TO PUBLIC
 /

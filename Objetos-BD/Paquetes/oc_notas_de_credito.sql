@@ -6,20 +6,30 @@
 --   STANDARD (Package)
 --   DBMS_OUTPUT (Synonym)
 --   DBMS_STANDARD (Package)
+--   VALORES_DE_LISTAS (Table)
+--   NOTAS_DE_CREDITO (Table)
+--   OC_AGENTES (Package)
+--   OC_ARCHIVO (Package)
+--   SUB_PROCESO (Table)
 --   PLAN_DE_PAGOS (Table)
 --   POLIZAS (Table)
 --   PROC_TAREA (Table)
---   FACTURAS (Table)
+--   OC_DETALLE_TRANSACCION (Package)
+--   OC_DISTRITO (Package)
+--   OC_EJECUTIVO_COMERCIAL (Package)
+--   OC_EMPRESAS (Package)
+--   OC_FACTURAS (Package)
+--   OC_FACT_ELECT_CONF_DOCTO (Package)
+--   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
+--   CONCEPTOS_PLAN_DE_PAGOS (Table)
+--   CORREOS_ELECTRONICOS_PNJ (Table)
 --   DETALLE_FACTURAS (Table)
 --   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
---   DIRECCIONES_PNJ (Table)
---   DISTRITO (Table)
---   EMPRESAS (Table)
---   ENDOSOS (Table)
---   OC_CORREOS_ELECTRONICOS_PNJ (Package)
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---   OC_DETALLE_TRANSACCION (Package)
+--   OC_TRANSACCION (Package)
+--   PARAMETROS_EMISION (Table)
+--   PARAMETROS_ENUM_NOT_CRE (Table)
+--   PARAMETROS_GLOBALES (Table)
+--   PERSONA_NATURAL_JURIDICA (Table)
 --   AGENTES (Table)
 --   AGENTES_DETALLES_POLIZAS (Table)
 --   ASEGURADO (Table)
@@ -27,44 +37,34 @@
 --   ASISTENCIAS (Table)
 --   ASISTENCIAS_ASEGURADO (Table)
 --   ASISTENCIAS_DETALLE_POLIZA (Table)
---   NOTAS_DE_CREDITO (Table)
---   TIPO_DE_DOCUMENTO (Table)
---   TRANSACCION (Table)
---   VALORES_DE_LISTAS (Table)
---   OC_PROVINCIA (Package)
---   SUB_PROCESO (Table)
---   COLONIA (Table)
---   COMISIONES (Table)
---   CONCEPTOS_PLAN_DE_PAGOS (Table)
---   CORREOS_ELECTRONICOS_PNJ (Table)
+--   PROVINCIA (Table)
+--   OC_CORREOS_ELECTRONICOS_PNJ (Package)
+--   OC_DETALLE_NOTAS_DE_CREDITO (Package)
 --   CATALOGO_DE_CONCEPTOS (Table)
 --   CLIENTES (Table)
 --   COBERTURAS (Table)
 --   COBERTURAS_DE_SEGUROS (Table)
 --   COBERTURA_ASEG (Table)
 --   COBERT_ACT (Table)
---   OC_DISTRITO (Package)
---   OC_EJECUTIVO_COMERCIAL (Package)
---   OC_EMPRESAS (Package)
---   OC_FACTURAS (Package)
---   OC_FACT_ELECT_CONF_DOCTO (Package)
---   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
---   OC_TRANSACCION (Package)
---   PARAMETROS_EMISION (Table)
---   PARAMETROS_ENUM_NOT_CRE (Table)
---   PARAMETROS_GLOBALES (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_AGENTES (Package)
---   OC_ARCHIVO (Package)
+--   COLONIA (Table)
+--   COMISIONES (Table)
+--   OC_GENERALES (Package)
+--   OC_MONEDA (Package)
+--   OC_PLAN_DE_PAGOS (Package)
 --   OC_CLIENTES (Package)
 --   OC_COLONIA (Package)
 --   OC_COMISIONES (Package)
 --   OC_COMPROBANTES_CONTABLES (Package)
 --   OC_CONCEPTOS_PLAN_DE_PAGOS (Package)
---   PROVINCIA (Table)
---   OC_GENERALES (Package)
---   OC_MONEDA (Package)
---   OC_PLAN_DE_PAGOS (Package)
+--   DETALLE_POLIZA (Table)
+--   DIRECCIONES_PNJ (Table)
+--   DISTRITO (Table)
+--   EMPRESAS (Table)
+--   ENDOSOS (Table)
+--   FACTURAS (Table)
+--   OC_PROVINCIA (Package)
+--   TIPO_DE_DOCUMENTO (Table)
+--   TRANSACCION (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_NOTAS_DE_CREDITO IS
 
@@ -125,7 +125,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_NOTAS_DE_CREDITO IS
 --
 -- MODIFICACIONES
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO      2018/03/09  ICOFINVIG
--- CALCULO DEL A�O POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
+-- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 --
 p_msg_regreso varchar2(50);----var XDS 
 --------------------------------------------------------------------
@@ -192,7 +192,7 @@ FUNCTION INSERTA_NOTA_CREDITO(nCodCia         NUMBER,    nIdPoliza      NUMBER, 
 nIdNcr               NOTAS_DE_CREDITO.IdNcr%TYPE;
 cCodTipoDoc          TIPO_DE_DOCUMENTO.CodTipoDoc%TYPE;
 cCodUsuarioEnvFact   NOTAS_DE_CREDITO.CodUsuarioEnvFact%TYPE;
-nID_A�O_POLIZA  FACTURAS.ID_A�O_POLIZA%TYPE;  
+nID_a�o_POLIZA  FACTURAS.id_a�o_poliza%TYPE;  
 dFECFINVIGNCR   FACTURAS.FECFINVIG%TYPE;      
 dFECFINVIGPOL   POLIZAS.FECFINVIG%TYPE;       
 nCODEMPRESA     POLIZAS.CODEMPRESA%TYPE;      
@@ -275,7 +275,7 @@ PROCEDURE ACTUALIZA_NOTA(nIdNcr NUMBER) IS
 nMtoTotal         DETALLE_NOTAS_DE_CREDITO.Monto_Det_Local%TYPE;
 nMtoTotalMoneda   DETALLE_NOTAS_DE_CREDITO.Monto_Det_Moneda%TYPE;
 BEGIN
-   -- Actualiza Valor de la Nota de Crédito con Impuestos
+   -- Actualiza Valor de la Nota de CrÃ©dito con Impuestos
    SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
      INTO nMtoTotal, nMtoTotalMoneda
      FROM DETALLE_NOTAS_DE_CREDITO
@@ -688,7 +688,7 @@ BEGIN
       nIdProceso     := 17; -- Pago de Comisiones a Agentes
       cCodSubProceso := 'PAGO';
    ELSE
-      nIdProceso     := 20; -- Pago de Notas de Crédito
+      nIdProceso     := 20; -- Pago de Notas de CrÃ©dito
       cCodSubProceso := 'PAGNCR';
    END IF;
 
@@ -1107,7 +1107,7 @@ BEGIN
                  TO_CHAR(NVL(nMtoIVA,0),'99999999990.00')       || cSeparador ||
                  '0.00'                                         || cSeparador || -- Descuento
                  'NO APLICA'                                    || cSeparador || -- Unidad de Medida
-                 '1'                                            || cSeparador || CHR(13);   -- No. de Artículo
+                 '1'                                            || cSeparador || CHR(13);   -- No. de ArtÃ­culo
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       nLinea  := NVL(nLinea,0) + 1;
 
@@ -1134,11 +1134,11 @@ BEGIN
                  TO_CHAR(NVL(nMtoIVA,0),'99999999990.00')       || cSeparador ||
                  '0.00'                                         || cSeparador || -- Descuento
                  'NO APLICA'                                    || cSeparador || -- Unidad de Medida
-                 '1'                                            || cSeparador || CHR(13);   -- No. de Artículo
+                 '1'                                            || cSeparador || CHR(13);   -- No. de ArtÃ­culo
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       nLinea  := NVL(nLinea,0) + 1;
 
-      -- Derechos de Póliza o Gastos de Expedición
+      -- Derechos de PÃ³liza o Gastos de ExpediciÃ³n
       cDescripcion    := 'GASTOS DE EXPEDICION';
       nMtoIVA         := NVL(NVL(nDerechos,0) * nTasaIVA / 100,0);
 
@@ -1161,7 +1161,7 @@ BEGIN
                  TO_CHAR(NVL(nMtoIVA,0),'99999999990.00')       || cSeparador ||
                  '0.00'                                         || cSeparador || -- Descuento
                  'NO APLICA'                                    || cSeparador || -- Unidad de Medida
-                 '1'                                            || cSeparador || CHR(13);   -- No. de Artículo
+                 '1'                                            || cSeparador || CHR(13);   -- No. de ArtÃ­culo
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       nLinea  := NVL(nLinea,0) + 1;
    END LOOP;
@@ -1617,4 +1617,17 @@ EXCEPTION
 END FACTURA_ELECTRONICA;
 
 END OC_NOTAS_DE_CREDITO;
+/
+
+--
+-- OC_NOTAS_DE_CREDITO  (Synonym) 
+--
+--  Dependencies: 
+--   OC_NOTAS_DE_CREDITO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_NOTAS_DE_CREDITO FOR SICAS_OC.OC_NOTAS_DE_CREDITO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_NOTAS_DE_CREDITO TO PUBLIC
 /

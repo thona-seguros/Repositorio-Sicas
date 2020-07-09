@@ -5,10 +5,36 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   DBMS_STANDARD (Package)
+--   SINIESTRO (Table)
 --   POLIZAS (Table)
 --   PROPIEDADES_VALORES (Table)
+--   OC_DISTRIBUCION_MASIVA_LOG (Package)
+--   OC_ENDOSO (Package)
 --   DETALLE_APROBACION (Table)
 --   DETALLE_APROBACION_ASEG (Table)
+--   APROBACIONES (Table)
+--   APROBACION_ASEG (Table)
+--   REA_DISTRIBUCION (Table)
+--   REA_DISTRIBUCION_EMPRESAS (Table)
+--   REA_ESQUEMAS (Table)
+--   REA_ESQUEMAS_CAPAS (Table)
+--   REA_ESQUEMAS_CONTRATOS (Table)
+--   REA_ESQUEMAS_EMPRESAS (Table)
+--   REA_ESQUEMAS_FACT_CREDITOS (Table)
+--   REA_ESQUEMAS_POLIZA_COBERT (Table)
+--   REA_RIESGOS (Table)
+--   REA_TARIFAS_REASEGURO_DET (Table)
+--   CATALOGO_DE_CONCEPTOS (Table)
+--   COBERTURAS (Table)
+--   COBERTURAS_DE_SEGUROS (Table)
+--   COBERTURA_ASEG (Table)
+--   COBERTURA_SINIESTRO (Table)
+--   COBERTURA_SINIESTRO_ASEG (Table)
+--   COBERT_ACT (Table)
+--   COBERT_ACT_ASEG (Table)
+--   OC_POLIZAS (Package)
+--   OC_ASEGURADO (Package)
+--   OC_CATALOGO_DE_CONCEPTOS (Package)
 --   DETALLE_POLIZA (Table)
 --   DETALLE_TRANSACCION (Table)
 --   ENDOSOS (Table)
@@ -23,32 +49,7 @@
 --   GT_REA_TARIFAS_REASEGURO (Package)
 --   GT_REA_TARIFAS_REASEGURO_DET (Package)
 --   GT_REA_TIPOS_CONTRATOS (Package)
---   APROBACIONES (Table)
---   APROBACION_ASEG (Table)
 --   TRANSACCION (Table)
---   SINIESTRO (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   COBERTURAS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERTURA_ASEG (Table)
---   COBERTURA_SINIESTRO (Table)
---   COBERTURA_SINIESTRO_ASEG (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   OC_ENDOSO (Package)
---   OC_ASEGURADO (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   REA_DISTRIBUCION (Table)
---   REA_DISTRIBUCION_EMPRESAS (Table)
---   REA_ESQUEMAS (Table)
---   REA_ESQUEMAS_CAPAS (Table)
---   REA_ESQUEMAS_CONTRATOS (Table)
---   REA_ESQUEMAS_EMPRESAS (Table)
---   REA_ESQUEMAS_FACT_CREDITOS (Table)
---   REA_ESQUEMAS_POLIZA_COBERT (Table)
---   REA_RIESGOS (Table)
---   REA_TARIFAS_REASEGURO_DET (Table)
---   OC_POLIZAS (Package)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_REA_DISTRIBUCION IS
 
@@ -950,7 +951,7 @@ BEGIN
                           0, nMtoSiniDistribEmp, NULL, 0,
                           0, NULL, 'ACTIVA', TRUNC(SYSDATE));
                END LOOP;
-               
+
                -- Actualiza Monto de Reserva
                nMtoSiniDistrib := GT_REA_DISTRIBUCION_EMPRESAS.MONTO_SINIESTRO(nCodCia, nIdDistribRea, nNumDistrib);
 
@@ -1160,4 +1161,17 @@ BEGIN
 END ELIMINAR_DISTRIBUCION_SINI;
 
 END GT_REA_DISTRIBUCION;
+/
+
+--
+-- GT_REA_DISTRIBUCION  (Synonym) 
+--
+--  Dependencies: 
+--   GT_REA_DISTRIBUCION (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM GT_REA_DISTRIBUCION FOR SICAS_OC.GT_REA_DISTRIBUCION
+/
+
+
+GRANT EXECUTE ON SICAS_OC.GT_REA_DISTRIBUCION TO PUBLIC
 /

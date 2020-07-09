@@ -1,4 +1,39 @@
 --
+-- GT_COTIZACIONES  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DBMS_STANDARD (Package)
+--   GENERALES_PLATAFORMA_DIGITAL (Package)
+--   NIVEL_PLAN_COBERTURA (Table)
+--   OC_AGENTES (Package)
+--   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
+--   POLIZAS (Table)
+--   GT_COTIZACIONES_ASEG (Package)
+--   GT_COTIZACIONES_CENSO_ASEG (Package)
+--   GT_COTIZACIONES_CLAUSULAS (Package)
+--   GT_COTIZACIONES_COBERTURAS (Package)
+--   GT_COTIZACIONES_COBERT_MASTER (Package)
+--   GT_COTIZACIONES_DETALLE (Package)
+--   GT_COTIZADOR_CONFIG (Package)
+--   COTIZACIONES (Table)
+--   COTIZACIONES_ASEG (Table)
+--   COTIZACIONES_CENSO_ASEG (Table)
+--   COTIZACIONES_COBERTURAS (Table)
+--   COTIZACIONES_COBERT_ASEG (Table)
+--   COTIZACIONES_DETALLE (Table)
+--   COTIZADOR_CONFIG (Table)
+--   AGENTES_DISTRIBUCION_POLIZA (Table)
+--   AGENTE_POLIZA (Table)
+--   COBERTURAS_DE_SEGUROS (Table)
+--   OC_MAIL (Package)
+--   OC_PLAN_COBERTURAS (Package)
+--   OC_POLIZAS (Package)
+--   OC_COMISIONES (Package)
+--   DETALLE_POLIZA (Table)
+--   GT_POLIZAS_TEXTO_COTIZACION (Package)
+--
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES IS
 
    FUNCTION VALIDAR_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2;
@@ -36,9 +71,16 @@ CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES IS
    FUNCTION COTIZACION_BASE_WEB(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2;
    PROCEDURE MARCA_COTIZACION_WEB(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER);
    FUNCTION COPIAR_COTIZACION_WEB(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN NUMBER;
-                         
+
 END GT_COTIZACIONES;
 /
+
+--
+-- GT_COTIZACIONES  (Package Body) 
+--
+--  Dependencies: 
+--   GT_COTIZACIONES (Package)
+--
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_COTIZACIONES IS
 
 FUNCTION VALIDAR_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2 IS
@@ -87,7 +129,7 @@ BEGIN
          GT_COTIZACIONES_ASEG.EXISTEN_ASEGURADOS_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion) = 'N' THEN
       RAISE_APPLICATION_ERROR(-20200,'Cotización No. ' || nIdCotizacion || ' NO tiene Listado de Asegurados');
    END IF;
-   
+
    FOR W IN DET_Q LOOP
       nIDetCotizacion := W.IDetCotizacion;
       IF cIndAsegModelo = 'S' THEN
@@ -104,7 +146,7 @@ BEGIN
             AND IDetCotizacion    = nIDetCotizacion
             AND SumaAsegCobMoneda = 0
             AND PrimaCobMoneda    = 0;
-         
+
          IF NVL(nCobCeros,0) > 0 THEN
             RAISE_APPLICATION_ERROR(-20200,'Cotización No. ' || nIdCotizacion || ' y SubGrupo No. ' || nIDetCotizacion ||
                                     ' tiene Coberturas con Suma Asegurada y Prima Cero');
@@ -126,7 +168,7 @@ BEGIN
                AND IdAsegurado       = X.IdAsegurado
                AND SumaAsegCobMoneda = 0
                AND PrimaCobMoneda    = 0;
-         
+
             IF NVL(nCobCeros,0) > 0 THEN
                RAISE_APPLICATION_ERROR(-20200,'Cotización No. ' || nIdCotizacion || ' SubGrupo No. ' || nIDetCotizacion ||
                                        ' y Censo No. ' || X.IdAsegurado || ' tiene Coberturas con Suma Asegurada y Prima en Cero');
@@ -149,7 +191,7 @@ BEGIN
                AND IdAsegurado       = Z.IdAsegurado
                AND SumaAsegCobMoneda = 0
                AND PrimaCobMoneda    = 0;
-         
+
             IF NVL(nCobCeros,0) > 0 THEN
                RAISE_APPLICATION_ERROR(-20200,'Cotización No. ' || nIdCotizacion || ' SubGrupo No. ' || nIDetCotizacion ||
                                        ' y Asegurado No. ' || Z.IdAsegurado || ' tiene Coberturas con Suma Asegurada y Prima en Cero');
@@ -560,7 +602,7 @@ BEGIN
       GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(nCodCia, nCodEmpresa, nIdCotizacion, W.IDetCotizacion);
    END LOOP;
    GT_COTIZACIONES.ACTUALIZAR_VALORES(nCodCia, nCodEmpresa, nIdCotizacion);
-   
+
    IF GT_COTIZACIONES.MONTO_SAMI(nCodCia, nCodEmpresa, nIdCotizacion) > 0 THEN
       GT_COTIZACIONES.CALCULA_SAMI(nCodCia, nCodEmpresa, nIdCotizacion);
    END IF;
@@ -654,11 +696,11 @@ BEGIN
 
    nRangoSAMI     := OC_POLIZAS.RANGO_SAMI(nCodCia, nCodEmpresa, NULL, nCantAsegurados);
    nSumaAsegSAMI  := NVL(nRangoSAMI * nPromedioSumaAseg,0);
-   
+
    IF nSumaAsegSAMI > 12000000 THEN
       nSumaAsegSAMI := 12000000;
    END IF;
-   
+
    IF nSAMIAutorizado = 0 THEN
       nSAMIAutorizado := nSumaAsegSAMI;
    END IF;
@@ -872,7 +914,7 @@ BEGIN
       nComisPromotor   := NVL(nPorcComisProm,0);
       nComisDirecReg   := NVL(nPorcComisDir,0);
    END IF;
-   
+
    nFactorAjuste := NVL(nFactorAjuste,0) * NVL(nFactorAjusteSubGrupo,1);
 
    cClaveCotizacion := 'M' || TRIM(TO_CHAR(nPorcUtilidad + nPorcGtoAdmin,'00.00')) || '-' ||
@@ -1191,8 +1233,8 @@ BEGIN
               AND P.IDPOLIZA    =   nIdPoliza;
             --
             -- Agentes            
-            
-             
+
+
                  IF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 5 THEN
                     cOrigen  := 'U';
                  ELSIF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 4 THEN
@@ -1212,7 +1254,7 @@ BEGIN
                  OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, X.CodAgente, 100);
             --
            -- IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, X.CodAgente) <> 'S' THEN --  CAPELE 20200227
-                 
+
                    nProporcAjust := 0;
                  FOR Y IN AGEDIS_Q LOOP
                     IF Y.CodNivel = 1 THEN
@@ -1263,7 +1305,7 @@ BEGIN
                  END LOOP;
 
            -- END IF;
-            
+
          BEGIN
             OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
          EXCEPTION
@@ -1273,7 +1315,7 @@ BEGIN
            WHEN OTHERS THEN
               RAISE_APPLICATION_ERROR(-20225,'Error en distribución de Agentes ' || SQLERRM);
          END;
-        
+
         UPDATE COTIZACIONES
            SET IdPoliza = nIdPoliza
          WHERE CodCia       = nCodCia
@@ -1427,4 +1469,17 @@ END COPIAR_COTIZACION_WEB;
 
 
 END GT_COTIZACIONES;
+/
+
+--
+-- GT_COTIZACIONES  (Synonym) 
+--
+--  Dependencies: 
+--   GT_COTIZACIONES (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM GT_COTIZACIONES FOR SICAS_OC.GT_COTIZACIONES
+/
+
+
+GRANT EXECUTE ON SICAS_OC.GT_COTIZACIONES TO PUBLIC
 /

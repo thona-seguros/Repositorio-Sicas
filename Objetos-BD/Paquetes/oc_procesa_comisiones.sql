@@ -1,12 +1,54 @@
-CREATE OR REPLACE PACKAGE OC_PROCESA_COMISIONES IS
+--
+-- OC_PROCESA_COMISIONES  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DUAL (Table)
+--   VALORES_DE_LISTAS (Table)
+--   NOTAS_DE_CREDITO (Table)
+--   OC_AGENTE_POLIZA_T (Package)
+--   POLIZAS (Table)
+--   OC_DETALLE_TRANSACCION (Package)
+--   OC_ENDOSO (Package)
+--   OC_ENDOSO_TEXTO (Package)
+--   OC_FACTURAS (Package)
+--   DETALLE_COMISION (Table)
+--   DETALLE_FACTURAS (Table)
+--   DETALLE_NOTAS_DE_CREDITO (Table)
+--   OC_TRANSACCION (Package)
+--   OC_VALORES_DE_LISTAS (Package)
+--   AGENTES (Table)
+--   AGENTES_DISTRIBUCION_COMISION (Table)
+--   AGENTES_DISTRIBUCION_POLIZA (Table)
+--   AGENTES_DISTRIBUCION_POLIZA_T (Table)
+--   AGENTE_POLIZA (Table)
+--   AGENTE_POLIZA_T (Table)
+--   OC_DETALLE_COMISION (Package)
+--   OC_DETALLE_FACTURAS (Package)
+--   CAMCAR_AGENTE_POLIZA (Table)
+--   CAMCAR_POLIZA (Table)
+--   CAMCAR_PORCEN (Table)
+--   CATALOGO_DE_CONCEPTOS (Table)
+--   COMISIONES (Table)
+--   OC_NOTAS_DE_CREDITO (Package)
+--   OC_COMISIONES (Package)
+--   OC_COMPROBANTES_CONTABLES (Package)
+--   DETALLE_POLIZA (Table)
+--   ENDOSOS (Table)
+--   ENDOSO_TEXTO (Table)
+--   FACTURAS (Table)
+--   TRANSACCION (Table)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESA_COMISIONES IS
 
-PROCEDURE CAMBIO_COMISIONES(NCODCIA            NUMBER, 
-                            NCODEMPRESA        NUMBER, 
+PROCEDURE CAMBIO_COMISIONES(NCODCIA            NUMBER,
+                            NCODEMPRESA        NUMBER,
                             NIDPOLIZA          NUMBER,
                             NAGENTE_ORIGEN     NUMBER);
-                             
+
 PROCEDURE INSERTA_POLIZA(PCODCIA            NUMBER,
-                         PCODEMPRESA        NUMBER, 
+                         PCODEMPRESA        NUMBER,
                          PIDPOLIZA          NUMBER,
                          PAGENTE_ORIGEN     NUMBER,
                          PAGENTE_DESTINO    NUMBER,
@@ -15,46 +57,53 @@ PROCEDURE INSERTA_POLIZA(PCODCIA            NUMBER,
                          PPARTICIPANTE      VARCHAR2) ;
 
 PROCEDURE ACTUALIZA_POLIZA(PCODCIA            NUMBER,
-                           PCODEMPRESA        NUMBER, 
+                           PCODEMPRESA        NUMBER,
                            PIDPOLIZA          NUMBER,
                            PAGENTE_ORIGEN     NUMBER,
                            PAGENTE_DESTINO    NUMBER);
-                         
-PROCEDURE INSERTA_ORIGEN(PCODCIA            NUMBER, 
-                         PCODEMPRESA        NUMBER, 
+
+PROCEDURE INSERTA_ORIGEN(PCODCIA            NUMBER,
+                         PCODEMPRESA        NUMBER,
                          PIDPOLIZA          NUMBER,
                          PAGENTE_ORIGEN     NUMBER,
                          PAGENTE_DESTINO    NUMBER,
                          PPARTICIPANTE      VARCHAR2);
-                              
-PROCEDURE INSERTA_DESTINO(PCODCIA            NUMBER, 
-                          PCODEMPRESA        NUMBER, 
+
+PROCEDURE INSERTA_DESTINO(PCODCIA            NUMBER,
+                          PCODEMPRESA        NUMBER,
                           PIDPOLIZA          NUMBER,
                           PAGENTE_ORIGEN     NUMBER,
                           PAGENTE_DESTINO    NUMBER,
                          PPARTICIPANTE      VARCHAR2);
 
 PROCEDURE ENVIA_ENDOSO_SIN_VALOR(PCODCIA            NUMBER,
-                                 PCODEMPRESA        NUMBER, 
+                                 PCODEMPRESA        NUMBER,
                                  PIDPOLIZA          NUMBER,
                                  PAGENTE_ORIGEN     NUMBER,
                                  PAGENTE_DESTINO    NUMBER,
                                  PPROMOTOR_ORIGEN   NUMBER,
                                  PPROMOTOR_DESTINO  NUMBER,
                                  PPARTICIPANTE      VARCHAR2);
-                                 
+
 END OC_PROCESA_COMISIONES;
 /
-CREATE OR REPLACE PACKAGE BODY OC_PROCESA_COMISIONES IS
+
+--
+-- OC_PROCESA_COMISIONES  (Package Body) 
+--
+--  Dependencies: 
+--   OC_PROCESA_COMISIONES (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESA_COMISIONES IS
 --
 -- MODIFICACIONES
 -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 -- CAMBIO DE COMISIONES AÑOS SUBSECUEBTES                                    2019/08/19  ICO LARPLASUB
 --
-PROCEDURE CAMBIO_COMISIONES(NCODCIA            NUMBER, 
-                            NCODEMPRESA        NUMBER, 
+PROCEDURE CAMBIO_COMISIONES(NCODCIA            NUMBER,
+                            NCODEMPRESA        NUMBER,
                             NIDPOLIZA          NUMBER,
-                            NAGENTE_ORIGEN     NUMBER) IS   
+                            NAGENTE_ORIGEN     NUMBER) IS
 nIdTransacAnul     TRANSACCION.IdTransaccion%TYPE;
 nIdTransacAnulNC   TRANSACCION.IdTransaccion%TYPE;
 nIdTransacPagos    TRANSACCION.IdTransaccion%TYPE;
@@ -89,18 +138,18 @@ CURSOR FACT_Q IS
     ORDER BY IdFactura;
 CURSOR NCR_Q IS
    SELECT IdNcr, IDetPol, IdEndoso, Saldo_Ncr_Moneda
-     FROM NOTAS_DE_CREDITO 
+     FROM NOTAS_DE_CREDITO
     WHERE CodCia     = nCodCia
       AND IdPoliza   = nIdPoliza
       AND StsNcr     = 'EMI'
     ORDER BY IdNcr;
 CURSOR FACT_ANU_Q IS
-   SELECT F.IdPoliza,            F.IDetPol,              F.CodCliente,         F.FecVenc, 
-          F.Monto_Fact_Local,    F.Monto_Fact_Moneda,    F.IdEndoso,           F.MtoComisi_Local, 
-          F.MtoComisi_Moneda,    F.NumCuota,             F.Tasa_Cambio,        F.CodGenerador, 
-          F.CodTipoDoc,          F.Cod_Moneda,           F.CodResPago,         F.IndFactElectronica, 
+   SELECT F.IdPoliza,            F.IDetPol,              F.CodCliente,         F.FecVenc,
+          F.Monto_Fact_Local,    F.Monto_Fact_Moneda,    F.IdEndoso,           F.MtoComisi_Local,
+          F.MtoComisi_Moneda,    F.NumCuota,             F.Tasa_Cambio,        F.CodGenerador,
+          F.CodTipoDoc,          F.Cod_Moneda,           F.CodResPago,         F.IndFactElectronica,
           F.IndGenAviCob,        F.FecGenAviCob,         D.IdTipoSeg,          F.IdFactura,
-          F.FECFINVIG,           F.CODPLANPAGO          
+          F.FECFINVIG,           F.CODPLANPAGO
      FROM FACTURAS F, DETALLE_POLIZA D
     WHERE F.CodCia           = nCodCia
       AND F.IdPoliza         = nIdPoliza
@@ -118,8 +167,8 @@ CURSOR DET_Q IS
      FROM DETALLE_FACTURAS
     WHERE IdFactura = nIdFacturaAnt;
 CURSOR NCR_ANU_Q IS
-   SELECT N.IdPoliza,             N.IDetPol,               N.CodCliente,     N.FecDevol, 
-          N.Monto_Ncr_Local,      N.Monto_Ncr_Moneda,      N.IdEndoso,       N.MtoComisi_Local, 
+   SELECT N.IdPoliza,             N.IDetPol,               N.CodCliente,     N.FecDevol,
+          N.Monto_Ncr_Local,      N.Monto_Ncr_Moneda,      N.IdEndoso,       N.MtoComisi_Local,
           N.MtoComisi_Moneda,     N.Tasa_Cambio,           N.Cod_Agente,     N.CodTipoDoc,
           N.CodMoneda,            N.IndFactElectronica,    D.IdTipoSeg,      N.IdNcr,
           N.FECFINVIG,            N.CODPLANPAGO
@@ -137,7 +186,7 @@ CURSOR DET_NCR_Q IS
           IndCptoPrima, MtoOrigDetLocal, MtoOrigDetMoneda
      FROM DETALLE_NOTAS_DE_CREDITO
     WHERE IdNcr  = nIdNcrAnt;
-    
+
 CURSOR C_AGENTES_D IS
   SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
          Porc_Com_Distribuida, Origen
@@ -152,7 +201,7 @@ BEGIN
       AND IdPoliza  = nIdPoliza;
 
    nIdTransacPagos := 0;
-   
+
    -- Anulación de Facturas Emitidas
    nIdTransacAnul := 0;
    FOR W IN FACT_Q LOOP
@@ -210,14 +259,14 @@ BEGIN
             nIdTransacEmis := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 7, 'FAC');
          END IF;
          --LARPLA
-         nIdFactura := OC_FACTURAS.INSERTAR(W.IdPoliza,          W.IDetPol,           W.CodCliente,      W.FecVenc,  
-                                            W.Monto_Fact_Local,  W.Monto_Fact_Moneda, W.IdEndoso,        W.MtoComisi_Local, 
-                                            W.MtoComisi_Moneda,  W.NumCuota,          W.Tasa_Cambio,     nCod_Agente, 
-                                            W.CodTipoDoc,        nCodCia,             W.Cod_Moneda,      W.CodResPago, 
+         nIdFactura := OC_FACTURAS.INSERTAR(W.IdPoliza,          W.IDetPol,           W.CodCliente,      W.FecVenc,
+                                            W.Monto_Fact_Local,  W.Monto_Fact_Moneda, W.IdEndoso,        W.MtoComisi_Local,
+                                            W.MtoComisi_Moneda,  W.NumCuota,          W.Tasa_Cambio,     nCod_Agente,
+                                            W.CodTipoDoc,        nCodCia,             W.Cod_Moneda,      W.CodResPago,
                                             nIdTransacEmis,      W.IndFactElectronica);
          UPDATE FACTURAS F
             SET IndGenAviCob = W.IndGenAviCob,
-                FecGenAviCob = W.FecGenAviCob  
+                FecGenAviCob = W.FecGenAviCob
           WHERE CodCia    = nCodCia
             AND IdFactura = nIdFactura;
 
@@ -236,7 +285,7 @@ BEGIN
                     Z.MtoOrigDetLocal, Z.MtoOrigDetMoneda, Z.IndPagoServicio,
                     Z.FecPagoServicio, Z.CodProveedor);
          END LOOP;
-         
+
        OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia, nIdFactura, 'IVASIN');
       --------------------------------------------------
 
@@ -335,9 +384,9 @@ BEGIN
             nIdTransacEmisNC := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 2, 'NOTACR');
          END IF;
          -- LARPLA
-         nIdNcr := OC_NOTAS_DE_CREDITO.INSERTA_NOTA_CREDITO(nCodCia,            W.IdPoliza,          W.IDetPol,         W.IdEndoso, 
+         nIdNcr := OC_NOTAS_DE_CREDITO.INSERTA_NOTA_CREDITO(nCodCia,            W.IdPoliza,          W.IDetPol,         W.IdEndoso,
                                                             W.CodCliente,       W.FecDevol,          W.Monto_Ncr_Local, W.Monto_Ncr_Moneda,
-                                                            W.MtoComisi_Local,  W.MtoComisi_Moneda,  nCod_Agente,       W.CodMoneda, 
+                                                            W.MtoComisi_Local,  W.MtoComisi_Moneda,  nCod_Agente,       W.CodMoneda,
                                                             W.Tasa_Cambio,      nIdTransacEmisNC,    W.IndFactElectronica);
 
          OC_DETALLE_TRANSACCION.CREA (nIdTransacEmisNC, nCodCia,  nCodEmpresa, 2, 'NOTACR', 'NOTAS_DE_CREDITO',
@@ -382,29 +431,29 @@ BEGIN
       DELETE AGENTE_POLIZA_T
        WHERE CODCIA     = nCodCia
          AND IDPOLIZA   = NIDPOLIZA;
-      --      
-      COMMIT; 
+      --
+      COMMIT;
       --
    END IF;
 END CAMBIO_COMISIONES;
 
 PROCEDURE INSERTA_POLIZA(PCODCIA            NUMBER,
-                         PCODEMPRESA        NUMBER, 
+                         PCODEMPRESA        NUMBER,
                          PIDPOLIZA          NUMBER,
                          PAGENTE_ORIGEN     NUMBER,
                          PAGENTE_DESTINO    NUMBER,
                          PPROMOTOR_ORIGEN   NUMBER,
                          PPROMOTOR_DESTINO  NUMBER,
-                         PPARTICIPANTE      VARCHAR2) IS   
---                        
+                         PPARTICIPANTE      VARCHAR2) IS
+--
 NCODTIPO_AGE_ORI   AGENTES.CODTIPO%TYPE;
 NCODTIPO_AGE_DES   AGENTES.CODTIPO%TYPE;
-NCODTIPO_PRO_ORI   AGENTES.CODTIPO%TYPE;    
+NCODTIPO_PRO_ORI   AGENTES.CODTIPO%TYPE;
 NCODTIPO_PRO_DES   AGENTES.CODTIPO%TYPE;
 --
 BEGIN
  --
- BEGIN 
+ BEGIN
     SELECT A.CODTIPO
     INTO NCODTIPO_AGE_ORI
     FROM AGENTES A
@@ -416,7 +465,7 @@ BEGIN
           NCODTIPO_AGE_ORI := '';
  END;
  --
- BEGIN 
+ BEGIN
     SELECT A.CODTIPO
     INTO NCODTIPO_AGE_DES
     FROM AGENTES A
@@ -428,7 +477,7 @@ BEGIN
           NCODTIPO_AGE_DES := '';
  END;
  --
- BEGIN 
+ BEGIN
     SELECT A.CODTIPO
     INTO NCODTIPO_PRO_ORI
     FROM AGENTES A
@@ -440,7 +489,7 @@ BEGIN
           NCODTIPO_PRO_ORI := '';
  END;
  --
- BEGIN 
+ BEGIN
     SELECT A.CODTIPO
     INTO NCODTIPO_PRO_DES
     FROM AGENTES A
@@ -469,7 +518,7 @@ BEGIN
    NCODTIPO_AGE_ORI,   NCODTIPO_AGE_DES,
    NCODTIPO_PRO_ORI,   NCODTIPO_PRO_DES,
    TRUNC(SYSDATE),     SYSDATE,
-   'PEN',              PPARTICIPANTE)  
+   'PEN',              PPARTICIPANTE)
  ;
  COMMIT;
  --
@@ -478,10 +527,10 @@ BEGIN
 END INSERTA_POLIZA;
 
 PROCEDURE ACTUALIZA_POLIZA(PCODCIA            NUMBER,
-                           PCODEMPRESA        NUMBER, 
+                           PCODEMPRESA        NUMBER,
                            PIDPOLIZA          NUMBER,
                            PAGENTE_ORIGEN     NUMBER,
-                           PAGENTE_DESTINO    NUMBER) IS   
+                           PAGENTE_DESTINO    NUMBER) IS
 
 NNIVEL_1_ORI  AGENTES.CODNIVEL%TYPE;
 NNIVEL_2_ORI  AGENTES.CODNIVEL%TYPE;
@@ -490,7 +539,7 @@ NNIVEL_1_DES  AGENTES.CODNIVEL%TYPE;
 NNIVEL_2_DES  AGENTES.CODNIVEL%TYPE;
 NNIVEL_3_DES  AGENTES.CODNIVEL%TYPE;
 NERRORESTRUCTURA NUMBER;
---                        
+--
 BEGIN
  --
  NERRORESTRUCTURA := 0;
@@ -544,7 +593,7 @@ BEGIN
      --
      AND B.COD_AGENTE(+) = A.COD_AGENTE_JEFE
      --
-     AND C.COD_AGENTE(+) = B.COD_AGENTE_JEFE;      
+     AND C.COD_AGENTE(+) = B.COD_AGENTE_JEFE;
  EXCEPTION
      WHEN OTHERS THEN
           NNIVEL_1_ORI := 999;
@@ -555,9 +604,9 @@ BEGIN
  IF NNIVEL_1_ORI != NNIVEL_1_DES THEN
       NERRORESTRUCTURA := 1;
  ELSIF NNIVEL_2_ORI != NNIVEL_2_DES THEN
-      NERRORESTRUCTURA := 1; 
+      NERRORESTRUCTURA := 1;
  ELSIF NNIVEL_3_ORI != NNIVEL_3_DES THEN
-      NERRORESTRUCTURA := 1; 
+      NERRORESTRUCTURA := 1;
  END IF;
  --
  IF NERRORESTRUCTURA != 0 THEN
@@ -587,12 +636,12 @@ BEGIN
 END ACTUALIZA_POLIZA;
 
 
-PROCEDURE INSERTA_ORIGEN(PCODCIA            NUMBER, 
-                         PCODEMPRESA        NUMBER, 
+PROCEDURE INSERTA_ORIGEN(PCODCIA            NUMBER,
+                         PCODEMPRESA        NUMBER,
                          PIDPOLIZA          NUMBER,
                          PAGENTE_ORIGEN     NUMBER,
                          PAGENTE_DESTINO    NUMBER,
-                         PPARTICIPANTE      VARCHAR2) IS   
+                         PPARTICIPANTE      VARCHAR2) IS
 BEGIN
  --
  INSERT INTO CAMCAR_PORCEN
@@ -611,23 +660,23 @@ BEGIN
          ADP.ORIGEN,
          PPARTICIPANTE,
          TRUNC(SYSDATE),
-         SYSDATE,            
+         SYSDATE,
          '',                 --LARPLASUB
          'CAMCAR'            --LARPLASUB
-    FROM AGENTES_DISTRIBUCION_POLIZA ADP 
+    FROM AGENTES_DISTRIBUCION_POLIZA ADP
    WHERE ADP.CODCIA     = PCODCIA
      AND ADP.IDPOLIZA   = PIDPOLIZA
  ;
  --
 END INSERTA_ORIGEN;
 
-PROCEDURE INSERTA_DESTINO(PCODCIA            NUMBER, 
-                          PCODEMPRESA        NUMBER, 
+PROCEDURE INSERTA_DESTINO(PCODCIA            NUMBER,
+                          PCODEMPRESA        NUMBER,
                           PIDPOLIZA          NUMBER,
                           PAGENTE_ORIGEN     NUMBER,
                           PAGENTE_DESTINO    NUMBER,
-                          PPARTICIPANTE      VARCHAR2) IS   
-CJEFE      VARCHAR2(1);                        
+                          PPARTICIPANTE      VARCHAR2) IS
+CJEFE      VARCHAR2(1);
 NNJEFE     AGENTES.COD_AGENTE%TYPE;
 NJEFE      AGENTES.COD_AGENTE%TYPE;
 NCODAGENTE AGENTES.COD_AGENTE%TYPE;
@@ -651,7 +700,7 @@ BEGIN
          COD_AGENTE_JEFE,
          PORC_COM_POLIZA,
          ORIGEN
-    FROM AGENTES_DISTRIBUCION_POLIZA ADP 
+    FROM AGENTES_DISTRIBUCION_POLIZA ADP
    WHERE ADP.CODCIA     = PCODCIA
      AND ADP.IDPOLIZA   = PIDPOLIZA
  ;
@@ -662,7 +711,7 @@ BEGIN
          PORC_COMISION,
          IND_PRINCIPAL,
          ORIGEN
-    FROM AGENTE_POLIZA ADP 
+    FROM AGENTE_POLIZA ADP
    WHERE ADP.CODCIA     = PCODCIA
      AND ADP.IDPOLIZA   = PIDPOLIZA
  ;
@@ -682,9 +731,9 @@ BEGIN
            INTO NCODAGENTE,        NNJEFE,              NCODNIVEL
            FROM AGENTES AG
           WHERE AG.COD_AGENTE = NJEFE;
-          -- 
-          IF NORDEN = 1 THEN 
-             UPDATE AGENTES_DISTRIBUCION_POLIZA_T ADP 
+          --
+          IF NORDEN = 1 THEN
+             UPDATE AGENTES_DISTRIBUCION_POLIZA_T ADP
                 SET ADP.COD_AGENTE       = PAGENTE_DESTINO,
                     ADP.COD_AGENTE_DISTR = PAGENTE_DESTINO,
                     ADP.COD_AGENTE_JEFE  = NNJEFE
@@ -693,7 +742,7 @@ BEGIN
                 AND ADP.COD_AGENTE       = PAGENTE_ORIGEN
                 AND ADP.COD_AGENTE_DISTR = PAGENTE_ORIGEN;
           ELSE
-             UPDATE AGENTES_DISTRIBUCION_POLIZA_T ADP 
+             UPDATE AGENTES_DISTRIBUCION_POLIZA_T ADP
                 SET ADP.COD_AGENTE       = PAGENTE_DESTINO,
                     ADP.COD_AGENTE_DISTR = NJEFE,
                     ADP.COD_AGENTE_JEFE  = NNJEFE
@@ -702,7 +751,7 @@ BEGIN
                 AND ADP.COD_AGENTE       = PAGENTE_ORIGEN
                 AND ADP.CODNIVEL         = NCODNIVEL;
           END IF;
-       EXCEPTION 
+       EXCEPTION
          WHEN NO_DATA_FOUND THEN
               CJEFE    := 'N';
        END;
@@ -710,7 +759,7 @@ BEGIN
        COMMIT;
        --
        NORDEN := NORDEN + 1;
-       IF NJEFE IS NULL OR CJEFE = 'N' THEN                                                       
+       IF NJEFE IS NULL OR CJEFE = 'N' THEN
           EXIT;
        END IF;
        --
@@ -721,7 +770,7 @@ BEGIN
        END IF;
  END LOOP;
   --
- UPDATE AGENTE_POLIZA_T AP 
+ UPDATE AGENTE_POLIZA_T AP
     SET AP.COD_AGENTE  = PAGENTE_DESTINO
   WHERE AP.CODCIA     = PCODCIA
     AND AP.IDPOLIZA   = PIDPOLIZA
@@ -750,7 +799,7 @@ BEGIN
          SYSDATE,
          '',
          'CAMCAR'
-    FROM AGENTES_DISTRIBUCION_POLIZA_T ADP 
+    FROM AGENTES_DISTRIBUCION_POLIZA_T ADP
    WHERE ADP.CODCIA     = PCODCIA
      AND ADP.IDPOLIZA   = PIDPOLIZA
  ;
@@ -765,7 +814,7 @@ BEGIN
          PPARTICIPANTE,
          TRUNC(SYSDATE),
          SYSDATE
-    FROM AGENTE_POLIZA_T ADP 
+    FROM AGENTE_POLIZA_T ADP
    WHERE ADP.CODCIA     = PCODCIA
      AND ADP.IDPOLIZA   = PIDPOLIZA
  ;
@@ -776,18 +825,18 @@ END INSERTA_DESTINO;
 
 
 PROCEDURE ENVIA_ENDOSO_SIN_VALOR(PCODCIA            NUMBER,
-                                 PCODEMPRESA        NUMBER, 
+                                 PCODEMPRESA        NUMBER,
                                  PIDPOLIZA          NUMBER,
                                  PAGENTE_ORIGEN     NUMBER,
                                  PAGENTE_DESTINO    NUMBER,
                                  PPROMOTOR_ORIGEN   NUMBER,
                                  PPROMOTOR_DESTINO  NUMBER,
-                                 PPARTICIPANTE      VARCHAR2) IS   
- nCodCia           ENDOSOS.CODCIA%TYPE;         
+                                 PPARTICIPANTE      VARCHAR2) IS
+ nCodCia           ENDOSOS.CODCIA%TYPE;
  nCodEmpresa       ENDOSOS.CODEMPRESA%TYPE;
- nIdPoliza         ENDOSOS.IDPOLIZA%TYPE;         
+ nIdPoliza         ENDOSOS.IDPOLIZA%TYPE;
  nIDetPol          ENDOSOS.IDETPOL%TYPE;
- cTipoEndoso       ENDOSOS.TIPOENDOSO%TYPE;       
+ cTipoEndoso       ENDOSOS.TIPOENDOSO%TYPE;
  cNumEndRef        ENDOSOS.NUMENDREF%TYPE;
  dFecIniVig        ENDOSOS.FECINIVIG%TYPE;
  dFecFinVig        ENDOSOS.FECFINVIG%TYPE;
@@ -821,12 +870,12 @@ BEGIN
      WHERE IDPOLIZA = PCODCIA
        AND CODCIA   = PIDPOLIZA;
    EXCEPTION
-     WHEN OTHERS THEN 
+     WHEN OTHERS THEN
           dFecFinVig := TRUNC(SYSDATE);
    END;
    --
-  SELECT USER,     USERENV('TERMINAL') 
-    INTO cUsuario, cTerminal 
+  SELECT USER,     USERENV('TERMINAL')
+    INTO cUsuario, cTerminal
     FROM SYS.DUAL;
   --
   SELECT NVL(MAX(IdEndoso),0) + 1
@@ -849,19 +898,19 @@ BEGIN
   nPorcComis        := 0;
   dFecExc           := TRUNC(SYSDATE);
   --
-  OC_ENDOSO.INSERTA(nCodCia,            nCodEmpresa,             nIdPoliza, 
-                    nIDetPol,           nIdendoso,               cTipoEndoso,    
+  OC_ENDOSO.INSERTA(nCodCia,            nCodEmpresa,             nIdPoliza,
+                    nIDetPol,           nIdendoso,               cTipoEndoso,
                     cNumEndRef,         dFecIniVig,              dFecFinVig,
-                    cCodPlan,           nSuma_Aseg_Moneda,       nPrima_Moneda,      
+                    cCodPlan,           nSuma_Aseg_Moneda,       nPrima_Moneda,
                     nPorcComis,         cMotivo_Endoso,          dFecExc);
   --
   OC_ENDOSO.EMITIR(nCodCia,             nCodEmpresa,             nIdPoliza,
-                   nIDetPol,            nIdendoso,               cTipoEndoso); 
-  --    
+                   nIDetPol,            nIdendoso,               cTipoEndoso);
+  --
   IF PPARTICIPANTE = 'A' THEN
      CTEXTO_INICIAL := 'Por medio del presente endoso, se hace constar que para la póliza en mención se realiza cambio de cartera, del agente '||
                         PAGENTE_ORIGEN||' al agente '||PAGENTE_DESTINO||' POR EL USUARIO, '||cUsuario||', EN LA TERMINAL - '||cTerminal;
-  ELSE 
+  ELSE
      CTEXTO_INICIAL := 'Por medio del presente endoso, se hace constar que para la póliza en mención se realiza cambio de cartera, del agente '||
                        PAGENTE_ORIGEN||' al agente '||PAGENTE_DESTINO||' del promotor '||PPROMOTOR_ORIGEN||' al Promotor '||PPROMOTOR_DESTINO||
                       ' POR EL USUARIO, '||cUsuario||', EN LA TERMINAL - '||cTerminal;
@@ -871,21 +920,21 @@ BEGIN
      SET E.DESCENDOSO = CTEXTO_INICIAL
    WHERE E.IDPOLIZA = nIdPoliza
      AND E.IDENDOSO = nIdendoso;
-  --            
+  --
   -- COMPLEMENTA TEXTO
   --
   BEGIN
-    SELECT AP.COD_AGENTE,  AP.COD_AGENTE   
+    SELECT AP.COD_AGENTE,  AP.COD_AGENTE
       INTO CAGENTE,        CCOD_AGENTE_JEFE
       FROM AGENTE_POLIZA_T AP
      WHERE AP.IDPOLIZA = nIdPoliza;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
-         CCOD_AGENTE_JEFE := 0;   
+         CCOD_AGENTE_JEFE := 0;
     WHEN OTHERS THEN
-         CCOD_AGENTE_JEFE := 0;   
+         CCOD_AGENTE_JEFE := 0;
   END;
-  --  
+  --
   CLINEA_T := CHR(10)||CTEXTO_INICIAL||CHR(10)||'Despues      Apartir del '||dFecFinVig||CHR(10);
   --
   WHILE CCOD_AGENTE_JEFE > 0 LOOP
@@ -896,10 +945,10 @@ BEGIN
                  ADP.COD_AGENTE_JEFE
             INTO CLINEA,
                  CCOD_AGENTE_JEFE
-            FROM AGENTES_DISTRIBUCION_POLIZA_T ADP  
-           WHERE ADP.IDPOLIZA         = nIdPoliza    
+            FROM AGENTES_DISTRIBUCION_POLIZA_T ADP
+           WHERE ADP.IDPOLIZA         = nIdPoliza
              AND ADP.COD_AGENTE       = CAGENTE
-             AND ADP.COD_AGENTE_DISTR = CCOD_AGENTE_JEFE;       
+             AND ADP.COD_AGENTE_DISTR = CCOD_AGENTE_JEFE;
         EXCEPTION
           WHEN NO_DATA_FOUND THEN
                CCOD_AGENTE_JEFE := 0;
@@ -908,10 +957,10 @@ BEGIN
         END;
         --
         CLINEA_T := CLINEA_T||CLINEA;
-        --        
+        --
   END LOOP;
   --
-  OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdendoso, CLINEA_T);                               
+  OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdendoso, CLINEA_T);
   --
 END;
 
@@ -919,4 +968,17 @@ END;
 
 
 END OC_PROCESA_COMISIONES;
+/
+
+--
+-- OC_PROCESA_COMISIONES  (Synonym) 
+--
+--  Dependencies: 
+--   OC_PROCESA_COMISIONES (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_PROCESA_COMISIONES FOR SICAS_OC.OC_PROCESA_COMISIONES
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_PROCESA_COMISIONES TO PUBLIC
 /

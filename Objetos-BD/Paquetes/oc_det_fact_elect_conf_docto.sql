@@ -5,30 +5,10 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   DBMS_STANDARD (Package)
+--   NOTAS_DE_CREDITO (Table)
+--   MONEDA (Table)
 --   PLAN_DE_PAGOS (Table)
 --   POLIZAS (Table)
---   FACTURAS (Table)
---   FACT_ELECT_CONF_DOCTO (Table)
---   FACT_ELECT_SERIES_FOLIOS (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_FACT_ELECT_CONF_DOCTO (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
---   DIRECCIONES_PNJ (Table)
---   DISTRITO (Table)
---   TASAS_CAMBIO (Table)
---   OC_CORREGIMIENTO (Package)
---   OC_DETALLE_FACTURAS (Package)
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---   ASEGURADO (Table)
---   MONEDA (Table)
---   NOTAS_DE_CREDITO (Table)
---   TIPOS_DE_SEGUROS (Table)
---   OC_PROVINCIA (Package)
---   COLONIA (Table)
---   CORREGIMIENTO (Table)
---   CAMBIA_ACENTOS (Function)
---   CLIENTES (Table)
 --   OC_DISTRITO (Package)
 --   OC_EMPRESAS (Package)
 --   OC_EMPRESAS_DE_SEGUROS (Package)
@@ -38,18 +18,38 @@
 --   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
 --   OC_FACT_ELECT_FORMA_PAGO (Package)
 --   OC_FACT_ELECT_SERIES_FOLIOS (Package)
+--   CORREGIMIENTO (Table)
+--   DETALLE_FACTURAS (Table)
+--   DETALLE_FACT_ELECT_CONF_DOCTO (Table)
+--   DETALLE_NOTAS_DE_CREDITO (Table)
 --   OC_TIPOS_DE_SEGUROS (Package)
 --   OC_TRANSACCION (Package)
 --   PAGOS (Table)
 --   PAGO_DETALLE (Table)
 --   PAIS (Table)
 --   PERSONA_NATURAL_JURIDICA (Table)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_COLONIA (Package)
+--   ASEGURADO (Table)
 --   PROVINCIA (Table)
+--   OC_CORREGIMIENTO (Package)
+--   OC_DETALLE_FACTURAS (Package)
+--   OC_DETALLE_NOTAS_DE_CREDITO (Package)
+--   CAMBIA_ACENTOS (Function)
+--   CLIENTES (Table)
+--   COLONIA (Table)
+--   TASAS_CAMBIO (Table)
 --   OC_MONEDA (Package)
 --   OC_PAIS (Package)
 --   OC_PERSONA_NATURAL_JURIDICA (Package)
+--   OC_CATALOGO_DE_CONCEPTOS (Package)
+--   OC_COLONIA (Package)
+--   DETALLE_POLIZA (Table)
+--   DIRECCIONES_PNJ (Table)
+--   DISTRITO (Table)
+--   FACTURAS (Table)
+--   FACT_ELECT_CONF_DOCTO (Table)
+--   FACT_ELECT_SERIES_FOLIOS (Table)
+--   OC_PROVINCIA (Package)
+--   TIPOS_DE_SEGUROS (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
 
@@ -560,7 +560,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                     IF cProceso = 'PAG' THEN
                         cValorAtributo := 'Pago'||cDescripcion;
                     ELSE
-                        cValorAtributo := OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia,cCodCpto)||cDescripcion;
+                        cValorAtributo := CAMBIA_ACENTOS(OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia,cCodCpto)||cDescripcion);
                     END IF;
                 ELSIF NVL(nIdNcr,0) != 0 THEN
                     IF cProceso = 'EMI' THEN
@@ -745,4 +745,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
     END GENERA_VALOR_ATRIBUTO;
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
+/
+
+--
+-- OC_DET_FACT_ELECT_CONF_DOCTO  (Synonym) 
+--
+--  Dependencies: 
+--   OC_DET_FACT_ELECT_CONF_DOCTO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_DET_FACT_ELECT_CONF_DOCTO FOR SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO TO PUBLIC
 /

@@ -5,28 +5,28 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   XMLTYPE (Type)
+--   UTL_FILE (Synonym)
 --   DUAL (Synonym)
 --   DBMS_LOB (Synonym)
 --   ALL_DIRECTORIES (Synonym)
 --   XMLAGG (Synonym)
 --   XMLTYPE (Synonym)
 --   XMLTYPE (Synonym)
---   UTL_FILE (Synonym)
+--   SYS_IXMLAGG (Function)
+--   VALORES_DE_LISTAS (Table)
+--   GT_REPORTE_FORMATO (Package)
 --   POLIZAS (Table)
 --   FAI_FONDOS_DETALLE_POLIZA (Table)
 --   FAI_REPORTES_PORTAL_CTRL (Table)
---   DETALLE_POLIZA (Table)
---   ENDOSOS (Table)
---   GT_REPORTE_FORMATO (Package)
---   SYS_IXMLAGG (Function)
 --   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   VALORES_DE_LISTAS (Table)
 --   OC_TIPOS_DE_SEGUROS (Package)
 --   PARAMETROS_GLOBALES (Table)
 --   REPORTE (Table)
 --   REPORTE_FORMATO (Table)
 --   REPORTE_PARAMETRO (Table)
 --   OC_GENERALES (Package)
+--   DETALLE_POLIZA (Table)
+--   ENDOSOS (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_FAI_REPORTES_PORTAL_CTRL AS
     FUNCTION NUMERO_REPORTE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER) RETURN NUMBER;
@@ -297,6 +297,7 @@ CURSOR POLIZAS_Q IS
        AND P.IdPoliza   = DP.IdPoliza
        AND OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(P.CodCia, P.CodEmpresa, DP.IdTipoSeg) = 'S'  
        AND GT_FAI_FONDOS_DETALLE_POLIZA.EXISTEN_FONDOS(P.CodCia, P.CodEmpresa, P.IdPoliza, DP.IDetPol, DP.Cod_Asegurado) = 'S'
+       AND P.IdPoliza = 27670
      /*  AND NOT EXISTS (SELECT 'S'
                          FROM FAI_REPORTES_PORTAL_CTRL
                         WHERE CodCia        = nCodCia
@@ -563,4 +564,17 @@ EXCEPTION
 END GENERA_REPORTERIA;
 
 END GT_FAI_REPORTES_PORTAL_CTRL;
+/
+
+--
+-- GT_FAI_REPORTES_PORTAL_CTRL  (Synonym) 
+--
+--  Dependencies: 
+--   GT_FAI_REPORTES_PORTAL_CTRL (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM GT_FAI_REPORTES_PORTAL_CTRL FOR SICAS_OC.GT_FAI_REPORTES_PORTAL_CTRL
+/
+
+
+GRANT EXECUTE ON SICAS_OC.GT_FAI_REPORTES_PORTAL_CTRL TO PUBLIC
 /

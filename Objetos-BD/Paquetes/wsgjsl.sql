@@ -1456,3 +1456,16 @@ end Output_Invoke_CAL_JS;
 
 end;
 /
+
+--
+-- WSGJSL  (Synonym) 
+--
+--  Dependencies: 
+--   WSGJSL (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM WSGJSL FOR SICAS_OC.WSGJSL
+/
+
+
+GRANT EXECUTE ON SICAS_OC.WSGJSL TO PUBLIC
+/

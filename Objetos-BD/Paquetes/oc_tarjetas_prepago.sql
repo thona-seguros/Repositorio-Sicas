@@ -5,33 +5,33 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   DBMS_STANDARD (Package)
+--   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
 --   PLAN_COBERTURAS (Table)
 --   POLIZAS (Table)
 --   PRIMAS_DEPOSITO (Table)
---   FACTURAS (Table)
---   DETALLE_POLIZA (Table)
---   TARJETAS_PREPAGO (Table)
---   TARJETAS_PREPAGO_ACTIV (Table)
---   OC_DETALLE_POLIZA (Package)
+--   CONFIG_COMISIONES (Table)
+--   OC_TAREA (Package)
+--   OC_TIPOS_DE_SEGUROS (Package)
 --   AGENTES (Table)
 --   AGENTES_DISTRIBUCION_POLIZA (Table)
 --   AGENTE_POLIZA (Table)
 --   ASEGURADO (Table)
---   TIPOS_DE_SEGUROS (Table)
---   CONFIG_COMISIONES (Table)
+--   OC_CONFIG_COMISIONES (Package)
+--   OC_DETALLE_POLIZA (Package)
 --   CLIENTES (Table)
 --   CLIENTE_ASEG (Table)
---   OC_TAREA (Package)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
---   OC_ASEGURADO (Package)
---   OC_CLIENTES (Package)
---   OC_COBERT_ACT (Package)
---   OC_CONFIG_COMISIONES (Package)
+--   TARJETAS_PREPAGO (Table)
+--   TARJETAS_PREPAGO_ACTIV (Table)
 --   OC_GENERALES (Package)
 --   OC_PLAN_COBERTURAS (Package)
 --   OC_POLIZAS (Package)
+--   OC_ASEGURADO (Package)
+--   OC_CLIENTES (Package)
+--   OC_COBERT_ACT (Package)
+--   DETALLE_POLIZA (Table)
+--   FACTURAS (Table)
 --   OC_PRIMAS_DEPOSITO (Package)
+--   TIPOS_DE_SEGUROS (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.oc_tarjetas_prepago IS
 
@@ -734,4 +734,17 @@ BEGIN
 END CAMBIA_LIBERA_TARJETA;
 
 END OC_TARJETAS_PREPAGO;
+/
+
+--
+-- OC_TARJETAS_PREPAGO  (Synonym) 
+--
+--  Dependencies: 
+--   OC_TARJETAS_PREPAGO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_TARJETAS_PREPAGO FOR SICAS_OC.OC_TARJETAS_PREPAGO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_TARJETAS_PREPAGO TO PUBLIC
 /

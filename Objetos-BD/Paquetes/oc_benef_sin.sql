@@ -12,13 +12,13 @@
 --   XMLTYPE (Synonym)
 --   XMLTYPE (Synonym)
 --   SYS_IXMLAGG (Function)
---   ASEGURADO (Table)
---   BENEF_SIN (Table)
---   BENEF_SIN_PAGOS (Table)
 --   MEDIOS_DE_PAGO (Table)
 --   SINIESTRO (Table)
 --   OC_VALORES_DE_LISTAS (Package)
 --   PERSONA_NATURAL_JURIDICA (Table)
+--   ASEGURADO (Table)
+--   BENEF_SIN (Table)
+--   BENEF_SIN_PAGOS (Table)
 --   OC_ASEGURADO (Package)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_BENEF_SIN IS
@@ -428,4 +428,17 @@ END EXISTE_BENEF_SIN;
 --
 --
 END OC_BENEF_SIN;
+/
+
+--
+-- OC_BENEF_SIN  (Synonym) 
+--
+--  Dependencies: 
+--   OC_BENEF_SIN (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_BENEF_SIN FOR SICAS_OC.OC_BENEF_SIN
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_BENEF_SIN TO PUBLIC
 /

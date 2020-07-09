@@ -5,29 +5,29 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   DUAL (Synonym)
+--   OC_AGENTES (Package)
+--   OC_AGENTES_DETALLES_POLIZAS (Package)
+--   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
 --   POLIZAS (Table)
 --   DATOS_PART_EMISION (Table)
---   DETALLE_POLIZA (Table)
---   OC_DETALLE_POLIZA (Package)
+--   OC_TAREA (Package)
+--   OC_TIPOS_DE_SEGUROS (Package)
 --   AGENTES_DETALLES_POLIZAS (Table)
 --   AGENTES_DISTRIBUCION_COMISION (Table)
 --   AGENTES_DISTRIBUCION_POLIZA (Table)
 --   AGENTE_POLIZA (Table)
+--   OC_CONFIG_COMISIONES (Package)
+--   OC_DETALLE_POLIZA (Package)
 --   COBERTURAS (Table)
 --   COBERT_ACT (Table)
---   OC_TAREA (Package)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_AGENTES (Package)
---   OC_AGENTES_DETALLES_POLIZAS (Package)
---   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
+--   OC_GENERALES (Package)
+--   OC_PLAN_COBERTURAS (Package)
+--   OC_POLIZAS (Package)
 --   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
 --   OC_BENEFICIARIO (Package)
 --   OC_COBERT_ACT (Package)
 --   OC_COMISIONES (Package)
---   OC_CONFIG_COMISIONES (Package)
---   OC_GENERALES (Package)
---   OC_PLAN_COBERTURAS (Package)
---   OC_POLIZAS (Package)
+--   DETALLE_POLIZA (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.TH_RENOVAR IS
   
@@ -631,4 +631,17 @@ END RENOVAR_MEXCAL_CAMBIO;
 
 
 END TH_RENOVAR;
+/
+
+--
+-- TH_RENOVAR  (Synonym) 
+--
+--  Dependencies: 
+--   TH_RENOVAR (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM TH_RENOVAR FOR SICAS_OC.TH_RENOVAR
+/
+
+
+GRANT EXECUTE ON SICAS_OC.TH_RENOVAR TO PUBLIC
 /

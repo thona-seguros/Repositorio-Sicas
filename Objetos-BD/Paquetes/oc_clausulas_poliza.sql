@@ -1,3 +1,13 @@
+--
+-- OC_CLAUSULAS_POLIZA  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DBMS_STANDARD (Package)
+--   POLIZAS (Table)
+--   CLAUSULAS_POLIZA (Table)
+--
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_CLAUSULAS_POLIZA IS
 
 PROCEDURE COPIAR(nCodCia NUMBER, nIdPolizaOrig NUMBER, nIdPolizaDest NUMBER);
@@ -20,11 +30,18 @@ PROCEDURE RENOVAR(nCodCia NUMBER, nIdPolizaOrig NUMBER, nIdPolizaDest NUMBER);  
 
 END OC_CLAUSULAS_POLIZA;
 /
+
+--
+-- OC_CLAUSULAS_POLIZA  (Package Body) 
+--
+--  Dependencies: 
+--   OC_CLAUSULAS_POLIZA (Package)
+--
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_CLAUSULAS_POLIZA IS
 --
 -- BITACORA DE CAMBIO
 -- SE AGREGO LA FUNCIONALIDAD PARA RENOVACION DE CLAUSULAS 31/08/2017  CLAUREN
--- SE CORRIGIO PROCEDIMIENTO DE RENOVACION                 01/12/2019  RENOV
+-- SE CORRIGIO PROCEDIMIENTO DE RENOVACION                 01/12/2019  RENOV   JICO
 --
 PROCEDURE COPIAR(nCodCia NUMBER, nIdPolizaOrig NUMBER, nIdPolizaDest NUMBER) IS
 
@@ -154,10 +171,23 @@ BEGIN
          Texto,     Inicio_Vigencia, Fin_Vigencia,    Estado)
       VALUES
         (X.CodCia,  nIdPoliza,       X.Cod_Clausula,  X.Tipo_Clausula,
-         X.Texto,   dFecIniVig,      dFecFinVig,      'XRENOV');
+         X.Texto,   dFecIniVig,      dFecFinVig,      'SOLICI');
    END LOOP;
    --
 END RENOVAR;   --RENOV FIN
 
 END OC_CLAUSULAS_POLIZA;
+/
+
+--
+-- OC_CLAUSULAS_POLIZA  (Synonym) 
+--
+--  Dependencies: 
+--   OC_CLAUSULAS_POLIZA (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_CLAUSULAS_POLIZA FOR SICAS_OC.OC_CLAUSULAS_POLIZA
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_CLAUSULAS_POLIZA TO PUBLIC
 /

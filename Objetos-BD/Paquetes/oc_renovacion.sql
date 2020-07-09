@@ -1,4 +1,49 @@
-CREATE OR REPLACE PACKAGE OC_RENOVACION IS
+--
+-- OC_RENOVACION  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DBMS_STANDARD (Package)
+--   SOLICITUDES_CLAUSULAS (Table)
+--   SOLICITUD_DETALLE (Table)
+--   SOLICITUD_EMISION (Table)
+--   PLAN_COBERTURAS (Table)
+--   POLIZAS (Table)
+--   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
+--   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
+--   OC_TIPOS_DE_SEGUROS (Package)
+--   AGENTES_DETALLES_POLIZAS (Table)
+--   AGENTES_DISTRIBUCION_COMISION (Table)
+--   AGENTES_DISTRIBUCION_POLIZA (Table)
+--   AGENTE_POLIZA (Table)
+--   ASEGURADO (Table)
+--   ASEGURADO_CERTIFICADO (Table)
+--   ASISTENCIAS_ASEGURADO (Table)
+--   ASISTENCIAS_DETALLE_POLIZA (Table)
+--   BENEFICIARIO (Table)
+--   REGLA_SA_COBER (Table)
+--   RENOVACIONES (Table)
+--   OC_DETALLE_POLIZA (Package)
+--   CLAUSULAS_DETALLE (Table)
+--   CLAUSULAS_POLIZA (Table)
+--   CLIENTES (Table)
+--   COBERTURAS (Table)
+--   COBERTURA_ASEG (Table)
+--   COBERT_ACT (Table)
+--   COBERT_ACT_ASEG (Table)
+--   OC_FILIALES (Package)
+--   OC_GENERALES (Package)
+--   OC_PLAN_COBERTURAS (Package)
+--   OC_POLIZAS (Package)
+--   OC_CLAUSULAS_POLIZA (Package)
+--   DETALLE_POLIZA (Table)
+--   EXTRAE_CLAUSULA_POL (Function)
+--   FACTURAS (Table)
+--   OC_SOLICITUD_EMISION (Package)
+--   TRANSACCION (Table)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_RENOVACION IS
 
 FUNCTION MIGRA_A_AUTOFACIL(P_POLIZA IN  NUMBER,
                            MENSAJE  OUT VARCHAR2) RETURN NUMBER;
@@ -11,19 +56,20 @@ PROCEDURE RENOVAR(NCODCIA               IN NUMBER,
                   NPOLIZA_SALIDA        OUT NUMBER);
 
 END OC_RENOVACION;
- 
- 
- 
-
- 
- 
 /
-CREATE OR REPLACE PACKAGE BODY OC_RENOVACION IS
+
+--
+-- OC_RENOVACION  (Package Body) 
+--
+--  Dependencies: 
+--   OC_RENOVACION (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_RENOVACION IS
 --
 -- CREADO 20/06/2016
 -- BITACORA DE CAMBIOS
 --
--- SE COLOCO EL PROCEDIMIENTO RENOVAR       JICO 20191202
+-- SE COLOCO EL PROCEDIMIENTO RENOVAR       01/12/2019  RENOV   JICO
 --
  W_CODCIA                   POLIZAS.CODCIA%TYPE;
  W_CODEMPRESA               POLIZAS.CODEMPRESA%TYPE;
@@ -334,7 +380,7 @@ EXCEPTION
       RETURN 0;  
 END;
 
-PROCEDURE RENOVAR(NCODCIA               IN NUMBER, 
+PROCEDURE RENOVAR(NCODCIA               IN NUMBER,       --01/12/2019  RENOV
                   NIDPOLIZAREN          IN NUMBER, 
                   CID_GENERA_SUBGRUPOS  IN VARCHAR2,
                   CID_GENERA_ASEGURADOS IN VARCHAR2,
@@ -571,7 +617,7 @@ BEGIN
         (nIdPoliza,                 P.CODEMPRESA,               P.CODCIA,
          P.TIPOPOL,                 P.NUMPOLREF,                dFecIni,
          dFecFin,                   dFecHoy,                    dFecHoy,
-         dFecFin,                   'XRE',                      dFecHoy,
+         dFecFin,                   'SOL',                      dFecHoy,
          '',                        '',                         P.SUMAASEG_LOCAL * nTasaCambio,
          --
          P.SUMAASEG_MONEDA,         P.PRIMANETA_LOCAL * nTasaCambio, P.PRIMANETA_MONEDA,
@@ -679,7 +725,7 @@ BEGIN
               D.IDTIPOSEG,          nTasaCambio,         D.PORCCOMIS,
               --
                D.PLANCOB,            D.MONTOCOMIS,         D.NUMDETREF,
-              'XRE',                '',                   '',
+              'SOL',                '',                   '',
               D.CODPROMOTOR,        D.INDDECLARA,         D.INDSINASEG,
               D.CODFILIAL,          D.CODCATEGORIA,       D.INDFACTELECTRONICA,
               D.INDASEGMODELO,      D.CANTASEGMODELO,     D.MONTOCOMISH,
@@ -774,7 +820,7 @@ BEGIN
                      Y.IDTIPOSEG,           Y.TIPOREF,             Y.NUMREF,              Y.CODCOBERT,
                      Y.SUMAASEG_LOCAL * nTasaCambio,               Y.SUMAASEG_MONEDA,     Y.TASA,                Y.PRIMA_MONEDA,
                      --
-                     Y.PRIMA_LOCAL * nTasaCambio,                  Y.IDENDOSO,            'XRE',                 Y.PLANCOB,
+                     Y.PRIMA_LOCAL * nTasaCambio,                  Y.IDENDOSO,            'SOL',                 Y.PLANCOB,
                      Y.COD_MONEDA,          Y.DEDUCIBLE_LOCAL * nTasaCambio,              Y.DEDUCIBLE_MONEDA,    Y.COD_ASEGURADO,
                      Y.INDCAMBIOSAMI,       Y.SUMAASEGORIGEN,      Y.PRIMANIVMONEDA,      Y.PRIMANIVLOCAL * nTasaCambio,
                      --
@@ -808,7 +854,7 @@ BEGIN
                      IDENDOSO,             FECANULEXCLU,         MOTIVANULEXCLU,       SUMAASEG_MONEDA,
                      PRIMANETA_MONEDA,     IDENDOSOEXCLU,        MONTOAPORTEASEG,      INDAJUSUMAASEGDECL)
                   VALUES
-                    (P.CODCIA,             nIdPoliza,            P.IDETPOL,            P.COD_ASEGURADO,      'XRE',         
+                    (P.CODCIA,             nIdPoliza,            P.IDETPOL,            P.COD_ASEGURADO,      'SOL',         
                      P.SUMAASEG * nTasaCambio,        P.PRIMANETA * nTasaCambio,
                      P.CAMPO1,  P.CAMPO2,  P.CAMPO3,  P.CAMPO4,  P.CAMPO5,  P.CAMPO6,  P.CAMPO7,  P.CAMPO8,  P.CAMPO9,  P.CAMPO10,
                      P.CAMPO11, P.CAMPO12, P.CAMPO13, P.CAMPO14, P.CAMPO15, P.CAMPO16, P.CAMPO17, P.CAMPO18, P.CAMPO19, P.CAMPO20,
@@ -857,7 +903,7 @@ BEGIN
                      Z.IDTIPOSEG,           Z.TIPOREF,             Z.NUMREF,              Z.CODCOBERT,
                      Z.SUMAASEG_LOCAL * nTasaCambio,               Z.SUMAASEG_MONEDA,     Z.TASA,                Z.PRIMA_MONEDA,
                      --
-                     Z.PRIMA_LOCAL * nTasaCambio,                  Z.IDENDOSO,            Z.STSCOBERTURA,        Z.PLANCOB,
+                     Z.PRIMA_LOCAL * nTasaCambio,                  Z.IDENDOSO,            'SOL',                 Z.PLANCOB,
                      Z.COD_MONEDA,          Z.DEDUCIBLE_LOCAL * nTasaCambio,              Z.DEDUCIBLE_MONEDA,    Z.COD_ASEGURADO,
                      Z.INDCAMBIOSAMI,       Z.SUMAASEGORIGEN,      Z.PRIMANIVMONEDA,      Z.PRIMANIVLOCAL * nTasaCambio,
                      --
@@ -907,7 +953,7 @@ BEGIN
           (AD.CODCIA,               AD.CODEMPRESA,          nIdPoliza,
            AD.IDETPOL,              AD.CODASISTENCIA,       AD.CODMONEDA,
            AD.MONTOASISTLOCAL * nTasaCambio,                AD.MONTOASISTMONEDA,
-           'XRENOV',                TRUNC(SYSDATE),         0);
+           'SOLICI',                TRUNC(SYSDATE),         0);
       EXCEPTION
         WHEN OTHERS THEN
              CMENSAJE_SALIDA := ' - T_OC_ASISTENCIAS_DETALLE_POLIZA ';
@@ -1046,7 +1092,20 @@ EXCEPTION
    WHEN OTHERS THEN
         CMENSAJE_SALIDA := CMENSAJE_SALIDA||' - LA POLIZA NO SE PROCESO DE MANERA CORRECTA';
         RAISE_APPLICATION_ERROR(-20205,CMENSAJE_SALIDA);
-END RENOVAR;
+END RENOVAR;          --01/12/2019  RENOV
 
 END OC_RENOVACION;
+/
+
+--
+-- OC_RENOVACION  (Synonym) 
+--
+--  Dependencies: 
+--   OC_RENOVACION (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_RENOVACION FOR SICAS_OC.OC_RENOVACION
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_RENOVACION TO PUBLIC
 /

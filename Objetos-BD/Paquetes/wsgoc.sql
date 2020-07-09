@@ -1093,3 +1093,16 @@ end;
 
 end;
 /
+
+--
+-- WSGOC  (Synonym) 
+--
+--  Dependencies: 
+--   WSGOC (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM WSGOC FOR SICAS_OC.WSGOC
+/
+
+
+GRANT EXECUTE ON SICAS_OC.WSGOC TO PUBLIC
+/

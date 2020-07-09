@@ -4550,3 +4550,16 @@ begin
 end;
 end;
 /
+
+--
+-- WSGL  (Synonym) 
+--
+--  Dependencies: 
+--   WSGL (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM WSGL FOR SICAS_OC.WSGL
+/
+
+
+GRANT EXECUTE ON SICAS_OC.WSGL TO PUBLIC
+/

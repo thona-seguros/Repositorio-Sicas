@@ -5,17 +5,17 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   XMLTYPE (Synonym)
---   DETALLE_TABLERO_COMPROB (Table)
---   DETALLE_TABLERO_CONTROL_DER (Table)
---   TABLERO_CONTROL_DERIVA (Table)
 --   GT_WEB_SERVICES (Package)
 --   GT_DERIVACION_AUTO_CONFIG (Package)
 --   GT_DETALLE_TABLERO_CONTROL_DER (Package)
 --   COMPROBANTES_CONTABLES (Table)
 --   COMPROBANTES_DETALLE (Table)
---   GLOBAL_NAME (Synonym)
+--   TABLERO_CONTROL_DERIVA (Table)
 --   OC_GENERALES (Package)
 --   OC_MAIL (Package)
+--   GLOBAL_NAME (Synonym)
+--   DETALLE_TABLERO_COMPROB (Table)
+--   DETALLE_TABLERO_CONTROL_DER (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_TABLERO_CONTROL_DERIVA AS
     FUNCTION  NUMERO_PROCESO    (nCodCia IN NUMBER) RETURN NUMBER;
@@ -101,24 +101,54 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CONTROL_DERIVA AS
         nMtoMovCuentaLocal  DETALLE_TABLERO_CONTROL_DER.MtoMovCuentaLocal%TYPE;
         nMtoMovCuentaMoneda DETALLE_TABLERO_CONTROL_DER.MtoMovCuentaMoneda%TYPE;
         nNumReg NUMBER;
+        nIncompl NUMBER;
     BEGIN
-        SELECT SUM(NVL(MtoMovCuentaLocal,0)), 
-               SUM(NVL(MtoMovCuentaMoneda,0)),
-               COUNT(*) NOREG
-          INTO nMtoMovCuentaLocal,
-               nMtoMovCuentaMoneda,
-               nNumReg      
-          FROM DETALLE_TABLERO_CONTROL_DER T
+
+        BEGIN
+            SELECT 1
+             INTO nIncompl
+             FROM TABLERO_CONTROL_DERIVA T
+            WHERE CodCia = nCodCia
+              AND IdProc = nIdProc
+              AND T.STSPROCESO = 'DERIVA' ;
+        EXCEPTION WHEN OTHERS THEN
+            nIncompl := 0;
+        END;          
+                     
+        UPDATE DETALLE_TABLERO_CONTROL_DER T SET STSGRUPO = 'ERRDER',
+                                                 T.ERROR  = 'No hubo respuesta de MIZAR, favor de validarlo con FINANZAS la poliza generada'
          WHERE T.CODCIA     = nCodCia
-           AND T.IDPROC     = nIdProc
-           AND T.STSGRUPO   IN ('XPROC', 'PROCSR', 'DERIVA');
+           AND T.IDPROC     = nIdProc                                                  
+           AND T.STSGRUPO   = 'PROCSR'
+           AND nIncompl = 1;
+
+        IF SQL%ROWCOUNT > 0 THEN
+            nIncompl := 2;
+        END IF;           
+        BEGIN           
+            SELECT SUM(NVL(MtoMovCuentaLocal,0)), 
+                   SUM(NVL(MtoMovCuentaMoneda,0)),
+                   COUNT(*) NOREG
+              INTO nMtoMovCuentaLocal,
+                   nMtoMovCuentaMoneda,
+                   nNumReg      
+              FROM DETALLE_TABLERO_CONTROL_DER T
+             WHERE T.CODCIA     = nCodCia
+               AND T.IDPROC     = nIdProc
+               AND T.STSGRUPO   IN ('XPROC', 'PROCSR', 'DERIVA');
+        EXCEPTION WHEN OTHERS THEN
+            NULL;
+        END;             
        
-        UPDATE TABLERO_CONTROL_DERIVA 
+        UPDATE TABLERO_CONTROL_DERIVA C 
            SET MontoDerivaLocal  = nMtoMovCuentaLocal,
                MontoDerivaMoneda = nMtoMovCuentaMoneda,
-               CANTIDAD = nNumReg
+               CANTIDAD = nNumReg,
+               C.STSPROCESO = DECODE(nIncompl, 2, 'ERRDER', C.STSPROCESO ),
+               C.ERROR = DECODE(nIncompl, 2, 'NO RECIBIO COMPLETO EL LOTE en MIZAR', C.ERROR )
          WHERE CodCia = nCodCia
            AND IdProc = nIdProc;
+           --
     END ACTUALIZA_VALORES;
     --
     PROCEDURE EJECUTA_PROCESO_WS_DERIVA(nCodCia          NUMBER      := 1,
@@ -319,4 +349,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TABLERO_CONTROL_DERIVA AS
     END;                
     --
 END GT_TABLERO_CONTROL_DERIVA;
+/
+
+--
+-- GT_TABLERO_CONTROL_DERIVA  (Synonym) 
+--
+--  Dependencies: 
+--   GT_TABLERO_CONTROL_DERIVA (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM GT_TABLERO_CONTROL_DERIVA FOR SICAS_OC.GT_TABLERO_CONTROL_DERIVA
+/
+
+
+GRANT EXECUTE ON SICAS_OC.GT_TABLERO_CONTROL_DERIVA TO PUBLIC
 /

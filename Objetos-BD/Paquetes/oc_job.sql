@@ -136,3 +136,16 @@ END ELIMINAR;
 
 END OC_JOB;
 /
+
+--
+-- OC_JOB  (Synonym) 
+--
+--  Dependencies: 
+--   OC_JOB (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_JOB FOR SICAS_OC.OC_JOB
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_JOB TO PUBLIC
+/

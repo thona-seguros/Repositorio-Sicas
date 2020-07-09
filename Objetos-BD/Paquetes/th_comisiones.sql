@@ -6,32 +6,32 @@
 --   STANDARD (Package)
 --   DUAL (Synonym)
 --   DBMS_OUTPUT (Synonym)
+--   NCR_FACTEXT (Table)
+--   NOTAS_DE_CREDITO (Table)
+--   SALDOS_COMISIONES (Table)
+--   SALDOS_COMISIONES (Table)
+--   SALDOS_COMISIONES_DETALLE (Table)
+--   SALDOS_COMISIONES_DETALLE (Table)
+--   SALDOS_COMISIONES_DIARIOS (Table)
+--   SALDOS_COMISIONES_DIARIOS (Table)
+--   SALDOS_COMISIONES_PAGOS (Table)
+--   SALDOS_COMISIONES_PAGOS (Table)
 --   POLIZAS (Table)
---   FACTURAS (Table)
---   FACTURAS (Table)
 --   DETALLE_COMISION (Table)
 --   DETALLE_FACTURAS (Table)
 --   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
+--   OC_VALORES_DE_LISTAS (Package)
 --   AGENTES (Table)
 --   AGENTES (Table)
 --   AGENTES_CEDULA_AUTORIZADA (Table)
 --   AGENTES_DISTRIBUCION_COMISION (Table)
---   NCR_FACTEXT (Table)
---   NOTAS_DE_CREDITO (Table)
---   TIPOS_DE_SEGUROS (Table)
---   SALDOS_COMISIONES (Table)
---   SALDOS_COMISIONES (Table)
---   SALDOS_COMISIONES_DETALLE (Table)
---   SALDOS_COMISIONES_DETALLE (Table)
---   SALDOS_COMISIONES_DIARIOS (Table)
---   SALDOS_COMISIONES_DIARIOS (Table)
---   SALDOS_COMISIONES_PAGOS (Table)
---   SALDOS_COMISIONES_PAGOS (Table)
---   COMISIONES (Table)
---   COMISIONES (Table)
 --   CATALOGO_DE_CONCEPTOS (Table)
---   OC_VALORES_DE_LISTAS (Package)
+--   COMISIONES (Table)
+--   COMISIONES (Table)
+--   DETALLE_POLIZA (Table)
+--   FACTURAS (Table)
+--   FACTURAS (Table)
+--   TIPOS_DE_SEGUROS (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.th_comisiones IS
 
@@ -1554,4 +1554,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.th_comisiones IS
       DBMS_OUTPUT.PUT_LINE('Procesé: '||q*2||' Saldos de '||q||' agentes');
     END;
 END th_comisiones;
+/
+
+--
+-- TH_COMISIONES  (Synonym) 
+--
+--  Dependencies: 
+--   TH_COMISIONES (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM TH_COMISIONES FOR SICAS_OC.TH_COMISIONES
 /

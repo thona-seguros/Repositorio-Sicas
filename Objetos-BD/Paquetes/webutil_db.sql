@@ -4,9 +4,9 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   STANDARD (Package)
---   DBMS_LOB (Synonym)
 --   UTL_ENCODE (Synonym)
 --   UTL_RAW (Synonym)
+--   DBMS_LOB (Synonym)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC."WEBUTIL_DB" AUTHID CURRENT_USER AS
 
@@ -213,4 +213,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC."WEBUTIL_DB" AS
   END GetSourceChunks;
 
 END;
+/
+
+--
+-- WEBUTIL_DB  (Synonym) 
+--
+--  Dependencies: 
+--   WEBUTIL_DB (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM WEBUTIL_DB FOR SICAS_OC.WEBUTIL_DB
+/
+
+
+GRANT EXECUTE ON SICAS_OC.WEBUTIL_DB TO PUBLIC
 /

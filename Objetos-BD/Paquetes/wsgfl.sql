@@ -86,3 +86,16 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.wsgfl is
 ---------------------
 end;
 /
+
+--
+-- WSGFL  (Synonym) 
+--
+--  Dependencies: 
+--   WSGFL (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM WSGFL FOR SICAS_OC.WSGFL
+/
+
+
+GRANT EXECUTE ON SICAS_OC.WSGFL TO PUBLIC
+/

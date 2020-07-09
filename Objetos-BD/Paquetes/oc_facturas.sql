@@ -5,57 +5,35 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   DBMS_STANDARD (Package)
+--   VALORES_DE_LISTAS (Table)
+--   NOTAS_DE_CREDITO (Table)
+--   NOTIFICACOBRANZAOK (Procedure)
+--   OC_AGENTES (Package)
+--   OC_AGENTE_POLIZA_T (Package)
+--   OC_ARCHIVO (Package)
 --   PLAN_DE_PAGOS (Table)
 --   POLIZAS (Table)
 --   PRIMAS_DEPOSITO (Table)
---   FACTURAS (Table)
 --   FAI_CONCENTRADORA_FONDO (Table)
 --   FAI_FONDOS_DETALLE_POLIZA (Table)
 --   FAI_MOVIMIENTOS_FONDOS (Table)
---   DETALLE_COMISION (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   DETALLE_POLIZA (Table)
---   DETALLE_TRANSACCION (Table)
---   DIRECCIONES_PNJ (Table)
---   DISTRITO (Table)
---   EMPRESAS (Table)
---   ENDOSOS (Table)
---   TASAS_CAMBIO (Table)
---   GT_FAI_TIPOS_DE_FONDOS (Package)
---   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
---   OC_CORREOS_ELECTRONICOS_PNJ (Package)
---   OC_DETALLE_COMISION (Package)
---   OC_DETALLE_FACTURAS (Package)
---   OC_DETALLE_PRIMAS_DEPOSITO (Package)
 --   OC_DETALLE_TRANSACCION (Package)
---   AGENTES (Table)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO (Table)
---   GT_FAI_CONCENTRADORA_FONDO (Package)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   GT_FAI_MOVIMIENTOS_FONDOS (Package)
---   NOTAS_DE_CREDITO (Table)
---   NOTIFICACOBRANZAOK (Procedure)
---   TIPO_DE_DOCUMENTO (Table)
---   TRANSACCION (Table)
---   VALORES_DE_LISTAS (Table)
---   OC_PROVINCIA (Package)
---   COLONIA (Table)
---   COMISIONES (Table)
---   CONCEPTOS_PLAN_DE_PAGOS (Table)
---   CORREOS_ELECTRONICOS_PNJ (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLIENTES (Table)
 --   OC_DISTRITO (Package)
 --   OC_EJECUTIVO_COMERCIAL (Package)
 --   OC_EMPRESAS (Package)
 --   OC_FACTURAR (Package)
 --   OC_FACT_ELECT_CONF_DOCTO (Package)
 --   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
---   OC_FILIALES (Package)
+--   GT_FAI_CONCENTRADORA_FONDO (Package)
+--   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
+--   GT_FAI_MOVIMIENTOS_FONDOS (Package)
+--   GT_FAI_TIPOS_DE_FONDOS (Package)
+--   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
+--   CONCEPTOS_PLAN_DE_PAGOS (Table)
+--   CORREOS_ELECTRONICOS_PNJ (Table)
+--   DETALLE_COMISION (Table)
+--   DETALLE_FACTURAS (Table)
+--   DETALLE_NOTAS_DE_CREDITO (Table)
 --   OC_TIPOS_DE_SEGUROS (Package)
 --   OC_TRANSACCION (Package)
 --   PAGOS (Table)
@@ -63,9 +41,27 @@
 --   PARAMETROS_ENUM_FAC (Table)
 --   PARAMETROS_GLOBALES (Table)
 --   PERSONA_NATURAL_JURIDICA (Table)
---   OC_AGENTES (Package)
---   OC_AGENTE_POLIZA_T (Package)
---   OC_ARCHIVO (Package)
+--   AGENTES (Table)
+--   AGENTES_DETALLES_POLIZAS (Table)
+--   AGENTES_DISTRIBUCION_COMISION (Table)
+--   AGENTE_POLIZA (Table)
+--   ASEGURADO (Table)
+--   PROVINCIA (Table)
+--   OC_CORREOS_ELECTRONICOS_PNJ (Package)
+--   OC_DETALLE_COMISION (Package)
+--   OC_DETALLE_FACTURAS (Package)
+--   OC_DETALLE_PRIMAS_DEPOSITO (Package)
+--   CATALOGO_DE_CONCEPTOS (Table)
+--   CLIENTES (Table)
+--   COLONIA (Table)
+--   COMISIONES (Table)
+--   TASAS_CAMBIO (Table)
+--   OC_FILIALES (Package)
+--   OC_GENERALES (Package)
+--   OC_MONEDA (Package)
+--   OC_NOTAS_DE_CREDITO (Package)
+--   OC_PAGOS (Package)
+--   OC_PLAN_DE_PAGOS (Package)
 --   OC_ASEGURADO_CERTIFICADO (Package)
 --   OC_CATALOGO_DE_CONCEPTOS (Package)
 --   OC_CLIENTES (Package)
@@ -74,13 +70,17 @@
 --   OC_COMISION_COBRADOR (Package)
 --   OC_COMPROBANTES_CONTABLES (Package)
 --   OC_CONCEPTOS_PLAN_DE_PAGOS (Package)
---   PROVINCIA (Table)
---   OC_GENERALES (Package)
---   OC_MONEDA (Package)
---   OC_NOTAS_DE_CREDITO (Package)
---   OC_PAGOS (Package)
---   OC_PLAN_DE_PAGOS (Package)
+--   DETALLE_POLIZA (Table)
+--   DETALLE_TRANSACCION (Table)
+--   DIRECCIONES_PNJ (Table)
+--   DISTRITO (Table)
+--   EMPRESAS (Table)
+--   ENDOSOS (Table)
+--   FACTURAS (Table)
 --   OC_PRIMAS_DEPOSITO (Package)
+--   OC_PROVINCIA (Package)
+--   TIPO_DE_DOCUMENTO (Table)
+--   TRANSACCION (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
 
@@ -129,7 +129,7 @@ FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoli
                         dFecFinVigPol  DATE,     nNUMCUOTA      NUMBER,  cCodPlanPagos  VARCHAR2) RETURN DATE;   -- INICIA FINVIG  LARPLA
 
 FUNCTION F_GET_FACT ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER; --SEQ XDS 2016/07/27
- 
+
 FUNCTION EN_COBRANZA_MASIVA(nCodCia NUMBER, nIdFactura NUMBER) RETURN VARCHAR2;
 
 FUNCTION FACTURA_ELECTRONICA(nIdFactura  NUMBER, nCodCia  NUMBER, nCodEmpresa  NUMBER,
@@ -757,7 +757,7 @@ BEGIN
    ELSIF NVL(nMontoPago,0) = 0 AND NVL(nPrimaNivelada,0) = 0 THEN
       cIndTipoAporte := 'A';
    END IF;
-   
+
    BEGIN
       SELECT F.CodCia, F.Saldo_Moneda, F.Saldo_Local, F.Monto_Fact_Moneda, 
              DP.CodEmpresa, F.Cod_Moneda, F.CodCliente, DP.IdPoliza, F.CodCobrador,
@@ -780,7 +780,7 @@ BEGIN
       nCodAsegurado := TO_NUMBER(SUBSTR(cNumReciboPago,11,8));
       nIDetPol      := TO_NUMBER(SUBSTR(cNumReciboPago,8,3));
    END IF;
-   
+
    BEGIN
       SELECT Cod_Agente
         INTO nCod_Agente
@@ -821,7 +821,7 @@ BEGIN
    ELSE 
       nNumCuota := NULL;
    END IF;
-   
+
    BEGIN
       SELECT CodTipoDoc
         INTO nCodTipoDoc
@@ -1413,7 +1413,7 @@ IF GRABA THEN GRABA_TIEMPO(4,1,'Inicio del debug',1,USER);  END IF;
       ELSE
          cEmailsFactElect := cEmailCia;
       END IF;
- 
+
       cCodCliente := X.CodClientePol;
       cAsignoEjec := 'N';
       FOR W IN AGT_Q LOOP
@@ -1426,7 +1426,7 @@ IF GRABA THEN GRABA_TIEMPO(4,1,'Inicio del debug',1,USER);  END IF;
             ELSE 
                cEmailAgteDirec := OC_CORREOS_ELECTRONICOS_PNJ.EMAIL_PRINCIPAL(W.Tipo_Doc_Identificacion, W.Num_Doc_Identificacion);
             END IF;
-              
+
               /*IF W.CodTipo LIKE 'AGTE%' THEN
                    cEmailAgteDirec := OC_CORREOS_ELECTRONICOS_PNJ.EMAIL_PRINCIPAL(W.Tipo_Doc_Identificacion, W.Num_Doc_Identificacion);
                 ELSIF W.CodTipo LIKE 'DIRE%' THEN
@@ -2163,7 +2163,7 @@ BEGIN
              FecGenAviCob = W.FecGenAviCob 
        WHERE CodCia    = nCodCia
          AND IdFactura = nIdFactura;
- 
+
       OC_DETALLE_TRANSACCION.CREA(nIdTransaccion, nCodCia, nCodEmpresa, 18, 'REHAB', 'FACTURAS',
                                   W.IdPoliza, W.IDetPol, NULL, nIdFactura, W.Monto_Fact_Moneda);
 
@@ -2290,7 +2290,7 @@ BEGIN
    END IF;
 
    OC_DETALLE_FACTURAS.REVERTIR_PAGO(nIdRecibo, nIdFactura);
-   
+
    IF GT_FAI_CONCENTRADORA_FONDO.ES_FACTURA_DE_FONDOS(nCodCia, 1, nIdPoliza, nIDetPol, nIdFactura) = 'S' THEN
       OC_DETALLE_TRANSACCION.CREA(nIdTransaccion, nCodCia, nCodEmpresa, 21, 'REVPAG', 'FACTURAS',
                                   nIdPoliza, nIDetPol, NULL, nIdFactura, nMontoPago);
@@ -2298,7 +2298,7 @@ BEGIN
       OC_DETALLE_TRANSACCION.CREA(nIdTransaccion, nCodCia, nCodEmpresa, 12, 'REVPAG', 'FACTURAS',
                                   nIdPoliza, nIDetPol, NULL, nIdFactura, nMontoPago);
    END IF;
-   
+
    OC_COMISION_COBRADOR.ANULAR_COMISION(nIdFactura, nCodCobrador);
    OC_PAGOS.ANULAR(nCodCia, nCodEmpresa, nIdRecibo, nIdFactura, dFecReversion, nIdTransaccion);
 END REVERTIR_PAGO;
@@ -2788,8 +2788,8 @@ END VIGENCIA_FINAL;   -- FIN FINVIG  LARPLA
       vNumFACT        parametros_enum_fac.paen_cont_fin%type;
       vNombreTabla    varchar2(30);
       vIdProducto     number(6);
-      
-   
+
+
    BEGIN
     -- Buscar el nombre de la tabla de la cual se obtendra por la descripcion y la bandera
       select pa.pame_ds_numerador,
@@ -2810,11 +2810,13 @@ END VIGENCIA_FINAL;   -- FIN FINVIG  LARPLA
         --FOR UPDATE OF pnf.paen_cont_fin;
 
  --  Actualizar al siguiente numero
+   BEGIN
       update parametros_enum_fac pe
          set pe.paen_cont_fin = vNumFACT +1
        where pe.paen_id_fac  = vIdProducto;
-      
- 
+       commit;
+   END;
+
  -- Hacer permanentes los cambios para evitar bloqueo de la tabla
 --       commit;
 
@@ -3536,4 +3538,17 @@ END CALCULA_AÑO_POLIZA;
 --END APLICAR_APORTES_FONDOS;
 
 END OC_FACTURAS;
+/
+
+--
+-- OC_FACTURAS  (Synonym) 
+--
+--  Dependencies: 
+--   OC_FACTURAS (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_FACTURAS FOR SICAS_OC.OC_FACTURAS
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_FACTURAS TO PUBLIC
 /
