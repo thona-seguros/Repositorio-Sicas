@@ -4,10 +4,10 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   DUAL (Synonym)
---   POLIZAS (Table)
---   AGENTES (Table)
 --   LOG_TRANSACCION (Table)
 --   SQ_LOGTRANSACC (Sequence)
+--   POLIZAS (Table)
+--   AGENTES (Table)
 --
 CREATE OR REPLACE TRIGGER SICAS_OC.TRG_ACTUALIZA_AGENTES 
  BEFORE UPDATE ON SICAS_OC.AGENTES

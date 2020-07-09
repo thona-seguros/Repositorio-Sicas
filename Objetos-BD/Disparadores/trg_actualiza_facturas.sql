@@ -4,10 +4,10 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   DUAL (Synonym)
---   POLIZAS (Table)
---   FACTURAS (Table)
 --   LOG_TRANSACCION (Table)
 --   SQ_LOGTRANSACC (Sequence)
+--   POLIZAS (Table)
+--   FACTURAS (Table)
 --
 CREATE OR REPLACE TRIGGER SICAS_OC.TRG_ACTUALIZA_FACTURAS 
  BEFORE UPDATE ON SICAS_OC.FACTURAS

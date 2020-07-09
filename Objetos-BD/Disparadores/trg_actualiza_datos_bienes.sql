@@ -4,10 +4,10 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   DUAL (Synonym)
---   POLIZAS (Table)
---   DATOS_PARTICULARES_BIENES (Table)
 --   LOG_TRANSACCION (Table)
 --   SQ_LOGTRANSACC (Sequence)
+--   POLIZAS (Table)
+--   DATOS_PARTICULARES_BIENES (Table)
 --
 CREATE OR REPLACE TRIGGER SICAS_OC.TRG_ACTUALIZA_DATOS_BIENES 
  BEFORE

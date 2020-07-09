@@ -4,9 +4,9 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   DUAL (Synonym)
---   DETALLE_POLIZA (Table)
 --   LOG_TRANSACCION (Table)
 --   SQ_LOGTRANSACC (Sequence)
+--   DETALLE_POLIZA (Table)
 --
 CREATE OR REPLACE TRIGGER SICAS_OC.TRG_INSERTA_DETALLE_POLIZA 
  BEFORE 

@@ -4,9 +4,9 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   DUAL (Synonym)
---   POLIZAS (Table)
 --   LOG_TRANSACCION (Table)
 --   SQ_LOGTRANSACC (Sequence)
+--   POLIZAS (Table)
 --   COBERTURA_SINIESTRO (Table)
 --
 CREATE OR REPLACE TRIGGER SICAS_OC.TRG_ACTUALIZA_COBERTURA_SINIES 

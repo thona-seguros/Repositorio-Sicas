@@ -4,10 +4,10 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   DUAL (Synonym)
---   POLIZAS (Table)
 --   LOG_TRANSACCION (Table)
---   SINIESTRO (Table)
 --   SQ_LOGTRANSACC (Sequence)
+--   SINIESTRO (Table)
+--   POLIZAS (Table)
 --
 CREATE OR REPLACE TRIGGER SICAS_OC.TRG_ACTUALIZA_SINIESTRO 
  BEFORE UPDATE ON SICAS_OC.SINIESTRO

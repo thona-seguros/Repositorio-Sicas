@@ -4,10 +4,10 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   DUAL (Synonym)
---   POLIZAS (Table)
---   DETALLE_RECARGO (Table)
 --   LOG_TRANSACCION (Table)
 --   SQ_LOGTRANSACC (Sequence)
+--   POLIZAS (Table)
+--   DETALLE_RECARGO (Table)
 --
 CREATE OR REPLACE TRIGGER SICAS_OC.TRG_INSERTA_DETALLE_RECARGO 
  BEFORE

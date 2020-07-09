@@ -4,9 +4,9 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   DUAL (Synonym)
---   POLIZAS (Table)
 --   LOG_TRANSACCION (Table)
 --   SQ_LOGTRANSACC (Sequence)
+--   POLIZAS (Table)
 --   CLAUSULAS_DETALLE (Table)
 --
 CREATE OR REPLACE TRIGGER SICAS_OC."TRG_ACTUALIZO_CLAUSULAS" 

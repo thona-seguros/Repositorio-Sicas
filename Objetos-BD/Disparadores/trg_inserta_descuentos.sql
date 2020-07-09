@@ -4,10 +4,10 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   DUAL (Synonym)
---   POLIZAS (Table)
---   DESCUENTOS (Table)
 --   LOG_TRANSACCION (Table)
 --   SQ_LOGTRANSACC (Sequence)
+--   POLIZAS (Table)
+--   DESCUENTOS (Table)
 --
 CREATE OR REPLACE TRIGGER SICAS_OC.TRG_INSERTA_DESCUENTOS 
  BEFORE 
