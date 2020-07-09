@@ -4,24 +4,24 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
+--   VALORES_DE_LISTAS (Table)
+--   OC_AGENTES (Package)
+--   SINIESTRO (Table)
 --   PLAN_DE_PAGOS (Table)
 --   POLIZAS (Table)
---   FACTURAS (Table)
 --   DETALLE_FACTURAS (Table)
---   DETALLE_POLIZA (Table)
---   DETALLE_TRANSACCION (Table)
---   AGENTES (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   TRANSACCION (Table)
---   VALORES_DE_LISTAS (Table)
---   SINIESTRO (Table)
---   COMISIONES (Table)
---   CLIENTES (Table)
 --   OC_VALORES_DE_LISTAS (Package)
 --   PERSONA_NATURAL_JURIDICA (Table)
---   OC_AGENTES (Package)
+--   AGENTES (Table)
+--   AGENTES_DISTRIBUCION_COMISION (Table)
 --   REPREC360 (Table)
+--   CLIENTES (Table)
+--   COMISIONES (Table)
 --   OC_PLAN_COBERTURAS (Package)
+--   DETALLE_POLIZA (Table)
+--   DETALLE_TRANSACCION (Table)
+--   FACTURAS (Table)
+--   TRANSACCION (Table)
 --
 CREATE OR REPLACE PROCEDURE SICAS_OC.DATOS_REPORTE_360 IS
 --declare
@@ -405,4 +405,17 @@ END DATOS_REPORTE_360;
 -- select * from reprec360 WHERE FECHA_REPORTE = TRUNC(SYSDATE) -1;
 end;
 */
+/
+
+--
+-- DATOS_REPORTE_360  (Synonym) 
+--
+--  Dependencies: 
+--   DATOS_REPORTE_360 (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM DATOS_REPORTE_360 FOR SICAS_OC.DATOS_REPORTE_360
+/
+
+
+GRANT EXECUTE ON SICAS_OC.DATOS_REPORTE_360 TO PUBLIC
 /

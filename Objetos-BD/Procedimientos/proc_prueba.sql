@@ -16,3 +16,16 @@ EXCEPTION
     WHEN no_data_found THEN null;
 END; -- Procedure
 /
+
+--
+-- PROC_PRUEBA  (Synonym) 
+--
+--  Dependencies: 
+--   PROC_PRUEBA (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM PROC_PRUEBA FOR SICAS_OC.PROC_PRUEBA
+/
+
+
+GRANT EXECUTE ON SICAS_OC.PROC_PRUEBA TO PUBLIC
+/

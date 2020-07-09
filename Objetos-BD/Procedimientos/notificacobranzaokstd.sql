@@ -3,26 +3,26 @@
 --
 --  Dependencies: 
 --   STANDARD (Package)
+--   UTL_TCP (Synonym)
 --   DBMS_STANDARD (Package)
 --   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
---   UTL_TCP (Synonym)
 --   POLIZAS (Table)
---   FACTURAS (Table)
 --   FAI_CONFIG_APORTE_FONDO_DET (Table)
 --   FAI_FONDOS_DETALLE_POLIZA (Table)
---   DETALLE_DOMICI_REFERE (Table)
---   DETALLE_POLIZA (Table)
---   OC_CORREOS_ELECTRONICOS_PNJ (Package)
---   OC_DETALLE_POLIZA (Package)
+--   OC_EMPRESAS (Package)
 --   GT_FAI_CONFIG_APORTE_FONDO_DET (Package)
 --   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
 --   CORREOS_ELECTRONICOS_PNJ (Table)
---   CLIENTES (Table)
---   OC_EMPRESAS (Package)
+--   DETALLE_DOMICI_REFERE (Table)
 --   OC_TIPOS_DE_SEGUROS (Package)
+--   OC_CORREOS_ELECTRONICOS_PNJ (Package)
+--   OC_DETALLE_POLIZA (Package)
+--   CLIENTES (Table)
 --   OC_GENERALES (Package)
 --   OC_MAIL (Package)
 --   OC_PERSONA_NATURAL_JURIDICA (Package)
+--   DETALLE_POLIZA (Table)
+--   FACTURAS (Table)
 --
 CREATE OR REPLACE PROCEDURE SICAS_OC.NOTIFICACOBRANZAOKSTD (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdFactura NUMBER) IS
 nCodCliente             CLIENTES.CodCliente%TYPE;
@@ -140,4 +140,17 @@ BEGIN
    OC_MAIL.SEND_EMAIL(NULL,cEmailEnvio,cEmailCliente,/*'esaavedra@thonaseguros.mx'*/null,NULL,cSubject,cMessage,NULL,NULL,NULL,NULL,cError);
     
 END NOTIFICACOBRANZAOKSTD;
+/
+
+--
+-- NOTIFICACOBRANZAOKSTD  (Synonym) 
+--
+--  Dependencies: 
+--   NOTIFICACOBRANZAOKSTD (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM NOTIFICACOBRANZAOKSTD FOR SICAS_OC.NOTIFICACOBRANZAOKSTD
+/
+
+
+GRANT EXECUTE ON SICAS_OC.NOTIFICACOBRANZAOKSTD TO PUBLIC
 /

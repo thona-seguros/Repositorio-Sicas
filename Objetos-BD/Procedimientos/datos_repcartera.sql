@@ -4,21 +4,21 @@
 --  Dependencies: 
 --   STANDARD (Package)
 --   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
+--   VALORES_DE_LISTAS (Table)
+--   OC_AGENTES (Package)
 --   PLAN_DE_PAGOS (Table)
 --   POLIZAS (Table)
---   FACTURAS (Table)
 --   DETALLE_FACTURAS (Table)
---   DETALLE_POLIZA (Table)
+--   OC_VALORES_DE_LISTAS (Package)
 --   AGENTES (Table)
 --   AGENTES_DISTRIBUCION_COMISION (Table)
---   VALORES_DE_LISTAS (Table)
---   COMISIONES (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   OC_VALORES_DE_LISTAS (Package)
---   OC_AGENTES (Package)
---   OC_CLIENTES (Package)
 --   REPCARTERA (Table)
+--   CATALOGO_DE_CONCEPTOS (Table)
+--   COMISIONES (Table)
 --   OC_PLAN_COBERTURAS (Package)
+--   OC_CLIENTES (Package)
+--   DETALLE_POLIZA (Table)
+--   FACTURAS (Table)
 --
 CREATE OR REPLACE PROCEDURE SICAS_OC.datos_repCartera IS
 
@@ -409,4 +409,13 @@ BEGIN
       END LOOP;
       COMMIT;
 END datos_repCartera;
+/
+
+--
+-- DATOS_REPCARTERA  (Synonym) 
+--
+--  Dependencies: 
+--   DATOS_REPCARTERA (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM DATOS_REPCARTERA FOR SICAS_OC.DATOS_REPCARTERA
 /

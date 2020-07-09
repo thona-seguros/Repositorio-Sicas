@@ -3,19 +3,19 @@
 --
 --  Dependencies: 
 --   STANDARD (Package)
+--   UTL_TCP (Synonym)
 --   DBMS_STANDARD (Package)
 --   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
---   UTL_TCP (Synonym)
 --   POLIZAS (Table)
---   DETALLE_POLIZA (Table)
---   OC_CORREOS_ELECTRONICOS_PNJ (Package)
---   CORREOS_ELECTRONICOS_PNJ (Table)
---   CLIENTES (Table)
 --   OC_EMPRESAS (Package)
+--   CORREOS_ELECTRONICOS_PNJ (Table)
 --   OC_TIPOS_DE_SEGUROS (Package)
+--   OC_CORREOS_ELECTRONICOS_PNJ (Package)
+--   CLIENTES (Table)
 --   OC_GENERALES (Package)
 --   OC_MAIL (Package)
 --   OC_PERSONA_NATURAL_JURIDICA (Package)
+--   DETALLE_POLIZA (Table)
 --
 CREATE OR REPLACE PROCEDURE SICAS_OC.NOTIFICAREGISTRO (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS
 nCodCliente             CLIENTES.CodCliente%TYPE;
@@ -99,4 +99,17 @@ BEGIN
    OC_MAIL.SEND_EMAIL(NULL,cEmailEnvio,cEmailCliente,NULL,NULL,cSubject,cMessage,NULL,NULL,NULL,NULL,cError);
     
 END NOTIFICAREGISTRO;
+/
+
+--
+-- NOTIFICAREGISTRO  (Synonym) 
+--
+--  Dependencies: 
+--   NOTIFICAREGISTRO (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM NOTIFICAREGISTRO FOR SICAS_OC.NOTIFICAREGISTRO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.NOTIFICAREGISTRO TO PUBLIC
 /

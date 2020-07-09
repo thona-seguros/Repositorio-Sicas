@@ -1,3 +1,36 @@
+--
+-- OC_INTEGRADO_CONTABLE  (Procedure) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   DUAL (Synonym)
+--   DBMS_STANDARD (Package)
+--   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
+--   NOTAS_DE_CREDITO (Table)
+--   OBJETO (Table)
+--   OC_ARCHIVO (Package)
+--   LLAVES (Table)
+--   SUB_PROCESO (Table)
+--   SINIESTRO (Table)
+--   POLIZAS (Table)
+--   PROCESOS_CONTABLES (Table)
+--   PROC_TAREA (Table)
+--   DETALLE_NOMINA (Table)
+--   AGENTES (Table)
+--   AGENTES_DISTRIBUCION_COMISION (Table)
+--   AGENTE_POLIZA (Table)
+--   BENEFICIARIO (Table)
+--   BENEF_SIN (Table)
+--   CATALOGO_CONTABLE (Table)
+--   COMISIONES (Table)
+--   COMPROBANTES_CONTABLES (Table)
+--   COMPROBANTES_DETALLE (Table)
+--   OC_GENERALES (Package)
+--   OC_CATALOGO_CONTABLE (Package)
+--   DETALLE_POLIZA (Table)
+--   DETALLE_TRANSACCION (Table)
+--   FACTURAS (Table)
+--
 CREATE OR REPLACE PROCEDURE SICAS_OC.oc_integrado_contable( dFecDesde     DATE
                                                           , dFecHasta     DATE
                                                           , cTipoComprob  VARCHAR2
@@ -331,20 +364,20 @@ BEGIN
                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Clave Prestador de Servicio 2</font></th>'            ||
                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Prestador de Servicio 2</font></th>'           ||
                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Importe Pago del Prestador de Servicio 2</font></th>' ||
-                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Póliza</font></th>' ||
-                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle</font></th>' ||
-                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Factura</font></th>' ||
-                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nota Crédito</font></th>' ||
-                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Endoso</font></th>' ||
-                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Siniestro</font></th>' ||
-                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle Siniestro</font></th>' ||
-                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Aprobación</font></th>' ||
+                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Póliza</font></th>'                               ||
+                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle</font></th>'                              ||
+                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Factura</font></th>'                              ||
+                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nota Crédito</font></th>'                             ||
+                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Endoso</font></th>'                               ||
+                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Siniestro</font></th>'                            ||
+                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle Siniestro</font></th>'                    ||
+                 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Aprobación</font></th>'                           ||
                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio de Vigencia del Recibo o NC</font></th>'       ||
                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin de Vigencia del Recibo o NC</font></th>'          ||
                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th></tr>';
       --La cadena excede la longitud máxima de la función OC_ARCHIVO.Escribir_Linea que es VARCHAR2(4000), por lo que se divide en 2 partes
-      OC_ARCHIVO.Escribir_Linea(SUBSTR(cCadena, 1, 3000), cCodUser, nLinea);
-      OC_ARCHIVO.Escribir_Linea(SUBSTR(cCadena, 3000), cCodUser, nLinea);
+      OC_ARCHIVO.Escribir_Linea(SUBSTR(cCadena, 1, 2500), cCodUser, nLinea);
+      OC_ARCHIVO.Escribir_Linea(SUBSTR(cCadena, 2500), cCodUser, nLinea);
    END IF;
    --
    FOR x IN CTA_Q LOOP
@@ -1126,4 +1159,17 @@ EXCEPTION
 WHEN OTHERS THEN 
    RAISE_APPLICATION_ERROR(-20000, 'Error en OC_INTEGRADO_CONTABLE ' || SQLERRM);
 END oc_integrado_contable;
+/
+
+--
+-- OC_INTEGRADO_CONTABLE  (Synonym) 
+--
+--  Dependencies: 
+--   OC_INTEGRADO_CONTABLE (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_INTEGRADO_CONTABLE FOR SICAS_OC.OC_INTEGRADO_CONTABLE
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_INTEGRADO_CONTABLE TO PUBLIC
 /

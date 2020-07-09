@@ -3,11 +3,13 @@
 --
 --  Dependencies: 
 --   STANDARD (Package)
---   DBMS_OUTPUT (Synonym)
 --   UTL_FILE (Synonym)
+--   DBMS_OUTPUT (Synonym)
+--   OC_AGENTES (Package)
 --   POLIZAS (Table)
---   FACTURAS (Table)
---   DETALLE_POLIZA (Table)
+--   OC_FACTURAS (Package)
+--   OC_VALORES_DE_LISTAS (Package)
+--   PERSONA_NATURAL_JURIDICA (Table)
 --   AGENTES (Table)
 --   AGENTES_DISTRIBUCION_POLIZA (Table)
 --   AGENTE_POLIZA (Table)
@@ -15,13 +17,11 @@
 --   CLIENTES (Table)
 --   COBERTURA_ASEG (Table)
 --   COBERT_ACT (Table)
---   OC_FACTURAS (Package)
 --   OC_FILIALES (Package)
---   OC_VALORES_DE_LISTAS (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_AGENTES (Package)
 --   OC_PLAN_COBERTURAS (Package)
 --   OC_PLAN_DE_PAGOS (Package)
+--   DETALLE_POLIZA (Table)
+--   FACTURAS (Table)
 --
 CREATE OR REPLACE PROCEDURE SICAS_OC."PROC_ALOGEM" AUTHID CURRENT_USER IS
 
@@ -641,4 +641,13 @@ exception
   when utl_file.invalid_operation then
     dbms_output.put_line ('Error: utl_file.invalid_operation');
 END;
+/
+
+--
+-- PROC_ALOGEM  (Synonym) 
+--
+--  Dependencies: 
+--   PROC_ALOGEM (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM PROC_ALOGEM FOR SICAS_OC.PROC_ALOGEM
 /

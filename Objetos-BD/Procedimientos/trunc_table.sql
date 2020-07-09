@@ -14,3 +14,16 @@ BEGIN
 
 END trunc_table;
 /
+
+--
+-- TRUNC_TABLE  (Synonym) 
+--
+--  Dependencies: 
+--   TRUNC_TABLE (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM TRUNC_TABLE FOR SICAS_OC.TRUNC_TABLE
+/
+
+
+GRANT EXECUTE ON SICAS_OC.TRUNC_TABLE TO PUBLIC
+/

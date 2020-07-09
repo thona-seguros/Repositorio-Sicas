@@ -189,3 +189,12 @@ BEGIN
      
 END saldacuentas;
 /
+
+--
+-- SALDACUENTAS  (Synonym) 
+--
+--  Dependencies: 
+--   SALDACUENTAS (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM SALDACUENTAS FOR SICAS_OC.SALDACUENTAS
+/

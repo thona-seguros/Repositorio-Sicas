@@ -34,3 +34,12 @@ BEGIN
   --
 END;
 /
+
+--
+-- GRABA_TIEMPO  (Synonym) 
+--
+--  Dependencies: 
+--   GRABA_TIEMPO (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM GRABA_TIEMPO FOR SICAS_OC.GRABA_TIEMPO
+/

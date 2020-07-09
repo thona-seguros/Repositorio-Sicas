@@ -5,10 +5,10 @@
 --   STANDARD (Package)
 --   DBMS_OUTPUT (Synonym)
 --   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
---   DETALLE_SINIESTRO_ASEG (Table)
---   APROBACION_ASEG (Table)
 --   SINIESTRO (Table)
+--   APROBACION_ASEG (Table)
 --   COBERTURA_SINIESTRO_ASEG (Table)
+--   DETALLE_SINIESTRO_ASEG (Table)
 --
 CREATE OR REPLACE PROCEDURE SICAS_OC.CambiaAsegurado(vNumSini IN siniestro.idsiniestro%TYPE, 
                                             vSiniRef IN siniestro.numsiniref%TYPE, 
@@ -102,4 +102,13 @@ EXCEPTION
      WHEN others THEN 
           DBMS_OUTPUT.PUT_LINE('others: '||SQLERRM);
 END CambiaAsegurado;
+/
+
+--
+-- CAMBIAASEGURADO  (Synonym) 
+--
+--  Dependencies: 
+--   CAMBIAASEGURADO (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM CAMBIAASEGURADO FOR SICAS_OC.CAMBIAASEGURADO
 /

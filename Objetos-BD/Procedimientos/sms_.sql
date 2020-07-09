@@ -5,12 +5,12 @@
 --   STANDARD (Package)
 --   DBMS_OUTPUT (Synonym)
 --   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
---   POLIZAS (Table)
---   FACTURAS (Table)
---   TABLA_SMS (Table)
 --   SQ_TABLASMS (Sequence)
---   CLIENTES (Table)
+--   POLIZAS (Table)
 --   PERSONA_NATURAL_JURIDICA (Table)
+--   CLIENTES (Table)
+--   TABLA_SMS (Table)
+--   FACTURAS (Table)
 --
 CREATE OR REPLACE PROCEDURE SICAS_OC."SMS_" 
    ( dFecha DATE,
@@ -155,4 +155,17 @@ BEGIN
       END LOOP;
     END IF;
 END;
+/
+
+--
+-- SMS_  (Synonym) 
+--
+--  Dependencies: 
+--   SMS_ (Procedure)
+--
+CREATE OR REPLACE PUBLIC SYNONYM SMS_ FOR SICAS_OC.SMS_
+/
+
+
+GRANT EXECUTE ON SICAS_OC.SMS_ TO PUBLIC
 /
