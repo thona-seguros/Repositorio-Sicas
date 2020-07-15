@@ -1,5 +1,7 @@
 CREATE OR REPLACE PACKAGE OC_ADMON_RIESGO IS
 -- CAMBIO JMMD 20200709 SE QUITA LA VALIDACION DE -SI ES AGENTE-
+-- CAMBIO JMMD SE METEN VALIDACION PARA PLD PLATAFORMA DIGITAL
+--
 PROCEDURE VALIDA(P_CODCIA                  NUMBER,
                  P_CODEMPRESA              NUMBER,
                  P_ID_PROCESO              NUMBER,
@@ -51,6 +53,7 @@ CREATE OR REPLACE PACKAGE BODY OC_ADMON_RIESGO IS
 -- CAMBIO JICO 20170901 SE AGREGO LA FUNCIONALIDAD DE ENDOSOS
 -- CAMBIO JICO 20190809 SE AGREGO LA FUNCIONALIDAD DE AÑOS SUBSECUENTES LARGO PLAZO
 -- CAMBIO JMMD 20200709 SE QUITA LA VALIDACION DE -SI ES AGENTE-
+-- CAMBIO JMMD SE METEN VALIDACION PARA PLD PLATAFORMA DIGITAL
 --
 PROCEDURE VALIDA(P_CODCIA                  NUMBER,
                  P_CODEMPRESA              NUMBER,
@@ -69,10 +72,31 @@ P_TP_RESOLUCION   ADMON_RIESGO.TP_RESOLUCION%TYPE := '';
 W_MENSAJE         VARCHAR2(300);
 CCODACTIVIDAD     PERSONA_NATURAL_JURIDICA.CODACTIVIDAD%TYPE;
 P_IDTIPOSEG       TIPOS_DE_SEGUROS.IDTIPOSEG%TYPE;
+-- JMMD20200710
+cEsPlataformaDigital VARCHAR2(1) :='N';
+-- JMMD20200710
 --
 BEGIN
   --
   W_MENSAJE := '';
+-- JMMD 20200709
+   BEGIN
+      SELECT 'S'
+        INTO cEsPlataformaDigital
+        FROM COTIZACIONES
+       WHERE CodCia             = P_CODCIA
+         AND IdPoliza           = P_IDPOLIZA
+         AND IndCotizacionWeb   = 'S';
+      EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+             cEsPlataformaDigital := 'N';
+          WHEN TOO_MANY_ROWS THEN
+             cEsPlataformaDigital := 'S';
+          WHEN OTHERS THEN
+             cEsPlataformaDigital := 'N';             
+      END;      
+      dbms_output.put_line('JMMD valor de cEsPlataformaDigital  '||cEsPlataformaDigital);
+-- JMMD 20200709  
   --
   BEGIN
     SELECT D.IDTIPOSEG
@@ -201,9 +225,9 @@ BEGIN
                              P_NUM_DOC_IDENTIFICACION,
                              P_TP_RESOLUCION,
                              P_OBSERVACIONES
-                            );
+                            );                           
      W_MENSAJE := '!! ALERTA !!   LA PERSONA ESTA EN QUIEN ES QUIEN  - ENVIADO A AUTORIZACION ';
-  END IF;
+  END IF;     
   --
   -- VALIDA SI ES TIPO DE SEGURO SE ALTO RIESGO
   --
@@ -251,6 +275,13 @@ BEGIN
            AND R.ST_RENOVA = 'PEN';
      END IF;
      --
+-- JMMD20200710     
+     IF cEsPlataformaDigital = 'S' THEN
+        W_MENSAJE := '';   
+     END IF;
+     DBMS_OUTPUT.put_line('JMMD cEsPlataformaDigital  '||cEsPlataformaDigital||'  W_MENSAJE -'||W_MENSAJE||'-');
+-- JMMD20200710     
+         
      P_MENSAJE := W_MENSAJE;
      --
      COMMIT;

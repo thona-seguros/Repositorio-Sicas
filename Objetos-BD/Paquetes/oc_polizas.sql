@@ -1,117 +1,5 @@
---
--- OC_POLIZAS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   NOTAS_DE_CREDITO (Table)
---   OC_ADMON_RIESGO (Package)
---   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
---   GT_TAB_VALORES_GARANTIZADOS (Package)
---   INSPECCION (Table)
---   REQUISITOS (Table)
---   REQUISITOS_ENC_POLIZA (Table)
---   REQUISITOS_POLIZA (Table)
---   REQUISITOS_SEGUROS (Table)
---   RESPONSABLE_PAGO_DET (Table)
---   RESPONSABLE_PAGO_POL (Table)
---   SINIESTRO (Table)
---   PLAN_COBERTURAS (Table)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   PREEMISION (Table)
---   FAI_FONDOS_DETALLE_POLIZA (Table)
---   FZ_DETALLE_FIANZAS (Table)
---   OC_DETALLE_TRANSACCION (Package)
---   OC_ENDOSO (Package)
---   OC_FACTURAR (Package)
---   OC_FACTURAS (Package)
---   GT_COTIZACIONES (Package)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
---   DATOS_PARTICULARES_BIENES (Table)
---   DATOS_PARTICULARES_PERSONAS (Table)
---   DATOS_PARTICULARES_VEHICULO (Table)
---   DATOS_PART_EMISION (Table)
---   DESCUENTOS (Table)
---   DETALLE_DESCUENTO (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_TRANSACCION (Package)
---   PARAMETROS_EMISION (Table)
---   PARAMETROS_ENUM_POL (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   AGENTES_DISTRIBUCION_POLIZA (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO (Table)
---   ASEGURADO_CERT (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   BENEFICIARIO (Table)
---   REA_DISTRIBUCION (Table)
---   RECARGOS (Table)
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---   OC_DETALLE_POLIZA (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLAUSULAS (Table)
---   CLAUSULAS_DETALLE (Table)
---   CLAUSULAS_PLAN_COBERTURAS (Table)
---   CLAUSULAS_POLIZA (Table)
---   CLAUSULAS_TIPOS_SEGUROS (Table)
---   CLIENTES (Table)
---   COBERTURAS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERTURA_ASEG (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   COMPROBANTES_CONTABLES (Table)
---   TAREA (Table)
---   TASAS_CAMBIO (Table)
---   OC_GENERALES (Package)
---   OC_MAIL (Package)
---   OC_MEDIOS_DE_COBRO (Package)
---   OC_NOTAS_DE_CREDITO (Package)
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---   OC_PLAN_COBERTURAS (Package)
---   OC_ASEGURADO (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_ASISTENCIAS_ASEGURADO (Package)
---   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
---   OC_BENEFICIARIO (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_CLAUSULAS_DETALLE (Package)
---   OC_CLAUSULAS_POLIZA (Package)
---   OC_CLIENTES (Package)
---   OC_COBERT_ACT (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   OC_COMISIONES (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   OC_COMPROBANTES_DETALLE (Package)
---   DETALLE_POLIZA (Table)
---   DETALLE_POLIZAS_TARJETAS (Table)
---   DETALLE_RECARGO (Table)
---   DETALLE_TRANSACCION (Table)
---   DOCUMENTO_POLIZA (Table)
---   ENDOSOS (Table)
---   EXAMEN (Table)
---   FACTURAS (Table)
---   OC_PROCESO_AUTORIZA_USUARIO (Package)
---   OC_SEGUIMIENTO (Package)
---   OC_SOLICITUD_EMISION (Package)
---   GT_REA_DISTRIBUCION (Package)
---   TIPOS_DE_SEGUROS (Table)
---   TRANSACCION (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
-
+CREATE OR REPLACE PACKAGE OC_POLIZAS IS
+-- SE INCLUYE LA VALIDACION DE PLD PARA POLIZAS DE PLATAFORMA DIGITAL    JMMD 20200709
     FUNCTION F_GET_NUMPOL ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
 
     FUNCTION INSERTAR_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, cDescPoliza VARCHAR2,
@@ -187,7 +75,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
 
     PROCEDURE PRE_EMITE_POLIZA(P_CODCIA NUMBER, P_CODEMPRESA NUMBER, P_IDPOLIZA NUMBER, P_IDTRANSACCION   NUMBER);  -- LARPLA
 
-    PROCEDURE LIBERA_PRE_EMITE(P_CODCIA NUMBER, P_CODEMPRESA NUMBER, P_IDPOLIZA NUMBER, P_FECHA_PAGO DATE); --LARPLA   
+    PROCEDURE LIBERA_PRE_EMITE(P_CODCIA NUMBER, P_CODEMPRESA NUMBER, P_IDPOLIZA NUMBER, P_FECHA_PAGO DATE); --LARPLA
 
     FUNCTION DIA_COBRO (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN NUMBER;
 
@@ -197,14 +85,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
 
 END OC_POLIZAS;
 /
-
---
--- OC_POLIZAS  (Package Body) 
---
---  Dependencies: 
---   OC_POLIZAS (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
+CREATE OR REPLACE PACKAGE BODY OC_POLIZAS IS
 --
 -- BITACORA DE CAMBIO
 -- SE AGREGO LA FUNCIONALIDAD DE LAVADO DE DINERO                        JICO 18/05/2017  LAVDIN
@@ -212,7 +93,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
 -- SE AGREGO LA FUNCIONALIDAD PARA RENOVACION DE CLAUSULAS               JICO 10/08/2017  CLAUREN
 -- SE AGREGO LA FUNCIONALIDA DE LARGO PLAZO                              JICO 10/04/2019  LARPLA
 -- SE AGREGO LA FUNCIONALIDA DE PREEMISIONO                              JICO 16/05/2019  PREEMI
--- HOMOLOGACION                                                          JICO 01/10/2019 
+-- HOMOLOGACION                                                          JICO 01/10/2019
+-- SE INCLUYE LA VALIDACION DE PLD PARA POLIZAS DE PLATAFORMA DIGITAL    JMMD 20200709
+--
 ----------------------------------------------------------------------  SEQ XDS
       --- Funcion para buscar el proximo numero de poliza  ---
 ----------------------------------------------------------------------
@@ -304,7 +187,7 @@ BEGIN
              FecSolicitud, FecEmision, FecRenovacion, StsPoliza, FecSts, FecAnul,
              MotivAnul, SumaAseg_Local, SumaAseg_Moneda, PrimaNeta_Local, PrimaNeta_Moneda,
              DescPoliza, PorcComis, NumRenov, IndExaInsp, Cod_Moneda, Num_Cotizacion,
-             CodCliente, Cod_Agente, CodPlanPago, Medio_Pago, NumPolUnico, PorcDescuento, 
+             CodCliente, Cod_Agente, CodPlanPago, Medio_Pago, NumPolUnico, PorcDescuento,
              PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste, MontoDeducible,
              FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
              IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
@@ -430,6 +313,9 @@ nNumRenov                   POLIZAS.NumRenov%TYPE;
 nDiaCobroAutomatico         POLIZAS.DiaCobroAutomatico%TYPE;
 cIndManejaFondos            POLIZAS.IndManejaFondos%TYPE;
 nIdFormaCobro               POLIZAS.IdFormaCobro%TYPE;
+--
+cEsPlataformaDigital        VARCHAR2(1) :='N';                      --JMMD 2020/07/09
+--
 
 CURSOR CPTO_PRIMAS_Q IS
    SELECT CS.CodCpto
@@ -480,6 +366,24 @@ CURSOR AGT_Q IS
       AND CodCia   = nCodCia;
 BEGIN
    nEmite := 'N';
+-- JMMD 20200709
+   BEGIN
+      SELECT 'S'
+        INTO cEsPlataformaDigital
+        FROM COTIZACIONES
+       WHERE CodCia             = nCodCia
+         AND IdPoliza           = nIdPoliza
+         AND IndCotizacionWeb   = 'S';
+      EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+             cEsPlataformaDigital := 'N';
+          WHEN TOO_MANY_ROWS THEN
+             cEsPlataformaDigital := 'S';
+          WHEN OTHERS THEN
+             cEsPlataformaDigital := 'N';             
+      END;      
+      dbms_output.put_line('JMMD valor de cEsPlataformaDigital  '||cEsPlataformaDigital);
+-- JMMD 20200709
 
    FOR X IN CPTO_PRIMAS_Q LOOP
       IF X.CodCpto IS NULL THEN
@@ -518,7 +422,11 @@ BEGIN
       AND C.CodCliente = P.CodCliente;                                                              --LAVDIN
 
    IF cStsPoliza = 'PLD'  THEN                            --LAVDIN 2017/08/07
-      RAISE_APPLICATION_ERROR(-20200,'La poliza es PLD'); --LAVDIN 2017/08/07
+      --
+      IF cEsPlataformaDigital = 'N' THEN                  --JMMD 20200709
+         RAISE_APPLICATION_ERROR(-20200,'La poliza es PLD'); --LAVDIN 2017/08/07
+      END IF;                                             --JMMD 20200709
+      --                                           
    END IF;                                                --LAVDIN 2017/08/07
 
    IF NVL(nNumRenov,0) = 0 THEN
@@ -633,7 +541,7 @@ BEGIN
                   OC_MEDIOS_DE_COBRO.FORMA_DE_COBRO(T.Tipo_Doc_Identificacion, T.Num_Doc_Identificacion, T.IdFormaCobro) IN ('CTC', 'DOMI', 'CLAB') THEN
                   RAISE_APPLICATION_ERROR(-20200,'Debe Indicar el Día para Cobranza Automática en la Póliza No. ' || nIdPoliza);
                END IF;
-            END IF;            
+            END IF;
          END IF;
 
          SELECT NVL(SUM(Porc_Com_Proporcional),0), NVL(SUM(Porc_Com_Distribuida),0), NVL(SUM(Porc_Comision_Agente),0)
@@ -707,7 +615,7 @@ BEGIN
          AND CodCia           = nCodCia;
 
       IF nRegis != 0 THEN
-         RAISE_APPLICATION_ERROR(-20200,'El Detalle No. ' || W.IDetPol || ' Posee ' || nRegis || 
+         RAISE_APPLICATION_ERROR(-20200,'El Detalle No. ' || W.IDetPol || ' Posee ' || nRegis ||
                                  'Cobertura(s) ccn Suma Asegurado Igual o Menor a Cero ');
       END IF;
 
@@ -793,7 +701,7 @@ BEGIN
       END IF;
 
       IF OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, nCodEmpresa, cIdTipoSeg) = 'S' THEN -- GTC - 06/02/2019
-         IF GT_FAI_TIPOS_FONDOS_PRODUCTOS.FONDOS_COLECTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob) = 'S' THEN  
+         IF GT_FAI_TIPOS_FONDOS_PRODUCTOS.FONDOS_COLECTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob) = 'S' THEN
             IF GT_FAI_FONDOS_DETALLE_POLIZA.VALIDA_FONDOS(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, W.Cod_Asegurado) = 'N' THEN
                RAISE_APPLICATION_ERROR(-20200,'Revise Configuración de Fondos de Ahorro e Inversión al SubGrupo No. ' || W.IDetPol ||
                                        ' y el Asegurado No. ' || W.Cod_Asegurado);
@@ -865,6 +773,17 @@ BEGIN
    ELSE
      nEmite := 'S';
    END IF;
+-- JMMD20200709
+   IF cEsPlataformaDigital = 'S' THEN
+      nEmite := 'S';
+      UPDATE POLIZAS
+         SET PLDSTAPROBADA        = 'S',
+             PLDUSUARIOAPROB      = ''
+       WHERE IdPoliza = nIdPoliza
+         AND CodCia   = nCodCia;      
+   END IF;  
+--JMMD 20200709  
+    dbms_output.put_line('JMMD Valor de nEmite  '||nEmite);
    RETURN(nEmite);
 END VALIDA_POLIZA;
 
@@ -943,7 +862,7 @@ CURSOR FONDOS_Q IS
       AND IdPoliza     = nIdPoliza
       AND CodEmpresa   = nCodEmpresa
       AND CodCia       = nCodCia;
---      
+--
 BEGIN
    SELECT TipoPol, CodPlanPago, NumPolRef, IndPolCol,
           IndFactPeriodo, IndFacturaPol, Num_Cotizacion
@@ -1071,11 +990,11 @@ BEGIN
             nIDetPol := W.IDetPol;
             FOR F IN FONDOS_Q LOOP
                GT_FAI_FONDOS_DETALLE_POLIZA.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, W.Cod_Asegurado, F.IdFondo);
-            END LOOP;          
+            END LOOP;
              ---valida si tiene habito para generar valores
-            IF NVL(w.HabitoTarifa, 'NA') != 'NA' THEN             
+            IF NVL(w.HabitoTarifa, 'NA') != 'NA' THEN
                GT_TAB_VALORES_GARANTIZADOS.INSERTA(nCodCia, nCodEmpresa, nIdPoliza,W.IDetPol,0,W.Cod_Asegurado,1);
-            END IF;            
+            END IF;
          END LOOP;
 
          FOR Z IN ASEG_Q LOOP
@@ -1448,7 +1367,7 @@ CURSOR POL_REN_Q IS
           Cod_Agente, CodPlanPago, Medio_Pago, IndProcFact,Caracteristica,
           IndFactPeriodo, FormaVenta, TipoRiesgo, IndConcentrada,TipoDividendo,
           TipoAdministracion, IndFacturaPol, CodAgrupador, HoraVigIni, HoraVigFin,
-          IndFactElectronica, IndCalcDerechoEmis, CodDirecRegional, PorcDescuento, 
+          IndFactElectronica, IndCalcDerechoEmis, CodDirecRegional, PorcDescuento,
           PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste, MontoDeducible,
           FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
           IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
@@ -1626,7 +1545,7 @@ CURSOR COBASEGCERT_Q IS
    SELECT CodCia, IDetPol, CodEmpresa, IdTipoSeg, TipoRef, NumRef, CodCobert,
           Cod_Asegurado, SumaAseg_Local, SumaAseg_Moneda, Tasa, Prima_Moneda,
           Prima_Local, IdEndoso, PlanCob, Cod_Moneda, Deducible_Local, Deducible_Moneda,
-          SumaAsegCalculada, SalarioMensual, VecesSalario, Edad_Minima, 
+          SumaAsegCalculada, SalarioMensual, VecesSalario, Edad_Minima,
           Edad_Maxima, Edad_Exclusion, SumaAseg_Maxima, SumaAseg_Minima,
           PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada
      FROM COBERT_ACT_ASEG
@@ -1665,7 +1584,7 @@ BEGIN
    FOR X IN POL_REN_Q LOOP
       IF nDuracionPlan > 1 AND
          X.NumRenov + 2 > nDuracionPlan THEN
-         RAISE_APPLICATION_ERROR(-20225,'Ya NO se puede Renovar la Póliza: '||TRIM(TO_CHAR(nIdPoliza))|| 
+         RAISE_APPLICATION_ERROR(-20225,'Ya NO se puede Renovar la Póliza: '||TRIM(TO_CHAR(nIdPoliza))||
                                  ' Porque con esta Renovación Supera la Duración del Plan de Coberturas ');
       END IF;
 
@@ -1691,7 +1610,7 @@ BEGIN
              Caracteristica, IndFactPeriodo, FormaVenta, TipoRiesgo, IndConcentrada,
              TipoDividendo, IndAplicoSami, SamiPoliza, TipoAdministracion,
              IndFacturaPol, CodAgrupador, HoraVigIni, HoraVigFin,
-             IndFactElectronica, IndCalcDerechoEmis, CodDirecRegional, PorcDescuento, 
+             IndFactElectronica, IndCalcDerechoEmis, CodDirecRegional, PorcDescuento,
              PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste, MontoDeducible,
              FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
              IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
@@ -1705,8 +1624,8 @@ BEGIN
              X.Medio_Pago, cNumPolUnico, X.IndProcFact, X.Caracteristica,
              X.IndFactPeriodo, X.FormaVenta, X.TipoRiesgo, X.IndConcentrada,
              X.TipoDividendo, 'N', 0, X.TipoAdministracion, X.IndFacturaPol,
-             X.CodAgrupador, X.HoraVigIni, X.HoraVigFin, X.IndFactElectronica, 
-             X.IndCalcDerechoEmis, X.CodDirecRegional, X.PorcDescuento, 
+             X.CodAgrupador, X.HoraVigIni, X.HoraVigFin, X.IndFactElectronica,
+             X.IndCalcDerechoEmis, X.CodDirecRegional, X.PorcDescuento,
              X.PorcGtoAdmin, X.PorcGtoAdqui, X.PorcUtilidad, X.FactorAjuste, X.MontoDeducible,
              X.FactFormulaDeduc, X.CodRiesgoRea, X.CodTipoBono, X.HorasVig, X.DiasVig,
              X.IndExtraPrima, X.AsegAdheridosPor, X.PorcenContributorio,
@@ -1754,7 +1673,7 @@ BEGIN
                                    nIdPoliza, NULL, NULL, NULL, nPrima);*/
 
       IF OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, X.CodEmpresa, X.IdTipoSeg) = 'S' THEN -- GTC - 06/02/2019
-         IF GT_FAI_TIPOS_FONDOS_PRODUCTOS.FONDOS_COLECTIVOS(nCodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN  
+         IF GT_FAI_TIPOS_FONDOS_PRODUCTOS.FONDOS_COLECTIVOS(nCodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
             GT_FAI_FONDOS_DETALLE_POLIZA.RENOVAR(X.CodCia, X.CodEmpresa, nIdPolizaRen, X.IDetPol, X.Cod_Asegurado, nIdPoliza);
          END IF;
       END IF;
@@ -1818,9 +1737,9 @@ BEGIN
    FOR Y IN COB_REN_Q LOOP
       OC_COBERT_ACT.CARGAR_COBERTURAS(Y.CodCia, Y.CodEmpresa, Y.IdTipoSeg, Y.PlanCob, nIdPoliza,
                                       Y.IDetPol, nTasaCambio, Y.CodCobert, Y.SumaAsegCalculada,
-                                      Y.SalarioMensual,  Y.VecesSalario, Y.Edad_Minima, 
-                                      Y.Edad_Maxima,  Y.Edad_Exclusion, Y.SumaAseg_Minima, 
-                                      Y.SumaAseg_Maxima, Y.PorcExtraPrimaDet, Y.MontoExtraPrimaDet, 
+                                      Y.SalarioMensual,  Y.VecesSalario, Y.Edad_Minima,
+                                      Y.Edad_Maxima,  Y.Edad_Exclusion, Y.SumaAseg_Minima,
+                                      Y.SumaAseg_Maxima, Y.PorcExtraPrimaDet, Y.MontoExtraPrimaDet,
                                       Y.SumaIngresada);
    END LOOP;
 
@@ -1952,9 +1871,9 @@ BEGIN
    FOR D IN COBASEGCERT_Q LOOP
       OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(D.CodCia, D.CodEmpresa, D.IdTipoSeg, D.PlanCob, nIdPoliza,
                                            D.IDetPol, nTasaCambio, D.Cod_Asegurado, D.CodCobert, D.SumaAsegCalculada,
-                                           D.SalarioMensual,  D.VecesSalario, D.Edad_Minima, 
-                                           D.Edad_Maxima,  D.Edad_Exclusion, D.SumaAseg_Minima, 
-                                           D.SumaAseg_Maxima, D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, 
+                                           D.SalarioMensual,  D.VecesSalario, D.Edad_Minima,
+                                           D.Edad_Maxima,  D.Edad_Exclusion, D.SumaAseg_Minima,
+                                           D.SumaAseg_Maxima, D.PorcExtraPrimaDet, D.MontoExtraPrimaDet,
                                            D.SumaIngresada);
    END LOOP;
 
@@ -3595,7 +3514,7 @@ BEGIN
          nIDetPol       := W.IDetPol;
          nCod_Asegurado := W.Cod_Asegurado;
          IF OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, nCodEmpresa, W.IdTipoSeg) = 'S' THEN -- GTC - 06/02/2019
-            IF GT_FAI_TIPOS_FONDOS_PRODUCTOS.FONDOS_COLECTIVOS(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob) = 'N' THEN  
+            IF GT_FAI_TIPOS_FONDOS_PRODUCTOS.FONDOS_COLECTIVOS(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob) = 'N' THEN
                IF cMotivAnul != 'REEX' THEN
                   IF NVL(nTotPrimaPag,0) = 0 THEN
                   null;
@@ -3883,9 +3802,9 @@ BEGIN
          AND IdPoliza    = nIdPoliza;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20225,'NO Existe Número de Intentos de Cobranza en la Póliza No.: '||TRIM(TO_CHAR(nIdPoliza))); 
+            RAISE_APPLICATION_ERROR(-20225,'NO Existe Número de Intentos de Cobranza en la Póliza No.: '||TRIM(TO_CHAR(nIdPoliza)));
    END;
-   RETURN nNumIntentosCobranza;   
+   RETURN nNumIntentosCobranza;
 END NUMERO_INTENTOS_COBRANZA;
 
 FUNCTION APLICA_RETIRO_PRIMA_NIVELADA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS
@@ -3955,11 +3874,11 @@ BEGIN
      WHERE P.IDPOLIZA = P_IDPOLIZA
        AND P.CODCIA   = P_CODCIA;
   EXCEPTION
-    WHEN NO_DATA_FOUND THEN 
+    WHEN NO_DATA_FOUND THEN
          W_FE_INIVIG := NULL;
          W_FE_FINVIG := NULL;
          W_FE_EMISION := NULL;
-    WHEN OTHERS THEN 
+    WHEN OTHERS THEN
          W_FE_INIVIG := NULL;
          W_FE_FINVIG := NULL;
          W_FE_EMISION := NULL;
@@ -4008,7 +3927,7 @@ BEGIN
      AND ESTADO   = 'EMI';
   --
   UPDATE ASISTENCIAS_ASEGURADO
-     SET STSASISTENCIA = 'PREEMI'        
+     SET STSASISTENCIA = 'PREEMI'
    WHERE CODCIA     = P_CODCIA
      AND CODEMPRESA = P_CODEMPRESA
      AND IDPOLIZA   = P_IDPOLIZA
@@ -4032,7 +3951,7 @@ BEGIN
    WHERE NUMTRANSACCION = P_IDTRANSACCION
      AND TIPOCOMPROB = '100'
      AND StsComprob  = 'CUA';
-  --    
+  --
   UPDATE DETALLE_POLIZA
      SET STSDETALLE = 'PRE'
    WHERE IDPOLIZA   = P_IDPOLIZA
@@ -4058,11 +3977,11 @@ BEGIN
    );
   --
 --
-END PRE_EMITE_POLIZA;    
+END PRE_EMITE_POLIZA;
 --
 --
 --
-PROCEDURE LIBERA_PRE_EMITE(P_CODCIA NUMBER, P_CODEMPRESA NUMBER, P_IDPOLIZA NUMBER, P_FECHA_PAGO DATE) IS  
+PROCEDURE LIBERA_PRE_EMITE(P_CODCIA NUMBER, P_CODEMPRESA NUMBER, P_IDPOLIZA NUMBER, P_FECHA_PAGO DATE) IS
 --
 WD_FECINIVIG_POL    POLIZAS.FECINIVIG%TYPE;
 WD_FECFINVIG_POL    POLIZAS.FECFINVIG%TYPE;
@@ -4100,7 +4019,7 @@ BEGIN
   BEGIN
     SELECT NUMPAGOS,     FRECPAGOS
       INTO WN_NUMPAGOS,  WC_FRECPAGOS
-      FROM PLAN_DE_PAGOS 
+      FROM PLAN_DE_PAGOS
      WHERE CodCia      = P_CODCIA
        AND CodEmpresa  = P_CODEMPRESA
        AND CodPlanPago = WC_CODPLANPAGO;
@@ -4115,7 +4034,7 @@ BEGIN
      AND IDPOLIZA     = P_IDPOLIZA
      AND STSCOBERTURA = 'PRE';
   --
-  UPDATE COBERT_ACT 
+  UPDATE COBERT_ACT
      SET STSCOBERTURA = 'EMI'
    WHERE CODCIA       = P_CODCIA
      AND IDPOLIZA     = P_IDPOLIZA
@@ -4170,7 +4089,7 @@ BEGIN
      AND IDPOLIZA = P_IDPOLIZA
      AND ESTADO   = 'PREEMI';
   --
-  -- LIBERA FACTURACION ELECTRONICA  
+  -- LIBERA FACTURACION ELECTRONICA
   --
   FOR R IN RECIBOS LOOP
       --
@@ -4190,7 +4109,7 @@ BEGIN
 
          END IF;
          --
-         WD_FECFINVIG_REC := OC_FACTURAS.VIGENCIA_FINAL(P_CODCIA,          P_CODEMPRESA, P_IDPOLIZA, 
+         WD_FECFINVIG_REC := OC_FACTURAS.VIGENCIA_FINAL(P_CODCIA,          P_CODEMPRESA, P_IDPOLIZA,
                                                         R.IDFACTURA,       R.IDENDOSO,   WD_FECINIVIG_REC,
                                                         WD_FECFINVIG_POL,  R.NUMCUOTA,   WC_CODPLANPAGO);
          --
@@ -4199,7 +4118,7 @@ BEGIN
          WD_FECFINVIG_REC := ADD_MONTHS(WD_FECINIVIG_POL,12);
       END IF;
       --
-      UPDATE FACTURAS 
+      UPDATE FACTURAS
          SET STSFACT            = 'EMI',
              INDFACTELECTRONICA = 'S',
              FECVENC            = WD_FECINIVIG_REC,
@@ -4241,7 +4160,7 @@ BEGIN
          FECSTS      = WD_FECINIVIG_POL
    WHERE NUMTRANSACCION = WN_IDTRANSACCION
      AND StsComprob    = 'PRE';
-  --    
+  --
   UPDATE DETALLE_POLIZA
      SET STSDETALLE = 'EMI',
          FECINIVIG  = WD_FECINIVIG_POL,
@@ -4264,7 +4183,7 @@ BEGIN
     SET FE_INIVIG_PRE = WD_FECINIVIG_POL,
         FE_FINVIG_PRE = WD_FECFINVIG_POL,
         FE_PREEMISION = SYSDATE,
-        USUARIO_PRE   = USER  
+        USUARIO_PRE   = USER
   WHERE ID_POLIZA = P_IDPOLIZA;
   --
 END LIBERA_PRE_EMITE;     -- PREEMI  FIN
@@ -4303,7 +4222,7 @@ BEGIN
          AND NVL(PldStAprobada,'N')    = 'N'
          AND StsPoliza                 = 'PLD';
    EXCEPTION
-      WHEN NO_DATA_FOUND THEN 
+      WHEN NO_DATA_FOUND THEN
          cExiste := 'N';
    END;
    RETURN cExiste;
@@ -4323,24 +4242,11 @@ BEGIN
          AND NVL(PldStAprobada,'N')    = 'S'
          AND StsPoliza                != 'PLD';
    EXCEPTION
-      WHEN NO_DATA_FOUND THEN 
+      WHEN NO_DATA_FOUND THEN
          cExiste := 'N';
    END;
    RETURN cExiste;
 END LIBERADA_PLD;
 
 END OC_POLIZAS;
-/
-
---
--- OC_POLIZAS  (Synonym) 
---
---  Dependencies: 
---   OC_POLIZAS (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_POLIZAS FOR SICAS_OC.OC_POLIZAS
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_POLIZAS TO PUBLIC
 /
