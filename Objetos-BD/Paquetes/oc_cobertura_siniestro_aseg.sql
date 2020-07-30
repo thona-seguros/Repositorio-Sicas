@@ -1,33 +1,3 @@
---
--- OC_COBERTURA_SINIESTRO_ASEG  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   OBSERVACION_SINIESTRO (Table)
---   SINIESTRO (Table)
---   POLIZAS (Table)
---   OC_DETALLE_SINIESTRO_ASEG (Package)
---   OC_DETALLE_TRANSACCION (Package)
---   CONFIG_TRANSAC_SINIESTROS (Table)
---   DETALLE_APROBACION_ASEG (Table)
---   OC_TRANSACCION (Package)
---   APROBACIONES (Table)
---   APROBACION_ASEG (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   COBERTURA_ASEG (Table)
---   COBERTURA_SINIESTRO (Table)
---   COBERTURA_SINIESTRO_ASEG (Table)
---   COBERT_ACT_ASEG (Table)
---   OC_OBSERVACION_SINIESTRO (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   DETALLE_POLIZA (Table)
---   GT_REA_DISTRIBUCION (Package)
---   TRANSACCION (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_COBERTURA_SINIESTRO_ASEG IS
   --
   PROCEDURE MONTO_RESERVA(nIdSiniestro NUMBER, nIdPoliza NUMBER, nIdDetSin NUMBER, nCod_Asegurado NUMBER,
@@ -57,22 +27,15 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_COBERTURA_SINIESTRO_ASEG IS
   FUNCTION OPC_REMANENTE (nCodCia NUMBER,nIdPoliza NUMBER, nIdDetPol NUMBER, nCod_Asegurado NUMBER,cCodCobert VARCHAR2) RETURN VARCHAR2;
   --
   FUNCTION RESERVA_DE_COB_SINIESTRO (nCodCia NUMBER,nIdSiniestro NUMBER, cCodCobert VARCHAR2)RETURN NUMBER;
-  --  
+  --
   FUNCTION PAGO_DE_COB_SINIESTRO (nCodCia NUMBER,nIdSiniestro NUMBER, cCodCobert VARCHAR2)RETURN NUMBER;
   --
-  PROCEDURE ACTUALIZA_AUTORIZACION(nIdSiniestro NUMBER, nIdDetSin NUMBER, nIdPoliza NUMBER, cCodCobert VARCHAR2, 
+  PROCEDURE ACTUALIZA_AUTORIZACION(nIdSiniestro NUMBER, nIdDetSin NUMBER, nIdPoliza NUMBER, cCodCobert VARCHAR2,
                                    nCod_Asegurado NUMBER, nNumMod NUMBER, nIdAutorizacion NUMBER);
   --
-END OC_COBERTURA_SINIESTRO_ASEG;
+END OC_COBERTURA_SINIESTRO_ASEG_1;
 /
-
---
--- OC_COBERTURA_SINIESTRO_ASEG  (Package Body) 
---
---  Dependencies: 
---   OC_COBERTURA_SINIESTRO_ASEG (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COBERTURA_SINIESTRO_ASEG IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COBERTURA_SINIESTRO_ASEG_1 IS
 --
 --
 -- La valuación de la reserva actual es incorrecta.
@@ -87,7 +50,7 @@ FUNCTION VALIDA_SUMA_ASEGURADA(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER
           nMovs            NUMBER(5)                                      ;
 --
 BEGIN
-  dbms_output.put_line('OC_COBERTURA_SINIESTRO_ASEG.VALIDA_SUMA_ASEGURADA  ');   
+  dbms_output.put_line('OC_COBERTURA_SINIESTRO_ASEG.VALIDA_SUMA_ASEGURADA  ');
   BEGIN
     SELECT NVL(SUM(CS.Monto_Reservado_Moneda * Decode(CTS.Signo,'-',-1,1)),0), COUNT(*)
       INTO nMontoRvaMoneda, nMovs
@@ -99,25 +62,25 @@ BEGIN
        AND CS.Cod_Asegurado  = nCod_Asegurado
        AND CS.StsCobertura  != 'ANU';
   END;
-  dbms_output.put_line('nMontoRvaMoneda   '||nMontoRvaMoneda||'-'||nMovs);   
+  dbms_output.put_line('nMontoRvaMoneda   '||nMontoRvaMoneda||'-'||nMovs);
   --
   IF nMovs > 1 THEN                                                                                 --#VSACO
      nMontoResAct := nMontoRvaMoneda;                                                               --#VSACO
   ELSE                                                                                              --#VSACO
      nMontoResAct := 0;                                                                             --#VSACO
   END IF;                                                                                           --#VSACO
-  dbms_output.put_line('nMontoResAct   '||nMontoResAct); 
+  dbms_output.put_line('nMontoResAct   '||nMontoResAct);
   --
   nSuma := OC_COBERT_ACT_ASEG.SUMA_ASEGURADA(nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, cCodCobert);
   --
-  dbms_output.put_line('nSuma Asegurada --> '||nSuma); 
-  dbms_output.put_line('nMontoRvaMoneda --> '||nMontoRvaMoneda ); 
+  dbms_output.put_line('nSuma Asegurada --> '||nSuma);
+  dbms_output.put_line('nMontoRvaMoneda --> '||nMontoRvaMoneda );
   dbms_output.put_line('nMtoReservarMoneda --> '||  nMtoReservarMoneda);
   dbms_output.put_line('nMontoResAct    --> '||nMontoResAct );
   dbms_output.put_line('nvl(nMtoReservarMoneda,0)+NVL(nMontoResAct,0) > NVL(nSuma,0): '||
                         NVL(nMtoReservarMoneda,0)||' '||
-                        NVL(nMontoResAct,0)   ||' '|| 
-                        NVL(nSuma,0)          );    
+                        NVL(nMontoResAct,0)   ||' '||
+                        NVL(nSuma,0)          );
   IF nvl(nMtoReservarMoneda,0) + NVL(nMontoResAct,0) > NVL(nSuma,0)  THEN
      RETURN('N');
   ELSIF NVL(nMtoReservarMoneda,0) + NVL(nMontoResAct,0) < 0  THEN
@@ -144,8 +107,8 @@ BEGIN
            NVL(SUM(CS.Monto_Reservado_Local * Decode(CTS.Signo,'-',-1,1)),0)
       INTO nMto_Rva_Moneda, nMonto_Rva_Local
       FROM COBERTURA_SINIESTRO_ASEG CS,
-           CONFIG_TRANSAC_SINIESTROS CTS 
-     WHERE IdSiniestro    = nIdSiniestro 
+           CONFIG_TRANSAC_SINIESTROS CTS
+     WHERE IdSiniestro    = nIdSiniestro
        AND IdPoliza       = nIdPoliza
        AND IddetSin       = nIdDetSin
        AND Cod_Asegurado  = nCod_Asegurado
@@ -171,14 +134,14 @@ BEGIN
     SELECT NVL(CSA.Saldo_Reserva,0), NVL(CSA.Saldo_Reserva_Local,0)
       INTO nSaldoRvaMoneda, nSaldoRvaLocal
       FROM COBERTURA_SINIESTRO_ASEG CSA
-     WHERE CSA.IdSiniestro    = nIdSiniestro 
+     WHERE CSA.IdSiniestro    = nIdSiniestro
        AND CSA.IdPoliza       = nIdPoliza
        AND CSA.IdDetSin       = nIdDetSin
        AND CSA.Cod_Asegurado  = nCod_Asegurado
        AND CSA.CodCobert      = cCodCobert
-       AND CSA.NumMod         = (SELECT MAX(NumMod) 
+       AND CSA.NumMod         = (SELECT MAX(NumMod)
                                    FROM COBERTURA_SINIESTRO_ASEG MCSA
-                                  WHERE MCSA.IdSiniestro    = CSA.IdSiniestro 
+                                  WHERE MCSA.IdSiniestro    = CSA.IdSiniestro
                                     AND MCSA.IdPoliza       = CSA.IdPoliza
                                     AND MCSA.IddetSin       = CSA.IddetSin
                                     AND MCSA.Cod_Asegurado  = CSA.Cod_Asegurado
@@ -220,7 +183,7 @@ BEGIN
     SELECT CodTransac, Monto_Reservado_Moneda, Monto_Reservado_Local
       INTO cCodTransac, nMonto_Reservado_Moneda, nMonto_Reservado_Local
       FROM COBERTURA_SINIESTRO_ASEG
-     WHERE IdSiniestro    = nIdSiniestro 
+     WHERE IdSiniestro    = nIdSiniestro
        AND IdPoliza       = nIdPoliza
        AND IddetSin       = nIdDetSin
        AND Cod_Asegurado  = nCod_Asegurado
@@ -251,18 +214,18 @@ BEGIN
       RAISE_APPLICATION_ERROR(-20225,'No Existe Configuración de Transacciones de Siniestros '||cCodTransac);
   END;
   --
-  BEGIN 
+  BEGIN
     SELECT NVL(Saldo_Reserva,0), NVL(Saldo_Reserva_Local,0)
       INTO nSaldoReservaAnterior, nSaldoRvaAnteriorLocal
       FROM COBERTURA_SINIESTRO_ASEG
-     WHERE IdSiniestro    = nIdSiniestro 
+     WHERE IdSiniestro    = nIdSiniestro
        AND IdPoliza       = nIdPoliza
        AND IdDetSin       = nIdDetSin
        AND Cod_Asegurado  = nCod_Asegurado
        AND CodCobert      = cCodCobert
-       AND NumMod         = (SELECT MAX(NumMod) 
+       AND NumMod         = (SELECT MAX(NumMod)
                                FROM COBERTURA_SINIESTRO_ASEG
-                              WHERE IdSiniestro    = nIdSiniestro 
+                              WHERE IdSiniestro    = nIdSiniestro
                                 AND IdPoliza       = nIdPoliza
                                 AND IddetSin       = nIdDetSin
                                 AND CodCobert      = cCodCobert
@@ -287,7 +250,7 @@ BEGIN
            Saldo_Reserva       = nSaldo_Reserva,
            Saldo_Reserva_Local = nSaldo_Reserva_Local,
            StsCobertura        = 'EMI'
-     WHERE IdSiniestro    = nIdSiniestro 
+     WHERE IdSiniestro    = nIdSiniestro
        AND IdPoliza       = nIdPoliza
        AND IddetSin       = nIdDetSin
        AND Cod_Asegurado  = nCod_Asegurado
@@ -338,7 +301,7 @@ BEGIN
       FROM APROBACION_ASEG
      WHERE IdPoliza      = nIdPoliza
        AND IdSiniestro   = nIdSiniestro
-       AND Cod_Asegurado = nCod_Asegurado 
+       AND Cod_Asegurado = nCod_Asegurado
        AND StsAprobacion IN ('PAG','EMI','SOL');
   END;
   --
@@ -348,7 +311,7 @@ BEGIN
        SELECT CodTransac, Monto_Reservado_Moneda, Monto_Reservado_Local
          INTO cCodTransac, nMonto_Reservado_Moneda, nMonto_Reservado_Local
          FROM COBERTURA_SINIESTRO_ASEG
-        WHERE IdSiniestro    = nIdSiniestro 
+        WHERE IdSiniestro    = nIdSiniestro
           AND IdPoliza       = nIdPoliza
           AND IddetSin       = nIdDetSin
           AND Cod_Asegurado  = nCod_Asegurado
@@ -374,18 +337,18 @@ BEGIN
          RAISE_APPLICATION_ERROR(-20225,'No Existe Configuración de Transacciones de Siniestros '||cCodTransac);
      END;
      --
-     BEGIN 
+     BEGIN
        SELECT NVL(Saldo_Reserva,0), NVL(Saldo_Reserva_Local,0)
          INTO nSaldoReservaAnterior, nSaldoRvaAnteriorLocal
          FROM COBERTURA_SINIESTRO_ASEG
-        WHERE IdSiniestro    = nIdSiniestro 
+        WHERE IdSiniestro    = nIdSiniestro
           AND IdPoliza       = nIdPoliza
           AND IdDetSin       = nIdDetSin
           AND Cod_Asegurado  = nCod_Asegurado
           AND CodCobert      = cCodCobert
-          AND NumMod         = (SELECT MAX(NumMod) 
+          AND NumMod         = (SELECT MAX(NumMod)
                                   FROM COBERTURA_SINIESTRO_ASEG
-                                 WHERE IdSiniestro    = nIdSiniestro 
+                                 WHERE IdSiniestro    = nIdSiniestro
                                    AND IdPoliza       = nIdPoliza
                                    AND IddetSin       = nIdDetSin
                                    AND CodCobert      = cCodCobert
@@ -410,7 +373,7 @@ BEGIN
               Saldo_Reserva       = nSaldo_Reserva,
               Saldo_Reserva_Local = nSaldo_Reserva_Local,
               StsCobertura        = 'ANU'
-        WHERE IdSiniestro    = nIdSiniestro 
+        WHERE IdSiniestro    = nIdSiniestro
           AND IdPoliza       = nIdPoliza
           AND IddetSin       = nIdDetSin
           AND Cod_Asegurado  = nCod_Asegurado
@@ -476,7 +439,7 @@ BEGIN
            NVL(SUM(CS.Monto_Pagado_Local),0)
       INTO nMontoPagadoMoneda, nMontoPagadoLocal
       FROM COBERTURA_SINIESTRO_ASEG CS
-     WHERE IdSiniestro    = nIdSiniestro 
+     WHERE IdSiniestro    = nIdSiniestro
        AND IdPoliza       = nIdPoliza
        AND IddetSin       = nIdDetSin
        AND Cod_Asegurado  = nCod_Asegurado
@@ -497,28 +460,28 @@ END MONTO_PAGADO;
 --
 --
 FUNCTION SUM_ASEG_REMANENTE (nCodCia NUMBER,nIdPoliza NUMBER, nIdDetPol NUMBER, nCod_Asegurado NUMBER,cCodCobert VARCHAR2) RETURN VARCHAR2 IS
-  
 
 
 
-OCURRIDO         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%TYPE;  
-SUMA_ASEGURADA   ASEGURADO_CERTIFICADO.SUMAASEG%TYPE;  
+
+OCURRIDO         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%TYPE;
+SUMA_ASEGURADA   ASEGURADO_CERTIFICADO.SUMAASEG%TYPE;
 DEDUCILBE        SINIESTRO.DEDUCIBLE%TYPE;
 PAGADO           APROBACION_ASEG.MONTO_MONEDA%TYPE;
 SUM_ASEG_REM     NUMBER;
 wHabemus         NUMBER;
 wHayPagos        NUMBER;
 MNTO_DEDUCIBLE   COBERTURA_ASEG.DEDUCIBLE_LOCAL%TYPE;
-TOTAL_DEDULCE    COBERTURA_ASEG.DEDUCIBLE_LOCAL%TYPE;           
-          
-          
-          
-          
+TOTAL_DEDULCE    COBERTURA_ASEG.DEDUCIBLE_LOCAL%TYPE;
+
+
+
+
 BEGIN
 
 
     ---  EXISTES 1a VEZ  --------------------------------------
-        SELECT  COUNT(*) INTO wHabemus                 
+        SELECT  COUNT(*) INTO wHabemus
           FROM  POLIZAS                  A,
                 ASEGURADO_CERTIFICADO    B,
                 COBERT_ACT_ASEG          B2,
@@ -533,29 +496,29 @@ BEGIN
           --
             AND B2.IDPOLIZA     = B.IDPOLIZA
             AND B2.IDETPOL      = B.IDETPOL
-            AND B2.COD_ASEGURADO= B.COD_ASEGURADO 
+            AND B2.COD_ASEGURADO= B.COD_ASEGURADO
             AND B2.CODCOBERT    = cCodCobert
           --
             AND C.IDPOLIZA       = B.IDPOLIZA
             AND C.IDETPOL        = B.IDETPOL
-            AND C.COD_ASEGURADO  = B.COD_ASEGURADO 
+            AND C.COD_ASEGURADO  = B.COD_ASEGURADO
           --
-            AND D.IDSINIESTRO   = C.IDSINIESTRO  
+            AND D.IDSINIESTRO   = C.IDSINIESTRO
             AND D.IDPOLIZA      = C.IDPOLIZA
-            AND D.COD_ASEGURADO = C.COD_ASEGURADO   
+            AND D.COD_ASEGURADO = C.COD_ASEGURADO
             AND D.CODCOBERT     = cCodCobert
-            AND D.STSCOBERTURA  = 'EMI'         
-            ;          
+            AND D.STSCOBERTURA  = 'EMI'
+            ;
     -------------------------------------------------------------
 
     IF wHabemus > 0 THEN
 
              BEGIN
-                SELECT SUM(RESERVA)  , SUMASEG  
+                SELECT SUM(RESERVA)  , SUMASEG
                 INTO   OCURRIDO      , SUMA_ASEGURADA
-                FROM 
+                FROM
                    ( SELECT  SUM(DECODE(CTS.SIGNO,'-',NVL(D.MONTO_RESERVADO_MONEDA,0)*(-1),NVL(D.MONTO_RESERVADO_MONEDA,0)))  RESERVA,
-                            B2.SUMAASEG_MONEDA              SUMASEG                     
+                            B2.SUMAASEG_MONEDA              SUMASEG
                     FROM  POLIZAS                  A,
                           ASEGURADO_CERTIFICADO    B,
                           COBERT_ACT_ASEG          B2,
@@ -571,16 +534,16 @@ BEGIN
                     --
                       AND B2.IDPOLIZA     = B.IDPOLIZA
                       AND B2.IDETPOL      = B.IDETPOL
-                      AND B2.COD_ASEGURADO= B.COD_ASEGURADO 
+                      AND B2.COD_ASEGURADO= B.COD_ASEGURADO
                       AND B2.CODCOBERT    = cCodCobert
                     --
                       AND C.IDPOLIZA       = B.IDPOLIZA
                       AND C.IDETPOL        = B.IDETPOL
-                      AND C.COD_ASEGURADO  = B.COD_ASEGURADO 
+                      AND C.COD_ASEGURADO  = B.COD_ASEGURADO
                     --
-                      AND D.IDSINIESTRO   = C.IDSINIESTRO  
+                      AND D.IDSINIESTRO   = C.IDSINIESTRO
                       AND D.IDPOLIZA      = C.IDPOLIZA
-                      AND D.COD_ASEGURADO = C.COD_ASEGURADO   
+                      AND D.COD_ASEGURADO = C.COD_ASEGURADO
                       AND D.CODCOBERT     = cCodCobert
                       AND D.STSCOBERTURA  = 'EMI'
                     --
@@ -590,18 +553,18 @@ BEGIN
                               B.COD_ASEGURADO   ,
                               C.IDSINIESTRO     ,
                               D.CODCOBERT       ,
-                              B2.DEDUCIBLE_MONEDA            
-                            
+                              B2.DEDUCIBLE_MONEDA
+
                    )
                 GROUP BY      SUMASEG      ;
              EXCEPTION WHEN NO_DATA_FOUND THEN
                          RAISE_APPLICATION_ERROR(-20225,'NDF  Error en OCURRIDO y SUMA_ASEGURADA : '||SQLERRM);
                         WHEN OTHERS THEN
                          RAISE_APPLICATION_ERROR(-20225,'OTHERS Error en OCURRIDO y SUMA_ASEGURADA : '||SQLERRM);
-             END;          
+             END;
      ELSIF wHabemus = 0 THEN
          OCURRIDO := 0;
-                   SELECT B2.SUMAASEG_MONEDA    INTO SUMA_ASEGURADA                     
+                   SELECT B2.SUMAASEG_MONEDA    INTO SUMA_ASEGURADA
                     FROM  POLIZAS                  A,
                           ASEGURADO_CERTIFICADO    B,
                           COBERT_ACT_ASEG          B2
@@ -614,81 +577,81 @@ BEGIN
                     --
                       AND B2.IDPOLIZA     = B.IDPOLIZA
                       AND B2.IDETPOL      = B.IDETPOL
-                      AND B2.COD_ASEGURADO= B.COD_ASEGURADO 
+                      AND B2.COD_ASEGURADO= B.COD_ASEGURADO
                       AND B2.CODCOBERT    = cCodCobert
-                    --                     
-                     ;         
-         
+                    --
+                     ;
+
      END IF;
 --   BEGIN
 --     SELECT COUNT(DISTINCT(NVL(MOTIVO_DE_SINIESTRO,'0')))
 --     INTO    DEDUCILBE
 --     FROM SINIESTRO F2
 --     WHERE F2.IDPOLIZA     = nIdPoliza
---     AND  F2.COD_ASEGURADO = nCod_Asegurado 
---     AND  F2.IDETPOL       = nIdDetPol;  
+--     AND  F2.COD_ASEGURADO = nCod_Asegurado
+--     AND  F2.IDETPOL       = nIdDetPol;
 --   EXCEPTION WHEN NO_DATA_FOUND THEN
 --               RAISE_APPLICATION_ERROR(-20225,'NDF  Error en DEDUCILBE: '||SQLERRM);
 --              WHEN OTHERS THEN
 --               RAISE_APPLICATION_ERROR(-20225,'OTHERS Error en DEDUCILBE: '||SQLERRM);
---   END; 
-                 
+--   END;
+
 --   IF DEDUCILBE IS NULL THEN DEDUCILBE:= 0; END IF;
---       BEGIN                                                              
---          SELECT DEDUCIBLE_LOCAL 
+--       BEGIN
+--          SELECT DEDUCIBLE_LOCAL
 --          INTO MNTO_DEDUCIBLE
 --          FROM COBERTURA_ASEG
---          WHERE IDPOLIZA     = nIdPoliza          
---          AND  cod_asegurado = nCod_Asegurado  
+--          WHERE IDPOLIZA     = nIdPoliza
+--          AND  cod_asegurado = nCod_Asegurado
 --          AND   IDETPOL       = nIdDetPol
---          AND   CODCOBERT    =  cCodCobert ;                                                 
+--          AND   CODCOBERT    =  cCodCobert ;
 --       EXCEPTION WHEN NO_DATA_FOUND THEN
---               MNTO_DEDUCIBLE:= 0;  
+--               MNTO_DEDUCIBLE:= 0;
 --              WHEN OTHERS THEN
---               MNTO_DEDUCIBLE:= 0;  
---       END;                         
+--               MNTO_DEDUCIBLE:= 0;
+--       END;
 --  IF MNTO_DEDUCIBLE IS NULL THEN MNTO_DEDUCIBLE:= 0; END IF;
-   
+
    SELECT COUNT(*) INTO wHayPagos
     FROM   DETALLE_APROBACION_ASEG  S
-    WHERE  S.IDSINIESTRO IN (SELECT IDSINIESTRO 
+    WHERE  S.IDSINIESTRO IN (SELECT IDSINIESTRO
                              FROM SINIESTRO
                              WHERE IDPOLIZA     = nIdPoliza
-                             AND   COD_ASEGURADO= nCod_Asegurado 
+                             AND   COD_ASEGURADO= nCod_Asegurado
                              AND   IDETPOL      = nIdDetPol)
     AND  S.COD_PAGO      = cCodCobert
     AND  S.NUM_APROBACION IN (SELECT NUM_APROBACION
                              FROM APROBACION_ASEG
-                             WHERE IDSINIESTRO IN (SELECT IDSINIESTRO 
+                             WHERE IDSINIESTRO IN (SELECT IDSINIESTRO
                                                    FROM SINIESTRO
                                                    WHERE IDPOLIZA      = nIdPoliza
                                                    AND   COD_ASEGURADO = nCod_Asegurado
                                                    AND   IDETPOL       = nIdDetPol)
-                             AND   STSAPROBACION IN ('PAG') 
+                             AND   STSAPROBACION IN ('PAG')
                               )
-    ;  
-    
-    
+    ;
+
+
     IF wHayPagos >  0 THEN
-               BEGIN                
-                SELECT SUM(PAGADO)  
+               BEGIN
+                SELECT SUM(PAGADO)
                  INTO       PAGADO
                  FROM( SELECT SUM(S.MONTO_LOCAL) PAGADO
                         FROM   DETALLE_APROBACION_ASEG  S
-                        WHERE  S.IDSINIESTRO IN (SELECT IDSINIESTRO 
+                        WHERE  S.IDSINIESTRO IN (SELECT IDSINIESTRO
                                                  FROM SINIESTRO
                                                  WHERE IDPOLIZA      = nIdPoliza
-                                                 AND   COD_ASEGURADO = nCod_Asegurado 
+                                                 AND   COD_ASEGURADO = nCod_Asegurado
                                                  AND   IDETPOL       = nIdDetPol)
-                        AND  S.COD_PAGO      = cCodCobert                      
+                        AND  S.COD_PAGO      = cCodCobert
                         AND  S.NUM_APROBACION IN (SELECT NUM_APROBACION
                                                   FROM APROBACION_ASEG
-                                                  WHERE IDSINIESTRO IN (SELECT IDSINIESTRO 
+                                                  WHERE IDSINIESTRO IN (SELECT IDSINIESTRO
                                                                         FROM SINIESTRO
                                                                         WHERE IDPOLIZA      = nIdPoliza
                                                                         AND   COD_ASEGURADO = nCod_Asegurado
                                                                         AND   IDETPOL       = nIdDetPol)
-                                                  AND   STSAPROBACION IN ('PAG') 
+                                                  AND   STSAPROBACION IN ('PAG')
                                                  )
                       );
                 EXCEPTION WHEN NO_DATA_FOUND THEN
@@ -696,19 +659,19 @@ BEGIN
                           WHEN OTHERS THEN
                             RAISE_APPLICATION_ERROR(-20225,'OTHERS Error en PAGADO: '||SQLERRM);
                END;
-         
+
     ELSIF wHayPagos = 0 THEN
          PAGADO := 0;
     END IF;
-    
-   
+
+
    --TOTAL_DEDULCE := ( MNTO_DEDUCIBLE * DEDUCILBE );
-    
- 
+
+
     --SUM_ASEG_REM := ((SUMA_ASEGURADA - ((OCURRIDO - PAGADO)+ PAGADO )- TOTAL_DEDULCE ));
     SUM_ASEG_REM := (SUMA_ASEGURADA - ((OCURRIDO - PAGADO)+ PAGADO ));
     RETURN(SUM_ASEG_REM);
-    
+
 EXCEPTION  WHEN OTHERS THEN
            RETURN(0);
                RAISE_APPLICATION_ERROR(-20225,'Error en Validar Suma Asegurada Remanente : '||SQLERRM);
@@ -717,12 +680,12 @@ END SUM_ASEG_REMANENTE;
 --
 --
 FUNCTION OPC_REMANENTE (nCodCia NUMBER,nIdPoliza NUMBER, nIdDetPol NUMBER, nCod_Asegurado NUMBER,cCodCobert VARCHAR2) RETURN VARCHAR2 IS
-  
 
 
 
-OCURRIDO         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%TYPE;  
-SUMA_ASEGURADA   ASEGURADO_CERTIFICADO.SUMAASEG%TYPE;  
+
+OCURRIDO         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%TYPE;
+SUMA_ASEGURADA   ASEGURADO_CERTIFICADO.SUMAASEG%TYPE;
 DEDUCILBE        SINIESTRO.DEDUCIBLE%TYPE;
 PAGADO           APROBACION_ASEG.MONTO_MONEDA%TYPE;
 SUM_ASEG_REM     NUMBER;
@@ -730,48 +693,48 @@ wHabemus         NUMBER;
 wHayPagos        NUMBER;
 
 BEGIN
-  
-     
-     
-     
-      SELECT  SUM(DECODE(CTS.SIGNO,'-',NVL(D.MONTO_RESERVADO_MONEDA,0)*(-1),NVL(D.MONTO_RESERVADO_MONEDA,0)))   
+
+
+
+
+      SELECT  SUM(DECODE(CTS.SIGNO,'-',NVL(D.MONTO_RESERVADO_MONEDA,0)*(-1),NVL(D.MONTO_RESERVADO_MONEDA,0)))
        INTO   OCURRIDO
         FROM  COBERTURA_SINIESTRO_ASEG D,
               CONFIG_TRANSAC_SINIESTROS CTS
        WHERE D.CODCOBERT     = cCodCobert
          AND D.STSCOBERTURA  = 'EMI'
-         AND D.IDSINIESTRO   IN (SELECT IDSINIESTRO 
+         AND D.IDSINIESTRO   IN (SELECT IDSINIESTRO
                              FROM SINIESTRO
                              WHERE IDPOLIZA      = nIdPoliza
-                             AND   COD_ASEGURADO = nCod_Asegurado 
+                             AND   COD_ASEGURADO = nCod_Asegurado
                              AND   IDETPOL       = nIdDetPol)
       --
-         AND CTS.CODTRANSAC = D.CODCPTOTRANSAC;  
-                  
+         AND CTS.CODTRANSAC = D.CODCPTOTRANSAC;
+
    SELECT COUNT(*) INTO wHayPagos
     FROM   DETALLE_APROBACION_ASEG  S
-    WHERE  S.IDSINIESTRO IN (SELECT IDSINIESTRO 
+    WHERE  S.IDSINIESTRO IN (SELECT IDSINIESTRO
                              FROM SINIESTRO
                              WHERE IDPOLIZA      = nIdPoliza
-                             AND   COD_ASEGURADO = nCod_Asegurado 
+                             AND   COD_ASEGURADO = nCod_Asegurado
                              AND   IDETPOL       = nIdDetPol)
     AND  S.COD_PAGO      = cCodCobert
     AND  S.NUM_APROBACION IN (SELECT NUM_APROBACION
                               FROM APROBACION_ASEG
-                              WHERE IDSINIESTRO IN (SELECT IDSINIESTRO 
+                              WHERE IDSINIESTRO IN (SELECT IDSINIESTRO
                                                      FROM SINIESTRO
                                                      WHERE IDPOLIZA      = nIdPoliza
                                                      AND   COD_ASEGURADO = nCod_Asegurado
                                                      AND   IDETPOL       = nIdDetPol)
-                              AND   STSAPROBACION IN ('PAG') 
-                             ); 
-    
-    
+                              AND   STSAPROBACION IN ('PAG')
+                             );
+
+
     IF wHayPagos >  0 THEN
-                BEGIN                
-                   SELECT SUM(S.MONTO_LOCAL) PAGADO INTO       PAGADO
+                BEGIN
+                 /*  SELECT SUM(S.MONTO_LOCAL) PAGADO INTO       PAGADO
                         FROM   DETALLE_APROBACION_ASEG  S
-                        WHERE  S.IDSINIESTRO IN (SELECT IDSINIESTRO 
+                        WHERE  S.IDSINIESTRO IN (SELECT IDSINIESTRO
                                                  FROM SINIESTRO
                                                  WHERE IDPOLIZA      = nIdPoliza
                                                  AND   COD_ASEGURADO = nCod_Asegurado
@@ -779,13 +742,35 @@ BEGIN
                    AND  S.COD_PAGO      = cCodCobert
                    AND  S.NUM_APROBACION IN (SELECT NUM_APROBACION
                                              FROM APROBACION_ASEG
-                                             WHERE IDSINIESTRO IN (SELECT IDSINIESTRO 
+                                             WHERE IDSINIESTRO IN (SELECT IDSINIESTRO
                                                                    FROM SINIESTRO
                                                                    WHERE IDPOLIZA      = nIdPoliza
                                                                    AND   COD_ASEGURADO = nCod_Asegurado
                                                                    AND   IDETPOL       = nIdDetPol)
-                                             AND   STSAPROBACION IN ('PAG') 
-                                            ); 
+                                             AND   STSAPROBACION IN ('PAG')
+                                            );*/
+                  -- INC-2600 MLJ SE AGREGA TABLA CPTOS_TRANSAC_SINIESTROS PARA OBTENER EL REMANENTE                          
+                                            
+                   SELECT SUM(S.MONTO_LOCAL) PAGADO INTO       PAGADO
+                        FROM   DETALLE_APROBACION_ASEG  S
+                              ,CPTOS_TRANSAC_SINIESTROS CTS
+                        WHERE  S.IDSINIESTRO IN (SELECT IDSINIESTRO
+                                                 FROM SINIESTRO
+                                                 WHERE IDPOLIZA      = nIdPoliza
+                                                 AND   COD_ASEGURADO = nCod_Asegurado 
+                                                 AND   IDETPOL       = nIdDetPol )
+                   AND  S.Codtransac = CTS.CODTRANSAC
+                        AND  S.Codcptotransac = CTS.CODCPTOTRANSAC
+                        and  CTS.INDDISMINRVA = 'S' 
+                   AND  S.NUM_APROBACION IN (SELECT NUM_APROBACION
+                                             FROM APROBACION_ASEG
+                                             WHERE IDSINIESTRO IN (SELECT IDSINIESTRO
+                                                                   FROM SINIESTRO
+                                                                   WHERE IDPOLIZA      = nIdPoliza
+                                                                   AND   COD_ASEGURADO = nCod_Asegurado 
+                                                                   AND   IDETPOL       = nIdDetPol)
+                                                                   AND   STSAPROBACION IN ('PAG')
+                                             );                       
                 EXCEPTION WHEN NO_DATA_FOUND THEN
                            RAISE_APPLICATION_ERROR(-20225,'NDF  Error en PAGADO: '||SQLERRM);
                           WHEN OTHERS THEN
@@ -794,12 +779,12 @@ BEGIN
     ELSIF wHayPagos = 0 THEN
          PAGADO := 0;
     END IF;
-    
-    
-    SUM_ASEG_REM := ((OCURRIDO - PAGADO)); 
-    ---SUM_ASEG_REM := ((SUMA_ASEGURADA - ((OCURRIDO - PAGADO)+ PAGADO )- DEDUCILBE )); 
+
+
+    SUM_ASEG_REM := ((OCURRIDO - PAGADO));
+    ---SUM_ASEG_REM := ((SUMA_ASEGURADA - ((OCURRIDO - PAGADO)+ PAGADO )- DEDUCILBE ));
     RETURN(SUM_ASEG_REM);
-    
+
 EXCEPTION  WHEN OTHERS THEN
            RETURN(0);
                RAISE_APPLICATION_ERROR(-20225,'Error en Validar Suma Asegurada Remanente : '||SQLERRM);
@@ -809,8 +794,8 @@ END OPC_REMANENTE;
 --
 FUNCTION RESERVA_DE_COB_SINIESTRO (nCodCia NUMBER,nIdSiniestro NUMBER, cCodCobert VARCHAR2) RETURN NUMBER IS
 
-OCURRIDO         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%TYPE;  
-SUMA_ASEGURADA   ASEGURADO_CERTIFICADO.SUMAASEG%TYPE;  
+OCURRIDO         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%TYPE;
+SUMA_ASEGURADA   ASEGURADO_CERTIFICADO.SUMAASEG%TYPE;
 DEDUCILBE        SINIESTRO.DEDUCIBLE%TYPE;
 PAGADO           APROBACION_ASEG.MONTO_MONEDA%TYPE;
 SUM_ASEG_REM     NUMBER;
@@ -818,8 +803,8 @@ wHabemus         NUMBER;
 wHayPagos        NUMBER;
 
 BEGIN
-     
-      SELECT  SUM(DECODE(CTS.SIGNO,'-',NVL(D.MONTO_RESERVADO_MONEDA,0)*(-1),NVL(D.MONTO_RESERVADO_MONEDA,0)))   
+
+      SELECT  SUM(DECODE(CTS.SIGNO,'-',NVL(D.MONTO_RESERVADO_MONEDA,0)*(-1),NVL(D.MONTO_RESERVADO_MONEDA,0)))
        INTO   OCURRIDO
         FROM  COBERTURA_SINIESTRO_ASEG D,
               CONFIG_TRANSAC_SINIESTROS CTS
@@ -827,12 +812,12 @@ BEGIN
          AND D.STSCOBERTURA  = 'EMI'
          AND D.IDSINIESTRO   = nIdSiniestro
       --
-         AND CTS.CODTRANSAC = D.CODCPTOTRANSAC;  
+         AND CTS.CODTRANSAC = D.CODCPTOTRANSAC;
 
-    SUM_ASEG_REM := (OCURRIDO); 
-    
+    SUM_ASEG_REM := (OCURRIDO);
+
     RETURN(SUM_ASEG_REM);
-    
+
 EXCEPTION  WHEN OTHERS THEN
            RETURN(0);
                RAISE_APPLICATION_ERROR(-20225,'Error en Validar Suma Asegurada Remanente : '||SQLERRM);
@@ -842,8 +827,8 @@ END RESERVA_DE_COB_SINIESTRO;
 --
 FUNCTION PAGO_DE_COB_SINIESTRO (nCodCia NUMBER,nIdSiniestro NUMBER, cCodCobert VARCHAR2) RETURN NUMBER IS
 
-OCURRIDO         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%TYPE;  
-SUMA_ASEGURADA   ASEGURADO_CERTIFICADO.SUMAASEG%TYPE;  
+OCURRIDO         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%TYPE;
+SUMA_ASEGURADA   ASEGURADO_CERTIFICADO.SUMAASEG%TYPE;
 DEDUCILBE        SINIESTRO.DEDUCIBLE%TYPE;
 PAGADO           APROBACION_ASEG.MONTO_MONEDA%TYPE;
 SUM_ASEG_REM     NUMBER;
@@ -851,16 +836,16 @@ wHabemus         NUMBER;
 wHayPagos        NUMBER;
 
 BEGIN
-     
+
      SELECT COUNT(*) INTO wHayPagos
     FROM   DETALLE_APROBACION_ASEG  S
     WHERE  S.IDSINIESTRO = nIdSiniestro
-    AND  S.COD_PAGO      = cCodCobert; 
-    
-    
+    AND  S.COD_PAGO      = cCodCobert;
+
+
     IF wHayPagos >  0 THEN
-                BEGIN                
-                   SELECT SUM(S.MONTO_LOCAL) PAGADO INTO       PAGADO
+                BEGIN
+                 /*  SELECT SUM(S.MONTO_LOCAL) PAGADO INTO       PAGADO
                         FROM   DETALLE_APROBACION_ASEG  S
                         WHERE  S.IDSINIESTRO = nIdSiniestro
                         AND  S.COD_PAGO      = cCodCobert
@@ -868,7 +853,21 @@ BEGIN
                                                 FROM APROBACION_ASEG
                                                 WHERE IDSINIESTRO = nIdSiniestro
                                                 AND   STSAPROBACION IN ('PAG') )
-                 ;
+                 ;*/
+                 -- INC-2600 MLJ SE AGREGA TABLA CPTOS_TRANSAC_SINIESTROS PARA IDENTIFICAR LOS CONCEPTOS
+                 -- QUE APLICAN AL IMPORTE PAGADO
+                    SELECT SUM(S.MONTO_LOCAL) PAGADO INTO       PAGADO
+                        FROM   DETALLE_APROBACION_ASEG  S
+                               ,CPTOS_TRANSAC_SINIESTROS CT      
+                        WHERE  S.IDSINIESTRO = NIDSINIESTRO
+                        AND  S.CODTRANSAC = CT.CODTRANSAC
+                        AND  S.CODCPTOTRANSAC = CT.CODCPTOTRANSAC
+                        AND  CT.INDDISMINRVA = 'S' 
+                        AND  NUM_APROBACION IN (SELECT NUM_APROBACION
+                                                FROM APROBACION_ASEG
+                                                WHERE IDSINIESTRO = NIDSINIESTRO
+                                                AND   STSAPROBACION IN ('PAG') )
+                    ;                            
                 EXCEPTION WHEN NO_DATA_FOUND THEN
                            RAISE_APPLICATION_ERROR(-20225,'NDF  Error en PAGADO: '||SQLERRM);
                           WHEN OTHERS THEN
@@ -877,16 +876,16 @@ BEGIN
     ELSIF wHayPagos = 0 THEN
          PAGADO := 0;
     END IF;
-    SUM_ASEG_REM := (PAGADO); 
+    SUM_ASEG_REM := (PAGADO);
     RETURN(SUM_ASEG_REM);
-    
+
 EXCEPTION  WHEN OTHERS THEN
            RETURN(0);
                RAISE_APPLICATION_ERROR(-20225,'Error en Validar Suma Asegurada Remanente : '||SQLERRM);
 END PAGO_DE_COB_SINIESTRO;
 ---
 ---
-PROCEDURE ACTUALIZA_AUTORIZACION(nIdSiniestro NUMBER, nIdDetSin NUMBER, nIdPoliza NUMBER, cCodCobert VARCHAR2, 
+PROCEDURE ACTUALIZA_AUTORIZACION(nIdSiniestro NUMBER, nIdDetSin NUMBER, nIdPoliza NUMBER, cCodCobert VARCHAR2,
                                  nCod_Asegurado NUMBER, nNumMod NUMBER, nIdAutorizacion NUMBER) IS
 BEGIN
     UPDATE COBERTURA_SINIESTRO_ASEG
@@ -900,20 +899,7 @@ BEGIN
 EXCEPTION
     WHEN OTHERS THEN
         RAISE_APPLICATION_ERROR(-20225,'Error al Asignar Autorización: '||nIdAutorizacion||' '||SQLERRM);
-END ACTUALIZA_AUTORIZACION;                                    
+END ACTUALIZA_AUTORIZACION;
 ---
 END OC_COBERTURA_SINIESTRO_ASEG;
-/
-
---
--- OC_COBERTURA_SINIESTRO_ASEG  (Synonym) 
---
---  Dependencies: 
---   OC_COBERTURA_SINIESTRO_ASEG (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_COBERTURA_SINIESTRO_ASEG FOR SICAS_OC.OC_COBERTURA_SINIESTRO_ASEG
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_COBERTURA_SINIESTRO_ASEG TO PUBLIC
 /
