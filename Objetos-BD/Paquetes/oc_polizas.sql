@@ -3287,15 +3287,14 @@ CURSOR ASEG_Q IS
       AND CodCia   = nCodCia
       AND Estado   = 'EMI';
 
+--Se agrega Prima_Moneda para la disribucion de la cancelación de reaseguro 310720202
 CURSOR DET_Q IS
-   SELECT IDetPol, IndDeclara, Cod_Asegurado,
-          IdTipoSeg, PlanCob
+   SELECT IDetPol, IndDeclara, Cod_Asegurado, IdTipoSeg, PlanCob, Prima_Moneda
      FROM DETALLE_POLIZA
     WHERE IdPoliza = nIdPoliza
       AND CodCia   = nCodCia
     UNION ALL
-   SELECT Correlativo IDetPol, '' IndDeclara, 0 Cod_Asegurado,
-          NULL IdTipoSeg, NULL PlanCob
+   SELECT Correlativo IDetPol, '' IndDeclara, 0 Cod_Asegurado, NULL IdTipoSeg, NULL PlanCob, 0 Prima_Moneda
      FROM FZ_DETALLE_FIANZAS
     WHERE IdPoliza = nIdPoliza
       AND CodCia   = nCodCia;
@@ -3591,6 +3590,9 @@ BEGIN
       OC_CLAUSULAS_POLIZA.ANULAR_TODAS(nCodCia, nIdPoliza);
 
       FOR W IN DET_Q LOOP
+         --Se generación de detalle de transacción para la disribucion de la cancelación de reaseguro 310720202
+         OC_DETALLE_TRANSACCION.CREA(nIdTransacAnul, nCodCia,  nCodEmpresa, 2, 'CER', 'DETALLE_POLIZA', nIdPoliza, W.IDetPol, NULL, NULL, W.Prima_Moneda);
+         --
          -- GTC - 17-12-2018
          nIDetPol       := W.IDetPol;
          nCod_Asegurado := W.Cod_Asegurado;
@@ -4338,9 +4340,9 @@ END OC_POLIZAS;
 --  Dependencies: 
 --   OC_POLIZAS (Package)
 --
-CREATE OR REPLACE PUBLIC SYNONYM OC_POLIZAS FOR SICAS_OC.OC_POLIZAS
-/
+--CREATE OR REPLACE PUBLIC SYNONYM OC_POLIZAS FOR SICAS_OC.OC_POLIZAS
+--/
 
 
-GRANT EXECUTE ON SICAS_OC.OC_POLIZAS TO PUBLIC
-/
+--GRANT EXECUTE ON SICAS_OC.OC_POLIZAS TO PUBLIC
+--/
