@@ -5,30 +5,30 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   DBMS_STANDARD (Package)
---   OC_ACTIVIDADES_ECONOMICAS (Package)
---   GT_TARIFA_CONTROL_VIGENCIAS (Package)
 --   PLAN_COBERTURAS (Table)
 --   POLIZAS (Table)
---   CONFIG_PLANTILLAS_PLANCOB (Table)
---   OC_TARIFA_DINAMICA (Package)
---   OC_TARIFA_DINAMICA_DET (Package)
---   OC_TARIFA_SEXO_EDAD_RIESGO (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
+--   DETALLE_POLIZA (Table)
+--   TARIFA_CONTROL_VIGENCIAS (Table)
+--   TARIFA_SEXO_EDAD_RIESGO (Table)
+--   GT_TARIFA_CONTROL_VIGENCIAS (Package)
+--   OC_DATOS_PART_EMISION (Package)
 --   ACTIVIDADES_ECONOMICAS (Table)
 --   ASEGURADO (Table)
---   OC_CONFIG_PLANTILLAS_PLANCOB (Package)
---   OC_DATOS_PART_EMISION (Package)
+--   TIPOS_DE_SEGUROS (Table)
+--   CONFIG_PLANTILLAS_PLANCOB (Table)
 --   COBERTURAS (Table)
 --   COBERTURAS_DE_SEGUROS (Table)
 --   COBERT_ACT (Table)
 --   COBERT_ACT_ASEG (Table)
---   TARIFA_CONTROL_VIGENCIAS (Table)
---   TARIFA_SEXO_EDAD_RIESGO (Table)
+--   OC_TARIFA_DINAMICA (Package)
+--   OC_TARIFA_DINAMICA_DET (Package)
+--   OC_TARIFA_SEXO_EDAD_RIESGO (Package)
+--   PERSONA_NATURAL_JURIDICA (Table)
+--   OC_ACTIVIDADES_ECONOMICAS (Package)
+--   OC_ASEGURADO (Package)
+--   OC_CONFIG_PLANTILLAS_PLANCOB (Package)
 --   OC_GENERALES (Package)
 --   OC_POLIZAS (Package)
---   OC_ASEGURADO (Package)
---   DETALLE_POLIZA (Table)
---   TIPOS_DE_SEGUROS (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_COBERT_ACT IS
 
@@ -86,68 +86,69 @@ PROCEDURE CARGAR_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCH
                             nEdad_Maxima NUMBER,  nEdad_Exclusion NUMBER, nSumaAseg_Minima NUMBER, 
                             nSumaAseg_Maxima NUMBER,  nPorcExtraPrima NUMBER, nMontoExtraPrima NUMBER, 
                             nSumaIngresada NUMBER) IS
-nCod_Moneda             POLIZAS.Cod_Moneda%TYPE;
-nTasaCambioDet          DETALLE_POLIZA.Tasa_Cambio%TYPE;
-dFecEmision             POLIZAS.FecEmision%TYPE ;
-nSumaAsegMoneda         DETALLE_POLIZA.Suma_Aseg_Moneda%TYPE;
-nSumaAsegLocal          DETALLE_POLIZA.Suma_Aseg_Local%TYPE;
-nCod_Asegurado          DETALLE_POLIZA.Cod_Asegurado%TYPE;
-dFecIniVig              POLIZAS.FecIniVig%TYPE;
-dFecFinVig              POLIZAS.FecFinVig%TYPE;
-cSexo                   PERSONA_NATURAL_JURIDICA.Sexo%TYPE;
-cRiesgo                 ACTIVIDADES_ECONOMICAS.RiesgoActividad%TYPE;
-cCodActividad           PERSONA_NATURAL_JURIDICA.CodActividad%TYPE;
-nIdTarifa               TARIFA_CONTROL_VIGENCIAS.IdTarifa%TYPE;
-nEdad                   NUMBER(5);
-nEdadEmision            NUMBER(5);
-nExiste                 NUMBER;
-nExisteAgen             NUMBER;
-nTasa                   NUMBER;
-nTasaNivelada           NUMBER;
-nValor                  NUMBER;
-nValorMoneda            NUMBER;
-nPrimaNivLocal          NUMBER := 0;
-nPrimaNivMoneda         NUMBER := 0;
-cTipoProceso            CONFIG_PLANTILLAS_PLANCOB.TipoProceso%TYPE;
-cTarifaDinamica         VARCHAR2(1) := 'N';
-nPorcDescuento          POLIZAS.PorcDescuento%TYPE;
-nPorcGtoAdmin           POLIZAS.PorcGtoAdmin%TYPE;
-nPorcGtoAdqui           POLIZAS.PorcGtoAdqui%TYPE;
-nPorcUtilidad           POLIZAS.PorcUtilidad%TYPE;
-nFactorAjuste           POLIZAS.FactorAjuste%TYPE;
-nMontoDeducible         POLIZAS.MontoDeducible%TYPE;
-nFactFormulaDeduc       POLIZAS.FactFormulaDeduc%TYPE;
-nHorasVig               POLIZAS.HorasVig%TYPE;
-nDiasVig                POLIZAS.DiasVig%TYPE;
-nEdad_MinimaCob         COBERTURAS_DE_SEGUROS.Edad_Minima%TYPE;
-nEdad_MaximaCob         COBERTURAS_DE_SEGUROS.Edad_Maxima%TYPE;
-nEdad_ExclusionCob      COBERTURAS_DE_SEGUROS.Edad_Exclusion%TYPE;
-nSumaAseg_MinimaCob     COBERTURAS_DE_SEGUROS.SumaAsegMinima%TYPE;
-nSumaAseg_MaximaCob     COBERTURAS_DE_SEGUROS.SumaAsegMaxima%TYPE;
-cTipoSeg                TIPOS_DE_SEGUROS.TipoSeg%TYPE;
-nDeducibleCobLocal      COBERT_ACT.Deducible_Local%TYPE;
-nDeducibleCobMoneda     COBERT_ACT.Deducible_Moneda%TYPE;
-nNumRenov               POLIZAS.NumRenov%TYPE;
-cStsCobertura           COBERT_ACT.StsCobertura%TYPE;
-nIdPolizaEmision        POLIZAS.IdPoliza%TYPE;
-dFecIniVigEmision       POLIZAS.FecIniVig%TYPE;
-nPorcGtoAdminTar        TARIFA_SEXO_EDAD_RIESGO.PorcGtoAdmin%TYPE;
+    nCod_Moneda             POLIZAS.Cod_Moneda%TYPE;
+    nTasaCambioDet          DETALLE_POLIZA.Tasa_Cambio%TYPE;
+    dFecEmision             POLIZAS.FecEmision%TYPE ;
+    nSumaAsegMoneda         DETALLE_POLIZA.Suma_Aseg_Moneda%TYPE;
+    nSumaAsegLocal          DETALLE_POLIZA.Suma_Aseg_Local%TYPE;
+    nCod_Asegurado          DETALLE_POLIZA.Cod_Asegurado%TYPE;
+    cHabitoTarifa           DETALLE_POLIZA.HABITOTARIFA%TYPE;
+    dFecIniVig              POLIZAS.FecIniVig%TYPE;
+    dFecFinVig              POLIZAS.FecFinVig%TYPE;
+    cSexo                   PERSONA_NATURAL_JURIDICA.Sexo%TYPE;
+    cRiesgo                 ACTIVIDADES_ECONOMICAS.RiesgoActividad%TYPE;
+    cCodActividad           PERSONA_NATURAL_JURIDICA.CodActividad%TYPE;
+    nIdTarifa               TARIFA_CONTROL_VIGENCIAS.IdTarifa%TYPE;
+    nEdad                   NUMBER(5);
+    nEdadEmision            NUMBER(5);
+    nExiste                 NUMBER;
+    nExisteAgen             NUMBER;
+    nTasa                   NUMBER;
+    nTasaNivelada           NUMBER;
+    nValor                  NUMBER;
+    nValorMoneda            NUMBER;
+    nPrimaNivLocal          NUMBER := 0;
+    nPrimaNivMoneda         NUMBER := 0;
+    cTipoProceso            CONFIG_PLANTILLAS_PLANCOB.TipoProceso%TYPE;
+    cTarifaDinamica         VARCHAR2(1) := 'N';
+    nPorcDescuento          POLIZAS.PorcDescuento%TYPE;
+    nPorcGtoAdmin           POLIZAS.PorcGtoAdmin%TYPE;
+    nPorcGtoAdqui           POLIZAS.PorcGtoAdqui%TYPE;
+    nPorcUtilidad           POLIZAS.PorcUtilidad%TYPE;
+    nFactorAjuste           POLIZAS.FactorAjuste%TYPE;
+    nMontoDeducible         POLIZAS.MontoDeducible%TYPE;
+    nFactFormulaDeduc       POLIZAS.FactFormulaDeduc%TYPE;
+    nHorasVig               POLIZAS.HorasVig%TYPE;
+    nDiasVig                POLIZAS.DiasVig%TYPE;
+    nEdad_MinimaCob         COBERTURAS_DE_SEGUROS.Edad_Minima%TYPE;
+    nEdad_MaximaCob         COBERTURAS_DE_SEGUROS.Edad_Maxima%TYPE;
+    nEdad_ExclusionCob      COBERTURAS_DE_SEGUROS.Edad_Exclusion%TYPE;
+    nSumaAseg_MinimaCob     COBERTURAS_DE_SEGUROS.SumaAsegMinima%TYPE;
+    nSumaAseg_MaximaCob     COBERTURAS_DE_SEGUROS.SumaAsegMaxima%TYPE;
+    cTipoSeg                TIPOS_DE_SEGUROS.TipoSeg%TYPE;
+    nDeducibleCobLocal      COBERT_ACT.Deducible_Local%TYPE;
+    nDeducibleCobMoneda     COBERT_ACT.Deducible_Moneda%TYPE;
+    nNumRenov               POLIZAS.NumRenov%TYPE;
+    cStsCobertura           COBERT_ACT.StsCobertura%TYPE;
+    nIdPolizaEmision        POLIZAS.IdPoliza%TYPE;
+    dFecIniVigEmision       POLIZAS.FecIniVig%TYPE;
+    nPorcGtoAdminTar        TARIFA_SEXO_EDAD_RIESGO.PorcGtoAdmin%TYPE;
 
-CURSOR COB_Q IS
-   SELECT CodCobert, Porc_Tasa, TipoTasa, Prima_Cobert,
-          SumaAsegurada, Cod_Moneda, CodTarifa, Edad_Minima, 
-          Edad_Maxima, Edad_Exclusion, MontoDeducible, PorcenDeducible,
-          SumaAsegMinima, SumaAsegMaxima,
-          DECODE(TipoTasa,'C',100,DECODE(TipoTasa,'M',1000,1)) FactorTasa
-     FROM COBERTURAS_DE_SEGUROS
-    WHERE CodCia        = nCodCia
-      AND CodEmpresa    = nCodEmpresa
-      AND IdTipoSeg     = cIdTipoSeg
-      AND PlanCob       = cPlanCob
-      AND Edad_Minima  <= nEdad
-      AND Edad_Maxima  >= nEdad
-      AND CodCobert     = NVL(cCodCobert, CodCobert)
-      AND StsCobertura  = 'ACT';
+    CURSOR COB_Q IS
+       SELECT CodCobert, Porc_Tasa, TipoTasa, Prima_Cobert,
+              SumaAsegurada, Cod_Moneda, CodTarifa, Edad_Minima, 
+              Edad_Maxima, Edad_Exclusion, MontoDeducible, PorcenDeducible,
+              SumaAsegMinima, SumaAsegMaxima,
+              DECODE(TipoTasa,'C',100,DECODE(TipoTasa,'M',1000,1)) FactorTasa
+         FROM COBERTURAS_DE_SEGUROS
+        WHERE CodCia        = nCodCia
+          AND CodEmpresa    = nCodEmpresa
+          AND IdTipoSeg     = cIdTipoSeg
+          AND PlanCob       = cPlanCob
+          AND Edad_Minima  <= nEdad
+          AND Edad_Maxima  >= nEdad
+          AND CodCobert     = NVL(cCodCobert, CodCobert)
+          AND StsCobertura  = 'ACT';
 BEGIN
    IF NVL(nTasaCambio,0) = 0 THEN
       RAISE_APPLICATION_ERROR(-20225,'No Existe Tasa de Cambio para Generar Coberturas');
@@ -188,8 +189,8 @@ BEGIN
       END;
 
       BEGIN
-         SELECT D.Cod_Asegurado, D.FecIniVig, D.FecFinVig
-           INTO nCod_Asegurado, dFecIniVig, dFecFinVig
+         SELECT D.Cod_Asegurado, D.FecIniVig, D.FecFinVig, D.HABITOTARIFA
+           INTO nCod_Asegurado, dFecIniVig, dFecFinVig, cHABITOTARIFA
            FROM DETALLE_POLIZA D
           WHERE D.CodCia         = nCodCia
             AND D.IdPoliza       = nIdPoliza
@@ -210,6 +211,7 @@ BEGIN
          dFecIniVigEmision := OC_POLIZAS.INICIO_VIGENCIA(nCodCia, nCodEmpresa, nIdPolizaEmision);
          nEdadEmision      := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, nCodEmpresa, nCod_Asegurado, dFecIniVigEmision);
       END IF;
+
 
       nIdTarifa     := GT_TARIFA_CONTROL_VIGENCIAS.TARIFA_VIGENTE(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecIniVig);
 
@@ -304,9 +306,9 @@ BEGIN
                      cCodActividad   := OC_ASEGURADO.ACTIVIDAD_ECONOMICA_ASEG(nCodCia, nCodEmpresa, nCod_Asegurado);
                      cRiesgo         := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
                      nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
                      nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                               X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                               X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
                      IF NVL(nSumaAsegMoneda,0) = 0 THEN
                         IF NVL(nSumaAsegManual,0) != 0 THEN
                            nSumaAsegMoneda := NVL(nSumaAsegManual,0);
@@ -317,10 +319,10 @@ BEGIN
 
                      IF NVL(nSumaAsegManual,0) != 0 THEN
                         nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                   X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa);
+                                                                                   X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa,cHabitoTarifa);
                      ELSE
                         nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                   X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa);
+                                                                                   X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa,cHabitoTarifa);
                      END IF;
 
                      IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
@@ -339,7 +341,7 @@ BEGIN
                      --nMontoExtraPrima  := OC_PLAN_COBERTURAS.MONTO_EXTRAPRIMA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob);
                    
                      nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
 
                      IF NVL(nSumaAsegMoneda,0) = 0 THEN
                         IF NVL(nSumaAsegManual,0) != 0 THEN
@@ -350,13 +352,13 @@ BEGIN
                      END IF;
 
                      nTasa            := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
 
                      nTasaNivelada    := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_NIVELADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdadEmision, cSexo, cRiesgo, nIdTarifa);
+                                                                                  X.CodCobert, nEdadEmision, cSexo, cRiesgo, nIdTarifa, cHabitoTarifa);
 
                      nPorcGtoAdminTar := OC_TARIFA_SEXO_EDAD_RIESGO.PORCEN_GASTOS_ADMIN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                        X.CodCobert, nEdadEmision, cSexo, cRiesgo, nIdTarifa);
+                                                                                        X.CodCobert, nEdadEmision, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
 
                      IF NVL(nTasa,0) > 0 THEN
                         nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
@@ -365,9 +367,9 @@ BEGIN
                       
                         nTasa := NVL(nTasa,0) + NVL(nMontoExtraPrima,0);
                       
-                        --IF NVL(nFactorAjuste,0) > 0 THEN
-                        nTasa := NVL(nTasa,0) * NVL(nFactorAjuste,0);
-                        --END IF;
+                        IF NVL(nFactorAjuste,0) > 0 THEN  
+                            nTasa := NVL(nTasa,0) * NVL(nFactorAjuste,0);
+                        END IF;
     
                         -- Factor Deducible ??
                         nTasa := (1-(NVL(nFactFormulaDeduc,0) * NVL(nMontoDeducible,0))) * NVL(nTasa,0);
@@ -403,18 +405,28 @@ BEGIN
                      END IF;
     
                      nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa); --nSumaAsegMoneda);
+                                                                                X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa,cHabitoTarifa); --nSumaAsegMoneda);
                      IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                         nValorMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasa,0) / X.FactorTasa;
                      END IF;
+                     
                      nValor    := NVL(nValorMoneda,0) * nTasaCambio;
+                     
                      IF NVL(nSumaAsegMoneda,0) != 0 AND NVL(nTasa,0) = 0 THEN
                         nTasa        := NVL(nValorMoneda,0) / NVL(nSumaAsegMoneda,0);
                      END IF;
 
-                     nPrimaNivMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasaNivelada,0) / X.FactorTasa;
-                     nPrimaNivMoneda := NVL(nPrimaNivMoneda,0) - NVL(nValorMoneda,0);
-                     nPrimaNivLocal  := NVL(nPrimaNivMoneda,0) * nTasaCambio;
+                     IF nTasaNivelada > 0 THEN
+                         nPrimaNivMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasaNivelada,0) / X.FactorTasa;                         
+                         nPrimaNivMoneda := NVL(nPrimaNivMoneda,0) - NVL(nValorMoneda,0);
+                         
+                     --    IF SIGN(nPrimaNivMoneda) = -1 THEN
+                     --       nPrimaNivMoneda := nPrimaNivMoneda * -1;
+                     --    END IF;
+                         
+                         nPrimaNivLocal  := NVL(nPrimaNivMoneda,0) * nTasaCambio;
+                     END IF;
+
                   END IF;
                ELSE
                   cTipoProceso := OC_CONFIG_PLANTILLAS_PLANCOB.TIPO_PROCESO(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, 'POLDET');
@@ -543,6 +555,7 @@ nSumaAsegMoneda         DETALLE_POLIZA.Suma_Aseg_Moneda%TYPE;
 nSumaAsegLocal          DETALLE_POLIZA.Suma_Aseg_Local%TYPE;
 nSumaAsegManual         DETALLE_POLIZA.Suma_Aseg_Local%TYPE;
 nCod_Asegurado          DETALLE_POLIZA.Cod_Asegurado%TYPE;
+cHabitoTarifa           DETALLE_POLIZA.HabitoTarifa%TYPE;
 dFecIniVig              POLIZAS.FecIniVig%TYPE;
 dFecFinVig              POLIZAS.FecFinVig%TYPE;
 cSexo                   PERSONA_NATURAL_JURIDICA.Sexo%TYPE;
@@ -600,7 +613,7 @@ BEGIN
    END;
 
    BEGIN
-      SELECT NVL(PorcExtraPrimaDet,0), NVL(MontoExtraPrimaDet,0), NVL(SumaAsegCalculada,0)
+      SELECT NVL(PorcExtraPrimaDet,0), NVL(MontoExtraPrimaDet,0), NVL(SUMAASEG_MONEDA, 0) + NVL(SumaAsegCalculada,0)
         INTO nPorcExtraPrima, nMontoExtraPrima, nSumaAsegManual
         FROM COBERT_ACT
        WHERE CodCia        = nCodCia
@@ -616,8 +629,8 @@ BEGIN
 
    FOR X IN COB_Q  LOOP
       BEGIN
-         SELECT D.Cod_Asegurado, TRUNC(D.FecIniVig), TRUNC(D.FecFinVig)
-           INTO nCod_Asegurado, dFecIniVig, dFecFinVig
+         SELECT D.Cod_Asegurado, TRUNC(D.FecIniVig), TRUNC(D.FecFinVig), HabitoTarifa
+           INTO nCod_Asegurado, dFecIniVig, dFecFinVig, cHabitoTarifa
            FROM DETALLE_POLIZA D
           WHERE D.IdPoliza       = nIdPoliza
             AND D.IDetPol        = nIDetPol;
@@ -663,15 +676,15 @@ BEGIN
                cCodActividad   := OC_ASEGURADO.ACTIVIDAD_ECONOMICA_ASEG(nCodCia, nCodEmpresa, nCod_Asegurado);
                cRiesgo         := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
                nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
                nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
                IF NVL(nSumaAsegMoneda,0) = 0 THEN
                   nSumaAsegMoneda  := X.SumaAsegurada;
                END IF;
 
                nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa);
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa,cHabitoTarifa);
                IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                   nValorMoneda := nSumaAsegMoneda * NVL(nTasa,0);
                END IF;
@@ -687,7 +700,7 @@ BEGIN
                --nMontoExtraPrima  := OC_PLAN_COBERTURAS.MONTO_EXTRAPRIMA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob);
              
                nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
 
                IF NVL(nSumaAsegMoneda,0) = 0 THEN
                   IF NVL(nSumaAsegManual,0) != 0 THEN
@@ -698,12 +711,12 @@ BEGIN
                END IF;
 
                nTasa            := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
                nTasaNivelada    := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_NIVELADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
 
                nPorcGtoAdminTar := OC_TARIFA_SEXO_EDAD_RIESGO.PORCEN_GASTOS_ADMIN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
 
                IF NVL(nTasa,0) > 0 THEN
                   nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
@@ -746,7 +759,7 @@ BEGIN
                END IF;
 
                nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa); --nSumaAsegMoneda);
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa,cHabitoTarifa); --nSumaAsegMoneda);
                IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                   nValorMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasa,0) / X.FactorTasa;
                END IF;
@@ -1063,17 +1076,4 @@ BEGIN
 END TOTAL_PRIMA_NIVELADA;
 
 END OC_COBERT_ACT;
-/
-
---
--- OC_COBERT_ACT  (Synonym) 
---
---  Dependencies: 
---   OC_COBERT_ACT (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_COBERT_ACT FOR SICAS_OC.OC_COBERT_ACT
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_COBERT_ACT TO PUBLIC
 /

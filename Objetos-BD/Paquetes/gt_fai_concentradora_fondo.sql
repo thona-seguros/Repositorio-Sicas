@@ -1223,7 +1223,7 @@ BEGIN
       FOR W IN COB_Q LOOP
          nIdTarifa       := GT_TARIFA_CONTROL_VIGENCIAS.TARIFA_VIGENTE(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob, dFecIniVig);
          nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
-                                                                   W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                   W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
          nPrimaCosto     := NVL(nPrimaCosto,0) + (W.SumaAseg_Moneda * nTasa / 1000);
       END LOOP;
 
@@ -1253,11 +1253,11 @@ BEGIN
       FOR W IN COB_Q LOOP
          nIdTarifa         := GT_TARIFA_CONTROL_VIGENCIAS.TARIFA_VIGENTE(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob, dFecIniVig);
          nTasa             := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
-                                                                     W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                     W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
          nPrimaCosto       := NVL(nPrimaCosto,0) + NVL(W.PrimaCosto,0);
          nPorcGtoAdminTar  := NVL(nPorcGtoAdmin,0) +
                               OC_TARIFA_SEXO_EDAD_RIESGO.PORCEN_GASTOS_ADMIN(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
-                                                                             W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                             W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
       END LOOP;
 
       cCodPlanPago    := OC_POLIZAS.PLAN_DE_PAGOS(nCodCia, nCodEmpresa, nIdPoliza);

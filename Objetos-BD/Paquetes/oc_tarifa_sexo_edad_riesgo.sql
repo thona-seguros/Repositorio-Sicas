@@ -5,20 +5,20 @@
 --   STANDARD (Package)
 --   STANDARD (Package)
 --   DBMS_STANDARD (Package)
---   GT_TARIFA_CONTROL_VIGENCIAS (Package)
 --   TARIFA_SEXO_EDAD_RIESGO (Table)
+--   GT_TARIFA_CONTROL_VIGENCIAS (Package)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_TARIFA_SEXO_EDAD_RIESGO IS
 
   FUNCTION PRIMA_TARIFA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                         cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2,
-                        nSumaAsegurada NUMBER, nIdTarifa NUMBER) RETURN NUMBER;
+                        nSumaAsegurada NUMBER, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER;
 
   FUNCTION SUMA_ASEGURADA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                          cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER;
+                          cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER;
 
   FUNCTION TASA_TARIFA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                       cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER;
+                       cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER;
 
   PROCEDURE COPIAR_TARIFA_PLAN(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSegOrig VARCHAR2,
                                cPlanCobOrig VARCHAR2, cIdTipoSegDest VARCHAR2, cPlanCobDest VARCHAR2,
@@ -28,13 +28,13 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_TARIFA_SEXO_EDAD_RIESGO IS
                    cIdTipoSegDest VARCHAR2, cPlanCobDest VARCHAR2, nIdTarifaOrig NUMBER, nIdTarifaDest NUMBER);
 
   FUNCTION TASA_NIVELADA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                         cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER;
+                         cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER,  cHabitoTarifa VARCHAR2) RETURN NUMBER;
 
   FUNCTION TASA_TARIFA_EDAD_MINIMA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                                   cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER;
+                                   cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER;
 
   FUNCTION PORCEN_GASTOS_ADMIN(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                               cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER;
+                               cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER;
 
 END OC_TARIFA_SEXO_EDAD_RIESGO;
 /
@@ -49,7 +49,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_TARIFA_SEXO_EDAD_RIESGO IS
 
 FUNCTION PRIMA_TARIFA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                       cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2,
-                      nSumaAsegurada NUMBER, nIdTarifa NUMBER) RETURN NUMBER IS
+                      nSumaAsegurada NUMBER, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER IS
 nPrimaTarifa    TARIFA_SEXO_EDAD_RIESGO.PrimaTarifa%TYPE;
 BEGIN
    BEGIN
@@ -66,22 +66,21 @@ BEGIN
          AND EdadFinTarifa  >= nEdad
          AND SexoTarifa     IN (cSexo, 'U')
          AND RiesgoTarifa   IN (cRiesgo,'NA')
+         AND HabitoTarifa  IN (cHabitoTarifa, 'NA')
          AND SumaAsegTarifa  = nSumaAsegurada;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20220,'No existe Prima en Tarifa por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo ||
-                                 '-' || nSumaAsegurada);
+         RAISE_APPLICATION_ERROR(-20220,'No existe Prima en Tarifa por Sexo, Edad, Riesgo y Hábito: '|| cIdTipoSeg || '-' ||
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || nSumaAsegurada || '-' || cHabitoTarifa);
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'TMR PRIMA Tarifa Mal Configurada por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo ||
-                                 '-' || nSumaAsegurada||SQLERRM );
+         RAISE_APPLICATION_ERROR(-20220,'TMR PRIMA Tarifa Mal Configurada por Sexo, Edad, Riesgo y Hábito: '|| cIdTipoSeg || '-' ||
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || nSumaAsegurada || '-' || cHabitoTarifa);
    END;
    RETURN(nPrimaTarifa);
 END PRIMA_TARIFA;
 
 FUNCTION SUMA_ASEGURADA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                        cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER IS
+                        cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER IS
 nSumaAsegTarifa    TARIFA_SEXO_EDAD_RIESGO.SumaAsegTarifa%TYPE;
 BEGIN
    BEGIN
@@ -97,20 +96,21 @@ BEGIN
          AND EdadIniTarifa  <= nEdad
          AND EdadFinTarifa  >= nEdad
          AND SexoTarifa     IN (cSexo, 'U')
-         AND RiesgoTarifa   IN (cRiesgo,'NA');
+         AND RiesgoTarifa   IN (cRiesgo,'NA')
+         AND HabitoTarifa  IN (cHabitoTarifa, 'NA');
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20220,'No existe Suma Asegurada en Tarifa por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo);
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || nIdTarifa || '-' || cHabitoTarifa);
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'TMR SUMA Tarifa Mal Configurada por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo|| SQLERRM );
+         RAISE_APPLICATION_ERROR(-20220,'TMR SUMA Tarifa Mal Configurada Sexo, Edad y Riesgo:'|| cIdTipoSeg || '-' ||
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || nIdTarifa || '-' || cHabitoTarifa);
    END;
    RETURN(nSumaAsegTarifa);
 END SUMA_ASEGURADA;
 
 FUNCTION TASA_TARIFA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                     cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER IS
+                     cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER IS
 nTasaTarifa    TARIFA_SEXO_EDAD_RIESGO.TasaTarifa%TYPE;
 BEGIN
    BEGIN
@@ -126,14 +126,15 @@ BEGIN
          AND EdadIniTarifa  <= nEdad
          AND EdadFinTarifa  >= nEdad
          AND SexoTarifa     IN (cSexo, 'U')
-         AND RiesgoTarifa   IN (cRiesgo,'NA');
+         AND RiesgoTarifa   IN (cRiesgo,'NA')
+         AND HabitoTarifa  IN (cHabitoTarifa, 'NA');
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20220,'No existe Tasa en Tarifa por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo);
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || cHabitoTarifa);
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'TMR TASA Tarifa Mal Configurada por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo|| SQLERRM );
+         RAISE_APPLICATION_ERROR(-20220,'TMR TASA Tarifa Mal Configurada Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || cHabitoTarifa );
    END;
    RETURN(nTasaTarifa);
 END TASA_TARIFA;
@@ -184,7 +185,7 @@ BEGIN
 END COPIAR_TARIFA_PLAN;
 
 FUNCTION TASA_NIVELADA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                      cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER IS
+                      cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER IS
 nTasaNivelada    TARIFA_SEXO_EDAD_RIESGO.TasaNivelada%TYPE;
 BEGIN
    BEGIN
@@ -200,20 +201,21 @@ BEGIN
          AND EdadIniTarifa  <= nEdad
          AND EdadFinTarifa  >= nEdad
          AND SexoTarifa     IN (cSexo, 'U')
-         AND RiesgoTarifa   IN (cRiesgo,'NA');
+         AND RiesgoTarifa   IN (cRiesgo,'NA')
+         AND HabitoTarifa  IN (cHabitoTarifa, 'NA');
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20220,'No existe Tasa Nivelada en Tarifa por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo);
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || cHabitoTarifa);
       WHEN TOO_MANY_ROWS THEN
          RAISE_APPLICATION_ERROR(-20220,'TMR TASA Tarifa Nivelada Mal Configurada por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo|| SQLERRM );
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || cHabitoTarifa || SQLERRM );
    END;
    RETURN(nTasaNivelada);
 END TASA_NIVELADA;
 
 FUNCTION TASA_TARIFA_EDAD_MINIMA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                                 cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER IS
+                                 cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER IS
 nTasaTarifa    TARIFA_SEXO_EDAD_RIESGO.TasaTarifa%TYPE;
 nEdadMinima    TARIFA_SEXO_EDAD_RIESGO.EdadIniTarifa%TYPE;
 BEGIN
@@ -228,7 +230,8 @@ BEGIN
          AND PlanCob         = cPlanCob
          AND CodCobert       = cCodCobert
          AND SexoTarifa     IN (cSexo, 'U')
-         AND RiesgoTarifa   IN (cRiesgo,'NA');
+         AND RiesgoTarifa   IN (cRiesgo,'NA')
+         AND HabitoTarifa  IN (cHabitoTarifa, 'NA');
    END;
 
    BEGIN
@@ -244,20 +247,21 @@ BEGIN
          AND EdadIniTarifa  <= nEdadMinima
          AND EdadFinTarifa  >= nEdadMinima
          AND SexoTarifa     IN (cSexo, 'U')
-         AND RiesgoTarifa   IN (cRiesgo,'NA');
+         AND RiesgoTarifa   IN (cRiesgo,'NA')
+         AND HabitoTarifa  IN (cHabitoTarifa, 'NA');
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20220,'No existe Tasa en Tarifa de Edad Mínima por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo);
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || cHabitoTarifa);
       WHEN TOO_MANY_ROWS THEN
          RAISE_APPLICATION_ERROR(-20220,'TMR TASA Tarifa Mal Configurada de Edad Mínima por Sexo, Edad y Riesgo '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo|| SQLERRM );
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || cHabitoTarifa );
    END;
    RETURN(nTasaTarifa);
 END TASA_TARIFA_EDAD_MINIMA;
 
 FUNCTION PORCEN_GASTOS_ADMIN(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
-                      cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER) RETURN NUMBER IS
+                      cCodCobert VARCHAR2, nEdad NUMBER, cSexo VARCHAR2, cRiesgo VARCHAR2, nIdTarifa NUMBER, cHabitoTarifa VARCHAR2) RETURN NUMBER IS
 nPorcGtoAdmin    TARIFA_SEXO_EDAD_RIESGO.PorcGtoAdmin%TYPE;
 BEGIN
    BEGIN
@@ -273,30 +277,18 @@ BEGIN
          AND EdadIniTarifa  <= nEdad
          AND EdadFinTarifa  >= nEdad
          AND SexoTarifa     IN (cSexo, 'U')
-         AND RiesgoTarifa   IN (cRiesgo,'NA');
+         AND RiesgoTarifa   IN (cRiesgo,'NA')
+         AND HabitoTarifa  IN (cHabitoTarifa, 'NA');
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20220,'No existe Porcentaje de Gastos de Administración por Edad '|| cIdTipoSeg || '-' ||
                                  cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo);
       WHEN TOO_MANY_ROWS THEN
          RAISE_APPLICATION_ERROR(-20220,'Porcentaje de Gastos de Administración por Edad Configurada '|| cIdTipoSeg || '-' ||
-                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo|| SQLERRM );
+                                 cPlanCob || '-'|| cCodCobert || '-' || nEdad || '-' || cSexo || '-' || cRiesgo || '-' || cHabitoTarifa );
    END;
    RETURN(nPorcGtoAdmin);
 END PORCEN_GASTOS_ADMIN;
 
 END OC_TARIFA_SEXO_EDAD_RIESGO;
-/
-
---
--- OC_TARIFA_SEXO_EDAD_RIESGO  (Synonym) 
---
---  Dependencies: 
---   OC_TARIFA_SEXO_EDAD_RIESGO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_TARIFA_SEXO_EDAD_RIESGO FOR SICAS_OC.OC_TARIFA_SEXO_EDAD_RIESGO
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_TARIFA_SEXO_EDAD_RIESGO TO PUBLIC
 /

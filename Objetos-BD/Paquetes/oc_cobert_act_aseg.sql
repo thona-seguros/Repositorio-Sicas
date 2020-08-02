@@ -330,9 +330,9 @@ BEGIN
                      cCodActividad   := OC_ASEGURADO.ACTIVIDAD_ECONOMICA_ASEG(nCodCia, nCodEmpresa, nCod_Asegurado);
                      cRiesgo         := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
                      nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                      nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                               X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                               X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                      IF NVL(nSumaAsegMoneda,0) = 0 THEN
                         IF NVL(nSumaAsegManual,0) != 0 THEN
                            nSumaAsegMoneda := NVL(nSumaAsegManual,0);
@@ -343,10 +343,10 @@ BEGIN
 
                      IF NVL(nSumaAsegManual,0) != 0 THEN
                         nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                   X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa);
+                                                                                   X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa, NULL);
                      ELSE
                         nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                   X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa);
+                                                                                   X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa, NULL);
                      END IF;
 
                      IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
@@ -364,7 +364,7 @@ BEGIN
                      --nMontoExtraPrima  := OC_PLAN_COBERTURAS.MONTO_EXTRAPRIMA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob);
                  
                      nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
 
                      IF NVL(nSumaAsegMoneda,0) = 0 THEN
                         IF NVL(nSumaAsegManual,0) != 0 THEN
@@ -375,11 +375,11 @@ BEGIN
                      END IF;
 
                      nTasa            := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                      nTasaNivelada    := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_NIVELADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdadEmision, cSexo, cRiesgo, nIdTarifa);
+                                                                                  X.CodCobert, nEdadEmision, cSexo, cRiesgo, nIdTarifa, NULL);
                      nPorcGtoAdminTar := OC_TARIFA_SEXO_EDAD_RIESGO.PORCEN_GASTOS_ADMIN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                        X.CodCobert, nEdadEmision, cSexo, cRiesgo, nIdTarifa);
+                                                                                        X.CodCobert, nEdadEmision, cSexo, cRiesgo, nIdTarifa, NULL);
 
                      IF NVL(nTasa,0) > 0 THEN
                         nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
@@ -426,7 +426,7 @@ BEGIN
                      END IF;
   
                      nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa); --nSumaAsegMoneda);
+                                                                                X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa, NULL); --nSumaAsegMoneda);
                      IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                         nValorMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasa,0) / X.FactorTasa;
                      END IF;
@@ -672,15 +672,15 @@ BEGIN
                cCodActividad   := OC_ASEGURADO.ACTIVIDAD_ECONOMICA_ASEG(nCodCia, nCodEmpresa, nCod_Asegurado);
                cRiesgo         := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
                nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                IF NVL(nSumaAsegMoneda,0) = 0 THEN
                   nSumaAsegMoneda  := X.SumaAsegurada;
                END IF;
 
                nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa);
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa, NULL);
                IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                   nValorMoneda := nSumaAsegMoneda * NVL(nTasa,0);
                END IF;
@@ -696,7 +696,7 @@ BEGIN
                --nMontoExtraPrima  := OC_PLAN_COBERTURAS.MONTO_EXTRAPRIMA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob);
              
                nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
 
                IF NVL(nSumaAsegMoneda,0) = 0 THEN
                   IF NVL(nSumaAsegManual,0) != 0 THEN
@@ -707,12 +707,12 @@ BEGIN
                END IF;
 
                nTasa            := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                nTasaNivelada    := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_NIVELADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
 
                nPorcGtoAdminTar := OC_TARIFA_SEXO_EDAD_RIESGO.PORCEN_GASTOS_ADMIN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
 
                IF NVL(nTasa,0) > 0 THEN
                   nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
@@ -755,7 +755,7 @@ BEGIN
                END IF;
 
                nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa); --nSumaAsegMoneda);
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa, NULL); --nSumaAsegMoneda);
                IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                   nValorMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasa,0) / X.FactorTasa;
                END IF;
@@ -1708,14 +1708,14 @@ BEGIN
                
                IF NVL(nSumaAsegManual,0) = 0 THEN
                   nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                               X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                               X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                ELSE
                   nSumaAsegMoneda := NVL(nSumaAsegManual,0);
                END IF;
                nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                nPorcGtoAdminTar := OC_TARIFA_SEXO_EDAD_RIESGO.PORCEN_GASTOS_ADMIN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                IF NVL(nTasa,0) > 0 THEN
                   nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
 
@@ -1757,7 +1757,7 @@ BEGIN
 
                nSumaAsegMoneda := NVL(nSumaAsegMoneda,0) * NVL(nCantAseg,0);
                nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa); --nSumaAsegMoneda);
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa, NULL); --nSumaAsegMoneda);
                IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                   nValorMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasa,0) / 1000;
                END IF;

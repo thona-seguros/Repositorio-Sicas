@@ -144,15 +144,15 @@ BEGIN
                cCodActividad   := NULL;
                cRiesgo         := NULL;
                nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                            X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                IF NVL(nSumaAsegMoneda,0) = 0 THEN
                   nSumaAsegMoneda := NVL(X.SumaAsegurada,0);
                END IF;
 
                nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa);
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nSumaAsegMoneda, nIdTarifa, NULL);
                IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                   nValorMoneda := nSumaAsegMoneda * NVL(nTasa,0);
                END IF;

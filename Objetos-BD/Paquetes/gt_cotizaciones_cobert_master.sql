@@ -280,12 +280,12 @@ BEGIN
                
                IF NVL(nSumaAsegManual,0) = 0 THEN
                   nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                               X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                               X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                ELSE
                   nSumaAsegMoneda := NVL(nSumaAsegManual,0);
                END IF;
                nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                         X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
                IF NVL(nTasa,0) > 0 THEN
                   nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
 
@@ -325,7 +325,7 @@ BEGIN
 
                nSumaAsegMoneda := NVL(nSumaAsegMoneda,0) * NVL(nCantAseg,0);
                nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa); --nSumaAsegMoneda);
+                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa, NULL); --nSumaAsegMoneda);
                IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                   nValorMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasa,0) / 1000;
                END IF;
