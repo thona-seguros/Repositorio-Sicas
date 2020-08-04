@@ -277,7 +277,7 @@ BEGIN
      --
 -- JMMD20200710     
      IF cEsPlataformaDigital = 'S' THEN
-        W_MENSAJE := '';   
+        W_MENSAJE := NULL;   
      END IF;
      DBMS_OUTPUT.put_line('JMMD cEsPlataformaDigital  '||cEsPlataformaDigital||'  W_MENSAJE -'||W_MENSAJE||'-');
 -- JMMD20200710     
