@@ -1,5 +1,6 @@
 CREATE OR REPLACE PACKAGE OC_POLIZAS IS
 -- SE INCLUYE LA VALIDACION DE PLD PARA POLIZAS DE PLATAFORMA DIGITAL    JMMD 20200709
+-- SE INCLUYEN MENSAJES PARA LA VALIDACION DE PLD PARA POLIZAS DE PLATAFORMA DIGITAL    JMMD 202000805
     FUNCTION F_GET_NUMPOL ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
 
     FUNCTION INSERTAR_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, cDescPoliza VARCHAR2,
@@ -896,6 +897,7 @@ BEGIN
    END IF;
 
    IF OC_POLIZAS.VALIDA_POLIZA(nCodCia, nIdPoliza) = 'S' THEN
+      dbms_output.put_line('JMMD regrese de valida poliza con valor de S ');   
       FOR X IN DET_Q LOOP
          nPorcAgtes := 0;
          BEGIN
@@ -917,13 +919,14 @@ BEGIN
              END IF;
          END IF;
       END LOOP;
-
+      dbms_output.put_line('JMMD despues del loop DET_Q ');
       SELECT SUM(PrimaNeta_Local)
         INTO cPrima
         FROM POLIZAS
        WHERE IdPoliza = nIdPoliza;
 
       IF cTipoPol != 'F' THEN
+         dbms_output.put_line('JMMD ENTRE POR cTipoPol != F ');     
          UPDATE RESPONSABLE_PAGO_POL
             SET StsResPago = 'ACT'
           WHERE IdPoliza   = nIdPoliza
@@ -934,13 +937,15 @@ BEGIN
           WHERE IdPoliza   = nIdPoliza
             AND CodCia     = nCodCia;
       END IF;
-
+         dbms_output.put_line('JMMD DESPUES DE cTipoPol != F ');
       IF cIndFacturaPol = 'S' THEN
          nIdTransac := OC_TRANSACCION.CREA(nCodCia,  nCodEmpresa, 7, 'POL');
+         dbms_output.put_line('JMMD DESPUES DE OC_TRANSACCION.CREA  nIdTransac '||nIdTransac);
          OC_DETALLE_TRANSACCION.CREA (nIdTransac, nCodCia, nCodEmpresa, 7, 'POL', 'POLIZAS',
                                       nIdPoliza, NULL, NULL, NULL, cPrima);
-
+         dbms_output.put_line('JMMD DESPUES DE OC_DETALLE_TRANSACCION.CREA');
          OC_FACTURAR.PROC_EMITE_FACT_POL(nIdPoliza, 0, nCodCia, nIdTransac);
+         dbms_output.put_line('JMMD DESPUES DE OC_FACTURAR.PROC_EMITE_FACT_POL');
       ELSE
          IF cCodPlanPago IS NOT NULL AND cTipoPol != 'F' THEN
             nIdTransac :=  OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 7, 'POL');
@@ -966,8 +971,9 @@ BEGIN
          END IF;
       END IF;
       OC_SEGUIMIENTO.INSERTA_SEGUIMIENTO(nIdPoliza, NULL,NULL);
+      dbms_output.put_line('JMMD DESPUES DE OC_SEGUIMIENTO.INSERTA_SEGUIMIENTO');
       OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransac, 'C');
-
+      dbms_output.put_line('JMMD DESPUES DE OC_COMPROBANTES_CONTABLES.CONTABILIZAR');
       UPDATE FZ_DETALLE_FIANZAS
          SET Estado = 'EMI'
        WHERE IdPoliza = nIdPoliza
@@ -1005,8 +1011,11 @@ BEGIN
          END LOOP;
 
          OC_SOLICITUD_EMISION.EMITIR(nCodCia, nCodEmpresa, nIdPoliza);
+         dbms_output.put_line('JMMD DESPUES DE OC_SOLICITUD_EMISION.EMITIR');
          IF GT_COTIZACIONES.EXISTE_COTIZACION_EMITIDA(nCodCia, nCodEmpresa, nNum_Cotizacion) = 'S' THEN
+            dbms_output.put_line('JMMD POR EL IF GT_COTIZACIONES.EXISTE_COTIZACION_EMITIDA');
             GT_COTIZACIONES.EMISION_POLIZA(nCodCia, nCodEmpresa, nNum_Cotizacion, nIdPoliza);
+            dbms_output.put_line('JMMD DESPUES DE GT_COTIZACIONES.EMISION_POLIZA');
          END IF;
 
          BEGIN
@@ -1020,6 +1029,7 @@ BEGIN
                AND Estado   = 'PRO';
          EXCEPTION
             WHEN OTHERS THEN
+               dbms_output.put_line('JMMD EN EL UPDATE TAREA POR EXCEPTION');
                RAISE_APPLICATION_ERROR(-20200,'Error en Tarea de Póliza No. '|| cNumPolRef ||SQLERRM);
          END;
          -- Realiza Distribución al Reaseguro
@@ -1029,7 +1039,7 @@ BEGIN
                RAISE_APPLICATION_ERROR(-20200,'Poliza No. '|| cNumPolRef || ' Posee Distribución Facultativa Pendiente');
             END IF;*/
          END IF;
-
+            dbms_output.put_line('JMMD ANTES DEL UPDATE POLIZAS');
          UPDATE POLIZAS
             SET StsPoliza  = 'EMI',
                 FecSts     = dFecHoy,
@@ -1039,6 +1049,7 @@ BEGIN
           --
           IF CID_PREPAGO = 'S' THEN     -- PREEMI
              --
+             dbms_output.put_line('JMMD ANTES DE PRE_EMITE_POLIZA');
              PRE_EMITE_POLIZA(nCodCia, nCodEmpresa, nIdPoliza, nIdTransac);
              --
           END IF;                      -- PREEMI
