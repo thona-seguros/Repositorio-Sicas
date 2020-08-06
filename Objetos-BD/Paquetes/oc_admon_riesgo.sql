@@ -251,40 +251,63 @@ BEGIN
   -- CAMBIO ST DE POLIZAS
   --
   IF W_MENSAJE IS NOT NULL THEN
-     IF P_ST_RESOLUCION = 'PEND' THEN  -- ORIGEN POLIZA
-        UPDATE POLIZAS
-           SET STSPOLIZA      = 'PLD',
-               PLDSTBLOQUEADA = 'S'
-         WHERE IDPOLIZA  = P_IDPOLIZA
-           AND CODCIA    = P_CODCIA
-           AND STSPOLIZA IN ('SOL','XRE');
-     END IF;
-     IF P_ST_RESOLUCION = 'PENT' THEN  -- ORIGEN ENDOSOS
-        UPDATE ENDOSOS
-           SET STSENDOSO      = 'PLD',
-               PLDSTBLOQUEADA = 'S'
-         WHERE IDPOLIZA  = P_IDPOLIZA
-           AND IDENDOSO  = P_CLIENTE
-           AND STSENDOSO IN ('SOL');
-     END IF;
-     IF P_ST_RESOLUCION = 'PENC' THEN  -- ORIGEN LARGO PLAZO
-        UPDATE RENO_CTRL R
-           SET ST_RENOVA      = 'PLD',
-               PLDSTBLOQUEADA = 'S'
-         WHERE R.ID_POLIZA  = P_IDPOLIZA
-           AND R.ST_RENOVA = 'PEN';
+     IF cEsPlataformaDigital = 'N' THEN  ---- JMMD20200806 
+         IF P_ST_RESOLUCION = 'PEND' THEN  -- ORIGEN POLIZA
+            UPDATE POLIZAS
+               SET STSPOLIZA      = 'PLD',
+                   PLDSTBLOQUEADA = 'S'
+             WHERE IDPOLIZA  = P_IDPOLIZA
+               AND CODCIA    = P_CODCIA
+               AND STSPOLIZA IN ('SOL','XRE');
+         END IF;
+         IF P_ST_RESOLUCION = 'PENT' THEN  -- ORIGEN ENDOSOS
+            UPDATE ENDOSOS
+               SET STSENDOSO      = 'PLD',
+                   PLDSTBLOQUEADA = 'S'
+             WHERE IDPOLIZA  = P_IDPOLIZA
+               AND IDENDOSO  = P_CLIENTE
+               AND STSENDOSO IN ('SOL');
+         END IF;
+         IF P_ST_RESOLUCION = 'PENC' THEN  -- ORIGEN LARGO PLAZO
+            UPDATE RENO_CTRL R
+               SET ST_RENOVA      = 'PLD',
+                   PLDSTBLOQUEADA = 'S'
+             WHERE R.ID_POLIZA  = P_IDPOLIZA
+               AND R.ST_RENOVA = 'PEN';
+         END IF;
+     ELSE
+       IF P_ST_RESOLUCION = 'PEND' THEN  -- ORIGEN POLIZA     
+          UPDATE POLIZAS
+             SET PLDSTBLOQUEADA = 'S'
+           WHERE IDPOLIZA  = P_IDPOLIZA
+             AND CODCIA    = P_CODCIA
+             AND STSPOLIZA IN ('SOL','XRE');
+       END IF;
+       IF P_ST_RESOLUCION = 'PENT' THEN  -- ORIGEN ENDOSOS
+          UPDATE ENDOSOS
+             SET PLDSTBLOQUEADA = 'S'
+           WHERE IDPOLIZA  = P_IDPOLIZA
+             AND IDENDOSO  = P_CLIENTE
+             AND STSENDOSO IN ('SOL');
+       END IF;
+       IF P_ST_RESOLUCION = 'PENC' THEN  -- ORIGEN LARGO PLAZO
+          UPDATE RENO_CTRL R
+             SET PLDSTBLOQUEADA = 'S'
+           WHERE R.ID_POLIZA  = P_IDPOLIZA
+             AND R.ST_RENOVA = 'PEN';
+       END IF;     
      END IF;
      --
 -- JMMD20200710     
      IF cEsPlataformaDigital = 'S' THEN
-        W_MENSAJE := NULL;   
+        W_MENSAJE := NULL;  
+        DBMS_OUTPUT.put_line('JMMD cEsPlataformaDigital  '||cEsPlataformaDigital||'  W_MENSAJE -'||W_MENSAJE||'-'); 
      END IF;
-     DBMS_OUTPUT.put_line('JMMD cEsPlataformaDigital  '||cEsPlataformaDigital||'  W_MENSAJE -'||W_MENSAJE||'-');
 -- JMMD20200710     
          
      P_MENSAJE := W_MENSAJE;
      --
-     COMMIT;
+--     COMMIT;
      --
   END IF;
   --
