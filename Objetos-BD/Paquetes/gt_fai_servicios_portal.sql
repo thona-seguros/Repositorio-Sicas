@@ -112,15 +112,16 @@ BEGIN
         SELECT 1 --PO.IdPoliza
           INTO nExiste
           FROM POLIZAS PO,CLIENTES C,PERSONA_NATURAL_JURIDICA P
-         WHERE C.CodCliente                                    = nCodCliente
-           AND NVL(P.Num_Tributario,C.Num_Doc_Identificacion)  = NVL(cRfc,C.Num_Doc_Identificacion)
+         WHERE C.CodCliente                  = nCodCliente
+           --AND NVL(P.Num_Tributario,C.Num_Doc_Identificacion)  = NVL(cRfc,C.Num_Doc_Identificacion)
+           AND C.Num_Doc_Identificacion      = NVL(cRfc,C.Num_Doc_Identificacion)
            --AND PO.IdPoliza                = nIdPoliza
            --AND PO.NumPolUnico                                   = cNumPolUnico
-           AND PO.StsPoliza                                    = 'EMI'
-           AND PO.CodCliente                                   = C.CodCliente
-           AND C.Tipo_Doc_Identificacion                       = P.Tipo_Doc_Identificacion
-           AND C.Num_Doc_Identificacion                        = P.Num_Doc_Identificacion
-           AND NVL(PO.IndManejaFondos,'N')                     = 'S' ;
+           AND PO.StsPoliza                  = 'EMI'
+           AND PO.CodCliente                 = C.CodCliente
+           AND C.Tipo_Doc_Identificacion     = P.Tipo_Doc_Identificacion
+           AND C.Num_Doc_Identificacion      = P.Num_Doc_Identificacion
+           AND NVL(PO.IndManejaFondos,'N')   = 'S' ;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             nExiste := 0;
