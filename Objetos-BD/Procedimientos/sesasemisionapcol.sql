@@ -931,16 +931,16 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
                      --
                      IF nEdad = 0 THEN
                         nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
-                                                                                    W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                    W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, null);
                      ELSE
                         BEGIN
                            nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
-                                                                           W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                           W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, null);
                         EXCEPTION
                         WHEN OTHERS THEN
                            BEGIN
                               nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
-                                                                                          W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                          W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, null);
                            EXCEPTION
                            WHEN OTHERS THEN
                               RAISE_APPLICATION_ERROR(-20200,SQLERRM);
@@ -1018,16 +1018,16 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
                      cRiesgo := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
                      IF nEdad = 0 THEN
                         nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob,
-                                                                                    R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                    R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, null);
                      ELSE
                         BEGIN
                            nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob,
-                                                                           R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                           R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, null);
                         EXCEPTION
                         WHEN OTHERS THEN
                            BEGIN
                               nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMA(nCodCia, nCodEmpresa, R.IdTipoSeg, R.PlanCob,
-                                                                                          R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                                                          R.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, null);
                            EXCEPTION
                            WHEN OTHERS THEN
                               RAISE_APPLICATION_ERROR(-20200,SQLERRM);
