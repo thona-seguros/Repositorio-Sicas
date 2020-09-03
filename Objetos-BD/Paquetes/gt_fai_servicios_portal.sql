@@ -475,7 +475,8 @@ BEGIN
                                                      XMLElement("NumerodePoliza",PO.IdPoliza),
                                                      XMLElement("FolioPoliza",PO.NumPolUnico),
                                                      XMLElement("FecIniVig",TO_CHAR(PO.FecIniVig,'DD/MM/YYYY')),
-                                                     XMLElement("FecFinVig",TO_CHAR(PO.FecFinVig,'DD/MM/YYYY'))
+                                                     XMLElement("FecFinVig",TO_CHAR(PO.FecFinVig,'DD/MM/YYYY'))--,
+                                                     --XMLElement("EstatusPoliza",OC_VALORES_DE_LISTAS.BUSCA_LVALOR('ESTADOS', StsPoliza))
                                                   )
                                        )
                                  ) 
@@ -483,7 +484,8 @@ BEGIN
         INTO xPrevListaPolizas
         FROM POLIZAS PO,CLIENTES C,PERSONA_NATURAL_JURIDICA P
        WHERE C.CodCliente                                    = nCodCliente
-         AND PO.StsPoliza                                    = 'EMI'
+         --AND PO.StsPoliza                                    = 'EMI'
+         AND PO.StsPoliza                                   IN ('EMI','REN')
          AND PO.CodCliente                                   = C.CodCliente
          AND C.Tipo_Doc_Identificacion                       = P.Tipo_Doc_Identificacion
          AND C.Num_Doc_Identificacion                        = P.Num_Doc_Identificacion
