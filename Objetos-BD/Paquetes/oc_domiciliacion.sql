@@ -588,7 +588,7 @@ BEGIN
 --     FROM EMPRESAS_DE_SEGUROS
 --    WHERE CodCia = nCodCia;
     
-   fArchivo := UTL_FILE.FOPEN(cDirectorio, cNomArchivo, 'w');    
+   fArchivo := UTL_FILE.FOPEN(cDirectorio, cNomArchivo, 'w', 32767);    
    nLinea := 1;
    FOR D in FACT_Q LOOP
       BEGIN
@@ -713,7 +713,7 @@ CURSOR C_EXCEPCIONES IS
        
 BEGIN 
 
-   fArchivo := UTL_FILE.FOPEN(cDirectorio, cNomArchivo, 'w');       
+   fArchivo := UTL_FILE.FOPEN(cDirectorio, cNomArchivo, 'w', 32767);       
    /*****************************/
    /* Escribiendo el Encabezado */
    /*****************************/
