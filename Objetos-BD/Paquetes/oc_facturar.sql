@@ -1,60 +1,3 @@
---
--- OC_FACTURAR  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   MOVIMIENTO_CONTABLE (Table)
---   RESPONSABLE_PAGO_DET (Table)
---   RESPONSABLE_PAGO_POL (Table)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   FZ_DETALLE_FIANZAS (Table)
---   OC_DETALLE_TRANSACCION (Package)
---   OC_FACTURAS (Package)
---   CONCEPTOS_PLAN_DE_PAGOS (Table)
---   DESCUENTOS (Table)
---   DETALLE_COMISION (Table)
---   DETALLE_DESCUENTO (Table)
---   DETALLE_ENDOSO (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_MOVIMIENTO_CONTABLE (Table)
---   DETALLE_OPERACION_CONTABLE (Table)
---   OPERACION_CONTABLE (Table)
---   PARAMETROS_EMISION (Table)
---   PARAMETROS_ENUM_FAC (Table)
---   PERIODO_CONTABLE (Table)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   ASISTENCIAS (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   RAMOS_CONCEPTOS_PLAN (Table)
---   RECARGOS (Table)
---   OC_DETALLE_COMISION (Package)
---   OC_DETALLE_FACTURAS (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CENCOSXCTACON (Table)
---   CENTROS_DE_COSTO (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   COMISIONES (Table)
---   OC_GENERALES (Package)
---   OC_CATALOGO_CONCEPTOS_RANGOS (Package)
---   OC_COMISIONES (Package)
---   OC_CONCEPTOS_PLAN_DE_PAGOS (Package)
---   DETALLE_POLIZA (Table)
---   DETALLE_RECARGO (Table)
---   EMPRESAS (Table)
---   ENDOSOS (Table)
---   FACTURAS (Table)
---   TIPO_DE_DOCUMENTO (Table)
---   TRANSACCION (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAR IS
    PROCEDURE PROC_EMITE_FACTURAS (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_POL (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
@@ -75,13 +18,6 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAR IS
    FUNCTION F_GET_FACT ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;--SEQ XDS 2016/07/27
 END OC_FACTURAR;
 /
-
---
--- OC_FACTURAR  (Package Body) 
---
---  Dependencies: 
---   OC_FACTURAR (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAR IS
 --
 -- MODIFICACIONES
@@ -89,7 +25,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAR IS
 -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 -- CORRECCION DEL TIPO DE CAMBIO PARA COMPONENTES                            2019/06/12  ICO LARPLA1
 -- CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES                                  2019/08/21  ICO LARPLA2
---
+-- AJUSTE A EXTRACCION DE DERECHOS                                           2020/12/10  ICO LARPLA3
 PROCEDURE PROC_EMITE_FACTURAS(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS
 nIdFactura               FACTURAS.IdFactura%TYPE;
 nNumPagos                PLAN_DE_PAGOS.NumPagos%TYPE;
@@ -519,7 +455,7 @@ BEGIN
             --PROC_COMISIONAG (nIdPoliza, X.IDetPol, nCodCia, nCodEmpresa, X.IdTipoSeg,
             --                cCodMoneda, nIdFactura, nMtot, nMtoTM, nTasaCambio);
 
-            -- Distribuye la comision por agente.
+            -- DETALLE_DE FACTURAS
             FOR Y IN CPTO_PLAN_Q LOOP
                BEGIN
                   SELECT 'S'
@@ -546,9 +482,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        ELSE
-                           nMtoCpto  := 0;
-                           nPorcCpto := 0;
+                        --ELSE   --LARPLA3
+                           --nMtoCpto  := 0; --LARPLA3
+                           --nPorcCpto := 0; --LARPLA3
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
@@ -819,9 +755,9 @@ BEGIN
                                     nMtoCpto  := Y.MtoCpto;
                                     nPorcCpto := Y.PorcCpto;
                                  END IF;
-                              ELSE
-                                 nMtoCpto  := 0;
-                                 nPorcCpto := 0;
+                              --ELSE   --LARPLA3
+                                 --nMtoCpto  := 0; --LARPLA3
+                                 --nPorcCpto := 0; --LARPLA3
                               END IF;
                            ELSE
                               nMtoCpto  := 0;
@@ -1411,9 +1347,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        ELSE
-                           nMtoCpto  := 0;
-                           nPorcCpto := 0;
+                        --ELSE   --LARPLA3
+                           --nMtoCpto  := 0; --LARPLA3
+                           --nPorcCpto := 0; --LARPLA3
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
@@ -1733,9 +1669,9 @@ BEGIN
                                  nMtoCpto  := Y.MtoCpto;
                                  nPorcCpto := Y.PorcCpto;
                               END IF;
-                           ELSE
-                              nMtoCpto  := 0;
-                              nPorcCpto := 0;
+                          --ELSE   --LARPLA3
+                             --nMtoCpto  := 0; --LARPLA3
+                             --nPorcCpto := 0; --LARPLA3
                            END IF;
                         ELSE
                            nMtoCpto  := 0;
@@ -2224,9 +2160,9 @@ BEGIN
                            nMtoCpto  := Y.MtoCpto;
                            nPorcCpto := Y.PorcCpto;
                         END IF;
-                     ELSE
-                        nMtoCpto  := 0;
-                        nPorcCpto := 0;
+                     --ELSE   --LARPLA3
+                        --nMtoCpto  := 0; --LARPLA3
+                        --nPorcCpto := 0; --LARPLA3
                      END IF;
                   ELSE
                      nMtoCpto  := Y.MtoCpto;
@@ -2428,9 +2364,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        ELSE
-                           nMtoCpto  := 0;
-                           nPorcCpto := 0;
+                        --ELSE   --LARPLA3
+                           --nMtoCpto  := 0; --LARPLA3
+                           --nPorcCpto := 0; --LARPLA3
                         END IF;
                      ELSE
                         nMtoCpto  := Y.MtoCpto;
@@ -3017,9 +2953,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        ELSE
-                           nMtoCpto  := 0;
-                           nPorcCpto := 0;
+                        --ELSE   --LARPLA3
+                           --nMtoCpto  := 0; --LARPLA3
+                           --nPorcCpto := 0; --LARPLA3
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
@@ -3322,9 +3258,9 @@ BEGIN
                                  nMtoCpto  := Y.MtoCpto;
                                  nPorcCpto := Y.PorcCpto;
                               END IF;
-                           ELSE
-                              nMtoCpto  := 0;
-                              nPorcCpto := 0;
+                          --ELSE   --LARPLA3
+                             --nMtoCpto  := 0; --LARPLA3
+                             --nPorcCpto := 0; --LARPLA3
                            END IF;
                         ELSE
                            nMtoCpto  := 0;
@@ -3792,9 +3728,9 @@ BEGIN
                                    nMtoCpto  := Y.MtoCpto;
                                    nPorcCpto := Y.PorcCpto;
                                 END IF;
-                             ELSE
-                                nMtoCpto  := 0;
-                                nPorcCpto := 0;
+                             --ELSE   --LARPLA3
+                                --nMtoCpto  := 0; --LARPLA3
+                                --nPorcCpto := 0; --LARPLA3
                              END IF;
                           ELSE
                              nMtoCpto  := 0;
@@ -4115,9 +4051,9 @@ BEGIN
                                    nMtoCpto  := Y.MtoCpto;
                                    nPorcCpto := Y.PorcCpto;
                                 END IF;
-                             ELSE
-                                nMtoCpto  := 0;
-                                nPorcCpto := 0;
+                             --ELSE   --LARPLA3
+                                --nMtoCpto  := 0; --LARPLA3
+                                --nPorcCpto := 0; --LARPLA3
                              END IF;
                           ELSE
                              nMtoCpto  := 0;
@@ -5343,9 +5279,9 @@ BEGIN
                            nMtoCpto  := Y.MtoCpto;
                            nPorcCpto := Y.PorcCpto;
                         END IF;
-                     ELSE
-                        nMtoCpto  := 0;
-                        nPorcCpto := 0;
+                        --ELSE   --LARPLA3
+                           --nMtoCpto  := 0; --LARPLA3
+                           --nPorcCpto := 0; --LARPLA3
                      END IF;
                   ELSE
                      nMtoCpto  := 0;
@@ -5666,9 +5602,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        ELSE
-                           nMtoCpto  := 0;
-                           nPorcCpto := 0;
+                        --ELSE   --LARPLA3
+                           --nMtoCpto  := 0; --LARPLA3
+                           --nPorcCpto := 0; --LARPLA3
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
@@ -6278,9 +6214,9 @@ BEGIN
                            nMtoCpto  := Y.MtoCpto;
                            nPorcCpto := Y.PorcCpto;
                         END IF;
-                     ELSE
-                        nMtoCpto  := 0;
-                        nPorcCpto := 0;
+                        --ELSE   --LARPLA3
+                           --nMtoCpto  := 0; --LARPLA3
+                           --nPorcCpto := 0; --LARPLA3
                      END IF;
                   ELSE
                      nMtoCpto  := 0;
@@ -6597,9 +6533,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        ELSE
-                           nMtoCpto  := 0;
-                           nPorcCpto := 0;
+                        --ELSE   --LARPLA3
+                           --nMtoCpto  := 0; --LARPLA3
+                           --nPorcCpto := 0; --LARPLA3
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
@@ -7612,17 +7548,4 @@ END PROC_EMITE_FACT_ENDO_PERIODO;
  END F_GET_FACT;
 
 END OC_FACTURAR;
-/
-
---
--- OC_FACTURAR  (Synonym) 
---
---  Dependencies: 
---   OC_FACTURAR (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_FACTURAR FOR SICAS_OC.OC_FACTURAR
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_FACTURAR TO PUBLIC
 /
