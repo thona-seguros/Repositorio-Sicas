@@ -145,7 +145,7 @@ PROCEDURE COPIAR(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSegOrig VARCHAR2,
 CURSOR COB_Q IS
    SELECT CodCobert, EdadIniTarifa, EdadFinTarifa, SexoTarifa, 
           RiesgoTarifa, SumaAsegTarifa, PrimaTarifa, TasaTarifa,
-          TasaNivelada, PorcGtoAdmin
+          TasaNivelada, PorcGtoAdmin, HabitoTarifa
      FROM TARIFA_SEXO_EDAD_RIESGO
     WHERE CodCia     = nCodCia
       AND CodEmpresa = nCodEmpresa      
@@ -157,10 +157,12 @@ BEGIN
       INSERT INTO TARIFA_SEXO_EDAD_RIESGO
              (IdTarifa, CodCia, CodEmpresa, IdTipoSeg, PlanCob, CodCobert, 
               EdadIniTarifa, EdadFinTarifa, SexoTarifa, RiesgoTarifa, 
-              SumaAsegTarifa, PrimaTarifa, TasaTarifa, TasaNivelada, PorcGtoAdmin)
+              SumaAsegTarifa, PrimaTarifa, TasaTarifa, TasaNivelada, PorcGtoAdmin,
+              HabitoTarifa)
       VALUES (nIdTarifaDest, nCodCia, nCodEmpresa, cIdTipoSegDest, cPlanCobDest, X.CodCobert,
               X.EdadIniTarifa, X.EdadFinTarifa, X.SexoTarifa, X.RiesgoTarifa, 
-              X.SumaAsegTarifa, X.PrimaTarifa, X.TasaTarifa, X.TasaNivelada, X.PorcGtoAdmin);
+              X.SumaAsegTarifa, X.PrimaTarifa, X.TasaTarifa, X.TasaNivelada, X.PorcGtoAdmin, 
+              X.HabitoTarifa);
    END LOOP;
 END COPIAR;
 
