@@ -58,7 +58,8 @@ CREATE OR REPLACE PACKAGE SICAS_OC.GT_FAI_SERVICIOS_PORTAL AS
                          dFechaDesde IN DATE, dFechaHasta IN DATE, xMovimientos OUT XMLTYPE); 
    PROCEDURE INTEGRACION_SALDO(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, 
                          dFechaDesde IN DATE, dFechaHasta IN DATE, xIntegraSaldo OUT XMLTYPE);
-   PROCEDURE LISTADO_POLIZAS (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, xListaPolizas OUT XMLTYPE);                     
+   PROCEDURE LISTADO_POLIZAS (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER, xListaPolizas OUT XMLTYPE);    
+   
 END GT_FAI_SERVICIOS_PORTAL;
 /
 

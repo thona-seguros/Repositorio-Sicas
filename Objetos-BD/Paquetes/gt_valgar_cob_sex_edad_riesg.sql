@@ -37,7 +37,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_VALGAR_COB_SEX_EDAD_RIESG IS
                         AND T.CODEMPRESA             = nCodEmpresa
                         AND T.IDTIPOSEG              = cIdTipoSeg
                         AND T.PLANCOB                = cPlanCob;
-        IF KONT = 0 THEN    
+        IF KONT != 0 THEN    
             SELECT DURACIONPLAN
               INTO KONT
                 FROM PLAN_COBERTURAS T
