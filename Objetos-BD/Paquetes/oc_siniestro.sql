@@ -1,40 +1,4 @@
---
--- OC_SINIESTRO  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   OBJETO (Table)
---   SAI_CAT_GENERAL (Table)
---   SINIESTRO (Table)
---   POLIZAS (Table)
---   OC_DETALLE_SINIESTRO (Package)
---   OC_DETALLE_SINIESTRO_ASEG (Package)
---   OC_DETALLE_TRANSACCION (Package)
---   CONFIG_NOMSIN (Table)
---   OC_TRANSACCION (Package)
---   PAGOS_POR_OTROS_CONCEPTOS (Table)
---   PARAMETROS_EMISION (Table)
---   PARAMETROS_ENUM_SIN (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   BENEFICIARIO (Table)
---   BENEF_SIN (Table)
---   CALENDARIO_SEMANAL (Table)
---   COBERTURA_SINIESTRO (Table)
---   COBERTURA_SINIESTRO_ASEG (Table)
---   OC_COBERTURA_SINIESTRO (Package)
---   OC_COBERTURA_SINIESTRO_ASEG (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   DETALLE_POLIZA (Table)
---   DETALLE_SINIESTRO (Table)
---   DETALLE_SINIESTRO_ASEG (Table)
---   GT_REA_DISTRIBUCION (Package)
---   TRANSACCION (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_SINIESTRO IS
+CREATE OR REPLACE PACKAGE OC_SINIESTRO IS
 
 FUNCTION INSERTA_SINIESTRO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, cNumSiniRef VARCHAR2, 
                            dFec_Ocurrencia DATE, dFec_Notificacion DATE, cDesc_Siniestro VARCHAR2, cTipo_Siniestro VARCHAR2,
@@ -65,23 +29,21 @@ FUNCTION F_GET_SIN ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
 
 END OC_SINIESTRO;
 /
-
+CREATE OR REPLACE PACKAGE BODY OC_SINIESTRO IS
 --
--- OC_SINIESTRO  (Package Body) 
+-- CONTROL DE CAMBIO
 --
---  Dependencies: 
---   OC_SINIESTRO (Package)
+-- Reingenieria de siniestros   25/11/2020  REISIN  ICO
 --
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SINIESTRO IS
-
+--
 FUNCTION INSERTA_SINIESTRO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, cNumSiniRef VARCHAR2, 
                            dFec_Ocurrencia DATE, dFec_Notificacion DATE, cDesc_Siniestro VARCHAR2, cTipo_Siniestro VARCHAR2,
                            cMotivo_Siniestro VARCHAR2, cCodPaisOcurr VARCHAR2, cCodProvOcurr VARCHAR2) RETURN NUMBER IS
 nIdSiniestro    SINIESTRO.IdSiniestro%TYPE;
 cIdTipoSeg      DETALLE_POLIZA.IdTipoSeg%TYPE;
 cPlanCob        DETALLE_POLIZA.PlanCob%TYPE;
-nUltAsig        CONFIG_NOMSIN.UltSinAsig%TYPE;
-cNumSinNom      SINIESTRO.NumSinNom%TYPE;
+--nUltAsig        CONFIG_NOMSIN.UltSinAsig%TYPE;    --REISIN
+cNumSinNom      SINIESTRO.NumSinNom%TYPE;         
 cCod_Moneda     POLIZAS.Cod_Moneda%TYPE;
 nNumSemana      CALENDARIO_SEMANAL.NumSemana%TYPE;
 
@@ -89,27 +51,44 @@ p_msg_regreso       varchar2(50);
 
 
 BEGIN
-   /*SELECT NVL(MAX(IdSiniestro),0) + 1
-     INTO nIdSiniestro
-     FROM SINIESTRO
-    WHERE CodCia     = nCodCia
-      AND CodEmpresa = nCodEmpresa;*/
-
-    nIdSiniestro := OC_SINIESTRO.F_GET_SIN(p_msg_regreso); 
-
-   BEGIN
-      SELECT IdTipoSeg, PlanCob
-        INTO cIdTipoSeg, cPlanCob
-        FROM DETALLE_POLIZA
-       WHERE CodCia      = nCodCia
-         AND CodEmpresa  = nCodEmpresa
-         AND IdPoliza    = nIdPoliza
-         AND IdetPol     = nIDetpol;
-   EXCEPTION 
-      WHEN NO_DATA_FOUND THEn 
-         RAISE_APPLICATION_ERROR(-20225,'NO Existe Detalle de Póliza '||SQLERRM);
-   END;
-
+  --
+  -- EXTRAE EL NUMERO DE SINIESTRO
+  --
+  nIdSiniestro := OC_SINIESTRO.F_GET_SIN(p_msg_regreso); 
+  --
+  BEGIN
+    SELECT IdTipoSeg,  PlanCob
+      INTO cIdTipoSeg, cPlanCob
+      FROM DETALLE_POLIZA
+     WHERE CodCia      = nCodCia
+       AND CodEmpresa  = nCodEmpresa
+       AND IdPoliza    = nIdPoliza
+       AND IdetPol     = nIDetpol;
+  EXCEPTION 
+    WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20225,'NO Existe Detalle de Póliza OC_SINIESTRO'||SQLERRM);  -- REISIN
+    WHEN OTHERS THEN
+         RAISE_APPLICATION_ERROR(-20225,'Extraccion de tipo de seguro con error OC_SINESTRO'||SQLERRM);  -- REISIN
+  END;
+  --
+  cNumSinNom := ''; -- REISIN
+  nNumSemana := ''; -- REISIN
+  --
+  BEGIN            -- REISIN  INICIO
+    SELECT Cod_Moneda
+      INTO cCod_Moneda
+      FROM POLIZAS
+     WHERE IdPoliza   = nIdPoliza
+       AND CodCia     = nCodCia
+       AND CodEmpresa = nCodEmpresa;
+  EXCEPTION 
+    WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20225,'NO Existe Póliza-Moneda OC_SINIESTRO'||SQLERRM);
+    WHEN OTHERS THEN
+         RAISE_APPLICATION_ERROR(-20225,'Extraccion de Moneda con error OC_SINESTRO'||SQLERRM);  -- REISIN
+  END;  --
+  --
+  /*    -- REISIN
    SELECT NVL(MAX(UltSinAsig),0) + 1
      INTO nUltAsig
      FROM CONFIG_NOMSIN
@@ -132,14 +111,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN 
          RAISE_APPLICATION_ERROR(-20225,'Se debe configurar Nomenclatura de Siniestros a Nivel de los Planes de Coberturas');
    END;
-
-   SELECT Cod_Moneda
-     INTO cCod_Moneda
-     FROM POLIZAS
-    WHERE IdPoliza   = nIdPoliza
-      AND CodCia     = nCodCia
-      AND CodEmpresa = nCodEmpresa;
-
+   --
    UPDATE CONFIG_NOMSIN
       SET UltSinAsig = UltSinAsig + 1
     WHERE CodCia     = nCodCia
@@ -147,7 +119,7 @@ BEGIN
       AND IdTipoSeg  = cIdTipoSeg
       AND PlanCob    = cPlanCob
       AND Anio       = TO_CHAR(SYSDATE,'YYYY');
-
+   --
    BEGIN
       SELECT NumSemana
         INTO nNumSemana
@@ -158,18 +130,34 @@ BEGIN
          RAISE_APPLICATION_ERROR(-20225,'Revise Configuración de Semanas, ya que NO se a encontrado una semana Configurada' ||
                                  ' para la Fecha de Notificacion ' || TO_CHAR(dFec_Notificacion,'DD/MM/YYYY'));
    END;
-
-   INSERT INTO SINIESTRO
-          (IdSiniestro, IdPoliza, NumSiniRef, Tipo_Siniestro, Fec_Ocurrencia, Fec_Notificacion,
-           Sts_Siniestro, FecSts, FecAnul, Motiv_Anul, Desc_Siniestro, Monto_Reserva_Local,
-           Monto_Reserva_Moneda, Monto_Pago_Local, Monto_Pago_Moneda, Cod_Moneda, IDetPol,
-           Num_Bien, Monto_Indeminzacion, Deducible, Tipo_Indemnizacion, Ajustador, CodCia,
-           Motivo_de_Siniestro, CodEmpresa, NumSinNom, NumSemana, CodPaisOcurr, CodProvOcurr)
-   VALUES (nIdSiniestro, nIdPoliza, cNumSiniRef, cTipo_Siniestro, dFec_Ocurrencia, dFec_Notificacion,
-           'SOL', TRUNC(SYSDATE), NULL, NULL, cDesc_Siniestro, 0, 0, 0, 0, cCod_Moneda, nIDetPol,
-           0, 0, 0, NULL, NULL, nCodCia,
-           cMotivo_Siniestro, nCodEmpresa, cNumSinNom, nNumSemana, cCodPaisOcurr, cCodProvOcurr);
-   RETURN(nIdSiniestro);
+   */  --REISIN
+  --
+  INSERT INTO SINIESTRO
+    (IdSiniestro,          IdPoliza,          NumSiniRef,         
+     Tipo_Siniestro,       Fec_Ocurrencia,    Fec_Notificacion,
+     Sts_Siniestro,        FecSts,            FecAnul,
+     Motiv_Anul,           Desc_Siniestro,    Monto_Reserva_Local,
+     Monto_Reserva_Moneda, Monto_Pago_Local,  Monto_Pago_Moneda,
+     --
+     Cod_Moneda,           IDetPol,           Num_Bien,
+     Monto_Indeminzacion,  Deducible,         Tipo_Indemnizacion,
+     Ajustador,            CodCia,            Motivo_de_Siniestro,
+     CodEmpresa,           NumSinNom,         NumSemana, 
+     CodPaisOcurr,         CodProvOcurr)
+  VALUES 
+    (nIdSiniestro,         nIdPoliza,         cNumSiniRef, 
+     cTipo_Siniestro,      dFec_Ocurrencia,   dFec_Notificacion,
+     'SOL',                TRUNC(SYSDATE),    NULL, 
+     NULL,                 cDesc_Siniestro,   0, 
+     0,                    0,                 0, 
+     --
+     cCod_Moneda,          nIDetPol,          0,
+     0,                    0,                 NULL, 
+     NULL,                 nCodCia,           cMotivo_Siniestro, 
+     nCodEmpresa,          cNumSinNom,        nNumSemana,
+     cCodPaisOcurr,        cCodProvOcurr);
+  RETURN(nIdSiniestro);
+  --
 END INSERTA_SINIESTRO;
 
 FUNCTION SINIESTRO_DE_ASEGURADO(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdSiniestro NUMBER) RETURN VARCHAR2 IS
@@ -307,10 +295,10 @@ END RECHAZAR;
 PROCEDURE ACTIVAR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSiniestro NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER) IS
 --
 dFecHoy              DATE;
-nRegis               NUMBER(10);
-nRegisCobert         NUMBER(10);
+--nRegis               NUMBER(10);
+--nRegisCobert         NUMBER(10);
 nCob                 NUMBER(1);
-cIndDeclara          DETALLE_POLIZA.IndDeclara%TYPE;
+--cIndDeclara          DETALLE_POLIZA.IndDeclara%TYPE;
 nIdTransaccion       TRANSACCION.IdTransaccion%TYPE;
 nMonto_Reserva_Monto SINIESTRO.Monto_Reserva_Local%TYPE;
 nCodAsegurado        SINIESTRO.Cod_Asegurado%TYPE;
@@ -474,19 +462,19 @@ END ACTIVAR;
 PROCEDURE TRANSACCION_RESERVAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSiniestro NUMBER, 
                                nIdPoliza NUMBER, nIDetPol NUMBER, nIdTransaccion NUMBER) IS
 --
-dFecHoy         DATE;
-nCobertLocal    COBERTURA_SINIESTRO.Monto_Reservado_Local%TYPE;
-nCobertMoneda   COBERTURA_SINIESTRO.Monto_Reservado_Moneda%TYPE;
-nOtrPagLocal    PAGOS_POR_OTROS_CONCEPTOS.Monto_Reservado_Local%TYPE;
-nOtrPagMoneda   PAGOS_POR_OTROS_CONCEPTOS.Monto_Reservado_Moneda%TYPE;
+--dFecHoy         DATE;
+--nCobertLocal    COBERTURA_SINIESTRO.Monto_Reservado_Local%TYPE;
+--nCobertMoneda   COBERTURA_SINIESTRO.Monto_Reservado_Moneda%TYPE;
+--nOtrPagLocal    PAGOS_POR_OTROS_CONCEPTOS.Monto_Reservado_Local%TYPE;
+--nOtrPagMoneda   PAGOS_POR_OTROS_CONCEPTOS.Monto_Reservado_Moneda%TYPE;
 nTotSiniLocal   SINIESTRO.Monto_Reserva_Local%TYPE;
 nTotSiniMoneda  SINIESTRO.Monto_Reserva_Moneda%TYPE;
-nIdDetSin       COBERTURA_SINIESTRO.IdDetSin%TYPE;
-nNumMod         COBERTURA_SINIESTRO.NumMod%TYPE;
+--nIdDetSin       COBERTURA_SINIESTRO.IdDetSin%TYPE;
+--nNumMod         COBERTURA_SINIESTRO.NumMod%TYPE;
 --
 --
-W_GRABA                SAI_CAT_GENERAL.CAGE_VALOR_CORTO%TYPE;
-GRABA                  BOOLEAN;
+--W_GRABA                SAI_CAT_GENERAL.CAGE_VALOR_CORTO%TYPE;
+--GRABA                  BOOLEAN;
 --
 CURSOR COBERT_Q(cIdDetSin COBERTURA_SINIESTRO.IdDetSin%TYPE) IS
    SELECT Monto_Reservado_Local, Monto_Reservado_Moneda, NumMod, CodCobert
@@ -668,17 +656,4 @@ END MONEDA_SINIESTRO;
  END F_GET_SIN;
 
 END OC_SINIESTRO;
-/
-
---
--- OC_SINIESTRO  (Synonym) 
---
---  Dependencies: 
---   OC_SINIESTRO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_SINIESTRO FOR SICAS_OC.OC_SINIESTRO
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_SINIESTRO TO PUBLIC
 /
