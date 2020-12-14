@@ -25,7 +25,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAR IS
 -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 -- CORRECCION DEL TIPO DE CAMBIO PARA COMPONENTES                            2019/06/12  ICO LARPLA1
 -- CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES                                  2019/08/21  ICO LARPLA2
--- AJUSTE A EXTRACCION DE DERECHOS                                           2020/12/10  ICO LARPLA3
+--
 PROCEDURE PROC_EMITE_FACTURAS(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS
 nIdFactura               FACTURAS.IdFactura%TYPE;
 nNumPagos                PLAN_DE_PAGOS.NumPagos%TYPE;
@@ -455,7 +455,7 @@ BEGIN
             --PROC_COMISIONAG (nIdPoliza, X.IDetPol, nCodCia, nCodEmpresa, X.IdTipoSeg,
             --                cCodMoneda, nIdFactura, nMtot, nMtoTM, nTasaCambio);
 
-            -- DETALLE_DE FACTURAS
+            -- Distribuye la comision por agente.
             FOR Y IN CPTO_PLAN_Q LOOP
                BEGIN
                   SELECT 'S'
@@ -482,9 +482,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        --ELSE   --LARPLA3
-                           --nMtoCpto  := 0; --LARPLA3
-                           --nPorcCpto := 0; --LARPLA3
+                        ELSE
+                           nMtoCpto  := 0;
+                           nPorcCpto := 0;
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
@@ -755,9 +755,9 @@ BEGIN
                                     nMtoCpto  := Y.MtoCpto;
                                     nPorcCpto := Y.PorcCpto;
                                  END IF;
-                              --ELSE   --LARPLA3
-                                 --nMtoCpto  := 0; --LARPLA3
-                                 --nPorcCpto := 0; --LARPLA3
+                              ELSE
+                                 nMtoCpto  := 0;
+                                 nPorcCpto := 0;
                               END IF;
                            ELSE
                               nMtoCpto  := 0;
@@ -1347,9 +1347,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        --ELSE   --LARPLA3
-                           --nMtoCpto  := 0; --LARPLA3
-                           --nPorcCpto := 0; --LARPLA3
+                        ELSE
+                           nMtoCpto  := 0;
+                           nPorcCpto := 0;
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
@@ -1669,9 +1669,9 @@ BEGIN
                                  nMtoCpto  := Y.MtoCpto;
                                  nPorcCpto := Y.PorcCpto;
                               END IF;
-                          --ELSE   --LARPLA3
-                             --nMtoCpto  := 0; --LARPLA3
-                             --nPorcCpto := 0; --LARPLA3
+                           ELSE
+                              nMtoCpto  := 0;
+                              nPorcCpto := 0;
                            END IF;
                         ELSE
                            nMtoCpto  := 0;
@@ -2160,9 +2160,9 @@ BEGIN
                            nMtoCpto  := Y.MtoCpto;
                            nPorcCpto := Y.PorcCpto;
                         END IF;
-                     --ELSE   --LARPLA3
-                        --nMtoCpto  := 0; --LARPLA3
-                        --nPorcCpto := 0; --LARPLA3
+                     ELSE
+                        nMtoCpto  := 0;
+                        nPorcCpto := 0;
                      END IF;
                   ELSE
                      nMtoCpto  := Y.MtoCpto;
@@ -2364,9 +2364,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        --ELSE   --LARPLA3
-                           --nMtoCpto  := 0; --LARPLA3
-                           --nPorcCpto := 0; --LARPLA3
+                        ELSE
+                           nMtoCpto  := 0;
+                           nPorcCpto := 0;
                         END IF;
                      ELSE
                         nMtoCpto  := Y.MtoCpto;
@@ -2953,9 +2953,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        --ELSE   --LARPLA3
-                           --nMtoCpto  := 0; --LARPLA3
-                           --nPorcCpto := 0; --LARPLA3
+                        ELSE
+                           nMtoCpto  := 0;
+                           nPorcCpto := 0;
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
@@ -3258,9 +3258,9 @@ BEGIN
                                  nMtoCpto  := Y.MtoCpto;
                                  nPorcCpto := Y.PorcCpto;
                               END IF;
-                          --ELSE   --LARPLA3
-                             --nMtoCpto  := 0; --LARPLA3
-                             --nPorcCpto := 0; --LARPLA3
+                           ELSE
+                              nMtoCpto  := 0;
+                              nPorcCpto := 0;
                            END IF;
                         ELSE
                            nMtoCpto  := 0;
@@ -3728,9 +3728,9 @@ BEGIN
                                    nMtoCpto  := Y.MtoCpto;
                                    nPorcCpto := Y.PorcCpto;
                                 END IF;
-                             --ELSE   --LARPLA3
-                                --nMtoCpto  := 0; --LARPLA3
-                                --nPorcCpto := 0; --LARPLA3
+                             ELSE
+                                nMtoCpto  := 0;
+                                nPorcCpto := 0;
                              END IF;
                           ELSE
                              nMtoCpto  := 0;
@@ -4051,9 +4051,9 @@ BEGIN
                                    nMtoCpto  := Y.MtoCpto;
                                    nPorcCpto := Y.PorcCpto;
                                 END IF;
-                             --ELSE   --LARPLA3
-                                --nMtoCpto  := 0; --LARPLA3
-                                --nPorcCpto := 0; --LARPLA3
+                             ELSE
+                                nMtoCpto  := 0;
+                                nPorcCpto := 0;
                              END IF;
                           ELSE
                              nMtoCpto  := 0;
@@ -5279,9 +5279,9 @@ BEGIN
                            nMtoCpto  := Y.MtoCpto;
                            nPorcCpto := Y.PorcCpto;
                         END IF;
-                        --ELSE   --LARPLA3
-                           --nMtoCpto  := 0; --LARPLA3
-                           --nPorcCpto := 0; --LARPLA3
+                     ELSE
+                        nMtoCpto  := 0;
+                        nPorcCpto := 0;
                      END IF;
                   ELSE
                      nMtoCpto  := 0;
@@ -5602,9 +5602,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        --ELSE   --LARPLA3
-                           --nMtoCpto  := 0; --LARPLA3
-                           --nPorcCpto := 0; --LARPLA3
+                        ELSE
+                           nMtoCpto  := 0;
+                           nPorcCpto := 0;
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
@@ -6214,9 +6214,9 @@ BEGIN
                            nMtoCpto  := Y.MtoCpto;
                            nPorcCpto := Y.PorcCpto;
                         END IF;
-                        --ELSE   --LARPLA3
-                           --nMtoCpto  := 0; --LARPLA3
-                           --nPorcCpto := 0; --LARPLA3
+                     ELSE
+                        nMtoCpto  := 0;
+                        nPorcCpto := 0;
                      END IF;
                   ELSE
                      nMtoCpto  := 0;
@@ -6533,9 +6533,9 @@ BEGIN
                               nMtoCpto  := Y.MtoCpto;
                               nPorcCpto := Y.PorcCpto;
                            END IF;
-                        --ELSE   --LARPLA3
-                           --nMtoCpto  := 0; --LARPLA3
-                           --nPorcCpto := 0; --LARPLA3
+                        ELSE
+                           nMtoCpto  := 0;
+                           nPorcCpto := 0;
                         END IF;
                      ELSE
                         nMtoCpto  := 0;
