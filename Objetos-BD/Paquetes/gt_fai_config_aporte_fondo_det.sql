@@ -149,7 +149,7 @@ CURSOR APORTES_Q IS
       AND IDetPol      = nIDetPol
       AND CodAsegurado = nCodAsegurado
       AND IdFondo      = nIdFondo
-      AND StsAporte    = 'SOLICI';
+      AND StsAporte    = 'SOL';
 BEGIN
    FOR X IN APORTES_Q LOOP
       UPDATE FAI_CONFIG_APORTE_FONDO_DET
