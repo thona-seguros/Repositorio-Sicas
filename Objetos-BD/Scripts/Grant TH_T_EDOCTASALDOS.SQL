@@ -1,0 +1,3 @@
+-- Grants for Package
+GRANT EXECUTE ON TH_T_EDOCTASALDOS TO PUBLIC
+/
