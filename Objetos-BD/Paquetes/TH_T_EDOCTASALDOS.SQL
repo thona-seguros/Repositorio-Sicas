@@ -918,7 +918,7 @@ SELECT --- '05',
         ,C.IDNOMINA NOMINA_COMISION,
       --%%%%%%%-----        
     CASE 
-       WHEN N.STSNCR IN ('PAG','APL') AND TRUNC(C.FEC_LIQUIDACION) < P_FECHASTA  THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
+       WHEN N.STSNCR IN ('PAG','APL') AND TRUNC(C.FEC_LIQUIDACION) <= P_FECHASTA  THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
        WHEN N.STSNCR IN ('PAG','APL') AND TRUNC(C.FEC_LIQUIDACION) IS NULL THEN NULL
        ELSE TO_CHAR(N.FECSTS, 'DD/MM/YYYY')
      END                                                   FECHA_PAGO            
@@ -964,7 +964,7 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND C.IdComision   = Y.IdComision
    AND C.Comision_Moneda  != 0
     AND ( (N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA) OR
-       (C.FEC_LIQUIDACION  BETWEEN P_FECDESDE AND P_FECHASTA)) 
+       (TRUNC(C.FEC_LIQUIDACION)  BETWEEN P_FECDESDE AND P_FECHASTA)) 
    AND A.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente            = AC.Cod_Agente(+)
