@@ -1,76 +1,5 @@
---
--- OC_COMPROBANTES_CONTABLES  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_STANDARD (Package)
---   VALORES_DE_LISTAS (Table)
---   NOTAS_DE_CREDITO (Table)
---   OC_ARCHIVO (Package)
---   SQ_COMPR_CONTA (Sequence)
---   SUB_PROCESO (Table)
---   RESERVAS_TECNICAS (Table)
---   RESERVAS_TECNICAS_CONTAB (Table)
---   SINIESTRO (Table)
---   PLANTILLAS_CONTABLES (Table)
---   PRIMAS_DEPOSITO (Table)
---   PROCESOS_CONTABLES (Table)
---   PROC_TAREA (Table)
---   FAI_CONCENTRADORA_FONDO (Table)
---   FZ_DETALLE_FIANZAS (Table)
---   OC_EMPRESAS (Package)
---   OC_FACTURAS (Package)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   GT_FAI_MOVIMIENTOS_FONDOS (Package)
---   CONCEPTOS_PLAN_DE_PAGOS (Table)
---   CONFIG_RESERVAS (Table)
---   CONFIG_RESERVAS_TIPOSEG (Table)
---   DETALLE_APROBACION (Table)
---   DETALLE_APROBACION_ASEG (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_VALORES_DE_LISTAS (Package)
---   PAGOS (Table)
---   PAGO_DETALLE (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   AGENTES (Table)
---   AGENTES (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   APROBACIONES (Table)
---   APROBACION_ASEG (Table)
---   CATALOGO_CONTABLE (Table)
---   COBERTURA_SINIESTRO (Table)
---   COBERTURA_SINIESTRO_ASEG (Table)
---   COMISIONES (Table)
---   COMPROBANTES_CONTABLES (Table)
---   COMPROBANTES_DETALLE (Table)
---   TARJETAS_PREPAGO (Table)
---   TASAS_CAMBIO (Table)
---   OC_GENERALES (Package)
---   OC_MONEDA (Package)
---   OC_CATALOGO_CONTABLE (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_COMPROBANTES_DETALLE (Package)
---   DETALLE_POLIZA (Table)
---   DETALLE_POLIZA (Table)
---   DETALLE_SINIESTRO (Table)
---   DETALLE_SINIESTRO_ASEG (Table)
---   DETALLE_TRANSACCION (Table)
---   EMPRESAS (Table)
---   FACTURAS (Table)
---   OC_PROCESOS_CONTABLES (Package)
---   OC_PROC_TAREA (Package)
---   OC_SUB_PROCESO (Package)
---   TIPOS_DE_SEGUROS (Table)
---   TRANSACCION (Table)
---   TRANSACCION (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.oc_comprobantes_contables IS
-
+CREATE OR REPLACE PACKAGE oc_comprobantes_contables IS
+---- Modificaciones para OGAS                       JMMD 20210212
    FUNCTION NUM_COMPROBANTE(nCodCia NUMBER) RETURN NUMBER;
 
    FUNCTION CREA_COMPROBANTE(nCodCia NUMBER, cTipoComprob VARCHAR2, nNumTransaccion NUMBER,
@@ -110,7 +39,18 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_comprobantes_contables IS
                                  , cIdTipoSeg      DETALLE_POLIZA.IDTIPOSEG%TYPE
                                  , cTipoPersona    PERSONA_NATURAL_JURIDICA.TIPO_PERSONA%TYPE
                                  , cTipoAgente     AGENTES.TIPO_AGENTE%TYPE ) RETURN NUMBER;
+                                 
+-------- JMMD20191015
+  FUNCTION COMISION_TIPO_ADICIONALES(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
+                                 cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2) RETURN NUMBER;
+                                 
+  FUNCTION COM_TIPO_ADICIONALES_CANC(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
+                                 cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2) RETURN NUMBER;
 
+  FUNCTION COM_TIPO_ADICIONALES_PAGOS(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
+                                 cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2) RETURN NUMBER;
+
+--------
    FUNCTION APLICA_CANAL_VENTA(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
                                cCanalComisVenta VARCHAR2) RETURN VARCHAR2;
 
@@ -127,20 +67,14 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_comprobantes_contables IS
 
 END OC_COMPROBANTES_CONTABLES;
 /
+CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
 
---
--- OC_COMPROBANTES_CONTABLES  (Package Body) 
---
---  Dependencies: 
---   OC_COMPROBANTES_CONTABLES (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_comprobantes_contables IS
-
-
+ 
 ---- ADICIONO UNA VALIDACION EN LA FUNCION APLICA_CANAL_VENTA
 ---- SI EL SINIESTRO YA FUE ABIERTO, YA NO VALIDA CERTIFICADO NI ESTATUS
 ---- PERMITE CONTINUAR                                                        25/11/2016   AEVS 
 -- SE QUITO LA PROGRAMACION EL GRABADO DE GRABA_TIEMPO  JICO 21/04/2017
+---- Modificaciones para OGAS                           JMMD 20200928 
 --
 FUNCTION NUM_COMPROBANTE(nCodCia NUMBER) RETURN NUMBER IS
 nNumComprob   COMPROBANTES_CONTABLES.NumComprob%TYPE;
@@ -305,6 +239,7 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
    cCodMonedaCia      EMPRESAS.Cod_Moneda%TYPE;
    nTasaCambio        TASAS_CAMBIO.Tasa_Cambio%TYPE;
    cContabilizo       VARCHAR2(1);
+   cConceptoAdicional VARCHAR2(1);
    --
    --Opt:07082019  Optimización
    --Se agrega CodEmpresa para entrar por la llave de la tabla Detalle_Transaccion en diversas consultas
@@ -337,12 +272,15 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
    --Opt:07082019
    CURSOR MOV_Q IS
       SELECT D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda CodMoneda, SUM(DF.Monto_Det_Moneda) MtoMovCuenta,
-             SUM(F.MtoComisi_Moneda) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov
+             SUM(F.MtoComisi_Moneda) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN-- JMMD SE AGREGO LA UEN
         FROM DETALLE_FACTURAS    DF
            , FACTURAS            F
            , DETALLE_TRANSACCION D
            , TRANSACCION         T
            , DETALLE_POLIZA      DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                    
        WHERE DP.IdPoliza         = F.IdPoliza
          AND DP.IDetPol          = NVL(F.IDetPol,DP.IDetPol)
          AND DP.CodCia           = D.CodCia
@@ -364,14 +302,21 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia            = nCodCia
          AND D.CodEmpresa        = nCodEmpresa
          AND D.Correlativo       = 1
-       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, NULL
-       UNION
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                  
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST -- JMMD SE AGREGO LA UEN
+       UNION 
       SELECT D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_NOTAS_DE_CREDITO DN
            , DETALLE_TRANSACCION       D
            , NOTAS_DE_CREDITO          N
            , DETALLE_POLIZA           DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN             
        WHERE DP.IdPoliza          = N.IdPoliza
          AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
          AND DP.CodCia            = D.CodCia
@@ -381,14 +326,21 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia             = nCodCia
          AND D.CodEmpresa         = nCodEmpresa
          AND D.Correlativo        = 1
-       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL,  VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_NOTAS_DE_CREDITO DN
            , DETALLE_TRANSACCION       D
            , NOTAS_DE_CREDITO          N
            , DETALLE_POLIZA           DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN             
        WHERE DP.IdPoliza          = N.IdPoliza
          AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
          AND DP.CodCia            = D.CodCia
@@ -398,14 +350,21 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia             = nCodCia
          AND D.CodEmpresa         = nCodEmpresa
          AND D.Correlativo        = 1
-       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN          
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST -- JMMD SE AGREGO LA UEN
        UNION
       SELECT D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_NOTAS_DE_CREDITO DN
            , DETALLE_TRANSACCION       D
            , NOTAS_DE_CREDITO          N
            , DETALLE_POLIZA           DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN               
        WHERE DP.IdPoliza          = N.IdPoliza
          AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
          AND DP.CodCia            = D.CodCia
@@ -415,14 +374,21 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia             = nCodCia
          AND D.CodEmpresa         = nCodEmpresa
          AND D.Correlativo        = 1
-       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN          
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_NOTAS_DE_CREDITO DN
            , DETALLE_TRANSACCION       D
            , NOTAS_DE_CREDITO          N
            , DETALLE_POLIZA           DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN               
        WHERE DP.IdPoliza          = N.IdPoliza
          AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
          AND DP.CodCia            = D.CodCia
@@ -432,10 +398,14 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia             = nCodCia
          AND D.CodEmpresa         = nCodEmpresa
          AND D.Correlativo        = 1
-       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL           
-       UNION
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN         
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL  , VL.DESCVALLST  -- JMMD SE AGREGO LA UEN         
+ /*      UNION
       SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, '000' UEN--N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
         FROM DETALLE_NOTAS_DE_CREDITO DN
            , DETALLE_TRANSACCION       D
            , NOTAS_DE_CREDITO          N 
@@ -446,10 +416,10 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia         = nCodCia
          AND D.CodEmpresa     = nCodEmpresa
          AND D.Correlativo    = 1
-       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL
+       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, '000' --N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA 
        UNION
       SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, '000' UEN --N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
         FROM DETALLE_NOTAS_DE_CREDITO DN
            , DETALLE_TRANSACCION       D
            , NOTAS_DE_CREDITO          N 
@@ -460,10 +430,10 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia           = nCodCia
          AND D.CodEmpresa       = nCodEmpresa
          AND D.Correlativo      = 1
-       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL
+       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA  
        UNION
       SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, '000' --N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
         FROM DETALLE_NOTAS_DE_CREDITO DN
            , DETALLE_TRANSACCION       D
            , NOTAS_DE_CREDITO          N 
@@ -474,10 +444,10 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia         = nCodCia
          AND D.CodEmpresa     = nCodEmpresa
          AND D.Correlativo    = 1
-       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL
+       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
        UNION
       SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, '000' uen --N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
         FROM DETALLE_NOTAS_DE_CREDITO DN
            , DETALLE_TRANSACCION       D
            , NOTAS_DE_CREDITO          N 
@@ -488,28 +458,253 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia            = nCodCia
          AND D.CodEmpresa        = nCodEmpresa
          AND D.Correlativo       = 1
-       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL
+       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL,'000' -- N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA  */
+       UNION
+      SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+--             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
+             SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_NOTAS_DE_CREDITO DN
+           , DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL           
+       WHERE DN.IdNcr         = N.IdNcr
+         AND N.IdPoliza      IS NULL
+         AND N.IdTransaccion  = D.IdTransaccion
+         AND D.IdTransaccion  = nIdTransaccion
+         AND D.CodCia         = nCodCia
+         AND D.CodEmpresa     = nCodEmpresa
+         AND D.Correlativo    = 1
+         AND C.IDNOMINA       = N.IDNOMINA
+         AND DC.IDCOMISION    = C.IDCOMISION
+         AND DC.CODCONCEPTO   = DN.CODCPTO
+         AND DP.IDPOLIZA = C.IDPOLIZA
+         AND DP.IDETPOL = C.IDETPOL
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'         
+       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN  
+       UNION
+      SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+--             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
+             SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_NOTAS_DE_CREDITO DN
+           , DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL             
+       WHERE DN.IdNcr           = N.IdNcr
+         AND N.IdPoliza        IS NULL
+         AND N.IdTransaccionAnu = D.IdTransaccion
+         AND D.IdTransaccion    = nIdTransaccion
+         AND D.CodCia           = nCodCia
+         AND D.CodEmpresa       = nCodEmpresa
+         AND D.Correlativo      = 1
+         AND C.IDNOMINA       = N.IDNOMINA
+         AND DC.IDCOMISION    = C.IDCOMISION
+         AND DC.CODCONCEPTO   = DN.CODCPTO         
+         AND DP.IDPOLIZA = C.IDPOLIZA
+         AND DP.IDETPOL = C.IDETPOL
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'            
+       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
+       UNION
+      SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+--             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
+             SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_NOTAS_DE_CREDITO DN
+           , DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL               
+       WHERE DN.IdNcr         = N.IdNcr
+         AND N.IdPoliza      IS NULL
+         AND N.IdTransacAplic = D.IdTransaccion
+         AND D.IdTransaccion  = nIdTransaccion
+         AND D.CodCia         = nCodCia
+         AND D.CodEmpresa     = nCodEmpresa
+         AND D.Correlativo    = 1
+         AND C.IDNOMINA       = N.IDNOMINA
+         AND DC.IDCOMISION    = C.IDCOMISION
+         AND DC.CODCONCEPTO   = DN.CODCPTO         
+         AND DP.IDPOLIZA = C.IDPOLIZA
+         AND DP.IDETPOL = C.IDETPOL
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'           
+       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
+       UNION
+      SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+  --           SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
+             SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN  
+        FROM DETALLE_NOTAS_DE_CREDITO DN
+           , DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL               
+       WHERE DN.IdNcr            = N.IdNcr
+         AND N.IdPoliza         IS NULL
+         AND N.IdTransacRevAplic = D.IdTransaccion
+         AND D.IdTransaccion     = nIdTransaccion
+         AND D.CodCia            = nCodCia
+         AND D.CodEmpresa        = nCodEmpresa
+         AND D.Correlativo       = 1
+         AND C.IDNOMINA       = N.IDNOMINA
+         AND DC.IDCOMISION    = C.IDCOMISION
+         AND DC.CODCONCEPTO   = DN.CODCPTO         
+         AND DP.IDPOLIZA = C.IDPOLIZA
+         AND DP.IDETPOL = C.IDETPOL
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'           
+       GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN  
+----- JMMD20200817
+       UNION
+      SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+--             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
+             SUM(DC.MONTO_MON_LOCAL) * -1 MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA)* -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_NOTAS_DE_CREDITO DN
+           , DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL           
+       WHERE DN.IdNcr         = N.IdNcr
+         AND N.IdPoliza      IS NULL
+         AND N.IdTransaccion  = D.IdTransaccion
+         AND DN.CODCPTO       = 'TRIVHO'
+         AND D.IdTransaccion  = nIdTransaccion
+         AND D.CodCia         = nCodCia
+         AND D.CodEmpresa     = nCodEmpresa
+         AND D.Correlativo    = 1
+         AND C.IDNOMINA       = N.IDNOMINA
+         AND DC.IDCOMISION    = C.IDCOMISION
+         AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO
+         AND DP.IDPOLIZA = C.IDPOLIZA
+         AND DP.IDETPOL = C.IDETPOL
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'         
+       GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN  
+       UNION
+      SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+--             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
+             SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA)* -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_NOTAS_DE_CREDITO DN
+           , DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL             
+       WHERE DN.IdNcr           = N.IdNcr
+         AND N.IdPoliza        IS NULL
+         AND N.IdTransaccionAnu = D.IdTransaccion
+         AND D.IdTransaccion    = nIdTransaccion
+         AND DN.CODCPTO       = 'TRIVHO'         
+         AND D.CodCia           = nCodCia
+         AND D.CodEmpresa       = nCodEmpresa
+         AND D.Correlativo      = 1
+         AND C.IDNOMINA       = N.IDNOMINA         
+         AND DC.IDCOMISION    = C.IDCOMISION
+         AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO         
+         AND DP.IDPOLIZA = C.IDPOLIZA
+         AND DP.IDETPOL = C.IDETPOL
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'            
+       GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
+       UNION
+      SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+--             SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
+             SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_NOTAS_DE_CREDITO DN
+           , DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL               
+       WHERE DN.IdNcr         = N.IdNcr
+         AND N.IdPoliza      IS NULL
+         AND N.IdTransacAplic = D.IdTransaccion
+         AND D.IdTransaccion  = nIdTransaccion
+         AND DN.CODCPTO       = 'TRIVHO'         
+         AND D.CodCia         = nCodCia
+         AND D.CodEmpresa     = nCodEmpresa
+         AND D.Correlativo    = 1
+         AND C.IDNOMINA       = N.IDNOMINA         
+         AND DC.IDCOMISION    = C.IDCOMISION
+         AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO         
+         AND DP.IDPOLIZA = C.IDPOLIZA
+         AND DP.IDETPOL = C.IDETPOL
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'           
+       GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
+       UNION
+      SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+  --           SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, N.IDNOMINA -- JMMD SEAGREGO EL IDNOMINA
+             SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN  
+        FROM DETALLE_NOTAS_DE_CREDITO DN
+           , DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL               
+       WHERE DN.IdNcr            = N.IdNcr
+         AND N.IdPoliza         IS NULL
+         AND N.IdTransacRevAplic = D.IdTransaccion
+         AND D.IdTransaccion     = nIdTransaccion
+         AND DN.CODCPTO       = 'TRIVHO'         
+         AND D.CodCia            = nCodCia
+         AND D.CodEmpresa        = nCodEmpresa
+         AND D.Correlativo       = 1
+         AND C.IDNOMINA       = N.IDNOMINA         
+         AND DC.IDCOMISION    = C.IDCOMISION
+         AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO         
+         AND DP.IDPOLIZA = C.IDPOLIZA
+         AND DP.IDETPOL = C.IDETPOL
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'           
+       GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN  
+
+----- JMMD20200817      
        UNION
       SELECT DISTINCT CFT.CodEmpresa, CFT.IdTipoSeg, RTC.CodCptoRva, cCodMonedaCia CodMoneda,
-             SUM(RTC.MtoCptoRva) MtoMovCuenta, 0 MtoComisCuenta, RTC.DescCptoRva DescripMov
+             SUM(RTC.MtoCptoRva) MtoMovCuenta, 0 MtoComisCuenta, RTC.DescCptoRva DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM RESERVAS_TECNICAS_CONTAB RTC
            , RESERVAS_TECNICAS         RT
            , CONFIG_RESERVAS           CF
            , CONFIG_RESERVAS_TIPOSEG  CFT
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN              
        WHERE CFT.CodCia       = CF.Codcia
          AND CFT.CodReserva   = CF.CodReserva
          AND CF.CodCia        = RT.CodCia
          AND CF.CodReserva    = RT.CodReserva
          AND RTC.IdReserva    = RT.IdReserva
          AND RT.IdTransaccion = nIdTransaccion
-       GROUP BY CFT.CodEmpresa, CFT.IdTipoSeg, RTC.CodCptoRva, cCodMonedaCia, RTC.DescCptoRva
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = CFT.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                
+       GROUP BY CFT.CodEmpresa, CFT.IdTipoSeg, RTC.CodCptoRva, cCodMonedaCia, RTC.DescCptoRva, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
-             SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+             SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION DT
            , COBERTURA_SINIESTRO  C
            , SINIESTRO            S
            , DETALLE_SINIESTRO    D
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN              
        WHERE S.IdSiniestro        = C.IdSiniestro
          AND S.IdSiniestro        = D.IdSiniestro
          AND S.CodCia             = nCodCia
@@ -523,15 +718,22 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND DT.CodCia            = nCodCia
          AND DT.CodEmpresa        = nCodEmpresa
          AND DT.Correlativo       = 1
-       GROUP BY s.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = D.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+       GROUP BY s.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
-             SUM(DA.Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+             SUM(DA.Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION DT
            , DETALLE_APROBACION  DA
            , APROBACIONES         A
            , SINIESTRO            S
            , DETALLE_SINIESTRO    D
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN            
        WHERE S.IdSiniestro        = A.IdSiniestro
          AND S.IdSiniestro        = D.IdSiniestro
          AND A.IdSiniestro        = DA.IdSiniestro
@@ -546,13 +748,20 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND DT.CodCia            = nCodCia
          AND DT.CodEmpresa        = nCodEmpresa
          AND DT.Correlativo       = 1
-       GROUP BY S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = D.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                
+       GROUP BY S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT D.CodEmpresa, TP.IdTipoSeg, 'PRIMDE' CodCpto, P.Cod_Moneda CodMoneda,
-             SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+             SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION D
            , PRIMAS_DEPOSITO     P
            , TARJETAS_PREPAGO   TP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN               
        WHERE TP.IdPrimaDeposito = P.IdPrimaDeposito
          --  JICO 20160823
          AND P.IDPRIMADEPOSITO  = D.VALOR1
@@ -564,13 +773,20 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.IdTransaccion    = nIdTransaccion
          AND D.CodCia           = nCodCia
          AND D.CodEmpresa       = nCodEmpresa
-       GROUP BY D.CodEmpresa, TP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = TP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+       GROUP BY D.CodEmpresa, TP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT D.CodEmpresa, DP.IdTipoSeg, 'PRIMDE' CodCpto, P.Cod_Moneda CodMoneda,
-             SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+             SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION D
            , PRIMAS_DEPOSITO     P
            , DETALLE_POLIZA     DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                  
        WHERE DP.IDetPol         = P.IDetPol
          AND DP.IdPoliza        = P.IdPoliza
          AND DP.CodCia          = nCodCia
@@ -584,15 +800,22 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.IdTransaccion    = nIdTransaccion
          AND D.CodCia           = nCodCia
          AND D.CodEmpresa       = nCodEmpresa
-       GROUP BY D.CodEmpresa, DP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN           
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda CodMoneda,
-             SUM(PD.Monto) MtoMovCuenta, SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(PD.Monto) MtoMovCuenta, SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION D
            , FACTURAS            F
            , PAGOS               P
            , PAGO_DETALLE       PD
            , DETALLE_POLIZA     DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN             
        WHERE F.IdFactura      = P.IdFactura
          AND PD.IdRecibo      = P.IdRecibo
          AND P.IdTransaccion  = D.IdTransaccion
@@ -602,15 +825,22 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia         = nCodCia
          AND D.CodEmpresa     = nCodEmpresa
          AND D.Correlativo    = 1
-       GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN           
+       GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda CodMoneda,
-             SUM(PD.Monto) MtoMovCuenta, SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
-        FROM DETALLE_TRANSACCION D
+             SUM(PD.Monto) MtoMovCuenta, SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
+           FROM DETALLE_TRANSACCION D
            , FACTURAS            F
            , PAGOS               P
            , PAGO_DETALLE       PD
            , DETALLE_POLIZA     DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN             
        WHERE F.IdFactura        = P.IdFactura
          AND PD.IdRecibo        = P.IdRecibo
          AND P.IdTransaccionAnu = D.IdTransaccion
@@ -620,14 +850,21 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia           = nCodCia
          AND D.CodEmpresa       = nCodEmpresa
          AND D.Correlativo      = 1
-       GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                    
+       GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT PD.CodEmpresa, PD.IdTipoSeg, DECODE(P.FormPago,'NCR','PAGNCR','PAGREC') CodCpto, P.Moneda CodMoneda,
-             SUM(P.Monto) MtoMovCuenta, 1 MtoComisCuenta, NULL DescripMov
+             SUM(P.Monto) MtoMovCuenta, 1 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION D
            , FACTURAS            F
            , PAGOS               P
            , DETALLE_POLIZA     PD
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                              
        WHERE F.IdFactura      = P.IdFactura
          AND ( P.IdTransaccion = D.IdTransaccion
                OR
@@ -638,14 +875,21 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia         = nCodCia
          AND D.CodEmpresa     = nCodEmpresa
          AND D.Correlativo    = 1
-       GROUP BY PD.CodEmpresa, PD.IdTipoSeg, DECODE(P.FormPago,'NCR','PAGNCR','PAGREC'), P.Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = PD.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN             
+       GROUP BY PD.CodEmpresa, PD.IdTipoSeg, DECODE(P.FormPago,'NCR','PAGNCR','PAGREC'), P.Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
       UNION
       SELECT S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
-             SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+             SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION      DT
            , COBERTURA_SINIESTRO_ASEG  C
            , SINIESTRO                 S
            , DETALLE_SINIESTRO_ASEG    D
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN            
        WHERE S.IdSiniestro    = C.IdSiniestro
          AND S.IdSiniestro    = D.IdSiniestro
          AND S.CodCia         = nCodCia
@@ -658,15 +902,22 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND DT.CodCia        = nCodCia
          AND DT.CodEmpresa    = nCodEmpresa
          AND DT.Correlativo   = 1
-       GROUP BY S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = D.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN             
+       GROUP BY S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
-             SUM(DA.Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+             SUM(DA.Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION     DT
            , DETALLE_APROBACION_ASEG DA
            , APROBACION_ASEG          A
            , SINIESTRO                S
            , DETALLE_SINIESTRO_ASEG   D
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                
        WHERE S.IdSiniestro        = A.IdSiniestro
          AND S.IdSiniestro        = D.IdSiniestro
          AND A.IdSiniestro        = DA.IdSiniestro
@@ -681,14 +932,21 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND DT.CodCia            = nCodCia
          AND DT.CodEmpresa        = nCodEmpresa
          AND DT.Correlativo       = 1
-       GROUP BY S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = D.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN           
+       GROUP BY S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda CodMoneda, SUM(DF.Monto_Det_Moneda) MtoMovCuenta,
-             SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION D
            , DETALLE_FACTURAS   DF
            , FACTURAS            F
            , FZ_DETALLE_FIANZAS DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN              
        WHERE DP.IdPoliza      = F.IdPoliza
          AND DP.Correlativo   = NVL(F.IDetPol,DP.Correlativo)
          AND DP.CodCia        = D.CodCia
@@ -700,14 +958,21 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia         = nCodCia
          AND D.CodEmpresa     = nCodEmpresa
          AND D.Correlativo    = 1
-       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                  
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
        UNION
       SELECT CF.CodEmpresa, DP.IdTipoSeg, CF.CodCptoMov CodCpto, CF.CodMonedaPago CodMoneda, SUM(CF.MontoMovMoneda) MtoMovCuenta,
-             SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+             SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
         FROM DETALLE_TRANSACCION      D
            , FAI_CONCENTRADORA_FONDO CF
            , FACTURAS                 F
            , DETALLE_POLIZA          DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN               
        WHERE DP.IdPoliza         = CF.IdPoliza
          AND DP.IDetPol          = CF.IDetPol
          AND DP.CodCia           = CF.CodCia
@@ -728,14 +993,270 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
          AND D.CodCia            = nCodCia
          AND D.CodEmpresa        = nCodEmpresa
          AND D.Correlativo       = 1
-       GROUP BY CF.CodEmpresa, DP.IdTipoSeg, CF.CodCptoMov, CF.CodMonedaPago, NULL;
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+       GROUP BY CF.CodEmpresa, DP.IdTipoSeg, CF.CodCptoMov, CF.CodMonedaPago, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
+---------------- jmmd 20191015 se agrega movimientos de IVAHON
+    UNION
+    SELECT T.CodEmpresa, DP.IdTipoSeg, DC.CodConcepto CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) MtoMovCuenta,
+          SUM(DC.Monto_Mon_Extranjera) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
+          
+    FROM POLIZAS P, DETALLE_POLIZA DP, FACTURAS F, TRANSACCION T, COMISIONES C, DETALLE_COMISION DC
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN          
+    WHERE T.IDTRANSACCION     = nIdTransaccion
+      AND T.CODCIA            = nCodCia
+      AND (F.IDTRANSACCION     = T.IDTRANSACCION
+       OR F.IDTRANSACCIONANU   = T.IDTRANSACCION)      
+      AND P.IDPOLIZA          = F.IDPOLIZA
+      AND P.CODCIA            = nCodCia
+      AND DP.IDPOLIZA         = P.IDPOLIZA
+      AND DP.CODCIA           = P.CODCIA
+      AND DP.IDETPOL          = NVL(C.IDetPol,DP.IDetPol)
+      AND ((TRUNC(F.FecVenc) <= TRUNC(FechaTransaccion)
+      AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+      AND C.CODCIA            = nCodCia
+      AND C.IDPOLIZA          = P.IDPOLIZA
+      AND C.COD_MONEDA        = P.COD_MONEDA
+      AND C.IDFACTURA         = F.IDFACTURA
+      AND DC.CODCIA           = C.CODCIA
+      AND DC.IDCOMISION       = C.IDCOMISION
+      AND DC.CODCONCEPTO      = 'IVAHON'
+      AND C.IDCOMISION        = DC.IDCOMISION
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN             
+    GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST   -- JMMD SE AGREGO LA UEN   
+---------------- jmmd 20191031 se agrega movimientos de IVAHON PARA NOTAS DE CREDITO
+      UNION
+      SELECT D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
+             SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN  -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N        
+           , DETALLE_NOTAS_DE_CREDITO DN
+           , POLIZAS P           
+           , DETALLE_POLIZA           DP
+           , COMISIONES C , DETALLE_COMISION DC    
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN             
+       WHERE D.IdTransaccion      = nIdTransaccion
+         AND D.CodCia             = nCodCia
+         AND D.CodEmpresa         = nCodEmpresa
+         AND D.Correlativo        = 1
+         AND N.IdTransaccion      = D.IdTransaccion         
+         AND DN.IdNcr             = N.IdNcr 
+         AND P.CODCIA             = N.CODCIA
+         AND P.IDPOLIZA           = N.IDPOLIZA
+         AND DP.IdPoliza          = N.IdPoliza         
+         AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
+         AND DP.CodCia            = D.CodCia          
+         AND C.CODCIA             = nCodCia
+         AND C.IDPOLIZA           = P.IDPOLIZA
+         AND C.COD_MONEDA         = P.COD_MONEDA
+         AND C.IDNCR              = N.IDNCR 
+         AND DC.CODCIA            = C.CODCIA
+         AND DC.IDCOMISION        = C.IDCOMISION
+         AND DC.CODCONCEPTO       = 'IVAHON'
+         AND C.IDCOMISION         = DC.IDCOMISION   
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                       
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST   -- JMMD SE AGREGO LA UEN
+       UNION  
+      SELECT D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
+             SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN  -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N        
+           , DETALLE_NOTAS_DE_CREDITO DN
+           , POLIZAS P           
+           , DETALLE_POLIZA           DP
+           , COMISIONES C , DETALLE_COMISION DC  
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN               
+       WHERE D.IdTransaccion      = nIdTransaccion
+         AND D.CodCia             = nCodCia
+         AND D.CodEmpresa         = nCodEmpresa
+         AND D.Correlativo        = 1       
+         AND N.IdTransaccionAnu   = D.IdTransaccion    
+         AND DN.IdNcr             = N.IdNcr    
+         AND P.CODCIA             = N.CODCIA
+         AND P.IDPOLIZA           = N.IDPOLIZA                    
+         and DP.IdPoliza          = N.IdPoliza
+         AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
+         AND DP.CodCia            = D.CodCia
+         AND C.CODCIA             = nCodCia
+         AND C.IDPOLIZA           = P.IDPOLIZA
+         AND C.COD_MONEDA         = P.COD_MONEDA
+         AND C.IDNCR              = N.IDNCR 
+         AND DC.CODCIA            = C.CODCIA
+         AND DC.IDCOMISION        = C.IDCOMISION
+         AND DC.CODCONCEPTO       = 'IVAHON'
+         AND C.IDCOMISION         = DC.IDCOMISION  
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                              
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST   -- JMMD SE AGREGO LA UEN
+       UNION  
+      SELECT D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
+             SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN  -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N        
+           , DETALLE_NOTAS_DE_CREDITO DN
+           , POLIZAS                  P
+           , DETALLE_POLIZA           DP
+           , COMISIONES C , DETALLE_COMISION DC   
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                     
+       WHERE D.IdTransaccion      = nIdTransaccion
+         AND D.CodCia             = nCodCia
+         AND D.CodEmpresa         = nCodEmpresa
+         AND D.Correlativo        = 1
+         AND N.IdTransacAplic     = D.IdTransaccion  
+         AND DN.IdNcr             = N.IdNcr      
+         AND P.CODCIA             = N.CODCIA
+         AND P.IDPOLIZA           = N.IDPOLIZA                   
+         AND DP.IdPoliza          = N.IdPoliza
+         AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
+         AND DP.CodCia            = D.CodCia
+         AND C.CODCIA             = nCodCia
+         AND C.IDPOLIZA           = P.IDPOLIZA
+         AND C.COD_MONEDA         = P.COD_MONEDA
+         AND C.IDNCR              = N.IDNCR 
+         AND DC.CODCIA            = C.CODCIA
+         AND DC.IDCOMISION        = C.IDCOMISION
+         AND DC.CODCONCEPTO       = 'IVAHON'
+         AND C.IDCOMISION         = DC.IDCOMISION    
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                            
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST   -- JMMD SE AGREGO LA UEN
+       UNION  
+      SELECT D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
+             SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN  -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N
+           , DETALLE_NOTAS_DE_CREDITO DN  
+           , POLIZAS                  P
+           , DETALLE_POLIZA           DP
+           , COMISIONES C , DETALLE_COMISION DC   
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                     
+       WHERE D.IdTransaccion      = nIdTransaccion
+         AND D.CodCia             = nCodCia
+         AND D.CodEmpresa         = nCodEmpresa
+         AND D.Correlativo        = 1
+         AND N.IdTransacRevAplic  = D.IdTransaccion         
+         AND DN.IdNcr             = N.IdNcr
+         AND P.CODCIA             = N.CODCIA
+         AND P.IDPOLIZA           = N.IDPOLIZA         
+         AND DP.IdPoliza          = N.IdPoliza
+         AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
+         AND DP.CodCia            = D.CodCia        
+         AND C.CODCIA             = nCodCia
+         AND C.IDPOLIZA           = P.IDPOLIZA
+         AND C.COD_MONEDA         = P.COD_MONEDA
+         AND C.IDNCR              = N.IDNCR 
+         AND DC.CODCIA            = C.CODCIA
+         AND DC.IDCOMISION        = C.IDCOMISION
+         AND DC.CODCONCEPTO       = 'IVAHON'
+         AND C.IDCOMISION         = DC.IDCOMISION    
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                            
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL , VL.DESCVALLST   -- JMMD SE AGREGO LA UEN        
+
+---------------- jmmd 20191015 se agrega movimientos de IVAHON PARA PAGOS 
+    UNION
+    SELECT T.CodEmpresa, DP.IdTipoSeg, DC.CodConcepto CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) MtoMovCuenta,
+      SUM(DC.Monto_Mon_Extranjera) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
+    FROM POLIZAS P, DETALLE_POLIZA DP, 
+    PAGOS PA, FACTURAS F,
+    TRANSACCION T , COMISIONES C, DETALLE_COMISION DC
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN      
+    WHERE T.IDTRANSACCION     = nIdTransaccion
+      AND T.CODCIA            = nCodCia
+      AND PA.IDTRANSACCION     = T.IDTRANSACCION
+      AND F.IDFACTURA          = PA.IDFACTURA
+      AND P.IDPOLIZA          = F.IDPOLIZA
+      AND P.CODCIA            = nCodCia
+      AND DP.IDPOLIZA         = P.IDPOLIZA
+      AND DP.CODCIA           = P.CODCIA
+      AND DP.IDETPOL          = NVL(C.IDetPol,DP.IDetPol)
+      AND ((TRUNC(F.FecVenc) <= TRUNC(FechaTransaccion)
+      AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+      AND C.CODCIA            = nCodCia
+      AND C.IDPOLIZA          = P.IDPOLIZA
+      AND C.COD_MONEDA        = P.COD_MONEDA
+      AND C.IDFACTURA         = F.IDFACTURA
+      AND DC.CODCIA           = C.CODCIA
+      AND DC.IDCOMISION       = C.IDCOMISION
+      AND DC.CODCONCEPTO      = 'IVAHON'
+      AND C.IDCOMISION        = DC.IDCOMISION
+---- JMMD20200817 SE RECUPERA LA UEN         
+       AND VL.CODVALOR = DP.IdTipoSeg
+       AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+    GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS' , VL.DESCVALLST   -- JMMD SE AGREGO LA UEN   
+---------------- jmmd 20200722 se agrega movimientos de TRIVHO A PARTIR DE IVAHON PARA PAGOS 
+    UNION
+    SELECT T.CodEmpresa, DP.IdTipoSeg, 'TRIVHO' CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) * -1 MtoMovCuenta,
+      SUM(DC.Monto_Mon_Extranjera) * -1 MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
+    FROM POLIZAS P, DETALLE_POLIZA DP, 
+    PAGOS PA, FACTURAS F,
+    TRANSACCION T , COMISIONES C, DETALLE_COMISION DC
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN      
+    WHERE T.IDTRANSACCION     = nIdTransaccion
+      AND T.CODCIA            = nCodCia
+      AND PA.IDTRANSACCION     = T.IDTRANSACCION
+      AND F.IDFACTURA          = PA.IDFACTURA
+      AND P.IDPOLIZA          = F.IDPOLIZA
+      AND P.CODCIA            = nCodCia
+      AND DP.IDPOLIZA         = P.IDPOLIZA
+      AND DP.CODCIA           = P.CODCIA
+      AND DP.IDETPOL          = NVL(C.IDetPol,DP.IDetPol)
+      AND ((TRUNC(F.FecVenc) <= TRUNC(FechaTransaccion)
+      AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+      AND C.CODCIA            = nCodCia
+      AND C.IDPOLIZA          = P.IDPOLIZA
+      AND C.COD_MONEDA        = P.COD_MONEDA
+      AND C.IDFACTURA         = F.IDFACTURA
+      AND DC.CODCIA           = C.CODCIA
+      AND DC.IDCOMISION       = C.IDCOMISION
+      AND DC.CODCONCEPTO      = 'IVAHON'
+      AND C.IDCOMISION        = DC.IDCOMISION
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+    GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST   -- JMMD SE AGREGO LA UEN
+-----------------    
+       ;
 BEGIN
    --
    cCodMonedaCia  := OC_EMPRESAS.MONEDA_COMPANIA(nCodCia);
    cContabilizo   := 'N';
    FOR Z IN SUBPROC_Q LOOP
---DBMS_OUTPUT.PUT_LINE('Z.CodSubProceso -> '||Z.CodSubProceso);
---DBMS_OUTPUT.PUT_LINE('nIdTransaccion -> '||nIdTransaccion);
+   DBMS_OUTPUT.PUT_LINE('Z.CodSubProceso -> '||Z.CodSubProceso);
+   DBMS_OUTPUT.PUT_LINE('nIdTransaccion -> '||nIdTransaccion);
       BEGIN
          --
          --Opt:07082019
@@ -754,6 +1275,7 @@ BEGIN
             RAISE_APPLICATION_ERROR (-20100,'No de Transacción '||nIdTransaccion||' Posee Más de un Proceso');
       END;
       -- 
+      DBMS_OUTPUT.PUT_LINE('OC_SUB_PROCESO.GENERA_CONTABILIDAD -> ');
       IF OC_SUB_PROCESO.GENERA_CONTABILIDAD(nIdProceso, Z.CodSubProceso) = 'S' THEN
          -- Lee el Tipo de Comprobante a Crear
          IF NVL(nNumComprob,0) = 0 THEN
@@ -774,10 +1296,11 @@ BEGIN
          cDescMovGeneral := 'Contabilización de ' || cDescProceso || ' para SubProceso ' || cDescSubProceso ||
                             ' de la Transacción No. ' || TRIM(TO_CHAR(nIdTransaccion)) || ' del ' ||
                             TO_CHAR(dFechaTransaccion,'DD/MM/YYYY');
+         DBMS_OUTPUT.PUT_LINE('antes de for MOV_Q -> ');                            
          FOR W IN MOV_Q LOOP
             nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(W.CodMoneda, TRUNC(dFechaTransaccion));
             nCodEmpresa := W.CodEmpresa;
-            cIdTipoSeg  := W.IdTipoSeg;
+            cIdTipoSeg  := W.IdTipoSeg;            
             cCodCpto    := W.CodCpto;
             IF W.CodMoneda IS NOT NULL AND cCodMoneda IS NULL THEN
                cCodMoneda := W.CodMoneda;
@@ -786,7 +1309,35 @@ BEGIN
             IF W.DescripMov = 'FACTURAS CONTABILIZADAS' THEN
                OC_FACTURAS.ACTUALIZA_CONTABILIZACION(nCodCia, nIdTransaccion);
             END IF;
+            DBMS_OUTPUT.PUT_LINE('W.CODCPTO EN MOV_Q-> '||W.CODCPTO||' W.MtoComisCuenta --> '||W.MtoComisCuenta||' W.UEN --> '||W.UEN );            
+-----
+            BEGIN
+              SELECT 'S'
+                INTO cConceptoAdicional
+                FROM CONCEPTOS_ADICIONALES
+               WHERE CODCONCEPTO   = W.CODCPTO;
+            EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               cConceptoAdicional := 'N';
+             WHEN TOO_MANY_ROWS THEN
+               cConceptoAdicional := 'S';
+             WHEN OTHERS THEN
+               cConceptoAdicional := 'N';
+            END;   
+
+            DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso );            
+-----
             FOR X IN PLANT_Q LOOP
+            
+/*              IF cConceptoAdicional = 'S' THEN                       
+                 X.CodUnidadNegocio := W.UEN; ---- JMMD20200817 SE CAMBIA LA UNIDAD DE NEGOCIO DE LA PLANTILLA POR LA UEN DEL TIPO DE SEGURO
+                 DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso||' W.CODCPTO -> '||W.CODCPTO||' X.CodUnidadNegocio '||X.CodUnidadNegocio );                         
+              END IF;   */
+              IF X.NIVELCTA1 = '5' AND X.NIVELCTA2 = '3' AND X.NIVELCTA3 = '09' THEN
+                 X.CodUnidadNegocio := W.UEN;
+              END IF;      
+-----
+                     
                IF X.TipoRegistro = 'MO' THEN
                   IF X.TipoAgente IS NULL THEN
                      nMtoMovCuenta := ABS(W.MtoMovCuenta);
@@ -796,9 +1347,56 @@ BEGIN
                      nMtoMovCuenta := 0;
                   END IF;
                ELSE
+-----               
+                  DBMS_OUTPUT.PUT_LINE('en el for plant_q W.CODCPTO -> '||W.CODCPTO||' W.MtoComisCuenta --> '||W.MtoComisCuenta||' W.UEN --> '||W.UEN );               
                   IF ABS(W.MtoComisCuenta) != 0 THEN
-                     nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
+--                     DBMS_OUTPUT.PUT_LINE('W.CODCPTO -> '||W.CODCPTO||' W.MtoComisCuenta --> '||W.MtoComisCuenta||' W.UEN --> '||W.UEN );                  
+--------------------- JMMD20191015 IVAHON
+
+/*                      BEGIN
+                        SELECT 'S'
+                          INTO cConceptoAdicional
+                          FROM CONCEPTOS_ADICIONALES
+                         WHERE CODCONCEPTO   = W.CODCPTO;
+                      EXCEPTION 
+                       WHEN NO_DATA_FOUND THEN
+                         cConceptoAdicional := 'N';
+                       WHEN TOO_MANY_ROWS THEN
+                         cConceptoAdicional := 'S';
+                       WHEN OTHERS THEN
+                         cConceptoAdicional := 'N';
+                      END;   */
+--                     DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso );                      
+--                     DBMS_OUTPUT.PUT_LINE('SQLERRM -> '||SQLERRM );   
+                      IF cConceptoAdicional = 'S' THEN 
+--                         DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso||' W.CODCPTO -> '||W.CODCPTO );                      
+   --                      X.CodUnidadNegocio := W.UEN; ---- JMMD20200817 SE CAMBIA LA UNIDAD DE NEGOCIO DE LA PLANTILLA POR LA UEN DEL TIPO DE SEGURO
+     --                    DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso||' W.CODCPTO -> '||W.CODCPTO||' X.CodUnidadNegocio '||X.CodUnidadNegocio );                         
+                         IF cCodProceso = 100 THEN
+                            nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                                                         X.TipoPersona, X.TipoAgente, W.CodCpto));                                              
+                         ELSE
+                           IF cCodProceso = 200 THEN
+                              nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                                                           X.TipoPersona, X.TipoAgente, W.CodCpto));                                                                    
+                           ELSE
+                             IF cCodProceso IN( 300,310,320,330) THEN
+                                DBMS_OUTPUT.PUT_LINE('cCodProceso 300,310,320,330 -> '||cCodProceso||' W.UEN --> '||W.UEN );                             
+                                nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_PAGOS(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                                                             X.TipoPersona, X.TipoAgente, W.CodCpto)); 
+                             ELSE
+                              IF cCodProceso IN( 700,900) THEN
+                                DBMS_OUTPUT.PUT_LINE('cCodProceso 700,900 -> '||cCodProceso||' W.UEN --> '||W.UEN );                           
+                                nMtoMovCuenta := W.MtoComisCuenta;  
+                              END IF;                                                                                                                                                                                           
+                             END IF;  
+                           END IF;      
+                         END IF;                                                                                                                                                                                                                           
+                      ELSE             ------- JMMD20191015     
+                  
+                        nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                                                           X.TipoPersona, X.TipoAgente));
+                      END IF;   ---- JMMD20191015                                                                                                                                                                                                                                                                          
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
@@ -870,6 +1468,7 @@ dFecSts            COMPROBANTES_CONTABLES.FecSts%TYPE;
 cCodMoneda         COMPROBANTES_CONTABLES.CodMoneda%TYPE := NULL;
 cCodMonedaCia      EMPRESAS.Cod_Moneda%TYPE;
 nTasaCambio        TASAS_CAMBIO.Tasa_Cambio%TYPE;
+cConceptoAdicional VARCHAR2(1);
 
 CURSOR PLANT_Q IS
    SELECT NivelCta1, NivelCta2, NivelCta3, NivelCta4, NivelCta5,
@@ -893,8 +1492,11 @@ CURSOR SUBPROC_Q IS
 
 CURSOR MOV_Q IS
    SELECT D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda CodMoneda, SUM(DF.Monto_Det_Moneda) MtoMovCuenta,
-          SUM(F.MtoComisi_Moneda) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov
+          SUM(F.MtoComisi_Moneda) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN-- JMMD SE AGREGO LA UEN
      FROM DETALLE_FACTURAS DF, FACTURAS F, DETALLE_TRANSACCION D, TRANSACCION T, DETALLE_POLIZA DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN       
     WHERE DP.IdPoliza         = F.IdPoliza
       AND DP.IDetPol          = NVL(F.IDetPol,DP.IDetPol)
       AND DP.CodCia           = D.CodCia
@@ -910,11 +1512,18 @@ CURSOR MOV_Q IS
       AND D.Correlativo       = 1
       AND D.IdTransaccion     = nIdTransaccion
       AND D.CodCia            = nCodCia
-    GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, NULL
-    UNION
+---- JMMD20200817 SE RECUPERA LA UEN         
+     AND VL.CODVALOR = DP.IDTIPOSEG
+     AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                  
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST -- JMMD SE AGREGO LA UEN
+   UNION    
    SELECT D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-          SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+          SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_NOTAS_DE_CREDITO DN, DETALLE_TRANSACCION D, NOTAS_DE_CREDITO N, DETALLE_POLIZA DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN      
     WHERE DP.IdPoliza          = N.IdPoliza
       AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
       AND DP.CodCia            = D.CodCia
@@ -926,11 +1535,20 @@ CURSOR MOV_Q IS
       AND D.Correlativo        = 1
       AND D.IdTransaccion      = nIdTransaccion
       AND D.CodCia             = nCodCia
-    GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN          
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST -- JMMD SE AGREGO LA UEN      
     UNION
-   SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-          SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+   SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+--          SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+          SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_NOTAS_DE_CREDITO DN, DETALLE_TRANSACCION D, NOTAS_DE_CREDITO N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL       
     WHERE DN.IdNcr             = N.IdNcr
       AND N.IdPoliza          IS NULL
       AND (N.IdTransaccion     = D.IdTransaccion
@@ -940,23 +1558,72 @@ CURSOR MOV_Q IS
       AND D.Correlativo        = 1
       AND D.IdTransaccion      = nIdTransaccion
       AND D.CodCia             = nCodCia
-    GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL
+       AND C.IDNOMINA       = N.IDNOMINA
+       AND DC.IDCOMISION    = C.IDCOMISION
+       AND DC.CODCONCEPTO   = DN.CODCPTO
+       AND DP.IDPOLIZA = C.IDPOLIZA
+       AND DP.IDETPOL = C.IDETPOL
+       AND VL.CODVALOR = DP.IDTIPOSEG
+       AND VL.CODLISTA = 'UENXTIPSEG'         
+     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN  
+----- jmmd20200828
+   UNION
+   SELECT D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
+--          SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+          SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA)* -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
+     FROM DETALLE_NOTAS_DE_CREDITO DN, DETALLE_TRANSACCION D, NOTAS_DE_CREDITO N 
+           , COMISIONES                C
+           , DETALLE_COMISION          DC
+           , DETALLE_POLIZA            DP
+           , VALORES_DE_LISTAS         VL       
+    WHERE DN.IdNcr             = N.IdNcr
+      AND N.IdPoliza          IS NULL
+      AND (N.IdTransaccion     = D.IdTransaccion
+       OR  N.IdTransaccionAnu  = D.IdTransaccion
+       OR  N.IdTransacAplic    = D.IdTransaccion
+       OR  N.IdTransacRevAplic = D.IdTransaccion)
+      AND D.Correlativo        = 1
+      AND D.IdTransaccion      = nIdTransaccion
+      AND D.CodCia             = nCodCia
+       AND C.IDNOMINA       = N.IDNOMINA
+       AND DN.CODCPTO       = 'TRIVHO'
+       AND DC.IDCOMISION    = C.IDCOMISION
+       AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO
+       AND DP.IDPOLIZA = C.IDPOLIZA
+       AND DP.IDETPOL = C.IDETPOL
+       AND VL.CODVALOR = DP.IDTIPOSEG
+       AND VL.CODLISTA = 'UENXTIPSEG'         
+     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN  
+
+----- jmmd20200828     
     UNION
    SELECT DISTINCT CFT.CodEmpresa, CFT.IdTipoSeg, RTC.CodCptoRva, cCodMonedaCia CodMoneda,
-          SUM(RTC.MtoCptoRva) MtoMovCuenta, 0 MtoComisCuenta, RTC.DescCptoRva DescripMov
+          SUM(RTC.MtoCptoRva) MtoMovCuenta, 0 MtoComisCuenta, RTC.DescCptoRva DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM RESERVAS_TECNICAS_CONTAB RTC, RESERVAS_TECNICAS RT,
           CONFIG_RESERVAS CF, CONFIG_RESERVAS_TIPOSEG CFT
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                
     WHERE CFT.CodCia       = CF.Codcia
       AND CFT.CodReserva   = CF.CodReserva
       AND CF.CodCia        = RT.CodCia
       AND CF.CodReserva    = RT.CodReserva
       AND RTC.IdReserva    = RT.IdReserva
       AND RT.IdTransaccion = nIdTransaccion
-    GROUP BY CFT.CodEmpresa, CFT.IdTipoSeg, RTC.CodCptoRva, cCodMonedaCia, RTC.DescCptoRva
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = CFT.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                
+       GROUP BY CFT.CodEmpresa, CFT.IdTipoSeg, RTC.CodCptoRva, cCodMonedaCia, RTC.DescCptoRva, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
+---- JMMD20200820
+---- JMMD20200820
     UNION
    SELECT S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
-          SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+          SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION DT, COBERTURA_SINIESTRO C, SINIESTRO S, DETALLE_SINIESTRO D
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN         
     WHERE S.IdSiniestro        = C.IdSiniestro
       AND S.IdSiniestro        = D.IdSiniestro
       AND S.CodCia             = nCodCia
@@ -964,11 +1631,18 @@ CURSOR MOV_Q IS
       AND (C.IdTransaccion     = DT.IdTransaccion
        OR  C.IdTransaccionAnul = DT.IdTransaccion)
       AND DT.IdTransaccion     = nIdTransaccion
-    GROUP BY s.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = D.IDTIPOSEG
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+       GROUP BY s.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
     UNION
    SELECT S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
-          SUM(DA.Monto_Local) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+          SUM(DA.Monto_Local) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION DT, DETALLE_APROBACION DA, APROBACIONES A, SINIESTRO S, DETALLE_SINIESTRO D
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN         
     WHERE S.IdSiniestro    = A.IdSiniestro
       AND S.IdSiniestro    = D.IdSiniestro
       AND A.IdSiniestro    = DA.IdSiniestro
@@ -978,22 +1652,36 @@ CURSOR MOV_Q IS
       AND (A.IdTransaccion     = DT.IdTransaccion
        OR  A.IdTransaccionAnul = DT.IdTransaccion)
       AND DT.IdTransaccion = nIdTransaccion
-    GROUP BY S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+       AND VL.CODVALOR = D.IDTIPOSEG
+       AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+       GROUP BY s.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN 
     UNION
    SELECT D.CodEmpresa, TP.IdTipoSeg, 'PRIMDE' CodCpto, P.Cod_Moneda CodMoneda,
-          SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+          SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION D, PRIMAS_DEPOSITO P, TARJETAS_PREPAGO TP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN       
     WHERE TP.IdPrimaDeposito = P.IdPrimaDeposito
       AND (P.IdTransacEmit   = D.IdTransaccion
        OR P.IdTransacAplic   = D.IdTransaccion
        OR P.IdTransacAnul    = D.IdTransaccion)
       AND D.IdTransaccion    = nIdTransaccion
       AND D.CodCia           = nCodCia
-    GROUP BY D.CodEmpresa, TP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+       AND VL.CODVALOR = TP.IdTipoSeg
+       AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+       GROUP BY D.CodEmpresa, TP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
     UNION
    SELECT D.CodEmpresa, DP.IdTipoSeg, 'PRIMDE' CodCpto, P.Cod_Moneda CodMoneda,
-          SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+          SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION D, PRIMAS_DEPOSITO P, DETALLE_POLIZA DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN          
     WHERE DP.IDetPol         = P.IDetPol
       AND DP.IdPoliza        = P.IdPoliza
       AND DP.CodCia          = nCodCia
@@ -1002,11 +1690,18 @@ CURSOR MOV_Q IS
        OR P.IdTransacAnul    = D.IdTransaccion)
       AND D.IdTransaccion    = nIdTransaccion
       AND D.CodCia           = nCodCia
-    GROUP BY D.CodEmpresa, DP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN           
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
     UNION
    SELECT DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda CodMoneda,
-          SUM(PD.Monto) MtoMovCuenta, SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+          SUM(PD.Monto) MtoMovCuenta, SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION D, FACTURAS F, PAGOS P, PAGO_DETALLE PD, DETALLE_POLIZA DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN               
     WHERE F.IdFactura     = P.IdFactura
       AND PD.IdRecibo     = P.IdRecibo
       AND (P.IdTransaccion    = D.IdTransaccion
@@ -1015,11 +1710,18 @@ CURSOR MOV_Q IS
       AND D.IdTransaccion = nIdTransaccion
       AND F.IDetPol       = DP.IDetPol
       AND F.IdPoliza      = DP.IdPoliza
-    GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN           
+       GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
     UNION
    SELECT PD.CodEmpresa, PD.IdTipoSeg, DECODE(P.FormPago,'NCR','PAGNCR','PAGREC') CodCpto, P.Moneda CodMoneda,
-          SUM(P.Monto) MtoMovCuenta, 1 MtoComisCuenta, NULL DescripMov
+          SUM(P.Monto) MtoMovCuenta, 1 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION D, FACTURAS F, PAGOS P, DETALLE_POLIZA PD
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN           
     WHERE F.IdFactura     = P.IdFactura
       AND (P.IdTransaccion    = D.IdTransaccion
        OR  P.IdTransaccionAnu = D.IdTransaccion)
@@ -1027,11 +1729,18 @@ CURSOR MOV_Q IS
       AND D.IdTransaccion = nIdTransaccion
       AND F.IdetPol       = PD.IdetPol
       AND F.IdPoliza      = PD.IdPoliza
-    GROUP BY PD.CodEmpresa, PD.IdTipoSeg, DECODE(P.FormPago,'NCR','PAGNCR','PAGREC'), P.Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+       AND VL.CODVALOR = PD.IdTipoSeg
+       AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN             
+       GROUP BY PD.CodEmpresa, PD.IdTipoSeg, DECODE(P.FormPago,'NCR','PAGNCR','PAGREC'), P.Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN      
    UNION
    SELECT S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
-          SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+          SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION DT, COBERTURA_SINIESTRO_ASEG C, SINIESTRO S, DETALLE_SINIESTRO_ASEG D
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN             
     WHERE S.IdSiniestro        = C.IdSiniestro
       AND S.IdSiniestro        = D.IdSiniestro
       AND S.CodCia             = nCodCia
@@ -1039,11 +1748,18 @@ CURSOR MOV_Q IS
       AND (C.IdTransaccion     = DT.IdTransaccion
        OR  C.IdTransaccionAnul = DT.IdTransaccion)
       AND DT.IdTransaccion     = nIdTransaccion
-    GROUP BY s.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+       AND VL.CODVALOR = D.IdTipoSeg
+       AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN             
+       GROUP BY S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
     UNION
    SELECT S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
-          SUM(DA.Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov
+          SUM(DA.Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION DT, DETALLE_APROBACION_ASEG DA, APROBACION_ASEG A, SINIESTRO S, DETALLE_SINIESTRO_ASEG D
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN         
     WHERE S.IdSiniestro        = A.IdSiniestro
       AND S.IdSiniestro        = D.IdSiniestro
       AND A.IdSiniestro        = DA.IdSiniestro
@@ -1053,11 +1769,18 @@ CURSOR MOV_Q IS
       AND (A.IdTransaccion     = DT.IdTransaccion
        OR  A.IdTransaccionAnul = DT.IdTransaccion)
       AND DT.IdTransaccion     = nIdTransaccion
-    GROUP BY S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+       AND VL.CODVALOR = D.IdTipoSeg
+       AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN           
+       GROUP BY S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
     UNION
    SELECT D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda CodMoneda, SUM(DF.Monto_Det_Moneda) MtoMovCuenta,
-          SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+          SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION D, DETALLE_FACTURAS DF, FACTURAS F, FZ_DETALLE_FIANZAS  DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                   
     WHERE DP.IdPoliza      = F.IdPoliza
       AND DP.Correlativo   = NVL(F.IDetPol,DP.Correlativo)
       AND DP.CodCia        = D.CodCia
@@ -1066,11 +1789,19 @@ CURSOR MOV_Q IS
       AND D.Correlativo    = 1
       AND D.IdTransaccion  = nIdTransaccion
       AND D.CodCia         = nCodCia
-    GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, NULL
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                  
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
+      
     UNION
    SELECT CF.CodEmpresa, DP.IdTipoSeg, CF.CodCptoMov CodCpto, CF.CodMonedaPago CodMoneda, SUM(CF.MontoMovMoneda) MtoMovCuenta,
-          SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov
+          SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
      FROM DETALLE_TRANSACCION D, FAI_CONCENTRADORA_FONDO CF, FACTURAS F, DETALLE_POLIZA  DP
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN          
     WHERE DP.IdPoliza         = CF.IdPoliza
       AND DP.IDetPol          = CF.IDetPol
       AND DP.CodCia           = CF.CodCia
@@ -1089,7 +1820,261 @@ CURSOR MOV_Q IS
       AND D.Correlativo       = 1
       AND D.IdTransaccion     = nIdTransaccion
       AND D.CodCia            = nCodCia
-    GROUP BY CF.CodEmpresa, DP.IdTipoSeg, CF.CodCptoMov, CF.CodMonedaPago, NULL;
+---- JMMD20200817 SE RECUPERA LA UEN         
+       AND VL.CODVALOR = DP.IdTipoSeg
+       AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+       GROUP BY CF.CodEmpresa, DP.IdTipoSeg, CF.CodCptoMov, CF.CodMonedaPago, NULL, VL.DESCVALLST  -- JMMD SE AGREGO LA UEN
+---------------- jmmd 20191015 se agrega movimientos de IVAHON
+    UNION
+    SELECT T.CodEmpresa, DP.IdTipoSeg, DC.CodConcepto CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) MtoMovCuenta,
+          SUM(DC.Monto_Mon_Extranjera) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
+    FROM POLIZAS P, DETALLE_POLIZA DP, FACTURAS F, TRANSACCION T, COMISIONES C, DETALLE_COMISION DC
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN        
+    WHERE T.IDTRANSACCION     = nIdTransaccion
+      AND T.CODCIA            = nCodCia
+      AND F.IDTRANSACCION     = T.IDTRANSACCION
+      AND P.IDPOLIZA          = F.IDPOLIZA
+      AND P.CODCIA            = nCodCia
+      AND DP.IDPOLIZA         = P.IDPOLIZA
+      AND DP.CODCIA           = P.CODCIA
+      AND DP.IDETPOL          = NVL(C.IDetPol,DP.IDetPol)
+      AND ((TRUNC(F.FecVenc) <= TRUNC(FechaTransaccion)
+      AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+      AND C.CODCIA            = nCodCia
+      AND C.IDPOLIZA          = P.IDPOLIZA
+      AND C.COD_MONEDA        = P.COD_MONEDA
+      AND C.IDFACTURA         = F.IDFACTURA
+      AND DC.CODCIA           = C.CODCIA
+      AND DC.IDCOMISION       = C.IDCOMISION
+      AND DC.CODCONCEPTO      = 'IVAHON'
+      AND C.IDCOMISION        = DC.IDCOMISION
+---- JMMD20200817 SE RECUPERA LA UEN         
+       AND VL.CODVALOR = DP.IdTipoSeg
+       AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN             
+    GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST   -- JMMD SE AGREGO LA UEN         
+----------------   
+---------------- jmmd 20191031 se agrega movimientos de IVAHON PARA NOTAS DE CREDITO
+      UNION
+      SELECT D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
+             SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN  -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N        
+           , DETALLE_NOTAS_DE_CREDITO DN
+           , POLIZAS P           
+           , DETALLE_POLIZA           DP
+           , COMISIONES C , DETALLE_COMISION DC  
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                  
+       WHERE D.IdTransaccion      = nIdTransaccion
+         AND D.CodCia             = nCodCia
+         AND D.CodEmpresa         = nCodEmpresa
+         AND D.Correlativo        = 1
+         AND N.IdTransaccion      = D.IdTransaccion         
+         AND DN.IdNcr             = N.IdNcr 
+         AND P.CODCIA             = N.CODCIA
+         AND P.IDPOLIZA           = N.IDPOLIZA
+         AND DP.IdPoliza          = N.IdPoliza         
+         AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
+         AND DP.CodCia            = D.CodCia          
+         AND C.CODCIA             = nCodCia
+         AND C.IDPOLIZA           = P.IDPOLIZA
+         AND C.COD_MONEDA         = P.COD_MONEDA
+         AND C.IDNCR              = N.IDNCR 
+         AND DC.CODCIA            = C.CODCIA
+         AND DC.IDCOMISION        = C.IDCOMISION
+         AND DC.CODCONCEPTO       = 'IVAHON'
+         AND C.IDCOMISION         = DC.IDCOMISION  
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                       
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST   -- JMMD SE AGREGO LA UEN
+       UNION  
+      SELECT D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
+             SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN  -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N        
+           , DETALLE_NOTAS_DE_CREDITO DN
+           , POLIZAS P           
+           , DETALLE_POLIZA           DP
+           , COMISIONES C , DETALLE_COMISION DC   
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN            
+       WHERE D.IdTransaccion      = nIdTransaccion
+         AND D.CodCia             = nCodCia
+         AND D.CodEmpresa         = nCodEmpresa
+         AND D.Correlativo        = 1       
+         AND N.IdTransaccionAnu   = D.IdTransaccion    
+         AND DN.IdNcr             = N.IdNcr    
+         AND P.CODCIA             = N.CODCIA
+         AND P.IDPOLIZA           = N.IDPOLIZA                    
+         and DP.IdPoliza          = N.IdPoliza
+         AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
+         AND DP.CodCia            = D.CodCia
+         AND C.CODCIA             = nCodCia
+         AND C.IDPOLIZA           = P.IDPOLIZA
+         AND C.COD_MONEDA         = P.COD_MONEDA
+         AND C.IDNCR              = N.IDNCR 
+         AND DC.CODCIA            = C.CODCIA
+         AND DC.IDCOMISION        = C.IDCOMISION
+         AND DC.CODCONCEPTO       = 'IVAHON'
+         AND C.IDCOMISION         = DC.IDCOMISION  
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                              
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST   -- JMMD SE AGREGO LA UEN
+       UNION  
+      SELECT D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
+             SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN  -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N        
+           , DETALLE_NOTAS_DE_CREDITO DN
+           , POLIZAS                  P
+           , DETALLE_POLIZA           DP
+           , COMISIONES C , DETALLE_COMISION DC    
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                       
+       WHERE D.IdTransaccion      = nIdTransaccion
+         AND D.CodCia             = nCodCia
+         AND D.CodEmpresa         = nCodEmpresa
+         AND D.Correlativo        = 1
+         AND N.IdTransacAplic     = D.IdTransaccion  
+         AND DN.IdNcr             = N.IdNcr      
+         AND P.CODCIA             = N.CODCIA
+         AND P.IDPOLIZA           = N.IDPOLIZA                   
+         AND DP.IdPoliza          = N.IdPoliza
+         AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
+         AND DP.CodCia            = D.CodCia
+         AND C.CODCIA             = nCodCia
+         AND C.IDPOLIZA           = P.IDPOLIZA
+         AND C.COD_MONEDA         = P.COD_MONEDA
+         AND C.IDNCR              = N.IDNCR 
+         AND DC.CODCIA            = C.CODCIA
+         AND DC.IDCOMISION        = C.IDCOMISION
+         AND DC.CODCONCEPTO       = 'IVAHON'
+         AND C.IDCOMISION         = DC.IDCOMISION  
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN                            
+       GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST   -- JMMD SE AGREGO LA UEN
+       UNION  
+      SELECT D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
+             SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
+        FROM DETALLE_TRANSACCION       D
+           , NOTAS_DE_CREDITO          N
+           , DETALLE_NOTAS_DE_CREDITO DN  
+           , POLIZAS                  P
+           , DETALLE_POLIZA           DP
+           , COMISIONES C , DETALLE_COMISION DC 
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN                           
+       WHERE D.IdTransaccion      = nIdTransaccion
+         AND D.CodCia             = nCodCia
+         AND D.CodEmpresa         = nCodEmpresa
+         AND D.Correlativo        = 1
+         AND N.IdTransacRevAplic  = D.IdTransaccion         
+         AND DN.IdNcr             = N.IdNcr
+         AND P.CODCIA             = N.CODCIA
+         AND P.IDPOLIZA           = N.IDPOLIZA         
+         AND DP.IdPoliza          = N.IdPoliza
+         AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
+         AND DP.CodCia            = D.CodCia        
+         AND C.CODCIA             = nCodCia
+         AND C.IDPOLIZA           = P.IDPOLIZA
+         AND C.COD_MONEDA         = P.COD_MONEDA
+         AND C.IDNCR              = N.IDNCR 
+         AND DC.CODCIA            = C.CODCIA
+         AND DC.IDCOMISION        = C.IDCOMISION
+         AND DC.CODCONCEPTO       = 'IVAHON'
+         AND C.IDCOMISION         = DC.IDCOMISION   
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+    GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, N.CodMoneda, NULL , VL.DESCVALLST   -- JMMD SE AGREGO LA UEN   
+---------------- jmmd 20191015 se agrega movimientos de IVAHON PARA PAGOS 
+    UNION
+    SELECT T.CodEmpresa, DP.IdTipoSeg, DC.CodConcepto CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) MtoMovCuenta,
+      SUM(DC.Monto_Mon_Extranjera) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
+    FROM POLIZAS P, DETALLE_POLIZA DP, 
+    PAGOS PA, FACTURAS F,
+    TRANSACCION T , COMISIONES C, DETALLE_COMISION DC
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN      
+    WHERE T.IDTRANSACCION     = nIdTransaccion
+      AND T.CODCIA            = nCodCia
+      AND PA.IDTRANSACCION     = T.IDTRANSACCION
+      AND F.IDFACTURA          = PA.IDFACTURA
+      AND P.IDPOLIZA          = F.IDPOLIZA
+      AND P.CODCIA            = nCodCia
+      AND DP.IDPOLIZA         = P.IDPOLIZA
+      AND DP.CODCIA           = P.CODCIA
+      AND DP.IDETPOL          = NVL(C.IDetPol,DP.IDetPol)
+      AND ((TRUNC(F.FecVenc) <= TRUNC(FechaTransaccion)
+      AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+      AND C.CODCIA            = nCodCia
+      AND C.IDPOLIZA          = P.IDPOLIZA
+      AND C.COD_MONEDA        = P.COD_MONEDA
+      AND C.IDFACTURA         = F.IDFACTURA
+      AND DC.CODCIA           = C.CODCIA
+      AND DC.IDCOMISION       = C.IDCOMISION
+      AND DC.CODCONCEPTO      = 'IVAHON'
+      AND C.IDCOMISION        = DC.IDCOMISION
+---- JMMD20200817 SE RECUPERA LA UEN         
+       AND VL.CODVALOR = DP.IdTipoSeg
+       AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+    GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS' , VL.DESCVALLST   -- JMMD SE AGREGO LA UEN     
+---------------- jmmd 20200722 se agrega movimientos de TRIVHO A PARTIR DE IVAHON PARA PAGOS 
+    UNION
+    SELECT T.CodEmpresa, DP.IdTipoSeg, 'TRIVHO' CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) * -1 MtoMovCuenta,
+      SUM(DC.Monto_Mon_Extranjera) * -1 MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN -- JMMD SE AGREGO LA UEN
+    FROM POLIZAS P, DETALLE_POLIZA DP, 
+    PAGOS PA, FACTURAS F,
+    TRANSACCION T , COMISIONES C, DETALLE_COMISION DC
+---- JMMD20200817 SE RECUPERA LA UEN
+           , VALORES_DE_LISTAS         VL  
+---- JMMD20200817 SE RECUPERA LA UEN      
+    WHERE T.IDTRANSACCION     = nIdTransaccion
+      AND T.CODCIA            = nCodCia
+      AND PA.IDTRANSACCION     = T.IDTRANSACCION
+      AND F.IDFACTURA          = PA.IDFACTURA
+      AND P.IDPOLIZA          = F.IDPOLIZA
+      AND P.CODCIA            = nCodCia
+      AND DP.IDPOLIZA         = P.IDPOLIZA
+      AND DP.CODCIA           = P.CODCIA
+      AND DP.IDETPOL          = NVL(C.IDetPol,DP.IDetPol)
+      AND ((TRUNC(F.FecVenc) <= TRUNC(FechaTransaccion)
+      AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+      AND C.CODCIA            = nCodCia
+      AND C.IDPOLIZA          = P.IDPOLIZA
+      AND C.COD_MONEDA        = P.COD_MONEDA
+      AND C.IDFACTURA         = F.IDFACTURA
+      AND DC.CODCIA           = C.CODCIA
+      AND DC.IDCOMISION       = C.IDCOMISION
+      AND DC.CODCONCEPTO      = 'IVAHON'
+      AND C.IDCOMISION        = DC.IDCOMISION
+---- JMMD20200817 SE RECUPERA LA UEN         
+         AND VL.CODVALOR = DP.IdTipoSeg
+         AND VL.CODLISTA = 'UENXTIPSEG'
+---- JMMD20200817 SE RECUPERA LA UEN              
+    GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST   -- JMMD SE AGREGO LA UEN
+   
+    ;
 BEGIN
    cCodMonedaCia   := OC_EMPRESAS.MONEDA_COMPANIA(nCodCia);
    BEGIN
@@ -1152,6 +2137,7 @@ BEGIN
             nCodEmpresa    := W.CodEmpresa;
             cIdTipoSeg     := W.IdTipoSeg;
             cCodCpto       := W.CodCpto;
+            DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional||'  W.CodCpto  '||W.CodCpto|| ' cCodProceso --> '||cCodProceso );            
             IF W.CodMoneda IS NOT NULL AND cCodMoneda IS NULL THEN
                cCodMoneda     := W.CodMoneda;
             END IF;
@@ -1160,8 +2146,32 @@ BEGIN
             IF W.DescripMov = 'FACTURAS CONTABILIZADAS' THEN
                OC_FACTURAS.ACTUALIZA_CONTABILIZACION(nCodCia, nIdTransaccion);
             END IF;
+-----
+            BEGIN
+              SELECT 'S'
+                INTO cConceptoAdicional
+                FROM CONCEPTOS_ADICIONALES
+               WHERE CODCONCEPTO   = W.CODCPTO;
+            EXCEPTION 
+             WHEN NO_DATA_FOUND THEN
+               cConceptoAdicional := 'N';
+             WHEN TOO_MANY_ROWS THEN
+               cConceptoAdicional := 'S';
+             WHEN OTHERS THEN
+               cConceptoAdicional := 'N';
+            END;   
 
+            DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso );            
+-----
             FOR X IN PLANT_Q LOOP
+/*              IF cConceptoAdicional = 'S' THEN                       
+                 X.CodUnidadNegocio := W.UEN; ---- JMMD20200817 SE CAMBIA LA UNIDAD DE NEGOCIO DE LA PLANTILLA POR LA UEN DEL TIPO DE SEGURO
+                 DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso||' W.CODCPTO -> '||W.CODCPTO||' X.CodUnidadNegocio '||X.CodUnidadNegocio );                         
+              END IF; */
+              IF X.NIVELCTA1 = '5' AND X.NIVELCTA2 = '3' AND X.NIVELCTA3 = '09' THEN
+                 X.CodUnidadNegocio := W.UEN;
+              END IF;  
+              DBMS_OUTPUT.PUT_LINE('X.TipoRegistro -> '||X.TipoRegistro|| ' cCodProceso --> '||cCodProceso );                                             
                IF X.TipoRegistro = 'MO' THEN
                   IF X.TipoAgente IS NULL THEN
                      nMtoMovCuenta := ABS(W.MtoMovCuenta);
@@ -1172,8 +2182,32 @@ BEGIN
                   END IF;
                ELSE
                   IF ABS(W.MtoComisCuenta) != 0 THEN
-                     nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
+--------------------- JMMD20191015 IVAHON
+                      IF cConceptoAdicional = 'S' THEN 
+                         IF cCodProceso = 100 THEN
+                            nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                                                         X.TipoPersona, X.TipoAgente, W.CodCpto));                                              
+                         ELSE
+                           IF cCodProceso = 200 THEN
+                              nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                                                           X.TipoPersona, X.TipoAgente, W.CodCpto));                                                                    
+                           ELSE
+                             IF cCodProceso IN( 300,310,320,330) THEN
+                                DBMS_OUTPUT.PUT_LINE('cCodProceso 300,310,320,330 -> '||cCodProceso||' W.UEN --> '||W.UEN );                             
+                                nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_PAGOS(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                                                             X.TipoPersona, X.TipoAgente, W.CodCpto)); 
+                             ELSE
+                              IF cCodProceso IN( 700,900) THEN
+                                DBMS_OUTPUT.PUT_LINE('cCodProceso 700,900 -> '||cCodProceso||' W.UEN --> '||W.UEN );                           
+                                nMtoMovCuenta := W.MtoComisCuenta;  
+                              END IF;                                                                                                                                                                                           
+                             END IF;  
+                           END IF;      
+                         END IF;                                                                                                                                                                                                                           
+                      ELSE             ------- JMMD20191015     
+                        nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                                                           X.TipoPersona, X.TipoAgente));
+                      END IF;                                                                                           
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
@@ -1700,6 +2734,136 @@ BEGIN
 
    RETURN(nComision_Moneda);
 END COMISION_TIPO_PERSONA;
+------------------
+FUNCTION COMISION_TIPO_ADICIONALES(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
+                               cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2) RETURN NUMBER IS
+nComision_Moneda      COMISIONES.Comision_Moneda%TYPE;
+BEGIN
+   SELECT NVL(SUM(DC.MONTO_MON_EXTRANJERA),0)
+     INTO nComision_Moneda
+     FROM COMISIONES C, FACTURAS F, DETALLE_TRANSACCION D,
+          TRANSACCION T, DETALLE_POLIZA DP, AGENTES A,
+          PERSONA_NATURAL_JURIDICA PNJ, DETALLE_COMISION DC
+    WHERE PNJ.Tipo_Persona            = cTipoPersona
+      AND PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+      AND PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
+      AND A.CodTipo                   = cTipoAgente
+      AND A.Cod_Agente                = C.Cod_Agente
+      AND A.CodCia                    = C.CodCia
+      AND C.IdFactura                 = F.IdFactura
+      AND DC.CODCIA                   = C.CODCIA
+      AND DC.IDCOMISION               = C.IDCOMISION
+      AND DC.CODCONCEPTO              = 'IVAHON'      
+      AND DP.IdTipoSeg                = cIdTipoSeg
+      AND DP.IdPoliza                 = F.IdPoliza
+      AND DP.IDetPol                  = NVL(F.IDetPol, DP.IDetPol)
+      AND DP.CodCia                   = D.CodCia
+      AND (F.IdTransaccion            = D.IdTransaccion
+       OR (F.IdTransaccionAnu         = D.IdTransaccion
+       OR  F.IdTransacContab          = D.IdTransaccion
+      AND  F.IndContabilizada         = 'S'))
+      AND T.IdTransaccion             = D.IdTransaccion
+      AND ((TRUNC(F.FecVenc)         <= TRUNC(T.FechaTransaccion)
+      AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, D.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, D.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')
+      AND D.Correlativo               = 1
+      AND D.IdTransaccion             = nIdTransaccion
+      AND D.CodCia                    = nCodCia
+;
+
+
+   RETURN(nComision_Moneda);
+END COMISION_TIPO_ADICIONALES;
+------------------
+FUNCTION COM_TIPO_ADICIONALES_CANC(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
+                               cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2) RETURN NUMBER IS
+nComision_Moneda      COMISIONES.Comision_Moneda%TYPE;
+BEGIN
+   SELECT NVL(SUM(DC.MONTO_MON_EXTRANJERA),0)
+     INTO nComision_Moneda
+    FROM  TRANSACCION T --, 
+           ,DETALLE_TRANSACCION D
+           ,NOTAS_DE_CREDITO NC
+           , COMISIONES C   
+           , DETALLE_COMISION DC        
+           , DETALLE_POLIZA DP 
+           , AGENTES A 
+           , PERSONA_NATURAL_JURIDICA PNJ 
+    WHERE T.IdTransaccion             = nIdTransaccion
+      AND D.IdTransaccion             = T.IdTransaccion
+      AND D.CodCia                    = nCodCia 
+      AND D.Correlativo               = 1     
+      AND (NC.IdTransaccion           = D.IdTransaccion
+       OR NC.IdTransaccionAnu         = D.IdTransaccion
+       OR  NC.IdTransacaPLIC          = D.IdTransaccion)
+      AND C.IdNCR                     = NC.IDNCR   
+      AND C.IDPOLIZA                  = NC.IDPOLIZA   
+      AND DC.CODCIA                   = C.CODCIA
+      AND DC.IDCOMISION               = C.IDCOMISION
+      AND DC.CODCONCEPTO              = 'IVAHON' 
+      AND DP.IdTipoSeg                = cIdTipoSeg
+      AND DP.IdPoliza                 = NC.IdPoliza
+      AND DP.IDetPol                  = NVL(NC.IDetPol, DP.IDetPol)
+      AND DP.CodCia                   = D.CodCia    
+      AND A.CodTipo                   = cTipoAgente
+      AND A.Cod_Agente                = C.Cod_Agente
+      AND A.CodCia                    = C.CodCia                     
+      AND PNJ.Tipo_Persona            = cTipoPersona
+      AND PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+      AND PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion   
+      AND ((TRUNC(NC.FecdEVOL)         <= TRUNC(T.FechaTransaccion)
+      AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+;
+
+   DBMS_OUTPUT.PUT_LINE('En com_tipo_adicionales_canc ->  nComision_Moneda --> '||nComision_Moneda );
+   RETURN(nComision_Moneda);
+END COM_TIPO_ADICIONALES_CANC;
+------------------
+
+FUNCTION COM_TIPO_ADICIONALES_PAGOS(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
+                               cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2) RETURN NUMBER IS
+nComision_Moneda      COMISIONES.Comision_Moneda%TYPE;
+BEGIN
+      SELECT NVL(SUM(DC.MONTO_MON_EXTRANJERA),0)
+     INTO nComision_Moneda
+     FROM COMISIONES C, 
+     FACTURAS F, 
+     DETALLE_TRANSACCION D,
+          TRANSACCION T, DETALLE_POLIZA DP , AGENTES A, 
+          PAGOS PA ,
+          PERSONA_NATURAL_JURIDICA PNJ, 
+            DETALLE_COMISION DC
+    WHERE PNJ.Tipo_Persona            = cTipoPersona
+      AND PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+      AND PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion  
+      AND A.CodTipo                   = cTipoAgente
+      AND A.Cod_Agente                = C.Cod_Agente  
+      AND A.CodCia                    = C.CodCia  
+      AND C.IdFactura                 = F.IdFactura
+      AND DC.CODCIA                   = C.CODCIA
+      AND DC.IDCOMISION               = C.IDCOMISION
+      AND DC.CODCONCEPTO              = 'IVAHON'    
+      AND DP.IdTipoSeg                = cIdTipoSeg
+      AND DP.IdPoliza                 = F.IdPoliza
+      AND DP.IDetPol                  = NVL(F.IDetPol, DP.IDetPol)
+      AND DP.CodCia                   = D.CodCia 
+      AND (PA.IdTransaccion            = D.IdTransaccion
+        OR  PA.IdTransaccionAnu         = D.IdTransaccion)
+      AND  F.IDFACTURA                 = PA.IDFACTURA
+      AND  T.IdTransaccion             = D.IdTransaccion
+      AND ((TRUNC(F.FecVenc)         <= TRUNC(T.FechaTransaccion)
+     AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')
+      AND D.Correlativo               = nCodCia
+      AND D.IdTransaccion             = nIdTransaccion
+      AND D.CodCia                    = nCodCia  
+;
+
+
+   RETURN(nComision_Moneda);
+END COM_TIPO_ADICIONALES_PAGOS;
+------------------
 
 FUNCTION APLICA_CANAL_VENTA(nCodCia NUMBER, nIdTransaccion NUMBER,
                             cIdTipoSeg VARCHAR2, cCanalComisVenta VARCHAR2) RETURN VARCHAR2 IS
@@ -2283,17 +3447,4 @@ BEGIN
 END ENVIADO_SISTEMA_CONTABLE;
 
 END OC_COMPROBANTES_CONTABLES;
-/
-
---
--- OC_COMPROBANTES_CONTABLES  (Synonym) 
---
---  Dependencies: 
---   OC_COMPROBANTES_CONTABLES (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_COMPROBANTES_CONTABLES FOR SICAS_OC.OC_COMPROBANTES_CONTABLES
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_COMPROBANTES_CONTABLES TO PUBLIC
 /
