@@ -1092,7 +1092,7 @@ WHERE  C.Cod_Agente       = P_AGENTE
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
    and XT.IDNCR(+) = NC.IDNCR      
 ---------------------------------------------------------- JMMD20210115 SEAGREGA DUMMY
-UNION
+/* UNION
 SELECT --- DUMMY, 
        A.COD_AGENTE AGENTE , OC_NIVEL.DESCRIPCION_NIVEL(A.CodCia, A.CodNivel) Nivel_Agente,  
        NULL Ramo, a.codnivel CodNivel,
@@ -1137,7 +1137,7 @@ PERSONA_NATURAL_JURIDICA P, AGENTES_CEDULA_AUTORIZADA AC
  WHERE  A.COD_AGENTE = P_AGENTE
    AND p.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
    AND p.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
-   AND AC.Cod_Agente(+)         = A.Cod_Agente
+   AND AC.Cod_Agente(+)         = A.Cod_Agente  */
 
 --------------------------------------------------------- 
  ORDER BY  1,2,6 --3- --RSR 16032016----CodNivel, CodTipoPlan, IdPoliza, IdComision 
