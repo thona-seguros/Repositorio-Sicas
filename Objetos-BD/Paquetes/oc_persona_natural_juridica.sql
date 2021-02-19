@@ -1,22 +1,4 @@
---
--- OC_PERSONA_NATURAL_JURIDICA  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   VALORES_DE_LISTAS (Table)
---   CORREOS_ELECTRONICOS_PNJ (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   ASEGURADO (Table)
---   OC_CORREGIMIENTO (Package)
---   CAMBIA_ACENTOS (Function)
---   CLIENTES (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   OC_COLONIA (Package)
---   OC_PROVINCIA (Package)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.oc_persona_natural_juridica IS
+CREATE OR REPLACE PACKAGE OC_PERSONA_NATURAL_JURIDICA IS
 
   FUNCTION EXISTE_PERSONA(cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN VARCHAR2;
 
@@ -58,20 +40,15 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_persona_natural_juridica IS
 
   FUNCTION EMAIL(cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN VARCHAR2;
 
+  FUNCTION FECHA_INGRESO(cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN DATE;
+  
 END OC_PERSONA_NATURAL_JURIDICA;
 /
-
---
--- OC_PERSONA_NATURAL_JURIDICA  (Package Body) 
---
---  Dependencies: 
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_persona_natural_juridica IS
+CREATE OR REPLACE PACKAGE BODY OC_PERSONA_NATURAL_JURIDICA IS
 --
 --  MODIFICACION
 --  09/05/2016 SE COLOCO FUNCION PARA QUITAR ACENTOS Y PONER EN MAYUSCULAS  -- JICO ACENTO
---  05/18/2017 SE AGREGO LA FUNCION ES_AGENTE Y ACTIVIDAD                   -- JICO LAVADO DE DINERO
+--  28/01/2021 SE AGREGO LA FUNCION DE EXTRAE FECHA DE REGISTRO             -- JICO
 --
 
 FUNCTION EXISTE_PERSONA(cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN VARCHAR2 IS
@@ -206,8 +183,6 @@ END INSERTAR_PERSONA;            -- FINI ACENTO
 
 FUNCTION FUNC_VALIDA_EDAD(cTipo_Doc_Identificacion VARCHAR2, nNum_Doc_Identificacion VARCHAR2, nCodCia NUMBER,
                           nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2) RETURN VARCHAR2 IS
-cExiste         VARCHAR2(1);
-nDummy          NUMBER;
 nEdad           NUMBER(5);
 cValido         VARCHAR2(1);
 dFecNacimiento  DATE;
@@ -540,8 +515,8 @@ BEGIN
               ||', CP '|| TRIM(PNJ.CodPosRes)
         INTO cDireccion
         FROM PERSONA_NATURAL_JURIDICA PNJ
-       WHERE Tipo_Doc_Identificacion = PNJ.Tipo_Doc_Identificacion
-         AND Num_Doc_Identificacion  = PNJ.Num_Doc_Identificacion;
+       WHERE Tipo_Doc_Identificacion = cTipo_Doc_Identificacion
+         AND Num_Doc_Identificacion  = cNum_Doc_Identificacion;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          cDireccion  := ' NO VALIDA';
@@ -651,18 +626,27 @@ BEGIN
    RETURN(cEmail);
 END EMAIL;
 
+FUNCTION FECHA_INGRESO(cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN DATE IS
+W_FECINGRESO    PERSONA_NATURAL_JURIDICA.FECINGRESO%TYPE;
+BEGIN
+   BEGIN
+      SELECT PNJ.FECINGRESO
+        INTO W_FECINGRESO
+        FROM PERSONA_NATURAL_JURIDICA PNJ
+       WHERE Tipo_Doc_Identificacion = cTipo_Doc_Identificacion
+         AND Num_Doc_Identificacion  = cNum_Doc_Identificacion;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         W_FECINGRESO := NULL;
+      WHEN TOO_MANY_ROWS THEN
+         W_FECINGRESO := NULL;
+      WHEN OTHERS THEN
+         W_FECINGRESO := NULL;
+   END;
+   RETURN(W_FECINGRESO);
+END FECHA_INGRESO;
+--
+--
+--
 END OC_PERSONA_NATURAL_JURIDICA;
-/
-
---
--- OC_PERSONA_NATURAL_JURIDICA  (Synonym) 
---
---  Dependencies: 
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_PERSONA_NATURAL_JURIDICA FOR SICAS_OC.OC_PERSONA_NATURAL_JURIDICA
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_PERSONA_NATURAL_JURIDICA TO PUBLIC
 /
