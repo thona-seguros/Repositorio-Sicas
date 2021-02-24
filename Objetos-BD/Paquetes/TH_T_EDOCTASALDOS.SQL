@@ -1,5 +1,5 @@
 CREATE OR REPLACE PACKAGE TH_T_EDOCTASALDOS IS
----- JMMD20210223
+
 
 -- 
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
@@ -1111,27 +1111,27 @@ SELECT    ---  '07',
        ,DECODE(C.Estado, 'REC', SubTotal,0 )    POR_PAGAR,   
       
        MtoIva, MtoIvaRet, MtoIsr, MtoIsrRet, SubTotal, 
-       CASE
+/*       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN C.Comision_Moneda
-        END                                                        CASE_Comision,
-       CASE
+        END    jmmd20210223    */   C.Comision_Moneda                                             CASE_Comision,
+/*       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIva
-        END                                                        CASE_MtoIva,
-       CASE
+        END     jmmd20210223    */                MtoIva                               CASE_MtoIva,
+/*       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIvaRet
-        END                                                        CASE_MtoIvaRet,
-      CASE
+        END     jmmd20210223   */    MtoIvaRet                                            CASE_MtoIvaRet,
+/*      CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsr
-        END                                                        CASE_MtoIsr,  
-        CASE
+        END          jmmd20210223     */     MtoIsr                                    CASE_MtoIsr,  
+ /*       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsrRet
-        END                                                        CASE_MtoIsrRet,
-        CASE
+        END     jmmd20210223         */      MtoIsrRet                                      CASE_MtoIsrRet,
+/*        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')  THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  SubTotal
@@ -1139,8 +1139,8 @@ SELECT    ---  '07',
                   WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_SHOWON,  
-        CASE
+        END     jmmd20210223       */            SubTotal                               POR_PAGAR_SHOWON,  
+ /*       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  C.Comision_Moneda
@@ -1148,8 +1148,8 @@ SELECT    ---  '07',
                   WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_Comision,  
-        CASE
+        END    jmmd20210223     */         C.Comision_Moneda                                     POR_PAGAR_Comision,  
+ /*       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIva
@@ -1157,8 +1157,8 @@ SELECT    ---  '07',
                   WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_MtoIva,  
-        CASE
+        END          jmmd20210223    */       MtoIva                                  POR_PAGAR_MtoIva,  
+/*        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIvaRet
@@ -1166,8 +1166,8 @@ SELECT    ---  '07',
                   WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_MtoIvaRet,  
-        CASE
+        END     jmmd20210223        */            MtoIvaRet                              POR_PAGAR_MtoIvaRet,  
+/*        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIsr
@@ -1175,8 +1175,8 @@ SELECT    ---  '07',
                   WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_MtoIsr,          
-        CASE
+        END         jmmd20210223      */              MtoIsr                          POR_PAGAR_MtoIsr,          
+ /*       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIsrRet
@@ -1184,11 +1184,11 @@ SELECT    ---  '07',
                   WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_MtoIsrRet,         
+        END              */             MtoIsrRet                            POR_PAGAR_MtoIsrRet,         
         ----  ETSSPERIMENTO  OFF ------------------------------      
         CASE
-          WHEN F.Fecsts < P_FECDESDE THEN       0          
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
+          WHEN F.Fecsts < P_FECDESDE THEN      ---- jmmd20210223 0          
+----- jmmd20210223          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
                           (SELECT NVL(SUM(NVL(D.Monto_Det_Moneda,0)),0)
                             FROM DETALLE_FACTURAS D, CATALOGO_DE_CONCEPTOS C
                            WHERE C.CodConcepto      = D.CodCpto
@@ -1288,28 +1288,28 @@ SELECT --- '08',
        ,DECODE(N.StsNcr,'PAG', (DECODE(C.Estado, 'REC',SubTotal, 0 ))
                        ,'APL', ((DECODE(C.Estado, 'REC',SubTotal, 0 )))) POR_PAGAR,
        MtoIva, MtoIvaRet, MtoIsr, MtoIsrRet, SubTotal, 
-       CASE
+/*       CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN C.Comision_Moneda
-        END                                                       CASE_COMISION,
-       CASE
+        END   jmmd20210223   */     C.Comision_Moneda                                            CASE_COMISION,
+/*       CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIva
-        END                                                        CASE_MtoIva,
-       CASE
+        END     jmmd20210223           */            MtoIva                            CASE_MtoIva,
+/*       CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIvaRet
-        END                                                        CASE_MtoIvaRet,
-      CASE
+        END      jmmd20210223            */               MtoIvaRet                       CASE_MtoIvaRet,
+/*      CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsr
-        END                                                        CASE_MtoIsr,  
-        CASE
+        END      jmmd20210223         */         MtoIsr                                CASE_MtoIsr,  
+/*        CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsrRet
-        END                                                        CASE_MtoIsrRet,
+        END      jmmd20210223           */        MtoIsrRet                               CASE_MtoIsrRet,
         ---ETSSSPERIMENTO  FECHAS ---
-        CASE
+/*        CASE
           WHEN ( (N.Fecsts  < P_FECDESDE) OR (C.FEC_LIQUIDACION  < P_FECDESDE ))  THEN 0
           WHEN ( N.STSNCR IN ('PAG','APL') AND C.Estado = 'LIQ')   THEN 0
           WHEN ( (N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL') AND C.Estado = 'REC' )) THEN  SubTotal --OR (C.FEC_LIQUIDACION BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')))   THEN  SubTotal-----0 AEVS
@@ -1318,8 +1318,8 @@ SELECT --- '08',
                   WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_SHOWON,  
-        CASE
+        END        jmmd20210223         */      SubTotal                                POR_PAGAR_SHOWON,  
+ /*       CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN ( N.STSNCR IN ('PAG','APL') AND C.Estado = 'LIQ')   THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL') AND C.Estado = 'REC'  THEN  C.Comision_Moneda----0 AEVS
@@ -1328,8 +1328,8 @@ SELECT --- '08',
                   WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_Comision,  
-        CASE
+        END              */               C.Comision_Moneda                          POR_PAGAR_Comision,  
+/*        CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
  --         WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN MtoIva ----jmmd20190724 0 ---JMMD 20190521  MtoIva----0 AEVS
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN 0 ----- JMMD20210119   MtoIva ----jmmd20190724 0 ---JMMD 20190521  MtoIva----0 AEVS
@@ -1338,8 +1338,8 @@ SELECT --- '08',
                   WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_MtoIva,  
-        CASE
+        END           jmmd20210223             */       MtoIva                        POR_PAGAR_MtoIva,  
+/*        CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN 0 ----JMMD20190521 MtoIvaRet----0 AEVS
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIvaRet
@@ -1347,8 +1347,8 @@ SELECT --- '08',
                   WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN N.STSNCR IN ('PAG','APL') THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_MtoIvaRet,  
-        CASE
+        END      jmmd20210223         */         MtoIvaRet                               POR_PAGAR_MtoIvaRet,  
+/*        CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN 0 ----JMMD20190521 MtoIsr----0 AEVS
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIsr
@@ -1356,8 +1356,8 @@ SELECT --- '08',
                   WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_MtoIsr,          
-        CASE
+        END       jmmd20210223      */             MtoIsr                             POR_PAGAR_MtoIsr,          
+ /*       CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN ( N.STSNCR IN ('PAG','APL') AND C.Estado = 'LIQ')   THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN MtoIsrRet----0 AEVS
@@ -1366,11 +1366,11 @@ SELECT --- '08',
                   WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
                   WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
                 END  ) > P_FECHASTA THEN 0
-        END                                                       POR_PAGAR_MtoIsrRet,         
+        END                   */        MtoIsrRet                            POR_PAGAR_MtoIsrRet,         
         ----  ETSSPERIMENTO  OFF ------------------------------          
         CASE
-          WHEN N.Fecsts < P_FECDESDE THEN       0          
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
+          WHEN N.Fecsts < P_FECDESDE THEN     ---- jmmd20210223  0          
+---- jmmd20210223          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
                       (SELECT NVL(SUM(D.Monto_Det_Moneda),0)
                         FROM DETALLE_NOTAS_DE_CREDITO D, CATALOGO_DE_CONCEPTOS C
                        WHERE C.CodConcepto      = D.CodCpto
