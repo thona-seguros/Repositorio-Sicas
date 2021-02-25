@@ -1518,7 +1518,7 @@ BEGIN
                                              D.MTOISR ,D.MTOISRRET ,D.SUBTOTAL,D.CASE_COMISION ,
                                              D.CASE_MTOIVA ,D.CASE_MTOIVARET ,D.CASE_MTOISR ,D.CASE_MTOISRRET ,
                                              D.POR_PAGAR_SHOWON ,D.POR_PAGAR_COMISION ,D.POR_PAGAR_MTOIVA ,
-                                             D.POR_PAGAR_MTOIVARET ,D.POR_PAGAR_MTOISR ,D.CASE_MTOPRIMAFACTURA ,
+                                             D.POR_PAGAR_MTOIVARET ,D.POR_PAGAR_MTOISRRET ,D.CASE_MTOPRIMAFACTURA ,
                                              D.EN_CONTRA ,D.CODTIPOPLAN ,D.A_FAVOR ,D.IDCOMISION ,D.NOMBRE ,    
                                              D.DIRECRES,D.NUM_TRIBUTARIO,D.NUMCEDULA ,D.FECVENCIMIENTO ,
                                              D.TIPO_PERSONA ,D.NUM_DOC_IDENTIFICACION ,D.Porc_Com_Distribuida,
