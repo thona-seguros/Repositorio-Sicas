@@ -15,7 +15,7 @@
 --   GT_FAI_TIPOS_DE_INTERES (Package)
 --   OC_VALORES_DE_LISTAS (Package)
 --
-CREATE OR REPLACE PROCEDURE SICAS_OC.CALCULA_INTERESES_FONDOS IS
+CREATE OR REPLACE PROCEDURE CALCULA_INTERESES_FONDOS IS
 dFecCalculo        DATE := TRUNC(SYSDATE);
 nSaldoFondo        FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
 nMontoInteres      FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
@@ -26,7 +26,23 @@ nDiasPeriodicidad  NUMBER(5);
 cIntCalculados     VARCHAR2(1);
 
 CURSOR FOND_Q IS
-    SELECT CodCia, CodEmpresa, IdPoliza, IDetPol, CodAsegurado, IdFondo, TipoFondo,
+   SELECT F.CodCia, F.CodEmpresa, F.IdPoliza, F.IDetPol, F.CodAsegurado, F.IdFondo, F.TipoFondo,
+          GT_FAI_CONCENTRADORA_FONDO.SALDO_CONCENTRADORA(F.CodCia, F.CodEmpresa, F.IdPoliza, F.IDetPol, 
+                                                         F.CodAsegurado, F.IdFondo, dFecCalculo) SaldoFondo,
+          GT_FAI_TIPOS_DE_FONDOS.TIPO_INTERES(F.CodCia, F.CodEmpresa, F.TipoFondo) TipoInteres,
+          F.FecEmision
+     FROM FAI_FONDOS_DETALLE_POLIZA F, POLIZAS P
+    WHERE F.CodCia          > 0
+      AND F.CodEmpresa      > 0
+      AND F.IdPoliza        > 0
+      AND F.IDetPol         > 0
+      AND F.CodAsegurado    > 0
+      AND F.StsFondo        = 'EMITID'
+      AND F.CodCia        = P.CodCia
+      AND F.CodEmpresa    = P.CodEmpresa
+      AND F.IdPoliza      = P.IdPoliza
+      AND P.FecFinVig     >= dFecCalculo;
+    /*SELECT CodCia, CodEmpresa, IdPoliza, IDetPol, CodAsegurado, IdFondo, TipoFondo,
            GT_FAI_CONCENTRADORA_FONDO.SALDO_CONCENTRADORA(CodCia, CodEmpresa, IdPoliza, IDetPol, 
                                                           CodAsegurado, IdFondo, dFecCalculo) SaldoFondo,
            GT_FAI_TIPOS_DE_FONDOS.TIPO_INTERES(CodCia, CodEmpresa, TipoFondo) TipoInteres,
@@ -37,7 +53,7 @@ CURSOR FOND_Q IS
        AND IdPoliza        > 0
        AND IDetPol         > 0
        AND CodAsegurado    > 0
-       AND StsFondo        = 'EMITID';
+       AND StsFondo        = 'EMITID';*/
 BEGIN
    FOR W IN FOND_Q LOOP
       BEGIN
