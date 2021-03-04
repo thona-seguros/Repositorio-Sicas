@@ -56,13 +56,16 @@ BEGIN
 
    FOR D IN C_DET_DOMI_REFE LOOP
       BEGIN
-         SELECT DISTINCT P.IdPoliza,P.CodEmpresa, F.IDetPol,F.NumCuota
-           INTO nIdPoliza,nCodEmpresa,nIDetPol,nNumCuota
-           FROM FACTURAS F,POLIZAS P
-          WHERE F.CodCia     = nCodCia
-            AND IdFactura    = D.NumRefContrato
-            AND F.CodCia     = P.CodCia
-            AND F.IdPoliza   = P.IdPoliza;
+         SELECT DISTINCT P.IdPoliza,P.CodEmpresa, F.IDetPol,F.NumCuota, D.IdTipoSeg
+           INTO nIdPoliza,nCodEmpresa,nIDetPol,nNumCuota, cIdTipoSeg
+           FROM FACTURAS F, POLIZAS P, DETALLE_POLIZA D
+          WHERE F.CodCia      = nCodCia
+            AND IdFactura     = D.NumRefContrato
+            AND F.CodCia      = P.CodCia
+            AND F.IdPoliza    = P.IdPoliza
+            AND F.CodCia      = D.CodCia
+            AND F.IdPoliza    = D.IdPoliza
+            AND F.IDetPol     = D.IDetPol;
       EXCEPTION 
          WHEN NO_DATA_FOUND THEN
             RAISE_APPLICATION_ERROR(-20225,'Error al Obtener Poliza de Factura '|| D.NumRefContrato);
