@@ -249,7 +249,7 @@ BEGIN
       cTitular_Cuenta := NULL;
       nCodEmpresa     := D.CodEmpresa;
       IF cTipo_Configuracion = 'D' AND D.CodFormaCobro IS NULL OR 
-         D.NumTarjeta IS NULL OR D.FechaVencTarjeta IS NULL THEN
+         (D.NumTarjeta IS NULL OR D.FechaVencTarjeta IS NULL) THEN
          cIndFaltaDatos := 'S';
       ELSIF cTipo_Configuracion = 'T' AND D.CodFormaCobro = 'DOMI' AND 
          D.NumTarjeta IS NULL OR D.FechaVencTarjeta IS NULL THEN
