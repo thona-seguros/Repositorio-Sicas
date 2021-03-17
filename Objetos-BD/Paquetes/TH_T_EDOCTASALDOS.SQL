@@ -230,9 +230,10 @@ SELECT   ---   '01',  NUEVA
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND DP.IdPoliza          = ADC.IdPoliza
-   AND DP.IdetPol           = ADC.IdetPol 
-   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.CodCia(+)             = C.CodCia          
+   AND ADC.IdPoliza(+)           = C.IdPoliza   
+   AND ADC.IdetPol (+)           = C.IdetPol           
+   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
    AND C.COD_MONEDA = P_MONEDA
 /*   and adc.porc_com_proporcional = (select max(adc1.porc_com_proporcional)
                                       from AGENTES_DISTRIBUCION_COMISION adc1
@@ -428,10 +429,10 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND DP.IdPoliza          = ADC.IdPoliza
-   AND DP.IdetPol           = ADC.IdetPol 
-   AND DP.CODCIA            = ADC.CODCIA
-   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.CodCia(+)             = C.CodCia          
+   AND ADC.IdPoliza(+)           = C.IdPoliza   
+   AND ADC.IdetPol (+)           = C.IdetPol           
+   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
   and XT.IDNCR(+) = NC.IDNCR     
@@ -604,10 +605,10 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND DP.IdPoliza          = ADC.IdPoliza
-   AND DP.IdetPol           = ADC.IdetPol 
-   AND DP.CODCIA            = ADC.CODCIA
-   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.CodCia(+)             = C.CodCia          
+   AND ADC.IdPoliza(+)           = C.IdPoliza   
+   AND ADC.IdetPol (+)           = C.IdetPol           
+   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
   AND NC.FECSTS  BETWEEN P_FECDESDE AND P_FECHASTA   ----  AEVS  Limita la busqueda a  notas de credito   
@@ -785,10 +786,10 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND DP.IdPoliza          = ADC.IdPoliza
-   AND DP.IdetPol           = ADC.IdetPol 
-   AND DP.CODCIA            = ADC.CODCIA
-   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.CodCia(+)             = C.CodCia          
+   AND ADC.IdPoliza(+)           = C.IdPoliza   
+   AND ADC.IdetPol (+)           = C.IdetPol           
+   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
   and XT.IDNCR(+) = NC.IDNCR     
@@ -969,10 +970,10 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente            = AC.Cod_Agente(+)
    AND C.Cod_Agente            = A.Cod_Agente
-   AND DP.IdPoliza             =  ADC.IdPoliza
-   AND DP.IdetPol              = ADC.IdetPol 
-   AND DP.CODCIA               = ADC.CODCIA
-   AND ADC.COD_AGENTE_DISTR    = C.Cod_Agente 
+   AND ADC.CodCia(+)             = C.CodCia          
+   AND ADC.IdPoliza(+)           = C.IdPoliza   
+   AND ADC.IdetPol (+)           = C.IdetPol           
+   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
    and XT.IDNCR(+)             = N.IDNCR
    ------------->>>>>>>>>>>
 UNION 
@@ -1085,9 +1086,10 @@ WHERE  C.Cod_Agente       = P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND DP.IdPoliza          = ADC.IdPoliza
-   AND DP.IdetPol           = ADC.IdetPol 
-   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.CodCia(+)             = C.CodCia          
+   AND ADC.IdPoliza(+)           = C.IdPoliza   
+   AND ADC.IdetPol (+)           = C.IdetPol           
+   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
    AND DP.CODCIA            = ADC.CODCIA
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
    and XT.IDNCR(+) = NC.IDNCR      
@@ -1262,10 +1264,10 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND DP.IdPoliza          = ADC.IdPoliza
-   AND DP.IdetPol           = ADC.IdetPol 
-   AND DP.CODCIA            = ADC.CODCIA
-   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.CodCia(+)             = C.CodCia          
+   AND ADC.IdPoliza(+)           = C.IdPoliza   
+   AND ADC.IdetPol (+)           = C.IdetPol           
+   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
 --  AND NC.FECSTS  BETWEEN P_FECDESDE AND P_FECHASTA   ----  AEVS  Limita la busqueda a  notas de credito   
@@ -1448,10 +1450,10 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente            = AC.Cod_Agente(+)
    AND C.Cod_Agente            = A.Cod_Agente
-   AND DP.IdPoliza             =  ADC.IdPoliza
-   AND DP.IdetPol              = ADC.IdetPol 
-   AND DP.CODCIA               = ADC.CODCIA
-   AND ADC.COD_AGENTE_DISTR    = C.Cod_Agente 
+   AND ADC.CodCia(+)             = C.CodCia          
+   AND ADC.IdPoliza(+)           = C.IdPoliza   
+   AND ADC.IdetPol (+)           = C.IdetPol           
+   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
    and XT.IDNCR(+)             = N.IDNCR
 ------------->>>>>>>>>>>
 ---------------------------------------------------------- JMMD20210115 SEAGREGA DUMMY
