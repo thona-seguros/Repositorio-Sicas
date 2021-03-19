@@ -520,7 +520,7 @@ BEGIN
            --
            CCALCULADO,
            CCADENA_FINAL   
-      FROM POLIZAS P
+      FROM POLIZAS P 
      WHERE IdPoliza = nIdPolizaRen
        AND CodCia   = nCodCia;
   EXCEPTION
@@ -634,9 +634,9 @@ BEGIN
          --
          P.INDFACTELECTRONICA,      P.INDCALCDERECHOEMIS,       P.CODDIRECREGIONAL,
          P.NUMFOLIOPORTAL,          '',                         '',
-         '',                        '',                         '',
-         '',                        '',                         '',
-         '',                         '',                         '',
+         '',                        P.PORCDESCUENTO,            P.PORCGTOADMIN,
+         P.PORCGTOADQUI,            P.PORCUTILIDAD,             P.FACTORAJUSTE,
+         P.FACTFORMULADEDUC,        P.CODRIESGOREA,             P.CODTIPOBONO,
          --
          '',                        '',                         '',
          '',                        '',                         '',

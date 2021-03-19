@@ -399,7 +399,7 @@ BEGIN
          nMontoOrigen    := NVL(nMontoMovMoneda,0);
       END IF;
    ELSE
-      nMontoOrigen    := 0;
+      nMontoOrigen    := NVL(nMontoMovMoneda,0);
    END IF;
    IF OC_CATALOGO_DE_CONCEPTOS.SIGNO_CONCEPTO(nCodCia, cCodCptoMov) = '-' AND nMontoMovMoneda > 0 AND
       GT_FAI_MOVIMIENTOS_FONDOS.TIPO_MOVIMIENTO(nCodCia, nCodEmpresa, cTipoFondo, cCodCptoMov) != 'RV' THEN
@@ -2877,6 +2877,19 @@ BEGIN
                                                          nCodAseguradoOrig, nIdFondoOrig, nIdTransaccion);
 
       OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccion, 'C');
+      
+      IF cOrigenTraspaso = 'RENOVACION' THEN
+         UPDATE FAI_CONCENTRADORA_FONDO
+            SET MontoMovLocal    = nMontoMovLocal * -1, 
+                MontoMovMoneda   = nMontoMovMoneda * -1
+          WHERE CodCia        = nCodCia
+            AND CodEmpresa    = nCodEmpresa
+            AND IdPoliza      = nIdPolizaOrig
+            AND IDetPol       = nIDetPolOrig
+            AND CodAsegurado  = nCodAseguradoOrig
+            AND IdFondo       = nIdFondoOrig
+            AND IdTransaccion = nIdTransaccion;
+      END IF;
    END IF;
 
    -- Inserta Movimiento a Fondo Destino

@@ -1645,7 +1645,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR( -20200, 'NO Existe Póliza No. ' || nIdPolizaOrig);
    END;
-   IF cStsPoliza = 'XRE' THEN
+   IF cStsPoliza IN ('XRE','SOL') THEN
       FOR W IN FONDOS_Q LOOP
          nIdFondoOrig    := W.IdFondo;
          nSaldoFondo     := GT_FAI_CONCENTRADORA_FONDO.SALDO_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPolizaOrig, nIDetPolOrig,
