@@ -1,31 +1,4 @@
---
--- OC_COMISIONES  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   NIVEL (Table)
---   NIVEL_PLAN_COBERTURA (Table)
---   NOTAS_DE_CREDITO (Table)
---   SQ_IDCOMISION (Sequence)
---   POLIZAS (Table)
---   DETALLE_COMISION (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   AGENTES (Table)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   AGENTES_DISTRIBUCION_POLIZA (Table)
---   AGENTE_POLIZA (Table)
---   OC_DETALLE_COMISION (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   COMISIONES (Table)
---   DETALLE_POLIZA (Table)
---   FACTURAS (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_COMISIONES IS
+create or replace PACKAGE          OC_COMISIONES IS
   
   PROCEDURE DISTRIBUCION(nCodCia NUMBER, nIdPoliza NUMBER,cCod_Agente VARCHAR2, nPorcApl NUMBER);
   PROCEDURE PAGA_ABONA_COMISION(nIdFactura NUMBER, cReciboPago VARCHAR2, dFecSts DATE, 
@@ -39,18 +12,12 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_COMISIONES IS
   PROCEDURE REVERSA_DEVOLUCION(nCodCia NUMBER, nIdNcr NUMBER);
   PROCEDURE PAGA_ABONA_COMISION_NC(nIdNcr NUMBER, cReciboPago VARCHAR2, dFecSts DATE, 
                                    nPorcApl NUMBER, cIndPago VARCHAR2);
-  FUNCTION  MONTO_COMISION(nCodCia NUMBER, nIdPoliza NUMBER, nCodNivel NUMBER, nCodAgente NUMBER, nIdFactura NUMBER DEFAULT NULL, nIdNcr NUMBER DEFAULT NULL) RETURN NUMBER;                                   
+  FUNCTION  MONTO_COMISION(nCodCia NUMBER, nIdPoliza NUMBER, nCodNivel NUMBER, nCodAgente NUMBER, nIdFactura NUMBER DEFAULT NULL, nIdNcr NUMBER DEFAULT NULL) RETURN NUMBER;      
+  PROCEDURE DISTRIBUCION_WEB(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER,cCod_Agente VARCHAR2, nPorcApl NUMBER, nIdCotizacion NUMBER);
 
 END OC_COMISIONES;
 /
-
---
--- OC_COMISIONES  (Package Body) 
---
---  Dependencies: 
---   OC_COMISIONES (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_comisiones IS
+create or replace PACKAGE BODY          oc_comisiones IS
 --
 -- MODIFICACION JICO  20160310  AJUSTE A COMISION POR ERROR AL 100 %   AJUS100
 --
@@ -72,7 +39,7 @@ nComisionTotalPlan  AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
 nSumaComTotAge      AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
 nSumaComTotAge1     AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
 nProporcional       NUMBER(5,2);
-vCountPoliza        NUMBER(2);
+nCountPoliza        NUMBER(2);
 nComPoliza          AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
 cOrigen             AGENTES_DETALLES_POLIZAS.Origen%TYPE;
 nPorc_Comision      AGENTE_POLIZA.Porc_Comision%TYPE;
@@ -83,11 +50,11 @@ BEGIN
    eDist_Realizada EXCEPTION;
    BEGIN
       SELECT COUNT(*)
-        INTO vCountPoliza
+        INTO nCountPoliza
         FROM AGENTES_DISTRIBUCION_POLIZA
        WHERE CodCia   = nCodCia
          AND IdPoliza = nIdPoliza;
-      IF vCountPoliza > 0 THEN
+      IF nCountPoliza > 0 THEN
          RAISE eDist_Realizada;
       END IF;
    EXCEPTION
@@ -567,18 +534,214 @@ BEGIN
     RETURN nMontoComisionMoneda;
 END MONTO_COMISION;
 
+PROCEDURE DISTRIBUCION_WEB(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER,cCod_Agente VARCHAR2, nPorcApl NUMBER, nIdCotizacion NUMBER) IS 
+nDummy              NUMBER;
+cTipo_Agente        AGENTES.Tipo_Agente%TYPE;
+cJefe               VARCHAR2(1);
+nJefe               AGENTES.COD_AGENTE_JEFE%TYPE;
+nnJefe              AGENTES.COD_AGENTE_JEFE%TYPE;
+nAgente             AGENTES.COD_AGENTE_JEFE%TYPE;
+nNivel              NIVEL.CodNivel%TYPE;
+nSaldo              AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
+nComAgenteNivel     AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
+nComAgenteNivel1    AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
+nCodAgente          AGENTES.COD_AGENTE_JEFE%TYPE;
+cPlanCob            NIVEL_PLAN_COBERTURA.PLANCOB%TYPE;
+cIdTipoSeg          DETALLE_POLIZA.IdTipoSeg%TYPE;
+nComisionTotalPlan  AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
+nSumaComTotAge      AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
+nSumaComTotAge1     AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
+nProporcional       NUMBER(5,2);
+nCountPoliza        NUMBER(2);
+nComPoliza          AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE;
+cOrigen             AGENTES_DETALLES_POLIZAS.Origen%TYPE;
+nPorc_Comision      AGENTE_POLIZA.Porc_Comision%TYPE;
+WPORC_COM_PROPORCIONAL   AGENTES_DISTRIBUCION_POLIZA.PORC_COM_PROPORCIONAL%TYPE;    --AJUS100
+
+nPorcComisNivel1     COTIZACIONES.PorcComisDir%TYPE;
+nPorcComisNivel2     COTIZACIONES.PorcComisProm%TYPE;       
+nPorcComisNivel3     COTIZACIONES.PorcComisAgte%TYPE;
+--
+BEGIN
+   BEGIN
+      SELECT COUNT(*)
+        INTO nCountPoliza
+        FROM AGENTES_DISTRIBUCION_POLIZA
+       WHERE CodCia   = nCodCia
+         AND IdPoliza = nIdPoliza;
+      
+      IF nCountPoliza > 0 THEN
+         RAISE_APPLICATION_ERROR (-20100,'Distribución Realizada con anterioridad, debera elimiar la distribución actual para generar una nueva!'|| SQLERRM);
+      END IF;
+   END;
+
+   BEGIN
+      SELECT Origen, Porc_Comision
+        INTO cOrigen, nPorc_Comision
+        FROM AGENTE_POLIZA
+       WHERE IdPoliza   = nIdPoliza
+         AND Cod_Agente = cCod_Agente
+         AND CodCia     = nCodCia;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR (-20100,'NO Existe el Origen del Agente Póliza '|| SQLERRM);
+   END;
+
+   BEGIN
+      SELECT DISTINCT(DECODE(cOrigen,'H',PorcComisH, PorcComis))
+        INTO nComPoliza
+        FROM DETALLE_POLIZA
+       WHERE CodCia     = nCodCia
+         AND CodEmpresa = nCodEmpresa
+         AND IdPoliza   = nIdPoliza;
+      
+      IF  nComPoliza IS NULL THEN
+         RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la Póliza...!!!'|| SQLERRM);
+      END IF;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la Póliza...!!!'|| SQLERRM); 
+   END;
+
+   BEGIN
+      SELECT PlanCob, IdTipoSeg
+        INTO cPlanCob, cIdTipoSeg
+        FROM COTIZACIONES
+       WHERE CodCia        = nCodCia
+         AND CodEmpresa = nCodEmpresa
+         AND IdCotizacion  = nIdCotizacion;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR (-20100,'No se puede obtener el Tipo De Seguro y Plan de COberturas de la Cotizacion '|| nIdCotizacion);
+   END;
+
+   BEGIN    
+      SELECT CodNivel
+        INTO nNivel
+        FROM AGENTES
+       WHERE CodCia     = nCodCia
+         AND CodEmpresa = nCodEmpresa
+         AND Cod_Agente = cCod_Agente;
+   EXCEPTION 
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR (-20100,'Agente '||cCod_Agente||' NO válido, por favor valide');
+   END;
+
+   BEGIN
+      SELECT 'S', AG.Cod_Agente, AG.Cod_Agente_Jefe JEFE, NPC.CodNivel, NPC.ComAgeNivel, NPC.PlanCob
+        INTO cJefe,nCodagente, nJefe, nNivel, nComAgenteNivel, cPlanCob
+        FROM AGENTES AG, AGENTES JF,  NIVEL_PLAN_COBERTURA NPC
+       WHERE AG.Cod_Agente = JF.Cod_Agente
+         AND AG.CodNivel   = NPC.CodNivel
+         AND AG.Cod_Agente = cCod_Agente
+         AND NPC.Origen    = cOrigen
+         AND NPC.IdTipoSeg = cIdTipoSeg
+         AND NPC.PlanCob   = cPlanCob;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inválido favor revisar Configuración'|| SQLERRM);
+   END;
+   
+   SELECT C.PorcComisDir, C.PorcComisProm, C.PorcComisAgte                                                       
+     INTO nPorcComisNivel1, nPorcComisNivel2, nPorcComisNivel3
+     FROM COTIZACIONES C
+    WHERE C.CodCia          =   nCodCia
+      AND C.CodEmpresa      =   nCodEmpresa
+      AND C.IdCotizacion    =   nIdCotizacion;
+   
+   BEGIN
+      SELECT NVL(SUM(ComAgeNivel),0)
+        INTO nComisionTotalPlan
+        FROM NIVEL_PLAN_COBERTURA
+       WHERE CodCia     = nCodCia
+         AND CodEmpresa = nCodEmpresa
+         AND PlanCob    = cPlanCob
+         AND IdTipoSeg  = cIdTipoSeg
+         AND Origen     = cOrigen;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         nComisionTotalPlan := 0;
+   END;
+   --
+   --WPORC_COM_PROPORCIONAL := 0;      --AJUS100
+   --
+   IF NVL(nComPoliza,0) != 0 THEN
+      IF cOrigen != 'H' THEN
+         nProporcional := TRUNC(ROUND((nPorcComisNivel3*100)/nComPoliza,2),2);
+      ELSIF cOrigen = 'H' THEN
+         nProporcional := TRUNC(ROUND((nPorc_Comision*100)/nComPoliza,2),2);
+      END IF;
+   ELSE
+      nProporcional := 100;
+   END IF;
+
+   INSERT INTO AGENTES_DISTRIBUCION_POLIZA
+          (CodCia, IdPoliza, Cod_Agente, CodNivel,
+           Cod_Agente_Distr, Porc_Comision_Agente, Porc_Com_Distribuida, Porc_Comision_Plan,
+           Porc_Com_Proporcional, Cod_Agente_Jefe, Porc_Com_Poliza, Origen)
+   VALUES (nCodCia, nIdPoliza, cCod_Agente, nNivel,
+           nCodAgente, nPorcApl, nComAgenteNivel, nComisionTotalPlan,
+           nProporcional, nJefe, nComPoliza, cOrigen);
+   --
+   --WPORC_COM_PROPORCIONAL := nProporcional;    -- AJUS100
+   --
+   WHILE cJefe = 'S' LOOP
+      BEGIN
+         SELECT AG.Cod_Agente, AG.Cod_Agente_Jefe JEFE, NPC.CodNivel, NPC.ComAgeNivel
+           INTO nCodAgente, nnJefe,  nNivel, nComAgenteNivel
+           FROM AGENTES AG, AGENTES JF,  NIVEL_PLAN_COBERTURA NPC
+          WHERE AG.Cod_Agente = JF.Cod_Agente
+            AND AG.CodNivel   = NPC.CodNivel
+            AND AG.Cod_Agente = nJefe
+            AND NPC.Origen    = cOrigen
+            AND NPC.IdTipoSeg = cIdTipoSeg
+            AND NPC.PlanCob   = cPlanCob;
+      EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+            cJefe           := 'N';
+            nComAgenteNivel := 0;
+            nJefe           := NULL;
+      END;
+
+      IF NVL(nComPoliza,0) != 0 THEN
+         IF nNivel = 2 THEN
+            nProporcional := TRUNC(ROUND((nPorcComisNivel2*100)/nComPoliza,2),2); ---nPorcComisNivel2*100/nComPoliza;
+         ELSIF nNivel = 1 THEN
+            nProporcional := TRUNC(ROUND((nPorcComisNivel1*100)/nComPoliza,2),2); ---nPorcComisNivel2*100/nComPoliza;
+         END IF;
+      ELSE
+         nProporcional := 0;
+      END IF;
+
+      IF nJefe IS NULL THEN
+         EXIT;
+      END IF;
+      -- AJUS100 I
+     /* WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL + nProporcional; 
+      --
+      IF (WPORC_COM_PROPORCIONAL > 100 AND WPORC_COM_PROPORCIONAL <= 100.01) THEN
+         DBMS_OUTPUT.PUT_LINE('AJUSTADO -> '||WPORC_COM_PROPORCIONAL);
+         WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL - 100;
+         nProporcional := nProporcional - WPORC_COM_PROPORCIONAL;
+      ELSIF
+         (WPORC_COM_PROPORCIONAL < 100 AND WPORC_COM_PROPORCIONAL >= 99.99)  THEN
+         DBMS_OUTPUT.PUT_LINE('AJUSTADO -> '||WPORC_COM_PROPORCIONAL);
+         WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL - 100;
+         nProporcional := nProporcional + WPORC_COM_PROPORCIONAL;
+      END IF;*/
+      -- AJUS100 F
+      INSERT INTO AGENTES_DISTRIBUCION_POLIZA
+             (codcia, idpoliza, cod_agente, codnivel,
+              cod_agente_distr, porc_comision_agente, porc_com_distribuida, porc_comision_plan,
+              porc_com_proporcional, cod_agente_jefe, porc_com_poliza, Origen)
+      VALUES (nCodCia,nIdPoliza,cCod_Agente,nNivel,
+              nJefe,nPorcApl,nComAgenteNivel,nComisionTotalPlan,
+              ROUND(nProporcional,5),nnJefe,nComPoliza, cOrigen);
+      nJefe := nnJefe;
+   END LOOP;
+EXCEPTION
+   WHEN OTHERS THEN
+      RAISE_APPLICATION_ERROR (-20100,'Error en Distribución de Comisiones de Póliza '|| ' ' || SQLERRM);
+END DISTRIBUCION_WEB;
+
 END OC_COMISIONES;
-/
-
---
--- OC_COMISIONES  (Synonym) 
---
---  Dependencies: 
---   OC_COMISIONES (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_COMISIONES FOR SICAS_OC.OC_COMISIONES
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_COMISIONES TO PUBLIC
-/

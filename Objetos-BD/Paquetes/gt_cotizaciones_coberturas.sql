@@ -1,37 +1,4 @@
---
--- GT_COTIZACIONES_COBERTURAS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   GT_TARIFA_CONTROL_VIGENCIAS (Package)
---   GT_COTIZACIONES_ASEG (Package)
---   GT_COTIZACIONES_CENSO_ASEG (Package)
---   GT_COTIZACIONES_DETALLE (Package)
---   GT_COTIZADOR_CONFIG (Package)
---   CONFIG_PLANTILLAS_PLANCOB (Table)
---   COTIZACIONES (Table)
---   COTIZACIONES_COBERTURAS (Table)
---   COTIZACIONES_COBERT_ASEG (Table)
---   COTIZACIONES_DETALLE (Table)
---   OC_TARIFA_DINAMICA (Package)
---   OC_TARIFA_SEXO_EDAD_RIESGO (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
---   ACTIVIDADES_ECONOMICAS (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   TARIFA_CONTROL_VIGENCIAS (Table)
---   TARIFA_SEXO_EDAD_RIESGO (Table)
---   TASAS_CAMBIO (Table)
---   OC_GENERALES (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   DETALLE_POLIZA (Table)
---   TIPOS_DE_SEGUROS (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES_COBERTURAS IS
+create or replace PACKAGE          GT_COTIZACIONES_COBERTURAS IS
 
   FUNCTION EXISTEN_COBERTURAS_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER) RETURN VARCHAR2;
   PROCEDURE RECOTIZACION_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIdRecotizacion NUMBER);
@@ -49,14 +16,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES_COBERTURAS IS
 
 END GT_COTIZACIONES_COBERTURAS;
 /
-
---
--- GT_COTIZACIONES_COBERTURAS  (Package Body) 
---
---  Dependencies: 
---   GT_COTIZACIONES_COBERTURAS (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_COTIZACIONES_COBERTURAS IS
+create or replace PACKAGE BODY          GT_COTIZACIONES_COBERTURAS IS
 
 FUNCTION EXISTEN_COBERTURAS_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER) RETURN VARCHAR2 IS
 cExisteCob      VARCHAR2(1);
@@ -494,12 +454,17 @@ BEGIN
             nSumaAsegLocal  := NVL(nSumaAsegMoneda,0) * nTasaCambio;
          END IF;
 
-         IF NVL(X.MontoDeducible,0) != 0 THEN
-            nDeducibleCobMoneda := NVL(X.MontoDeducible,0);
-            nDeducibleCobLocal  := NVL(X.MontoDeducible,0) * nTasaCambio;
+         IF nMontoDeducible != 0 THEN
+            nDeducibleCobMoneda := nMontoDeducible;
+            nDeducibleCobLocal  := NVL(nMontoDeducible,0) * nTasaCambio;
          ELSE
-            nDeducibleCobMoneda := NVL(nSumaAsegMoneda,0) * NVL(X.PorcenDeducible,0) / 100;
-            nDeducibleCobLocal  := NVL(nDeducibleCobMoneda,0) * nTasaCambio;
+            IF NVL(X.MontoDeducible,0) != 0 THEN
+               nDeducibleCobMoneda := NVL(X.MontoDeducible,0);
+               nDeducibleCobLocal  := NVL(X.MontoDeducible,0) * nTasaCambio;
+            ELSE
+               nDeducibleCobMoneda := NVL(nSumaAsegMoneda,0) * NVL(X.PorcenDeducible,0) / 100;
+               nDeducibleCobLocal  := NVL(nDeducibleCobMoneda,0) * nTasaCambio;
+            END IF;
          END IF;
 
          IF NVL(nSumaAsegMoneda,0) != 0 AND NVL(nValorMoneda,0) != 0 THEN
@@ -736,17 +701,3 @@ EXCEPTION
 END CREAR_COBERTURAS;
 
 END GT_COTIZACIONES_COBERTURAS;
-/
-
---
--- GT_COTIZACIONES_COBERTURAS  (Synonym) 
---
---  Dependencies: 
---   GT_COTIZACIONES_COBERTURAS (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM GT_COTIZACIONES_COBERTURAS FOR SICAS_OC.GT_COTIZACIONES_COBERTURAS
-/
-
-
-GRANT EXECUTE ON SICAS_OC.GT_COTIZACIONES_COBERTURAS TO PUBLIC
-/

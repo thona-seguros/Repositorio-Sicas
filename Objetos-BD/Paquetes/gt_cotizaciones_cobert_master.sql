@@ -1,33 +1,4 @@
---
--- GT_COTIZACIONES_COBERT_MASTER  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   GT_TARIFA_CONTROL_VIGENCIAS (Package)
---   GT_COTIZADOR_CONFIG (Package)
---   CONFIG_PLANTILLAS_PLANCOB (Table)
---   COTIZACIONES (Table)
---   COTIZACIONES_COBERTURAS (Table)
---   COTIZACIONES_COBERT_MASTER (Table)
---   COTIZACIONES_DETALLE (Table)
---   OC_TARIFA_DINAMICA (Package)
---   OC_TARIFA_SEXO_EDAD_RIESGO (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
---   ACTIVIDADES_ECONOMICAS (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERT_ACT (Table)
---   TARIFA_CONTROL_VIGENCIAS (Table)
---   TASAS_CAMBIO (Table)
---   OC_GENERALES (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   DETALLE_POLIZA (Table)
---   TIPOS_DE_SEGUROS (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES_COBERT_MASTER IS
+create or replace PACKAGE          GT_COTIZACIONES_COBERT_MASTER IS
 
   FUNCTION EXISTEN_COBERTURAS_MASTER(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER) RETURN VARCHAR2;
   PROCEDURE CARGAR_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
@@ -46,14 +17,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES_COBERT_MASTER IS
 
 END GT_COTIZACIONES_COBERT_MASTER;
 /
-
---
--- GT_COTIZACIONES_COBERT_MASTER  (Package Body) 
---
---  Dependencies: 
---   GT_COTIZACIONES_COBERT_MASTER (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_COTIZACIONES_COBERT_MASTER IS
+create or replace PACKAGE BODY          GT_COTIZACIONES_COBERT_MASTER IS
 
 FUNCTION EXISTEN_COBERTURAS_MASTER(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER) RETURN VARCHAR2 IS
 cExisteCob      VARCHAR2(1);
@@ -173,9 +137,9 @@ BEGIN
    IF GT_COTIZADOR_CONFIG.TIPO_DE_COTIZADOR(nCodCia, nCodEmpresa, cCodCotizador) IN ('API','APC') THEN
       BEGIN
          SELECT RiesgoTarifa, HorasVig, DiasVig, 
-                FactorAjuste, FactFormulaDeduc
+                FactorAjuste--, FactFormulaDeduc
            INTO cRiesgoTarifa, nHorasVig, nDiasVig,
-                nFactorAjuste, nFactFormulaDeduc
+                nFactorAjusteSubGrupo--, nFactFormulaDeduc
            FROM COTIZACIONES_DETALLE
           WHERE CodCia         = nCodCia
             AND CodEmpresa     = nCodEmpresa
@@ -296,7 +260,7 @@ BEGIN
                   nTasa := NVL(nTasa,0) * NVL(nFactorAjuste,0);
 
                   IF NVL(nFactorAjusteSubGrupo,0) > 0 THEN
-                     nTasa := NVL(nTasa,0) * NVL(nFactorAjuste,0);
+                     nTasa := NVL(nTasa,0) * NVL(nFactorAjusteSubGrupo,0);
                   END IF;
 
                   -- Factor Deducible ??
@@ -546,11 +510,13 @@ END PRIMA_COBERTURA;
 
 PROCEDURE CREAR_COBERTURAS_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER,
                                     nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER, cIndPolCol VARCHAR2, nSumaAsegManual NUMBER) IS
-cIndCambioSAMI   COBERT_ACT.IndCambioSAMI%TYPE;
-nSumaAsegLocal   ASEGURADO_CERTIFICADO.SumaAseg%TYPE         := 0;
-nSumaAsegMoneda  ASEGURADO_CERTIFICADO.SumaAseg_Moneda%TYPE  := 0;
-nPrimaNeta       ASEGURADO_CERTIFICADO.PrimaNeta%TYPE        := 0;
-nPrimaNeta_Mon   ASEGURADO_CERTIFICADO.PrimaNeta_Moneda%TYPE := 0;
+cIndCambioSAMI       COBERT_ACT.IndCambioSAMI%TYPE;
+nSumaAsegLocal       ASEGURADO_CERTIFICADO.SumaAseg%TYPE         := 0;
+nSumaAsegMoneda      ASEGURADO_CERTIFICADO.SumaAseg_Moneda%TYPE  := 0;
+nPrimaNeta           ASEGURADO_CERTIFICADO.PrimaNeta%TYPE        := 0;
+nPrimaNeta_Mon       ASEGURADO_CERTIFICADO.PrimaNeta_Moneda%TYPE := 0;
+
+nSumaAsegManualCalc  COTIZACIONES_COBERT_MASTER.SumaAsegCobLocal%TYPE;
    
 CURSOR COTCOB_Q IS
    SELECT C.IdTipoSeg, M.CodCobert, M.SumaAsegCobLocal, M.SumaAsegCobMoneda, M.Tasa,
@@ -583,9 +549,15 @@ BEGIN
             cIndCambioSAMI     := 'S';
          END IF;
 
+         IF nSumaAsegManual = 0 THEN 
+            nSumaAsegManualCalc := X.SumaAsegCobLocal;
+         ELSE
+            nSumaAsegManualCalc := nSumaAsegManual;
+         END IF;
+         
          OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS_COTIZACION(nCodCia, nCodEmpresa, X.IdTipoSeg,
                                                           X.PlanCob, nIdCotizacion, nIDetCotizacion,
-                                                          X.CodCobert, NVL(nSumaAsegManual,0), X.SalarioMensual, 
+                                                          X.CodCobert, NVL(nSumaAsegManualCalc,0), X.SalarioMensual, 
                                                           X.VecesSalario, X.Edad_Minima, X.Edad_Maxima, 
                                                           X.Edad_Exclusion, X.SumaAseg_Minima, X.SumaAseg_Maxima,
                                                           X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada, 
@@ -636,17 +608,3 @@ EXCEPTION
 END CREAR_COBERTURAS_POLIZA;   
 
 END GT_COTIZACIONES_COBERT_MASTER;
-/
-
---
--- GT_COTIZACIONES_COBERT_MASTER  (Synonym) 
---
---  Dependencies: 
---   GT_COTIZACIONES_COBERT_MASTER (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM GT_COTIZACIONES_COBERT_MASTER FOR SICAS_OC.GT_COTIZACIONES_COBERT_MASTER
-/
-
-
-GRANT EXECUTE ON SICAS_OC.GT_COTIZACIONES_COBERT_MASTER TO PUBLIC
-/

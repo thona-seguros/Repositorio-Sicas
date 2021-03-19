@@ -1,40 +1,4 @@
---
--- GT_COTIZACIONES  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   GENERALES_PLATAFORMA_DIGITAL (Package)
---   NIVEL_PLAN_COBERTURA (Table)
---   OC_AGENTES (Package)
---   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
---   POLIZAS (Table)
---   GT_COTIZACIONES_ASEG (Package)
---   GT_COTIZACIONES_CENSO_ASEG (Package)
---   GT_COTIZACIONES_CLAUSULAS (Package)
---   GT_COTIZACIONES_COBERTURAS (Package)
---   GT_COTIZACIONES_COBERT_MASTER (Package)
---   GT_COTIZACIONES_DETALLE (Package)
---   GT_COTIZADOR_CONFIG (Package)
---   COTIZACIONES (Table)
---   COTIZACIONES_ASEG (Table)
---   COTIZACIONES_CENSO_ASEG (Table)
---   COTIZACIONES_COBERTURAS (Table)
---   COTIZACIONES_COBERT_ASEG (Table)
---   COTIZACIONES_DETALLE (Table)
---   COTIZADOR_CONFIG (Table)
---   AGENTES_DISTRIBUCION_POLIZA (Table)
---   AGENTE_POLIZA (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   OC_MAIL (Package)
---   OC_PLAN_COBERTURAS (Package)
---   OC_POLIZAS (Package)
---   OC_COMISIONES (Package)
---   DETALLE_POLIZA (Table)
---   GT_POLIZAS_TEXTO_COTIZACION (Package)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES IS
+create or replace PACKAGE          GT_COTIZACIONES IS
 
    FUNCTION VALIDAR_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2;
    PROCEDURE EMITIR_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER);
@@ -74,14 +38,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES IS
 
 END GT_COTIZACIONES;
 /
-
---
--- GT_COTIZACIONES  (Package Body) 
---
---  Dependencies: 
---   GT_COTIZACIONES (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_COTIZACIONES IS
+create or replace PACKAGE BODY          GT_COTIZACIONES IS
 
 FUNCTION VALIDAR_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2 IS
 cIndAsegModelo              COTIZACIONES.IndAsegModelo%TYPE;
@@ -1119,8 +1076,15 @@ nProporcional    AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
 nProporcAjust    AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
 cTipoCotiz       COTIZADOR_CONFIG.CodTipoCotizador%TYPE;
 cPrefijoPol      VARCHAR2(30);--PLAN_COBERTURAS.PrefijoPol%TYPE;
-nPorcGtoAdqui    COTIZACIONES.PorcGtoAdqui%TYPE;      
-
+nPorcGtoAdqui    COTIZACIONES.PorcGtoAdqui%TYPE;
+-- 
+nPorcComis       POLIZAS.PorcComis%TYPE;     
+nNivEstruct1     AGENTES.CODNIVEL%TYPE;
+nCodAgente2      AGENTES.COD_AGENTE%TYPE;
+nNivEstruct2     AGENTES.CODNIVEL%TYPE;
+nCodAgente3      AGENTES.COD_AGENTE%TYPE;
+nNivEstruct3     AGENTES.CODNIVEL%TYPE;
+--
 CURSOR COTIZ_Q IS
   SELECT CodCotizador, NumUnicoCotizacion, NumCotizacionRef, FecIniVigCot, FecFinVigCot,
          SumaAsegCotLocal, SumaAsegCotMoneda, PrimaCotLocal, PrimaCotMoneda,
@@ -1129,8 +1093,9 @@ CURSOR COTIZ_Q IS
          SAMIAutorizado, TipoAdministracion, PorcDescuento, PorcGtoAdmin, PorcGtoAdqui,
          PorcUtilidad, FactorAjuste, MontoDeducible, FactFormulaDeduc, CodRiesgoRea,
          CodTipoBono, HorasVig, DiasVig, IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
-         FuenteRecursosPrima, PorcComisProm, PorcComisDir, TipoProrrata, IndConvenciones, CODTIPONEGOCIO, CODPAQCOMERCIAL, CODOFICINA , CODCATEGO,
-         IdTipoSeg, PlanCob
+         FuenteRecursosPrima, PorcComisProm, PorcComisDir, TipoProrrata, IndConvenciones, 
+         CodTipoNegocio, CodPaqComercial, CodOficina , CodCatego, IdTipoSeg, PlanCob,
+         IndCotizacionWeb, IndCotizacionBaseWeb, DescElegibilidad
     FROM COTIZACIONES c
    WHERE CodCia        = nCodCia
      AND CodEmpresa    = nCodEmpresa
@@ -1139,7 +1104,7 @@ CURSOR COTIZ_Q IS
      AND IdPoliza      IS NULL;
 
 CURSOR AGEDIS_Q IS
-  SELECT CodNivel, Cod_Agente_Distr, Porc_Com_Distribuida
+  SELECT CodNivel, Cod_Agente_Distr, Porc_Com_Distribuida, Porc_Com_proporcional
     FROM AGENTES_DISTRIBUCION_POLIZA
    WHERE CodCia     = nCodCia
      AND IdPoliza   = nIdPoliza
@@ -1149,15 +1114,13 @@ BEGIN
       GT_COTIZACIONES.EXISTE_SIN_POLIZA(nCodCia, nCodEmpresa, nIdCotizacion) = 'S' THEN
       FOR X IN COTIZ_Q LOOP
          IF X.NumPolRenovacion IS NOT NULL THEN
---                    DBMS_OUTPUT.PUT_LINE('X.NumPolRenovacion: ' || X.NumPolRenovacion);  --capele 200226 
-                    nNumRenov    := TO_NUMBER(SUBSTR(X.NumPolRenovacion, INSTR(X.NumPolRenovacion,'-',-1)+1, LENGTH(X.NumPolRenovacion) - INSTR(X.NumPolRenovacion,'-',-1)))+1;
-                    cNumPolUnico := SUBSTR(X.NumPolRenovacion, 1, INSTR(X.NumPolRenovacion,'-', -1))||LPAD(nNumRenov,2,'0');
---                    DBMS_OUTPUT.PUT_LINE('cNumPolUnico: ' || cNumPolUnico); --capele 200226
+            nNumRenov    := TO_NUMBER(SUBSTR(X.NumPolRenovacion, INSTR(X.NumPolRenovacion,'-',-1)+1, LENGTH(X.NumPolRenovacion) - INSTR(X.NumPolRenovacion,'-',-1)))+1;
+            cNumPolUnico := SUBSTR(X.NumPolRenovacion, 1, INSTR(X.NumPolRenovacion,'-', -1))||LPAD(nNumRenov,2,'0');
          ELSE
             nNumRenov          := 0;
             cNumPolUnico       := X.NumCotizacionRef;
          END IF;
-
+         --
          cTipoCotiz := GT_COTIZADOR_CONFIG.TIPO_DE_COTIZADOR(nCodCia, nCodEmpresa, X.CodCotizador);
          IF NVL(cTipoCotiz,'API') IN ('API','VI') THEN
             cIndPolCol := 'N';
@@ -1170,10 +1133,35 @@ BEGIN
             nSAMIPoliza     := X.SAMIAutorizado;
          END IF;
 
-         nIdPoliza := OC_POLIZAS.INSERTAR_POLIZA(nCodCia, nCodEmpresa, X.DescPoliticaEdades,
-                                                 X.Cod_Moneda, X.PorcComisAgte, nCodCliente,
-                                                 X.CodAgente, X.CodPlanPago, cNumPolUnico,
-                                                 X.NumUnicoCotizacion, X.FecIniVigCot);
+         OC_AGENTES.ESTRUCTURA_AGENTE( nCodCia, nCodEmpresa, X.CodAgente, nNivEstruct1, nCodAgente2, nNivEstruct2, nCodAgente3, nNivEstruct3 );
+         --
+         IF nNivEstruct1 = 1 THEN
+            nPorcComis := NVL(nPorcComis, 0) + NVL(x.PorcComisDir, 0);
+         ELSIF nNivEstruct1 = 2 THEN
+            nPorcComis := NVL(nPorcComis, 0) + NVL(x.PorcComisProm, 0);
+         ELSIF nNivEstruct1 = 3 THEN
+            nPorcComis := NVL(nPorcComis, 0) + NVL(x.PorcComisAgte, 0);
+         END IF;            
+         --            
+         IF nNivEstruct2 = 1 THEN
+            nPorcComis := NVL(nPorcComis, 0) + NVL(x.PorcComisDir, 0);
+         ELSIF nNivEstruct2 = 2 THEN
+            nPorcComis := NVL(nPorcComis, 0) + NVL(x.PorcComisProm, 0);
+         ELSIF nNivEstruct2 = 3 THEN
+            nPorcComis := NVL(nPorcComis, 0) + NVL(x.PorcComisAgte, 0);
+         END IF;            
+         --            
+         IF nNivEstruct3 = 1 THEN
+            nPorcComis := NVL(nPorcComis, 0) + NVL(x.PorcComisDir, 0);
+         ELSIF nNivEstruct3 = 2 THEN
+            nPorcComis := NVL(nPorcComis, 0) + NVL(x.PorcComisProm, 0);
+         ELSIF nNivEstruct3 = 3 THEN
+            nPorcComis := NVL(nPorcComis, 0) + NVL(x.PorcComisAgte, 0);
+         END IF;            
+         --
+         nIdPoliza := OC_POLIZAS.INSERTAR_POLIZA( nCodCia    , nCodEmpresa, X.DescPoliticaEdades, X.Cod_Moneda, nPorcComis          ,
+                                                  nCodCliente, X.CodAgente, X.CodPlanPago       , cNumPolUnico, X.NumUnicoCotizacion,
+                                                  X.FecIniVigCot );
          --
          -- genera numero unico conforme parametro
          cPrefijoPol := OC_PLAN_COBERTURAS.PREFIJO_POLIZA(nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob);
@@ -1217,94 +1205,118 @@ BEGIN
                 CODPAQCOMERCIAL      = X.CODPAQCOMERCIAL,
                 CODOFICINA           = X.CODOFICINA,
                 CODCATEGO            = X.CODCATEGO,
-                NumPolUnico          = cNumPolUnico
+                NumPolUnico          = cNumPolUnico,
+                DescPoliza           = SUBSTR(X.DescElegibilidad, 1, 2000)
           WHERE CodCia     = nCodCia
             AND CodEmpresa = nCodEmpresa
             AND IdPoliza   = nIdPoliza;
 
-           nIDetPol := GT_COTIZACIONES_DETALLE.CREAR_CERTIFICADO(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza, nCodAsegurado, cIndPolCol);
-           GT_POLIZAS_TEXTO_COTIZACION.INSERTA(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza);
-           GT_COTIZACIONES_CLAUSULAS.CREAR_CLAUSULAS_POL(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza);
+         nIDetPol := GT_COTIZACIONES_DETALLE.CREAR_CERTIFICADO(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza, nCodAsegurado, cIndPolCol);
+         GT_POLIZAS_TEXTO_COTIZACION.INSERTA(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza);
+         GT_COTIZACIONES_CLAUSULAS.CREAR_CLAUSULAS_POL(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza);
+         --
+         UPDATE DETALLE_POLIZA P 
+         SET    P.PorcComis = nPorcComis
+         WHERE  P.CodCia     = nCodCia
+           AND  P.CodEmpresa = nCodEmpresa
+           AND  P.IdPoliza   = nIdPoliza;
+         --
+         -- Agentes            
+         IF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 5 THEN
+            cOrigen  := 'U';
+         ELSIF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 4 THEN
+            cOrigen  := 'H';
+         ELSE
+            cOrigen  := 'C';
+         END IF;
 
-            --  CAPELE 20200227
-            UPDATE DETALLE_POLIZA P SET P.PORCCOMIS = X.PorcGtoAdqui
-            WHERE P.CODCIA      =   nCodCia
-              AND P.CODEMPRESA  =   nCodEmpresa
-              AND P.IDPOLIZA    =   nIdPoliza;
+         BEGIN
+            INSERT INTO AGENTE_POLIZA
+                  (IdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen)
+            VALUES (nIdPoliza, nCodCia, X.CodAgente, 100, 'S', cOrigen);
+         EXCEPTION
+            WHEN OTHERS THEN
+               RAISE_APPLICATION_ERROR(-20200,'Error al Insertar el Agente de la Póliza.');
+         END;
+
+         IF NVL(X.IndCotizacionWeb,'N') = 'S' THEN
+            OC_COMISIONES.DISTRIBUCION_WEB(nCodCia, nCodEmpresa, nIdPoliza, X.CodAgente, 100, nIdCotizacion);
+         ELSE
+            OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, X.CodAgente, 100);
+         END IF;
+         --
+         --IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, X.CodAgente) <> 'S' THEN --  CAPELE 20200227
+         --
+         nCodAgente    := X.CodAgente;
+         nProporcAjust := 0;
+         --
+         FOR Y IN AGEDIS_Q LOOP
+            IF Y.CodNivel = 1 THEN
+               nPorcComDis := X.PorcComisDir;
+            ELSIF Y.CodNivel = 2 THEN
+               nPorcComDis := X.PorcComisProm;
+            ELSIF Y.CodNivel = 3 THEN
+               nPorcComDis := X.PorcComisAgte;
+            END IF;
             --
-            -- Agentes            
+            IF NVL(X.PorcGtoAdqui,0) != 0 THEN
+--            IF NVL(nPorcComis,0) != 0 THEN
+               IF cOrigen != 'H' THEN
+--DBMS_OUTPUT.PUT_LINE('Y.Porc_Com_Distribuida: ' || Y.Porc_Com_Distribuida);
+--DBMS_OUTPUT.PUT_LINE('Y.Porc_Com_proporcional: ' || Y.Porc_Com_proporcional);
+--DBMS_OUTPUT.PUT_LINE('X.PorcGtoAdqui: ' || X.PorcGtoAdqui);
 
 
-                 IF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 5 THEN
-                    cOrigen  := 'U';
-                 ELSIF OC_AGENTES.NIVEL_AGENTE(nCodCia, X.CodAgente) = 4 THEN
-                    cOrigen  := 'H';
-                 ELSE
-                    cOrigen  := 'C';
-                 END IF;
-
-                 BEGIN
-                    INSERT INTO AGENTE_POLIZA
-                           (IdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen)
-                    VALUES (nIdPoliza, nCodCia, X.CodAgente, 100, 'S', cOrigen);
-                 EXCEPTION
-                    WHEN OTHERS THEN
-                       RAISE_APPLICATION_ERROR(-20200,'Error al Insertar el Agente de la Póliza.');
-                 END;
-                 OC_COMISIONES.DISTRIBUCION(nCodCia, nIdPoliza, X.CodAgente, 100);
+--                  nProporcional := TRUNC(ROUND((Y.Porc_Com_Distribuida*100)/nPorcComis,2),2);
+                  nProporcional := TRUNC(ROUND((Y.Porc_Com_Distribuida*100)/X.PorcGtoAdqui,2),2);
+               ELSIF cOrigen = 'H' THEN
+--                  nProporcional := TRUNC(ROUND((nPorcComDis*100)/nPorcComis,2),2);
+                  nProporcional := TRUNC(ROUND((nPorcComDis*100)/X.PorcGtoAdqui,2),2);
+               END IF;
+            ELSE
+               nProporcional := 100;
+            END IF;
             --
-           -- IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, X.CodAgente) <> 'S' THEN --  CAPELE 20200227
+            nProporcAjust := nProporcAjust + nProporcional; 
+--DBMS_OUTPUT.PUT_LINE('nProporcional: ' || nProporcional);
+--DBMS_OUTPUT.PUT_LINE('nProporcAjust: ' || nProporcAjust);
+            --
+            IF (nProporcAjust > 100 AND nProporcAjust <= 100.01) THEN
+               nProporcAjust := nProporcAjust - 100;
+               nProporcional := nProporcional - nProporcAjust;
+            ELSIF (nProporcAjust < 100 AND nProporcAjust >= 99.99)  THEN
+               nProporcAjust := nProporcAjust - 100;
+               nProporcional := nProporcional + nProporcAjust;
+            END IF;
+            --
+--DBMS_OUTPUT.PUT_LINE('nProporcional: ' || nProporcional);
+            IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) = 'S' THEN
+               nPorcComDis    := 0;
+               nPorcGtoAdqui  := 0;
+               --
+               UPDATE DETALLE_POLIZA P 
+               SET    P.PorcComis = nPorcGtoAdqui
+               WHERE  P.CodCia     =   nCodCia
+                 AND  P.CodEmpresa =   nCodEmpresa
+                 AND  P.IdPoliza   =   nIdPoliza;
+            ELSE
+               nPorcGtoAdqui := nPorcComis;--X.PorcGtoAdqui;
+            END IF;
+            --
+            UPDATE AGENTES_DISTRIBUCION_POLIZA
+            SET    Porc_Com_Distribuida = nPorcComDis
+              --,    Porc_Com_Poliza      = X.PorcGtoAdqui
+              ,    Porc_Com_Poliza      = nPorcGtoAdqui
+              --,    Porc_Com_proporcional = nProporcional
+            WHERE CodCia           = nCodCia
+              AND IdPoliza         = nIdPoliza
+              AND Cod_Agente       = nCodAgente
+              AND CodNivel         = Y.CodNivel
+              AND Cod_Agente_Distr = Y.Cod_Agente_Distr;
 
-                   nProporcAjust := 0;
-                 FOR Y IN AGEDIS_Q LOOP
-                    IF Y.CodNivel = 1 THEN
-                          nPorcComDis := X.PorcComisDir;
-                    ELSIF Y.CodNivel = 2 THEN
-                          nPorcComDis := X.PorcComisProm;
-                    ELSIF Y.CodNivel = 3 THEN
-                          nPorcComDis := X.PorcComisAgte;
-                    END IF;
-
-                    IF NVL(X.PorcGtoAdqui,0) != 0 THEN
-                       IF cOrigen != 'H' THEN
-                          nProporcional := TRUNC(ROUND((Y.Porc_Com_Distribuida*100)/X.PorcGtoAdqui,2),2);
-                       ELSIF cOrigen = 'H' THEN
-                          nProporcional := TRUNC(ROUND((nPorcComDis*100)/X.PorcGtoAdqui,2),2);
-                       END IF;
-                    ELSE
-                       nProporcional := 100;
-                    END IF;
-
-                    nProporcAjust := nProporcAjust + nProporcional; 
-
-                    IF (nProporcAjust > 100 AND nProporcAjust <= 100.01) THEN
-                       nProporcAjust := nProporcAjust - 100;
-                       nProporcional := nProporcional - nProporcAjust;
-                    ELSIF (nProporcAjust < 100 AND nProporcAjust >= 99.99)  THEN
-                       nProporcAjust := nProporcAjust - 100;
-                       nProporcional := nProporcional + nProporcAjust;
-                    END IF;
-
-                    IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) = 'DIREC' THEN
-                       nPorcComDis    := 0;
-                       nPorcGtoAdqui  := 0;
-                    ELSE
-                       nPorcGtoAdqui := X.PorcGtoAdqui;
-                    END IF;
-
-                    UPDATE AGENTES_DISTRIBUCION_POLIZA
-                       SET Porc_Com_Distribuida = nPorcComDis,
-                           --Porc_Com_Poliza      = X.PorcGtoAdqui,
-                           Porc_Com_Poliza      = nPorcGtoAdqui,
-                           Porc_Com_proporcional = nProporcional
-                     WHERE CodCia           = nCodCia
-                       AND IdPoliza         = nIdPoliza
-                       AND Cod_Agente       = nCodAgente
-                       AND CodNivel         = Y.CodNivel
-                       AND Cod_Agente_Distr = Y.Cod_Agente_Distr;
-                 END LOOP;
-
-           -- END IF;
+--nProporcional := 0;
+         END LOOP;
+         --END IF;
 
          BEGIN
             OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
@@ -1316,11 +1328,11 @@ BEGIN
               RAISE_APPLICATION_ERROR(-20225,'Error en distribución de Agentes ' || SQLERRM);
          END;
 
-        UPDATE COTIZACIONES
-           SET IdPoliza = nIdPoliza
-         WHERE CodCia       = nCodCia
-           AND CodEmpresa   = nCodEmpresa
-           AND IdCotizacion = nIdCotizacion;
+         UPDATE COTIZACIONES
+         SET    IdPoliza = nIdPoliza
+         WHERE  CodCia       = nCodCia
+           AND  CodEmpresa   = nCodEmpresa
+           AND  IdCotizacion = nIdCotizacion;
       END LOOP;
       --
       RETURN(nIdPoliza);
@@ -1463,23 +1475,10 @@ BEGIN
       ELSIF W.IndListadoAseg = 'S' THEN
          GT_COTIZACIONES_ASEG.RECOTIZACION_ASEG(nCodCia, nCodEmpresa, nIdCotizacion, nIdCotizacionCopia);
       END IF;
+      OC_COTIZACIONES_GPO_COBERT_WEB.COPIAR(nCodCia, nCodEmpresa, nIdCotizacion, nIdCotizacionCopia);
+      OC_COTIZACIONES_COBERT_WEB.COPIAR_COTIZACION( nCodCia, nCodEmpresa, nIdCotizacion, nIdCotizacionCopia);
    END LOOP;
    RETURN nIdCotizacionCopia;
 END COPIAR_COTIZACION_WEB;
 
-
 END GT_COTIZACIONES;
-/
-
---
--- GT_COTIZACIONES  (Synonym) 
---
---  Dependencies: 
---   GT_COTIZACIONES (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM GT_COTIZACIONES FOR SICAS_OC.GT_COTIZACIONES
-/
-
-
-GRANT EXECUTE ON SICAS_OC.GT_COTIZACIONES TO PUBLIC
-/

@@ -1,28 +1,14 @@
---
--- OC_CLAUSULAS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   CLAUSULAS (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.oc_clausulas IS
+create or replace PACKAGE sicas_oc.oc_clausulas IS
 
   FUNCTION DESCRIPCION(nCodCia NUMBER, nCodEmpresa NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2;
   FUNCTION OBLIGATORIA(nCodCia NUMBER, nCodEmpresa NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2;
   FUNCTION TIPO_CLAUSULA(nCodCia NUMBER, nCodEmpresa NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2;
   FUNCTION TIPO_ADMINISTRACION(nCodCia NUMBER, nCodEmpresa NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2;
   FUNCTION APLICA_ADMINISTRACION(nCodCia NUMBER, nCodEmpresa NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2;
+  FUNCTION TEXTOCLAUSULA(nCodCia NUMBER, nCodEmpresa NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2;
 END OC_CLAUSULAS;
 /
-
---
--- OC_CLAUSULAS  (Package Body) 
---
---  Dependencies: 
---   OC_CLAUSULAS (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_clausulas IS
+create or replace PACKAGE BODY sicas_oc.oc_clausulas IS
 
 FUNCTION DESCRIPCION(nCodCia NUMBER, nCodEmpresa NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2 IS
 cDescClausula    CLAUSULAS.DescClausula%TYPE;
@@ -112,18 +98,22 @@ BEGIN
    RETURN( cTipoAdminsitracionClausula);
 END TIPO_ADMINISTRACION;
 
+FUNCTION TEXTOCLAUSULA(nCodCia NUMBER, nCodEmpresa NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2 IS
+   cTextoClausula   LONG;
+BEGIN
+   BEGIN
+      SELECT TextoClausula
+        INTO cTextoClausula
+        FROM CLAUSULAS
+       WHERE CodCia      = nCodCia
+         AND CodEmpresa  = nCodEmpresa
+         AND CodClausula = cCodClausula;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cTextoClausula := 'NO EXISTE';
+   END;
+   RETURN(SUBSTR(cTextoClausula, 1, 4000));
+END TEXTOCLAUSULA;
+
 END OC_CLAUSULAS;
-/
-
---
--- OC_CLAUSULAS  (Synonym) 
---
---  Dependencies: 
---   OC_CLAUSULAS (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_CLAUSULAS FOR SICAS_OC.OC_CLAUSULAS
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_CLAUSULAS TO PUBLIC
 /

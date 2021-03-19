@@ -1,27 +1,4 @@
---
--- GT_COTIZACIONES_DETALLE  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   GT_COTIZACIONES_ASEG (Package)
---   GT_COTIZACIONES_CENSO_ASEG (Package)
---   GT_COTIZACIONES_COBERTURAS (Package)
---   GT_COTIZACIONES_COBERT_ASEG (Package)
---   GT_COTIZACIONES_COBERT_MASTER (Package)
---   GT_DETALLE_POLIZA_COTIZ (Package)
---   COTIZACIONES (Table)
---   COTIZACIONES_ASEG (Table)
---   COTIZACIONES_CENSO_ASEG (Table)
---   COTIZACIONES_COBERTURAS (Table)
---   COTIZACIONES_COBERT_ASEG (Table)
---   COTIZACIONES_DETALLE (Table)
---   OC_DETALLE_POLIZA (Package)
---   OC_GENERALES (Package)
---   DETALLE_POLIZA (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES_DETALLE IS
+create or replace PACKAGE          GT_COTIZACIONES_DETALLE IS
 
    FUNCTION EXISTE_DETALLE_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2;
    PROCEDURE RECOTIZACION_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIdRecotizacion NUMBER);
@@ -40,17 +17,20 @@ CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES_DETALLE IS
    FUNCTION MANEJA_PRIMA_PROMEDIO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER) RETURN NUMBER;
    FUNCTION CREAR_CERTIFICADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIdPoliza NUMBER, 
                               nCodAsegurado NUMBER, cIndPolCol VARCHAR2) RETURN NUMBER;
+   --
+   PROCEDURE RECALCULA_FACTORAJUSTE( nCodCia         COTIZACIONES_DETALLE.CodCia%TYPE
+                                   , nCodEmpresa     COTIZACIONES_DETALLE.CodEmpresa%TYPE
+                                   , nIdCotizacion   COTIZACIONES_DETALLE.IdCotizacion%TYPE
+                                   , nIDetCotizacion COTIZACIONES_DETALLE.IDetCotizacion%TYPE
+                                   , cCodSubGrupo    COTIZACIONES_DETALLE.CodSubGrupo%TYPE );
 
+   PROCEDURE RESTAURA_FACTORAJUSTE( nCodCia         COTIZACIONES_DETALLE.CodCia%TYPE
+                                   , nCodEmpresa     COTIZACIONES_DETALLE.CodEmpresa%TYPE
+                                   , nIdCotizacion   COTIZACIONES_DETALLE.IdCotizacion%TYPE
+                                   , nIDetCotizacion COTIZACIONES_DETALLE.IDetCotizacion%TYPE);                                   
 END GT_COTIZACIONES_DETALLE;
 /
-
---
--- GT_COTIZACIONES_DETALLE  (Package Body) 
---
---  Dependencies: 
---   GT_COTIZACIONES_DETALLE (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_COTIZACIONES_DETALLE IS
+create or replace PACKAGE BODY          GT_COTIZACIONES_DETALLE IS
 
 FUNCTION EXISTE_DETALLE_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2 IS
 cExisteDet      VARCHAR2(1);
@@ -79,7 +59,7 @@ CURSOR DET_Q IS
           PrimaAsegurado, SumaAsegDetLocal, SumaAsegDetMoneda, 
           PrimaDetLocal, PrimaDetMoneda, RiesgoTarifa, HorasVig,
           DiasVig, FactorAjuste, FactFormulaDeduc, IndEdadPromedio,
-          IndCuotaPromedio, IndPrimaPromedio
+          IndCuotaPromedio, IndPrimaPromedio, PrimaNetaPor
      FROM COTIZACIONES_DETALLE
     WHERE CodCia       = nCodCia
       AND CodEmpresa   = nCodEmpresa
@@ -94,20 +74,20 @@ BEGIN
                  PrimaAsegurado, SumaAsegDetLocal, SumaAsegDetMoneda, 
                  PrimaDetLocal, PrimaDetMoneda, RiesgoTarifa, HorasVig,
                  DiasVig, FactorAjuste, FactFormulaDeduc, IndEdadPromedio,
-                 IndCuotaPromedio, IndPrimaPromedio)
+                 IndCuotaPromedio, IndPrimaPromedio, PrimaNetaPor)
          VALUES (nCodCia, nCodEmpresa, nIdReCotizacion, W.IDetCotizacion, W.CodSubgrupo,
                  W.DescSubgrupo, W.EdadLimite, W.CantAsegurados, W.SalarioMensual, 
                  W.VecesSalario, W.PorcExtraPrimaDet, W.MontoExtraPrimaDet, 
                  W.PrimaAsegurado, W.SumaAsegDetLocal, W.SumaAsegDetMoneda, 
                  W.PrimaDetLocal, W.PrimaDetMoneda, W.RiesgoTarifa, W.HorasVig,
                  W.DiasVig, W.FactorAjuste, W.FactFormulaDeduc, W.IndEdadPromedio,
-                 W.IndCuotaPromedio, W.IndPrimaPromedio);
+                 W.IndCuotaPromedio, W.IndPrimaPromedio, W.PrimaNetaPor);
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20200,'Duplicado Detalle de Cotización No. ' || nIdReCotizacion || ' y Detalle No. ' ||W.IDetCotizacion);
       END;
    END LOOP;
-   
+
    GT_COTIZACIONES_COBERTURAS.RECOTIZACION_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, nIdRecotizacion);
 END RECOTIZACION_DETALLE;
 
@@ -245,7 +225,7 @@ BEGIN
          END;
       END IF;
    END IF;
-   
+
    IF NVL(nCantAsegurados,0) > 0 THEN
       nPrimaAsegurado := NVL(nPrimaCobMoneda,0) / NVL(nCantAsegurados,0);
       nSumaAsegurado  := NVL(nSumaAsegCobMoneda,0) / NVL(nCantAsegurados,0);
@@ -483,7 +463,7 @@ FUNCTION CREAR_CERTIFICADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUM
    nIDetPol         DETALLE_POLIZA.IDetPol%TYPE;
    cIndAsegMod      DETALLE_POLIZA.IndAsegModelo%TYPE;
    nCantAsegurados  DETALLE_POLIZA.CantAsegModelo%TYPE;
-   
+
 CURSOR COTDET_Q IS
    SELECT C.IdTipoSeg, C.PlanCob, C.Cod_Moneda, OC_GENERALES.FUN_TASA_CAMBIO(C.Cod_Moneda,TRUNC(SYSDATE)) TipoCambio,
           C.PorcComisAgte, C.CodPlanPago, C.FecIniVigCot, C.FecFinVigCot, C.IndAsegModelo, C.IndCensoSubGrupo,
@@ -500,7 +480,11 @@ BEGIN
    FOR X IN COTDET_Q LOOP
       IF NVL(X.IndAsegModelo,'N') = 'S' OR  NVL(X.IndCensoSubGrupo,'N') = 'S' THEN
          cIndAsegMod     := 'S';
-         nCantAsegurados := X.CantAsegurados;
+         IF NVL(X.IndAsegModelo,'N') = 'S' AND (NVL(X.CantAsegurados, 0) > 0) THEN
+            nCantAsegurados := X.CantAsegurados - 1;
+         ELSE
+            nCantAsegurados := X.CantAsegurados;
+         END IF;
       ELSE
          cIndAsegMod     := 'N';
          nCantAsegurados := NULL;
@@ -550,18 +534,166 @@ EXCEPTION
       RAISE_APPLICATION_ERROR(-20200,'Error al Crear el SubGrupo/Certificado '||SQLERRM);
 END CREAR_CERTIFICADO;
 
+   PROCEDURE RECALCULA_FACTORAJUSTE( nCodCia         COTIZACIONES_DETALLE.CodCia%TYPE
+                                   , nCodEmpresa     COTIZACIONES_DETALLE.CodEmpresa%TYPE
+                                   , nIdCotizacion   COTIZACIONES_DETALLE.IdCotizacion%TYPE
+                                   , nIDetCotizacion COTIZACIONES_DETALLE.IDetCotizacion%TYPE
+                                   , cCodSubGrupo    COTIZACIONES_DETALLE.CodSubGrupo%TYPE ) IS
+      --
+      nFactorAjusteNuevo   COTIZACIONES_DETALLE.FactorAjuste%TYPE;
+      nFactorAjusteInicial COTIZACIONES_DETALLE.FactorAjusteInicial%TYPE;
+      --
+      CURSOR Factores IS
+         SELECT Factor
+         FROM   COTIZACIONES_DETALLE_FACTOR
+         WHERE  CodCia         = nCodCia
+           AND  CodEmpresa     = nCodEmpresa
+           AND  IdCotizacion   = nIdCotizacion
+           AND  IDetCotizacion = nIDetCotizacion;
+   BEGIN
+      --Actualizo el FactorAjuste en COTIZACIONES_DETALLE 
+      nFactorAjusteNuevo := 1;
+      --
+      SELECT FactorAjuste
+      INTO   nFactorAjusteInicial
+         FROM   COTIZACIONES_DETALLE
+         WHERE  CodCia         = nCodCia
+           AND  CodEmpresa     = nCodEmpresa
+           AND  IdCotizacion   = nIdCotizacion
+           AND  IDetCotizacion = nIDetCotizacion
+           AND  CodSubgrupo    = cCodSubGrupo;
+         --
+         FOR x IN Factores LOOP 
+             nFactorAjusteNuevo := nFactorAjusteNuevo * x.Factor;
+         END LOOP;
+         --
+         UPDATE COTIZACIONES_DETALLE
+         SET    FactorAjuste        = nFactorAjusteNuevo
+           ,    FactorAjusteInicial = nFactorAjusteInicial
+         WHERE  CodCia         = nCodCia
+           AND  CodEmpresa     = nCodEmpresa
+           AND  IdCotizacion   = nIdCotizacion
+           AND  IDetCotizacion = nIDetCotizacion
+           AND  CodSubgrupo    = cCodSubGrupo;
+   EXCEPTION
+   WHEN OTHERS THEN
+      RAISE_APPLICATION_ERROR(-20200,'Error al Recalcular el Factor Ajuste '||SQLERRM);
+   END RECALCULA_FACTORAJUSTE;
+
+PROCEDURE RESTAURA_FACTORAJUSTE(  nCodCia         COTIZACIONES_DETALLE.CodCia%TYPE
+                                , nCodEmpresa     COTIZACIONES_DETALLE.CodEmpresa%TYPE
+                                , nIdCotizacion   COTIZACIONES_DETALLE.IdCotizacion%TYPE
+                                , nIDetCotizacion COTIZACIONES_DETALLE.IDetCotizacion%TYPE) IS
+nIdCotizacionOriginal      COTIZACIONES.IdCotizacion%TYPE;    
+nFactorAjusteOriginal      COTIZACIONES_DETALLE.FactorAjuste%TYPE;
+nFactorAjusteInicialOrig   COTIZACIONES_DETALLE.FactorAjusteInicial%TYPE;
+nFactorAjusteCotOrig       COTIZACIONES.FactorAjuste%TYPE;
+cCodSubGrupo               COTIZACIONES_DETALLE.CodSubGrupo%TYPE;
+
+nPorcComisAgte             COTIZACIONES.PorcComisAgte%TYPE;
+nPorcComisProm             COTIZACIONES.PorcComisProm%TYPE;
+nPorcComisDir              COTIZACIONES.PorcComisDir%TYPE;
+nPorcGtoAdqui              COTIZACIONES.PorcGtoAdqui%TYPE;
+cCodTipoBono               COTIZACIONES.CodTipoBono%TYPE;
+nPorcConvenciones          COTIZACIONES.PorcConvenciones%TYPE;
+
+CURSOR CLAU_Q IS
+   SELECT CodClausula, TextoClausula
+     FROM COTIZACIONES_CLAUSULAS
+    WHERE CodCia         = nCodCia
+      AND CodEmpresa     = nCodEmpresa
+      AND IdCotizacion   = nIdCotizacionOriginal;
+BEGIN
+   BEGIN
+      SELECT NumCotizacionAnt
+        INTO nIdCotizacionOriginal
+        FROM COTIZACIONES
+       WHERE CodCia         = nCodCia
+         AND CodEmpresa     = nCodEmpresa
+         AND IdCotizacion   = nIdCotizacion;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN 
+         RAISE_APPLICATION_ERROR(-20200,'No es posible determinar la cotización origen para la cotización '||nIdCotizacion);
+   END;
+
+   BEGIN
+      SELECT FactorAjuste, PorcComisAgte, PorcComisProm, 
+             PorcComisDir, PorcGtoAdqui, CodTipoBono,
+             PorcConvenciones
+        INTO nFactorAjusteCotOrig,nPorcComisAgte, nPorcComisProm, 
+             nPorcComisDir, nPorcGtoAdqui, cCodTipoBono,
+             nPorcConvenciones
+        FROM COTIZACIONES
+       WHERE CodCia         = nCodCia
+         AND CodEmpresa     = nCodEmpresa
+         AND IdCotizacion   = nIdCotizacionOriginal;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN 
+         RAISE_APPLICATION_ERROR(-20200,'No es posible determinar el factor de ajuste original para la cotización '||nIdCotizacion);
+   END;
+
+   BEGIN
+      SELECT CodSubGrupo
+        INTO cCodSubGrupo 
+        FROM COTIZACIONES_DETALLE
+       WHERE CodCia           = nCodCia
+         AND CodEmpresa       = nCodEmpresa
+         AND IdCotizacion     = nIdCotizacion
+         AND IdetCotizacion   = nIdetCotizacion;
+   END;
+
+   BEGIN
+      SELECT FactorAjuste, FactorAjusteInicial
+        INTO nFactorAjusteOriginal, nFactorAjusteInicialOrig
+        FROM COTIZACIONES_DETALLE
+       WHERE CodCia         = nCodCia
+         AND CodEmpresa     = nCodEmpresa
+         AND IdCotizacion   = nIdCotizacionOriginal
+         AND IDetCotizacion = nIDetCotizacion
+         AND CodSubgrupo    = cCodSubGrupo;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN 
+         RAISE_APPLICATION_ERROR(-20200,'No es posible determinar Factores de Ajuste iniciales de la cotización '||nIdCotizacion);
+   END;
+
+   DELETE COTIZACIONES_CLAUSULAS
+    WHERE CodCia         = nCodCia
+      AND CodEmpresa     = nCodEmpresa
+      AND IdCotizacion   = nIdCotizacion;
+
+   --RESTAURA CLAUSULAS
+   FOR W IN CLAU_Q LOOP
+      INSERT INTO COTIZACIONES_CLAUSULAS (CodCia, CodEmpresa, IdCotizacion, CodClausula, TextoClausula)
+           VALUES (nCodCia, nCodEmpresa, nIdCotizacion, W.CodClausula, W.TextoClausula);
+   END LOOP;
+
+   DELETE COTIZACIONES_DETALLE_FACTOR
+    WHERE CodCia         = nCodCia
+      AND CodEmpresa     = nCodEmpresa
+      AND IdCotizacion   = nIdCotizacion
+      AND IDetCotizacion = nIDetCotizacion;
+
+   UPDATE COTIZACIONES_DETALLE
+      SET FactorAjuste        = nFactorAjusteOriginal,    
+          FactorAjusteInicial = nFactorAjusteInicialOrig
+    WHERE CodCia         = nCodCia
+      AND CodEmpresa     = nCodEmpresa
+      AND IdCotizacion   = nIdCotizacion
+      AND IDetCotizacion = nIDetCotizacion
+      AND CodSubgrupo    = cCodSubGrupo; 
+
+   UPDATE COTIZACIONES
+      SET FactorAjuste     = nFactorAjusteCotOrig,
+          PorcComisAgte    = nPorcComisAgte, 
+          PorcComisProm    = nPorcComisProm, 
+          PorcComisDir     = nPorcComisDir, 
+          PorcGtoAdqui     = nPorcGtoAdqui, 
+          CodTipoBono      = cCodTipoBono,
+          PorcConvenciones = nPorcConvenciones
+    WHERE CodCia         = nCodCia
+      AND CodEmpresa     = nCodEmpresa
+      AND IdCotizacion   = nIdCotizacion;
+      
+END RESTAURA_FACTORAJUSTE;
+
 END GT_COTIZACIONES_DETALLE;
-/
-
---
--- GT_COTIZACIONES_DETALLE  (Synonym) 
---
---  Dependencies: 
---   GT_COTIZACIONES_DETALLE (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM GT_COTIZACIONES_DETALLE FOR SICAS_OC.GT_COTIZACIONES_DETALLE
-/
-
-
-GRANT EXECUTE ON SICAS_OC.GT_COTIZACIONES_DETALLE TO PUBLIC
-/

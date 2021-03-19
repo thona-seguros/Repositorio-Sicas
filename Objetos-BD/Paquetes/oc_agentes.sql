@@ -1,20 +1,4 @@
---
--- OC_AGENTES  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   DETALLE_COMISION (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   AGENTES (Table)
---   OC_CORREGIMIENTO (Package)
---   COMISIONES (Table)
---   OC_COLONIA (Package)
---   OC_PROVINCIA (Package)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_AGENTES IS
+create or replace PACKAGE          OC_AGENTES IS
   FUNCTION NOMBRE_AGENTE(nCodCia NUMBER, cCodAgente NUMBER) RETURN VARCHAR2;
   FUNCTION AUXILIAR_CONTABLE(nCodCia NUMBER, cCodAgente NUMBER) RETURN NUMBER;
   FUNCTION DIRECCION_AGENTE(nCodAgente NUMBER) RETURN VARCHAR2;
@@ -34,16 +18,19 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_AGENTES IS
   FUNCTION FIND_MNTOCOMI_DR(nCodCia NUMBER, cCodAgente NUMBER, nIdPoliza NUMBER, nIdFactura NUMBER) RETURN NUMBER;
   FUNCTION FIND_MNTOCOMI_PROMTR(nCodCia NUMBER, cCodAgente NUMBER, nIdPoliza NUMBER, nIdFactura NUMBER) RETURN NUMBER;
   FUNCTION ES_AGENTE_DIRECTO(nCodCia NUMBER, cCodAgente NUMBER) RETURN VARCHAR2;
+  --
+  PROCEDURE ESTRUCTURA_AGENTE( nCodCia        IN  AGENTES.CodCia%TYPE
+                             , nCodEmpresa    IN  AGENTES.CodEmpresa%TYPE
+                             , nCodAgente1    IN  AGENTES.Cod_Agente%TYPE
+                             , nNivEstruct1  OUT  AGENTES.CODNIVEL%TYPE
+                             , nCodAgente2   OUT  AGENTES.Cod_Agente%TYPE
+                             , nNivEstruct2  OUT  AGENTES.CODNIVEL%TYPE
+                             , nCodAgente3   OUT  AGENTES.Cod_Agente%TYPE
+                             , nNivEstruct3  OUT  AGENTES.CODNIVEL%TYPE );
+
 END OC_AGENTES;
 /
-
---
--- OC_AGENTES  (Package Body) 
---
---  Dependencies: 
---   OC_AGENTES (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_agentes IS
+create or replace PACKAGE BODY          oc_agentes IS
 --
 -- BITACORA DE CAMBIO
 -- CAMBIO - SE AGREGO LA FUNCION ES_AGENTE   JICO 20170518  LAVADO DE DINERO
@@ -528,18 +515,36 @@ BEGIN
    END IF;
 END ES_AGENTE_DIRECTO;
 
+  PROCEDURE ESTRUCTURA_AGENTE( nCodCia        IN  AGENTES.CodCia%TYPE
+                             , nCodEmpresa    IN  AGENTES.CodEmpresa%TYPE
+                             , nCodAgente1    IN  AGENTES.Cod_Agente%TYPE
+                             , nNivEstruct1  OUT  AGENTES.CODNIVEL%TYPE
+                             , nCodAgente2   OUT  AGENTES.Cod_Agente%TYPE
+                             , nNivEstruct2  OUT  AGENTES.CODNIVEL%TYPE
+                             , nCodAgente3   OUT  AGENTES.Cod_Agente%TYPE
+                             , nNivEstruct3  OUT  AGENTES.CODNIVEL%TYPE ) IS
+   BEGIN
+      SELECT A.CodNivel  , B.Cod_Agente, B.CodNivel  , C.Cod_Agente, C.CodNivel
+      INTO   nNivEstruct1, nCodAgente2 , nNivEstruct2, nCodAgente3 , nNivEstruct3
+      FROM   AGENTES  A
+         ,   AGENTES  B
+         ,   AGENTES  C
+      WHERE  A.Cod_Agente    = nCodAgente1
+        AND  A.CodCia        = nCodCia
+        AND  A.CodEmpresa    = nCodEmpresa
+        AND  B.Cod_Agente(+) = A.Cod_Agente_Jefe
+        AND  B.CodCia(+)     = A.CodCia
+        AND  B.CodEmpresa(+) = A.CodEmpresa
+        AND  C.Cod_Agente(+) = B.Cod_Agente_Jefe
+        AND  C.CodCia(+)     = B.CodCia
+        AND  C.CodEmpresa(+) = B.CodEmpresa;
+   EXCEPTION
+   WHEN OTHERS THEN
+        nNivEstruct1 := NULL;
+        nCodAgente2  := NULL;
+        nNivEstruct2 := NULL;
+        nCodAgente3  := NULL;
+        nNivEstruct3 := NULL;
+   END ESTRUCTURA_AGENTE;
+
 END OC_AGENTES;
-/
-
---
--- OC_AGENTES  (Synonym) 
---
---  Dependencies: 
---   OC_AGENTES (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_AGENTES FOR SICAS_OC.OC_AGENTES
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_AGENTES TO PUBLIC
-/
