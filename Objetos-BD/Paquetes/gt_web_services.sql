@@ -1,31 +1,3 @@
---
--- GT_WEB_SERVICES  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   XMLTYPE (Type)
---   UTL_HTTP (Synonym)
---   DUAL (Synonym)
---   DBMS_LOB (Synonym)
---   DBMS_LOCK (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   DBMS_SQL (Synonym)
---   DBMS_XMLDOM (Synonym)
---   DBMS_XMLDOM (Synonym)
---   XMLTYPE (Synonym)
---   XMLTYPE (Synonym)
---   PLITBLM (Synonym)
---   WEB_SERVICES (Table)
---   WEB_SERVICES_XML (Table)
---   WEB_SERVICES_XML_NODOS (Table)
---   WEB_SERVICES_XML_NODOS_ATRIB (Table)
---   WEB_SERVICES_XML_PARAM (Table)
---   SPLIT_TBL (Type)
---   SPLIT_TBL (Type)
---   CHAR_HTML (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_WEB_SERVICES AS
     --
     xmlString   VARCHAR2(32767);
@@ -48,13 +20,6 @@ CREATE OR REPLACE PACKAGE SICAS_OC.GT_WEB_SERVICES AS
     --
 END GT_WEB_SERVICES;
 /
-
---
--- GT_WEB_SERVICES  (Package Body) 
---
---  Dependencies: 
---   GT_WEB_SERVICES (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
     --
     FUNCTION ExtraStr(cTAG VARCHAR2, cXxmlString VARCHAR2 := xmlString) return varchar2 is        
@@ -218,7 +183,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                          offset := offset + amount;                         
                     end loop;
 
-                    --dbms_output.put_line('SALIDA');
+                    --dbms_output.put_line(l_soap_request);
                                         
                     http_resp:= utl_http.get_response(http_req);
                     
@@ -246,9 +211,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
 
                     IF swISO88591 = 0 AND INSTR(l_cLOB2, 'ISO-8859-1') > 0 THEN
                         swISO88591 := 1;
-                        dbms_output.put_line('l_cLOB2----');
-                        dbms_output.put_line(l_cLOB2);
-                        dbms_output.put_line('----');
+                        --dbms_output.put_line('l_cLOB2----');
+                        --dbms_output.put_line(l_cLOB2);
+                        --dbms_output.put_line('----');
                         l_cLOB2 := GT_WEB_SERVICES.REMPLAZA_ISO88591(l_cLOB2);
                         IF INSTR(l_cLOB2, 'bm:') > 0 THEN
                             l_cLOB2 := REPLACE(l_cLOB2, 'bm:', ''); 
@@ -264,7 +229,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                             --l_cLOB2 := l_Alterno.getStringVal();
                             l_cLOB2 := TO_CLOB(l_Alterno.getStringVal()); 
                             --l_cLOB2 := CAMBIA_ACENTOS(l_cLOB2);
-                            dbms_output.put_line(l_cLOB2);
+                            --dbms_output.put_line(l_cLOB2);
                         END IF;                                                     
                             --l_cLOB2 := REPLACE(l_cLOB2, '<?xml version="1.0" encoding="ISO-8859-1"?>', '');                        
                     END IF;
@@ -283,14 +248,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                      return XMLType(l_cLOB2);
                     --RETURN l_Alterno;
                 EXCEPTION WHEN OTHERS THEN
---                    dbms_output.put_line('----------------ERROR-----------------------------------------');
---                    dbms_output.put_line( SQLERRM);
---                    dbms_output.put_line(l_soap_request);
---                    dbms_output.put_line('---------------------------------------------------------------');
---                    dbms_output.put_line('l_cLOB---------------------------------------------------------');
---                    --dbms_output.put_line(l_Alterno.getStringVal());
---                    dbms_output.put_line(l_cLOB);                    
---                    dbms_output.put_line('---------------------------------------------------------------'); 
+                    --dbms_output.put_line('----------------ERROR-----------------------------------------');
+                    dbms_output.put_line( SQLERRM);
+                    dbms_output.put_line(l_soap_request);
+                    --dbms_output.put_line('---------------------------------------------------------------');
+                    dbms_output.put_line('l_cLOB---------------------------------------------------------');
+                    --dbms_output.put_line(l_Alterno.getStringVal());
+                    dbms_output.put_line(l_cLOB);                    
+                    --dbms_output.put_line('---------------------------------------------------------------'); 
                     return XMLType.createXML(l_cLOB);               
                 end;
             --
@@ -400,8 +365,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                                   --  DBMS_OUTPUT.PUT_LINE(pIdWebResp || ' --1: ' || cRespStrXML);
                                   -- DBMS_OUTPUT.PUT_LINE(pIdWebResp || ' Resultado: ' || Resultado);
                                     --DBMS_OUTPUT.PUT_LINE('sqlerrm: ' || sqlerrm);
-                                    raise_application_error(-20010,'ERROR EN EL EXECUTE (esDatosXML): ' || SQLERRM);
                                     DBMS_OUTPUT.PUT_LINE('l_response_payload.getStringVal():' || LENGTH(l_response_payload.getStringVal()));
+                                    raise_application_error(-20010,'ERROR EN EL EXECUTE (esDatosXML): ' || SQLERRM);
                                 end;
                             ELSE
 --                                DBMS_OUTPUT.PUT_LINE(pIdWebResp || ' --1: ' || cStrXML);
@@ -426,7 +391,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                 begin
                     EXECUTE IMMEDIATE cDatosXml;
                 EXCEPTION WHEN OTHERS THEN
-            --     DBMS_OUTPUT.PUT_LINE(cDatosXml);  
+                 DBMS_OUTPUT.PUT_LINE(cDatosXml);  
                  raise_application_error(-20010,'ERROR EN EL EXECUTE: ' || SQLERRM);
                 end;
             END IF;
@@ -775,17 +740,4 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
     End Similitud_Porcentual;
     --
 END GT_WEB_SERVICES;
-/
-
---
--- GT_WEB_SERVICES  (Synonym) 
---
---  Dependencies: 
---   GT_WEB_SERVICES (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM GT_WEB_SERVICES FOR SICAS_OC.GT_WEB_SERVICES
-/
-
-
-GRANT EXECUTE ON SICAS_OC.GT_WEB_SERVICES TO PUBLIC
 /
