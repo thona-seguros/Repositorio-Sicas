@@ -1,0 +1,7 @@
+--> Secuencias para Tablas de Clientes: UNAM cliente inicial(Nueva funcionalidad Febrero de 2021).
+CREATE SEQUENCE  SICAS_OC.CTES_CERTIF_INDIV_SEQ  MINVALUE 1
+INCREMENT BY 1 START WITH 1 CACHE 20;
+/
+GRANT SELECT ON SICAS_OC.CTES_CERTIF_INDIV_SEQ TO PUBLIC;
+/
+
