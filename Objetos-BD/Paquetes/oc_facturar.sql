@@ -1,5 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_FACTURAR IS
--- MODIFICACION DE PROCEDURES COMISIONAG Y COMISIONPOL POR PROYECTO DE OGAS  20210212
+create or replace PACKAGE          OC_FACTURAR IS
    PROCEDURE PROC_EMITE_FACTURAS (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_POL (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_END (nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER,nTransa NUMBER);
@@ -19,14 +18,13 @@ CREATE OR REPLACE PACKAGE OC_FACTURAR IS
    FUNCTION F_GET_FACT ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;--SEQ XDS 2016/07/27
 END OC_FACTURAR;
 /
-CREATE OR REPLACE PACKAGE BODY OC_FACTURAR IS
+create or replace PACKAGE BODY          OC_FACTURAR IS
 --
 -- MODIFICACIONES
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO      2018/03/09  ICOFINVIG
 -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 -- CORRECCION DEL TIPO DE CAMBIO PARA COMPONENTES                            2019/06/12  ICO LARPLA1
 -- CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES                                  2019/08/21  ICO LARPLA2
--- MODIFICACION DE PROCEDURES COMISIONAG Y COMISIONPOL POR PROYECTO DE OGAS  2020/01/14  JMMD 
 --
 PROCEDURE PROC_EMITE_FACTURAS(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS
 nIdFactura               FACTURAS.IdFactura%TYPE;
@@ -412,10 +410,10 @@ BEGIN
                nMtoComisiMoneda := nMtoPagoMoneda * X.PorcComis / 100;
             END IF;
             -- LARPLA
-            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago, 
-                                               nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi, 
-                                               nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente, 
-                                               nCodTipoDoc,      pCodCia,        cCodMoneda,  NULL, 
+            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago,
+                                               nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi,
+                                               nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente,
+                                               nCodTipoDoc,      pCodCia,        cCodMoneda,  NULL,
                                                nTransa,          X.IndFactElectronica);
 
             FOR W IN CPTO_PRIMAS_Q LOOP
@@ -686,10 +684,10 @@ BEGIN
                      nMtoComisiMoneda := nMtoPagoMoneda * X.PorcComis / 100;
                   END IF;
                   -- LARPLA
-                  nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago, 
-                                                     nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi, 
-                                                     nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente, 
-                                                     nCodTipoDoc,      pCodCia,        cCodMoneda,  J.CodResPago, 
+                  nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago,
+                                                     nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi,
+                                                     nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente,
+                                                     nCodTipoDoc,      pCodCia,        cCodMoneda,  J.CodResPago,
                                                      nTransa,          X.IndFactElectronica);
 
                   FOR W IN CPTO_PRIMAS_Q LOOP
@@ -1254,7 +1252,7 @@ BEGIN
       nMtoComisiRest       := NVL(nMtoComiL,0)    - NVL(nMtoComisiPag,0);
       nMtoComisiMonedaRest := NVL(nMtoComisiM,0)  - NVL(nMtoComisiMonedaPag,0);
       IF NVL(nMtoPagoMoneda,0) != 0 THEN
-      
+
          FOR NP IN 1..nNumPagos LOOP
             IF NP > 1 THEN
                nMtoPago            := NVL(nPrimaRest,0)     / (nNumPagos - 1);
@@ -1272,10 +1270,10 @@ BEGIN
                nMtoComisiMoneda    := NVL(nMtoComisiMoneda,0) + NVL(nMtoComisiMonedaPag,0);
             END IF;
             -- LARPLA
-            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIDetPol,       nCodCliente, dFecPago, 
-                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag, 
+            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIDetPol,       nCodCliente, dFecPago,
+                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag,
                                                nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente,
-                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  NULL, 
+                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  NULL,
                                                nTransa,             cIndFactElectronica);
 
             FOR W IN CPTO_PRIMAS_Q LOOP
@@ -1598,10 +1596,10 @@ BEGIN
                   nMtoComisiMoneda    := NVL(nMtoComisiMoneda,0) + NVL(nMtoComisiMonedaPag,0);
                END IF;
                -- LARPLA
-               nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago, 
-                                                  nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag, 
-                                                  nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente, 
-                                                  nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago, 
+               nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago,
+                                                  nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag,
+                                                  nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente,
+                                                  nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago,
                                                   nTransa,             cIndFactElectronica);
 
                FOR W IN CPTO_PRIMAS_Q LOOP
@@ -2092,10 +2090,10 @@ BEGIN
                nMtoComisiMoneda := nMtoPagoMoneda * X.PorcComis / 100;
             END IF;
             -- LARPLA
-            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago, 
-                                               nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi, 
-                                               nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente, 
-                                               nCodTipoDoc,      nCodCia,        cCodMoneda,  NULL, 
+            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago,
+                                               nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi,
+                                               nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente,
+                                               nCodTipoDoc,      nCodCia,        cCodMoneda,  NULL,
                                                nTransa,          cIndFactElectronica);
 
             FOR W IN CPTO_PRIMAS_Q LOOP
@@ -2296,10 +2294,10 @@ BEGIN
                   nMtoComisiMoneda := nMtoPagoMoneda * X.PorcComis / 100;
                END IF;
             -- LARPLA
-               nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,       nCodCliente, dFecPago, 
-                                                  nMtoPago,         nMtoPagoMoneda,  nIdEndoso,   nMtoComisi, 
-                                                  nMtoComisiMoneda, NP,              nTasaCambio, nCod_Agente, 
-                                                  nCodTipoDoc,      nCodCia,         cCodMoneda,  J.CodResPago, 
+               nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,       nCodCliente, dFecPago,
+                                                  nMtoPago,         nMtoPagoMoneda,  nIdEndoso,   nMtoComisi,
+                                                  nMtoComisiMoneda, NP,              nTasaCambio, nCod_Agente,
+                                                  nCodTipoDoc,      nCodCia,         cCodMoneda,  J.CodResPago,
                                                   nTransa,          cIndFactElectronica);
 
                FOR W IN CPTO_PRIMAS_Q LOOP
@@ -2474,7 +2472,7 @@ BEGIN
 END PROC_EMITE_FACT_END;
 --
 --
--- 
+--
 PROCEDURE PROC_EMITE_FACT_CAM(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS --LARPLA2
 nIdFactura               FACTURAS.IdFactura%TYPE;
 nNumPagos                PLAN_DE_PAGOS.NumPagos%TYPE;
@@ -2866,7 +2864,7 @@ BEGIN
       nMtoComisiRest       := NVL(nMtoComiL,0)    - NVL(nMtoComisiPag,0);
       nMtoComisiMonedaRest := NVL(nMtoComisiM,0)  - NVL(nMtoComisiMonedaPag,0);
       IF NVL(nMtoPagoMoneda,0) != 0 THEN
-      
+
          FOR NP IN 1..nNumPagos LOOP
             IF NP > 1 THEN
                nMtoPago            := NVL(nPrimaRest,0)     / (nNumPagos - 1);
@@ -2884,10 +2882,10 @@ BEGIN
                nMtoComisiMoneda    := NVL(nMtoComisiMoneda,0) + NVL(nMtoComisiMonedaPag,0);
             END IF;
             -- LARPLA
-            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIDetPol,       nCodCliente, dFecPago, 
-                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag, 
+            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIDetPol,       nCodCliente, dFecPago,
+                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag,
                                                nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente,
-                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  NULL, 
+                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  NULL,
                                                nTransa,             cIndFactElectronica);
 
             FOR W IN CPTO_PRIMAS_Q LOOP
@@ -3193,10 +3191,10 @@ BEGIN
                   nMtoComisiMoneda    := NVL(nMtoComisiMoneda,0) + NVL(nMtoComisiMonedaPag,0);
                END IF;
                -- LARPLA
-               nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago, 
-                                                  nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag, 
-                                                  nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente, 
-                                                  nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago, 
+               nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago,
+                                                  nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag,
+                                                  nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente,
+                                                  nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago,
                                                   nTransa,             cIndFactElectronica);
 
                FOR W IN CPTO_PRIMAS_Q LOOP
@@ -3689,10 +3687,10 @@ BEGIN
                    INTO dFecHoy
                    FROM DUAL;
                  -- LARPLA
-                 nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago, 
-                                                    nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi, 
-                                                    nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente, 
-                                                    nCodTipoDoc,      pCodCia,        cCodMoneda,  NULL, 
+                 nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago,
+                                                    nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi,
+                                                    nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente,
+                                                    nCodTipoDoc,      pCodCia,        cCodMoneda,  NULL,
                                                     nTransa,          X.IndFactElectronica);
 
                   OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, 'PRIBAS', 'S', nMtoPago , nMtoPagoMoneda );
@@ -4014,10 +4012,10 @@ BEGIN
                    INTO dFecHoy
                    FROM DUAL;
                -- LARPLA
-               nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago, 
-                                                  nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi, 
-                                                  nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente, 
-                                                  nCodTipoDoc,      pCodCia,        cCodMoneda,  NULL, 
+               nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,        X.IDetPol,      nCodCliente, dFecPago,
+                                                  nMtoPago,         nMtoPagoMoneda, nIdEndoso,   nMtoComisi,
+                                                  nMtoComisiMoneda, NP,             nTasaCambio, nCod_Agente,
+                                                  nCodTipoDoc,      pCodCia,        cCodMoneda,  NULL,
                                                   nTransa,          X.IndFactElectronica);
 
                 -- Inserta Detalle de Factura
@@ -4347,27 +4345,12 @@ CURSOR C_AGENTES IS
       AND IDetPol   = nIdetPol
       AND IdTipoSeg = cIdTipoSeg;
 CURSOR C_AGENTES_D IS
- --JMMD20200114 SE CAMBIA EL CURSOR PARA INCLUIR CODTIPO DEL AGENTE PARA PROYECTO DE OGAS
   SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
          Porc_Com_Distribuida, Origen
     FROM AGENTES_DISTRIBUCION_COMISION
    WHERE IdPoliza   = nIdPoliza
      AND IDetPol    = nIdetPol
-     AND Cod_Agente = nCod_Agente;  
----
-/*  SELECT ADC.Cod_Agente_Distr Cod_Agente, ADC.Porc_Com_Proporcional Porc_Comision,
-         ADC.Porc_Com_Distribuida, CASE WHEN A.CODTIPO = 'HONORF' THEN  'H'
-                                        WHEN A.CODTIPO = 'HONORM' THEN  'H'
-                                   ELSE  'C' END ORIGEN
-    FROM AGENTES_DISTRIBUCION_COMISION ADC,
-         AGENTES A
-   WHERE ADC.IdPoliza   = nIdPoliza
-     AND ADC.IDetPol    = nIdetPol
-     AND ADC.Cod_Agente = nCod_Agente
-     AND A.COD_AGENTE   = ADC.COD_AGENTE_DISTR
-     AND A.CODCIA       = nCodCia
-     AND A.CODEMPRESA   = nCodEmpresa;  */
-------
+     AND Cod_Agente = nCod_Agente;
 BEGIN
    FOR I IN C_AGENTES LOOP
       nCod_Agente := I.Cod_Agente;
@@ -4567,27 +4550,12 @@ CURSOR C_Agentes IS
 
 
 CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
- --JMMD20200114 SE CAMBIA EL CURSOR PARA INCLUIR CODTIPO DEL AGENTE PARA PROYECTO DE OGAS
   SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
          Porc_Com_Distribuida, Origen
     FROM AGENTES_DISTRIBUCION_COMISION
    WHERE IdPoliza   = nIdPoliza
      AND IDetPol    = nIdetPol
-     AND Cod_Agente = nCod_Agente;  
----------------
-/*  SELECT ADC.Cod_Agente_Distr Cod_Agente, ADC.Porc_Com_Proporcional Porc_Comision,
-         ADC.Porc_Com_Distribuida, CASE WHEN A.CODTIPO = 'HONORF' THEN  'H'
-                                        WHEN A.CODTIPO = 'HONORM' THEN  'H'
-                                   ELSE  'C' END ORIGEN
-    FROM AGENTES_DISTRIBUCION_COMISION ADC,
-         AGENTES A
-   WHERE ADC.IdPoliza   = nIdPoliza
-     AND ADC.IDetPol    = nIdetPol
-     AND ADC.Cod_Agente = nCod_Agente
-     AND A.COD_AGENTE   = ADC.COD_AGENTE_DISTR
-     AND A.CODCIA       = nCodCia
-     AND A.CODEMPRESA   = nCodEmpresa;*/
----------------
+     AND Cod_Agente = nCod_Agente;
 BEGIN
    SELECT NumPagos, FrecPagos
      INTO nNumPagos, nFrecPagos
@@ -4644,18 +4612,14 @@ BEGIN
             nMontoComiMoneda := nMontoComisiones / nTasaCambio * (R_AGENTES.Porc_Comision/100) * (I.Porc_Comision/100);
          END IF;
 
- /*        BEGIN  ------- JMMD20201112 SE COMENTA PARA QUE GRABE REGISTRO POR REGISTRO SIN ACUMULAR
+         BEGIN
             SELECT 'S'
               INTO cExiste
               FROM COMISIONES
              WHERE IdPoliza  = nIdPoliza
                AND IdFactura = nIdFactura
         --       AND IDETPOL = I.IDETPOL
-              AND Cod_Agente = R_Agentes.Cod_Agente
----- JMMD20201112              
-              AND ORIGEN     = R_Agentes.Origen
----- JMMD20201112              
-              ;
+              AND Cod_Agente = R_Agentes.Cod_Agente;
          EXCEPTION
             WHEN NO_DATA_FOUND THEN
                cExiste :='N';
@@ -4663,11 +4627,11 @@ BEGIN
                cExiste :='S';
          END;
 
-         IF cExiste = 'N' THEN  */  ---- JMMD20201112 SE COMENTA PARA QUE GRABE REGISTRO POR REGISTRO SIN ACUMULAR
+         IF cExiste = 'N' THEN
             OC_COMISIONES.INSERTAR_COMISION_FACT(nIdFactura, nIdPoliza, I.IdetPol, cCodMoneda, R_Agentes.Cod_Agente,
                                                  nCodCia, nCodEmpresa, nMontoComiLocal, nMontoComiMoneda,
                                                  nTasaCambio, R_Agentes.Origen, I.IdTipoSeg);
-/*         ELSIF cExiste = 'S' THEN  ------- JMMD20201112 SE COMENTA PARA QUE GRABE REGISTRO POR REGISTRO SIN ACUMULAR
+         ELSIF cExiste = 'S' THEN
             UPDATE COMISIONES
                SET Comision_Moneda  = Comision_Moneda + nMontoComiMoneda,
                    Comision_Local   = Comision_Local   + nMontoComiLocal,
@@ -4690,7 +4654,7 @@ BEGIN
             DELETE DETALLE_COMISION
              WHERE IdComision = nIdComision;
             OC_DETALLE_COMISION.INSERTA_DETALLE_COMISION(nCodCia, nIdPoliza, nIdComision, R_Agentes.Origen, I.IdTipoSeg);
-         END IF; */  -------- JMMD20201112 SE COMENTA PARA QUE GRABE REGISTRO POR REGISTRO SIN ACUMULAR COMISIONES
+         END IF;
          nMontoComiLocal := 0;
       END LOOP;
       nMontoComiLocal:=0;
@@ -5239,10 +5203,10 @@ BEGIN
 
       IF OC_GENERALES.VALIDA_FECHA(dFecPago) = 'S' THEN
          -- LARPLA
-         nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIDetPol,        nCodCliente, dFecPago, 
-                                            nMtoPago,            nMtoPagoMoneda,  nIdEndoso,   nMtoComisiPag, 
-                                            nMtoComisiMonedaPag, NP,              nTasaCambio, nCod_Agente, 
-                                            nCodTipoDoc,         pCodCia,         cCodMoneda,  NULL, 
+         nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIDetPol,        nCodCliente, dFecPago,
+                                            nMtoPago,            nMtoPagoMoneda,  nIdEndoso,   nMtoComisiPag,
+                                            nMtoComisiMonedaPag, NP,              nTasaCambio, nCod_Agente,
+                                            nCodTipoDoc,         pCodCia,         cCodMoneda,  NULL,
                                             nTransa,             cIndFactElectronica);
 
          FOR W IN CPTO_PRIMAS_Q LOOP
@@ -5564,10 +5528,10 @@ BEGIN
             END IF;
  --IF OC_generales.VALIDA_FECHA(dFecPago) = 'S' THEN
             -- LARPLA
-            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago, 
-                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag, 
-                                               nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente, 
-                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago, 
+            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago,
+                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag,
+                                               nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente,
+                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago,
                                                nTransa,             cIndFactElectronica);
 
             FOR W IN CPTO_PRIMAS_Q LOOP
@@ -6172,10 +6136,10 @@ BEGIN
        --  dFecPago := trunc(SYSDATE);
       IF OC_GENERALES.VALIDA_FECHA(dFecPago) = 'S' THEN
             -- LARPLA
-            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,          /*nIDetPol*/1,  nCodCliente, dFecPago, 
-                                              nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag, 
-                                              nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente, 
-                                              nCodTipoDoc,         pCodCia,        cCodMoneda,  NULL, 
+            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,          /*nIDetPol*/1,  nCodCliente, dFecPago,
+                                              nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag,
+                                              nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente,
+                                              nCodTipoDoc,         pCodCia,        cCodMoneda,  NULL,
                                               nTransa,             cIndFactElectronica);
 
             FOR W IN CPTO_PRIMAS_Q LOOP
@@ -6495,10 +6459,10 @@ BEGIN
             END IF;
  --IF OC_generales.VALIDA_FECHA(dFecPago) = 'S' THEN
             -- LARPLA
-            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago, 
-                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag, 
-                                               nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente, 
-                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago, 
+            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago,
+                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag,
+                                               nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente,
+                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago,
                                                nTransa, cIndFactElectronica);
 
             FOR W IN CPTO_PRIMAS_Q LOOP
@@ -7114,10 +7078,10 @@ BEGIN
       IF OC_generales.VALIDA_FECHA(dFecPago) = 'S'   THEN
       --  IF  nMontoAdic > 0 THEN
          -- LARPLA
-         nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           /*nIDetPol*/1,   nCodCliente, dFecPago, 
-                                            nMtoPago,            nMtoPagoMoneda,  nIdEndoso,   nMtoComisiPag, 
-                                            nMtoComisiMonedaPag, NP,              nTasaCambio, nCod_Agente, 
-                                            nCodTipoDoc,         pCodCia,         cCodMoneda,  NULL, 
+         nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           /*nIDetPol*/1,   nCodCliente, dFecPago,
+                                            nMtoPago,            nMtoPagoMoneda,  nIdEndoso,   nMtoComisiPag,
+                                            nMtoComisiMonedaPag, NP,              nTasaCambio, nCod_Agente,
+                                            nCodTipoDoc,         pCodCia,         cCodMoneda,  NULL,
                                             nTransa,             cIndFactElectronica);
 
          FOR W IN CPTO_PRIMAS_Q LOOP
@@ -7382,10 +7346,10 @@ BEGIN
             END IF;
  --IF OC_generales.VALIDA_FECHA(dFecPago) = 'S' THEN
             -- LARPLA
-            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago, 
-                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag, 
-                                               nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente, 
-                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago, 
+            nIdFactura := OC_FACTURAS.INSERTAR(nIdPoliza,           nIdetPol,       nCodCliente, dFecPago,
+                                               nMtoPago,            nMtoPagoMoneda, nIdEndoso,   nMtoComisiPag,
+                                               nMtoComisiMonedaPag, NP,             nTasaCambio, nCod_Agente,
+                                               nCodTipoDoc,         pCodCia,        cCodMoneda,  J.CodResPago,
                                                nTransa,             cIndFactElectronica);
 
             FOR W IN CPTO_PRIMAS_Q LOOP
@@ -7584,4 +7548,3 @@ END PROC_EMITE_FACT_ENDO_PERIODO;
  END F_GET_FACT;
 
 END OC_FACTURAR;
-/
