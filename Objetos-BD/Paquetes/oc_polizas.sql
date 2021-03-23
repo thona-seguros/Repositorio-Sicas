@@ -185,15 +185,17 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
     PROCEDURE SEND_MAIL(cCtaEnvio IN VARCHAR2,cPwdEmail IN VARCHAR2,cEmail IN VARCHAR2, cEmailDest IN VARCHAR2,cEmailCC IN VARCHAR2 DEFAULT NULL,
                         cEmailBCC IN VARCHAR2 DEFAULT NULL,cSubject IN VARCHAR2,cMessage IN VARCHAR2);
 
-    PROCEDURE PRE_EMITE_POLIZA(P_CODCIA NUMBER, P_CODEMPRESA NUMBER, P_IDPOLIZA NUMBER, P_IDTRANSACCION   NUMBER);  -- LARPLA
+    PROCEDURE PRE_EMITE_POLIZA(P_CodCia NUMBER, P_CodEmpresa NUMBER, P_IdPoliza NUMBER, P_IDTRANSACCION   NUMBER);  -- LARPLA
 
-    PROCEDURE LIBERA_PRE_EMITE(P_CODCIA NUMBER, P_CODEMPRESA NUMBER, P_IDPOLIZA NUMBER, P_FECHA_PAGO DATE); --LARPLA   
+    PROCEDURE LIBERA_PRE_EMITE(P_CodCia NUMBER, P_CodEmpresa NUMBER, P_IdPoliza NUMBER, P_Fecha_Pago DATE); --LARPLA   
 
     FUNCTION DIA_COBRO (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN NUMBER;
 
     FUNCTION BLOQUEADA_PLD(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
 
     FUNCTION LIBERADA_PLD(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
+    
+    PROCEDURE LIBERA_PRE_EMITE_PLATAFORMA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFechaPago DATE);
 
 END OC_POLIZAS;
 /
@@ -3942,7 +3944,7 @@ BEGIN
 END SEND_MAIL;
 
 
-PROCEDURE PRE_EMITE_POLIZA(P_CODCIA NUMBER, P_CODEMPRESA NUMBER, P_IDPOLIZA NUMBER, P_IDTRANSACCION   NUMBER) IS  -- PREEMI   INICIO
+PROCEDURE PRE_EMITE_POLIZA(P_CodCia NUMBER, P_CodEmpresa NUMBER, P_IdPoliza NUMBER, P_IDTRANSACCION   NUMBER) IS  -- PREEMI   INICIO
 --
 W_FE_INIVIG      PREEMISION.FE_INIVIG%TYPE;
 W_FE_FINVIG      PREEMISION.FE_FINVIG%TYPE;
@@ -3954,8 +3956,8 @@ BEGIN
     SELECT P.FECINIVIG,   P.FECFINVIG
       INTO W_FE_INIVIG,   W_FE_FINVIG
       FROM POLIZAS P
-     WHERE P.IDPOLIZA = P_IDPOLIZA
-       AND P.CODCIA   = P_CODCIA;
+     WHERE P.IDPOLIZA = P_IdPoliza
+       AND P.CODCIA   = P_CodCia;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN 
          W_FE_INIVIG := NULL;
@@ -3969,64 +3971,64 @@ BEGIN
   --
   UPDATE COBERTURAS
      SET STSCOBERTURA = 'PRE'
-   WHERE CODCIA       = P_CODCIA
-     AND IDPOLIZA     = P_IDPOLIZA
+   WHERE CODCIA       = P_CodCia
+     AND IDPOLIZA     = P_IdPoliza
      AND STSCOBERTURA = 'EMI';
   --
   UPDATE COBERT_ACT
      SET STSCOBERTURA = 'PRE'
-   WHERE CODCIA       = P_CODCIA
-     AND IDPOLIZA     = P_IDPOLIZA
+   WHERE CODCIA       = P_CodCia
+     AND IDPOLIZA     = P_IdPoliza
      AND STSCOBERTURA = 'EMI';
   --
   UPDATE ASISTENCIAS_DETALLE_POLIZA
      SET STSASISTENCIA = 'PREEMI'
-   WHERE CODCIA        = P_CODCIA
-     AND CODEMPRESA    = P_CODEMPRESA
-     AND IDPOLIZA      = P_IDPOLIZA
+   WHERE CODCIA        = P_CodCia
+     AND CODEMPRESA    = P_CodEmpresa
+     AND IDPOLIZA      = P_IdPoliza
      AND STSASISTENCIA = 'EMITID';
   --
   UPDATE BENEFICIARIO
      SET ESTADO = 'PREEMI'
-   WHERE IDPOLIZA = P_IDPOLIZA
+   WHERE IDPOLIZA = P_IdPoliza
      AND ESTADO   = 'EMITID';
   --
   UPDATE COBERTURA_ASEG
      SET STSCOBERTURA = 'PRE'
-   WHERE CODCIA       = P_CODCIA
-     AND IDPOLIZA     = P_IDPOLIZA
+   WHERE CODCIA       = P_CodCia
+     AND IDPOLIZA     = P_IdPoliza
      AND STSCOBERTURA = 'EMI';
   --
   UPDATE COBERT_ACT_ASEG
      SET STSCOBERTURA = 'PRE'
-   WHERE CODCIA       = P_CODCIA
-     AND IDPOLIZA     = P_IDPOLIZA
+   WHERE CODCIA       = P_CodCia
+     AND IDPOLIZA     = P_IdPoliza
      AND STSCOBERTURA = 'EMI';
   --
   UPDATE ASEGURADO_CERTIFICADO
      SET ESTADO = 'PRE'
-   WHERE CODCIA   = P_CODCIA
-     AND IDPOLIZA = P_IDPOLIZA
+   WHERE CODCIA   = P_CodCia
+     AND IDPOLIZA = P_IdPoliza
      AND ESTADO   = 'EMI';
   --
   UPDATE ASISTENCIAS_ASEGURADO
      SET STSASISTENCIA = 'PREEMI'        
-   WHERE CODCIA     = P_CODCIA
-     AND CODEMPRESA = P_CODEMPRESA
-     AND IDPOLIZA   = P_IDPOLIZA
+   WHERE CODCIA     = P_CodCia
+     AND CODEMPRESA = P_CodEmpresa
+     AND IDPOLIZA   = P_IdPoliza
      AND STSASISTENCIA = 'EMITID';
   --
   UPDATE CLAUSULAS_POLIZA
      SET ESTADO = 'PREEMI'
-   WHERE CODCIA   = P_CODCIA
-     AND IDPOLIZA = P_IDPOLIZA
+   WHERE CODCIA   = P_CodCia
+     AND IDPOLIZA = P_IdPoliza
      AND ESTADO   = 'EMITID';
   --
   UPDATE FACTURAS
      SET STSFACT            = 'PRE',
          INDFACTELECTRONICA = 'N'   -- CANCELA FACTURACION ELECTRONICA
-   WHERE CODCIA   = P_CODCIA
-     AND IDPOLIZA = P_IDPOLIZA
+   WHERE CODCIA   = P_CodCia
+     AND IDPOLIZA = P_IdPoliza
      AND STSFACT  = 'EMI';
   --
   UPDATE COMPROBANTES_CONTABLES
@@ -4037,12 +4039,12 @@ BEGIN
   --    
   UPDATE DETALLE_POLIZA
      SET STSDETALLE = 'PRE'
-   WHERE IDPOLIZA   = P_IDPOLIZA
+   WHERE IDPOLIZA   = P_IdPoliza
      AND STSDETALLE = 'EMI';
   --
   UPDATE POLIZAS
      SET STSPOLIZA = 'PRE'
-   WHERE IDPOLIZA  = P_IDPOLIZA
+   WHERE IDPOLIZA  = P_IdPoliza
      AND STSPOLIZA = 'EMI';
   --
   INSERT INTO PREEMISION
@@ -4052,7 +4054,7 @@ BEGIN
     FE_INIVIG_PRE,  FE_FINVIG_PRE,
     FE_PREEMISION,  USUARIO_PRE)
   VALUES
-   (P_CODCIA,         P_IDPOLIZA,
+   (P_CodCia,         P_IdPoliza,
     W_FE_INIVIG,      W_FE_FINVIG,
     SYSDATE,          USER,
     '',  '',
@@ -4064,12 +4066,12 @@ END PRE_EMITE_POLIZA;
 --
 --
 --
-PROCEDURE LIBERA_PRE_EMITE(P_CODCIA NUMBER, P_CODEMPRESA NUMBER, P_IDPOLIZA NUMBER, P_FECHA_PAGO DATE) IS  
+PROCEDURE LIBERA_PRE_EMITE(P_CodCia NUMBER, P_CodEmpresa NUMBER, P_IdPoliza NUMBER, P_Fecha_Pago DATE) IS  
 --
-WD_FECINIVIG_POL    POLIZAS.FECINIVIG%TYPE;
-WD_FECFINVIG_POL    POLIZAS.FECFINVIG%TYPE;
-WN_IDTRANSACCION    TRANSACCION.IDTRANSACCION%TYPE;
-WC_CODPLANPAGO      POLIZAS.CODPLANPAGO%TYPE;
+Wd_FecIniVig_Pol    POLIZAS.FECINIVIG%TYPE;
+Wd_FecFinVig_Pol    POLIZAS.FECFINVIG%TYPE;
+Wn_IdTransaccion    TRANSACCION.IDTRANSACCION%TYPE;
+WC_CodPlanPago      POLIZAS.CodPlanPago%TYPE;
 WN_NUMPAGOS         NUMBER;
 WC_FRECPAGOS        NUMBER;
 WD_FECINIVIG_REC    POLIZAS.FECINIVIG%TYPE;
@@ -4077,99 +4079,104 @@ WD_FECFINVIG_REC    POLIZAS.FECFINVIG%TYPE;
 --
 WN_MESES_VIGENCIA   NUMBER(6) := 0;
 
+nDiasVigencia        NUMBER;
+
 --
 CURSOR RECIBOS IS
 SELECT F.IDFACTURA, F.IDENDOSO, F.NUMCUOTA
   FROM FACTURAS F
- WHERE F.IDPOLIZA = P_IDPOLIZA
+ WHERE F.IDPOLIZA = P_IdPoliza
  ORDER BY F.IDFACTURA
 ;
 --
 BEGIN
-  BEGIN
-    SELECT MONTHS_BETWEEN(FECFINVIG,FECINIVIG),  CODPLANPAGO
-      INTO WN_MESES_VIGENCIA,                    WC_CODPLANPAGO
-      FROM POLIZAS P
-     WHERE IDPOLIZA = P_IDPOLIZA;
-  EXCEPTION
+   BEGIN
+    SELECT MONTHS_BETWEEN(FECFINVIG,FECINIVIG),  CodPlanPago
+      INTO WN_MESES_VIGENCIA,                    WC_CodPlanPago
+     /* SELECT FecFinVig - FecIniVig, CodPlanPago
+        INTO nDiasVigencia, WC_CodPlanPago*/
+        FROM POLIZAS P
+       WHERE IDPOLIZA = P_IdPoliza;
+   EXCEPTION
     WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR (-20100,'No Existe POLIZA '||P_IDPOLIZA);
-  END;
+         RAISE_APPLICATION_ERROR (-20100,'No Existe POLIZA '||P_IdPoliza);
+   END;
   --
-  WD_FECINIVIG_POL := P_FECHA_PAGO;
-  WD_FECFINVIG_POL := ADD_MONTHS(P_FECHA_PAGO,WN_MESES_VIGENCIA);
+  Wd_FecIniVig_Pol := P_Fecha_Pago;
+  Wd_FecFinVig_Pol := ADD_MONTHS(P_Fecha_Pago,WN_MESES_VIGENCIA);
+ -- Wd_FecFinVig_Pol := P_Fecha_Pago + nDiasVigencia;
   --
   BEGIN
     SELECT NUMPAGOS,     FRECPAGOS
       INTO WN_NUMPAGOS,  WC_FRECPAGOS
       FROM PLAN_DE_PAGOS 
-     WHERE CodCia      = P_CODCIA
-       AND CodEmpresa  = P_CODEMPRESA
-       AND CodPlanPago = WC_CODPLANPAGO;
+     WHERE CodCia      = P_CodCia
+       AND CodEmpresa  = P_CodEmpresa
+       AND CodPlanPago = WC_CodPlanPago;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR (-20100,'No Existe Plan de Pagos '||WC_CODPLANPAGO);
+         RAISE_APPLICATION_ERROR (-20100,'No Existe Plan de Pagos '||WC_CodPlanPago);
   END;
   --
   UPDATE COBERTURAS
      SET STSCOBERTURA = 'EMI'
-   WHERE CODCIA       = P_CODCIA
-     AND IDPOLIZA     = P_IDPOLIZA
+   WHERE CODCIA       = P_CodCia
+     AND IDPOLIZA     = P_IdPoliza
      AND STSCOBERTURA = 'PRE';
   --
   UPDATE COBERT_ACT 
      SET STSCOBERTURA = 'EMI'
-   WHERE CODCIA       = P_CODCIA
-     AND IDPOLIZA     = P_IDPOLIZA
+   WHERE CODCIA       = P_CodCia
+     AND IDPOLIZA     = P_IdPoliza
      AND STSCOBERTURA = 'PRE';
   --
   UPDATE ASISTENCIAS_DETALLE_POLIZA
      SET STSASISTENCIA = 'EMITID',
-         FECSTS        = WD_FECINIVIG_POL
-   WHERE CODCIA        = P_CODCIA
-     AND CODEMPRESA    = P_CODEMPRESA
-     AND IDPOLIZA      = P_IDPOLIZA
+         FECSTS        = Wd_FecIniVig_Pol
+   WHERE CODCIA        = P_CodCia
+     AND CODEMPRESA    = P_CodEmpresa
+     AND IDPOLIZA      = P_IdPoliza
      AND STSASISTENCIA= 'PREEMI';
   --
   UPDATE BENEFICIARIO
      SET ESTADO    = 'EMITID',
-         FECESTADO = WD_FECINIVIG_POL,
-         FECALTA   = WD_FECINIVIG_POL
-   WHERE IDPOLIZA = P_IDPOLIZA
+         FECESTADO = Wd_FecIniVig_Pol,
+         FECALTA   = Wd_FecIniVig_Pol
+   WHERE IDPOLIZA = P_IdPoliza
      AND ESTADO   = 'PREEMI';
   --
   UPDATE COBERTURA_ASEG
      SET STSCOBERTURA = 'EMI'
-   WHERE CODCIA       = P_CODCIA
-     AND IDPOLIZA     = P_IDPOLIZA
+   WHERE CODCIA       = P_CodCia
+     AND IDPOLIZA     = P_IdPoliza
      AND STSCOBERTURA = 'PRE';
   --
   UPDATE COBERT_ACT_ASEG
      SET STSCOBERTURA = 'EMI'
-   WHERE CODCIA       = P_CODCIA
-     AND IDPOLIZA     = P_IDPOLIZA
+   WHERE CODCIA       = P_CodCia
+     AND IDPOLIZA     = P_IdPoliza
      AND STSCOBERTURA = 'PRE';
   --
   UPDATE ASEGURADO_CERTIFICADO
      SET ESTADO = 'EMI'
-   WHERE CODCIA   = P_CODCIA
-     AND IDPOLIZA = P_IDPOLIZA
+   WHERE CODCIA   = P_CodCia
+     AND IDPOLIZA = P_IdPoliza
      AND ESTADO   = 'PRE';
   --
   UPDATE ASISTENCIAS_ASEGURADO
      SET STSASISTENCIA = 'EMITID',
-         FECSTS        = WD_FECINIVIG_POL
-   WHERE CODCIA        = P_CODCIA
-     AND CODEMPRESA    = P_CODEMPRESA
-     AND IDPOLIZA      = P_IDPOLIZA
+         FECSTS        = Wd_FecIniVig_Pol
+   WHERE CODCIA        = P_CodCia
+     AND CODEMPRESA    = P_CodEmpresa
+     AND IDPOLIZA      = P_IdPoliza
      AND STSASISTENCIA = 'PREEMI';
   --
   UPDATE CLAUSULAS_POLIZA
      SET ESTADO          = 'EMITID',
-         INICIO_VIGENCIA = WD_FECINIVIG_POL,
-         FIN_VIGENCIA    = WD_FECFINVIG_POL
-   WHERE CODCIA   = P_CODCIA
-     AND IDPOLIZA = P_IDPOLIZA
+         INICIO_VIGENCIA = Wd_FecIniVig_Pol,
+         FIN_VIGENCIA    = Wd_FecFinVig_Pol
+   WHERE CODCIA   = P_CodCia
+     AND IDPOLIZA = P_IdPoliza
      AND ESTADO   = 'PREEMI';
   --
   -- LIBERA FACTURACION ELECTRONICA  
@@ -4179,9 +4186,9 @@ BEGIN
      IF WN_NUMPAGOS > 1 THEN  --SI ES DIFEENTE A ANUAL
          IF R.NUMCUOTA = 1 THEN
             IF WC_FRECPAGOS NOT IN (15,7) THEN
-               WD_FECINIVIG_REC := WD_FECINIVIG_POL;
+               WD_FECINIVIG_REC := Wd_FecIniVig_Pol;
             ELSE
-               WD_FECINIVIG_REC := WD_FECINIVIG_POL + WC_FRECPAGOS;
+               WD_FECINIVIG_REC := Wd_FecIniVig_Pol + WC_FRECPAGOS;
             END IF;
          ELSE
             IF WC_FRECPAGOS NOT IN (15,7) THEN
@@ -4192,13 +4199,13 @@ BEGIN
 
          END IF;
          --
-         WD_FECFINVIG_REC := OC_FACTURAS.VIGENCIA_FINAL(P_CODCIA,          P_CODEMPRESA, P_IDPOLIZA, 
+         WD_FECFINVIG_REC := OC_FACTURAS.VIGENCIA_FINAL(P_CodCia,          P_CodEmpresa, P_IdPoliza, 
                                                         R.IDFACTURA,       R.IDENDOSO,   WD_FECINIVIG_REC,
-                                                        WD_FECFINVIG_POL,  R.NUMCUOTA,   WC_CODPLANPAGO);
+                                                        Wd_FecFinVig_Pol,  R.NUMCUOTA,   WC_CodPlanPago);
          --
       ELSE  -- SI ES ANUAL
-         WD_FECINIVIG_REC := WD_FECINIVIG_POL;
-         WD_FECFINVIG_REC := ADD_MONTHS(WD_FECINIVIG_POL,12);
+         WD_FECINIVIG_REC := Wd_FecIniVig_Pol;
+         WD_FECFINVIG_REC := ADD_MONTHS(Wd_FecIniVig_Pol,12);
       END IF;
       --
       UPDATE FACTURAS 
@@ -4208,8 +4215,8 @@ BEGIN
              FECSTS             = WD_FECINIVIG_REC,
              FECCONTABILIZADA   = WD_FECINIVIG_REC,
              FECFINVIG          = WD_FECFINVIG_REC
-       WHERE CODCIA    = P_CODCIA
-         AND IDPOLIZA  = P_IDPOLIZA
+       WHERE CODCIA    = P_CodCia
+         AND IDPOLIZA  = P_IdPoliza
          AND IDFACTURA = R.IDFACTURA
          AND STSFACT   = 'PRE';
   END LOOP;
@@ -4218,56 +4225,56 @@ BEGIN
   --
   BEGIN
     SELECT DISTINCT(IDTRANSACCION)
-      INTO WN_IDTRANSACCION
+      INTO Wn_IdTransaccion
       FROM FACTURAS
-     WHERE CODCIA   = P_CODCIA
-       AND IDPOLIZA = P_IDPOLIZA;
+     WHERE CODCIA   = P_CodCia
+       AND IDPOLIZA = P_IdPoliza;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
-         WN_IDTRANSACCION := 0;
+         Wn_IdTransaccion := 0;
     WHEN TOO_MANY_ROWS THEN
-         WN_IDTRANSACCION := 0;
+         Wn_IdTransaccion := 0;
     WHEN OTHERS THEN
-         WN_IDTRANSACCION := 0;
+         Wn_IdTransaccion := 0;
   END;
   --
   -- LIBERA CONTABILIDAD  VERIFICAR LA OPERATIVA CORRECTA CON PAGO
   --
   UPDATE TRANSACCION
-     SET FECHATRANSACCION = WD_FECINIVIG_POL
-   WHERE IDTRANSACCION = WN_IDTRANSACCION;
+     SET FECHATRANSACCION = Wd_FecIniVig_Pol
+   WHERE IDTRANSACCION = Wn_IdTransaccion;
   --
   UPDATE COMPROBANTES_CONTABLES
      SET StsComprob = 'CUA',
-         FECCOMPROB  = WD_FECINIVIG_POL,
-         FECSTS      = WD_FECINIVIG_POL
-   WHERE NUMTRANSACCION = WN_IDTRANSACCION
+         FECCOMPROB  = Wd_FecIniVig_Pol,
+         FECSTS      = Wd_FecIniVig_Pol
+   WHERE NUMTRANSACCION = Wn_IdTransaccion
      AND StsComprob    = 'PRE';
   --    
   UPDATE DETALLE_POLIZA
      SET STSDETALLE = 'EMI',
-         FECINIVIG  = WD_FECINIVIG_POL,
-         FECFINVIG  = WD_FECFINVIG_POL
-   WHERE IDPOLIZA   = P_IDPOLIZA
+         FECINIVIG  = Wd_FecIniVig_Pol,
+         FECFINVIG  = Wd_FecFinVig_Pol
+   WHERE IDPOLIZA   = P_IdPoliza
      AND STSDETALLE = 'PRE';
   --
   UPDATE POLIZAS
      SET STSPOLIZA     = 'EMI',
-         FECINIVIG     = WD_FECINIVIG_POL,
-         FECFINVIG     = WD_FECFINVIG_POL,
-         FECSOLICITUD  = WD_FECINIVIG_POL,
-         FECEMISION    = WD_FECINIVIG_POL,
-         FECRENOVACION = ADD_MONTHS(WD_FECINIVIG_POL,12),
-         FECSTS        = WD_FECINIVIG_POL
-   WHERE IDPOLIZA  = P_IDPOLIZA
+         FECINIVIG     = Wd_FecIniVig_Pol,
+         FECFINVIG     = Wd_FecFinVig_Pol,
+         FECSOLICITUD  = Wd_FecIniVig_Pol,
+         FECEMISION    = Wd_FecIniVig_Pol,
+         FECRENOVACION = ADD_MONTHS(Wd_FecIniVig_Pol,12),
+         FECSTS        = Wd_FecIniVig_Pol
+   WHERE IDPOLIZA  = P_IdPoliza
      AND STSPOLIZA = 'PRE';
  --
  UPDATE PREEMISION
-    SET FE_INIVIG_PRE = WD_FECINIVIG_POL,
-        FE_FINVIG_PRE = WD_FECFINVIG_POL,
+    SET FE_INIVIG_PRE = Wd_FecIniVig_Pol,
+        FE_FINVIG_PRE = Wd_FecFinVig_Pol,
         FE_PREEMISION = SYSDATE,
         USUARIO_PRE   = USER  
-  WHERE ID_POLIZA = P_IDPOLIZA;
+  WHERE ID_POLIZA = P_IdPoliza;
   --
 END LIBERA_PRE_EMITE;     -- PREEMI  FIN
 
@@ -4330,6 +4337,181 @@ BEGIN
    END;
    RETURN cExiste;
 END LIBERADA_PLD;
+
+PROCEDURE LIBERA_PRE_EMITE_PLATAFORMA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFechaPago DATE) IS
+--
+dFecIniVigPol     POLIZAS.FecIniVig%TYPE;
+dFecFinVigPol     POLIZAS.FecFinVig%TYPE;
+dFecIniVig        POLIZAS.FecIniVig%TYPE;
+dFecFinVig        POLIZAS.FecFinVig%TYPE;
+nIdTransaccion    TRANSACCION.IdTransaccion%TYPE;
+cCodPlanPago      POLIZAS.CodPlanPago%TYPE;
+nNumPagos         NUMBER;
+nFrecPagos        NUMBER;
+dFecIniVigRec     POLIZAS.FecIniVig%TYPE;
+dFecFinVigRec     POLIZAS.FecFinVig%TYPE;
+--
+nMesesVigencia   NUMBER(6) := 0;
+
+nDiasVigencia        NUMBER;
+
+--
+CURSOR RECIBOS IS
+   SELECT F.IdFactura, F.IdEndoso, F.NumCuota
+     FROM FACTURAS F
+    WHERE F.CodCia   = nCodCia
+      AND F.IdPoliza = nIdPoliza
+    ORDER BY F.IdFactura;
+--
+BEGIN
+   BEGIN
+      SELECT P.FecFinVig - P.FecIniVig, P.CodPlanPago, P.FecFinVig, P.FecIniVig
+        INTO nDiasVigencia, cCodPlanPago, dFecFinVig, dFecIniVig
+        FROM POLIZAS P
+       WHERE IdPoliza = nIdPoliza;
+   EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR (-20100,'No Existe POLIZA '||nIdPoliza);
+   END;
+  --
+   dFecIniVigPol := dFechaPago;
+  --
+   BEGIN
+      SELECT NumPagos, FrecPagos
+        INTO nNumPagos, nFrecPagos
+        FROM PLAN_DE_PAGOS 
+       WHERE CodCia      = nCodCia
+         AND CodEmpresa  = nCodEmpresa
+         AND CodPlanPago = cCodPlanPago;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR (-20100,'No Existe Plan de Pagos '||cCodPlanPago);
+   END;
+  --
+   UPDATE Coberturas
+      SET StsCobertura = 'EMI'
+    WHERE CodCia       = nCodCia
+      AND IdPoliza     = nIdPoliza
+      AND StsCobertura = 'PRE';
+  --
+   UPDATE COBERT_ACT 
+      SET StsCobertura = 'EMI'
+    WHERE CodCia       = nCodCia
+      AND IdPoliza     = nIdPoliza
+      AND StsCobertura = 'PRE';
+  --
+  UPDATE ASISTENCIAS_DETALLE_POLIZA
+     SET StsAsistencia  = 'EMITID',
+         FecSts         = dFecIniVigPol
+   WHERE CodCia         = nCodCia
+     AND CodEmpresa     = nCodEmpresa
+     AND IdPoliza       = nIdPoliza
+     AND StsAsistencia  = 'PREEMI';
+  --
+  UPDATE BENEFICIARIO
+     SET Estado    = 'EMITID',
+         FecEstado = dFecIniVigPol,
+         FecAlta   = dFecIniVigPol
+   WHERE IdPoliza = nIdPoliza
+     AND Estado   = 'PREEMI';
+  --
+  UPDATE COBERTURA_ASEG
+     SET StsCobertura = 'EMI'
+   WHERE CodCia       = nCodCia
+     AND IdPoliza     = nIdPoliza
+     AND StsCobertura = 'PRE';
+  --
+  UPDATE COBERT_ACT_ASEG
+     SET StsCobertura = 'EMI'
+   WHERE CodCia       = nCodCia
+     AND IdPoliza     = nIdPoliza
+     AND StsCobertura = 'PRE';
+  --
+  UPDATE ASEGURADO_CERTIFICADO
+     SET Estado = 'EMI'
+   WHERE CodCia   = nCodCia
+     AND IdPoliza = nIdPoliza
+     AND Estado   = 'PRE';
+  --
+  UPDATE ASISTENCIAS_ASEGURADO
+     SET StsAsistencia = 'EMITID',
+         FecSts        = dFecIniVigPol
+   WHERE CodCia        = nCodCia
+     AND CodEmpresa    = nCodEmpresa
+     AND IdPoliza      = nIdPoliza
+     AND StsAsistencia = 'PREEMI';
+  --
+  UPDATE CLAUSULAS_POLIZA
+     SET Estado          = 'EMITID'
+   WHERE CodCia   = nCodCia
+     AND IdPoliza = nIdPoliza
+     AND Estado   = 'PREEMI';
+  --
+  -- LIBERA FACTURACION ELECTRONICA  
+  --
+   FOR R IN RECIBOS LOOP
+      --
+      UPDATE FACTURAS 
+         SET StsFact            = 'EMI',
+             IndFactElectronica = 'S',
+             FecSts             = dFecIniVigPol,
+             FecContabilizada   = dFecIniVigPol
+       WHERE CodCia    = nCodCia
+         AND IdPoliza  = nIdPoliza
+         AND IdFactura = R.IdFactura
+         AND StsFact   = 'PRE';
+   END LOOP;
+  --
+  --
+  --
+   BEGIN
+      SELECT DISTINCT(IdTransaccion)
+        INTO nIdTransaccion
+        FROM FACTURAS
+       WHERE CodCia   = nCodCia
+         AND IdPoliza = nIdPoliza;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         nIdTransaccion := 0;
+      WHEN TOO_MANY_ROWS THEN
+         nIdTransaccion := 0;
+      WHEN OTHERS THEN
+         nIdTransaccion := 0;
+   END;
+  --
+  -- LIBERA CONTABILIDAD  VERIFICAR LA OPERATIVA CORRECTA CON PAGO
+  --
+   UPDATE TRANSACCION
+     SET FechaTransaccion = dFecIniVigPol
+   WHERE IdTransaccion = nIdTransaccion;
+   --
+   UPDATE COMPROBANTES_CONTABLES
+     SET StsComprob = 'CUA',
+         FecComprob  = dFecIniVigPol,
+         FecSts      = dFecIniVigPol
+   WHERE NumTransaccion = nIdTransaccion
+     AND StsComprob    = 'PRE';
+   --    
+   UPDATE DETALLE_POLIZA
+     SET StsDetalle = 'EMI'
+   WHERE IdPoliza   = nIdPoliza
+     AND StsDetalle = 'PRE';
+   --
+   UPDATE POLIZAS
+     SET StsPoliza     = 'EMI',
+         FecEmision    = dFecIniVigPol,
+         FecSts        = SYSDATE
+   WHERE IdPoliza  = nIdPoliza
+     AND StsPoliza = 'PRE';
+   --
+   UPDATE PREEMISION
+    SET Fe_Inivig_Pre = dFecIniVig,
+        Fe_Finvig_Pre = dFecFinVig,
+        Fe_PreEmision = SYSDATE,
+        Usuario_Pre   = USER  
+   WHERE Id_Poliza = nIdPoliza;
+  --
+END LIBERA_PRE_EMITE_PLATAFORMA; 
 
 END OC_POLIZAS;
 /
