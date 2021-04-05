@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_COTIZACIONES_COBERT_WEB IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
 PROCEDURE INSERTAR( nCodCia              IN  COTIZACIONES_COBERT_WEB.CodCia%TYPE
                   , nCodEmpresa          IN  COTIZACIONES_COBERT_WEB.CodEmpresa%TYPE
                   , nIdCotizacion        IN  COTIZACIONES_COBERT_WEB.IdCotizacion%TYPE
@@ -58,13 +58,14 @@ FUNCTION ACTUALIZAR( nCodCia        IN  COTIZACIONES_COBERT_WEB.CodCia%TYPE
                    , nCodEmpresa    IN  COTIZACIONES_COBERT_WEB.CodEmpresa%TYPE
                    , xDatos         IN  XMLTYPE  
                    , xPrima         OUT XMLTYPE) RETURN XMLTYPE;
-
+                      
 PROCEDURE ACTUALIZA_DATOS_COBERTURA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, xGenerales XMLTYPE);       
 
 
 END OC_COTIZACIONES_COBERT_WEB;
 /
-create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
+
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
    PROCEDURE INSERTAR( nCodCia              IN  COTIZACIONES_COBERT_WEB.CodCia%TYPE
                      , nCodEmpresa          IN  COTIZACIONES_COBERT_WEB.CodEmpresa%TYPE
                      , nIdCotizacion        IN  COTIZACIONES_COBERT_WEB.IdCotizacion%TYPE
@@ -232,7 +233,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                               , nIdCotizacionOrig  IN  COTIZACIONES_COBERT_WEB.IdCotizacion%TYPE
                               , nIdCotizacion      IN  COTIZACIONES_COBERT_WEB.IdCotizacion%TYPE) IS
       cCodGpoCobertWebDesc  VARCHAR2(200);
-
+      
       CURSOR COB_WEB_Q IS
          SELECT IDetCotizacion, CodGpoCobertWeb, CodCobertWeb, SumaAsegCobLocal, SumaAsegCobMoneda,
                 Tasa, PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal, DeducibleCobMoneda,
@@ -343,7 +344,7 @@ CURSOR Grupos IS
          AND CodGpoCobertWeb     = nCodGpoCobertWeb_1
          AND A.CodCobertWeb      = NVL( cCodCobertWeb   , A.CodCobertWeb)
        ORDER BY A.IdetCotizacion, A.CodGpoCobertWeb, A.CodCobertWeb;
-
+       
 BEGIN
    SELECT IdTipoSeg, PlanCob, IndAsegModelo
      INTO cIdTipoSeg, cPlanCob, cIndAsegModelo
@@ -353,7 +354,7 @@ BEGIN
       AND IdCotizacion  = nIdCotizacion;
    --
    cResultado := '<?xml version="1.0"?> <DATA><IDCOTIZACION>' || nIdCotizacion || '</IDCOTIZACION>';
-
+   
    FOR x IN Grupos LOOP
       cResultado         := cResultado || '<GPOCOBERT>';
       cResultado         := cResultado || '<CODGPOCOBERTWEB>'  || x.CodGpoCobertWeb     || '</CODGPOCOBERTWEB>';
@@ -501,10 +502,9 @@ nMontoIva            NUMBER(14,2);
 cIndAsegModelo       SICAS_OC.COTIZACIONES.IndAsegModelo%TYPE;
 cIndListadoAseg      SICAS_OC.COTIZACIONES.IndListadoAseg%TYPE;
 --
-nFactorAjuste        SICAS_OC.COTIZACIONES.FactorAjuste%TYPE := 1;
+nFactorAjuste        SICAS_OC.COTIZACIONES.FactorAjuste%TYPE;
 cEscala              FACTOR_ESCALA_PO.Escala%TYPE;
 xFactorEscalaPO      XMLTYPE;
-cCodSubGrupo         COTIZACIONES_DETALLE.CodSubGrupo%TYPE;
 
    CURSOR Cotizaciones IS
    SELECT DISTINCT CodCia, CodEmpresa, IdCotizacion, IdetCotizacion
@@ -522,7 +522,7 @@ CURSOR Cotizacion_Coberturas IS
     WHERE CodCia        = nCodCia
       AND CodEmpresa    = nCodEmpresa
       AND IdCotizacion  = nIdCotizacion;
-
+      
 CURSOR COT_ASEG_Q IS
    SELECT CodCia, CodEmpresa, IdCotizacion, IDetCotizacion, IdAsegurado
      FROM COTIZACIONES_ASEG
@@ -530,14 +530,14 @@ CURSOR COT_ASEG_Q IS
       AND CodEmpresa       = nCodEmpresa
       AND IdCotizacion     = nIdCotizacion;
       --AND IDetCotizacion   = nIdetCotizacion;
-
+      
 CURSOR COT_SUBGPO_Q IS
    SELECT CodCia, CodEmpresa, IdCotizacion, IDetCotizacion
      FROM COTIZACIONES_DETALLE
     WHERE CodCia        = nCodCia
       AND CodEmpresa    = nCodEmpresa
       AND IdCotizacion  = nIdCotizacion;
-
+      
 BEGIN
    EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_DATE_FORMAT = ''DD/MM/YYYY''';
    --
@@ -666,18 +666,6 @@ BEGIN
          AND CodEmpresa    = nCodEmpresa
          AND IdCotizacion  = nIdCotizacion;
    END;
-   
-   /*BEGIN
-      SELECT CodSubGrupo
-        INTO cCodSubGrupo 
-        FROM COTIZACIONES_DETALLE
-       WHERE CodCia           = nCodCia
-         AND CodEmpresa       = nCodEmpresa
-         AND IdCotizacion     = nIdCotizacion
-         AND IdetCotizacion   = nIdetCotizacion;
-   END;*/
-   -- LIMPIA FACTORES DE AJUSTE
-  -- GT_COTIZACIONES_DETALLE.RESTAURA_FACTORAJUSTE(nCodCia, nCodEmpresa, nIdCotizacion, nIDetCotizacion, cCodSubGrupo);
    --
    FOR x IN Cotizaciones LOOP
       DELETE COTIZACIONES_COBERT_MASTER A
@@ -705,7 +693,7 @@ BEGIN
 --                                    AND  B.IdCotizacion   = A.IdCotizacion
 --                                    AND  B.IdetCotizacion = A.IdetCotizacion );
       --
-
+      
       ELSE
          DELETE COTIZACIONES_COBERT_ASEG A
          WHERE  A.CodCia         = x.CodCia
@@ -721,7 +709,6 @@ BEGIN
       END IF;
    END LOOP;
    -- 
-
    FOR x IN Cotizacion_Coberturas LOOP --- ACTUALIZA FACTOR DE AJUSTE PO ANTES DE CARGAR COBERTURAS
       IF OC_FACTOR_ESCALA_PO.EXISTE_FACTOR_ESCALA(X.CodCia, X.CodEmpresa, cIdTipoSeg, cPlanCob , X.CodCobertWeb) = 'S' THEN
          cEscala := OC_FACTOR_ESCALA_PO.ESCALA(X.CodCia, X.CodEmpresa, cIdTipoSeg, cPlanCob , X.CodCobertWeb);
@@ -735,24 +722,11 @@ BEGIN
                 VERSION '1.0" encoding="UTF-8')
            INTO xFactorEscalaPO
            FROM DUAL;
-
+         
          THONAPI.GENERALES_PLATAFORMA_DIGITAL.RECIBE_GENERALES_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, xFactorEscalaPO);
       END IF;
    END LOOP;
    
-   FOR x IN Cotizacion_Coberturas LOOP
-      GT_COTIZACIONES_COBERT_MASTER.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, cIdTipoSeg,
-                                                      cPlanCob, X.IdCotizacion, 
-                                                      X.IdetCotizacion, NULL, X.CodCobertWeb,
-                                                      NVL(X.SumaAsegCalculada,0), NVL(X.SalarioMensual,0),
-                                                      NVL(X.VecesSalario,0), NVL(X.Edad_Minima,0), 
-                                                      NVL(X.Edad_Maxima,0), NVL(X.Edad_Exclusion,0),
-                                                      NVL(X.SumaAseg_Minima,0), NVL(X.SumaAseg_Maxima,0),
-                                                      NVL(X.PorcExtraPrimaDet,0), NVL(X.MontoExtraprimaDet,0), NVL(X.SumaIngresada,0),
-                                                      NVL(X.DeducibleIngresado,0), NVL(X.CuotaPromedio,0), 
-                                                      NVL(X.PrimaPromedio,0));     
-   END LOOP;   
-
    IF NVL(cIndAsegModelo,'N') = 'S' THEN
       FOR I IN COT_SUBGPO_Q LOOP
          FOR X IN Cotizacion_Coberturas LOOP
@@ -787,10 +761,23 @@ BEGIN
                                                  I.IDetCotizacion, I.IdAsegurado);
          GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion, I.IDetCotizacion);  
       END LOOP;   
-   END IF;         
-
+   END IF;      
+   
+   FOR x IN Cotizacion_Coberturas LOOP
+      GT_COTIZACIONES_COBERT_MASTER.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, cIdTipoSeg,
+                                                      cPlanCob, X.IdCotizacion, 
+                                                      X.IdetCotizacion, NULL, X.CodCobertWeb,
+                                                      NVL(X.SumaAsegCalculada,0), NVL(X.SalarioMensual,0),
+                                                      NVL(X.VecesSalario,0), NVL(X.Edad_Minima,0), 
+                                                      NVL(X.Edad_Maxima,0), NVL(X.Edad_Exclusion,0),
+                                                      NVL(X.SumaAseg_Minima,0), NVL(X.SumaAseg_Maxima,0),
+                                                      NVL(X.PorcExtraPrimaDet,0), NVL(X.MontoExtraprimaDet,0), NVL(X.SumaIngresada,0),
+                                                      NVL(X.DeducibleIngresado,0), NVL(X.CuotaPromedio,0), 
+                                                      NVL(X.PrimaPromedio,0));     
+   END LOOP;      
+                                                         
    GENERALES_PLATAFORMA_DIGITAL.RECALCULAR_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, cIdTipoSeg, cPlanCob, 'N', 'N', 'S');
-
+                                  
    BEGIN
       SELECT PrimaCotLocal, PrimaCotMoneda, GastosExpedicion
         INTO nPrimaCotLocal, nPrimaCotMoneda, nGastosExpedicion
@@ -799,7 +786,7 @@ BEGIN
          AND CodEmpresa    = nCodEmpresa
          AND IdCotizacion  = nIdCotizacion;
    END;
-
+   
    BEGIN
       SELECT 'S'
         INTO cExiste
@@ -827,7 +814,7 @@ BEGIN
    ELSE
       nMontoIva   := 0;
    END IF;      
-
+   
    SELECT XMLELEMENT("DATA",   
             XMLELEMENT("PRIMALOCAL",nPrimaCotLocal),
             XMLELEMENT("PRIMAMONEDAEXT",nPrimaCotMoneda),
@@ -837,16 +824,16 @@ BEGIN
      INTO xPrima       
      FROM DUAL ;
    --
-
+   
    SELECT XMLROOT (xPrima, VERSION '1.0" encoding="UTF-8')
      INTO xPrima
      FROM DUAL;
-
+   
    xResultado := COBERTURAS_XML( nCodCia, nCodEmpresa, nIdCotizacion, NULL, NULL, NULL );
    --
   --- COMMIT;
    --
-
+   
    RETURN xResultado;
 EXCEPTION
    WHEN OTHERS THEN
@@ -898,7 +885,7 @@ BEGIN
          nDeducibleCobLocal  := nDeducibleCobMoneda * nTasaCambio;
       END IF;
    END LOOP;
-
+   
    UPDATE COTIZACIONES_COBERT_MASTER
       SET DeducibleCobMoneda  = NVL(nDeducibleCobMoneda,DeducibleCobMoneda),
           DeducibleCobLocal   = NVL(nDeducibleCobLocal,DeducibleCobLocal),
@@ -908,7 +895,7 @@ BEGIN
       AND IdCotizacion     = nIdCotizacion
       AND IDetCotizacion   = nIDetCotizacion
       AND CodCobert        = cCodCobert;
-
+      
    UPDATE COTIZACIONES_COBERTURAS
       SET DeducibleCobMoneda  = NVL(nDeducibleCobMoneda,DeducibleCobMoneda),
           DeducibleCobLocal   = NVL(nDeducibleCobLocal,DeducibleCobLocal),
@@ -921,3 +908,9 @@ BEGIN
 END ACTUALIZA_DATOS_COBERTURA;
 
 END OC_COTIZACIONES_COBERT_WEB;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM OC_COTIZACIONES_COBERT_WEB FOR SICAS_OC.OC_COTIZACIONES_COBERT_WEB;
+/
+GRANT EXECUTE ON SICAS_OC.OC_COTIZACIONES_COBERT_WEB TO PUBLIC;
+/
