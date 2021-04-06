@@ -541,11 +541,11 @@ BEGIN
                                                 PNJ.nacionalidad,
                                                 DP.Suma_Aseg_Local SumaAsegurada,
                                                 DP.Prima_Local PrimaNeta
-                                         FROM   ASEGURADO                   A,
+                                         FROM   POLIZAS                     P,
+                                                DETALLE_POLIZA              DP,
+                                                ASEGURADO                   A,
                                                 PERSONA_NATURAL_JURIDICA    PNJ,
                                                 AGENTE_POLIZA               AP,
-                                                POLIZAS                     P,
-                                                DETALLE_POLIZA              DP,
                                                 (SELECT DISTINCT C.CodCia, C.Cod_Agente, C.IdPoliza, D.Cod_Agente_Distr,
                                                          OC_AGENTES.NIVEL_AGENTE(C.CodCia, c.Cod_Agente ) Nivel
                                                     FROM COMISIONES C, AGENTES_DISTRIBUCION_POLIZA D,
@@ -575,7 +575,7 @@ BEGIN
                                          AND    P.codcia        = AP.codcia
                                          AND    AP.idpoliza     = DP.idpoliza
                                          AND    AP.codcia       = DP.codcia
-                                         AND    OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(A.codcia, P.idpoliza, DP.idetpol, A.cod_asegurado) = 'N'
+                                         AND    OC_POLIZAS.POLIZA_COLECTIVA(P.CodCia, P.CodEmpresa, P.IdPoliza) = 'N'
                                          AND    P.codcia         = nCodCia
                                          AND    P.codempresa     = nCodEmpresa
                                          AND    P.idpoliza       = NVL(nIdPoliza,P.IdPoliza)
@@ -632,12 +632,12 @@ BEGIN
                                                 PNJ.nacionalidad,
                                                 AC.SumaAseg SumaAsegurada,
                                                 AC.PrimaNeta
-                                         FROM   ASEGURADO_CERTIFICADO       AC,
+                                         FROM   POLIZAS                     P,
+                                                DETALLE_POLIZA              DP,
+                                                ASEGURADO_CERTIFICADO       AC,
                                                 ASEGURADO                   A,
                                                 PERSONA_NATURAL_JURIDICA    PNJ,
                                                 AGENTE_POLIZA               AP,
-                                                POLIZAS                     P,
-                                                DETALLE_POLIZA              DP,
                                                 (SELECT  DISTINCT C.CodCia, C.Cod_Agente, C.IdPoliza, D.Cod_Agente_Distr,
                                                          OC_AGENTES.NIVEL_AGENTE(C.CodCia, c.Cod_Agente ) Nivel
                                                     FROM COMISIONES C,
@@ -649,31 +649,21 @@ BEGIN
                                                      AND D.Cod_Agente     = P.Cod_Agente
                                                      AND C.IdPoliza       = P.IdPoliza
                                                      AND P.Ind_Principal  = 'S') D   
-                                         WHERE   P.idpoliza       = DP.idpoliza
+                                       WHERE     P.idpoliza       = DP.idpoliza
                                          AND     P.codcia         = DP.codcia
                                          AND     P.codempresa     = DP.codempresa
-                                         AND     AC.idpoliza      = P.idpoliza
-                                         AND     AC.cod_asegurado = DP.cod_asegurado
-                                         AND     AC.codcia        = DP.codcia
-                                         AND     AC.idetpol       = DP.idetpol
-                                         AND     A.cod_asegurado  = DP.cod_asegurado
-                                         AND     A.codcia         = DP.codcia
-                                         AND     A.codempresa     = DP.codempresa
-                                         AND     A.codcia         = P.codcia
-                                         AND     A.codempresa     = P.codempresa
-                                         AND     DP.stsdetalle   <> 'PRE'
+                                         AND     DP.idpoliza      = AC.idpoliza
+                                         AND     DP.codcia        = AC.codcia
+                                         AND     DP.idetpol       = AC.idetpol
+                                         AND     AC.cod_asegurado  = A.cod_asegurado
+                                         AND     AC.codcia         = A.codcia
                                          AND     A.tipo_doc_identificacion   = PNJ.tipo_doc_identificacion
                                          AND     A.num_doc_identificacion    = PNJ.num_doc_identificacion
                                          AND     PNJ.nombre       = NVL(cNombreContratante, PNJ.nombre)                      --> 11/03/2021  (JALV +)
                                          AND     (cApePatContratante IS NULL OR PNJ.apellido_paterno = cApePatContratante)   --> 11/03/2021  (JALV +)
                                          AND     (cApeMatContratante IS NULL OR PNJ.apellido_materno = cApeMatContratante)   --> 11/03/2021  (JALV +)
-                                         AND     A.codcia         = AP.codcia
-                                         AND     AC.codcia        = AP.codcia
-                                         AND     AC.idpoliza      = AP.idpoliza
                                          AND     P.idpoliza       = AP.idpoliza
                                          AND     P.codcia         = AP.codcia
-                                         AND     AP.idpoliza      = DP.idpoliza
-                                         AND     AP.codcia        = DP.codcia
                                          AND     P.codcia         = nCodCia
                                          AND     P.codempresa     = nCodEmpresa
                                          AND     P.idpoliza       = NVL(nIdPoliza,P.IdPoliza)
@@ -685,6 +675,7 @@ BEGIN
                                                                      AND    A.codempresa  = nCodEmpresa
                                                                      START WITH A.cod_agente  = nCodAgente
                                                                      ) 
+                                         AND     DP.stsdetalle   <> 'PRE'
                                          AND    AP.Ind_Principal   = 'S'
                                          AND    AP.IdPoliza   = D.IdPoliza
                                          AND    AP.CodCia     = D.CodCia
@@ -702,185 +693,181 @@ BEGIN
         --> Total registros obtenidos
         SELECT  NVL(COUNT(*),0) TOTAL                            
         INTO    nTotRegs 
-        FROM    (SELECT A.cod_asegurado                         ASEGURADO, 
-                        AP.cod_agente                           AGENTE, 
-                        DECODE(AP.ind_principal,'S','Si','No')  PRINCIPAL, 
-                        P.idpoliza,
-                        P.numpolunico,		                                    --> 12/03/2021 (JALV +)
-                        DP.fecinivig, 
-                        DP.fecfinvig, 
-                        PNJ.nombre, 
-                        PNJ.apellido_paterno, 
-                        PNJ.apellido_materno,
-                        OC_ASEGURADO.EDAD_ASEGURADO(A.codcia, A.codempresa, A.cod_asegurado, TRUNC(SYSDATE)) EDAD,
-                        PNJ.sexo, 
-                        PNJ.estadocivil, 
-                        PNJ.fecnacimiento,
-                        PNJ.curp,
-                        PNJ.fecingreso,        
-                        PNJ.tipo_doc_identificacion,
-                        PNJ.num_doc_identificacion,
-                        PNJ.tipo_persona,
-                        PNJ.num_tributario, 
-                        PNJ.tipo_id_tributaria,
-                        DP.idtiposeg                            TIPO_SEGURO,
-                        OC_TIPOS_DE_SEGUROS.TIPO_DE_SEGURO(A.codcia, A.codempresa, DP.idtiposeg) DESC_TIPO_SEGURO,
-                        'Individual'                            TIPO_POLIZA,
-                        OC_PAIS.NOMBRE_PAIS(PNJ.codpaisres)     PAIS,
-                        OC_PROVINCIA.NOMBRE_PROVINCIA(PNJ.codpaisres, PNJ.codprovres) ESTADO,
-                        OC_DISTRITO.NOMBRE_DISTRITO(PNJ.codpaisres, PNJ.codprovres, PNJ.coddistres) CIUDAD,
-                        OC_CORREGIMIENTO.nombre_corregimiento(PNJ.codpaisres,PNJ.codprovres,PNJ.coddistres,PNJ.codcorrres) MUNICIPIO_ALCALDIA,
-                        OC_COLONIA.DESCRIPCION_COLONIA(PNJ.codpaisres, PNJ.codprovres, PNJ.coddistres, PNJ.codcorrres, PNJ.codposres, PNJ.codcolres) COLONIA,        
-                        PNJ.codposres,
-                        PNJ.nacionalidad
-                 FROM   ASEGURADO                   A,
-                        PERSONA_NATURAL_JURIDICA    PNJ,
-                        AGENTE_POLIZA               AP,
-                        POLIZAS                     P,
-                        DETALLE_POLIZA              DP,
-                        (SELECT  DISTINCT C.CodCia, C.Cod_Agente, C.IdPoliza, D.Cod_Agente_Distr,
-                                 OC_AGENTES.NIVEL_AGENTE(C.CodCia, c.Cod_Agente ) Nivel
-                            FROM COMISIONES C,
-                                 AGENTES_DISTRIBUCION_POLIZA D,
-                                 AGENTE_POLIZA P
-                           WHERE C.CodCia         = nCodCia
-                             AND C.Cod_Agente     = D.Cod_Agente_Distr
-                             AND C.IdPoliza       = D.IdPoliza
-                             AND D.Cod_Agente     = P.Cod_Agente
-                             AND C.IdPoliza       = P.IdPoliza
-                             AND P.Ind_Principal  = 'S') D   
-                 WHERE  P.idpoliza      = DP.idpoliza
-                 AND    P.codcia        = DP.codcia
-                 AND    P.codempresa    = DP.codempresa
-                 AND    A.cod_asegurado = DP.cod_asegurado
-                 AND    A.codcia        = DP.codcia
-                 AND    A.codempresa    = DP.codempresa
-                 AND    A.codcia        = P.codcia
-                 AND    A.codempresa    = P.codempresa
-                 AND    DP.stsdetalle   <> 'PRE'
-                 AND    A.tipo_doc_identificacion   = PNJ.tipo_doc_identificacion
-                 AND    A.num_doc_identificacion    = PNJ.num_doc_identificacion
-                 AND     PNJ.nombre       = NVL(cNombreContratante, PNJ.nombre)                      --> 11/03/2021  (JALV +)
-                 AND     (cApePatContratante IS NULL OR PNJ.apellido_paterno = cApePatContratante)   --> 11/03/2021  (JALV +)
-                 AND     (cApeMatContratante IS NULL OR PNJ.apellido_materno = cApeMatContratante)   --> 11/03/2021  (JALV +)
-                 AND    A.codcia        = AP.codcia
-                 AND    P.idpoliza      = AP.idpoliza
-                 AND    P.codcia        = AP.codcia
-                 AND    AP.idpoliza     = DP.idpoliza
-                 AND    AP.codcia       = DP.codcia
-                 AND    OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(A.codcia, P.idpoliza, DP.idetpol, A.cod_asegurado) = 'N'
-                 AND    P.codcia        = nCodCia
-                 AND    P.codempresa    = nCodEmpresa
-                 AND    P.idpoliza      = NVL(nIdPoliza,P.IdPoliza)
-                 AND    AP.cod_agente IN ( SELECT   A.cod_agente
-                                             FROM   AGENTES A
-                                             CONNECT BY PRIOR A.cod_agente = A.cod_agente_jefe
-                                             AND    A.est_agente  = 'ACT'
-                                             AND    A.codcia      = nCodCia
-                                             AND    A.codempresa  = nCodEmpresa
-                                             START WITH A.cod_agente  = nCodAgente
-                                             ) 
-                 AND    AP.Ind_Principal = 'S'
-                 AND    AP.IdPoliza   = D.IdPoliza
-                 AND    AP.CodCia     = D.CodCia
-                 AND    D.Cod_Agente  = nCodAgenteSesion
-                 AND    D.Nivel       = nNivel
-                 AND    P.numpolunico = NVL(cNumPolUnico, P.numpolunico)
-                 --AND    A.cod_asegurado  = NVL(:nContratante, A.cod_asegurado)
-                 --AND    P.fecinivig >= :dFechaIni
-                 --AND    P.fecfinvig <= :dFechaFin
-                UNION
-                -- Colectiva
-                 SELECT AC.cod_asegurado                        ASEGURADO, 
-                        AP.cod_agente                           AGENTE, 
-                        DECODE(AP.ind_principal,'S','Si','No')  PRINCIPAL, 
-                        P.idpoliza,
-                        P.numpolunico,		                                    --> 12/03/2021 (JALV +)
-                        DP.fecinivig, 
-                        DP.fecfinvig, 
-                        PNJ.nombre, 
-                        PNJ.apellido_paterno, 
-                        PNJ.apellido_materno,
-                        OC_ASEGURADO.EDAD_ASEGURADO(P.codcia, P.codempresa, AC.cod_asegurado, TRUNC(SYSDATE)) EDAD,
-                        PNJ.sexo, 
-                        PNJ.estadocivil, 
-                        PNJ.fecnacimiento,
-                        PNJ.curp,
-                        PNJ.fecingreso,        
-                        PNJ.tipo_doc_identificacion,
-                        PNJ.num_doc_identificacion,
-                        PNJ.tipo_persona,
-                        PNJ.num_tributario, 
-                        PNJ.tipo_id_tributaria,
-                        DP.idtiposeg                            TIPO_SEGURO,
-                        OC_TIPOS_DE_SEGUROS.TIPO_DE_SEGURO(P.codcia, P.codempresa, DP.idtiposeg) DESC_TIPO_SEGURO,
-                        'Colectiva'                             TIPO_POLIZA,
-                        OC_PAIS.NOMBRE_PAIS(PNJ.codpaisres)     PAIS,
-                        OC_PROVINCIA.NOMBRE_PROVINCIA(PNJ.codpaisres, PNJ.codprovres) ESTADO,
-                        OC_DISTRITO.NOMBRE_DISTRITO(PNJ.codpaisres, PNJ.codprovres, PNJ.coddistres) CIUDAD,
-                        OC_CORREGIMIENTO.nombre_corregimiento(PNJ.codpaisres,PNJ.codprovres,PNJ.coddistres,PNJ.codcorrres) MUNICIPIO_ALCALDIA,
-                        OC_COLONIA.DESCRIPCION_COLONIA(PNJ.codpaisres, PNJ.codprovres, PNJ.coddistres, PNJ.codcorrres, PNJ.codposres, PNJ.codcolres) COLONIA,        
-                        PNJ.codposres,
-                        PNJ.nacionalidad
-                 FROM   ASEGURADO_CERTIFICADO       AC,
-                        ASEGURADO                   A,
-                        PERSONA_NATURAL_JURIDICA    PNJ,
-                        AGENTE_POLIZA               AP,
-                        POLIZAS                     P,
-                        DETALLE_POLIZA              DP,
-                        (SELECT  DISTINCT C.CodCia, C.Cod_Agente, C.IdPoliza, D.Cod_Agente_Distr,
-                                 OC_AGENTES.NIVEL_AGENTE(C.CodCia, c.Cod_Agente ) Nivel
-                            FROM COMISIONES C, 
-                                 AGENTES_DISTRIBUCION_POLIZA D,
-                                 AGENTE_POLIZA P
-                           WHERE C.CodCia         = nCodCia
-                             AND C.Cod_Agente     = D.Cod_Agente_Distr
-                             AND C.IdPoliza       = D.IdPoliza
-                             AND D.Cod_Agente     = P.Cod_Agente
-                             AND C.IdPoliza       = P.IdPoliza
-                             AND P.Ind_Principal  = 'S') D   
-                 WHERE   P.idpoliza       = DP.idpoliza
-                 AND     P.codcia         = DP.codcia
-                 AND     P.codempresa     = DP.codempresa
-                 AND     AC.idpoliza      = P.idpoliza
-                 AND     AC.cod_asegurado = DP.cod_asegurado
-                 AND     AC.codcia        = DP.codcia
-                 AND     AC.idetpol       = DP.idetpol
-                 AND     A.cod_asegurado  = DP.cod_asegurado
-                 AND     A.codcia         = DP.codcia
-                 AND     A.codempresa     = DP.codempresa
-                 AND     A.codcia         = P.codcia
-                 AND     A.codempresa     = P.codempresa
-                 AND     DP.stsdetalle   <> 'PRE'
-                 AND     A.tipo_doc_identificacion   = PNJ.tipo_doc_identificacion
-                 AND     A.num_doc_identificacion    = PNJ.num_doc_identificacion
-                 AND     PNJ.nombre       = NVL(cNombreContratante, PNJ.nombre)                      --> 11/03/2021  (JALV +)
-                 AND     (cApePatContratante IS NULL OR PNJ.apellido_paterno = cApePatContratante)   --> 11/03/2021  (JALV +)
-                 AND     (cApeMatContratante IS NULL OR PNJ.apellido_materno = cApeMatContratante)   --> 11/03/2021  (JALV +)
-                 AND     A.codcia         = AP.codcia
-                 AND     AC.codcia        = AP.codcia
-                 AND     AC.idpoliza      = AP.idpoliza
-                 AND     P.idpoliza       = AP.idpoliza
-                 AND     P.codcia         = AP.codcia
-                 AND     AP.idpoliza      = DP.idpoliza
-                 AND     AP.codcia        = DP.codcia
-                 AND     P.codcia         = nCodCia
-                 AND     P.codempresa     = nCodEmpresa
-                 AND     P.idpoliza       = NVL(nIdPoliza,P.IdPoliza)
-                 AND     AP.cod_agente IN (SELECT   A.cod_agente
-                                             FROM   AGENTES A
-                                             CONNECT BY PRIOR A.cod_agente = A.cod_agente_jefe
-                                             AND     A.est_agente  = 'ACT'
-                                             AND     A.codcia      = nCodCia
-                                             AND     A.codempresa  = nCodEmpresa
-                                             START WITH A.cod_agente  = nCodAgente
-                                             ) 
-                 AND    AP.Ind_Principal   = 'S'
-                 AND    AP.IdPoliza   = D.IdPoliza
-                 AND    AP.CodCia     = D.CodCia
-                 AND    D.Cod_Agente  = nCodAgenteSesion
-                 AND    D.Nivel       = nNivel
-                 AND    P.numpolunico = NVL(cNumPolUnico, P.numpolunico)
+        FROM    (  SELECT  A.cod_asegurado                         ASEGURADO,
+                           DP.stsdetalle                           EDOASEG,
+                           AP.cod_agente                           AGENTE, 
+                           DECODE(AP.ind_principal,'S','Si','No')  PRINCIPAL, 
+                           P.idpoliza,
+                           P.numpolunico,		                                --> 12/03/2021 (JALV +)
+                           DP.fecinivig, 
+                           DP.fecfinvig, 
+                           PNJ.nombre, 
+                           PNJ.apellido_paterno, 
+                           PNJ.apellido_materno,
+                           OC_ASEGURADO.EDAD_ASEGURADO(A.codcia, A.codempresa, A.cod_asegurado, TRUNC(SYSDATE)) EDAD,
+                           PNJ.sexo, 
+                           PNJ.estadocivil, 
+                           PNJ.fecnacimiento,
+                           PNJ.curp,
+                           PNJ.fecingreso,        
+                           PNJ.tipo_doc_identificacion,
+                           PNJ.num_doc_identificacion,
+                           PNJ.tipo_persona,
+                           PNJ.num_tributario, 
+                           PNJ.tipo_id_tributaria,
+                           DP.idtiposeg                        TIPO_SEGURO,
+                           OC_TIPOS_DE_SEGUROS.TIPO_DE_SEGURO(A.codcia, A.codempresa, DP.idtiposeg) DESC_TIPO_SEGURO,
+                           'Individual'                        TIPO_POLIZA,
+                           OC_PAIS.NOMBRE_PAIS(PNJ.codpaisres) PAIS,
+                           OC_PROVINCIA.NOMBRE_PROVINCIA(PNJ.codpaisres, PNJ.codprovres) ESTADO,
+                           OC_DISTRITO.NOMBRE_DISTRITO(PNJ.codpaisres, PNJ.codprovres, PNJ.coddistres) CIUDAD,
+                           OC_CORREGIMIENTO.nombre_corregimiento(PNJ.codpaisres,PNJ.codprovres,PNJ.coddistres,PNJ.codcorrres) MUNICIPIO_ALCALDIA,
+                           OC_COLONIA.DESCRIPCION_COLONIA(PNJ.codpaisres, PNJ.codprovres, PNJ.coddistres, PNJ.codcorrres, PNJ.codposres, PNJ.codcolres) COLONIA,        
+                           PNJ.codposres,
+                           PNJ.nacionalidad,
+                           DP.Suma_Aseg_Local SumaAsegurada,
+                           DP.Prima_Local PrimaNeta
+                    FROM   POLIZAS                     P,
+                           DETALLE_POLIZA              DP,
+                           ASEGURADO                   A,
+                           PERSONA_NATURAL_JURIDICA    PNJ,
+                           AGENTE_POLIZA               AP,
+                           (SELECT DISTINCT C.CodCia, C.Cod_Agente, C.IdPoliza, D.Cod_Agente_Distr,
+                                    OC_AGENTES.NIVEL_AGENTE(C.CodCia, c.Cod_Agente ) Nivel
+                               FROM COMISIONES C, AGENTES_DISTRIBUCION_POLIZA D,
+                                    AGENTE_POLIZA P
+                              WHERE C.CodCia         = nCodCia
+                                AND C.Cod_Agente     = D.Cod_Agente_Distr
+                                AND C.IdPoliza       = D.IdPoliza
+                                AND D.Cod_Agente     = P.Cod_Agente
+                                AND C.IdPoliza       = P.IdPoliza
+                                AND P.Ind_Principal  = 'S') D
+                    WHERE  P.idpoliza      = DP.idpoliza
+                    AND    P.codcia        = DP.codcia
+                    AND    P.codempresa    = DP.codempresa
+                    AND    A.cod_asegurado = DP.cod_asegurado
+                    AND    A.codcia        = DP.codcia
+                    AND    A.codempresa    = DP.codempresa
+                    AND    A.codcia        = P.codcia
+                    AND    A.codempresa    = P.codempresa
+                    AND    DP.stsdetalle   <> 'PRE'
+                    AND    A.tipo_doc_identificacion   = PNJ.tipo_doc_identificacion
+                    AND    A.num_doc_identificacion    = PNJ.num_doc_identificacion
+                    AND    PNJ.nombre      = NVL(cNombreContratante, PNJ.nombre)                       --> 11/03/2021  (JALV +)
+                    AND    (cApePatContratante IS NULL OR PNJ.apellido_paterno = cApePatContratante)   --> 11/03/2021  (JALV +)
+                    AND    (cApeMatContratante IS NULL OR PNJ.apellido_materno = cApeMatContratante)   --> 11/03/2021  (JALV +)
+                    AND    A.codcia        = AP.codcia
+                    AND    P.idpoliza      = AP.idpoliza
+                    AND    P.codcia        = AP.codcia
+                    AND    AP.idpoliza     = DP.idpoliza
+                    AND    AP.codcia       = DP.codcia
+                    AND    OC_POLIZAS.POLIZA_COLECTIVA(P.CodCia, P.CodEmpresa, P.IdPoliza) = 'N'
+                    AND    P.codcia         = nCodCia
+                    AND    P.codempresa     = nCodEmpresa
+                    AND    P.idpoliza       = NVL(nIdPoliza,P.IdPoliza)
+                    AND     AP.cod_agente IN (SELECT   A.cod_agente
+                                                FROM   AGENTES A
+                                                CONNECT BY PRIOR A.cod_agente = A.cod_agente_jefe
+                                                AND     A.est_agente  = 'ACT'
+                                                AND     A.codcia      = nCodCia
+                                                AND     A.codempresa  = nCodEmpresa
+                                                START WITH A.cod_agente  = nCodAgente
+                                                ) 
+                    AND    AP.Ind_Principal   = 'S'
+                    AND    AP.IdPoliza   = D.IdPoliza
+                    AND    AP.CodCia     = D.CodCia
+                    AND    D.Cod_Agente  = nCodAgenteSesion
+                    AND    D.Nivel       = nNivel
+                    AND    P.numpolunico = NVL(cNumPolUnico, P.numpolunico)
+                    --AND    A.cod_asegurado  = NVL(:nContratante, A.cod_asegurado)
+                    --AND    P.fecinivig >= :dFechaIni
+                    --AND    P.fecfinvig <= :dFechaFin
+                   UNION
+                   -- Colectiva
+                    SELECT AC.cod_asegurado                        ASEGURADO,
+                           AC.estado                               EDOASEG,
+                           AP.cod_agente                           AGENTE, 
+                           DECODE(AP.ind_principal,'S','Si','No')  PRINCIPAL, 
+                           P.idpoliza,
+                           P.numpolunico,		                                --> 12/03/2021 (JALV +)
+                           DP.fecinivig, 
+                           DP.fecfinvig, 
+                           PNJ.nombre, 
+                           PNJ.apellido_paterno, 
+                           PNJ.apellido_materno,
+                           OC_ASEGURADO.EDAD_ASEGURADO(P.codcia, P.codempresa, AC.cod_asegurado, TRUNC(SYSDATE)) EDAD,
+                           PNJ.sexo, 
+                           PNJ.estadocivil, 
+                           PNJ.fecnacimiento,
+                           PNJ.curp,
+                           PNJ.fecingreso,        
+                           PNJ.tipo_doc_identificacion,
+                           PNJ.num_doc_identificacion,
+                           PNJ.tipo_persona,
+                           PNJ.num_tributario, 
+                           PNJ.tipo_id_tributaria,
+                           DP.idtiposeg                            TIPO_SEGURO,
+                           OC_TIPOS_DE_SEGUROS.TIPO_DE_SEGURO(P.codcia, P.codempresa, DP.idtiposeg) DESC_TIPO_SEGURO,
+                           'Colectiva'                             TIPO_POLIZA,
+                           OC_PAIS.NOMBRE_PAIS(PNJ.codpaisres)     PAIS,
+                           OC_PROVINCIA.NOMBRE_PROVINCIA(PNJ.codpaisres, PNJ.codprovres) ESTADO,
+                           OC_DISTRITO.NOMBRE_DISTRITO(PNJ.codpaisres, PNJ.codprovres, PNJ.coddistres) CIUDAD,
+                           OC_CORREGIMIENTO.nombre_corregimiento(PNJ.codpaisres,PNJ.codprovres,PNJ.coddistres,PNJ.codcorrres) MUNICIPIO_ALCALDIA,
+                           OC_COLONIA.DESCRIPCION_COLONIA(PNJ.codpaisres, PNJ.codprovres, PNJ.coddistres, PNJ.codcorrres, PNJ.codposres, PNJ.codcolres) COLONIA,        
+                           PNJ.codposres,
+                           PNJ.nacionalidad,
+                           AC.SumaAseg SumaAsegurada,
+                           AC.PrimaNeta
+                    FROM   POLIZAS                     P,
+                           DETALLE_POLIZA              DP,
+                           ASEGURADO_CERTIFICADO       AC,
+                           ASEGURADO                   A,
+                           PERSONA_NATURAL_JURIDICA    PNJ,
+                           AGENTE_POLIZA               AP,
+                           (SELECT  DISTINCT C.CodCia, C.Cod_Agente, C.IdPoliza, D.Cod_Agente_Distr,
+                                    OC_AGENTES.NIVEL_AGENTE(C.CodCia, c.Cod_Agente ) Nivel
+                               FROM COMISIONES C,
+                                    AGENTES_DISTRIBUCION_POLIZA D,
+                                    AGENTE_POLIZA P
+                              WHERE C.CodCia         = nCodCia
+                                AND C.Cod_Agente     = D.Cod_Agente_Distr
+                                AND C.IdPoliza       = D.IdPoliza
+                                AND D.Cod_Agente     = P.Cod_Agente
+                                AND C.IdPoliza       = P.IdPoliza
+                                AND P.Ind_Principal  = 'S') D   
+                  WHERE     P.idpoliza       = DP.idpoliza
+                    AND     P.codcia         = DP.codcia
+                    AND     P.codempresa     = DP.codempresa
+                    AND     DP.idpoliza      = AC.idpoliza
+                    AND     DP.codcia        = AC.codcia
+                    AND     DP.idetpol       = AC.idetpol
+                    AND     AC.cod_asegurado  = A.cod_asegurado
+                    AND     AC.codcia         = A.codcia
+                    AND     A.tipo_doc_identificacion   = PNJ.tipo_doc_identificacion
+                    AND     A.num_doc_identificacion    = PNJ.num_doc_identificacion
+                    AND     PNJ.nombre       = NVL(cNombreContratante, PNJ.nombre)                      --> 11/03/2021  (JALV +)
+                    AND     (cApePatContratante IS NULL OR PNJ.apellido_paterno = cApePatContratante)   --> 11/03/2021  (JALV +)
+                    AND     (cApeMatContratante IS NULL OR PNJ.apellido_materno = cApeMatContratante)   --> 11/03/2021  (JALV +)
+                    AND     P.idpoliza       = AP.idpoliza
+                    AND     P.codcia         = AP.codcia
+                    AND     P.codcia         = nCodCia
+                    AND     P.codempresa     = nCodEmpresa
+                    AND     P.idpoliza       = NVL(nIdPoliza,P.IdPoliza)
+                    AND     AP.cod_agente IN (SELECT   A.cod_agente
+                                                FROM   AGENTES A
+                                                CONNECT BY PRIOR A.cod_agente = A.cod_agente_jefe
+                                                AND    A.est_agente  = 'ACT'
+                                                AND    A.codcia      = nCodCia
+                                                AND    A.codempresa  = nCodEmpresa
+                                                START WITH A.cod_agente  = nCodAgente
+                                                ) 
+                    AND     DP.stsdetalle   <> 'PRE'
+                    AND    AP.Ind_Principal   = 'S'
+                    AND    AP.IdPoliza   = D.IdPoliza
+                    AND    AP.CodCia     = D.CodCia
+                    AND    D.Cod_Agente  = nCodAgenteSesion
+                    AND    D.Nivel       = nNivel
+                    AND    P.numpolunico = NVL(cNumPolUnico, P.numpolunico)
                  --AND     AC.cod_asegurado =  :nContratante  -- NVL(:nContratante, AC.cod_asegurado) --
                  --AND     P.fecinivig >= :dFechaIni
                  --AND     P.fecfinvig <= :dFechaFin
