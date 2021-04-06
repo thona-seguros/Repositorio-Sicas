@@ -788,7 +788,7 @@ BEGIN
    END;
    
    BEGIN
-      SELECT NVL(C.GastosExpedicion,NVL(CC.MontoConcepto,0))
+      SELECT DECODE(NVL(C.GastosExpedicion,0),0,NVL(CC.MontoConcepto,0))
         INTO nGastosExpedicion
         FROM COTIZACIONES C,
              PLAN_DE_PAGOS P,
@@ -812,7 +812,14 @@ BEGIN
          AND C.PrimaCotLocal  BETWEEN CC.RangoInicial(+) AND CC.RangoFinal(+);
    EXCEPTION
       WHEN NO_DATA_FOUND THEN 
-         nGastosExpedicion := 0;
+         BEGIN
+            SELECT NVL(GastosExpedicion,0)
+              INTO nGastosExpedicion
+              FROM COTIZACIONES
+             WHERE CodCia        = nCodCia
+               AND CodEmpresa    = nCodEmpresa
+               AND IdCotizacion  = nIdCotizacion;
+         END;
    END;
    
    BEGIN
