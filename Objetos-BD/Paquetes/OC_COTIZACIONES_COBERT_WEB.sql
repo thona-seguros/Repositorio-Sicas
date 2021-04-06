@@ -779,12 +779,40 @@ BEGIN
    GENERALES_PLATAFORMA_DIGITAL.RECALCULAR_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, cIdTipoSeg, cPlanCob, 'N', 'N', 'S');
                                   
    BEGIN
-      SELECT PrimaCotLocal, PrimaCotMoneda, GastosExpedicion
-        INTO nPrimaCotLocal, nPrimaCotMoneda, nGastosExpedicion
+      SELECT PrimaCotLocal, PrimaCotMoneda--, GastosExpedicion
+        INTO nPrimaCotLocal, nPrimaCotMoneda--, nGastosExpedicion
         FROM COTIZACIONES
        WHERE CodCia        = nCodCia
          AND CodEmpresa    = nCodEmpresa
          AND IdCotizacion  = nIdCotizacion;
+   END;
+   
+   BEGIN
+      SELECT NVL(C.GastosExpedicion,NVL(CC.MontoConcepto,0))
+        INTO nGastosExpedicion
+        FROM COTIZACIONES C,
+             PLAN_DE_PAGOS P,
+             CONCEPTOS_PLAN_DE_PAGOS CP,
+             CATALOGO_CONCEPTOS_RANGOS CC  
+       WHERE C.CodCia               = nCodCia
+         AND C.CodEmpresa           = nCodEmpresa
+         AND C.IdCotizacion         = nIdCotizacion 
+         AND C.CodCia               = P.CodCia
+         AND C.CodEmpresa           = P.CodEmpresa
+         AND C.CodPlanPago          = P.CodPlanPago
+         AND P.CodCia               = CP.CodCia
+         AND P.CodEmpresa           = CP.CodEmpresa
+         AND P.CodPlanPago          = CP.CodPlanPago
+         AND CP.CodCpto             = 'DEREMI'
+         AND CP.CodCia              = CC.CodCia
+         AND CP.CodEmpresa          = CC.CodEmpresa 
+         AND CP.CodCpto             = CC.CodConcepto
+         AND C.IdTipoSeg            = CC.IdTipoSeg
+         AND C.Cod_Moneda           = CC.CodMoneda
+         AND C.PrimaCotLocal  BETWEEN CC.RangoInicial(+) AND CC.RangoFinal(+);
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN 
+         nGastosExpedicion := 0;
    END;
    
    BEGIN
