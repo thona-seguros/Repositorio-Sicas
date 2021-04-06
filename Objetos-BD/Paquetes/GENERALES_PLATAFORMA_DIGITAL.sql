@@ -2906,20 +2906,19 @@ BEGIN
       GENERALES_PLATAFORMA_DIGITAL.ACTUALIZA_CONVENCIONES(nCodCia, nCodEmpresa, nIdCotizacion, nPorcConvenciones);
       --- llamar funcion de restaurar factores ajustes
       --GT_COTIZACIONES_DETALLE.RESTAURA_FACTORAJUSTE(nCodCia, nCodEmpresa, nIdCotizacion, 1);
-
-      BEGIN
-         SELECT PorcGtoAdqui, CodTipoBono, PorcConvenciones
-         --  INTO nGastos, cTipoBono ,nPorcConv
-           INTO nPorcGtoAdqui, cCodTipoBono, nPorcConvenciones
-           FROM COTIZACIONES
-          WHERE CodCia        = nCodCia
-            AND CodEmpresa    = nCodEmpresa
-            AND IdCotizacion  = nIdCotizacion;
-      END;
-      nGastos     := nPorcGtoAdqui;
-      --cTipoBono   := cCodTipoBono;
-      nPorcConv   := nPorcConvenciones;
    END IF;
+   BEGIN
+      SELECT PorcGtoAdqui, CodTipoBono, PorcConvenciones
+      --  INTO nGastos, cTipoBono ,nPorcConv
+        INTO nPorcGtoAdqui, cCodTipoBono, nPorcConvenciones
+        FROM COTIZACIONES
+       WHERE CodCia        = nCodCia
+         AND CodEmpresa    = nCodEmpresa
+         AND IdCotizacion  = nIdCotizacion;
+   END;
+   nGastos     := nPorcGtoAdqui;
+   --cTipoBono   := cCodTipoBono;
+   nPorcConv   := nPorcConvenciones;
 END ACTUALIZA_COMISIONES;
     --
 PROCEDURE ACTUALIZA_CONVENCIONES(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nPorcConvenciones NUMBER) IS
