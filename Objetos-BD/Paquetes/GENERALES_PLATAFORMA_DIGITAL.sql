@@ -2293,10 +2293,12 @@ END PAGO_FACTURA;
                             P.DESCRIPCONCEPTO, 
                             P.PORCCONCEPTO,  
                             NVL(C.CODMONEDA, 'PS') CODMONEDA, 
-                            NVL(Z.GastosExpedicion,NVL(C.MONTOCONCEPTO, 0)) MONTOCONCEPTO
+                            DECODE(NVL(Z.GastosExpedicion,0),0,NVL(C.MontoConcepto,0),NVL(Z.GastosExpedicion,0)) MONTOCONCEPTO
+                            --NVL(Z.GastosExpedicion,NVL(C.MONTOCONCEPTO, 0)) MONTOCONCEPTO
                             --NVL(C.MONTOCONCEPTO, 0) MONTOCONCEPTO
                     from SICAS_OC.CATALOGO_DE_CONCEPTOS P  LEFT JOIN SICAS_OC.COTIZACIONES              Z ON Z.CODCIA      = P.CODCIA      AND Z.CODEMPRESA = 1 AND Z.IDCOTIZACION = pIDCOTIZACION     
                                                            LEFT JOIN SICAS_OC.CATALOGO_CONCEPTOS_RANGOS C ON C.CODCONCEPTO = P.CODCONCEPTO AND C.CODCIA = P.CODCIA AND Z.IDTIPOSEG = C.IDTIPOSEG AND C.CODMONEDA = Z.COD_MONEDA 
+                                                           AND  Z.PrimaCotLocal  BETWEEN C.RangoInicial AND C.RangoFinal
                     WHERE( (P.INDESIMPUESTO = 'S' 
                       AND P.CODCPTOPRIMASFACTELECT IS NOT NULL)
                        OR P.INDRANGOSTIPSEG = 'S')
