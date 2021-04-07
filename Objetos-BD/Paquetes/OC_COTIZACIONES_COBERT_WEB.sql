@@ -788,7 +788,7 @@ BEGIN
    END;
    
    BEGIN
-      SELECT DECODE(NVL(C.GastosExpedicion,0),0,NVL(CC.MontoConcepto,0))
+      SELECT DECODE(NVL(C.GastosExpedicion,0),0,NVL(CC.MontoConcepto,0),NVL(C.GastosExpedicion,0))
         INTO nGastosExpedicion
         FROM COTIZACIONES C,
              PLAN_DE_PAGOS P,
