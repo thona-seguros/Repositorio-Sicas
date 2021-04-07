@@ -1777,10 +1777,11 @@ BEGIN
          ELSE
             nSumaAsegLocal  := NVL(nSumaAsegMoneda,0) * nTasaCambio;
          END IF;
-
-         IF NVL(X.MontoDeducible,0) != 0 THEN
-            nDeducibleCobMoneda := NVL(X.MontoDeducible,0);
-            nDeducibleCobLocal  := NVL(X.MontoDeducible,0) * nTasaCambio;
+         
+         IF NVL(nDeducibleIngresado,0) != 0 THEN
+         --IF NVL(X.MontoDeducible,0) != 0 THEN
+            nDeducibleCobMoneda := NVL(nDeducibleIngresado,0);
+            nDeducibleCobLocal  := NVL(nDeducibleCobMoneda,0) * nTasaCambio;
          ELSE
             nDeducibleCobMoneda := NVL(nSumaAsegMoneda,0) * NVL(X.PorcenDeducible,0) / 100;
             nDeducibleCobLocal  := NVL(nDeducibleCobMoneda,0) * nTasaCambio;
@@ -1813,8 +1814,6 @@ BEGIN
                       nEdad_MinimaCob, nEdad_MaximaCob, nEdad_ExclusionCob, nSumaAseg_MinimaCob, nSumaAseg_MaximaCob, 
                       nPorcExtraPrima, nMontoExtraPrima, nSumaIngresada, 0,
                       0);
-
-
             END;
          END IF;
       END IF;
