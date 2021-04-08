@@ -38,7 +38,6 @@ FUNCTION CONSULTA_POLIZA_UNAM ( nCodCia         NUMBER,
                                 cCodAgrupador   VARCHAR2,
                                 cPassword       VARCHAR2)
 RETURN XMLTYPE;
-
 END OC_ASEGURADO_SERVICIOS_WEB;
 /
 CREATE OR REPLACE PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
