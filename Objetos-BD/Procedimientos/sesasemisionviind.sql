@@ -932,6 +932,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONVIIND( nCodCia      ENTREGAS_CN
                      END IF;
                      --
                      cRiesgo := OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
+                     nEdad   := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, nCodEmpresa, W.Cod_Asegurado, Z.FecIniVig);                     
                      nTasa   := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, W.IdTipoSeg, W.PlanCob,
                                                                        W.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, null);
                      nPrimaMonedaTotPol := NVL(nPrimaMonedaTotPol,0) + W.SumaAseg_Moneda * nTasa / W.FactorTasa;
