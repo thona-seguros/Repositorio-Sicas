@@ -11,7 +11,7 @@ FUNCTION LISTADO_ASEGURADO (nCodCia         IN NUMBER,  nCodEmpresa         IN N
 							)
 RETURN XMLTYPE;
 
-FUNCTION CONSULTA_ASEGURADO (nCodCia  NUMBER,  nCodEmpresa NUMBER, nNoContratante  NUMBER)
+FUNCTION CONSULTA_ASEGURADO (nCodCia  NUMBER,  nCodEmpresa NUMBER, nCodAsegurado  NUMBER, nIdPoliza NUMBER DEFAULT NULL, nIDetPol NUMBER DEFAULT NULL)
 RETURN XMLTYPE;
 
 FUNCTION VALIDA_ASEG_UNAM(  nCodCia         NUMBER,
@@ -298,8 +298,8 @@ CREATE OR REPLACE PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
               ,    Tasa               = x.Tasa
               ,    Prima_Moneda       = x.PrimaCobMoneda
               ,    Prima_Local        = x.PrimaCobLocal
-              ,    Deducible_Local    = x.DeducibleCobLocal
-              ,    Deducible_Moneda   = x.DeducibleCobMoneda
+              --,    Deducible_Local    = x.DeducibleCobLocal
+              --,    Deducible_Moneda   = x.DeducibleCobMoneda
               ,    SalarioMensual     = x.SalarioMensual
               ,    VecesSalario       = x.VecesSalario
               ,    SumaAsegCalculada  = x.SumaaSegCalculada
@@ -432,7 +432,8 @@ BEGIN
                                                 XMLELEMENT("C.P.", codposres),
                                                 XMLELEMENT("Nacionalidad", nacionalidad),
                                                 XMLELEMENT("SumaAsegurada", SumaAsegurada),
-                                                XMLELEMENT("PrimaNeta", PrimaNeta)
+                                                XMLELEMENT("PrimaNeta", PrimaNeta),
+                                                XMLELEMENT("IDetPol", IDetPol)
                                               )
                                   )
                          )
@@ -471,7 +472,8 @@ BEGIN
                         codposres,
                         nacionalidad,
                         SumaAsegurada,
-                        PrimaNeta
+                        PrimaNeta,
+                        IDetPol
                 FROM    (SELECT     AA.asegurado,
                                     AA.EdoAseg,
                                     AA.agente,
@@ -506,6 +508,7 @@ BEGIN
                                     AA.nacionalidad,
                                     AA.SumaAsegurada,
                                     AA.PrimaNeta,
+                                    AA.IDetPol,
                                     ROW_NUMBER() OVER (ORDER BY idpoliza) REGISTRO
                         FROM        (   SELECT  A.cod_asegurado                         ASEGURADO,
                                                 DP.stsdetalle                           EDOASEG,
@@ -540,7 +543,8 @@ BEGIN
                                                 PNJ.codposres,
                                                 PNJ.nacionalidad,
                                                 DP.Suma_Aseg_Local SumaAsegurada,
-                                                DP.Prima_Local PrimaNeta
+                                                DP.Prima_Local PrimaNeta,
+                                                DP.IDetPol
                                          FROM   POLIZAS                     P,
                                                 DETALLE_POLIZA              DP,
                                                 ASEGURADO                   A,
@@ -631,7 +635,8 @@ BEGIN
                                                 PNJ.codposres,
                                                 PNJ.nacionalidad,
                                                 AC.SumaAseg SumaAsegurada,
-                                                AC.PrimaNeta
+                                                AC.PrimaNeta,
+                                                DP.IDetPol
                                          FROM   POLIZAS                     P,
                                                 DETALLE_POLIZA              DP,
                                                 ASEGURADO_CERTIFICADO       AC,
@@ -883,7 +888,7 @@ BEGIN
 END LISTADO_ASEGURADO;
 
 
-FUNCTION CONSULTA_ASEGURADO (nCodCia  NUMBER,  nCodEmpresa NUMBER, nNoContratante  NUMBER)
+FUNCTION CONSULTA_ASEGURADO (nCodCia  NUMBER,  nCodEmpresa NUMBER, nCodAsegurado  NUMBER, nIdPoliza NUMBER DEFAULT NULL, nIDetPol NUMBER DEFAULT NULL)
 	RETURN XMLTYPE IS
 /*   _______________________________________________________________________________________________________________________________	
     |                                                                                                                               |
@@ -1022,12 +1027,15 @@ BEGIN
                  AND    P.codcia        = AP.codcia
                  AND    AP.idpoliza     = DP.idpoliza
                  AND    AP.codcia       = DP.codcia
-                 AND    OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(A.codcia, P.idpoliza, DP.idetpol, A.cod_asegurado) = 'N'
+                 AND    OC_POLIZAS.POLIZA_COLECTIVA(P.CodCia, P.CodEmpresa, P.IdPoliza) = 'N'
                  AND    P.codcia         = nCodCia
                  AND    P.codempresa     = nCodEmpresa
                  --AND    P.idpoliza       = :nPoliza
                  --AND    AP.cod_agente    = :nCodAgente
-                 AND    A.cod_asegurado  = nNoContratante    --NVL(:nContratante, A.cod_asegurado)
+                 AND    A.cod_asegurado  = nCodAsegurado    --NVL(:nContratante, A.cod_asegurado)
+                 AND P.IdPoliza                   = NVL(nIdPoliza,P.IdPoliza)
+                 AND DP.IDetPol                   = NVL(nIDetPol,DP.IDetPol)
+                 AND DP.StsDetalle     = 'EMI'
                  --AND    P.fecinivig >= :dFechaIni
                  --AND    P.fecfinvig <= :dFechaFin
                 UNION
@@ -1081,39 +1089,29 @@ BEGIN
                         AGENTE_POLIZA               AP,
                         POLIZAS                     P,
                         DETALLE_POLIZA              DP  
-                 WHERE  P.idpoliza       = DP.idpoliza
-                 AND    P.codcia         = DP.codcia
-                 AND    P.codempresa     = DP.codempresa
-                 AND    AC.idpoliza      = P.idpoliza
-                 AND    AC.cod_asegurado = DP.cod_asegurado
-                 AND    AC.codcia        = DP.codcia
-                 AND    AC.idetpol       = DP.idetpol
-                 AND    A.cod_asegurado  = DP.cod_asegurado
-                 AND    A.codcia         = DP.codcia
-                 AND    A.codempresa     = DP.codempresa
-                 AND    A.codcia         = P.codcia
-                 AND    A.codempresa     = P.codempresa
-                 AND    A.tipo_doc_identificacion   = PNJ.tipo_doc_identificacion
-                 AND    A.num_doc_identificacion    = PNJ.num_doc_identificacion  
-                 AND    A.codcia         = AP.codcia
-                 AND    AC.codcia        = AP.codcia
-                 AND    AC.idpoliza      = AP.idpoliza
-                 AND    P.idpoliza       = AP.idpoliza
-                 AND    P.codcia         = AP.codcia
-                 AND    AP.idpoliza      = DP.idpoliza
-                 AND    AP.codcia        = DP.codcia
-                 AND    P.codcia         = nCodCia
-                 AND    P.codempresa     = nCodEmpresa
-                 --AND    P.idpoliza       = :nPoliza
-                 --AND    AP.cod_agente    = :nCodAgente
-                 AND    AC.cod_asegurado = nNoContratante    -- NVL(:nContratante, AC.cod_asegurado) -- 
-                 --AND    P.fecinivig >= :dFechaIni
-                 --AND    P.fecfinvig <= :dFechaFin
+                   WHERE P.codcia                     = nCodCia
+                     AND P.codempresa                 = nCodEmpresa
+                     AND AC.cod_asegurado             = nCodAsegurado 
+                     AND P.IdPoliza                   = NVL(nIdPoliza,P.IdPoliza)
+                     AND DP.IDetPol                   = NVL(nIDetPol,DP.IDetPol)
+                     AND P.idpoliza                   = DP.idpoliza
+                     AND P.codcia                     = DP.codcia
+                     AND P.codempresa                 = DP.codempresa     
+                     AND DP.codcia                    = AC.codcia
+                     AND DP.idpoliza                  = AC.idpoliza
+                     AND DP.idetpol                   = AC.idetpol
+                     AND AC.codcia                    = A.codcia
+                     AND AC.cod_asegurado             = A.cod_asegurado   
+                     AND A.tipo_doc_identificacion    = PNJ.tipo_doc_identificacion
+                     AND A.num_doc_identificacion     = PNJ.num_doc_identificacion  
+                     AND P.idpoliza                   = AP.idpoliza
+                     AND P.codcia                     = AP.codcia
+                     AND AC.Estado                    = 'EMI'
                 );
 
       EXCEPTION
       WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20200,'El Asegurado '||nNoContratante||' no existente en Base de Datos.'); 
+         RAISE_APPLICATION_ERROR(-20200,'El Asegurado '||nCodAsegurado||' no existente en Base de Datos.'); 
    END;
 
    SELECT 	XMLROOT (xPrevAseg, VERSION '1.0" encoding="UTF-8')
