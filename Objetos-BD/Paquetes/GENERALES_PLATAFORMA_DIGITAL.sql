@@ -1,4 +1,4 @@
-create or replace PACKAGE         GENERALES_PLATAFORMA_DIGITAL AS
+CREATE OR REPLACE PACKAGE THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
 /******************************************************************************
    NOMBRE:       GENERALES_PLATAFORMA_DIGITAL
    1.0        12/07/2019      CPEREZ<       1. Created this package.
@@ -59,7 +59,7 @@ create or replace PACKAGE         GENERALES_PLATAFORMA_DIGITAL AS
     --
 END GENERALES_PLATAFORMA_DIGITAL;
 /
-create or replace PACKAGE BODY         GENERALES_PLATAFORMA_DIGITAL AS
+CREATE OR REPLACE PACKAGE BODY THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
 /******************************************************************************
    NOMBRE:       GENERALES_PLATAFORMA_DIGITAL
    1.0        12/07/2019      CPEREZ<       1. Created this package.
@@ -2465,7 +2465,7 @@ END PAGO_FACTURA;
         RETURN ( LIN );          
     END MUESTRA_POLIZAS;
     --
-    FUNCTION CONSULTA_AGENTE(pCODCIA NUMBER, pCODEMPRESA NUMBER, pCODAGENTE NUMBER) RETURN CLOB IS
+    FUNCTION CONSULTA_AGENTE(pCodCia NUMBER, pCodEmpresa NUMBER, pCodAgente NUMBER) RETURN CLOB IS
 /*   _______________________________________________________________________________________________________________________________	
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
@@ -2473,13 +2473,15 @@ END PAGO_FACTURA;
     | Para       : THONA Seguros                                                                                                    |
     | Fecha Elab.: ??                                                                                                               |    
 	| Nombre     : CONSULTA_AGENTE	                                                                                                |
+    | Version    : 3.0                                                                                                              |
     | Objetivo   : Funcion que obtiene informacion del Agente que coincida con el proporcionado.                                    |
     | Modificado : Si                                                                                                               |
-    | Ult. modif.: 04/03/2021                                                                                                       |
+    | Ult. modif.: 14/04/2021                                                                                                       |
     | Modifico   : J. Alberto Lopez Valle (JALV)                                                                                    |
     | Email      : alopez@thonaseguros.mx                                                                                           |
     |                                                                                                                               |
-    | Obj. Modif.: Correccion para que muestre el Email correcto de acuerdo al Correlativo.                                         |
+    | Obj. Modif.: Colocar orden correcto de apellidos en el Nombre del agente (Ape. Paterno y despues Ape. Materno)                |
+    |        04/03/2021 Correccion para que muestre el Email correcto de acuerdo al Correlativo.                                    |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
     |			pCodCia				Codigo de la Compañia	        (Entrada)                                                       |
@@ -2489,10 +2491,10 @@ END PAGO_FACTURA;
 
 */     
         NUM         NUMBER  := 0;
-        nNIVEL      NUMBER  := 5;
+        nNivel      NUMBER  := 5;
         nAgente     NUMBER  := 0;
         --pCOD_AGENTE NUMBER := 264;     --264 --3048 -- 99
-        nCOD_AGENTE NUMBER;     --264 --3048 -- 99
+        nCod_Agente NUMBER;     --264 --3048 -- 99
         Linea       CLOB;
 
         TYPE NIVELES IS RECORD (
@@ -2542,7 +2544,7 @@ END PAGO_FACTURA;
                 TABLA_NIVELES(NUM).NIVEL      := ENT.NIVEL;
                 TABLA_NIVELES(NUM).JEFE       := ENT.COD_AGENTE;
                 TABLA_NIVELES(NUM).SUB        := ENT.COD_AGENTE_JEFE;
-                SELECT  REPLACE(PA.NOMBRE || ' ' || PA.APELLIDO_MATERNO || ' ' || PA.APELLIDO_PATERNO, '  ', ' '),
+                SELECT  REPLACE(PA.NOMBRE || ' ' || PA.APELLIDO_PATERNO || ' ' || PA.APELLIDO_MATERNO, '  ', ' '), -- JALV 14/042021
                         DECODE(ENT.IDCUENTACORREO,NULL,PA.EMAIL,OC_CORREOS_ELECTRONICOS_PNJ.EMAIL_ESPECIFICO(ENT.TIPO_DOC_IDENTIFICACION, ENT.NUM_DOC_IDENTIFICACION, ENT.IDCUENTACORREO)),--PA.EMAIL,   --> 04/03/2021 (JALV +)
                         NVL(PA.TELMOVIL, NVL(PA.TELOFI, PA.TELRES )) TEL                           
                   INTO  TABLA_NIVELES(NUM).NOMBRE, 
