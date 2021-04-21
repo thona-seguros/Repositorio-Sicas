@@ -828,7 +828,7 @@ BEGIN
 
          dbms_output.put_line('jmmd3 cNomDirectorio '||cNomDirectorio||' cNomArchivo  '||cNomArchivo );
          --
-     nLinea := 4;
+     nLinea := 6;
      dbms_output.put_line('jmmd5 '||cCadena);
 --     nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cEncabez, 1);
 

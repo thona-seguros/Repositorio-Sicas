@@ -703,7 +703,7 @@ BEGIN
                      'Fecha Emisión'||cLimitador||
                      'Inicio Vigencia'||cLimitador||
                      'Fin Vigencia'||cLimitador|| 
-                     'Fecha Pago/Reverso'||
+                     'Fecha Pago/Reverso'||cLimitador||
                      'Prima Neta'||cLimitador||
                      'Reducción de Prima'||cLimitador||
                      'Recargos'||cLimitador||
