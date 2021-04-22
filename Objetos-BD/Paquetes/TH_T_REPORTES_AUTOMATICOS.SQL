@@ -16,6 +16,8 @@ PROCEDURE BORRA_MOVIMIENTO(P_CODCIA                              NUMBER,
                            P_CODEMPRESA                          NUMBER, 
                            P_NOMBRE_REPORTE                      VARCHAR2, 
                            P_FECHA_PROCESO                       DATE  );
+                           
+FUNCTION REPORTE(nCodCia NUMBER, nCodEmpresa NUMBER, cNombreReporte VARCHAR2, dFechaProceso DATE) RETURN XMLTYPE;                           
 --                           
               
 END TH_T_REPORTES_AUTOMATICOS;
@@ -62,5 +64,31 @@ BEGIN
 END BORRA_MOVIMIENTO;
 --
 --
+
+FUNCTION REPORTE(nCodCia NUMBER, nCodEmpresa NUMBER, cNombreReporte VARCHAR2, dFechaProceso DATE) RETURN XMLTYPE IS
+xReporte XMLTYPE;
+BEGIN 
+   BEGIN
+      SELECT XMLROOT(XMLELEMENT("DATA", 
+                  XMLAGG(XMLELEMENT("REGISTRO",
+                     XMLELEMENT("Nombre_Reporte",Nombre_Reporte),   
+                     XMLELEMENT("Fecha_Proceso",TO_CHAR(Fecha_Proceso,'DD/MM/RRRR')),
+                     XMLELEMENT("Numero_Registro",Numero_Registro),
+                     XMLAGG(XMLELEMENT("INFORMACION", XMLFOREST(REPLACE(Campo,CHR(13)) "Datos")
+                                       )
+                           ) 
+                                    )
+                        )
+                     )
+                   , VERSION '1.0" encoding="UTF-8') XML
+        INTO xReporte
+        FROM T_REPORTES_AUTOMATICOS
+       WHERE Nombre_Reporte   = cNombreReporte
+         AND Fecha_Proceso    = dFechaProceso
+       GROUP BY Nombre_Reporte, Fecha_Proceso, Numero_Registro
+       ORDER BY Numero_Registro ASC;
+   END;
+   RETURN xReporte;
+END REPORTE;
 END TH_T_REPORTES_AUTOMATICOS;
 /
