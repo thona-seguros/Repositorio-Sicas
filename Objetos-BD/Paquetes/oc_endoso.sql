@@ -97,6 +97,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
    PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdEndoso NUMBER);
    PROCEDURE ENDOSO_ANULACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFecAnulacion DATE, cMotivAnul VARCHAR2);
    PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
+   FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN NUMBER;
    
 END OC_ENDOSO;
 /
@@ -2377,6 +2378,46 @@ BEGIN
   --
 END ENDOSO_REHABILITACION;
 --
+FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN NUMBER IS
+/*   _______________________________________________________________________________________________________________________________
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : J. Alberto Lopez Valle                                                                                           |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: 26/04/2021                                                                                                       |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
+    | Nombre     : MONEDA                                                                                                           |
+    | Objetivo   : Funcion que obtiene la Moneda (Cod_Moneda) en que se efectuo el Endoso asociado a la Poliza correspondiente.     |                                                                                                     |
+    | Modificado : NO                                                                                                               |
+    | Ult. Modif.: N/A                                                                                                              |
+    | Modifico   : N/A                                                                                                              |
+    | Obj. Modif.: N/A                                                                                                              |
+    | Parametros:                                                                                                                   |
+    |           nCodCia             Codigo de Compañia                                          (Entrada)                           |
+    |           nCodEmpresa         Codigo de Empresa                                           (Entrada)                           |
+    |           nIdPoliza           Numero de la Poliza a revisar                               (Entrada)                           |
+    |           nIDetPol            IdetPol de la Poliza                                        (Entrada)                           |
+    |           nIdEndoso           Numero del Endoso asociado.                                 (Entrada)                           |
+    |_______________________________________________________________________________________________________________________________|
+*/
+nCodMoneda  POLIZAS.Cod_Moneda%TYPE;
+BEGIN
+    SELECT  P.Cod_Moneda
+    INTO    nCodMoneda
+    FROM    POLIZAS P,
+            ENDOSOS E
+    WHERE   P.IdPoliza   = E.IdPoliza
+    AND     P.CodCia     = E.CodCia
+    AND     P.CodEmpresa = E.CodEmpresa
+    AND     E.StsEndoso    IN ('SOL','EMI')
+    AND     E.IdEndoso     = nIdEndoso
+    AND     E.IDetPol      = nIDetPol
+    AND     E.IdPoliza     = nIdPoliza
+    AND     E.CodCia       = nCodCia
+    AND     E.CodEmpresa   = nCodEmpresa;
+   RETURN(nCodMoneda);
+END MONEDA;
+
 END OC_ENDOSO;
 /
 
