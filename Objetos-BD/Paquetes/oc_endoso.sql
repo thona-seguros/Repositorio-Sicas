@@ -97,7 +97,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
    PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdEndoso NUMBER);
    PROCEDURE ENDOSO_ANULACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFecAnulacion DATE, cMotivAnul VARCHAR2);
    PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
-   FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN NUMBER;
+   FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN VARCHAR2;
    
 END OC_ENDOSO;
 /
@@ -2378,7 +2378,7 @@ BEGIN
   --
 END ENDOSO_REHABILITACION;
 --
-FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN NUMBER IS
+FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN VARCHAR2 IS
 /*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
