@@ -663,7 +663,7 @@ BEGIN
          nComisionTotalPlan := 0;
    END;
    --
-   --WPORC_COM_PROPORCIONAL := 0;      --AJUS100
+   WPORC_COM_PROPORCIONAL := 0;      --AJUS100
    --
    IF NVL(nComPoliza,0) != 0 THEN
       IF cOrigen != 'H' THEN
@@ -683,7 +683,7 @@ BEGIN
            nCodAgente, nPorcApl, nComAgenteNivel, nComisionTotalPlan,
            nProporcional, nJefe, nComPoliza, cOrigen);
    --
-   --WPORC_COM_PROPORCIONAL := nProporcional;    -- AJUS100
+   WPORC_COM_PROPORCIONAL := nProporcional;    -- AJUS100
    --
    WHILE cJefe = 'S' LOOP
       BEGIN
@@ -702,7 +702,7 @@ BEGIN
             nComAgenteNivel := 0;
             nJefe           := NULL;
       END;
-
+      
       IF NVL(nComPoliza,0) != 0 THEN
          IF nNivel = 2 THEN
             nProporcional := TRUNC(ROUND((nPorcComisNivel2*100)/nComPoliza,2),2); ---nPorcComisNivel2*100/nComPoliza;
@@ -712,23 +712,24 @@ BEGIN
       ELSE
          nProporcional := 0;
       END IF;
-
+      
       IF nJefe IS NULL THEN
          EXIT;
       END IF;
       -- AJUS100 I
-     /* WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL + nProporcional; 
+      WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL + nProporcional; 
       --
+--      DBMS_OUTPUT.PUT_LINE('WPORC_COM_PROPORCIONAL '||WPORC_COM_PROPORCIONAL);
       IF (WPORC_COM_PROPORCIONAL > 100 AND WPORC_COM_PROPORCIONAL <= 100.01) THEN
-         DBMS_OUTPUT.PUT_LINE('AJUSTADO -> '||WPORC_COM_PROPORCIONAL);
+--         DBMS_OUTPUT.PUT_LINE('AJUSTADO -> '||WPORC_COM_PROPORCIONAL);
          WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL - 100;
          nProporcional := nProporcional - WPORC_COM_PROPORCIONAL;
       ELSIF
          (WPORC_COM_PROPORCIONAL < 100 AND WPORC_COM_PROPORCIONAL >= 99.99)  THEN
-         DBMS_OUTPUT.PUT_LINE('AJUSTADO -> '||WPORC_COM_PROPORCIONAL);
+--         DBMS_OUTPUT.PUT_LINE('AJUSTADO -> '||WPORC_COM_PROPORCIONAL);
          WPORC_COM_PROPORCIONAL := WPORC_COM_PROPORCIONAL - 100;
          nProporcional := nProporcional + WPORC_COM_PROPORCIONAL;
-      END IF;*/
+      END IF;
       -- AJUS100 F
       INSERT INTO AGENTES_DISTRIBUCION_POLIZA
              (codcia, idpoliza, cod_agente, codnivel,
