@@ -503,21 +503,21 @@ BEGIN
              Prima_Moneda         = X.PrimaDetMoneda,
              IndDeclara           = 'N',
              IndSinAseg           = 'N',
-             CodCategoria         = X.DescSubGrupo,
+             --CodCategoria         = X.DescSubGrupo,
              IndAsegModelo        = X.IndAsegModelo,
-             CantAsegModelo       = nCantAsegurados,
-             CodFilial            = X.CodSubGrupo
+             CantAsegModelo       = nCantAsegurados--,
+             --CodFilial            = X.CodSubGrupo
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
          AND IdPoliza   = nIdPoliza;
 
       GT_DETALLE_POLIZA_COTIZ.INSERTA(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion,
                                       nIdPoliza, nIDetPol);
-
+      
       IF X.IndAsegModelo = 'S' THEN
          GT_COTIZACIONES_COBERTURAS.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion,
                                                      nIdPoliza, nIDetPol, nCodAsegurado, cIndPolCol);
-      ELSIF X.IndListadoAseg = 'S' AND X.IndCensoSubGrupo = 'S' THEN
+      ELSIF X.IndListadoAseg = 'S' OR X.IndCensoSubGrupo = 'S' THEN
          GT_COTIZACIONES_COBERT_ASEG.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion,
                                                       nIdPoliza, nIDetPol, nCodAsegurado, cIndPolCol);
       END IF;
@@ -534,51 +534,51 @@ EXCEPTION
       RAISE_APPLICATION_ERROR(-20200,'Error al Crear el SubGrupo/Certificado '||SQLERRM);
 END CREAR_CERTIFICADO;
 
-   PROCEDURE RECALCULA_FACTORAJUSTE( nCodCia         COTIZACIONES_DETALLE.CodCia%TYPE
-                                   , nCodEmpresa     COTIZACIONES_DETALLE.CodEmpresa%TYPE
-                                   , nIdCotizacion   COTIZACIONES_DETALLE.IdCotizacion%TYPE
-                                   , nIDetCotizacion COTIZACIONES_DETALLE.IDetCotizacion%TYPE
-                                   , cCodSubGrupo    COTIZACIONES_DETALLE.CodSubGrupo%TYPE ) IS
+PROCEDURE RECALCULA_FACTORAJUSTE( nCodCia         COTIZACIONES_DETALLE.CodCia%TYPE
+                                , nCodEmpresa     COTIZACIONES_DETALLE.CodEmpresa%TYPE
+                                , nIdCotizacion   COTIZACIONES_DETALLE.IdCotizacion%TYPE
+                                , nIDetCotizacion COTIZACIONES_DETALLE.IDetCotizacion%TYPE
+                                , cCodSubGrupo    COTIZACIONES_DETALLE.CodSubGrupo%TYPE ) IS
+   --
+   nFactorAjusteNuevo   COTIZACIONES_DETALLE.FactorAjuste%TYPE;
+   nFactorAjusteInicial COTIZACIONES_DETALLE.FactorAjusteInicial%TYPE;
+   --
+   CURSOR Factores IS
+      SELECT Factor
+      FROM   COTIZACIONES_DETALLE_FACTOR
+      WHERE  CodCia         = nCodCia
+        AND  CodEmpresa     = nCodEmpresa
+        AND  IdCotizacion   = nIdCotizacion
+        AND  IDetCotizacion = nIDetCotizacion;
+BEGIN
+   --Actualizo el FactorAjuste en COTIZACIONES_DETALLE 
+   nFactorAjusteNuevo := 1;
+   --
+   SELECT FactorAjuste
+   INTO   nFactorAjusteInicial
+      FROM   COTIZACIONES_DETALLE
+      WHERE  CodCia         = nCodCia
+        AND  CodEmpresa     = nCodEmpresa
+        AND  IdCotizacion   = nIdCotizacion
+        AND  IDetCotizacion = nIDetCotizacion
+        AND  CodSubgrupo    = cCodSubGrupo;
       --
-      nFactorAjusteNuevo   COTIZACIONES_DETALLE.FactorAjuste%TYPE;
-      nFactorAjusteInicial COTIZACIONES_DETALLE.FactorAjusteInicial%TYPE;
+      FOR x IN Factores LOOP 
+          nFactorAjusteNuevo := nFactorAjusteNuevo * x.Factor;
+      END LOOP;
       --
-      CURSOR Factores IS
-         SELECT Factor
-         FROM   COTIZACIONES_DETALLE_FACTOR
-         WHERE  CodCia         = nCodCia
-           AND  CodEmpresa     = nCodEmpresa
-           AND  IdCotizacion   = nIdCotizacion
-           AND  IDetCotizacion = nIDetCotizacion;
-   BEGIN
-      --Actualizo el FactorAjuste en COTIZACIONES_DETALLE 
-      nFactorAjusteNuevo := 1;
-      --
-      SELECT FactorAjuste
-      INTO   nFactorAjusteInicial
-         FROM   COTIZACIONES_DETALLE
-         WHERE  CodCia         = nCodCia
-           AND  CodEmpresa     = nCodEmpresa
-           AND  IdCotizacion   = nIdCotizacion
-           AND  IDetCotizacion = nIDetCotizacion
-           AND  CodSubgrupo    = cCodSubGrupo;
-         --
-         FOR x IN Factores LOOP 
-             nFactorAjusteNuevo := nFactorAjusteNuevo * x.Factor;
-         END LOOP;
-         --
-         UPDATE COTIZACIONES_DETALLE
-         SET    FactorAjuste        = nFactorAjusteNuevo
-           ,    FactorAjusteInicial = nFactorAjusteInicial
-         WHERE  CodCia         = nCodCia
-           AND  CodEmpresa     = nCodEmpresa
-           AND  IdCotizacion   = nIdCotizacion
-           AND  IDetCotizacion = nIDetCotizacion
-           AND  CodSubgrupo    = cCodSubGrupo;
-   EXCEPTION
-   WHEN OTHERS THEN
-      RAISE_APPLICATION_ERROR(-20200,'Error al Recalcular el Factor Ajuste '||SQLERRM);
-   END RECALCULA_FACTORAJUSTE;
+      UPDATE COTIZACIONES_DETALLE
+      SET    FactorAjuste        = nFactorAjusteNuevo
+        ,    FactorAjusteInicial = nFactorAjusteInicial
+      WHERE  CodCia         = nCodCia
+        AND  CodEmpresa     = nCodEmpresa
+        AND  IdCotizacion   = nIdCotizacion
+        AND  IDetCotizacion = nIDetCotizacion
+        AND  CodSubgrupo    = cCodSubGrupo;
+EXCEPTION
+WHEN OTHERS THEN
+   RAISE_APPLICATION_ERROR(-20200,'Error al Recalcular el Factor Ajuste '||SQLERRM);
+END RECALCULA_FACTORAJUSTE;
 
 PROCEDURE RESTAURA_FACTORAJUSTE(  nCodCia         COTIZACIONES_DETALLE.CodCia%TYPE
                                 , nCodEmpresa     COTIZACIONES_DETALLE.CodEmpresa%TYPE

@@ -276,9 +276,6 @@ BEGIN
                 cNumUnicoCotizacion := cNumUnicoCotizacionMax;            
             END IF;
     --                        
-            --DBMS_OUTPUT.PUT_LINE(cNumUnicoCotizacionMax);
-            --DBMS_OUTPUT.PUT_LINE(cNumUnicoCotizacion);
-
             SELECT MAX(NVL(SUBSTR(cNumUnicoCotizacion,1,INSTR(cNumUnicoCotizacion,'-',-1)-1), SUBSTR(GT_COTIZACIONES.NUMERO_UNICO_COTIZACION(nCodCia, nCodEmpresa, nIdRecotizacionMax),1,INSTR(GT_COTIZACIONES.NUMERO_UNICO_COTIZACION(nCodCia, nCodEmpresa, nIdRecotizacionMax),'-',-1)-1)) || '-' || DECODE(THONAPI.GENERALES_PLATAFORMA_DIGITAL.ES_NUMERICO(SUBSTR(cNumUnicoCotizacion,INSTR(cNumUnicoCotizacion,'-',-1)+1)), 1, TRIM(TO_CHAR(SUBSTR(cNumUnicoCotizacion,INSTR(cNumUnicoCotizacion,'-',-1)+1) + 1, '000')), '001') ) D
               INTO cNumUnicoCotizacion                                              
               FROM COTIZACIONES N
@@ -738,7 +735,7 @@ BEGIN
                  DescActividadAseg,  DescFormulaDividendos, NumPolRenovacion, AsegAdheridosPor, PorcenContributorio, 
                  FuenteRecursosPrima, TipoProrrata, PorcComisAgte, PorcComisProm, PorcComisDir, 
                  IndConvenciones, PorcConvenciones, DescCuotasPrimaNiv, DescElegibilidad, DescRiesgosCubiertos,
-                 IndCotizacionWeb, IndCotizacionBaseWeb, GASTOSEXPEDICION, CODTIPONEGOCIO, CODPAQCOMERCIAL, CODOFICINA, CODCATEGO )
+                 IndCotizacionWeb, IndCotizacionBaseWeb, GastosExpedicion, CodTipoNegocio, CodPaqComercial, CodOficina, CodCatego )
          VALUES (nCodCia, nCodEmpresa, nIdCotizacionCopia, W.NumUnicoCotizacion, W.CodCotizador, W.NumCotizacionRef, 
                  NULL, 'COTIZA', TRUNC(SYSDATE), W.NombreContratante, W.FecIniVigCot, W.FecFinVigCot, 
                  TRUNC(SYSDATE), TRUNC(SYSDATE) + GT_COTIZADOR_CONFIG.DIAS_VIGENCIA_COTIZACION(nCodCia, nCodEmpresa, W.CodCotizador),
@@ -752,7 +749,7 @@ BEGIN
                  USER, W.DescGiroNegocio,  W.DescActividadAseg, W.DescFormulaDividendos, W.NumPolRenovacion, W.AsegAdheridosPor, 
                  W.PorcenContributorio,  W.FuenteRecursosPrima, W.TipoProrrata, W.PorcComisAgte, W.PorcComisProm, W.PorcComisDir, 
                  W.IndConvenciones, W.PorcConvenciones, W.DescCuotasPrimaNiv, W.DescElegibilidad, W.DescRiesgosCubiertos,
-                 W.IndCotizacionWeb, W.IndCotizacionBaseWeb, NVL(W.GASTOSEXPEDICION, 0), W.CODTIPONEGOCIO, W.CODPAQCOMERCIAL, W.CODOFICINA, W.CODCATEGO );
+                 W.IndCotizacionWeb, W.IndCotizacionBaseWeb, NVL(W.GastosExpedicion, 0), W.CodTipoNegocio, W.CodPaqComercial, W.CodOficina, W.CodCatego );
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20200,'Duplicada Cotización No. ' || nIdCotizacion);
@@ -1062,28 +1059,31 @@ BEGIN
 END EXISTE_SIN_POLIZA;
 
 FUNCTION CREAR_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nCodCliente NUMBER, nCodAsegurado NUMBER) RETURN VARCHAR2 IS
-nIdPoliza        POLIZAS.IdPoliza%TYPE;
-nNumRenov        POLIZAS.NumRenov%TYPE;
-cNumPolUnico     POLIZAS.NumPolUnico%TYPE;
-cIndPolCol       POLIZAS.IndpolCol%TYPE;
-cIndAplicoSAMI   POLIZAS.IndAplicoSAMI%TYPE;
-nSAMIPoliza      POLIZAS.SAMIPoliza%TYPE;
-nIDetPol         DETALLE_POLIZA.IDetPol%TYPE;
-cOrigen          AGENTE_POLIZA.Origen%TYPE;
-nCodAgente       AGENTE_POLIZA.Origen%TYPE;
-nPorcComDis      AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Distribuida%TYPE;
-nProporcional    AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
-nProporcAjust    AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
-cTipoCotiz       COTIZADOR_CONFIG.CodTipoCotizador%TYPE;
-cPrefijoPol      VARCHAR2(30);--PLAN_COBERTURAS.PrefijoPol%TYPE;
-nPorcGtoAdqui    COTIZACIONES.PorcGtoAdqui%TYPE;
--- 
-nPorcComis       POLIZAS.PorcComis%TYPE;     
-nNivEstruct1     AGENTES.CODNIVEL%TYPE;
-nCodAgente2      AGENTES.COD_AGENTE%TYPE;
-nNivEstruct2     AGENTES.CODNIVEL%TYPE;
-nCodAgente3      AGENTES.COD_AGENTE%TYPE;
-nNivEstruct3     AGENTES.CODNIVEL%TYPE;
+nIdPoliza         POLIZAS.IdPoliza%TYPE;
+nNumRenov         POLIZAS.NumRenov%TYPE;
+cNumPolUnico      POLIZAS.NumPolUnico%TYPE;
+cIndPolCol        POLIZAS.IndpolCol%TYPE;
+cIndAplicoSAMI    POLIZAS.IndAplicoSAMI%TYPE;
+nSAMIPoliza       POLIZAS.SAMIPoliza%TYPE;
+nIDetPol          DETALLE_POLIZA.IDetPol%TYPE;
+cOrigen           AGENTE_POLIZA.Origen%TYPE;
+nCodAgente        AGENTE_POLIZA.Origen%TYPE;
+nPorcComDis       AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Distribuida%TYPE;
+nProporcional     AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
+nProporcAjust     AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
+cTipoCotiz        COTIZADOR_CONFIG.CodTipoCotizador%TYPE;
+cPrefijoPol       VARCHAR2(30);--PLAN_COBERTURAS.PrefijoPol%TYPE;
+nPorcGtoAdqui     COTIZACIONES.PorcGtoAdqui%TYPE;
+--  
+nPorcComis        POLIZAS.PorcComis%TYPE;     
+nNivEstruct1      AGENTES.CODNIVEL%TYPE;
+nCodAgente2       AGENTES.COD_AGENTE%TYPE;
+nNivEstruct2      AGENTES.CODNIVEL%TYPE;
+nCodAgente3       AGENTES.COD_AGENTE%TYPE;
+nNivEstruct3      AGENTES.CODNIVEL%TYPE;
+
+cHoraVigIni       POLIZAS.HoraVigIni%TYPE;
+cHoraVigFin       POLIZAS.HoraVigFin%TYPE;
 --
 CURSOR COTIZ_Q IS
   SELECT CodCotizador, NumUnicoCotizacion, NumCotizacionRef, FecIniVigCot, FecFinVigCot,
@@ -1167,7 +1167,15 @@ BEGIN
          cPrefijoPol := OC_PLAN_COBERTURAS.PREFIJO_POLIZA(nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob);
          IF cPrefijoPol IS NOT NULL THEN
             cNumPolUnico := TRIM(cPrefijoPol) || '-' || TRIM(TO_CHAR(nIdPoliza)) || '-' || TRIM(TO_CHAR(nNumRenov,'00'));
-         END IF;                                          
+         END IF;  
+         
+         IF NVL(X.IndCotizacionWeb,'N') = 'S' AND NVL(X.IndCotizacionBaseWeb,'N') = 'N' THEN
+            cHoraVigIni := '12:00';
+            cHoraVigFin := '12:00';
+         ELSE
+            cHoraVigIni := X.HorasVig;
+            cHoraVigFin := X.HorasVig;
+         END IF;
          --
          UPDATE POLIZAS
             SET Num_Cotizacion       = nIdCotizacion,
@@ -1182,8 +1190,10 @@ BEGIN
                 SAMIPoliza           = nSAMIPoliza,
                 FormaVenta           = X.CanalFormaventa,
                 TipoAdministracion   = X.TipoAdministracion,
-                HoraVigIni           = X.HorasVig,
-                HoraVigFin           = X.HorasVig,
+                --HoraVigIni           = X.HorasVig,
+                --HoraVigFin           = X.HorasVig,
+                HoraVigIni           = cHoraVigIni,
+                HoraVigFin           = cHoraVigFin,
                 PorcDescuento        = X.PorcDescuento,
                 PorcGtoAdmin         = X.PorcGtoAdmin,
                 PorcGtoAdqui         = X.PorcGtoAdqui,
@@ -1262,11 +1272,6 @@ BEGIN
             IF NVL(X.PorcGtoAdqui,0) != 0 THEN
 --            IF NVL(nPorcComis,0) != 0 THEN
                IF cOrigen != 'H' THEN
---DBMS_OUTPUT.PUT_LINE('Y.Porc_Com_Distribuida: ' || Y.Porc_Com_Distribuida);
---DBMS_OUTPUT.PUT_LINE('Y.Porc_Com_proporcional: ' || Y.Porc_Com_proporcional);
---DBMS_OUTPUT.PUT_LINE('X.PorcGtoAdqui: ' || X.PorcGtoAdqui);
-
-
 --                  nProporcional := TRUNC(ROUND((Y.Porc_Com_Distribuida*100)/nPorcComis,2),2);
                   nProporcional := TRUNC(ROUND((Y.Porc_Com_Distribuida*100)/X.PorcGtoAdqui,2),2);
                ELSIF cOrigen = 'H' THEN
@@ -1278,9 +1283,7 @@ BEGIN
             END IF;
             --
             nProporcAjust := nProporcAjust + nProporcional; 
---DBMS_OUTPUT.PUT_LINE('nProporcional: ' || nProporcional);
---DBMS_OUTPUT.PUT_LINE('nProporcAjust: ' || nProporcAjust);
-            --
+
             IF (nProporcAjust > 100 AND nProporcAjust <= 100.01) THEN
                nProporcAjust := nProporcAjust - 100;
                nProporcional := nProporcional - nProporcAjust;
@@ -1289,7 +1292,6 @@ BEGIN
                nProporcional := nProporcional + nProporcAjust;
             END IF;
             --
---DBMS_OUTPUT.PUT_LINE('nProporcional: ' || nProporcional);
             IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) = 'S' THEN
                nPorcComDis    := 0;
                nPorcGtoAdqui  := 0;

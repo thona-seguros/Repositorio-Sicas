@@ -20,6 +20,8 @@ create or replace PACKAGE OC_POLIZAS_SERVICIOS_WEB AS
 
     FUNCTION ESTADO_POLIZA(nCodCia  NUMBER, nCodEmpresa NUMBER, nCodAgente  NUMBER,  nCodAgenteSesion IN NUMBER, nNivel IN NUMBER) 
     RETURN XMLTYPE;
+    
+    FUNCTION RENOVAR (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPolizaRen NUMBER, cEmitePoliza VARCHAR2, cPreEmitePoliza VARCHAR2, nIdCotizacion NUMBER, cFacturas OUT CLOB) RETURN NUMBER;
 
 END OC_POLIZAS_SERVICIOS_WEB;
 /
@@ -795,5 +797,39 @@ BEGIN
    RETURN xStatus;
 
 END ESTADO_POLIZA;
+
+FUNCTION RENOVAR (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPolizaRen NUMBER, cEmitePoliza VARCHAR2, cPreEmitePoliza VARCHAR2, nIdCotizacion NUMBER, cFacturas OUT CLOB) RETURN NUMBER IS
+nIdPoliza         POLIZAS.IdPoliza%TYPE;
+--cFacturas         CLOB;
+nIdTransaccion    TRANSACCION.IdTransaccion%TYPE;
+CURSOR cTransaccion IS
+   SELECT IdTransaccion
+     FROM   DETALLE_TRANSACCION
+    WHERE  CodCia        = nCodCia
+      AND  CodEmpresa    = nCodEmpresa
+      AND  CodSubProceso = 'POL'
+      AND  Objeto        ='POLIZAS'
+      AND  Valor1        = nIdPoliza;
+BEGIN
+   IF NVL(cEmitePoliza,'N') = 'N' AND NVL(cPreEmitePoliza,'N') = 'S' THEN
+      RAISE_APPLICATION_ERROR(-20200,'No es posible Pre Emitir cuando se indica NO emitir'); 
+   ELSE
+      nIdPoliza := OC_POLIZAS.RENOVAR(nCodCia, nIdPolizaRen, cEmitePoliza, 'S', 'S', nIdCotizacion);
+      IF NVL(cEmitePoliza,'N') = 'S' THEN
+         IF NVL(cPreEmitePoliza,'N') = 'S' THEN
+            OPEN  cTransaccion;
+            FETCH cTransaccion INTO nIdTransaccion;
+            CLOSE cTransaccion;                       
+            --
+            IF NVL(cPreEmitePoliza,'N') = 'S' THEN
+              OC_POLIZAS.PRE_EMITE_POLIZA(nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion);
+            END IF;
+            --
+         END IF;
+         cFacturas := GENERALES_PLATAFORMA_DIGITAL.CONSULTA_FACTURA(nCodCia, nIdPoliza);  
+      END IF;
+   END IF;
+   RETURN nIdPoliza; 
+END RENOVAR;
 
 END OC_POLIZAS_SERVICIOS_WEB;
