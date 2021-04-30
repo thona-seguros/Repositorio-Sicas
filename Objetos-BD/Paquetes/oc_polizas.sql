@@ -1810,7 +1810,16 @@ BEGIN
                AND D.IdPoliza   = nIdPoliza;
 
             OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza); 
-          END;   
+         END;   
+         FOR W IN BENEF_Q LOOP
+            INSERT INTO BENEFICIARIO
+                   (IdPoliza, IDetPol, Cod_Asegurado, Benef, Nombre, PorcePart,
+                    CodParent, Estado, Sexo, FecEstado, FecAlta, FecBaja,
+                    MotBaja, Obervaciones, IndIrrevocable)
+            VALUES (nIdPoliza, W.IDetPol, W.Cod_Asegurado, W.Benef, W.Nombre, W.PorcePart,
+                    W.CodParent, 'ACTIVO', W.Sexo, dFechoy, dFecIni, NULL,
+                    NULL, W.Obervaciones, W.IndIrrevocable);
+         END LOOP;
       END LOOP;
 /*********************************************************************************************************/      
    ELSE
