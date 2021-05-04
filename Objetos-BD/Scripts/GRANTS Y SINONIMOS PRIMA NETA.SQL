@@ -1,0 +1,6 @@
+----------------- GRANTS ------------------
+GRANT EXECUTE ON PRIMA_NETA_COB TO PUBLIC	;
+/
+CREATE or replace PUBLIC SYNONYM PRIMA_NETA_COB FOR PRIMA_NETA_COB ;
+/
+
