@@ -290,6 +290,9 @@ CREATE OR REPLACE PACKAGE BODY THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
                               END IF;
 
                             EXCEPTION WHEN others THEN
+                                   --dbms_output.put_line(DBMS_LOB.GETLENGTH(val) );
+                                   --dbms_output.put_line(DBMS_LOB.GETLENGTH(cSalida) );
+                                   --dbms_output.put_line(cSalida);
                                    RAISE_APPLICATION_ERROR(-20200,SQLERRM);
                             END;
                           --
@@ -323,7 +326,9 @@ CREATE OR REPLACE PACKAGE BODY THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
                             locSalidaNva :=  DIGITAL_PLANTILLA(nNivel,cSqlWhere); 
                             locSalida := locSalida || locSalidaNva;              
                             --locSalida := replace(locSalida, '<NIVEL>' || TRIM(TO_CHAR((nNivel-1), '000')) || '</NIVEL>', locSalidaNva) ;                        
+                            --DBMS_OUTPUT.PUT_LINE('LOCSALIDA 1: ' ||  locSalida);
                         EXCEPTION WHEN OTHERS THEN
+                            ---DBMS_OUTPUT.PUT_LINE('SALIDA LOCSALIDA 1: ' ||  locSalida);
                             EXIT;
                         END;
                         --
@@ -343,6 +348,8 @@ CREATE OR REPLACE PACKAGE BODY THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
         --    
         RETURN locSalida;
     --EXCEPTION WHEN OTHERS THEN
+         --DBMS_OUTPUT.PUT_LINE(cSqlText || '-' || SQLERRM);
+         --DBMS_OUTPUT.PUT_LINE('curs: ' || curs); 
         --NULL;        
     END DIGITAL_PLANTILLA;
     --
@@ -801,10 +808,15 @@ END;
             RESULTADO := RESULTADO || CHR(9) || CHR(9) ||GENTAG('CODPLANTILLA', R_PLAN.CODPLANTILLA)||CHR(10);
             RESULTADO := RESULTADO || CHR(9) || CHR(9) ||GENTAG('DESCPLANTILLA', R_PLAN.DESCPLANTILLA)||CHR(10);
 
+               -- DBMS_OUTPUT.PUT_LINE(P_IDTIPOSEG);
+               -- DBMS_OUTPUT.PUT_LINE(P_PLANCOB);
+
             --
             OPEN Q_NUMREG (P_IDTIPOSEG, P_PLANCOB);
                 FETCH Q_NUMREG INTO R_NUMREG;
+                --DBMS_OUTPUT.PUT_LINE(R_NUMREG.CODSUBGRUPO);
                 wNumReg := TO_NUMBER(NVL(R_NUMREG.CODSUBGRUPO, 1));   
+                --DBMS_OUTPUT.PUT_LINE(wNumReg);
                 IF wNumReg = 0 THEN wNumReg := 1; END IF;         
             FOR R IN 1..wNumReg LOOP
                 RESULTADO := RESULTADO || CHR(9) || CHR(9) || CHR(9) || '<TABLAS>'|| CHR(10);
@@ -978,11 +990,15 @@ END;
             RESULTADO := RESULTADO || CHR(9) || CHR(9) ||GENTAG('CODPLANTILLA', R_PLAN.CODPLANTILLA)||CHR(10);
             RESULTADO := RESULTADO || CHR(9) || CHR(9) ||GENTAG('DESCPLANTILLA', R_PLAN.DESCPLANTILLA)||CHR(10);
 
+                DBMS_OUTPUT.PUT_LINE(P_IDTIPOSEG);
+                DBMS_OUTPUT.PUT_LINE(P_PLANCOB);
 
             --
             OPEN Q_NUMREG (P_IDTIPOSEG, P_PLANCOB);
                 FETCH Q_NUMREG INTO R_NUMREG;
+                --DBMS_OUTPUT.PUT_LINE(R_NUMREG.CODSUBGRUPO);
                 wNumReg := TO_NUMBER(NVL(R_NUMREG.CODSUBGRUPO, 1));   
+                --DBMS_OUTPUT.PUT_LINE(wNumReg);
                 IF wNumReg = 0 THEN wNumReg := 1; END IF;         
             FOR R IN 1..wNumReg LOOP
                 RESULTADO := RESULTADO || CHR(9) || CHR(9) || CHR(9) || '<TABLAS>'|| CHR(10);
@@ -1316,6 +1332,8 @@ CURSOR DETPOL_Q IS
              --                 
              nIdPoliza := gt_cotizaciones.CREAR_POLIZA(nCodCia,nCodEmpresa, nIdCotizacion, nCodCliente, nCod_Asegurado);
              --   
+             --DBMS_OUTPUT.PUT_LINE(nIdPoliza);
+            
                 SELECT C.NUMCOTIZACIONANT
                   INTO wIdCotizacion
                   FROM COTIZACIONES C
@@ -1410,6 +1428,7 @@ CURSOR DETPOL_Q IS
                                  ELSIF COM.CODNIVEL = 3 THEN
                                       wPorcComisTot := wPorcComisTot + wPorcComis3;
                                  END IF;   
+                                -- DBMS_OUTPUT.PUT_LINE('wPorcComisTot '||wPorcComisTot);
                           END LOOP;
                        END IF;                                        
                    END IF;                                                      
@@ -1772,6 +1791,7 @@ END PRE_EMITE_POLIZA_NEW;
 
             CATA :=  CATA || '</FACTURAS>';
             RETURN(CATA);
+            --DBMS_OUTPUT.PUT_LINE(CATA);              
     END CONSULTA_FACTURA;
     --
 FUNCTION PAGO_FACTURA (nIdPoliza NUMBER, nIdFactura NUMBER, cCodFormaPago VARCHAR2) RETURN BOOLEAN IS 
@@ -1866,7 +1886,7 @@ BEGIN
       IF cObten_Fecha_Vigencia = 'N' THEN
          OC_POLIZAS.LIBERA_PRE_EMITE(nCodCia, nCodEmpresa, nIdPoliza, TRUNC(SYSDATE));
       ELSE
-         OC_POLIZAS.LIBERA_PRE_EMITE_PLATAFORMA(nCodCia, nCodEmpresa, nIdPoliza, dFechaPag);
+         OC_POLIZAS.LIBERA_PRE_EMITE_PLATAFORMA(nCodCia, nCodEmpresa, nIdPoliza, TRUNC(dFechaPag));
       END IF;
    --         
       OPEN Q_FACTURAS;
@@ -2793,6 +2813,7 @@ END CONDICIONES_GENERALES;
             DELETE FROM COTIZACIONES_DETALLE        C WHERE C.CODCIA = R_COTIZA.CODCIA AND C.CODEMPRESA = R_COTIZA.CODEMPRESA AND C.IDCOTIZACION = R_COTIZA.IDCOTIZACION;
             DELETE FROM COTIZACIONES                C WHERE C.CODCIA = R_COTIZA.CODCIA AND C.CODEMPRESA = R_COTIZA.CODEMPRESA AND C.IDCOTIZACION = R_COTIZA.IDCOTIZACION;        
         END LOOP;    
+        --DBMS_OUTPUT.PUT_LINE('Numero de cotizaciones: '|| nNumReg);        
         RETURN nNumReg;
     END LIMPIA_COTIZACIONES;    
     --
