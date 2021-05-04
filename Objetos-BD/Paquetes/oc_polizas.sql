@@ -2807,7 +2807,8 @@ CURSOR POL_Q IS
           FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
           IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
           FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos,
-          TipoProrrata, IndConvenciones
+          TipoProrrata, IndConvenciones, CodTipoNegocio, CodPaqComercial,
+          CodOficina,CodCatego
      FROM POLIZAS
     WHERE IdPoliza = nIdPolizaOrig
       AND CodCia   = nCodCia;
@@ -2941,7 +2942,8 @@ BEGIN
                 FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
                 IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
                 FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos,
-                TipoProrrata, IndConvenciones)
+                TipoProrrata, IndConvenciones, CodTipoNegocio, CodPaqComercial,
+                CodOficina, CodCatego)
          VALUES(nIdPoliza, X.CodEmpresa, nCodCia, X.TipoPol, X.NumPolRef,
                 dFecHoy, ADD_MONTHS(dFecHoy,12), dFecHoy, dFecHoy, ADD_MONTHS(dFecHoy,12),
                 'SOL', dFecHoy, NULL, NULL, X.SumaAseg_Local, X.SumaAseg_Moneda,
@@ -2956,7 +2958,8 @@ BEGIN
                 X.FactFormulaDeduc, X.CodRiesgoRea, X.CodTipoBono, X.HorasVig, X.DiasVig,
                 X.IndExtraPrima, X.AsegAdheridosPor, X.PorcenContributorio,
                 X.FuenteRecursosPrima, X.IdFormaCobro, X.DiaCobroAutomatico, X.IndManejaFondos,
-                X.TipoProrrata, X.IndConvenciones);
+                X.TipoProrrata, X.IndConvenciones, X.CodTipoNegocio, X.CodPaqComercial,
+                X.CodOficina, X.CodCatego);
       EXCEPTION
          WHEN OTHERS THEN
               RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nueva Póliza ' ||SQLERRM);
