@@ -38,10 +38,14 @@ BEGIN
        WHERE CodCia     = nCodCia
          AND CodEndoso  = cCodEndoso;
    EXCEPTION
+      WHEN OTHERS THEN
+      NULL;
+      /*
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20225,'NO Existe Configuración de Texto de Endoso Código '|| cCodEndoso);
       WHEN TOO_MANY_ROWS THEN
          RAISE_APPLICATION_ERROR(-20225,'Existen Varios Registros de Texto de Endoso Código '|| cCodEndoso);
+      */
    END;
    RETURN(cDescripcion);
 END DESCRIPCION_TEXTO;
