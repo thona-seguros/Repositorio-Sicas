@@ -71,13 +71,15 @@ nSPV                   NUMBER := 0;
 ----
 
 CURSOR AGENTES_Q IS
-SELECT A.COD_AGENTE, VL.CODVALOR
+SELECT A.COD_AGENTE, VL.CODVALOR,MO.COD_MONEDA
 FROM AGENTES A,
-VALORES_DE_LISTAS VL
+VALORES_DE_LISTAS VL,
+MONEDA MO
 WHERE CODLISTA = 'CODRAMOS'
 AND CODVALOR IN('010', '030')
------AND A.COD_AGENTE in(1024,10009,3212)
-ORDER BY COD_AGENTE;      
+--AND A.COD_AGENTE = 302 --in(100,233,234)
+AND COD_MONEDA IN('PS','USD')
+ORDER BY COD_AGENTE, COD_MONEDA, CODVALOR;      
 
 ---------------------------   INICIA PROCEDIMIENTO --------------------------------------
 
@@ -91,31 +93,26 @@ BEGIN
       INTO W_ID_TERMINAL,
            W_ID_USER
       FROM DUAL;
- 
+----
+     INSERT INTO CONTROL_PROCESOS_AUTOMATICOS
+      VALUES('TH_ACTUALIZA_SALDO_AGENTENVO1',SYSDATE,W_ID_ENVIO,W_ID_USER,W_ID_TERMINAL);
+      --
+      COMMIT;  
 ----
     select 
     TRUNC(sysdate - 1) first,
     TRUNC(sysdate - 1) last,
     TRUNC(sysdate - 1) control    
---    to_date('01/'|| to_char(sysdate, 'MM') ||'/' ||to_char(sysdate, 'YYYY'), 'dd/mm/yyyy') first,
---    to_date('01/'|| 08 ||'/' ||to_char(sysdate, 'YYYY')- 1, 'dd/mm/yyyy') first,    
------   to_date('01/'|| 12 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') first  ,    
 
---    last_day(to_date('01/'|| 08 ||'/'|| to_char(sysdate, 'YYYY')-1), 'dd/mm/yyyy')) last
---    to_date(to_date('01/'|| 08 ||'/'|| to_char(sysdate, 'YYYY')-1), 'dd/mm/yyyy')) last 
---          to_date('01/'|| 01 ||'/' ||(to_char(sysdate, 'YYYY')- 1 ), 'dd/mm/yyyy') last    , 
-------    to_date('01/'|| 12 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') last    ,
-------    to_date('07/'|| 03 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') control    
- 
+-----   to_date('17/'|| 03 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') first  ,    
+-----    to_date('17/'|| 03 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') last    ,
+-----    to_date('24/'|| 05 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') control    
+
   INTO dFecDesde, dFecHasta, dFechacontrolFin
   from  dual ;
   
   dbms_output.put_line('jmmd1 dFecDesde '||dFecDesde);
 
-/*  SELECT dFecDesde + 31
-    INTO dFechacontrolFin
-    from dual;  */
- 
   dbms_output.put_line(' dFechacontrolFin '||dFechacontrolFin);
           
    BEGIN
@@ -125,7 +122,7 @@ BEGIN
        WHERE CodCia = nCodCia;
    EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      cNomCia := 'COMPA√ëIA - NO EXISTE!!!';
+      cNomCia := 'COMPA—IA - NO EXISTE!!!';
    END ;
          
   dbms_output.put_line('dPrimerDia '||dFecDesde);
@@ -143,7 +140,7 @@ FOR X IN AGENTES_Q LOOP
       nCdAgente := X.COD_AGENTE;
       nSPV := 0;
       nCdAgente := X.COD_AGENTE;
---        dbms_output.put_line('JMMD EN FOR X  ');
+ ------       dbms_output.put_line('JMMD EN FOR X  COD_AGENTE '||X.COD_AGENTE ||'  RAMO  '||X.CODVALOR||'  MONEDA  '||X.COD_MONEDA);
     BEGIN
      SELECT  nvl(SCM.MT_SALDO_INICIAL,0), nvl(SCM.MT_SALDO_FINAL,0), NVL(SCM.MT_IVA_MES,0), NVL(SCM.MT_IVARET_MES,0),
              NVL(SCM.MT_ISR_MES,0), NVL(SCM.MT_ISRRET_MES,0), NVL(SCM.MT_ENCONTRA_MES,0), NVL(SCM.MT_AFAVOR_MES,0)
@@ -153,7 +150,7 @@ FOR X IN AGENTES_Q LOOP
         AND SCM.FE_INI_SALDO     = dFecDesde
 --        AND SCM.FE_INI_SALDO     = dFecHasta         
         AND SCM.CD_TIPO_RAMO     = X.CODVALOR
-        AND SCM.CD_MONEDA  = 'PS';
+        AND SCM.CD_MONEDA  = X.COD_MONEDA;
      EXCEPTION WHEN OTHERS THEN
            nSPV := 1;
            nMT_SALDO_INICIAL := 0;
@@ -167,12 +164,7 @@ FOR X IN AGENTES_Q LOOP
  --          DBMS_OUTPUT.put_line('JMMD NO 1   '||SQLERRM||' nSPV  '||nSPV );  
      END;    
         
- --    BEGIN
- --    SELECT AGENTE, CODTIPOPLAN,SUM(COMISION) COMISION, SUM(IVA) IVA, SUM(IVARET) IVARET, SUM(ISR) ISR, SUM(ISRRET) ISRRET  
---      FOR W IN SALDOS_PAGOS_Q (X.COD_AGENTE) LOOP
- --         nSPV := 2;
-  --      dbms_output.put_line('JMMD EN FOR W  '||X.COD_AGENTE);      
-          ----------------
+   ----------------
           nMtoComi_moneda_Mes := 0; 
           nMtoIva_Mes         := 0;
           nMtoIvaRet_Mes      := 0;
@@ -245,7 +237,7 @@ from comisiones C,
                                 DETALLE_COMISION DC                      
                            WHERE C2.CODCIA       = 1
                            AND   C2.Cod_Agente   = X.COD_AGENTE   
-                           AND   C2.COD_MONEDA   = 'PS'                   
+                           AND   C2.COD_MONEDA   = X.COD_MONEDA                  
                            AND   DC.CODCIA     = C2.CODCIA
                            AND   DC.IDCOMISION = C2.IDCOMISION
                           GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  ) 
@@ -257,9 +249,8 @@ where C.cod_agente = X.COD_AGENTE
 and C.estado != 'PRY'
 AND (TRUNC(FEC_ESTADO ) BETWEEN dFecDesde AND dFecHasta
 OR TRUNC(FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta)
---AND IDFACTURA = 260176
 AND Y.IDCOMISION = C.IDCOMISION
-AND C.COD_MONEDA = 'PS'
+AND C.COD_MONEDA = X.COD_MONEDA
 AND DP.IDPOLIZA = C.IDPOLIZA
 AND DP.IDETPOL = (SELECT MIN(DP1.IDETPOL)
                    FROM DETALLE_POLIZA DP1
@@ -267,7 +258,7 @@ AND DP.IDETPOL = (SELECT MIN(DP1.IDETPOL)
 AND TS.IDTIPOSEG = DP.IDTIPOSEG
 AND TS.CODTIPOPLAN = X.CODVALOR
 AND F.IDFACTURA = C.IDFACTURA
-UNION
+UNION ALL  ----- NOTAS DE CREDITO
 select C.IDFACTURA, C.IDNCR, 
 --C.COMISION_MONEDA COMISION, 
    case when
@@ -322,7 +313,7 @@ from comisiones C,
                                 DETALLE_COMISION DC                      
                            WHERE C2.CODCIA       = 1
                            AND   C2.Cod_Agente   = X.COD_AGENTE   
-                           AND   C2.COD_MONEDA   = 'PS'                   
+                           AND   C2.COD_MONEDA   = X.COD_MONEDA                 
                            AND   DC.CODCIA     = C2.CODCIA
                            AND   DC.IDCOMISION = C2.IDCOMISION
                           GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  ) 
@@ -336,7 +327,7 @@ AND (TRUNC(FEC_ESTADO ) BETWEEN dFecDesde AND dFecHasta
 OR TRUNC(FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta)
 --AND IDFACTURA = 260176
 AND Y.IDCOMISION = C.IDCOMISION
-AND C.COD_MONEDA = 'PS'
+AND C.COD_MONEDA = X.COD_MONEDA
 AND DP.IDPOLIZA = C.IDPOLIZA
 AND DP.IDETPOL = (SELECT MIN(DP1.IDETPOL)
                    FROM DETALLE_POLIZA DP1
@@ -344,6 +335,292 @@ AND DP.IDETPOL = (SELECT MIN(DP1.IDETPOL)
 AND TS.IDTIPOSEG = DP.IDTIPOSEG
 AND TS.CODTIPOPLAN = X.CODVALOR
 AND NC.IDNCR = C.IDNCR
+UNION ALL ----- CAMBIO DE COMISIONES FACTURAS
+select C.IDFACTURA, C.IDNCR, 
+--                    C.Comision_Moneda Comision  -- jmmd20201204 se cambio por case de abajo
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then C.Comision_Moneda * -1
+       else 0
+       end  Comision ,
+       C.ESTADO, TRUNC(C.FEC_GENERACION) FECHA_GENERA, TRUNC(C.FEC_LIQUIDACION) FECHA_LIQUIDA,
+       C.IDENDOSO ENDOSO, C.FEC_ESTADO FECHA_ESTADO, C.IDNOMINA NOMINA, C.ORIGEN ORIGEN,
+       case when
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then 
+           Y.MTOCOMISI * -1       
+        else 0
+       end  MONTO_COMISION,    
+       case when
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVA * -1
+           else 0
+       end  MONTO_IVA, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVARET * -1
+          else 0
+       end  MONTO_IVARET, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISR * -1      
+          else 0
+       end   MONTO_ISR, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISRRET * -1           
+          else 0
+       end  MONTO_ISRRET, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then
+           Y.SUBTOTAL * -1                  
+          else 0
+       end  MONTO_SUBTOTAL, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then
+           DECODE(SIGN(Y.SubTotal * -1), -1, Y.SubTotal, 0)                 
+          else 0
+       end  En_contra, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then 
+           DECODE(SIGN(Y.SubTotal * -1), -1, 0, Y.SubTotal)                 
+          else 0
+       end  A_FAVOR,               
+
+       CASE 
+          WHEN  C.Estado = 'LIQ' AND trunc(C.FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta 
+          THEN  C.comision_moneda * -1
+           ELSE 0
+       END   PAGADO,             
+               TS.CODTIPOPLAN TIPOPLAN     
+from comisiones C,
+     (SELECT CodCia, IdComision, SUM(MtoComisi) MtoComisi, SUM(MtoIva) MtoIva, 
+                        SUM(MtoIvaRet) MtoIvaRet, SUM(MtoIsr) MtoIsr, SUM(MtoIsrRet) MtoIsrRet, 
+                        SUM(MtoComisi) + SUM(MtoIva) + SUM(MtoIvaRet) + SUM(MtoIsr) + SUM(MtoIsrRet) SubTotal
+                   FROM (SELECT 
+                                DC.CodCia, 
+                                DC.IdComision,
+                                DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
+                                DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
+                                DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
+                                DECODE(DC.CodConcepto, 'ISR',         SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsr, 
+                                DECODE(DC.CodConcepto, 'RETISR', SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsrRet
+                           FROM COMISIONES       C2, 
+                                DETALLE_COMISION DC                      
+                           WHERE C2.CODCIA       = 1
+                           AND   C2.Cod_Agente   = X.COD_AGENTE   
+                           AND   C2.COD_MONEDA   = X.COD_MONEDA                  
+                           AND   DC.CODCIA     = C2.CODCIA
+                           AND   DC.IDCOMISION = C2.IDCOMISION
+                          GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  ) 
+                  GROUP BY CodCia, IdComision) Y,
+DETALLE_POLIZA DP,
+TIPOS_DE_SEGUROS TS,
+FACTURAS         F                                   
+where C.cod_agente = X.COD_AGENTE
+and C.estado = 'PRY'
+AND (TRUNC(FEC_ESTADO ) BETWEEN dFecDesde AND dFecHasta
+OR TRUNC(FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta)
+--AND IDFACTURA = 260176
+AND Y.IDCOMISION = C.IDCOMISION
+AND C.COD_MONEDA = X.COD_MONEDA
+AND DP.IDPOLIZA = C.IDPOLIZA
+AND DP.IDETPOL = (SELECT MIN(DP1.IDETPOL)
+                   FROM DETALLE_POLIZA DP1
+                  WHERE DP1.IDPOLIZA = DP.IDPOLIZA)
+AND TS.IDTIPOSEG = DP.IDTIPOSEG
+AND TS.CODTIPOPLAN = X.CODVALOR
+AND F.IDFACTURA = C.IDFACTURA
+----
+AND TRUNC(C.FEC_GENERACION) != TRUNC(C.FEC_ESTADO)
+AND F.STSFACT = 'ANU'
+AND F.MOTIVANUL = 'CCO'
+UNION ALL  ----- CAMBIO DE COMISIONES NOTAS DE CREDITO
+select C.IDFACTURA, C.IDNCR, 
+--C.COMISION_MONEDA COMISION, 
+   case when
+      trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then C.Comision_Moneda * -1
+       else 0
+       end  Comision ,
+C.ESTADO, TRUNC(C.FEC_GENERACION) FECHA_GENERA, TRUNC(C.FEC_LIQUIDACION) FECHA_LIQUIDA,
+       C.IDENDOSO ENDOSO, C.FEC_ESTADO FECHA_ESTADO, C.IDNOMINA NOMINA, C.ORIGEN ORIGEN,
+        case when
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then 
+           Y.MTOCOMISI * -1               
+           else 0
+       end  MONTO_COMISION, 
+----- JMMD202101/20       Y.MTOIVA MONTO_IVA, Y.MTOIVARET MONTO_IVARET, Y.MTOISR MONTO_ISR, Y.MTOISRRET MONTO_ISRRET, 
+       case when
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVA * -1      
+           else 0
+       end  MONTO_IVA, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVARET * -1        
+          else 0
+       end  MONTO_IVARET, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISR * -1            
+          else 0
+       end   MONTO_ISR, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISRRET * -1                 
+          else 0
+       end  MONTO_ISRRET, 
+-----
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then 
+           Y.SUBTOTAL * -1                  
+          else 0
+       end  MONTO_SUBTOTAL, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then 
+           DECODE(SIGN(Y.SubTotal * -1), -1, Y.SubTotal, 0)                 
+          else 0
+       end  En_contra, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then 
+           DECODE(SIGN(Y.SubTotal * -1), -1, 0, Y.SubTotal)                 
+          else 0
+       end  A_FAVOR,               
+
+-----
+
+--Y.SUBTOTAL * -1 MONTO_SUBTOTAL,
+--               DECODE(SIGN(Y.SubTotal * -1), -1, Y.SubTotal, 0) En_contra,-- PC.CodTipoPlan CodTipoPlan,                            
+--               DECODE(SIGN(Y.SubTotal * -1), -1, 0, Y.SubTotal) A_FAVOR, 
+       CASE 
+          WHEN  C.Estado = 'LIQ' AND trunc(C.FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta 
+          THEN  C.comision_moneda * -1
+           ELSE 0
+       END   PAGADO,               
+               TS.CODTIPOPLAN TIPOPLAN     
+from comisiones C,
+     (SELECT CodCia, IdComision, SUM(MtoComisi) MtoComisi, SUM(MtoIva) MtoIva, 
+                        SUM(MtoIvaRet) MtoIvaRet, SUM(MtoIsr) MtoIsr, SUM(MtoIsrRet) MtoIsrRet, 
+                        SUM(MtoComisi) + SUM(MtoIva) + SUM(MtoIvaRet) + SUM(MtoIsr) + SUM(MtoIsrRet) SubTotal
+                   FROM (SELECT 
+                                DC.CodCia, 
+                                DC.IdComision,
+                                DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
+                                DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
+                                DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
+                                DECODE(DC.CodConcepto, 'ISR',         SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsr, 
+                                DECODE(DC.CodConcepto, 'RETISR', SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsrRet
+                           FROM COMISIONES       C2, 
+                                DETALLE_COMISION DC                      
+                           WHERE C2.CODCIA       = 1
+                           AND   C2.Cod_Agente   = X.COD_AGENTE   
+                           AND   C2.COD_MONEDA   = X.COD_MONEDA                   
+                           AND   DC.CODCIA     = C2.CODCIA
+                           AND   DC.IDCOMISION = C2.IDCOMISION
+                          GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  ) 
+                  GROUP BY CodCia, IdComision) Y,
+DETALLE_POLIZA DP,
+TIPOS_DE_SEGUROS TS,
+NOTAS_DE_CREDITO NC                                 
+where C.cod_agente = X.COD_AGENTE
+and C.estado  = 'PRY'
+AND (TRUNC(FEC_ESTADO ) BETWEEN dFecDesde AND dFecHasta
+OR TRUNC(FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta)
+--AND IDFACTURA = 260176
+AND Y.IDCOMISION = C.IDCOMISION
+AND C.COD_MONEDA = X.COD_MONEDA
+AND DP.IDPOLIZA = C.IDPOLIZA
+AND DP.IDETPOL = (SELECT MIN(DP1.IDETPOL)
+                   FROM DETALLE_POLIZA DP1
+                  WHERE DP1.IDPOLIZA = DP.IDPOLIZA)
+AND TS.IDTIPOSEG = DP.IDTIPOSEG
+AND TS.CODTIPOPLAN = X.CODVALOR
+AND NC.IDNCR = C.IDNCR
+----
+AND NC.STSNCR  = 'ANU'
+AND NC.MOTIVANUL = 'CCO'
+UNION ALL  ----- DESPAGO DE RECIBOS
+select C.IDFACTURA, C.IDNCR, 
+--                    C.Comision_Moneda Comision  -- jmmd20201204 se cambio por case de abajo
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then C.Comision_Moneda * -1
+          else 0
+       end  Comision ,
+       C.ESTADO, TRUNC(C.FEC_GENERACION) FECHA_GENERA, TRUNC(C.FEC_LIQUIDACION) FECHA_LIQUIDA,
+       C.IDENDOSO ENDOSO, C.FEC_ESTADO FECHA_ESTADO, C.IDNOMINA NOMINA, C.ORIGEN ORIGEN,
+       case when
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOCOMISI * -1 
+       else 0
+       end      MONTO_COMISION, 
+       case when
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVA * -1
+           else 0
+       end  MONTO_IVA, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVARET * -1
+          else 0
+       end  MONTO_IVARET, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISR * -1
+          else 0
+       end   MONTO_ISR, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISRRET * -1
+          else 0
+       end  MONTO_ISRRET, 
+       Y.SUBTOTAL MONTO_SUBTOTAL,
+               DECODE(SIGN(Y.SubTotal * -1), -1, Y.SubTotal, 0) En_contra,-- PC.CodTipoPlan CodTipoPlan,                            
+               DECODE(SIGN(Y.SubTotal * -1), -1, 0, Y.SubTotal) A_FAVOR, 
+       CASE 
+          WHEN  C.Estado = 'LIQ' AND trunc(C.FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta 
+          THEN  C.comision_moneda * -1
+           ELSE 0
+       END   PAGADO,                  
+               TS.CODTIPOPLAN TIPOPLAN     
+from comisiones C,
+     (SELECT CodCia, IdComision, SUM(MtoComisi) MtoComisi, SUM(MtoIva) MtoIva, 
+                        SUM(MtoIvaRet) MtoIvaRet, SUM(MtoIsr) MtoIsr, SUM(MtoIsrRet) MtoIsrRet, 
+                        SUM(MtoComisi) + SUM(MtoIva) + SUM(MtoIvaRet) + SUM(MtoIsr) + SUM(MtoIsrRet) SubTotal
+                   FROM (SELECT 
+                                DC.CodCia, 
+                                DC.IdComision,
+                                DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
+                                DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
+                                DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
+                                DECODE(DC.CodConcepto, 'ISR',         SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsr, 
+                                DECODE(DC.CodConcepto, 'RETISR', SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsrRet
+                           FROM COMISIONES       C2, 
+                                DETALLE_COMISION DC                      
+                           WHERE C2.CODCIA       = 1
+                           AND   C2.Cod_Agente   = X.COD_AGENTE   
+                           AND   C2.COD_MONEDA   = X.COD_MONEDA                   
+                           AND   DC.CODCIA     = C2.CODCIA
+                           AND   DC.IDCOMISION = C2.IDCOMISION
+                          GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  ) 
+                  GROUP BY CodCia, IdComision) Y,
+DETALLE_POLIZA DP,
+TIPOS_DE_SEGUROS TS,
+FACTURAS         F  ,
+DETALLE_TRANSACCION      DTR  ,
+TRANSACCION TR                                               
+where C.cod_agente = X.COD_AGENTE
+and C.estado = 'PRY'
+AND (TRUNC(FEC_ESTADO ) BETWEEN dFecDesde AND dFecHasta
+OR TRUNC(FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta)
+--AND IDFACTURA = 260176
+AND Y.IDCOMISION = C.IDCOMISION
+AND C.COD_MONEDA = X.COD_MONEDA
+AND DP.IDPOLIZA = C.IDPOLIZA
+AND DP.IDETPOL = (SELECT MIN(DP1.IDETPOL)
+                   FROM DETALLE_POLIZA DP1
+                  WHERE DP1.IDPOLIZA = DP.IDPOLIZA)
+AND TS.IDTIPOSEG = DP.IDTIPOSEG
+AND TS.CODTIPOPLAN = X.CODVALOR
+AND F.IDFACTURA = C.IDFACTURA
+--------
+AND F.STSFACT = 'EMI'
+AND DTR.CODSUBPROCESO = 'REVPAG'
+AND DTR.VALOR4 = TO_CHAR(C.IDFACTURA)
+AND DTR.VALOR1 = TO_CHAR(C.IDPOLIZA)
+AND TR.IDTRANSACCION = DTR.IDTRANSACCION 
+--AND TR.IDPROCESO = 12
+AND TRUNC(TR.FECHATRANSACCION) = TRUNC(FEC_ESTADO)
         )
           GROUP BY X.CODVALOR
       ;  
@@ -359,7 +636,7 @@ AND NC.IDNCR = C.IDNCR
          nPOR_PAGAR_COMISION_MES := 0;
       --     DBMS_OUTPUT.put_line('JMMD NO 2 ANTES DE ETIQUETA OTROS  '||SQLERRM);
        END;  
-------------------- JMMD20210107 SE AGREGA EL PAGO DE IMPUESTOS DEL D√çA
+------------------- JMMD20210107 SE AGREGA EL PAGO DE IMPUESTOS DEL DÕA
 begin
 SELECT TO_NUMBER(COD_AGENTE) COD_AGENTE, RAMO RAMO, NVL(SUM(COMISION),0) COMISION,  NVL(SUM(MTOIVA),0) MTOIVA,  
 NVL(SUM(MTOIVARET),0) MTOIVARET, NVL(SUM(MTOISRRET),0) MTOISRRET
@@ -387,7 +664,7 @@ tipos_de_seguros ts,
                                 DETALLE_COMISION DC                      
                            WHERE C2.CODCIA       = 1
                            AND   C2.Cod_Agente   = C2.COD_AGENTE
-                           AND   C2.COD_MONEDA   = 'PS'                     
+                           AND   C2.COD_MONEDA   = X.COD_MONEDA                    
                            AND   DC.CODCIA     = 1
                            AND   DC.IDCOMISION = C2.IDCOMISION
                          GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto )
@@ -395,7 +672,7 @@ tipos_de_seguros ts,
          ) Y
 where c.codcia = 1
 and C.COD_AGENTE = X.COD_AGENTE
-AND C.COD_MONEDA = 'PS'
+AND C.COD_MONEDA = X.COD_MONEDA
 AND TRUNC(C.FEC_LIQUIDACION) = dFecDesde
 and Y.codcia = c.codcia
 and Y.idcomision = c.idcomision
@@ -454,7 +731,7 @@ ORDER BY COD_AGENTE ASC, RAMO DESC;
             INSERT INTO SALDOS_COMISIONES_MES(CD_CIA,CD_AGENTE,CD_TIPO_RAMO,FE_INI_SALDO,FE_FIN_SALDO,FE_PROC_SALDO,
             CD_MONEDA,MT_SALDO_INICIAL,MT_COMISION_MES,MT_IVA_MES,MT_IVARET_MES,MT_ISR_MES,MT_ISRRET_MES,MT_ENCONTRA_MES,
             MT_AFAVOR_MES,MT_SALDO_FINAL,DS_OBSERVACIONES)        
-            VALUES(nCodCia,X.COD_AGENTE , X.CODVALOR, dFecDesde, dFecHasta,trunc(sysdate),'PS',nMT_SALDO_INICIAL,
+            VALUES(nCodCia,X.COD_AGENTE , X.CODVALOR, dFecDesde, dFecHasta,trunc(sysdate),x.cod_moneda,nMT_SALDO_INICIAL,
  /*           nMtoComi_moneda_Mes, nMtoIva_Mes, nMtoIvaRet_Mes, nMtoIsr_Mes, nMtoIsrRet_Mes, nEn_Contra_mes, nA_Favor_mes,
             nMtoComi_moneda_Mes,'CARGA SALDO');  */
 /*            nMtoComi_moneda_Mes, nMtoIva_Mes, nMtoIvaRet_Mes, nMtoIsr_Mes, nMtoIsrRet_Mes, nEn_Contra_mes, nA_Favor_mes,
@@ -467,7 +744,7 @@ ORDER BY COD_AGENTE ASC, RAMO DESC;
             INSERT INTO SALDOS_COMISIONES_MES(CD_CIA,CD_AGENTE,CD_TIPO_RAMO,FE_INI_SALDO,FE_FIN_SALDO,FE_PROC_SALDO,
             CD_MONEDA,MT_SALDO_INICIAL,MT_COMISION_MES,MT_IVA_MES,MT_IVARET_MES,MT_ISR_MES,MT_ISRRET_MES,MT_ENCONTRA_MES,
             MT_AFAVOR_MES,MT_SALDO_FINAL,DS_OBSERVACIONES)        
-            VALUES(nCodCia,X.COD_AGENTE ,X.CODVALOR, dFecDesdeMesSig, dFecHastaMesSig,trunc(sysdate),'PS',nSALDO_FINAL,
+            VALUES(nCodCia,X.COD_AGENTE ,X.CODVALOR, dFecDesdeMesSig, dFecHastaMesSig,trunc(sysdate),x.cod_moneda,nSALDO_FINAL,
 /*            0, 0, 0, 0, 0, 0, 0, nMT_SALDO_FINAL,'CARGA SALDO');   */ ----- jmmd20210107
             0, nMT_IVA_TOT, nMT_IVARET_TOT, nMT_ISR_TOT, nMT_ISRRET_TOT, 0, 0, nMT_SALDO_FINAL,'CARGA SALDO');            
                     
@@ -493,7 +770,7 @@ ORDER BY COD_AGENTE ASC, RAMO DESC;
                DS_OBSERVACIONES = 'ACTUALIZACION DE SALDO SIGUIENTE MES'
         WHERE CD_AGENTE = X.COD_AGENTE
           AND CD_TIPO_RAMO = X.CODVALOR
-          AND CD_MONEDA = 'PS'
+          AND CD_MONEDA = x.cod_moneda
           AND FE_INI_SALDO = dFecHasta;
           COMMIT;
         EXCEPTION WHEN OTHERS THEN
@@ -508,7 +785,7 @@ ORDER BY COD_AGENTE ASC, RAMO DESC;
         INSERT INTO SALDOS_COMISIONES_MES(CD_CIA,CD_AGENTE,CD_TIPO_RAMO,FE_INI_SALDO,FE_FIN_SALDO,FE_PROC_SALDO,
         CD_MONEDA,MT_SALDO_INICIAL,MT_COMISION_MES,MT_IVA_MES,MT_IVARET_MES,MT_ISR_MES,MT_ISRRET_MES,MT_ENCONTRA_MES,
         MT_AFAVOR_MES,MT_SALDO_FINAL,DS_OBSERVACIONES)        
-        VALUES(nCodCia,X.COD_AGENTE ,X.CODVALOR, dFecDesdeMesSig, dFecHastaMesSig,trunc(sysdate),'PS',nSALDO_FINAL,
+        VALUES(nCodCia,X.COD_AGENTE ,X.CODVALOR, dFecDesdeMesSig, dFecHastaMesSig,trunc(sysdate),x.cod_moneda,nSALDO_FINAL,
 /*        0, 0, 0, 0, 0, 0, 0, nSALDO_FINAL,'CARGA SALDO SIGUIENTE MES');  */ ----- jmmd20210107
             0, nMT_IVA_TOT, nMT_IVARET_TOT, nMT_ISR_TOT, nMT_ISRRET_TOT, 0, 0, nMT_SALDO_FINAL,'CARGA SALDO SIGUIENTE MES');   
                     
@@ -529,3 +806,4 @@ EXCEPTION
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
    RAISE_APPLICATION_ERROR(-20000, 'Error en actualiza saldos ' || SQLERRM);
 END;
+/
