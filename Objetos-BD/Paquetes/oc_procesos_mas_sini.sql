@@ -1,55 +1,5 @@
---
--- OC_PROCESOS_MAS_SINI  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   OBSERVACION_SINIESTRO (Table)
---   OC_APROBACIONES (Package)
---   OC_APROBACION_ASEG (Package)
---   INFO_ALTBAJ (Table)
---   INFO_SINIESTRO (Table)
---   SINIESTRO (Table)
---   POLIZAS (Table)
---   PROCESOS_MASIVOS (Table)
---   PROCESOS_MASIVOS_LOG (Table)
---   CONFIG_PLANTILLAS_CAMPOS (Table)
---   CONFIG_PLANTILLAS_PLANCOB (Table)
---   DATOS_PART_SINIESTROS (Table)
---   DETALLE_APROBACION (Table)
---   DETALLE_APROBACION_ASEG (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   APROBACIONES (Table)
---   APROBACION_ASEG (Table)
---   ASEGURADO (Table)
---   BENEF_SIN (Table)
---   OC_CONFIG_PLANTILLAS_PLANCOB (Package)
---   OC_DDL_OBJETOS (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLIENTES (Table)
---   CLIENTE_ASEG (Table)
---   COBERTURA_SINIESTRO (Table)
---   COBERTURA_SINIESTRO_ASEG (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   COMPROBANTES_CONTABLES (Table)
---   COMPROBANTES_DETALLE (Table)
---   OC_GENERALES (Package)
---   OC_OBSERVACION_SINIESTRO (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_COBERTURA_SINIESTRO (Package)
---   OC_COBERTURA_SINIESTRO_ASEG (Package)
---   DETALLE_POLIZA (Table)
---   DETALLE_SINIESTRO (Table)
---   DETALLE_SINIESTRO_ASEG (Table)
---   OC_PROCESOS_MASIVOS (Package)
---   OC_PROCESOS_MASIVOS_LOG (Package)
---   OC_SINIESTRO (Package)
---   TRANSACCION (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOS_MAS_SINI IS
+CREATE OR REPLACE PACKAGE OC_PROCESOS_MAS_SINI IS
+--  15/06/2021  ajuste a Disminucion de reserva  RVAICO
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 --
 PROCEDURE SINIESTROS_INFONACOT(nIdProcMasivo NUMBER);
@@ -88,14 +38,7 @@ PROCEDURE ACTUALIZA_PAGOS(nIdPoliza NUMBER,   nIdSiniestro  NUMBER,   NIDDETSIN 
                           --
 END OC_PROCESOS_MAS_SINI;
 /
-
---
--- OC_PROCESOS_MAS_SINI  (Package Body) 
---
---  Dependencies: 
---   OC_PROCESOS_MAS_SINI (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOS_MAS_SINI IS
+CREATE OR REPLACE PACKAGE BODY OC_PROCESOS_MAS_SINI IS
 --
 --  28/02/2017  Rutina para constituir solo reserva en INFONACOT                                 -- JICO ASEGMAS 
 --  07/08/2018  Ajuste para cambio especial                                                      -- JICO INFO2
@@ -1857,7 +1800,7 @@ BEGIN
                     RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||cCodCobert);
              END;
              --
-             IF WSALDO_RESERVA >= nAJUSTEMONEDA THEN
+             --IF WSALDO_RESERVA >= nAJUSTEMONEDA THEN  RVAICO
                 BEGIN
                   INSERT INTO COBERTURA_SINIESTRO
                    (IDDETSIN,               CODCOBERT,              IDSINIESTRO,          IDPOLIZA,
@@ -1877,11 +1820,11 @@ BEGIN
                        cObservacion := 'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO ';
                        RAISE_APPLICATION_ERROR(-20225,'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO'||SQLERRM);
                 END;
-             ELSE
-                nCodError := 99;
-                cObservacion := 'LA RESERVA ES INSUFICIENTE PARA ESTE AJUSTE. ';
-                RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);
-             END IF;
+             --ELSE    RVAICO
+             --   nCodError := 99;   RVAICO
+             --   cObservacion := 'LA RESERVA ES INSUFICIENTE PARA ESTE AJUSTE. ';    RVAICO
+             --   RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);   RVAICO
+             --END IF;  RVAICO
           END IF;    
        ELSE      
           IF cExisteCob = 'S' THEN
@@ -2949,17 +2892,4 @@ END ACTUALIZA_PAGOS;  -- AJUSTES FIN--
 --
 --
 END OC_PROCESOS_MAS_SINI;
-/
-
---
--- OC_PROCESOS_MAS_SINI  (Synonym) 
---
---  Dependencies: 
---   OC_PROCESOS_MAS_SINI (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_PROCESOS_MAS_SINI FOR SICAS_OC.OC_PROCESOS_MAS_SINI
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_PROCESOS_MAS_SINI TO PUBLIC
 /
