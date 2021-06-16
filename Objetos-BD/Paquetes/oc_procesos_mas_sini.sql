@@ -1,5 +1,5 @@
 CREATE OR REPLACE PACKAGE OC_PROCESOS_MAS_SINI IS
---  15/06/2021  ajuste a Disminucion de reserva  RVAICO
+--  16/06/2021  ajuste a Disminucion de reserva  RVAICO
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 --
 PROCEDURE SINIESTROS_INFONACOT(nIdProcMasivo NUMBER);
@@ -1970,7 +1970,7 @@ BEGIN
                     RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura (SIN Aseg) de '||cCodCobert);
              END;
              --
-             IF WSALDO_RESERVA >= nAJUSTEMONEDA THEN
+             --IF WSALDO_RESERVA >= nAJUSTEMONEDA THEN RVAICO
                 BEGIN
                   INSERT INTO COBERTURA_SINIESTRO_ASEG
                    (IDDETSIN,               CODCOBERT,              IDSINIESTRO,          IDPOLIZA,
@@ -1992,11 +1992,11 @@ BEGIN
                        cObservacion := 'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO_ASEG ';
                        RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);
                 END;
-             ELSE
-                nCodError := 99;
-                cObservacion := 'LA RESERVA ES INSUFICIENTE PARA ESTE AJUSTE. ';
-                RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);
-             END IF;
+             --ELSE  RVAICO
+             --   nCodError := 99;  RVAICO
+             --   cObservacion := 'LA RESERVA ES INSUFICIENTE PARA ESTE AJUSTE. ';   RVAICO
+             --   RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);  RVAICO
+             --END IF;  RVAICO
           END IF;    
        ELSE      
           IF cExisteCob = 'S' THEN
