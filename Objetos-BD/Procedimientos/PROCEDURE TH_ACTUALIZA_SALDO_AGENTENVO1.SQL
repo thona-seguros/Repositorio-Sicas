@@ -1,4 +1,5 @@
 CREATE OR REPLACE PROCEDURE TH_ACTUALIZA_SALDO_AGENTENVO1  IS
+----- JMMD20210623          SE AGREGA QUERY PARA RECUPERAR RECIBOS QUE SE PAGAN Y DESPAGAN EL MISMO DIA
 nCdAgente          AGENTES.COD_AGENTE%TYPE;
 
 nMtoIsr            DETALLE_COMISION.MONTO_MON_LOCAL%TYPE; 
@@ -77,7 +78,7 @@ VALORES_DE_LISTAS VL,
 MONEDA MO
 WHERE CODLISTA = 'CODRAMOS'
 AND CODVALOR IN('010', '030')
---AND A.COD_AGENTE = 302 --in(100,233,234)
+--AND A.COD_AGENTE in(3479)
 AND COD_MONEDA IN('PS','USD')
 ORDER BY COD_AGENTE, COD_MONEDA, CODVALOR;      
 
@@ -104,9 +105,9 @@ BEGIN
     TRUNC(sysdate - 1) last,
     TRUNC(sysdate - 1) control    
 
------   to_date('17/'|| 03 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') first  ,    
------    to_date('17/'|| 03 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') last    ,
------    to_date('24/'|| 05 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') control    
+-----   to_date('15/'|| 06 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') first  ,    
+-----   to_date('15/'|| 06 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') last    ,
+-----   to_date('21/'|| 06 ||'/' ||(to_char(sysdate, 'YYYY') ), 'dd/mm/yyyy') control    
 
   INTO dFecDesde, dFecHasta, dFechacontrolFin
   from  dual ;
@@ -518,6 +519,7 @@ TIPOS_DE_SEGUROS TS,
 NOTAS_DE_CREDITO NC                                 
 where C.cod_agente = X.COD_AGENTE
 and C.estado  = 'PRY'
+AND TRUNC(FEC_ESTADO) != TRUNC(FEC_LIQUIDACION)   -------------JMMD20210622
 AND (TRUNC(FEC_ESTADO ) BETWEEN dFecDesde AND dFecHasta
 OR TRUNC(FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta)
 --AND IDFACTURA = 260176
@@ -616,6 +618,94 @@ AND F.IDFACTURA = C.IDFACTURA
 --------
 AND F.STSFACT = 'EMI'
 AND DTR.CODSUBPROCESO = 'REVPAG'
+AND DTR.VALOR4 = TO_CHAR(C.IDFACTURA)
+AND DTR.VALOR1 = TO_CHAR(C.IDPOLIZA)
+AND TR.IDTRANSACCION = DTR.IDTRANSACCION 
+--AND TR.IDPROCESO = 12
+AND TRUNC(TR.FECHATRANSACCION) = TRUNC(FEC_ESTADO)
+UNION ALL  ----- PAGO/DESPAGO DE RECIBOS EL MISMO DIA
+select C.IDFACTURA, C.IDNCR, 
+--                    C.Comision_Moneda Comision  -- jmmd20201204 se cambio por case de abajo
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then C.Comision_Moneda 
+          else 0
+       end  Comision ,
+       C.ESTADO, TRUNC(C.FEC_GENERACION) FECHA_GENERA, TRUNC(C.FEC_LIQUIDACION) FECHA_LIQUIDA,
+       C.IDENDOSO ENDOSO, C.FEC_ESTADO FECHA_ESTADO, C.IDNOMINA NOMINA, C.ORIGEN ORIGEN,
+       case when
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOCOMISI  
+       else 0
+       end      MONTO_COMISION, 
+       case when
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVA 
+           else 0
+       end  MONTO_IVA, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVARET 
+          else 0
+       end  MONTO_IVARET, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISR 
+          else 0
+       end   MONTO_ISR, 
+       case when
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISRRET 
+          else 0
+       end  MONTO_ISRRET, 
+       Y.SUBTOTAL MONTO_SUBTOTAL,
+               DECODE(SIGN(Y.SubTotal ), -1, Y.SubTotal, 0) En_contra,-- PC.CodTipoPlan CodTipoPlan,                            
+               DECODE(SIGN(Y.SubTotal ), -1, 0, Y.SubTotal) A_FAVOR, 
+       CASE 
+          WHEN  C.Estado = 'LIQ' AND trunc(C.FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta 
+          THEN  C.comision_moneda 
+           ELSE 0
+       END   PAGADO,                  
+               TS.CODTIPOPLAN TIPOPLAN     
+from comisiones C,
+     (SELECT CodCia, IdComision, SUM(MtoComisi) MtoComisi, SUM(MtoIva) MtoIva, 
+                        SUM(MtoIvaRet) MtoIvaRet, SUM(MtoIsr) MtoIsr, SUM(MtoIsrRet) MtoIsrRet, 
+                        SUM(MtoComisi) + SUM(MtoIva) + SUM(MtoIvaRet) + SUM(MtoIsr) + SUM(MtoIsrRet) SubTotal
+                   FROM (SELECT 
+                                DC.CodCia, 
+                                DC.IdComision,
+                                DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
+                                DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
+                                DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
+                                DECODE(DC.CodConcepto, 'ISR',         SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsr, 
+                                DECODE(DC.CodConcepto, 'RETISR', SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsrRet
+                           FROM COMISIONES       C2, 
+                                DETALLE_COMISION DC                      
+                           WHERE C2.CODCIA       = 1
+                           AND   C2.Cod_Agente   = X.COD_AGENTE   
+                           AND   C2.COD_MONEDA   = X.COD_MONEDA                   
+                           AND   DC.CODCIA     = C2.CODCIA
+                           AND   DC.IDCOMISION = C2.IDCOMISION
+                          GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  ) 
+                  GROUP BY CodCia, IdComision) Y,
+DETALLE_POLIZA DP,
+TIPOS_DE_SEGUROS TS,
+FACTURAS         F  ,
+DETALLE_TRANSACCION      DTR  ,
+TRANSACCION TR                                               
+where C.cod_agente = X.COD_AGENTE
+and C.estado = 'PRY'
+AND (TRUNC(FEC_ESTADO ) BETWEEN dFecDesde AND dFecHasta
+OR TRUNC(FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta)
+--AND IDFACTURA = 260176
+AND Y.IDCOMISION = C.IDCOMISION
+AND C.COD_MONEDA = X.COD_MONEDA
+AND DP.IDPOLIZA = C.IDPOLIZA
+AND DP.IDETPOL = (SELECT MIN(DP1.IDETPOL)
+                   FROM DETALLE_POLIZA DP1
+                  WHERE DP1.IDPOLIZA = DP.IDPOLIZA)
+AND TS.IDTIPOSEG = DP.IDTIPOSEG
+AND TS.CODTIPOPLAN = X.CODVALOR
+AND F.IDFACTURA = C.IDFACTURA
+--------
+AND F.STSFACT = 'EMI'
+AND DTR.CODSUBPROCESO = 'PAG'
 AND DTR.VALOR4 = TO_CHAR(C.IDFACTURA)
 AND DTR.VALOR1 = TO_CHAR(C.IDPOLIZA)
 AND TR.IDTRANSACCION = DTR.IDTRANSACCION 
