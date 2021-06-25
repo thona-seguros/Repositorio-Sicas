@@ -1,13 +1,29 @@
---
--- OC_ADICIONALES_EMPRESA  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   ADICIONALES_EMPRESA (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_ADICIONALES_EMPRESA IS
+/*   _______________________________________________________________________________________________________________________________
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : OC CONSULTORES                                                                                                   |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: ??                                                                                                               |    
+    | Nombre     : OC_ADICIONALES_EMPRESA                                                                                           |
+    | Versión    : v2 [ Modificada en Jun 2021 ]                                                                                    |
+    | Objetivo   : Package que obtiene los datos adicionales de la Empresa tales como: Rurtas de Logo y Firmantes, Num. telefonicos,|
+    |              textos adicionales, etc.                                                                                         |
+    |                                                                                                                               |
+    | Modificado : Si                                                                                                               |
+    | Ult. Modif.: 18/06/2021                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle (JALV)                                                                                    |
+    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
+    | Obj. Modif.: Se agreg0 funcion que obtiene la ruta de firma para Carta de bienvenida del agente para platasforma Digital.     |
+    |               - RUTA_FIRMA_CBA                                                                                                |
+    |                                                                                                                               |
+    |   DEPENDENCIAS:                                                                                                               |
+    |               STANDARD            (Package)                                                                                   |
+    |               STANDARD            (Package)                                                                                   |
+    |               DBMS_STANDARD       (Package)                                                                                   |
+    |               ADICIONALES_EMPRESA (Table)                                                                                     |
+    |_______________________________________________________________________________________________________________________________|
+*/ 
 
   FUNCTION NOMBRE_FIRMA(nCodCia NUMBER) RETURN VARCHAR2;
 
@@ -38,6 +54,8 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_ADICIONALES_EMPRESA IS
   FUNCTION RUTA_DIRECCION(nCodCia NUMBER) RETURN VARCHAR2;   --LARPLA
  
   FUNCTION RUTA_LOGOTIPO_ADICIONAL(nCodCia NUMBER) RETURN VARCHAR2;  --LARPLA
+  
+  FUNCTION RUTA_FIRMA_CBA(nCodCia NUMBER) RETURN VARCHAR2;
 
 END OC_ADICIONALES_EMPRESA;
 /
@@ -322,6 +340,46 @@ BEGIN
    END;
    RETURN(cPATH_LOGO_ADICIONAL);
 END RUTA_LOGOTIPO_ADICIONAL;  ----LARPLA FIN
+
+FUNCTION RUTA_FIRMA_CBA(nCodCia NUMBER) RETURN VARCHAR2 IS
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : J. Alberto Lopez Valle									                                                        |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: 18/06/2021                                                                                                       |
+    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
+    | Nombre     : RUTA_FIRMA_CBA                                                                                                   |
+    | Objetivo   : Funcion que obtiene la Ruta donde se encuentra la firma (Digitalizada) para la Carta de bienvenida del agente    |
+    |              en Plataforma Digital.                                                                                           |
+    | Modificado : No                                                                                                               |
+    | Ult. Modif.: N/A                                                                                                              |
+    | Modifico   : N/A                                                                                                              |
+    | Obj. Modif.: N/A                                                                                                              |
+    |                                                                                                                               |
+    | Parametros:                                                                                                                   |
+    |			nCodCia				Codigo de la Compañia	    (Entrada)                                                           |
+    |			nCodEmpresa			Codigo de la Empresa	    (Entrada)                                                           |
+    |           nCodAgente			Numero o Codigo del Agente  (Entrada)                                                           |
+    |_______________________________________________________________________________________________________________________________|
+*/ 
+cPath_Firma_CBA   ADICIONALES_EMPRESA.PathFirma_CBA%TYPE := NULL;
+
+BEGIN
+   BEGIN
+      SELECT PathFirma_CBA
+        INTO cPath_Firma_CBA
+        FROM ADICIONALES_EMPRESA
+       WHERE nCodCia    = nCodCia
+         AND Correlativo IN (SELECT MAX(Correlativo)
+                               FROM ADICIONALES_EMPRESA
+                              WHERE CodCia  = nCodCia);
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20225,'NO Existe la Configuración del parametro de Firma para Carta de Bienvenida del Agente de la Empresa: '|| nCodCia);
+   END;
+   RETURN(cPath_Firma_CBA);
+END RUTA_FIRMA_CBA;
 
 END OC_ADICIONALES_EMPRESA;
 /
