@@ -659,6 +659,16 @@ BEGIN
       FOR X IN TICKETPOLASEG_Q LOOP
          nCodAsegurado := X.CodAsegurado;
          IF OC_DETALLE_POLIZA.EXISTE_POLIZA_DETALLE(nCodCia, nCodEmpresa, nIdPoliza, TRIM(TO_CHAR(X.IDetPol))) = 'S' AND X.IDetPol = 1 THEN
+            DELETE COBERT_ACT_ASEG
+             WHERE CodCia        = nCodCia
+               AND IdPoliza      = nIdPoliza
+               AND IDetPol       = X.IDetPol;
+               
+            DELETE ASEGURADO_CERTIFICADO
+             WHERE CodCia        = nCodCia
+               AND IdPoliza      = nIdPoliza
+               AND IDetPol       = X.IDetPol;
+               
             DELETE DETALLE_POLIZA 
              WHERE CodCia     = nCodCia
                AND CodEmpresa = nCodEmpresa
@@ -719,10 +729,10 @@ BEGIN
          nCodAsegurado  := X.CodAsegurado;
          nIDetPol       := X.IDetPol;
 
-         OC_TICKET_POLIZA_ASEGURADO.EMITIR(nCodCia, nCodEmpresa, nCodCliente, X.NumeroCelular, X.FechaCompra, 
+         OC_TICKET_POLIZA_ASEGURADO.EMITIR(nCodCia, nCodEmpresa, nCodCliente, --X.NumeroCelular, X.FechaCompra, 
                                            dFechaRegistro, nCodAsegurado, nIdPoliza, nIDetPol);
          OC_TICKET_POLIZA_BENEFICIARIO.EMITIR(nCodCia, nCodEmpresa, nCodCliente, nIdPoliza, nIDetPol, nCodAsegurado, NULL);                                           
-         OC_TICKET_POLIZA_ASEGURADO.ASIGNA_FACTURA(nCodCia, nCodEmpresa, nCodCliente, X.NumeroCelular, X.FechaCompra, 
+         OC_TICKET_POLIZA_ASEGURADO.ASIGNA_FACTURA(nCodCia, nCodEmpresa, nCodCliente, --X.NumeroCelular, X.FechaCompra, 
                                                    dFechaRegistro, nCodAsegurado, nIdPoliza, nIDetPol, nIdFactura);
       END LOOP;
 
