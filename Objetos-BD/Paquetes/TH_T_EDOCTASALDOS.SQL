@@ -8,7 +8,7 @@ PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_FECHASTA     DATE,
                               P_MONEDA      VARCHAR2);
 --                                                            
-                                                            
+
 PROCEDURE GRABA_MOVIMIENTO(P_COD_AGENTE                      NUMBER,
                             P_FECHA_DESDE                    DATE,                            
                             P_FECHA_HASTA                    DATE,
@@ -67,13 +67,13 @@ PROCEDURE BORRA_MOVIMIENTO(P_COD_AGENTE NUMBER,
                             P_FECHA_DESDE                    DATE,                            
                             P_FECHA_HASTA                    DATE );
 --                           
-              
+
 END TH_T_EDOCTASALDOS;
 /
 CREATE OR REPLACE PACKAGE BODY TH_T_EDOCTASALDOS IS
 ---
 -- CREACION     21/01/2021                                        -- JMMDP
---
+-- VERSIÓN ANTERIOR CON COMPLEMENTO DE QUERIES QUE ESTABAN SACANDO MÁS REGISTROS DE LOS NECESARIOS
 --
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_CODCIA       NUMBER,
@@ -230,10 +230,9 @@ SELECT   ---   '01',  NUEVA
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND ADC.CodCia(+)             = C.CodCia          
-   AND ADC.IdPoliza(+)           = C.IdPoliza   
-   AND ADC.IdetPol (+)           = C.IdetPol           
-   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
+   AND DP.IdPoliza          = ADC.IdPoliza
+   AND DP.IdetPol           = ADC.IdetPol 
+   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
    AND C.COD_MONEDA = P_MONEDA
 /*   and adc.porc_com_proporcional = (select max(adc1.porc_com_proporcional)
                                       from AGENTES_DISTRIBUCION_COMISION adc1
@@ -288,8 +287,7 @@ SELECT    ---  '02',
         END                                                        CASE_MtoIsrRet,
         CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
-----          WHEN F.STSFACT  = 'PAG' and  f.Fecsts < P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then SubTotal     -- Se cambio el < P_FECHASTA por <=  P_FECHASTA
-          WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then SubTotal
+          WHEN F.STSFACT  = 'PAG' and  f.Fecsts < P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then SubTotal
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  SubTotal
           WHEN (CASE 
@@ -378,8 +376,7 @@ SELECT    ---  '02',
            AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
       ,C.IDNOMINA NOMINA_COM, 
     CASE 
---       WHEN F.STSFACT  = 'PAG' and  f.Fecsts < P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null--TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   ----- jmmd210105 se cambio el < P_FECHASTA por f.Fecsts <= P_FECHASTA
-       WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null--TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY') 
+       WHEN F.STSFACT  = 'PAG' and  f.Fecsts < P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null--TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY') 
        WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
        WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')        
      END                                                   FECHA_PAGO
@@ -423,16 +420,17 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND C.Comision_Moneda  != 0
     and (     
      CASE 
-       WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then  f.Fecsts
+--       WHEN F.STSFACT  = 'PAG' and  f.Fecsts < P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then  f.Fecsts  ----JMMD2021 SE AGREGA EL IGUAL
+       WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then  f.Fecsts       
      END ) BETWEEN P_FECDESDE AND P_FECHASTA
    AND A.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND ADC.CodCia(+)             = C.CodCia          
-   AND ADC.IdPoliza(+)           = C.IdPoliza   
-   AND ADC.IdetPol (+)           = C.IdetPol           
-   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
+   AND DP.IdPoliza          = ADC.IdPoliza
+   AND DP.IdetPol           = ADC.IdetPol 
+   AND DP.CODCIA            = ADC.CODCIA
+   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
   and XT.IDNCR(+) = NC.IDNCR     
@@ -605,10 +603,10 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND ADC.CodCia(+)             = C.CodCia          
-   AND ADC.IdPoliza(+)           = C.IdPoliza   
-   AND ADC.IdetPol (+)           = C.IdetPol           
-   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
+   AND DP.IdPoliza          = ADC.IdPoliza
+   AND DP.IdetPol           = ADC.IdetPol 
+   AND DP.CODCIA            = ADC.CODCIA
+   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
   AND NC.FECSTS  BETWEEN P_FECDESDE AND P_FECHASTA   ----  AEVS  Limita la busqueda a  notas de credito   
@@ -786,10 +784,10 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND ADC.CodCia(+)             = C.CodCia          
-   AND ADC.IdPoliza(+)           = C.IdPoliza   
-   AND ADC.IdetPol (+)           = C.IdetPol           
-   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
+   AND DP.IdPoliza          = ADC.IdPoliza
+   AND DP.IdetPol           = ADC.IdetPol 
+   AND DP.CODCIA            = ADC.CODCIA
+   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
   and XT.IDNCR(+) = NC.IDNCR     
@@ -855,8 +853,7 @@ SELECT --- '05',
         END                                                       POR_PAGAR_Comision,  
         CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
- --         WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN MtoIva ----jmmd20190724 0 ---JMMD 20190521  MtoIva----0 AEVS
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN 0 ----- JMMD20210119   MtoIva ----jmmd20190724 0 ---JMMD 20190521  MtoIva----0 AEVS
+          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN MtoIva ----jmmd20190724 0 ---JMMD 20190521  MtoIva----0 AEVS
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIva
           WHEN (CASE 
                   WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
@@ -919,7 +916,7 @@ SELECT --- '05',
         ,C.IDNOMINA NOMINA_COMISION,
       --%%%%%%%-----        
     CASE 
-       WHEN N.STSNCR IN ('PAG','APL') AND TRUNC(C.FEC_LIQUIDACION) <= P_FECHASTA  THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
+       WHEN N.STSNCR IN ('PAG','APL') AND TRUNC(C.FEC_LIQUIDACION) < P_FECHASTA  THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
        WHEN N.STSNCR IN ('PAG','APL') AND TRUNC(C.FEC_LIQUIDACION) IS NULL THEN NULL
        ELSE TO_CHAR(N.FECSTS, 'DD/MM/YYYY')
      END                                                   FECHA_PAGO            
@@ -965,15 +962,15 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND C.IdComision   = Y.IdComision
    AND C.Comision_Moneda  != 0
     AND ( (N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA) OR
-       (TRUNC(C.FEC_LIQUIDACION)  BETWEEN P_FECDESDE AND P_FECHASTA)) 
+       (C.FEC_LIQUIDACION  BETWEEN P_FECDESDE AND P_FECHASTA)) 
    AND A.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente            = AC.Cod_Agente(+)
    AND C.Cod_Agente            = A.Cod_Agente
-   AND ADC.CodCia(+)             = C.CodCia          
-   AND ADC.IdPoliza(+)           = C.IdPoliza   
-   AND ADC.IdetPol (+)           = C.IdetPol           
-   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
+   AND DP.IdPoliza             =  ADC.IdPoliza
+   AND DP.IdetPol              = ADC.IdetPol 
+   AND DP.CODCIA               = ADC.CODCIA
+   AND ADC.COD_AGENTE_DISTR    = C.Cod_Agente 
    and XT.IDNCR(+)             = N.IDNCR
    ------------->>>>>>>>>>>
 UNION 
@@ -1086,377 +1083,13 @@ WHERE  C.Cod_Agente       = P_AGENTE
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND ADC.CodCia(+)             = C.CodCia          
-   AND ADC.IdPoliza(+)           = C.IdPoliza   
-   AND ADC.IdetPol (+)           = C.IdetPol           
-   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
+   AND DP.IdPoliza          = ADC.IdPoliza
+   AND DP.IdetPol           = ADC.IdetPol 
+   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
    AND DP.CODCIA            = ADC.CODCIA
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
-   and XT.IDNCR(+) = NC.IDNCR      
-UNION
-SELECT    ---  '07',
-           C.Cod_Agente, 
-           OC_NIVEL.DESCRIPCION_NIVEL(A.CodCia, A.CodNivel) Nivel_Agente,  
-           OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS', PC.CodTipoPlan) Ramo, 
-           A.CodNivel CodNivel,
-           NumPolUnico, 
-           F.Fecsts Fec_Generacion, 
-           PO.IdPoliza IdPoliza, 
-           F.IdEndoso IdEndoso, 
-           OC_CLIENTES.NOMBRE_CLIENTE(PO.CodCliente) NomCliente, TRIM(TO_CHAR(F.IdFactura)) Recibo, 
-           OC_MONEDA.MONEDA_ALTERNA(F.Cod_Moneda) Moneda, Monto_Fact_Moneda Prima_Comisinable_Local,
-          C.Comision_Moneda Comision
-       , C.comision_moneda COMI_MONEDA
-       , C.Estado  STT_COMISION
-       ,NC.STSNCR  STATUSPAGO_F
-       ,DECODE(C.Estado,'LIQ', C.comision_moneda,  (DECODE(F.StsFact, 'APL', C.comision_moneda, 0))) PAGADO
-       ,DECODE(C.Estado, 'REC', SubTotal,0 )    POR_PAGAR,   
-      
-       MtoIva, MtoIvaRet, MtoIsr, MtoIsrRet, SubTotal, 
-/*       CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN C.Comision_Moneda
-        END    jmmd20210223    */   C.Comision_Moneda                                             CASE_Comision,
-/*       CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIva
-        END     jmmd20210223    */                MtoIva                               CASE_MtoIva,
-/*       CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIvaRet
-        END     jmmd20210223   */    MtoIvaRet                                            CASE_MtoIvaRet,
-/*      CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsr
-        END          jmmd20210223     */     MtoIsr                                    CASE_MtoIsr,  
- /*       CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsrRet
-        END     jmmd20210223         */      MtoIsrRet                                      CASE_MtoIsrRet,
-/*        CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')  THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  SubTotal
-          WHEN (CASE 
-                  WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END     jmmd20210223       */            SubTotal                               POR_PAGAR_SHOWON,  
- /*       CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  C.Comision_Moneda
-          WHEN (CASE 
-                  WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END    jmmd20210223     */         C.Comision_Moneda                                     POR_PAGAR_Comision,  
- /*       CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIva
-          WHEN (CASE 
-                  WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END          jmmd20210223    */       MtoIva                                  POR_PAGAR_MtoIva,  
-/*        CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIvaRet
-          WHEN (CASE 
-                  WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END     jmmd20210223        */            MtoIvaRet                              POR_PAGAR_MtoIvaRet,  
-/*        CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIsr
-          WHEN (CASE 
-                  WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END         jmmd20210223      */              MtoIsr                          POR_PAGAR_MtoIsr,          
- /*       CASE
-          WHEN F.Fecsts < P_FECDESDE THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND NC.STSNCR IN ('PAG','APL')   THEN 0
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIsrRet
-          WHEN (CASE 
-                  WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END              */             MtoIsrRet                            POR_PAGAR_MtoIsrRet,         
-        ----  ETSSPERIMENTO  OFF ------------------------------      
-        CASE
-          WHEN F.Fecsts < P_FECDESDE THEN      ---- jmmd20210223 0          
------ jmmd20210223          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
-                          (SELECT NVL(SUM(NVL(D.Monto_Det_Moneda,0)),0)
-                            FROM DETALLE_FACTURAS D, CATALOGO_DE_CONCEPTOS C
-                           WHERE C.CodConcepto      = D.CodCpto
-                             AND C.CodCia           = F.CodCia
-                             AND (D.IndCptoPrima    = 'S'
-                              OR C.IndCptoServicio  = 'S')
-                             AND D.IdFactura        = F.IdFactura)
-        END                                                        CASE_MtoPrimaFactura,            
-       ---------------------------------------------------------------------------------------------
-       DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
-       DECODE(SIGN(SubTotal), -1, 0, SubTotal) A_FAVOR, C.IdComision IdComision,
-       P.Nombre||' '||P.Apellido_Paterno||' '||P.Apellido_Materno Nombre,
-       OC_AGENTES.DIRECCION_AGENTE(C.Cod_Agente) DirecRes,
-       P.Num_Tributario, AC.NumCedula,
-        AC.FecVencimiento, P.Tipo_Persona, P.Num_Doc_Identificacion,
-       Porc_Com_Distribuida, ADC.Porc_Com_Proporcional, PO.PrimaNeta_Moneda Prima_Net,
-       (SELECT NVL(SUM(NVL(D.Monto_Det_Moneda,0)),0)
-          FROM DETALLE_FACTURAS D, CATALOGO_DE_CONCEPTOS C
-         WHERE C.CodConcepto      = D.CodCpto
-           AND C.CodCia           = F.CodCia
-           AND (D.IndCptoPrima    = 'S'
-            OR C.IndCptoServicio  = 'S')
-           AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
-      ,C.IDNOMINA NOMINA_COM,     
-     CASE 
-       WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-       WHEN NC.STSNCR IN ('PAG','APL')   THEN  TO_CHAR(NC.FECSTS, 'DD/MM/YYYY')        
-     END                                                   FECHA_PAGO
-  FROM COMISIONES C, FACTURAS F, POLIZAS PO, DETALLE_POLIZA DP, 
-       TIPOS_DE_SEGUROS PC, AGENTES_DISTRIBUCION_COMISION ADC,
-      (SELECT CodCia, IdComision, SUM(MtoComisi) MtoComisi, SUM(MtoIva) MtoIva, 
-              SUM(MtoIvaRet) MtoIvaRet, SUM(MtoIsr) MtoIsr, SUM(MtoIsrRet) MtoIsrRet, 
-              SUM(MtoComisi) + SUM(MtoIva) + SUM(MtoIvaRet) + SUM(MtoIsr) + SUM(MtoIsrRet) SubTotal
-         FROM (SELECT  
-                      DC.CodCia, 
-                      DC.IdComision,
-                      DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
-                      DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
-                      DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
-                      DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
-                      DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
-                      DECODE(DC.CodConcepto, 'ISR',        SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsr, 
-                      DECODE(DC.CodConcepto, 'RETISR', SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsrRet
-                 FROM COMISIONES       C2, 
-                      DETALLE_COMISION DC                      
-                 WHERE C2.CODCIA       = P_CODCIA
-                 AND   C2.Cod_Agente   = P_AGENTE                 
-                 AND   DC.CODCIA     = C2.CODCIA
-                 AND   DC.IDCOMISION = C2.IDCOMISION
-                GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  ) 
-        GROUP BY CodCia, IdComision) Y,        
-       AGENTES A, PERSONA_NATURAL_JURIDICA P, AGENTES_CEDULA_AUTORIZADA AC
-       ,NOTAS_DE_CREDITO NC, NCR_FACTEXT XT
-WHERE  C.Cod_Agente  =  P_AGENTE
-   AND C.COD_MONEDA = P_MONEDA
-   AND C.IdFactura    = F.IdFactura
-   AND (F.StsFact     != 'ANU' and C.Estado !='PRY')
-   AND C.ESTADO = 'REC'
-   AND F.IdPoliza     = PO.IdPoliza
-   AND F.IdPoliza     = DP.IdPoliza
-   AND F.IdetPol      = DP.IdetPol
-   AND DP.CodCia      = PC.CodCia
-   AND DP.CodEmpresa  = PC.CodEmpresa
-   AND DP.IdTipoSeg   = PC.IdTipoSeg
-   AND C.CodCia       = Y.CodCia
-   AND C.IdComision   = Y.IdComision
-   AND C.Comision_Moneda  != 0
-   AND f.Fecsts < P_FECDESDE
-  -- AND f.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA -- Esto estaba comentado para que no buscara facturas APLICADAS en el periodo. RSR 0404/2016
-   AND A.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
-   AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
-   AND A.Cod_Agente         = AC.Cod_Agente(+)
-   AND C.Cod_Agente         = A.Cod_Agente
-   AND ADC.CodCia(+)             = C.CodCia          
-   AND ADC.IdPoliza(+)           = C.IdPoliza   
-   AND ADC.IdetPol (+)           = C.IdetPol           
-   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
-   --
-   AND NC.IDNOMINA(+)   = C.IDNOMINA 
---  AND NC.FECSTS  BETWEEN P_FECDESDE AND P_FECHASTA   ----  AEVS  Limita la busqueda a  notas de credito   
-  and XT.IDNCR(+) = NC.IDNCR    
-UNION 
-------------->>>>>>>
-SELECT --- '08',
-       C.Cod_Agente, OC_NIVEL.DESCRIPCION_NIVEL(A.CodCia, A.CodNivel) Nivel_Agente,  
-       OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS', PC.CodTipoPlan) Ramo, A.CodNivel CodNivel,
-       NumPolUnico, N.Fecsts Fec_Generacion, PO.IdPoliza IdPoliza, N.IdEndoso IdEndoso, 
-       OC_CLIENTES.NOMBRE_CLIENTE(PO.CodCliente) NomCliente, 'NC-' || N.IdNcr Recibo, 
-       OC_MONEDA.MONEDA_ALTERNA(N.CodMoneda) Moneda, Monto_Ncr_Moneda Prima_Comisinable_Local,
-       C.Comision_Moneda Comision
-       , c.comision_moneda COMI_MONEDA
-       , C.Estado  STT_COMISION
-       , N.StsNcr  STATUSPAGO
-       --------------------------------,DECODE(N.StsNcr,'APL', (DECODE(C.Estado, 'REC', 0, c.comision_moneda))) PAGADO       AEVS 09102017                
-       ,DECODE(N.StsNcr,'PAG', (DECODE(C.Estado, 'REC',c.comision_moneda, 0 ))
-                       ,'APL', ((DECODE(C.Estado, 'REC',c.comision_moneda, 0 )))) PAGADO                   
-       ,DECODE(N.StsNcr,'PAG', (DECODE(C.Estado, 'REC',SubTotal, 0 ))
-                       ,'APL', ((DECODE(C.Estado, 'REC',SubTotal, 0 )))) POR_PAGAR,
-       MtoIva, MtoIvaRet, MtoIsr, MtoIsrRet, SubTotal, 
-/*       CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN C.Comision_Moneda
-        END   jmmd20210223   */     C.Comision_Moneda                                            CASE_COMISION,
-/*       CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIva
-        END     jmmd20210223           */            MtoIva                            CASE_MtoIva,
-/*       CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIvaRet
-        END      jmmd20210223            */               MtoIvaRet                       CASE_MtoIvaRet,
-/*      CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsr
-        END      jmmd20210223         */         MtoIsr                                CASE_MtoIsr,  
-/*        CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsrRet
-        END      jmmd20210223           */        MtoIsrRet                               CASE_MtoIsrRet,
-        ---ETSSSPERIMENTO  FECHAS ---
-/*        CASE
-          WHEN ( (N.Fecsts  < P_FECDESDE) OR (C.FEC_LIQUIDACION  < P_FECDESDE ))  THEN 0
-          WHEN ( N.STSNCR IN ('PAG','APL') AND C.Estado = 'LIQ')   THEN 0
-          WHEN ( (N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL') AND C.Estado = 'REC' )) THEN  SubTotal --OR (C.FEC_LIQUIDACION BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')))   THEN  SubTotal-----0 AEVS
-          WHEN ( (N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  ) OR (C.FEC_LIQUIDACION BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  ))THEN  SubTotal
-          WHEN (CASE 
-                  WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END        jmmd20210223         */      SubTotal                                POR_PAGAR_SHOWON,  
- /*       CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
-          WHEN ( N.STSNCR IN ('PAG','APL') AND C.Estado = 'LIQ')   THEN 0
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL') AND C.Estado = 'REC'  THEN  C.Comision_Moneda----0 AEVS
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  C.Comision_Moneda
-          WHEN (CASE 
-                  WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END              */               C.Comision_Moneda                          POR_PAGAR_Comision,  
-/*        CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
- --         WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN MtoIva ----jmmd20190724 0 ---JMMD 20190521  MtoIva----0 AEVS
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN 0 ----- JMMD20210119   MtoIva ----jmmd20190724 0 ---JMMD 20190521  MtoIva----0 AEVS
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIva
-          WHEN (CASE 
-                  WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END           jmmd20210223             */       MtoIva                        POR_PAGAR_MtoIva,  
-/*        CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN 0 ----JMMD20190521 MtoIvaRet----0 AEVS
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIvaRet
-          WHEN (CASE 
-                  WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN N.STSNCR IN ('PAG','APL') THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END      jmmd20210223         */         MtoIvaRet                               POR_PAGAR_MtoIvaRet,  
-/*        CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN 0 ----JMMD20190521 MtoIsr----0 AEVS
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIsr
-          WHEN (CASE 
-                  WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END       jmmd20210223      */             MtoIsr                             POR_PAGAR_MtoIsr,          
- /*       CASE
-          WHEN N.Fecsts < P_FECDESDE THEN 0
-          WHEN ( N.STSNCR IN ('PAG','APL') AND C.Estado = 'LIQ')   THEN 0
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND N.STSNCR IN ('PAG','APL')  THEN MtoIsrRet----0 AEVS
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA  AND C.Estado = 'REC'  THEN  MtoIsrRet
-          WHEN (CASE 
-                  WHEN N.STSNCR IN ('PAG','APL') AND  N.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-                  WHEN N.STSNCR IN ('PAG','APL')  THEN  TO_CHAR(N.FECSTS, 'DD/MM/YYYY')    ---FECHA_PAGO    
-                END  ) > P_FECHASTA THEN 0
-        END                   */        MtoIsrRet                            POR_PAGAR_MtoIsrRet,         
-        ----  ETSSPERIMENTO  OFF ------------------------------          
-        CASE
-          WHEN N.Fecsts < P_FECDESDE THEN     ---- jmmd20210223  0          
----- jmmd20210223          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
-                      (SELECT NVL(SUM(D.Monto_Det_Moneda),0)
-                        FROM DETALLE_NOTAS_DE_CREDITO D, CATALOGO_DE_CONCEPTOS C
-                       WHERE C.CodConcepto      = D.CodCpto
-                         AND C.CodCia           = N.CodCia
-                         AND (D.IndCptoPrima    = 'S'
-                          OR C.IndCptoServicio  = 'S')
-                         AND D.IdNcr            = N.IdNcr)
-        END                                                        CASE_MtoPrimaFactura,                
-       DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
-       DECODE(SIGN(SubTotal), -1, 0, SubTotal) A_FAVOR, C.IdComision IdComision,
-       P.Nombre||' '||P.Apellido_Paterno||' '||P.Apellido_Materno Nombre,
-       OC_AGENTES.DIRECCION_AGENTE(C.Cod_Agente) DirecRes,
-       P.Num_Tributario, AC.NumCedula, AC.FecVencimiento, P.Tipo_Persona, P.Num_Doc_Identificacion,
-       Porc_Com_Distribuida, Porc_Com_Proporcional, PO.PrimaNeta_Moneda Prima_Net,
-       (SELECT NVL(SUM(D.Monto_Det_Moneda),0)
-          FROM DETALLE_NOTAS_DE_CREDITO D, CATALOGO_DE_CONCEPTOS C
-         WHERE C.CodConcepto      = D.CodCpto
-           AND C.CodCia           = N.CodCia
-           AND (D.IndCptoPrima    = 'S'
-            OR C.IndCptoServicio  = 'S')
-           AND D.IdNcr            = N.IdNcr) MtoPrimaFactura
-        ,C.IDNOMINA NOMINA_COMISION,
-      --%%%%%%%-----        
-    CASE 
-       WHEN N.STSNCR IN ('PAG','APL') AND TRUNC(C.FEC_LIQUIDACION) <= P_FECHASTA  THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')   
-       WHEN N.STSNCR IN ('PAG','APL') AND TRUNC(C.FEC_LIQUIDACION) IS NULL THEN NULL
-       ELSE TO_CHAR(N.FECSTS, 'DD/MM/YYYY')
-     END                                                   FECHA_PAGO            
-      
-  FROM COMISIONES C, NOTAS_DE_CREDITO N, POLIZAS PO, DETALLE_POLIZA DP, 
-       TIPOS_DE_SEGUROS PC, AGENTES_DISTRIBUCION_COMISION adc,
-       (SELECT CodCia, IdComision, SUM(MtoComisi) MtoComisi, SUM(MtoIva) MtoIva, 
-              SUM(MtoIvaRet) MtoIvaRet, SUM(MtoIsr) MtoIsr, SUM(MtoIsrRet) MtoIsrRet, 
-              SUM(MtoComisi) + SUM(MtoIva) + SUM(MtoIvaRet) + SUM(MtoIsr) + SUM(MtoIsrRet) SubTotal
-         FROM (SELECT 
-                      DC.CodCia, 
-                      DC.IdComision,
-                      DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
-                      DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
-                      DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
-                      DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
-                      DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
-                      DECODE(DC.CodConcepto, 'ISR',         SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsr, 
-                      DECODE(DC.CodConcepto, 'RETISR', SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIsrRet
-                 FROM COMISIONES       C2, 
-                      DETALLE_COMISION DC                      
-                 WHERE C2.CODCIA       = P_CODCIA
-                 AND   C2.Cod_Agente   = P_AGENTE                 
-                 ----AND   C2.FEC_ESTADO BETWEEN P_FECDESDE AND P_FECHASTA
-                 AND   DC.CODCIA     = C2.CODCIA
-                 AND   DC.IDCOMISION = C2.IDCOMISION
-                GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  ) 
-        GROUP BY CodCia, IdComision) Y,
-       AGENTES A, PERSONA_NATURAL_JURIDICA P, AGENTES_CEDULA_AUTORIZADA AC      
-       , NCR_FACTEXT XT
-WHERE  C.Cod_Agente   = P_AGENTE
-   AND C.COD_MONEDA = P_MONEDA
-  ----- AND C.FEC_ESTADO BETWEEN P_FECDESDE AND P_FECHASTA
-   AND C.IdNcr        = N.IdNcr
-   AND ( N.StsNcr      != 'ANU' and C.Estado !='PRY') 
-   AND N.IdPoliza     = PO.IdPoliza
-   AND N.IdPoliza     = DP.IdPoliza
-   AND N.IdetPol      = DP.IdetPol
-  AND DP.CodCia      = PC.CodCia
-   AND DP.CodEmpresa  = PC.CodEmpresa
-   AND DP.IdTipoSeg   = PC.IdTipoSeg
-   AND C.CodCia       = Y.CodCia
-   AND C.IdComision   = Y.IdComision
-   AND C.Comision_Moneda  != 0
-   AND C.ESTADO = 'REC'
-    AND N.Fecsts < P_FECDESDE 
---    AND ( (N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA) OR
---       (TRUNC(C.FEC_LIQUIDACION)  BETWEEN P_FECDESDE AND P_FECHASTA)) 
-   AND A.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
-   AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
-   AND A.Cod_Agente            = AC.Cod_Agente(+)
-   AND C.Cod_Agente            = A.Cod_Agente
-   AND ADC.CodCia(+)             = C.CodCia          
-   AND ADC.IdPoliza(+)           = C.IdPoliza   
-   AND ADC.IdetPol (+)           = C.IdetPol           
-   AND ADC.COD_AGENTE_DISTR(+)   = C.Cod_Agente
-   and XT.IDNCR(+)             = N.IDNCR
-------------->>>>>>>>>>>
----------------------------------------------------------- JMMD20210115 SEAGREGA DUMMY
+   and XT.IDNCR(+) = NC.IDNCR       
+ ---------------------------------------------------------- JMMD20210115 SEAGREGA DUMMY
 /* UNION
 SELECT --- DUMMY, 
        A.COD_AGENTE AGENTE , OC_NIVEL.DESCRIPCION_NIVEL(A.CodCia, A.CodNivel) Nivel_Agente,  
