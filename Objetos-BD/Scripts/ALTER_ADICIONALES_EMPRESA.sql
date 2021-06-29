@@ -1,18 +1,5 @@
--- =============================
--- Modifica tabla
--- =============================
--- 
-ALTER TABLE ADICIONALES_EMPRESA
-ADD
-(
-DIRECCION_UEAT  VARCHAR2(500),
-EMAIL_UEAT      VARCHAR2(200),
-HORARIO_UEAT    VARCHAR2(200),
-TELEFONO_UEAT   VARCHAR2(200)
-)
-;
-comment on column ADICIONALES_EMPRESA.DIRECCION_UEAT is 'Direccion de la Unidad de Atencion a Clientes Thona';
-comment on column ADICIONALES_EMPRESA.EMAIL_UEAT     is 'Email de la Unidad de Atencion a Clientes Thona';
-comment on column ADICIONALES_EMPRESA.HORARIO_UEAT   is 'Horario de la Unidad de Atencion a Clientes Thona';
-comment on column ADICIONALES_EMPRESA.TELEFONO_UEAT  is 'Telefono de la Unidad de Atencion a Clientes Thona';
-
+-- Agregar columna para firma de Carta de Bienvenida de Agentes
+ALTER TABLE ADICIONALES_EMPRESA ADD PathFirma_CBA VARCHAR2(100 BYTE);
+/
+COMMENT ON COLUMN ADICIONALES_EMPRESA.PathFirma_CBA IS 'Ruta de la firma para Carta de Bienvenida a Agentes';
+/
