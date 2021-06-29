@@ -723,8 +723,8 @@ BEGIN
    INTO DFECDESDE, DFECHASTA
    FROM  DUAL ;
 
-  -- DFECDESDE := TO_DATE('22/06/2021','DD/MM/RRRR');
-  -- DFECHASTA := TO_DATE('22/06/2021','DD/MM/RRRR');
+   --DFECDESDE := TO_DATE('25/06/2021','DD/MM/RRRR');
+   --DFECHASTA := TO_DATE('25/06/2021','DD/MM/RRRR');
 
    DELETE TEMP_REPORTES_THONA
    WHERE  CodCia     = nCodCia
@@ -756,68 +756,80 @@ BEGIN
    cTitulo3 := 'PERIODO DEL ' || TO_CHAR(dFecDesde,'DD') || ' AL ' || TO_CHAR(dFecHasta,'DD') || ' DE '|| TO_CHAR(dFecDesde,'Month') ||
                  ' DE ' || TO_CHAR(dFecDesde,'YYYY');
    cTitulo4 := ' ';
-   cEncabez    :='NUMERO POLIZA'          ||cLimitador||
-                 'NO. POLIZA UNICO'       ||cLimitador||
-                 'NÚMERO DE REFERENCIA'   ||cLimitador||
-                 'NO. SINIESTRO'          ||cLimitador||
-                 'COBERTURA'              ||cLimitador||
-                 'FECHA MOVIMIENTO'       ||cLimitador||
-                 'NO. APROB.'             ||cLimitador||
-                 'TIPO APROBACION'        ||cLimitador||
-                 'ESTATUS'                ||cLimitador||
-                 'TRANSACCION'            ||cLimitador||
-                 'DESCRIPCION TRANSACCION'||cLimitador||
-                 'CONCEPTO'               ||cLimitador||
-                 'NUMERO DE TRANSACCION'  ||cLimitador||
-                 'FECHA ESTIMACION'       ||cLimitador||
-                 'MONEDA'                 ||cLimitador||
-                 'TIPO DE CAMBIO'         ||cLimitador||
-                 'PAGO MON ORIGINAL'      ||cLimitador||
-                 'PAGO MON NACIONAL'      ||cLimitador||
-                 'IVA MON ORIGINAL'       ||cLimitador||
-                 'IVA MON NACIONAL'       ||cLimitador||
-                 'ISR RET MON ORIGINAL'   ||cLimitador||
-                 'ISR RET MON NACIONAL'   ||cLimitador||
-                 'IVA RET MON ORIGINAL'   ||cLimitador||
-                 'IVA RET MON NACIONAL'   ||cLimitador||
-                 'PAGO NETO MON ORIGINAL' ||cLimitador||
-                 'PAGO NETO MON NACIONAL' ||cLimitador||
-                 'OPC MON ORIGINAL'       ||cLimitador||
-                 'OPC MON NACIONAL'       ||cLimitador||
-                 'BANCO'                  ||cLimitador||
-                 'NUM CHEQUE O CUENTA CLABE'||cLimitador||
-                 'OPERO'                  ||cLimitador||
-                 'TASA IVA'               ||cLimitador||
-                 'COD. ASEGURADO'         ||cLimitador||
-                 'BENEFICIARIO'           ||cLimitador||
-                 'RFC BENEFICIARIO'       ||cLimitador||
-                 'NOMBRE_ARCH_CARGA'      ||cLimitador||
-                 'NOMBRE ARCHIVO LOGEM'   ||cLimitador||
-                 'FECHA DE CARGA'         ||cLimitador||
-                 'TIPO DE SEGURO'         ||cLimitador||
-                 'NUMERO DE FACTURA'      ||cLimitador||
-                 'ID CARGA MASIVA'        ||cLimitador||
-                 'POLIZA CONTABLE PGO GG' ||cLimitador||
-                 'FECHA DE PAGO GG'       ||cLimitador||
-                 'IMPORTE DEL PAGO'       ||cLimitador||
-                 'ARCHIVO PGO-GG'         ||cLimitador||
-                 'USUARIO CARGA PGO-GG'   ||cLimitador||
-                 'FECHA - HORA DE CARGA'  ||cLimitador||
-                 'OBSERVACIONES POLIZA GG'||cLimitador||
-                 'MONTO DE PAGO'          ||cLimitador||
-                 'Es Contributorio'       ||cLimitador||
-                 '% Contributorio'        ||cLimitador||
-                 'Giro de Negocio'        ||cLimitador||
-                 'Tipo de Negocio'        ||cLimitador||
-                 'Fuente de Recursos'     ||cLimitador||
-                 'Paquete Comercial'      ||cLimitador||
-                 'Categoria'              ||cLimitador||
-                 'Canal de Venta'         ||cLimitador||
-                 'POLIZA_CONT';
+   cEncabez    := 'NUMERO POLIZA' ||cLimitador||
+                  'NO. POLIZA UNICO' ||cLimitador||
+                  'NÚMERO DE REFERENCIA' ||cLimitador||
+                  'NO. SINIESTRO' ||cLimitador||
+                  'COBERTURA' ||cLimitador||
+                  'FECHA MOVIMIENTO' ||cLimitador||
+                  'NO. APROB.' ||cLimitador||
+                  'TIPO APROBACION' ||cLimitador||
+                  'ESTATUS' ||cLimitador||
+                  'TRANSACCION' ||cLimitador||
+                  'DESCRIPCION TRANSACCION' ||cLimitador||
+                  'CONCEPTO' ||cLimitador||
+                  'NUMERO DE TRANSACCION' ||cLimitador||
+                  'FECHA ESTIMACION' ||cLimitador||
+                  'MONEDA' ||cLimitador||
+                  'TIPO DE CAMBIO' ||cLimitador||
+                  'PAGO MON ORIGINAL' ||cLimitador||
+                  'PAGO MON NACIONAL' ||cLimitador||
+                  'GASTOS HONORARIOS ORIGINAL' ||cLimitador||
+                  'GASTOS HONORARIOS NACIONAL' ||cLimitador||
+                  'GASTOS HOSPITALARIOS ORIGINAL' ||cLimitador||
+                  'GASTOS HOSPITALARIOS NACIONAL' ||cLimitador||
+                  'OTROS GASTOS ORIGINAL' ||cLimitador||
+                  'OTROS GASTOS NACIONAL' ||cLimitador||
+                  'DESCUENTO ORIGINAL' ||cLimitador||
+                  'DESCUENTO NACIONAL' ||cLimitador||
+                  'DEDUCIBLE ORIGINAL' ||cLimitador||
+                  'DEDUCIBLE NACIONAL' ||cLimitador||
+                  'IVA MON ORIGINAL' ||cLimitador||
+                  'IVA MON NACIONAL' ||cLimitador||
+                  'ISR RET MON ORIGINAL' ||cLimitador||
+                  'ISR RET MON NACIONAL' ||cLimitador||
+                  'IVA RET MON ORIGINAL' ||cLimitador||
+                  'IVA RET MON NACIONAL' ||cLimitador||
+                  'IMP LOCAL RET ORIGINAL' ||cLimitador||
+                  'IMP LOCAL RET NACIONAL' ||cLimitador||
+                  'PAGO NETO MON ORIGINAL' ||cLimitador||
+                  'PAGO NETO MON NACIONAL' ||cLimitador||
+                  'OPC MON ORIGINAL' ||cLimitador||
+                  'OPC MON NACIONAL' ||cLimitador||
+                  'BANCO' ||cLimitador||
+                  'NUM CHEQUE O CUENTA CLABE' ||cLimitador||
+                  'OPERO' ||cLimitador||
+                  'TASA IVA' ||cLimitador||
+                  'COD ASEGURADO' ||cLimitador||
+                  'BENEFICIARIO' ||cLimitador||
+                  'RFC BENEFICIARIO' ||cLimitador||
+                  'NOMBRE_ARCH_CARGA' ||cLimitador||
+                  'NOMBRE ARCHIVO LOGEM' ||cLimitador||
+                  'FECHA DE CARGA' ||cLimitador||
+                  'TIPO DE SEGURO' ||cLimitador||
+                  'NUMERO DE FACTURA' ||cLimitador||
+                  'ID CARGA MASIVA' ||cLimitador||
+                  'POLIZA CONTABLE PGO GG' ||cLimitador||
+                  'FECHA DE PAGO GG' ||cLimitador||
+                  'IMPORTE DEL PAGO' ||cLimitador||
+                  'ARCHIVO PGO-GG' ||cLimitador||
+                  'USUARIO CARGA PGO-GG' ||cLimitador||
+                  'FECHA - HORA DE CARGA' ||cLimitador||
+                  'OBSERVACIONES POLIZA GG' ||cLimitador||
+                  'MONTO DE PAGO' ||cLimitador||
+                  'Es Contributorio 1' ||cLimitador||
+                  '% Contributorio' ||cLimitador||
+                  'Giro de Negocio' ||cLimitador||
+                  'Tipo de Negocio' ||cLimitador||
+                  'Fuente de Recursos' ||cLimitador||
+                  'Paquete Comercial' ||cLimitador||
+                  'Categoria' ||cLimitador||
+                  'Canal de Venta' ||cLimitador||
+                  'POLIZA_CONT';
 
    --dbms_output.put_line('MLJS 1 '||'  cCodReporte  '||cCodReporte||' cCodUser  '||cCodUser||'  cNomDirectorio  '||cNomDirectorio||' cNomArchivo  '||cNomArchivo  );
    --dbms_output.put_line('MLJS 2 cEncabez'||cEncabez);
-   
+
    INSERTA_REGISTROS;
    INSERTA_ENCABEZADO( 'EXCEL', nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo ) ;
 
@@ -1081,65 +1093,76 @@ BEGIN
          WNUM_APROBACION := X.Num_Aprobacion;
       END IF;
        --
---      IF :BK_DATOS.Formato = 'TEXTO' THEN
-         cCadena := X.IDPOLIZA                           ||cLimitador||
-                    X.POLUNIK                            ||cLimitador||
-                    X.NUMSINIREF                        ||cLimitador||
-                    X.IDSINIESTRO                        ||cLimitador||
-                    X.COD_PAGO                          ||cLimitador||
-                    X.cFechaMvto                        ||cLimitador||
-                    X.NUM_APROBACION                    ||cLimitador||
-                    X.TIPO_APROBACION                    ||cLimitador||
-                    X.ESTATUS                            ||cLimitador||
-                    X.CODTRANSAC                        ||cLimitador||
-                    X.DESCTRANSAC                        ||cLimitador||
-                    X.CODCPTOTRANSAC                    ||cLimitador||
-                    X.NUMTRX                            ||cLimitador||
-                    dFecRes                             ||cLimitador||
-                    X.COD_MONEDA                        ||cLimitador||
-                    nTipoCambio                         ||cLimitador||
-                    NVO_MNTO_PAGADO_MON                 ||cLimitador||
-                    NVO_MNTO_PAGADO_LOC                 ||cLimitador||
-                    X.IVA_Moneda                        ||cLimitador||
-                    X.IVA_Local                          ||cLimitador||
-                    X.ISR_Moneda                        ||cLimitador||
-                    X.ISR_Local                          ||cLimitador||
-                    X.IVA_RET_MONEDA                    ||cLimitador||
-                    X.IVA_RET_LOCAL                      ||cLimitador||
-                    W_PAGO_NETO_MON_MON                 ||cLimitador||
-                    W_PAGO_NETO_MON_LOC                  ||cLimitador||
-                    X.OPC_MONEDA                        ||cLimitador||
-                    X.OPC_LOCAL                          ||cLimitador||
-                    cDescBanco                          ||cLimitador||
-                    cCuentaCheque                       ||cLimitador||
-                    X.USUARIO                            ||cLimitador||
-                    nIVAPorcentaje                      ||cLimitador||
-                    X.ASEGURADO                         ||cLimitador||
-                    cNombreBenef                         ||cLimitador||
-                    cNumDocTributario                    ||cLimitador||
-                    NVL(X.NomArchCarga,cNomArchCarga)   ||cLimitador||
-                    NVL(X.ARCHIVO_LOGEM,cNomArchLogem)  ||cLimitador||
-                    NVL(X.FecCarga,dFecCarga)            ||cLimitador||
-                    X.TIPOSEGURO                        ||cLimitador||
-                    NVL(X.NUMERO_FACTURA,cUUID)          ||cLimitador||
-                    NVL(X.IDPROCMASIVO,nIdProcMasivo)   ||cLimitador||
-                    X.POLCONTA_GG                       ||cLimitador||
-                    X.FECHA_PAGO                        ||cLimitador||
-                    X.IMPORT_PAGO                       ||cLimitador||
-                    X.ARCHIVO_GG                        ||cLimitador||
-                    X.PGOGG_USUARIO                     ||cLimitador||
-                    X.PGOGG_FECHACOMP                   ||cLimitador||
-                    X.OBSERVACION_GG                    ||cLimitador||
-                    X.WMONTO                            ||cLimitador||
-                    X.ESCONTRIBUTORIO                   ||cLimitador||
-                    X.PORCENCONTRIBUTORIO               ||cLimitador||
-                    X.GIRONEGOCIO                       ||cLimitador||
-                    X.TIPONEGOCIO                       ||cLimitador||
-                    X.FUENTERECURSOS                    ||cLimitador||
-                    X.CODPAQCOMERCIAL                   ||cLimitador||
-                    X.CATEGORIA                         ||cLimitador||
-                    X.CANALFORMAVENTA                   ||cLimitador||
-                    cPolizaCont                         ||CHR(13);
+         cCadena := X.IDPOLIZA||cLimitador||
+                    X.POLUNIK||cLimitador||
+                    X.NUMSINIREF||cLimitador||            
+                    X.IDSINIESTRO||cLimitador||
+                    X.COD_PAGO||cLimitador||
+                    X.cFechaMvto||cLimitador||
+                    X.NUM_APROBACION||cLimitador||
+                    X.TIPO_APROBACION||cLimitador||
+                    X.ESTATUS||cLimitador||
+                    X.CODTRANSAC||cLimitador||
+                    X.DESCTRANSAC||cLimitador||
+                    X.CODCPTOTRANSAC||cLimitador||
+                    X.NUMTRX||cLimitador||
+                    dFecRes||cLimitador||
+                    X.COD_MONEDA||cLimitador||
+                    nTipoCambio||cLimitador||
+                    NVO_MNTO_PAGADO_MON||cLimitador||
+                    NVO_MNTO_PAGADO_LOC||cLimitador||
+                    nMontoHonoMoneda||cLimitador||
+                    nMontoHonoLocal||cLimitador||
+                    nMontoHospMoneda||cLimitador||
+                    nMontoHospLocal||cLimitador||
+                    nMontoOtrGtoMoneda||cLimitador||
+                    nMontoOtrGtoLocal||cLimitador||
+                    nMontoDctoMoneda||cLimitador||
+                    nMontoDctoLocal||cLimitador||
+                    nMontoDeducLocal||cLimitador||
+                    nMontoDeducMoneda||cLimitador||
+                    cValorCampoIVA||cLimitador||
+                    cValorCampoIVA||cLimitador||
+                    cValorCampoISR||cLimitador||
+                    cValorCampoISR||cLimitador||
+                    nIVA_RET_MONEDA||cLimitador||
+                    nIVA_RET_LOCAL||cLimitador||
+                    nImpLoc_Ret_Local||cLimitador||
+                    nImpLoc_Ret_Moneda||cLimitador||
+                    W_PAGO_NETO_MON_MON||cLimitador||
+                    W_PAGO_NETO_MON_LOC||cLimitador||
+                    X.OPC_MONEDA||cLimitador||
+                    X.OPC_LOCAL||cLimitador||
+                    cDescBanco||cLimitador||
+                    cCuentaCheque||cLimitador||
+                    X.USUARIO||cLimitador||
+                    nIVAPorcentaje||cLimitador||
+                    X.ASEGURADO||cLimitador||
+                    cNombreBenef||cLimitador||
+                    cNumDocTributario||cLimitador||
+                    NVL(X.NomArchCarga,cNomArchCarga)||cLimitador||
+                    NVL(X.ARCHIVO_LOGEM,cNomArchLogem)||cLimitador||
+                    NVL(X.FecCarga,dFecCarga)||cLimitador||
+                    X.TIPOSEGURO||cLimitador||  
+                    NVL(X.NUMERO_FACTURA,cUUID)||cLimitador|| 
+                    NVL(X.IDPROCMASIVO,nIdProcMasivo)||cLimitador||  
+                    X.POLCONTA_GG||cLimitador||
+                    X.FECHA_PAGO||cLimitador||
+                    X.IMPORT_PAGO||cLimitador||
+                    X.ARCHIVO_GG||cLimitador||
+                    X.PGOGG_USUARIO||cLimitador||
+                    X.PGOGG_FECHACOMP||cLimitador||
+                    X.OBSERVACION_GG||cLimitador||                  
+                    X.WMONTO||cLimitador||
+                    X.ESCONTRIBUTORIO||cLimitador||
+                    X.PORCENCONTRIBUTORIO||cLimitador|| 
+                    X.GIRONEGOCIO||cLimitador||
+                    X.TIPONEGOCIO||cLimitador||
+                    X.FUENTERECURSOS||cLimitador||
+                    X.CODPAQCOMERCIAL||cLimitador||
+                    X.CATEGORIA||cLimitador|| 
+                    X.CANALFORMAVENTA||cLimitador||
+                    cPolizaCont||CHR(13);
 
       nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cCadena||cCadenaAux||cCadenaAux1, 1);
       INSERTA_REGISTROS;
@@ -1164,6 +1187,5 @@ EXCEPTION
    WHEN OTHERS THEN
    dbms_output.put_line('me fui por el exception');
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
-   RAISE_APPLICATION_ERROR(-20000, 'Error en SINIESTROS PAGADOS ' || SQLERRM);
+   RAISE_APPLICATION_ERROR(-20000, 'Error en APROBACIONES PAGADAS DE SINIESTROS' || SQLERRM);
 END;
-/

@@ -386,7 +386,7 @@ SELECT SI.IDPOLIZA,
       --
       DBMS_OUTPUT.put_line('MLJS EN INSERTA ENCABEZADO cFormato  '||cFormato||' cNomDirectorio  '||cNomDirectorio||' cNomArchivo  '||cNomArchivo  );
       IF cFormato = 'TEXTO' THEN
-         sicas_oc.OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
+         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
       ELSE
          --Obtiene Número de Columnas Totales
          nColsTotales := XLSX_BUILDER_PKG.EXCEL_CUENTA_COLUMNAS(cEncabez);
@@ -489,7 +489,7 @@ BEGIN
 
        INSERT INTO T_REPORTES_AUTOMATICOS (CODCIA, CODEMPRESA, NOMBRE_REPORTE, FECHA_PROCESO, NUMERO_REGISTRO, CODPLANTILLA,
        NOMBRE_ARCHIVO_EXCEL,CAMPO)
-       VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSI',cNomArchivo,cCadena);
+       VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSIN',cNomArchivo,cCadena);
        nLineaimp := nLineaimp +1;
 
        commit;
@@ -521,8 +521,8 @@ BEGIN
    INTO DFECDESDE, DFECHASTA
    FROM  DUAL ;
 
-   --DFECDESDE := TO_DATE('22/06/2021','DD/MM/RRRR');
-   --DFECHASTA := TO_DATE('22/06/2021','DD/MM/RRRR');
+  -- DFECDESDE := TO_DATE('25/06/2021','DD/MM/RRRR');
+  -- DFECHASTA := TO_DATE('25/06/2021','DD/MM/RRRR');
 
 
    DELETE TEMP_REPORTES_THONA
@@ -589,7 +589,6 @@ BEGIN
                   'FECHA DE CARGA'           ||cLimitador||
                   'USUARIO'                  ||cLimitador||
                   'NOMBRE_ARCHIVO_LOGEM'     ||cLimitador||
-                  'Estatus'                  ||cLimitador||
                   'Es Contributorio'         ||cLimitador||
                   '% Contributorio'          ||cLimitador||
                   'Giro de Negocio'          ||cLimitador||
@@ -766,4 +765,3 @@ EXCEPTION
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
    RAISE_APPLICATION_ERROR(-20000, 'Error en ESTIMASINIESTROS ' || SQLERRM);
 END;
-/
