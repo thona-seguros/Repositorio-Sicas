@@ -3,7 +3,7 @@ CREATE OR REPLACE PACKAGE TH_T_EDOCTASALDOS IS
 -- CREACION     21/01/2021                                        --                JMMDP
 -- JMMD 20210628 SE SUSTITUYE EL CURSOR PRINCIPAL POR EL MISMO DEL REPORT CEDOCTA   JMMD20210628
 -- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS 
---               DE MESES Y AÑOS ANTERIORES                                         JMMD20210714
+--               DE MESES Y AÑOS ANTERIORES                                         JMMD20210719
 -- 
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_CODCIA       NUMBER,
@@ -78,7 +78,7 @@ CREATE OR REPLACE PACKAGE BODY TH_T_EDOCTASALDOS IS
 -- CREACION     21/01/2021                                        --                JMMDP
 -- JMMD 20210628 SE SUSTITUYE EL CURSOR PRINCIPAL POR EL MISMO DEL REPORT CEDOCTA   JMMD20210628
 -- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS 
---               DE MESES Y AÑOS ANTERIORES                                         JMMD20210714
+--               DE MESES Y AÑOS ANTERIORES                                         JMMD20210719
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_CODCIA       NUMBER,
                               P_FECDESDE     DATE,
@@ -1147,26 +1147,26 @@ SELECT   ---   '07',  NUEVA
        ,DECODE(C.Estado, 'REC', SubTotal,0 )    POR_PAGAR,   
        MtoIva, MtoIvaRet, MtoIsr, MtoIsrRet, SubTotal, 
        --------- CASE para poner en Cero Si la fecha de aplicacion es menor al mes en curso  -------        
-       CASE
+/*JMMD20210719       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN C.Comision_Moneda
-        END                                                        CASE_Comision,
-       CASE
+        END */    C.Comision_Moneda                                                   CASE_Comision,
+/*JMMD20210719       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0         
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIva
-        END                                                        CASE_MtoIva,
-       CASE
+        END  */   MtoIva                                                   CASE_MtoIva,
+/*JMMD20210719       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIvaRet
-        END                                                        CASE_MtoIvaRet,
-      CASE
+        END */  MtoIvaRet                                                     CASE_MtoIvaRet,
+/*JMMD20210719      CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0          
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsr
-        END                                                        CASE_MtoIsr,  
-        CASE
+        END  */    MtoIsr                                                  CASE_MtoIsr,  
+/*JMMD20210719        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0         
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsrRet
-        END                                                        CASE_MtoIsrRet,
+        END  */   MtoIsrRet                                                   CASE_MtoIsrRet,
 
 /*        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
@@ -1304,26 +1304,26 @@ SELECT   ---   '08',  NUEVA
        ,DECODE(C.Estado, 'LIQ', SubTotal,0 )    POR_PAGAR,       
        MtoIva, MtoIvaRet, MtoIsr, MtoIsrRet, SubTotal, 
        --------- CASE para poner en Cero Si la fecha de aplicacion es menor al mes en curso  -------        
-       CASE
+/*JMMD20210719        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN C.Comision_Moneda
-        END                                                        CASE_Comision,
-       CASE
+        END  */      C.Comision_Moneda                                                CASE_Comision,
+/*JMMD20210719        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0         
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIva
-        END                                                        CASE_MtoIva,
-       CASE
+        END */   MtoIva                                                     CASE_MtoIva,
+/*JMMD20210719        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIvaRet
-        END                                                        CASE_MtoIvaRet,
-      CASE
+        END */   MtoIvaRet                                                     CASE_MtoIvaRet,
+/*JMMD20210719       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0          
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsr
-        END                                                        CASE_MtoIsr,  
-        CASE
+        END */   MtoIsr                                                     CASE_MtoIsr,  
+/*JMMD20210719         CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0         
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsrRet
-        END                                                        CASE_MtoIsrRet,
+        END  */  MtoIsrRet                                                     CASE_MtoIsrRet,
 
 /*        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
@@ -1457,26 +1457,26 @@ SELECT --- '09',
        ,DECODE(N.StsNcr,'PAG', (DECODE(C.Estado, 'REC',SubTotal, 0 ))
                        ,'APL', ((DECODE(C.Estado, 'REC',SubTotal, 0 )))) POR_PAGAR,
        MtoIva, MtoIvaRet, MtoIsr, MtoIsrRet, SubTotal, 
-       CASE
+/*JMMD20210719        CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN C.Comision_Moneda
-        END                                                       CASE_COMISION,
-       CASE
+        END   */  C.Comision_Moneda                                                  CASE_COMISION,
+/*JMMD20210719        CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIva
-        END                                                        CASE_MtoIva,
-       CASE
+        END  */  MtoIva                                                    CASE_MtoIva,
+/*JMMD20210719        CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIvaRet
-        END                                                        CASE_MtoIvaRet,
-      CASE
+        END  */  MtoIvaRet                                                    CASE_MtoIvaRet,
+/*JMMD20210719       CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsr
-        END                                                        CASE_MtoIsr,  
-        CASE
+        END */  MtoIsr                                                     CASE_MtoIsr,  
+/*JMMD20210719         CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsrRet
-        END                                                        CASE_MtoIsrRet,
+        END  */  MtoIsrRet                                                    CASE_MtoIsrRet,
         ---ETSSSPERIMENTO  FECHAS ---
 /*        CASE
           WHEN ( (N.Fecsts  < P_FECDESDE) OR (C.FEC_LIQUIDACION  < P_FECDESDE ))  THEN 0
@@ -1640,26 +1640,26 @@ SELECT --- '10',
                        ,'APL', ((DECODE(C.Estado, 'LIQ',SubTotal, 0 )))) POR_PAGAR,
                        
        MtoIva, MtoIvaRet, MtoIsr, MtoIsrRet, SubTotal, 
-       CASE
+/*JMMD20210719       CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN C.Comision_Moneda
-        END                                                       CASE_COMISION,
-       CASE
+        END  */  C.Comision_Moneda                                                   CASE_COMISION,
+/*JMMD20210719       CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIva
-        END                                                        CASE_MtoIva,
-       CASE
+        END  */  MtoIva                                                    CASE_MtoIva,
+/*JMMD20210719       CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIvaRet
-        END                                                        CASE_MtoIvaRet,
-      CASE
+        END  */ MtoIvaRet                                                     CASE_MtoIvaRet,
+/*JMMD20210719      CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsr
-        END                                                        CASE_MtoIsr,  
-        CASE
+        END  */ MtoIsr                                                     CASE_MtoIsr,  
+/*JMMD20210719        CASE
           WHEN N.Fecsts < P_FECDESDE THEN 0
           WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsrRet
-        END                                                        CASE_MtoIsrRet,
+        END   */  MtoIsrRet                                                   CASE_MtoIsrRet,
         ---ETSSSPERIMENTO  FECHAS ---
 /*        CASE
           WHEN ( (N.Fecsts  < P_FECDESDE) OR (C.FEC_LIQUIDACION  < P_FECDESDE ))  THEN 0
@@ -1803,7 +1803,7 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND DP.CODCIA               = ADC.CODCIA
    AND ADC.COD_AGENTE_DISTR    = C.Cod_Agente 
    and XT.IDNCR(+)             = N.IDNCR  
- UNION -- 11
+UNION ----- 11
  SELECT   ---   '11',  NUEVA
            C.Cod_Agente, 
            OC_NIVEL.DESCRIPCION_NIVEL(A.CodCia, A.CodNivel) Nivel_Agente,  
@@ -1823,26 +1823,26 @@ WHERE  C.Cod_Agente   = P_AGENTE
        ,DECODE(C.Estado, 'REC', SubTotal,0 )    POR_PAGAR,   
        MtoIva, MtoIvaRet, MtoIsr, MtoIsrRet, SubTotal, 
        --------- CASE para poner en Cero Si la fecha de aplicacion es menor al mes en curso  -------        
-       CASE
+/*JMMD20210719       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN C.Comision_Moneda
-        END                                                        CASE_Comision,
-       CASE
+        END  */  C.Comision_Moneda                                                    CASE_Comision,
+/*JMMD20210719       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0         
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIva
-        END                                                        CASE_MtoIva,
-       CASE
+        END */   MtoIva                                                    CASE_MtoIva,
+/*JMMD20210719       CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIvaRet
-        END                                                        CASE_MtoIvaRet,
-      CASE
+        END  */   MtoIvaRet                                                   CASE_MtoIvaRet,
+/*JMMD20210719      CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0          
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsr
-        END                                                        CASE_MtoIsr,  
-        CASE
+        END  */   MtoIsr                                                   CASE_MtoIsr,  
+/*JMMD20210719        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0         
           WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN MtoIsrRet
-        END                                                        CASE_MtoIsrRet,
+        END */  MtoIsrRet                                                     CASE_MtoIsrRet,
 
 /*        CASE
           WHEN F.Fecsts < P_FECDESDE THEN 0
@@ -1898,7 +1898,7 @@ WHERE  C.Cod_Agente   = P_AGENTE
        OC_AGENTES.DIRECCION_AGENTE(C.Cod_Agente) DirecRes,
        P.Num_Tributario, AC.NumCedula,
         AC.FecVencimiento, P.Tipo_Persona, P.Num_Doc_Identificacion,
-       NULL Porc_Com_Distribuida, NULL Porc_Com_Proporcional, 
+       ADC.Porc_Com_Distribuida, ADC.Porc_Com_Proporcional, 
        PO.PrimaNeta_Moneda Prima_Net,
        (SELECT NVL(SUM(NVL(D.Monto_Det_Moneda,0)),0)
           FROM DETALLE_FACTURAS D, CATALOGO_DE_CONCEPTOS C
@@ -1912,7 +1912,7 @@ WHERE  C.Cod_Agente   = P_AGENTE
        WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null
      END                                                   FECHA_PAGO  
   FROM COMISIONES C , FACTURAS F, POLIZAS PO, DETALLE_POLIZA DP, 
-       TIPOS_DE_SEGUROS PC, --AGENTES_DISTRIBUCION_COMISION adc,
+       TIPOS_DE_SEGUROS PC, AGENTES_DISTRIBUCION_COMISION adc,
        AGENTES A, PERSONA_NATURAL_JURIDICA P, AGENTES_CEDULA_AUTORIZADA AC,
        (SELECT CodCia, IdComision, SUM(MtoComisi) MtoComisi, SUM(MtoIva) MtoIva, 
               SUM(MtoIvaRet) MtoIvaRet, SUM(MtoIsr) MtoIsr, SUM(MtoIsrRet) MtoIsrRet, 
@@ -1935,12 +1935,12 @@ WHERE  C.Cod_Agente   = P_AGENTE
                  AND   DC.IDCOMISION = C2.IDCOMISION
                 GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  ) 
         GROUP BY CodCia, IdComision) Y  
-  WHERE C.Estado = 'REC'
-   AND TRUNC(C.FEC_ESTADO) BETWEEN '01/07/2019' AND P_FECDESDE - 1  ----- JMMD20210701
---   AND  TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA----- JMMD20210701
+  WHERE C.Estado = 'PRY'
+   AND TRUNC(C.FEC_ESTADO) > P_FECHASTA
    AND C.Cod_Agente   = DECODE(P_AGENTE,NULL,C.Cod_Agente,P_AGENTE)
    AND C.IdFactura    = F.IdFactura
---   AND F.StsFact      = 'ANU'
+   AND F.StsFact      = 'ANU'
+   AND F.MOTIVANUL    = 'CCO'      
    AND F.IdPoliza     = PO.IdPoliza
    AND F.IdPoliza     = DP.IdPoliza
    AND F.IdetPol      = DP.IdetPol
@@ -1950,19 +1950,13 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND C.CodCia       = Y.CodCia
    AND C.IdComision   = Y.IdComision
    AND C.Comision_Moneda  != 0
---   AND f.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA
---   AND f.Fecsts < P_FECDESDE   
    AND A.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
    AND A.Cod_Agente         = AC.Cod_Agente(+)
    AND C.Cod_Agente         = A.Cod_Agente
-   AND C.Cod_Agente  NOT IN(SELECT ADC1.COD_AGENTE_DISTR
-   FROM AGENTES_DISTRIBUCION_COMISION adc1
-   WHERE  DP.IdPoliza          = ADC1.IdPoliza
-   AND DP.IdetPol           = ADC1.IdetPol )   
-/*   AND DP.IdPoliza          = ADC.IdPoliza
+   AND DP.IdPoliza          = ADC.IdPoliza
    AND DP.IdetPol           = ADC.IdetPol 
-   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente  */
+   AND ADC.COD_AGENTE_DISTR = C.Cod_Agente  
    AND C.COD_MONEDA = P_MONEDA
 
       
