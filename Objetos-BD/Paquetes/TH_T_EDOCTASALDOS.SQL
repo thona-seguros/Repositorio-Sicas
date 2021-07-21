@@ -3,7 +3,7 @@ CREATE OR REPLACE PACKAGE TH_T_EDOCTASALDOS IS
 -- CREACION     21/01/2021                                        --                JMMDP
 -- JMMD 20210628 SE SUSTITUYE EL CURSOR PRINCIPAL POR EL MISMO DEL REPORT CEDOCTA   JMMD20210628
 -- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS 
---               DE MESES Y AÑOS ANTERIORES                                         JMMD20210719
+--               DE MESES Y AÑOS ANTERIORES                                         JMMD20210720
 -- 
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_CODCIA       NUMBER,
@@ -78,7 +78,7 @@ CREATE OR REPLACE PACKAGE BODY TH_T_EDOCTASALDOS IS
 -- CREACION     21/01/2021                                        --                JMMDP
 -- JMMD 20210628 SE SUSTITUYE EL CURSOR PRINCIPAL POR EL MISMO DEL REPORT CEDOCTA   JMMD20210628
 -- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS 
---               DE MESES Y AÑOS ANTERIORES                                         JMMD20210719
+--               DE MESES Y AÑOS ANTERIORES                                         JMMD20210720
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_CODCIA       NUMBER,
                               P_FECDESDE     DATE,
@@ -438,7 +438,7 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
   and XT.IDNCR(+) = NC.IDNCR     
-UNION -- CUERI 3
+UNION -- QUERY 3
 SELECT    ---  '03',
            C.Cod_Agente, 
            OC_NIVEL.DESCRIPCION_NIVEL(A.CodCia, A.CodNivel) Nivel_Agente,  
@@ -615,7 +615,7 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND NC.IDNOMINA(+)   = C.IDNOMINA 
   AND NC.FECSTS  BETWEEN P_FECDESDE AND P_FECHASTA   ----  AEVS  Limita la busqueda a  notas de credito   
   and XT.IDNCR(+) = NC.IDNCR    
-UNION   -- CUERI 4 
+UNION   -- QUERY 4 
 SELECT   ---  '04',
            C.Cod_Agente, 
            OC_NIVEL.DESCRIPCION_NIVEL(A.CodCia, A.CodNivel) Nivel_Agente,  
@@ -1205,8 +1205,9 @@ SELECT   ---   '07',  NUEVA
         END     */   MtoIsrRet                                               POR_PAGAR_MtoIsrRet,         
         ----  ETSSPERIMENTO  OFF ------------------------------  
         CASE
-          WHEN F.Fecsts < P_FECDESDE THEN       0    
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
+          WHEN F.Fecsts < P_FECDESDE OR F.Fecsts > P_FECHASTA THEN 
+/*JMMD20210720          WHEN F.Fecsts < P_FECDESDE THEN       0                       
+          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN */   
                           (SELECT NVL(SUM(NVL(D.Monto_Det_Moneda,0)),0)
                             FROM DETALLE_FACTURAS D, CATALOGO_DE_CONCEPTOS C
                            WHERE C.CodConcepto      = D.CodCpto
@@ -1362,8 +1363,12 @@ SELECT   ---   '08',  NUEVA
         END    */     MtoIsrRet                                              POR_PAGAR_MtoIsrRet,         
         ----  ETSSPERIMENTO  OFF ------------------------------  
         CASE
-          WHEN F.Fecsts < P_FECDESDE THEN       0    
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
+/*  JMMD20210720        WHEN F.Fecsts < P_FECDESDE THEN       0    
+          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN */
+-------
+          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 0
+          ELSE
+-------          
                           (SELECT NVL(SUM(NVL(D.Monto_Det_Moneda,0)),0)
                             FROM DETALLE_FACTURAS D, CATALOGO_DE_CONCEPTOS C
                            WHERE C.CodConcepto      = D.CodCpto
@@ -1371,7 +1376,7 @@ SELECT   ---   '08',  NUEVA
                              AND (D.IndCptoPrima    = 'S'
                               OR C.IndCptoServicio  = 'S')
                              AND D.IdFactura        = F.IdFactura)
-         ELSE 0                    
+----- JMMD20210720         ELSE 0                    
         END                                                        CASE_MtoPrimaFactura,            
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
        DECODE(SIGN(SubTotal), -1, 0, SubTotal) A_FAVOR, C.IdComision IdComision,
@@ -1536,9 +1541,10 @@ SELECT --- '09',
                 END  ) > P_FECHASTA THEN 0
         END   */   MtoIsrRet                                                 POR_PAGAR_MtoIsrRet,         
         ----  ETSSPERIMENTO  OFF ------------------------------          
-        CASE
-          WHEN N.Fecsts < P_FECDESDE THEN       0          
-          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
+        CASE       
+          WHEN N.Fecsts < P_FECDESDE OR N.Fecsts > P_FECHASTA THEN   
+/*JMMD20210720          WHEN N.Fecsts < P_FECDESDE THEN       0                      
+          WHEN N.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN */
                       (SELECT NVL(SUM(D.Monto_Det_Moneda),0)
                         FROM DETALLE_NOTAS_DE_CREDITO D, CATALOGO_DE_CONCEPTOS C
                        WHERE C.CodConcepto      = D.CodCpto
@@ -1546,6 +1552,7 @@ SELECT --- '09',
                          AND (D.IndCptoPrima    = 'S'
                           OR C.IndCptoServicio  = 'S')
                          AND D.IdNcr            = N.IdNcr)
+        ELSE 0  -----JMMD20210720
         END                                                        CASE_MtoPrimaFactura,                
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
        DECODE(SIGN(SubTotal), -1, 0, SubTotal) A_FAVOR, C.IdComision IdComision,
@@ -1881,8 +1888,9 @@ UNION ----- 11
         END     */   MtoIsrRet                                               POR_PAGAR_MtoIsrRet,         
         ----  ETSSPERIMENTO  OFF ------------------------------  
         CASE
-          WHEN F.Fecsts < P_FECDESDE THEN       0    
-          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN 
+          WHEN F.Fecsts < P_FECDESDE OR F.Fecsts > P_FECHASTA THEN    ----- JMMD20210720  
+/*JMMD20210720          WHEN F.Fecsts < P_FECDESDE THEN       0          
+          WHEN F.Fecsts BETWEEN P_FECDESDE AND P_FECHASTA THEN */
                           (SELECT NVL(SUM(NVL(D.Monto_Det_Moneda,0)),0)
                             FROM DETALLE_FACTURAS D, CATALOGO_DE_CONCEPTOS C
                            WHERE C.CodConcepto      = D.CodCpto
