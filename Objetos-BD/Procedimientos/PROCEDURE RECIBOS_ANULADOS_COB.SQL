@@ -28,7 +28,6 @@ nImpuestoHonoPF				 DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nImpuestoHonoPM				 DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nImpuestoHonoPFOC				 DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nImpuestoHonoPMOC				 DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-
 nUdisPEM               DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nTotComisDist          DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nDifComis              DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
@@ -160,7 +159,7 @@ CURSOR ANU_Q IS
           T.IdTransaccion,                  F.FolioFactElec,
           P.CODCIA COD_CIA,                 F.FECFINVIG FECFINVIG_FAC,
           F.STSFACT,                        GT_TASAS_CAMBIO.CONSULTA_TASA_CAMBIO(TRUNC(F.FecAnul),F.Cod_Moneda) TIPO_CAMBIO,
-         --
+         --       
           DECODE(NVL(P.PORCENCONTRIBUTORIO,0),0,'N','S')            ESCONTRIBUTORIO,
           NVL(P.PORCENCONTRIBUTORIO,0)                              PORCENCONTRIBUTORIO,
           UPPER(TXT.DESCGIRONEGOCIO)                                GIRONEGOCIO,
@@ -182,7 +181,7 @@ CURSOR ANU_Q IS
           POLIZAS_TEXTO_COTIZACION  TXT,
           CATEGORIAS                CGO
     -- MLJS 28/05/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION      
-    -- SE ASEGURA LA OBTENCIÓN DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO       
+    -- SE ASEGURA LA OBTENCIÓN DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO      
     WHERE DT.IDTRANSACCION           = T.IDTRANSACCION
       AND DT.CODEMPRESA              = T.CODEMPRESA
       AND DT.CODCIA                  = T.CODCIA            
@@ -191,7 +190,7 @@ CURSOR ANU_Q IS
       AND DT.CODSUBPROCESO          IN ('FAC','ANUFAC')                    
       AND TO_NUMBER(DT.VALOR4)      = F.IDFACTURA   
       AND TO_NUMBER(DT.VALOR1)      = F.IDPOLIZA  
-      --
+      --            
       AND T.CODCIA                   = DT.CODCIA
       AND T.CODEMPRESA               = DT.CODEMPRESA
       AND T.IDTRANSACCION            > 0               
@@ -228,7 +227,7 @@ CURSOR ANU_Q IS
       AND P.CodCia                   = F.CodCia
       AND P.IdPoliza                 = F.IDPOLIZA
      -- AND P.CodEmpresa               = DT.CodEmpresa 
-      --
+      --  
       AND TXT.CODCIA(+)              = P.CODCIA    
       AND TXT.CODEMPRESA(+)          = P.CODEMPRESA 
       AND TXT.IDPOLIZA(+)            = P.IDPOLIZA
@@ -238,8 +237,8 @@ CURSOR ANU_Q IS
       AND CGO.CODTIPONEGOCIO(+)      = P.CODTIPONEGOCIO 
       AND CGO.CODCATEGO(+)           = P.CODCATEGO
     ORDER BY F.IdFactura;
-    
 
+   
 CURSOR DET_Q IS 
    SELECT D.CodCpto,           D.Monto_Det_Moneda, 
           D.IndCptoPrima,      C.IndCptoServicio
@@ -264,7 +263,7 @@ CURSOR DET_ConC (P_IdPoliza Number, p_idFactura Number ) IS
       AND AGE.Cod_Agente = COM.Cod_Agente
       AND COM.IdPoliza   = P_IdPoliza
       AND COM.IdFactura  = p_idFactura;    
-      
+ 
 CURSOR NC_Q IS
 -- MLJS 04/06/2020 SE REEMPLAZA LA CONSULTA ANTERIOR POR LA NUEVA EXTRACCION
 -- MLJS 25/08/2020 SE AGREGO HINT PARA EFICIENTAR CONSULTA
@@ -285,7 +284,7 @@ CURSOR NC_Q IS
           TO_CHAR(P.FecFinVig,'DD/MM/YYYY') FecFinVig,
           P.NumRenov, 
           P.CodCia,                        N.MtoComisi_Moneda*-1 MtoComisi_Moneda,
-          1 NumCuota,                      P.CodEmpresa, 
+          1 NumCuota,                      P.CodEmpresa,          
           TO_CHAR(N.FecAnul,'DD/MM/YYYY')  FecAnul,                       
           N.MotivAnul, 
           T.IdTransaccion,                 N.StsNcr,
@@ -314,7 +313,7 @@ CURSOR NC_Q IS
           DETALLE_POLIZA   DP, 
           PLAN_COBERTURAS  PC,
           POLIZAS_TEXTO_COTIZACION  TXT,
-          CATEGORIAS                CGO 
+          CATEGORIAS                CGO           
     WHERE DT.IDTRANSACCION           = T.IDTRANSACCION
       AND DT.CODEMPRESA              = T.CODEMPRESA
       AND DT.CODCIA                  = T.CODCIA            
@@ -324,7 +323,7 @@ CURSOR NC_Q IS
       OR   (DT.OBJETO IN ('NOTAS_DE_CREDITO')  AND  T.IDPROCESO  IN (18) AND DT.CODSUBPROCESO IN ('REHNCR')))
       AND  TO_NUMBER(DT.VALOR1)  = N.IDPOLIZA
       AND  TO_NUMBER(DT.VALOR4)  = N.IDNCR
-      --
+      --      
       AND T.CODCIA                   = DT.CODCIA
       AND T.CODEMPRESA               = DT.CODEMPRESA
       AND T.IDTRANSACCION            > 0               
@@ -345,7 +344,7 @@ CURSOR NC_Q IS
            OR    (DTR.OBJETO IN ('ENDOSOS')           AND  T.IDPROCESO  IN (8)  AND DTR.CODSUBPROCESO IN ('NSS','EXA','EXC'))
            OR    (DTR.OBJETO IN ('NOTAS_DE_CREDITO')  AND  T.IDPROCESO  IN (18) AND DTR.CODSUBPROCESO IN ('REHNCR')))
             )
-      -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION        
+      -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION             
       AND PC.PlanCob                 = DP.PlanCob
       AND PC.IdTipoSeg               = DP.IdTipoSeg
       AND PC.CodEmpresa              = DP.CodEmpresa
@@ -364,8 +363,8 @@ CURSOR NC_Q IS
       AND P.CodCia                   = N.CodCia
       AND P.IdPoliza                 = N.IdPoliza
       AND P.CodEmpresa               = T.CodEmpresa 
-      
-      --
+
+      --      
       AND TXT.CODCIA(+)              = P.CODCIA    
       AND TXT.CODEMPRESA(+)          = P.CODEMPRESA 
       AND TXT.IDPOLIZA(+)            = P.IDPOLIZA
@@ -472,7 +471,7 @@ UNION
       AND P.CodCia                   = N.CodCia
       AND P.IdPoliza                 = N.IdPoliza
       AND P.CodEmpresa               = T.CodEmpresa 
-      
+
       --
       AND TXT.CODCIA(+)              = P.CODCIA    
       AND TXT.CODEMPRESA(+)          = P.CODEMPRESA 
@@ -609,7 +608,7 @@ EXCEPTION WHEN OTHERS THEN
    cEmail1      := 'jmarquez@thonaseguros.mx';
 END;
    DBMS_OUTPUT.put_line('cEmail1  '||cEmail1);
-   
+
 BEGIN
   select  LOWER(DESCVALLST)
   INTO cEmail2
@@ -620,7 +619,7 @@ EXCEPTION WHEN OTHERS THEN
    cEmail1      := NULL;
 END;
    DBMS_OUTPUT.put_line('cEmail2  '||cEmail2); 
-   
+
 BEGIN
   select  LOWER(DESCVALLST)
   INTO cEmail3
@@ -661,7 +660,7 @@ END;
     BEGIN
     UTL_FILE.fremove (cNomDirectorio, cNomArchZip);
     END;
-    
+
 END ENVIA_MAIL;
 -------------------------------
 PROCEDURE INSERTA_REGISTROS is
@@ -702,7 +701,7 @@ BEGIN
     TRUNC(sysdate - 1) last
   INTO dFecDesde, dFecHasta
   from  dual ;
-  
+
 /*    select
 --    to_date('01/'|| to_char(sysdate, 'MM') ||'/' ||to_char(sysdate, 'YYYY'), 'dd/mm/yyyy') first,
 --    to_date('01/'|| 8 ||'/' ||to_char(sysdate, 'YYYY'), 'dd/mm/yyyy') first,
@@ -761,7 +760,7 @@ BEGIN
                      'Recargos'||cLimitador||
                      'Derechos'||cLimitador||
                      'Impuesto'||cLimitador||
-                     'Prima Total'||cLimitador||
+                     'Prima Total'||cLimitador||                   
                      'Compensación Sobre Prima'||cLimitador|| 
                      'Comisión Persona Fisica'||cLimitador||
                      'Comisión Persona Moral'||cLimitador|| 
@@ -781,7 +780,7 @@ BEGIN
                      'Agente'||cLimitador||
                      'Tipo Agente'||cLimitador||
                      'Comisión Promotor'||cLimitador||
-                     'Honorario Promotor'||cLimitador||
+                     'Honorario Promotor'||cLimitador||                   
                      'Promotor'||cLimitador||
                      'Tipo Promotor'||cLimitador||
                      'Comisión Dirección Regional'||cLimitador||
@@ -805,7 +804,7 @@ BEGIN
                      'Folio Fact. Electrónica'||cLimitador||
                      'Folio Fiscal'||cLimitador||
                      'Serie'||cLimitador||
-                     'UUID'||cLimitador||
+                     'UUID'||cLimitador||                        
                      'Fecha UUID'||cLimitador||
                      'Varios UUID' ||cLimitador|| 
                      'Origen del Recibo' || cLimitador||
@@ -862,13 +861,13 @@ BEGIN
 ------- JMMD 20200803 SE INCLUYE BUSQUEDA DE ULTIMO RECIBO PAGADO Y FECHA DE COBERTURA DE LA PÓLIZA SOLICITADOS POR OCTAVIO
 --dPagadoHasta  	DATE;
 --dCubiertoHasta  DATE;
---nDiasGracia
+--nDiasGracia  
 			 SELECT STSPOLIZA, FECINIVIG
 			   INTO cStatuspol, dFecIniVig		  
 			   FROM POLIZAS
 			  WHERE IDPOLIZA = X.IDPOLIZA;
-			  
-			  
+
+
 		   BEGIN
 					SELECT DIASCANCELACION
 						INTO nDiasGracia
@@ -880,7 +879,7 @@ BEGIN
 		   	 WHEN OTHERS THEN
 		   	 		  nDiasGracia := 45;
 		   END;
-
+    
 		   BEGIN
 					SELECT MAX(FECFINVIG)
 					  INTO dPagadoHasta
@@ -899,33 +898,33 @@ BEGIN
 			   FROM FACTURAS
 				WHERE IDPOLIZA = X.IdPoliza
 					AND STSFACT = 'EMI';  
-					                      
+
 			 SELECT COUNT(*)
 			   INTO nCuantosPag
 			   FROM FACTURAS
 				WHERE IDPOLIZA = X.IdPoliza
 					AND STSFACT = 'PAG';  
-										                      
+
 			 IF nCuantosEmi > 0 THEN		
 					SELECT MIN(IDFACTURA)
 					  INTO nMinFactura
 						FROM FACTURAS
 						WHERE IDPOLIZA = X.IdPoliza
 						AND STSFACT = 'EMI'; 
-						
+
 					SELECT FECVENC + nDiasGracia
 					  INTO dCubiertoHasta
 					  FROM FACTURAS
 					 WHERE IDPOLIZA = X.IdPoliza
 					   AND IDFACTURA = nMinFactura;
-					   	 
+
 			 ELSIF nCuantosPag > 0 THEN
 			 	 	  SELECT MAX(IDFACTURA)
 					    INTO nMinFactura
 						  FROM FACTURAS
 						 WHERE IDPOLIZA = X.IdPoliza
 						   AND STSFACT = 'PAG';  
-						   
+
 						SELECT FECFINVIG + nDiasGracia
 						  INTO dCubiertoHasta
 						  FROM FACTURAS
@@ -962,7 +961,7 @@ BEGIN
       nImpuestoHonoPM := 0;
       nImpuestoHonoPFOC := 0;
       nImpuestoHonoPMOC := 0;      
-      --
+      --    
       cTipoAge        := 0;
       cCodAge         := 0;
       cTipoProm       := 0;
@@ -972,7 +971,6 @@ BEGIN
 			nOtrasCompPF    := 0;
 			nOtrasCompPM	  := 0;
       --
-
       FOR W IN DET_Q LOOP
          IF W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S' THEN
             nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(W.Monto_Det_Moneda,0);
@@ -988,7 +986,7 @@ BEGIN
          END IF;
          nPrimaTotal  := NVL(nPrimaTotal,0) + NVL(W.Monto_Det_Moneda,0);
       END LOOP;
-
+  
       FOR C IN DET_ConC (X.IdPoliza,X.IdFactura) LOOP
          IF C.CODTIPO = 'AGTEPF' THEN --AGENTE PERSONA FISICA
             IF C.CodConcepto IN ('COMISI','COMIPF') THEN
@@ -1005,7 +1003,7 @@ BEGIN
                nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
                NULL;
-            END IF;
+            END IF;          
          ELSIF C.CODTIPO = 'HONPF' THEN -- HONORARIOS PERSONA FISICA 
             IF C.CodConcepto IN ('COMISI','COMIPF') THEN
                nComisionesPEF  := NVL(nComisionesPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
@@ -1025,7 +1023,7 @@ BEGIN
             	nImpuestoHonoPM   := NVL(nImpuestoHonoPM,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd201906003 nImpuestoHono Nuevo concepto para el proyecto de honorarios      	 	     
             ELSE
                NULL;
-            END IF; 	
+            END IF; 	             
          ELSIF C.CodTipo = 'UDISPF' THEN -- UDIS PERSONA FISICA
             IF C.CodConcepto = 'UDI' THEN
 --               nUdisPEF        := NVL(nUdisPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
@@ -1040,7 +1038,7 @@ BEGIN
             ELSE
                NULL;
             END IF;               
----- jmmd20190523Se incluyen los conceptos para HONORF y HONORM            
+---- jmmd20190523Se incluyen los conceptos para HONORF y HONORM          
          ELSIF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA 
  						   IF C.CodConcepto = 'HONORA' THEN
       	 	        nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
@@ -1058,7 +1056,7 @@ BEGIN
                   NULL;
                END IF; 	
 ----            
-         END IF;
+         END IF;           
          IF C.CodConcepto = 'IVAHON' THEN
          	  NULL;
          ELSE
@@ -1083,7 +1081,7 @@ BEGIN
 							 	 END IF;
 							 END IF;	 
 						END IF; */       
-
+            
 				 ELSIF C.CodNivel = 2 THEN
 						cTipoProm			:= C.CodTipo;
 						cCodProm 			:= C.Cod_Agente;
@@ -1125,7 +1123,7 @@ BEGIN
 ----            
       	 END IF;
       END LOOP;
-
+ 
       nDifComis := NVL(X.MtoComisi_Moneda,0) - NVL(nTotComisDist,0);
 
       SELECT NVL(MIN(NumComprob),'0')
@@ -1156,7 +1154,7 @@ BEGIN
 			      cUUID        := NULL;
 			      cFechaUUID   := NULL;
       END;          
-     
+
    BEGIN
       SELECT COUNT(FE.IDFACTURA) 
         INTO cVariosUUID
@@ -1191,7 +1189,7 @@ BEGIN
    END IF;
 --      cOrigenRecibo := ORIGEN_RECIBO(X.CodCia, X.CodEmpresa, X.IdPoliza, X.IDetPol, X.IdFactura);
 
---      IF :BK_DATOS.Formato = 'TEXTO' THEN
+--      IF :BK_DATOS.Formato = 'TEXTO' THEN 
          cCadena := X.NumPolUnico                                  ||cLimitador||
                     TO_CHAR(X.IdPoliza,'9999999999999')            ||cLimitador||
                     X.NumPolRef                                    ||cLimitador||
@@ -1206,13 +1204,13 @@ BEGIN
                     X.FecVenc                                      ||cLimitador||
                     cFecFin                                        ||cLimitador||
                     X.FecAnul                                      ||cLimitador||
-                    X.MotivAnul                                    ||cLimitador||
+                    X.MotivAnul                                    ||cLimitador||                   
                     TO_CHAR(nPrimaNeta,'99999999999990.00')        ||cLimitador||
                     TO_CHAR(nReducPrima,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nRecargos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nImpuesto,'99999999999990.00')         ||cLimitador||
-                    TO_CHAR(nPrimaTotal,'99999999999990.00')       ||cLimitador||
+                    TO_CHAR(nPrimaTotal,'99999999999990.00')       ||cLimitador||                   
                     TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00')||cLimitador||
                     TO_CHAR(nComisionesPEF,'99999999999990.00')    ||cLimitador||
                     TO_CHAR(nComisionesPEM,'99999999999990.00')    ||cLimitador||
@@ -1228,7 +1226,7 @@ BEGIN
                     TO_CHAR(nImpuestoHonoPMOC,'99999999999990.00')    ||cLimitador||                                         
                     TO_CHAR(nDifComis,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nMtoComiAge,'99999999999990.00')       ||cLimitador||
-                    TO_CHAR(nMtoHonoAge,'99999999999990.00')       ||cLimitador||
+                    TO_CHAR(nMtoHonoAge,'99999999999990.00')       ||cLimitador||                     
                     LPAD(cCodAge,6,'0')                            ||cLimitador||
                     cTipoAge                                       ||cLimitador||
                     TO_CHAR(nMtoComiProm,'99999999999990.00')      ||cLimitador||
@@ -1238,11 +1236,11 @@ BEGIN
                     TO_CHAR(nMtoComiDR,'99999999999990.00')        ||cLimitador||
                     TO_CHAR(nMtoHonoDR,'99999999999990.00')        ||cLimitador||
                     LPAD(cCodDR,6,'0')                             ||cLimitador||
-                    cTipoDR                                        ||cLimitador||
+                    cTipoDR                                        ||cLimitador||                     
                     TO_CHAR(nTasaIVA,'999990.00')                  ||cLimitador||
                     cDescEstado                                    ||cLimitador||
                     X.Cod_Moneda                                   ||cLimitador||
-                    TO_CHAR(X.TIPO_CAMBIO,'99999999999990.00')     ||cLimitador||
+                    TO_CHAR(X.TIPO_CAMBIO,'99999999999990.00')     ||cLimitador||                    
                     X.IdTipoSeg                                    ||cLimitador||
                     X.PlanCob                                      ||cLimitador||
                     X.CodTipoPlan                                  ||cLimitador||
@@ -1256,8 +1254,8 @@ BEGIN
 				          	X.FolioFactElec                                ||cLimitador||
 					          cFolioFiscal                                   ||cLimitador||
 					          cSerie                                         ||cLimitador||
-                    cUUID	    	                                   ||cLimitador||
-                    TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador||	-- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA				
+                    cUUID	    	                                   ||cLimitador||             
+                    TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador||	-- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA	                    			
                     cVariosUUID                                    ||cLimitador||
                     cOrigenRecibo                                  ||cLimitador||
                     X.ESCONTRIBUTORIO                              ||cLimitador||
@@ -1296,7 +1294,7 @@ BEGIN
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
             cDescEstado := NULL;
-      END;
+      END;     
       IF cDescEstado = 'PROVINCIA NO EXISTE' THEN
       	 cDescEstado := NULL;
       END IF;
@@ -1306,7 +1304,7 @@ BEGIN
       ELSE
          cTipoVigencia := 'RENOVACION';
       END IF;
-
+   
       nPrimaNeta      := 0;
       nReducPrima     := 0;
       nRecargos       := 0;
@@ -1325,7 +1323,7 @@ BEGIN
       nMtoComiProm    := 0;
       nMtoHonoProm    := 0;
       nMtoComiDR      := 0;
-      nMtoHonoDR      := 0;
+      nMtoHonoDR      := 0;    
       nImpuestoHonoPF := 0;
       nImpuestoHonoPM := 0;
       nImpuestoHonoPFOC := 0;
@@ -1377,7 +1375,7 @@ BEGIN
 --            	nImpuestoHonoPF   := NVL(nImpuestoHonoPF,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios             	 	    
             ELSE
               NULL;
-            END IF;
+            END IF;             
          ELSIF C.CODTIPO = 'AGTEPM' THEN -- AGENTE PERSONA MORAL 
           	IF C.CodConcepto IN ('COMISI','COMIPM') THEN
                nComisionesPEM  := NVL(nComisionesPEM,0) + NVL(nMonto_Mon_Extranjera,0);
@@ -1388,7 +1386,7 @@ BEGIN
             ELSE
                NULL;
             END IF;
-           
+
          ELSIF C.CODTIPO = 'HONPF' THEN -- HONORARIOS PERSONA FISICA 
             IF C.CodConcepto IN ('COMISI','COMIPF') THEN
                nComisionesPEF  := NVL(nComisionesPEF,0) + NVL(nMonto_Mon_Extranjera,0);
@@ -1408,7 +1406,7 @@ BEGIN
             	nImpuestoHonoPM   := NVL(nImpuestoHonoPM,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios      	 	     
             ELSE
                NULL;
-            END IF; 	
+            END IF;              	
          ELSIF C.CodTipo = 'UDISPF' THEN -- UDIS PERSONA FISICA
             IF C.CodConcepto = 'UDI' THEN
 --               nUdisPEF        := NVL(nUdisPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
@@ -1422,9 +1420,11 @@ BEGIN
       	 	        nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
                NULL;
-            END IF;      
+            END IF;     
+-------------------
 ---- jmmd20190523Se incluyen los conceptos para HONORF y HONORM            
-            IF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA 
+            --IF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA  --- MLJS 10/03/2021
+         ELSIF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA    --- MLJS 10/03/2021
  						   IF C.CodConcepto = 'HONORA' THEN
       	 	        nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
          			 ELSIF C.CodConcepto = 'IVAHON' THEN
@@ -1447,7 +1447,9 @@ BEGIN
             ELSE
          			nTotComisDist   := NVL(nTotComisDist,0) + NVL(nMonto_Mon_Extranjera,0);
          	  END IF;
+-------------------              
          --
+         
          IF C.CodNivel = 3 THEN
 						cTipoAge			:= C.CodTipo;
 						cCodAge				:= C.Cod_Agente;
@@ -1466,7 +1468,7 @@ BEGIN
 							 END IF;	 
 						END IF;	 */
 
-----						
+----					
 				 ELSIF C.CodNivel = 2 THEN
 						cTipoProm			:= C.CodTipo;
 						cCodProm 			:= C.Cod_Agente;
@@ -1484,7 +1486,8 @@ BEGIN
 							 	 END IF;
 							 END IF;	 
 						END IF;	 */       
-----						
+----					
+--------------------
       	 ELSIF C.CodNivel = 1 THEN
 						cTipoDR				:= C.CodTipo;
 						cCodDR 				:= C.Cod_Agente;
@@ -1505,8 +1508,9 @@ BEGIN
 
           END IF;  
 ----            
-      	 END IF;
+      --	 END IF;  -- ESTA DE MAS MLJS 10/03/2021
       END LOOP;
+--------------------		
 
       nDifComis := NVL(X.MtoComisi_Moneda,0) - NVL(nTotComisDist,0);
 
@@ -1515,7 +1519,7 @@ BEGIN
         FROM COMPROBANTES_CONTABLES
        WHERE CODCIA         = X.COD_CIA
          AND NumTransaccion = X.IdTransaccion;
-         
+
      --RECUPERA FOLIO FISCAL RECIBO NCR cuenta de uuids ESA20180620
       BEGIN
          SELECT FE.FOLIOFISCAL, FE.SERIE, FE.UUID, FE.FECHAUUID
@@ -1535,7 +1539,7 @@ BEGIN
 		        cSerie       := NULL;
    	        cUUID        := NULL;
 	          cFechaUUID   := NULL;       
-      END;
+      END;   
       BEGIN
          SELECT count(FE.IDNCR) 
            INTO cVariosUUID
@@ -1551,7 +1555,7 @@ BEGIN
 -- ESA20180620  
 
       cOrigenRecibo := 'PRIMAS';
-
+   
 --      IF :BK_DATOS.Formato = 'TEXTO' THEN
          cCadena := X.NumPolUnico                                  ||cLimitador||
                     TO_CHAR(X.IdPoliza,'9999999999999')            ||cLimitador||
@@ -1566,14 +1570,14 @@ BEGIN
                     X.FechaTransaccion                             ||cLimitador||
                     X.FecDevol                                     ||cLimitador||
                     cFecFin                                        ||cLimitador||
-                    X.FecDevol                                     ||cLimitador||
+                    X.FecAnul                                     ||cLimitador||
                     X.MotivAnul                                    ||cLimitador||
                     TO_CHAR(nPrimaNeta,'99999999999990.00')        ||cLimitador||
                     TO_CHAR(nReducPrima,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nRecargos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nImpuesto,'99999999999990.00')         ||cLimitador||
-                    TO_CHAR(nPrimaTotal,'99999999999990.00')       ||cLimitador||
+                    TO_CHAR(nPrimaTotal,'99999999999990.00')       ||cLimitador||                   
                     TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00')||cLimitador||
                     TO_CHAR(nComisionesPEF,'99999999999990.00')    ||cLimitador||
                     TO_CHAR(nComisionesPEM,'99999999999990.00')    ||cLimitador||
@@ -1589,7 +1593,7 @@ BEGIN
                     TO_CHAR(nImpuestoHonoPMOC,'99999999999990.00')    ||cLimitador||                                         
                     TO_CHAR(nDifComis,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nMtoComiAge,'99999999999990.00')       ||cLimitador||
-                    TO_CHAR(nMtoHonoAge,'99999999999990.00')       ||cLimitador||
+                    TO_CHAR(nMtoHonoAge,'99999999999990.00')       ||cLimitador||                 
                     LPAD(cCodAge,6,'0')                            ||cLimitador||
                     cTipoAge									   									 ||cLimitador||
                     TO_CHAR(nMtoComiProm,'99999999999990.00')      ||cLimitador||
@@ -1605,7 +1609,7 @@ BEGIN
                     X.CodMoneda                                    ||cLimitador||
                     TO_CHAR(X.TIPO_CAMBIO,'99999999999990.00')     ||cLimitador||
                     X.IdTipoSeg                                    ||cLimitador||
-                    X.PlanCob                                      ||cLimitador||
+                    X.PlanCob                                      ||cLimitador||                       
                     X.CodTipoPlan                                  ||cLimitador||
                     X.DescSubRamo                                  ||cLimitador||
                     cTipoVigencia                                  ||cLimitador||
@@ -1618,7 +1622,7 @@ BEGIN
 										cFolioFiscal                                   ||cLimitador||
 										cSerie                                         ||cLimitador||
 										cUUID                                          ||cLimitador||
-										TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador||	-- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
+										TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador||	-- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA                  
                     cVariosUUID									                   ||cLimitador||
                     cOrigenRecibo                                  ||cLimitador||
                     X.ESCONTRIBUTORIO                              ||cLimitador||
