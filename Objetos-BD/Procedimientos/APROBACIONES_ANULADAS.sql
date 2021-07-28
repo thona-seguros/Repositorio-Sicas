@@ -67,6 +67,12 @@ nIVA_RET_MONEDA     NUMBER(28,2);
 nIVA_RET_LOCAL      NUMBER(28,2);
 nImpLoc_Ret_Local   NUMBER(28,2);
 nImpLoc_Ret_Moneda  NUMBER(28,2);
+
+--
+
+cTIPODIARIO         COMPROBANTES_CONTABLES.TIPODIARIO%TYPE;
+nNUMCOMPROBSC       COMPROBANTES_CONTABLES.NUMCOMPROBSC%TYPE;
+
 -----------------------
 -- variables reporte --
 cCtlArchivo     UTL_FILE.FILE_TYPE;
@@ -655,9 +661,9 @@ END;
    DBMS_OUTPUT.PUT_LINE('CEMAIL3  '||CEMAIL3);
 ---------------------------
 
---   CEMAIL1 := 'ljimenez@thonaseguros.mx';
---   CEMAIL2 := null;
---   CEMAIL3 := null;
+   --CEMAIL1 := 'ljimenez@thonaseguros.mx';
+   --CEMAIL2 := null;
+   --CEMAIL3 := null;
 
    cEmail       := OC_GENERALES.BUSCA_PARAMETRO(1,'021');
    cPwdEmail    := OC_GENERALES.BUSCA_PARAMETRO(1,'022');
@@ -723,8 +729,8 @@ BEGIN
    INTO DFECDESDE, DFECHASTA
    FROM  DUAL ;
 
-   --DFECDESDE := TO_DATE('25/06/2021','DD/MM/RRRR');
-   --DFECHASTA := TO_DATE('25/06/2021','DD/MM/RRRR');
+   --DFECDESDE := TO_DATE('26/07/2021','DD/MM/RRRR');
+   --DFECHASTA := TO_DATE('26/07/2021','DD/MM/RRRR');
 
 
    DELETE TEMP_REPORTES_THONA
@@ -837,9 +843,7 @@ BEGIN
    --dbms_output.put_line('MLJS 3 cNomDirectorio '||cNomDirectorio||' cNomArchivo  '||cNomArchivo );
          --
    nLinea := 6;
-  -- dbms_output.put_line('jmmd5 '||cCadena);
- --    nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cEncabez, 1);
-  -- dbms_output.put_line('jmmd X cCadena '||cCadena||' cCodUser  '||cCodUser||' nLinea '||nLinea );
+ 
    WIDSINIESTRO         := 0; --  JICO AGREGAD0
    WNUM_APROBACION      := 0; --  JICO AGREGAD0
    W_PAGO_NETO_MON_LOC  := 0; --  JICO AGREGAD0
@@ -1029,10 +1033,12 @@ BEGIN
       END;
       --MLJS 08/10/2020 SE OBTIENE LA PÓLIZA CONTABLE
       BEGIN
-        SELECT TIPODIARIO||'-'||NUMCOMPROBSC
-          INTO cPolizaCont
+        SELECT TIPODIARIO, NUMCOMPROBSC
+          INTO cTIPODIARIO, nNUMCOMPROBSC
           FROM COMPROBANTES_CONTABLES CC
          WHERE NUMTRANSACCION = X.NUMTRX;
+         
+         cPolizaCont := cTIPODIARIO||'-'||nNUMCOMPROBSC;
       EXCEPTION
         WHEN NO_DATA_FOUND THEN
               cPolizaCont := 'SIN POLIZA CONT';
@@ -1098,7 +1104,7 @@ BEGIN
        --
          cCadena := X.IDPOLIZA||cLimitador||
                     X.POLUNIK||cLimitador||
-                    X.NUMSINIREF||cLimitador||            
+                    REPLACE(X.NUMSINIREF,'|','')||cLimitador||            
                     X.IDSINIESTRO||cLimitador||
                     X.COD_PAGO||cLimitador||
                     X.cFechaMvto||cLimitador||
@@ -1109,7 +1115,7 @@ BEGIN
                     X.DESCTRANSAC||cLimitador||
                     X.CODCPTOTRANSAC||cLimitador||
                     X.NUMTRX||cLimitador||
-                    dFecRes||cLimitador||
+                    TO_CHAR(dFecRes,'DD/MM/RRRR')||cLimitador||
                     X.COD_MONEDA||cLimitador||
                     nTipoCambio||cLimitador||
                     NVO_MNTO_PAGADO_MON||cLimitador||

@@ -23,8 +23,10 @@ cRFCHospital      DATOS_PART_SINIESTROS.Campo1%TYPE;
 cDescSiniestro    SINIESTRO.Desc_Siniestro%TYPE;
 cNomArchCarga     PROCESOS_MASIVOS_SEGUIMIENTO.CRGA_NOM_ARCHIVO%TYPE;
 --
-cPolizaCont       VARCHAR(50);
 
+cPolizaCont       VARCHAR(50);
+cTIPODIARIO       COMPROBANTES_CONTABLES.TIPODIARIO%TYPE;
+nNUMCOMPROBSC     COMPROBANTES_CONTABLES.NUMCOMPROBSC%TYPE;
 
 W_ID_TERMINAL   VARCHAR2(100);
 W_ID_USER       VARCHAR2(100);
@@ -403,6 +405,8 @@ SELECT SI.IDPOLIZA,
                nFila := XLSX_BUILDER_PKG.EXCEL_HEADER(nFila + 1, cTitulo4, nColsTotales, nJustCentro, nColsLateral, nColsCentro, nColsMerge);
                --Encabezado
                nFila := XLSX_BUILDER_PKG.EXCEL_ENCABEZADO(nFila + 1, cEncabez, 1);
+               
+             
             END IF;
          END IF;
       END IF;
@@ -489,7 +493,8 @@ BEGIN
 
        INSERT INTO T_REPORTES_AUTOMATICOS (CODCIA, CODEMPRESA, NOMBRE_REPORTE, FECHA_PROCESO, NUMERO_REGISTRO, CODPLANTILLA,
        NOMBRE_ARCHIVO_EXCEL,CAMPO)
-       VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSIN',cNomArchivo,cCadena);
+       VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSIN',cNomArchivo,
+              trim(cCadena)||trim(cCadenaAux)||trim(cCadenaAux1));
        nLineaimp := nLineaimp +1;
 
        commit;
@@ -521,8 +526,8 @@ BEGIN
    INTO DFECDESDE, DFECHASTA
    FROM  DUAL ;
 
-  -- DFECDESDE := TO_DATE('25/06/2021','DD/MM/RRRR');
-  -- DFECHASTA := TO_DATE('25/06/2021','DD/MM/RRRR');
+   --DFECDESDE := TO_DATE('26/07/2021','DD/MM/RRRR');
+   --DFECHASTA := TO_DATE('26/07/2021','DD/MM/RRRR');
 
 
    DELETE TEMP_REPORTES_THONA
@@ -678,18 +683,32 @@ BEGIN
          nMontoRvaMon := NVL(X.MONTO_RESERVADO_MONEDA,0);
          nMontoRvaLoc := NVL(X.MONTO_RESERVADO_LOCAL,0);
       END IF;
-       --
---      IF :BK_DATOS.Formato = 'TEXTO' THEN
-      cCadena :=  X.IDPOLIZA                   ||cLimitador||
+      
+      --MLJS 08/10/2020 SE OBTIENE LA PÓLIZA CONTABLE
+         BEGIN
+         	 SELECT TIPODIARIO,NUMCOMPROBSC
+         	 INTO   cTIPODIARIO, nNUMCOMPROBSC
+           FROM   COMPROBANTES_CONTABLES CC
+           WHERE  NUMTRANSACCION = X.NUMTRX;
+           
+           cPolizaCont :=   cTIPODIARIO||'-'||nNUMCOMPROBSC; 
+         EXCEPTION
+         	  WHEN NO_DATA_FOUND THEN
+         	     cPolizaCont := 'SIN POLIZA CONT';
+         	  WHEN OTHERS THEN
+         	     cPolizaCont := 'SIN POLIZA CONT';   
+         END;
+               
+      cCadena :=  X.IDPOLIZA                               ||cLimitador||
                   X.POLUNIK                                ||cLimitador||
                   X.IDSINIESTRO                            ||cLimitador||
                   X.CVCOB                                  ||cLimitador||
-                  X.NUMSINIREF                             ||cLimitador||
+                  REPLACE(X.NUMSINIREF,'|','')             ||cLimitador||
                   TO_CHAR(X.FECHAMVTO,'DD/MM/RRRR')        ||cLimitador||
                   cRFCHospital                             ||cLimitador||
                   X.CVE_CIE_10                             ||cLimitador||
-                  X.DESC_CIE_10                            ||cLimitador||
-                  X.DESCCORTAMOV                           ||cLimitador||
+                  TRIM(X.DESC_CIE_10)                      ||cLimitador||
+                  TRIM(X.DESCCORTAMOV)                     ||cLimitador||
                   TO_CHAR(X.FECINIVIG,'DD/MM/RRRR')        ||cLimitador||
                   TO_CHAR(X.FECFINVIG,'DD/MM/RRRR')        ||cLimitador||
                   X.NUMTRX                                 ||cLimitador||
@@ -708,11 +727,11 @@ BEGIN
                   TO_CHAR(X.FEC_NOTIFICACION,'DD/MM/RRRR') ||cLimitador||
                   X.STSCOBERTURA                           ||cLimitador||
                   X.NOM_ASEG                               ||cLimitador||
-                  X.COD_ASEGURADO                          ||cLimitador;     -- MLJS 21/12/2020
-      cCadenaAux  := cDescSiniestro                        ||cLimitador;     -- MLJS 21/12/2020
+                  X.COD_ASEGURADO                          ||cLimitador;                  -- MLJS 21/12/2020
+      cCadenaAux  := TRIM(REPLACE(REPLACE(cDescSiniestro,chr(13),' '),chr(10),' ')) ||cLimitador;     -- MLJS 21/12/2020
       cCadenaAux1 := X.TIPOSEGURO                          ||cLimitador||
                   cNomArchCarga1A                          ||cLimitador||
-                  dFecCarga1A                              ||cLimitador||
+                  TO_CHAR(dFecCarga1A,'DD/MM/RRRR')        ||cLimitador||
                   X.USUARIO                                ||cLimitador||
                   cNomArchCarga                            ||cLimitador||
                   X.ESCONTRIBUTORIO                        ||cLimitador||
@@ -724,7 +743,7 @@ BEGIN
                   X.CATEGORIA                              ||cLimitador||
                   X.CANALFORMAVENTA                        ||cLimitador||
                   cPolizaCont                              ||cLimitador||
-                  X.NOMCONTRATANTE                         ||cLimitador||
+                  TRIM(X.NOMCONTRATANTE)                   ||cLimitador||
                   X.EMPRESA_LABORA                         ||cLimitador||
                   X.CERTIFICADO                            ||cLimitador||
                   X.IDCREDITO                              ||cLimitador||
@@ -739,10 +758,11 @@ BEGIN
                   X.MUNICIPIO                              ||cLimitador||
                   X.NOMMUNICIPIO                           ||cLimitador||
                   X.NOM_MEDICO_CERTIFICA                   ||cLimitador||
-                  X.ID_CEDULA_MEDICA                       ||CHR(13);
-
-      nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cCadena||cCadenaAux||cCadenaAux1, 1);
-      INSERTA_REGISTROS;
+                  REPLACE(X.ID_CEDULA_MEDICA,'|','')       ||CHR(13);
+  
+      nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, trim(cCadena)||trim(cCadenaAux)||trim(cCadenaAux1), 1);
+     
+      INSERTA_REGISTROS; 
    END LOOP;
    --dbms_output.put_line('MLJS SALIO DE LOOP');
    cNomArchZip := SUBSTR(cNomArchivo, 1, INSTR(cNomArchivo, '.')-1) || '.zip';
