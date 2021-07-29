@@ -1,4 +1,5 @@
 CREATE OR REPLACE PROCEDURE RECIBOS_ANULADOS_COB  IS
+----- SE ESTABA GRABANDO UN REGISTRO EN BLANCO Y SE CORRIGIO LA COMISION DEL AGENTE     ----- JMMD20210729
 cLimitador             VARCHAR2(1) :='|';
 nLinea                 NUMBER;
 nLineaimp              NUMBER := 1;
@@ -821,7 +822,7 @@ BEGIN
 					           'Fecha Pagado Hasta'								||cLimitador || 
 					           'Fecha Cobertura' ;
 
-         INSERTA_REGISTROS;
+ --        INSERTA_REGISTROS;
 
          INSERTA_ENCABEZADO( 'EXCEL', nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo ) ;
 

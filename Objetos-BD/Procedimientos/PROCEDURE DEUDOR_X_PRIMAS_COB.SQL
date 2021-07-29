@@ -1,4 +1,5 @@
 CREATE OR REPLACE PROCEDURE DEUDOR_X_PRIMAS_COB  IS
+----- ESTABA INSERTANDO UNA LINEA EN BLANCO EN EL ARCHIVO Y FALTABA EL ENCABEZADO DE TASA_IVA     JMMD20210729 
 cLimitador      VARCHAR2(1) :='|'; 
 nLinea          NUMBER;
 nLineaimp       NUMBER := 1;
@@ -418,7 +419,7 @@ CURSOR DET_ConC (P_IdPoliza NUMBER, p_IdFactura NUMBER) IS
      AND AGE.COD_AGENTE = COM.COD_AGENTE
      AND COM.IdPoliza   = P_IdPoliza
      AND COM.IdFactura  = p_IdFactura;    
-     
+
 CURSOR NC_Q IS
    SELECT P.IdPoliza,                  P.NumPolUnico, 
           P.NumPolRef,                 DP.CodFilial, 
@@ -618,7 +619,7 @@ EXCEPTION WHEN OTHERS THEN
    cEmail1      := 'jmarquez@thonaseguros.mx';
 END;
    DBMS_OUTPUT.put_line('cEmail1  '||cEmail1);
-   
+
 BEGIN
   select  LOWER(DESCVALLST)
   INTO cEmail2
@@ -629,7 +630,7 @@ EXCEPTION WHEN OTHERS THEN
    cEmail1      := NULL;
 END;
    DBMS_OUTPUT.put_line('cEmail2  '||cEmail2); 
-   
+
 BEGIN
   select  LOWER(DESCVALLST)
   INTO cEmail3
@@ -670,7 +671,7 @@ END;
     BEGIN
     UTL_FILE.fremove (cNomDirectorio, cNomArchZip);
     END;
-    
+
 END ENVIA_MAIL;
 -------------------------------
 PROCEDURE INSERTA_REGISTROS is
@@ -680,9 +681,9 @@ BEGIN
        NOMBRE_ARCHIVO_EXCEL,CAMPO)
        VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTDEUDXPMA',cNomArchivo,cCadena);
        nLineaimp := nLineaimp +1;
-       
+
        commit;  
-          
+
 END INSERTA_REGISTROS;
 -------------------------------
 
@@ -747,6 +748,7 @@ BEGIN
       cTitulo1 := cNomCia;
       cTitulo2 := 'REPORTE DEL DEUDOR POR PRIMA DEL '|| TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' || TO_CHAR(dFecHasta,'DD/MM/YYYY');
       cTitulo4 := ' ';
+
       cEncabez    := 'No. de Póliza'||cLimitador||
                      'Consecutivo'||cLimitador||
                      'No. Referencia'||cLimitador||
@@ -767,7 +769,7 @@ BEGIN
                      'Recargos'||cLimitador||
                      'Derechos'||cLimitador||
                      'Impuesto'||cLimitador||
-                     'Prima Total'||cLimitador||
+                     'Prima Total'||cLimitador||                          
                      'Compensación Sobre Prima'||cLimitador||
                      'Comisión Persona Fisica'||cLimitador||
                      'Comisión Persona Moral'||cLimitador|| 
@@ -787,11 +789,12 @@ BEGIN
                      'Comisión Promotor'||cLimitador||
                      'Honorario Promotor'||cLimitador||
                      'Promotor'||cLimitador||
-                     'Tipo Promotor'||cLimitador||
+                     'Tipo Promotor'||cLimitador||           
                      'Comisión Dirección Regional'||cLimitador||
                      'Honorario Dirección Regional'||cLimitador||
                      'Dirección Regional'||cLimitador||
                      'Tipo Dirección Regional'||cLimitador||
+                     'Tasa Iva' ||cLimitador||
                      'Estado'||cLimitador||
                      'Moneda'||cLimitador||
                      'Tipo Cambio'||cLimitador||
@@ -804,7 +807,7 @@ BEGIN
                      'Inicio Vig. Póliza'||cLimitador||
                      'Fin Vig. Póliza'||cLimitador||
                      'No. Renovacion'||cLimitador||
-                     'No. Comprobante'||cLimitador||
+                     'No. Comprobante'||cLimitador||                     
                      'Tiene Siniestro'||cLimitador||
                      'No. 1er. Siniestro'||cLimitador||
                      'Folio Fact. Electrónica'||cLimitador ||
@@ -819,7 +822,7 @@ BEGIN
 
          dbms_output.put_line('jmmd 1 NVO'||'  cCodReporte  '||cCodReporte||' cCodUser  '||cCodUser||'  cNomDirectorio  '||cNomDirectorio||' cNomArchivo  '||cNomArchivo  );
          dbms_output.put_line('jmmd 1 NVO'||cEncabez);
-         INSERTA_REGISTROS;
+--         INSERTA_REGISTROS;
 --         BEGIN
 
          INSERTA_ENCABEZADO( 'EXCEL', nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo ) ;
@@ -1090,7 +1093,7 @@ BEGIN
                     TO_CHAR(nRecargos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nImpuesto,'99999999999990.00')         ||cLimitador||
-                    TO_CHAR(nPrimaTotal,'99999999999990.00')       ||cLimitador||
+                    TO_CHAR(nPrimaTotal,'99999999999990.00')       ||cLimitador||                    
                     TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00')||cLimitador||
                     TO_CHAR(nComisionesPEF,'99999999999990.00')    ||cLimitador||
                     TO_CHAR(nComisionesPEM,'99999999999990.00')    ||cLimitador||
@@ -1110,7 +1113,7 @@ BEGIN
                     TO_CHAR(nMtoComiProm,'99999999999990.00')      ||cLimitador||
                     TO_CHAR(nMtoHonoProm,'99999999999990.00')      ||cLimitador||
                     LPAD(cCodProm,6,'0')													 ||cLimitador||
-                    cTipoProm																			 ||cLimitador||
+                    cTipoProm																			 ||cLimitador||                    
                     TO_CHAR(nMtoComiDR,'99999999999990.00')        ||cLimitador||
                     TO_CHAR(nMtoHonoDR,'99999999999990.00')        ||cLimitador||
                     LPAD(cCodDR,6,'0')														 ||cLimitador||
@@ -1128,7 +1131,7 @@ BEGIN
                     X.FecIniVig                                    ||cLimitador||
                     X.FecFinVig                                    ||cLimitador||
                     TO_CHAR(X.NumRenov,'99990')                    ||cLimitador||
-                    cNumComprob                                    ||cLimitador||
+                    cNumComprob                                    ||cLimitador||                  
                     cTieneSiniestro                                ||cLimitador||
                     TO_CHAR(nIdSiniestro,'9999999999990')          ||cLimitador||
                     X.FolioFactElec                                ||cLimitador||
@@ -1287,7 +1290,7 @@ BEGIN
             ELSE
                NULL;
             END IF;
-         
+
          ----------------------   
          ELSIF C.CodTipo = 'UDISPF' THEN -- UDIS PERSONA FISICA
             IF C.CodConcepto = 'UDI' THEN
