@@ -19,6 +19,8 @@ create or replace PACKAGE          OC_COTIZACIONES_GPO_COBERT_WEB IS
                    , nIdCotizacionOrig IN COTIZACIONES_GPO_COBERT_WEB.IdCotizacion%TYPE
                    , nIdCotizacion     IN COTIZACIONES_GPO_COBERT_WEB.IdCotizacion%TYPE);                   
 
+    PROCEDURE AGREGA_REGISTROS(nCODCIA NUMBER, nCODEMPRESA NUMBER, cCODCOTIZADOR VARCHAR2, cIDTIPOSEG VARCHAR2, cPLANCOB VARCHAR2, nIDCOTIZACION NUMBER, nIDETCOTIZACION NUMBER);
+    
 END OC_COTIZACIONES_GPO_COBERT_WEB;
 /
 create or replace PACKAGE BODY          OC_COTIZACIONES_GPO_COBERT_WEB IS
@@ -77,20 +79,47 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_GPO_COBERT_WEB IS
       RETURN NULL;
    END SERVICIO_XML;
 
-PROCEDURE COPIAR( nCodCia           IN COTIZACIONES_GPO_COBERT_WEB.CodCia%TYPE
-                , nCodEmpresa       IN COTIZACIONES_GPO_COBERT_WEB.CodEmpresa%TYPE
-                , nIdCotizacionOrig IN COTIZACIONES_GPO_COBERT_WEB.IdCotizacion%TYPE
-                , nIdCotizacion     IN COTIZACIONES_GPO_COBERT_WEB.IdCotizacion%TYPE) IS
-CURSOR GPO_COBERT_Q IS
-   SELECT CodGpoCobertWeb
-     FROM COTIZACIONES_GPO_COBERT_WEB
-    WHERE CodCia        = nCodCia
-      AND CodEmpresa    = nCodEmpresa
-      AND IdCotizacion  = nIdCotizacionOrig;
-BEGIN
-   FOR W IN GPO_COBERT_Q LOOP
-       OC_COTIZACIONES_GPO_COBERT_WEB.INSERTAR( nCodCia, nCodEmpresa, nIdCotizacion, W.CodGpoCobertWeb);
-   END LOOP;
-END COPIAR;
+    PROCEDURE COPIAR( nCodCia           IN COTIZACIONES_GPO_COBERT_WEB.CodCia%TYPE
+                    , nCodEmpresa       IN COTIZACIONES_GPO_COBERT_WEB.CodEmpresa%TYPE
+                    , nIdCotizacionOrig IN COTIZACIONES_GPO_COBERT_WEB.IdCotizacion%TYPE
+                    , nIdCotizacion     IN COTIZACIONES_GPO_COBERT_WEB.IdCotizacion%TYPE) IS
+    CURSOR GPO_COBERT_Q IS
+       SELECT CodGpoCobertWeb
+         FROM COTIZACIONES_GPO_COBERT_WEB
+        WHERE CodCia        = nCodCia
+          AND CodEmpresa    = nCodEmpresa
+          AND IdCotizacion  = nIdCotizacionOrig;
+    BEGIN
+       FOR W IN GPO_COBERT_Q LOOP
+           OC_COTIZACIONES_GPO_COBERT_WEB.INSERTAR( nCodCia, nCodEmpresa, nIdCotizacion, W.CodGpoCobertWeb);
+       END LOOP;
+    END COPIAR;
 
+    --
+    PROCEDURE AGREGA_REGISTROS(nCODCIA NUMBER, nCODEMPRESA NUMBER, cCODCOTIZADOR VARCHAR2, cIDTIPOSEG VARCHAR2, cPLANCOB VARCHAR2, nIDCOTIZACION NUMBER, nIDETCOTIZACION NUMBER) AS
+    
+    BEGIN
+        FOR ENT IN (SELECT CODCIA, CODEMPRESA, CODCOTIZADOR, IDTIPOSEG, PLANCOB, CODGPOCOBERTWEB
+                      FROM COTIZADOR_GPO_COBERT_WEB G
+                     WHERE G.CODCIA        = nCODCIA
+                       AND G.CODEMPRESA    = nCODEMPRESA
+                       AND G.CODCOTIZADOR  = cCODCOTIZADOR
+                       AND G.IDTIPOSEG     = cIDTIPOSEG
+                       AND G.PLANCOB       = cPLANCOB) LOOP
+
+            INSERT INTO COTIZACIONES_GPO_COBERT_WEB  (CODCIA, CODEMPRESA, IDCOTIZACION, CODGPOCOBERTWEB, ACTUALIZO_USUARIO, ACTUALIZO_FECHA) VALUES 
+                                                    (ENT.CODCIA, ENT.CODEMPRESA, nIDCOTIZACION, ENT.CODGPOCOBERTWEB, USER, SYSDATE);
+            --
+            GT_COTIZACIONES_COBERT_WEB.AGREGA_REGISTROS (ENT.CODCIA, ENT.CODEMPRESA, ENT.CODCOTIZADOR, ENT.IDTIPOSEG, ENT.PLANCOB, ENT.CODGPOCOBERTWEB,  nIDCOTIZACION,  nIDETCOTIZACION);                                                                                           
+            --                                       
+        END LOOP;                  
+                 
+    END AGREGA_REGISTROS;
+    --
 END OC_COTIZACIONES_GPO_COBERT_WEB;
+/
+GRANT EXECUTE, DEBUG ON OC_COTIZACIONES_GPO_COBERT_WEB TO "PUBLIC";
+/
+CREATE OR REPLACE PUBLIC SYNONYM OC_COTIZACIONES_GPO_COBERT_WEB FOR OC_COTIZACIONES_GPO_COBERT_WEB;
+/
+
