@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE ESTIMADOS_SINIESTROS  IS
+CREATE OR REPLACE PROCEDURE SICAS_OC.ESTIMADOS_SINIESTROS  IS
 -- variables proceso --
 cLimitador      VARCHAR2(1) :='|';
 nLinea          NUMBER;
@@ -16,6 +16,7 @@ nMontoRvaMon     COBERTURA_SINIESTRO.MONTO_RESERVADO_MONEDA%TYPE;
 nMontoRvaLoc     COBERTURA_SINIESTRO.MONTO_RESERVADO_LOCAL%TYPE;
 
 dFecCarga1A       VARCHAR2(50);
+cFecCarga1A       VARCHAR2(10);
 cNomArchCarga1A   PROCESOS_MASIVOS_SEGUIMIENTO.CRGA_NOM_ARCHIVO%TYPE;
 cEmiTipoProceso   PROCESOS_MASIVOS_SEGUIMIENTO.EMI_TIPOPROCESO%TYPE;
 dFecCarga         DATOS_PART_SINIESTROS.FecSts%TYPE;
@@ -23,8 +24,10 @@ cRFCHospital      DATOS_PART_SINIESTROS.Campo1%TYPE;
 cDescSiniestro    SINIESTRO.Desc_Siniestro%TYPE;
 cNomArchCarga     PROCESOS_MASIVOS_SEGUIMIENTO.CRGA_NOM_ARCHIVO%TYPE;
 --
-cPolizaCont       VARCHAR(50);
 
+cPolizaCont       VARCHAR(50);
+cTIPODIARIO       COMPROBANTES_CONTABLES.TIPODIARIO%TYPE;
+nNUMCOMPROBSC     COMPROBANTES_CONTABLES.NUMCOMPROBSC%TYPE;
 
 W_ID_TERMINAL   VARCHAR2(100);
 W_ID_USER       VARCHAR2(100);
@@ -386,7 +389,7 @@ SELECT SI.IDPOLIZA,
       --
       DBMS_OUTPUT.put_line('MLJS EN INSERTA ENCABEZADO cFormato  '||cFormato||' cNomDirectorio  '||cNomDirectorio||' cNomArchivo  '||cNomArchivo  );
       IF cFormato = 'TEXTO' THEN
-         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
+         SICAS_OC.OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
       ELSE
          --Obtiene Número de Columnas Totales
          nColsTotales := XLSX_BUILDER_PKG.EXCEL_CUENTA_COLUMNAS(cEncabez);
@@ -403,6 +406,8 @@ SELECT SI.IDPOLIZA,
                nFila := XLSX_BUILDER_PKG.EXCEL_HEADER(nFila + 1, cTitulo4, nColsTotales, nJustCentro, nColsLateral, nColsCentro, nColsMerge);
                --Encabezado
                nFila := XLSX_BUILDER_PKG.EXCEL_ENCABEZADO(nFila + 1, cEncabez, 1);
+
+
             END IF;
          END IF;
       END IF;
@@ -489,7 +494,7 @@ BEGIN
 
        INSERT INTO T_REPORTES_AUTOMATICOS (CODCIA, CODEMPRESA, NOMBRE_REPORTE, FECHA_PROCESO, NUMERO_REGISTRO, CODPLANTILLA,
        NOMBRE_ARCHIVO_EXCEL,CAMPO)
-       VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSIN',cNomArchivo,cCadena);
+       VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSIN',cNomArchivo,trim(cCadena)||trim(cCadenaAux)||trim(cCadenaAux1));
        nLineaimp := nLineaimp +1;
 
        commit;
@@ -521,9 +526,8 @@ BEGIN
    INTO DFECDESDE, DFECHASTA
    FROM  DUAL ;
 
-  -- DFECDESDE := TO_DATE('25/06/2021','DD/MM/RRRR');
-  -- DFECHASTA := TO_DATE('25/06/2021','DD/MM/RRRR');
-
+   --DFECDESDE := TO_DATE('26/07/2020','DD/MM/RRRR');
+   --DFECHASTA := TO_DATE('30/07/2020','DD/MM/RRRR');
 
    DELETE TEMP_REPORTES_THONA
    WHERE  CodCia     = nCodCia
@@ -615,7 +619,7 @@ BEGIN
                   'MEDICO CERFICANTE'        ||cLimitador||
                   'CEDULA ' ;
 
-   INSERTA_REGISTROS;
+   --INSERTA_REGISTROS;
    INSERTA_ENCABEZADO( 'EXCEL', nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo ) ;
          --
    nLinea := 6;
@@ -626,14 +630,15 @@ BEGIN
      -- dbms_output.put_line('MLJS ENTRNADO A ESTIMADOS_Q '||nIdSiniestro);
       --
       BEGIN
-         SELECT TO_CHAR(PMS.Crga_FechaComp,'DD/MM/YYYY HH24:MI:SS'),
+         SELECT --TO_CHAR(PMS.Crga_FechaComp,'DD/MM/YYYY HH24:MI:SS'),
+                TO_CHAR(PMS.Crga_FechaComp,'DD/MM/YYYY'),
                 PMS.Crga_Nom_Archivo,
                 PMS.Emi_TipoProceso,
                 DPS.FecSts,
                 DPS.Campo1,
                 NVL(DPS.Campo4,X.Desc_Sini),
                 DECODE(PMS.Crga_Nom_Archivo,NULL,'Registro Manual',NVL(DPS.Campo85,'Sin Archio LOGEM'))
-           INTO dFecCarga1A,
+           INTO cFecCarga1A,
                 cNomArchCarga1A,
                 cEmiTipoProceso,
                 dFecCarga,
@@ -651,7 +656,7 @@ BEGIN
             AND PMS.IdProcMasivo       = DPS.IdProcMasivo;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-           dFecCarga1A     := NULL;
+           cFecCarga1A     := NULL;
            cNomArchCarga1A := NULL;
            cEmiTipoProceso := NULL;
            dFecCarga       := NULL;
@@ -678,18 +683,32 @@ BEGIN
          nMontoRvaMon := NVL(X.MONTO_RESERVADO_MONEDA,0);
          nMontoRvaLoc := NVL(X.MONTO_RESERVADO_LOCAL,0);
       END IF;
-       --
---      IF :BK_DATOS.Formato = 'TEXTO' THEN
-      cCadena :=  X.IDPOLIZA                   ||cLimitador||
+
+      --MLJS 08/10/2020 SE OBTIENE LA PÓLIZA CONTABLE
+         BEGIN
+         	 SELECT TIPODIARIO,NUMCOMPROBSC
+         	 INTO   cTIPODIARIO, nNUMCOMPROBSC
+           FROM   COMPROBANTES_CONTABLES CC
+           WHERE  NUMTRANSACCION = X.NUMTRX;
+
+           cPolizaCont :=   cTIPODIARIO||'-'||nNUMCOMPROBSC;
+         EXCEPTION
+         	  WHEN NO_DATA_FOUND THEN
+         	     cPolizaCont := 'SIN POLIZA CONT';
+         	  WHEN OTHERS THEN
+         	     cPolizaCont := 'SIN POLIZA CONT';
+         END;
+
+      cCadena :=  X.IDPOLIZA                               ||cLimitador||
                   X.POLUNIK                                ||cLimitador||
                   X.IDSINIESTRO                            ||cLimitador||
                   X.CVCOB                                  ||cLimitador||
-                  X.NUMSINIREF                             ||cLimitador||
+                  REPLACE(X.NUMSINIREF,'|','')             ||cLimitador||
                   TO_CHAR(X.FECHAMVTO,'DD/MM/RRRR')        ||cLimitador||
                   cRFCHospital                             ||cLimitador||
                   X.CVE_CIE_10                             ||cLimitador||
-                  X.DESC_CIE_10                            ||cLimitador||
-                  X.DESCCORTAMOV                           ||cLimitador||
+                  TRIM(X.DESC_CIE_10)                      ||cLimitador||
+                  TRIM(X.DESCCORTAMOV)                     ||cLimitador||
                   TO_CHAR(X.FECINIVIG,'DD/MM/RRRR')        ||cLimitador||
                   TO_CHAR(X.FECFINVIG,'DD/MM/RRRR')        ||cLimitador||
                   X.NUMTRX                                 ||cLimitador||
@@ -707,12 +726,12 @@ BEGIN
                   TO_CHAR(X.FEC_OCURRENCIA,'DD/MM/RRRR')   ||cLimitador||
                   TO_CHAR(X.FEC_NOTIFICACION,'DD/MM/RRRR') ||cLimitador||
                   X.STSCOBERTURA                           ||cLimitador||
-                  X.NOM_ASEG                               ||cLimitador||
-                  X.COD_ASEGURADO                          ||cLimitador;     -- MLJS 21/12/2020
-      cCadenaAux  := cDescSiniestro                        ||cLimitador;     -- MLJS 21/12/2020
+                  TRIM(REPLACE(REPLACE(REPLACE(X.NOM_ASEG,'|',''),chr(13),' '),chr(10),' '))||cLimitador||
+                  X.COD_ASEGURADO                          ||cLimitador;                  -- MLJS 21/12/2020
+      cCadenaAux  := TRIM(REPLACE(REPLACE(REPLACE(cDescSiniestro,'|',''),chr(13),' '),chr(10),' ')) ||cLimitador;     -- MLJS 21/12/2020
       cCadenaAux1 := X.TIPOSEGURO                          ||cLimitador||
                   cNomArchCarga1A                          ||cLimitador||
-                  dFecCarga1A                              ||cLimitador||
+                  cFecCarga1A                              ||cLimitador||
                   X.USUARIO                                ||cLimitador||
                   cNomArchCarga                            ||cLimitador||
                   X.ESCONTRIBUTORIO                        ||cLimitador||
@@ -724,7 +743,7 @@ BEGIN
                   X.CATEGORIA                              ||cLimitador||
                   X.CANALFORMAVENTA                        ||cLimitador||
                   cPolizaCont                              ||cLimitador||
-                  X.NOMCONTRATANTE                         ||cLimitador||
+                  TRIM(REPLACE(REPLACE(REPLACE(X.NOMCONTRATANTE,'|',''),chr(13),' '),chr(10),' '))||cLimitador||
                   X.EMPRESA_LABORA                         ||cLimitador||
                   X.CERTIFICADO                            ||cLimitador||
                   X.IDCREDITO                              ||cLimitador||
@@ -738,10 +757,11 @@ BEGIN
                   X.NOMESTADO                              ||cLimitador||
                   X.MUNICIPIO                              ||cLimitador||
                   X.NOMMUNICIPIO                           ||cLimitador||
-                  X.NOM_MEDICO_CERTIFICA                   ||cLimitador||
-                  X.ID_CEDULA_MEDICA                       ||CHR(13);
+                  TRIM(REPLACE(REPLACE(REPLACE(X.NOM_MEDICO_CERTIFICA,'|',''),chr(13),' '),chr(10),' '))||cLimitador||
+                  REPLACE(X.ID_CEDULA_MEDICA,'|','')       ||CHR(13);
 
-      nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cCadena||cCadenaAux||cCadenaAux1, 1);
+      nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, trim(cCadena)||trim(cCadenaAux)||trim(cCadenaAux1), 1);
+
       INSERTA_REGISTROS;
    END LOOP;
    --dbms_output.put_line('MLJS SALIO DE LOOP');
@@ -752,8 +772,8 @@ BEGIN
          dbms_output.put_line('OK');
       END IF;
 
-      OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
-      OC_REPORTES_THONA.INSERTAR_REGISTRO ( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+      SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+      SICAS_OC.OC_REPORTES_THONA.INSERTAR_REGISTRO ( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
       COMMIT;
    END IF;
 
@@ -765,3 +785,4 @@ EXCEPTION
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
    RAISE_APPLICATION_ERROR(-20000, 'Error en ESTIMASINIESTROS ' || SQLERRM);
 END;
+/
