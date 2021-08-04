@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE APROBACIONES_ANULADAS  IS
+CREATE OR REPLACE PROCEDURE SICAS_OC.APROBACIONES_ANULADAS  IS
 ------------------------
 -- variables proceso --
 
@@ -35,6 +35,7 @@ MuestrAlerta       NUMBER;
 cNomArchCarga       VARCHAR2(100);
 cNomArchLogem       VARCHAR2(100);
 dFecCarga           DATE;
+CFecCarga           VARCHAR2(10);
 cUUID               FACTURA_EXTERNA.UUID%TYPE;
 nIdProcMasivo       PROCESOS_MASIVOS_SEGUIMIENTO.IDPROCMASIVO%TYPE;
 nMontoNetoLocal     NUMBER(28,2);
@@ -67,6 +68,12 @@ nIVA_RET_MONEDA     NUMBER(28,2);
 nIVA_RET_LOCAL      NUMBER(28,2);
 nImpLoc_Ret_Local   NUMBER(28,2);
 nImpLoc_Ret_Moneda  NUMBER(28,2);
+
+--
+
+cTIPODIARIO         COMPROBANTES_CONTABLES.TIPODIARIO%TYPE;
+nNUMCOMPROBSC       COMPROBANTES_CONTABLES.NUMCOMPROBSC%TYPE;
+
 -----------------------
 -- variables reporte --
 cCtlArchivo     UTL_FILE.FILE_TYPE;
@@ -387,7 +394,8 @@ UNION
           A.Benef,
           SI.CodCia,
           SI.CodEmpresa,
-          TO_CHAR(PMS.Crga_FechaComp,'DD/MM/YYYY HH24:MI:SS') FecCarga,
+          --TO_CHAR(PMS.Crga_FechaComp,'DD/MM/YYYY HH24:MI:SS') FecCarga,
+          TO_CHAR(PMS.Crga_FechaComp,'DD/MM/YYYY') FecCarga,
           PMS.CRGA_NOM_ARCHIVO NomArchCarga,
           PMS.MontoIva MontoIva,
           PMS.MontoISR MontoISR,
@@ -520,7 +528,8 @@ UNION
           A.Benef,
           SI.CodCia,
           SI.CodEmpresa,
-          TO_CHAR(PMS.Crga_FechaComp,'DD/MM/YYYY HH24:MI:SS'),-- FecCarga,
+          --TO_CHAR(PMS.Crga_FechaComp,'DD/MM/YYYY HH24:MI:SS'),-- FecCarga,
+          TO_CHAR(PMS.Crga_FechaComp,'DD/MM/YYYY'),-- FecCarga,
           PMS.CRGA_NOM_ARCHIVO,-- NomArchCarga,
           PMS.MontoIva,--MontoIva,
           PMS.MontoISR,--MontoISR,
@@ -590,7 +599,7 @@ CURSOR PAGO_Q  IS
       --
       DBMS_OUTPUT.put_line('MLJS EN INSERTA ENCABEZADO cFormato  '||cFormato||' cNomDirectorio  '||cNomDirectorio||' cNomArchivo  '||cNomArchivo  );
       IF cFormato = 'TEXTO' THEN
-         OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
+         SICAS_OC.OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
       ELSE
          --Obtiene Número de Columnas Totales
          nColsTotales := XLSX_BUILDER_PKG.EXCEL_CUENTA_COLUMNAS(cEncabez);
@@ -655,9 +664,9 @@ END;
    DBMS_OUTPUT.PUT_LINE('CEMAIL3  '||CEMAIL3);
 ---------------------------
 
---   CEMAIL1 := 'ljimenez@thonaseguros.mx';
---   CEMAIL2 := null;
---   CEMAIL3 := null;
+   --CEMAIL1 := 'ljimenez@thonaseguros.mx';
+   --CEMAIL2 := null;
+   --CEMAIL3 := null;
 
    cEmail       := OC_GENERALES.BUSCA_PARAMETRO(1,'021');
    cPwdEmail    := OC_GENERALES.BUSCA_PARAMETRO(1,'022');
@@ -723,8 +732,8 @@ BEGIN
    INTO DFECDESDE, DFECHASTA
    FROM  DUAL ;
 
-   --DFECDESDE := TO_DATE('25/06/2021','DD/MM/RRRR');
-   --DFECHASTA := TO_DATE('25/06/2021','DD/MM/RRRR');
+   --DFECDESDE := TO_DATE('30/07/2021','DD/MM/RRRR');
+  -- DFECHASTA := TO_DATE('30/07/2021','DD/MM/RRRR');
 
 
    DELETE TEMP_REPORTES_THONA
@@ -831,15 +840,13 @@ BEGIN
    --dbms_output.put_line('MLJS 1 '||'  cCodReporte  '||cCodReporte||' cCodUser  '||cCodUser||'  cNomDirectorio  '||cNomDirectorio||' cNomArchivo  '||cNomArchivo  );
    --dbms_output.put_line('MLJS 2 cEncabez'||cEncabez);
 
-   INSERTA_REGISTROS;
+   --INSERTA_REGISTROS;
    INSERTA_ENCABEZADO( 'EXCEL', nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo ) ;
 
    --dbms_output.put_line('MLJS 3 cNomDirectorio '||cNomDirectorio||' cNomArchivo  '||cNomArchivo );
          --
    nLinea := 6;
-  -- dbms_output.put_line('jmmd5 '||cCadena);
- --    nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cEncabez, 1);
-  -- dbms_output.put_line('jmmd X cCadena '||cCadena||' cCodUser  '||cCodUser||' nLinea '||nLinea );
+
    WIDSINIESTRO         := 0; --  JICO AGREGAD0
    WNUM_APROBACION      := 0; --  JICO AGREGAD0
    W_PAGO_NETO_MON_LOC  := 0; --  JICO AGREGAD0
@@ -1029,16 +1036,21 @@ BEGIN
       END;
       --MLJS 08/10/2020 SE OBTIENE LA PÓLIZA CONTABLE
       BEGIN
-        SELECT TIPODIARIO||'-'||NUMCOMPROBSC
-          INTO cPolizaCont
+        SELECT TIPODIARIO, NUMCOMPROBSC
+          INTO cTIPODIARIO, nNUMCOMPROBSC
           FROM COMPROBANTES_CONTABLES CC
          WHERE NUMTRANSACCION = X.NUMTRX;
+
+         cPolizaCont := cTIPODIARIO||'-'||nNUMCOMPROBSC;
       EXCEPTION
         WHEN NO_DATA_FOUND THEN
               cPolizaCont := 'SIN POLIZA CONT';
         WHEN OTHERS THEN
               cPolizaCont := 'SIN POLIZA CONT';
       END;
+      
+      cFecCarga := NVL(X.FecCarga,TO_CHAR(dFecCarga,'DD/MM/RRRR'));
+       
       --MLJS 08/10/2020 SE OBTIENE LA PÓLIZA CONTABLE
       ----
       --
@@ -1098,7 +1110,7 @@ BEGIN
        --
          cCadena := X.IDPOLIZA||cLimitador||
                     X.POLUNIK||cLimitador||
-                    X.NUMSINIREF||cLimitador||            
+                    REPLACE(X.NUMSINIREF,'|','')||cLimitador||
                     X.IDSINIESTRO||cLimitador||
                     X.COD_PAGO||cLimitador||
                     X.cFechaMvto||cLimitador||
@@ -1109,7 +1121,7 @@ BEGIN
                     X.DESCTRANSAC||cLimitador||
                     X.CODCPTOTRANSAC||cLimitador||
                     X.NUMTRX||cLimitador||
-                    dFecRes||cLimitador||
+                    TO_CHAR(dFecRes,'DD/MM/RRRR')||cLimitador||
                     X.COD_MONEDA||cLimitador||
                     nTipoCambio||cLimitador||
                     NVO_MNTO_PAGADO_MON||cLimitador||
@@ -1145,25 +1157,25 @@ BEGIN
                     cNumDocTributario||cLimitador||
                     NVL(X.NomArchCarga,cNomArchCarga)||cLimitador||
                     NVL(X.ARCHIVO_LOGEM,cNomArchLogem)||cLimitador||
-                    NVL(X.FecCarga,dFecCarga)||cLimitador||
-                    X.TIPOSEGURO||cLimitador||  
-                    NVL(X.NUMERO_FACTURA,cUUID)||cLimitador|| 
-                    NVL(X.IDPROCMASIVO,nIdProcMasivo)||cLimitador||  
+                    cFecCarga||cLimitador||
+                    X.TIPOSEGURO||cLimitador||
+                    NVL(X.NUMERO_FACTURA,cUUID)||cLimitador||
+                    NVL(X.IDPROCMASIVO,nIdProcMasivo)||cLimitador||
                     X.POLCONTA_GG||cLimitador||
                     X.FECHA_PAGO||cLimitador||
                     X.IMPORT_PAGO||cLimitador||
                     X.ARCHIVO_GG||cLimitador||
                     X.PGOGG_USUARIO||cLimitador||
                     X.PGOGG_FECHACOMP||cLimitador||
-                    X.OBSERVACION_GG||cLimitador||                  
+                    X.OBSERVACION_GG||cLimitador||
                     X.WMONTO||cLimitador||
                     X.ESCONTRIBUTORIO||cLimitador||
-                    X.PORCENCONTRIBUTORIO||cLimitador|| 
+                    X.PORCENCONTRIBUTORIO||cLimitador||
                     X.GIRONEGOCIO||cLimitador||
                     X.TIPONEGOCIO||cLimitador||
                     X.FUENTERECURSOS||cLimitador||
                     X.CODPAQCOMERCIAL||cLimitador||
-                    X.CATEGORIA||cLimitador|| 
+                    X.CATEGORIA||cLimitador||
                     X.CANALFORMAVENTA||cLimitador||
                     cPolizaCont||CHR(13);
 
@@ -1181,8 +1193,8 @@ BEGIN
          dbms_output.put_line('OK');
       END IF;
 
-       OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
-       OC_REPORTES_THONA.INSERTAR_REGISTRO ( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+       SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
+       SICAS_OC.OC_REPORTES_THONA.INSERTAR_REGISTRO ( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomArchZip );
       COMMIT;
    END IF;
 
@@ -1194,3 +1206,4 @@ EXCEPTION
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
    RAISE_APPLICATION_ERROR(-20000, 'Error en APROBACIONES ANULADAS DE SINIESTROS ' || SQLERRM);
 END;
+/
