@@ -1,6 +1,7 @@
 CREATE OR REPLACE PROCEDURE TH_ACTUALIZA_SALDO_AGENTENVO1  IS
 ----- JMMD20210623          SE AGREGA QUERY PARA RECUPERAR RECIBOS QUE SE PAGAN Y DESPAGAN EL MISMO DIA
----- JMMD20210721          SE AGREGA VALIDACION PARA CAMBIO DE COMISIONES DE FACTURAS Y NOTAS DE CREDITO
+----- JMMD20210721          SE AGREGA VALIDACION PARA CAMBIO DE COMISIONES DE FACTURAS Y NOTAS DE CREDITO
+----- JMMD20210806          SE COMPLEMENTA QUERY PARA RECUPERAR RECIBOS QUE SE PAGAN Y DESPAGAN EL MISMO DIA
 nCdAgente          AGENTES.COD_AGENTE%TYPE;
 
 nMtoIsr            DETALLE_COMISION.MONTO_MON_LOCAL%TYPE; 
@@ -572,7 +573,8 @@ select C.IDFACTURA, C.IDNCR,
           trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISRRET * -1
           else 0
        end  MONTO_ISRRET, 
-       Y.SUBTOTAL MONTO_SUBTOTAL,
+-----   JMMD20210806   Y.SUBTOTAL MONTO_SUBTOTAL,
+       Y.SUBTOTAL * - 1     MONTO_SUBTOTAL,
                DECODE(SIGN(Y.SubTotal * -1), -1, Y.SubTotal, 0) En_contra,-- PC.CodTipoPlan CodTipoPlan,                            
                DECODE(SIGN(Y.SubTotal * -1), -1, 0, Y.SubTotal) A_FAVOR, 
        CASE 
@@ -635,34 +637,34 @@ UNION ALL  ----- PAGO/DESPAGO DE RECIBOS EL MISMO DIA
 select C.IDFACTURA, C.IDNCR, 
 --                    C.Comision_Moneda Comision  -- jmmd20201204 se cambio por case de abajo
        case when
-          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then C.Comision_Moneda 
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then C.Comision_Moneda * -1
           else 0
        end  Comision ,
        C.ESTADO, TRUNC(C.FEC_GENERACION) FECHA_GENERA, TRUNC(C.FEC_LIQUIDACION) FECHA_LIQUIDA,
        C.IDENDOSO ENDOSO, C.FEC_ESTADO FECHA_ESTADO, C.IDNOMINA NOMINA, C.ORIGEN ORIGEN,
        case when
-            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOCOMISI  
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOCOMISI  * -1
        else 0
        end      MONTO_COMISION, 
        case when
-            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVA 
+            trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVA * -1
            else 0
        end  MONTO_IVA, 
        case when
-          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVARET 
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVARET * -1
           else 0
        end  MONTO_IVARET, 
        case when
-          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISR 
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISR * -1
           else 0
        end   MONTO_ISR, 
        case when
-          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISRRET 
+          trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISRRET * -1
           else 0
        end  MONTO_ISRRET, 
-       Y.SUBTOTAL MONTO_SUBTOTAL,
-               DECODE(SIGN(Y.SubTotal ), -1, Y.SubTotal, 0) En_contra,-- PC.CodTipoPlan CodTipoPlan,                            
-               DECODE(SIGN(Y.SubTotal ), -1, 0, Y.SubTotal) A_FAVOR, 
+       Y.SUBTOTAL * -1   MONTO_SUBTOTAL,
+               DECODE(SIGN(Y.SubTotal * -1 ), -1, Y.SubTotal, 0) En_contra,-- PC.CodTipoPlan CodTipoPlan,                            
+               DECODE(SIGN(Y.SubTotal * -1 ), -1, 0, Y.SubTotal) A_FAVOR, 
        CASE 
           WHEN  C.Estado = 'LIQ' AND trunc(C.FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta 
           THEN  C.comision_moneda 
@@ -698,7 +700,8 @@ FACTURAS         F  ,
 DETALLE_TRANSACCION      DTR  ,
 TRANSACCION TR                                               
 where C.cod_agente = X.COD_AGENTE
-and C.estado = 'PRY'
+----- JMMD 20210805   and C.estado = 'PRY'
+and C.estado = 'REC'
 AND (TRUNC(FEC_ESTADO ) BETWEEN dFecDesde AND dFecHasta
 OR TRUNC(FEC_LIQUIDACION) BETWEEN dFecDesde AND dFecHasta)
 --AND IDFACTURA = 260176
@@ -712,8 +715,9 @@ AND TS.IDTIPOSEG = DP.IDTIPOSEG
 AND TS.CODTIPOPLAN = X.CODVALOR
 AND F.IDFACTURA = C.IDFACTURA
 --------
-AND F.STSFACT = 'EMI'
-AND DTR.CODSUBPROCESO = 'PAG'
+----- JMMD 20210805   AND F.STSFACT = 'EMI'
+AND F.STSFACT IN( 'EMI', 'PAG')
+AND DTR.CODSUBPROCESO = 'REVPAG'
 AND DTR.VALOR4 = TO_CHAR(C.IDFACTURA)
 AND DTR.VALOR1 = TO_CHAR(C.IDPOLIZA)
 AND TR.IDTRANSACCION = DTR.IDTRANSACCION 

@@ -1,4 +1,6 @@
 CREATE OR REPLACE PROCEDURE RECIBOS_ANULADOS_COB  IS
+----- SE ESTABA GRABANDO UN REGISTRO EN BLANCO Y SE CORRIGIO LA COMISION DEL AGENTE     ----- JMMD20210729
+----- SE INCLUYO EL CONCEPTO DE IVAHON EN CURSOR 					 ----- JMMD20210729
 cLimitador             VARCHAR2(1) :='|';
 nLinea                 NUMBER;
 nLineaimp              NUMBER := 1;
@@ -257,7 +259,7 @@ CURSOR DET_ConC (P_IdPoliza Number, p_idFactura Number ) IS
      FROM COMISIONES       COM, 
           DETALLE_COMISION DCO, 
           AGENTES          AGE
-    WHERE DCO.CodConcepto IN ('HONORA','COMISI','COMIPF','COMIPM','UDI')
+    WHERE DCO.CodConcepto IN ('HONORA','COMISI','COMIPF','COMIPM','UDI','IVAHON')
       AND COM.CodCia     = DCO.CodCia 
       AND COM.IdComision = DCO.IdComision
       AND AGE.Cod_Agente = COM.Cod_Agente
@@ -821,7 +823,7 @@ BEGIN
 					           'Fecha Pagado Hasta'								||cLimitador || 
 					           'Fecha Cobertura' ;
 
-         INSERTA_REGISTROS;
+ --        INSERTA_REGISTROS;
 
          INSERTA_ENCABEZADO( 'EXCEL', nCodCia, nCodEmpresa, cCodReporte, cCodUser, cNomDirectorio, cNomArchivo ) ;
 
