@@ -110,7 +110,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_GPO_COBERT_WEB IS
             INSERT INTO COTIZACIONES_GPO_COBERT_WEB  (CODCIA, CODEMPRESA, IDCOTIZACION, CODGPOCOBERTWEB, ACTUALIZO_USUARIO, ACTUALIZO_FECHA) VALUES 
                                                     (ENT.CODCIA, ENT.CODEMPRESA, nIDCOTIZACION, ENT.CODGPOCOBERTWEB, USER, SYSDATE);
             --
-            GT_COTIZACIONES_COBERT_WEB.AGREGA_REGISTROS (ENT.CODCIA, ENT.CODEMPRESA, ENT.CODCOTIZADOR, ENT.IDTIPOSEG, ENT.PLANCOB, ENT.CODGPOCOBERTWEB,  nIDCOTIZACION,  nIDETCOTIZACION);                                                                                           
+            OC_COTIZACIONES_COBERT_WEB.AGREGA_REGISTROS (ENT.CODCIA, ENT.CODEMPRESA, ENT.CODCOTIZADOR, ENT.IDTIPOSEG, ENT.PLANCOB, ENT.CODGPOCOBERTWEB,  nIDCOTIZACION,  nIDETCOTIZACION);                                                                                           
             --                                       
         END LOOP;                  
                  
