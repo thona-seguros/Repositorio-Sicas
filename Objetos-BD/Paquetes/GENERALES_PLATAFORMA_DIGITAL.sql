@@ -6,7 +6,7 @@ CREATE OR REPLACE PACKAGE THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
 
     FUNCTION ES_NUMERICO(pEntrada VARCHAR2) RETURN NUMBER;
     FUNCTION DIGITAL_PLANTILLA   (nNivel IN OUT int, pPK1 IN OUT VARCHAR2) return CLOB;
-    FUNCTION DIGITAL_GENERAWHERE (pCOLUMN_NAME  VARCHAR2, pPK VARCHAR2, pSqlWhere VARCHAR2) return VARCHAR2;
+    FUNCTION DIGITAL_GENERAWHERE (pCOLUMN_NAME  VARCHAR2, pPK varchar2, pSqlWhere Varchar2) return VARCHAR2;
     --  
     FUNCTION DIGITAL_CATALOGO_PRODUCT return clob;
     FUNCTION VIGENCIA_HASTA (VIGENCIAINI DATE := SYSDATE) return DATE;
@@ -41,7 +41,7 @@ CREATE OR REPLACE PACKAGE THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
     FUNCTION PLD_POLIZA_LIBERADA(nIdPoliza NUMBER) RETURN CHAR;
     FUNCTION PLD_POLIZA_BLOQUEDA(nIdPoliza NUMBER) RETURN CHAR;
     FUNCTION COTIZACION_CONCEPTOS_PRIMA(pIDCOTIZACION NUMBER) RETURN CLOB;
-    FUNCTION MUESTRA_POLIZAS(pCodCia NUMBER, pIDPOLIZA NUMBER, pRFC VARCHAR2, pNombre VARCHAR2, pCodAgente VARCHAR2, nNumRegIni NUMBER, nNumRegFin NUMBER) RETURN CLOB;
+    FUNCTION MUESTRA_POLIZAS(pCodCia NUMBER, pIDPOLIZA NUMBER, pRFC varchar2, pNombre VARCHAR2, pCodAgente varchar2, nNumRegIni NUMBER, nNumRegFin NUMBER) RETURN CLOB;
     FUNCTION CONSULTA_AGENTE(pCODCIA NUMBER, pCODEMPRESA NUMBER, pCODAGENTE NUMBER) RETURN CLOB;
     FUNCTION CONDICIONES_GENERALES(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, dFecEmision DATE) RETURN BLOB;
     FUNCTION DESCARTA_POLIZA (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN INT;
@@ -139,8 +139,8 @@ CREATE OR REPLACE PACKAGE BODY THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
         curs          NUMBER;
         cols          int;
         d             dbms_sql.desc_tab;
-        val           long ; --VARCHAR2(32767);
-        cName         VARCHAR2(30);
+        val           long ; --varchar2(32767);
+        cName         varchar2(30);
         cPK2          VARCHAR2(32767);
         xi  NUMBER := 0;
 
@@ -353,9 +353,9 @@ CREATE OR REPLACE PACKAGE BODY THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
         --NULL;        
     END DIGITAL_PLANTILLA;
     --
-    FUNCTION DIGITAL_GENERAWHERE(pCOLUMN_NAME VARCHAR2, pPK VARCHAR2, pSqlWhere VARCHAR2) return VARCHAR2 is
-        SqlWhere VARCHAR2(32767);
-        linea VARCHAR2(100);
+    FUNCTION DIGITAL_GENERAWHERE(pCOLUMN_NAME VARCHAR2, pPK varchar2, pSqlWhere Varchar2) return varchar2 is
+        SqlWhere varchar2(32767);
+        linea varchar2(100);
     BEGIN
         SqlWhere := pSqlWhere;
         linea := '1.0';
@@ -1089,586 +1089,557 @@ END;
 
     END COTIZACION_EMITIR;
     --
-FUNCTION PRE_EMITE_POLIZA_NEW(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, cCadena VARCHAR2, cIdPoliza NUMBER := NULL) return CLOB IS
---LUCERO MAYOR 
---cCadena           VARCHAR2(4000) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PEÑON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N|A,RFC,,GABRIELA,LOPEZ,DE SANTA ANA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,NOMB PAGA CUENTA,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
------
---Otros productos
---cCadena            VARCHAR2(32727) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PEÑON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
-------  
-CRFC              VARCHAR2(20);
-nCodCliente       NUMBER;
-nCod_Asegurado    NUMBER;  
-cTipoDocIdentAseg VARCHAR2(100);
-cNumDocIdentAseg  VARCHAR2(100);
-nIdPoliza         VARCHAR2(100);  
-nIdePol           NUMBER := 1;
-nRegComision      NUMBER := 0;
-nIdTransaccion    NUMBER := 0;                   
-nPorcComProp      NUMBER := 0; 
-nPorcComis        NUMBER := 0; 
-wPorcComProp      NUMBER := 0; 
-wPorcComis        NUMBER := 0; 
-nTotPorcComis     NUMBER := 0;
-cNUMPOLUNICO      VARCHAR2(100);
-cFacturas         CLOB;
-nCantPol          NUMBER := 0;
-dBenefFecNAc      DATE;
-numBenef          NUMBER := 0;
-cCodPaisRes       VARCHAR2(20);     
-cCodProvRes       VARCHAR2(20);      
-cCodDistRes       VARCHAR2(20);
-cCodCorrRes       VARCHAR2(20);
-cCodValor         VARCHAR2(6);
-cTipoRiesgo       VARCHAR2(6);
-cTipPersona       VARCHAR2(6);
-cCodMoneda        POLIZAS.Cod_Moneda%TYPE;
-wIdCotizacion     NUMBER := 0;
-wPorcComis1       NUMBER := 0;     
-wPorcComis2       NUMBER := 0;     
-wPorcComis3       NUMBER := 0;     
-wPorcComisTot     NUMBER := 0;
-wPorcComProp1     NUMBER := 0;
-wPorcComProp2     NUMBER := 0;
-wPorcComProp3     NUMBER := 0;
-wPorcComPropT     NUMBER := 0;
-nCodAgente        number :=0;
-nIdFormaCobro     MEDIOS_DE_COBRO.IdFormaCobro%TYPE;
-nGastosExpedicion COTIZACIONES.GastosExpedicion%TYPE;
+    FUNCTION PRE_EMITE_POLIZA_NEW(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, cCadena VARCHAR2, cIdPoliza NUMBER := NULL) return CLOB IS
+        --LUCERO MAYOR 
+          --cCadena           VARCHAR2(4000) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PEÑON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N|A,RFC,,GABRIELA,LOPEZ,DE SANTA ANA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,NOMB PAGA CUENTA,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
+        -----
+        --Otros productos
+        --cCadena            VARCHAR2(32727) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PEÑON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
+        ------  
+          CRFC              VARCHAR2(20);
+          nCodCliente       NUMBER;
+          nCod_Asegurado    NUMBER;  
+          cTipoDocIdentAseg VARCHAR2(100);
+          cNumDocIdentAseg  VARCHAR2(100);
+          nIdPoliza         VARCHAR2(100);  
+          nIdePol           NUMBER := 1;
+          nRegComision      NUMBER := 0;
+          nIdTransaccion    NUMBER := 0;                   
+          nPorcComProp      NUMBER := 0; 
+          nPorcComis        NUMBER := 0; 
+          wPorcComProp      NUMBER := 0; 
+          wPorcComis        NUMBER := 0; 
+          nTotPorcComis     NUMBER := 0;
+          cNUMPOLUNICO      VARCHAR2(100);
+          cFacturas         CLOB;
+          nCantPol          NUMBER := 0;
+          dBenefFecNAc      DATE;
+          numBenef          NUMBER := 0;
+          cCodPaisRes       VARCHAR2(20);     
+          cCodProvRes       VARCHAR2(20);      
+          cCodDistRes       VARCHAR2(20);
+          cCodCorrRes       VARCHAR2(20);
+          cCodValor         VARCHAR2(6);
+          cTIPORIESGO       varchar2(6);
+          cTipPersona       varchar2(6);
+          cCodMoneda        POLIZAS.COD_MONEDA%TYPE;
+          wIdCotizacion     NUMBER := 0;
+          wPorcComis1       NUMBER := 0;     
+          wPorcComis2       NUMBER := 0;     
+          wPorcComis3       NUMBER := 0;     
+          wPorcComisTot     NUMBER := 0;
+          wPorcComProp1     NUMBER := 0;
+          wPorcComProp2     NUMBER := 0;
+          wPorcComProp3     NUMBER := 0;
+          wPorcComPropT     NUMBER := 0;
+          nCodAgente        number :=0;
+          nIdFormaCobro     MEDIOS_DE_COBRO.IdFormaCobro%TYPE;
+          nGastosExpedicion COTIZACIONES.GastosExpedicion%TYPE;
 
-cIdTipoSeg        COTIZACIONES.IdTipoSeg%TYPE;
-cPlanCob          COTIZACIONES.PlanCob%TYPE;
+          CURSOR Q_NUMREG IS
+            SELECT CASE WHEN COUNT(COLUMN_VALUE)> 2 THEN 'N' ELSE 'N' END ESCOLECTIVA,
+                   COUNT(COLUMN_VALUE) NUMREG
+              FROM table(GT_WEB_SERVICES.SPLIT(cCadena, '|'));
+          R_NUMREG Q_NUMREG%ROWTYPE;
 
-CURSOR Q_NUMREG IS
-   SELECT CASE WHEN COUNT(COLUMN_VALUE)> 2 THEN 'N' ELSE 'N' END EsColectiva,
-          COUNT(COLUMN_VALUE) NUMREG
-     FROM TABLE(GT_WEB_SERVICES.SPLIT(cCadena, '|'));
+          CURSOR Q_TRAN (PnIdePol NUMBER) IS
+            SELECT D.IDTRANSACCION      
+                 FROM DETALLE_TRANSACCION D
+                WHERE CodCia        = nCodCia
+                  AND CodEmpresa    = nCodEmpresa
+                  AND D.CODSUBPROCESO = 'POL'
+                  AND D.OBJETO      ='POLIZAS'
+                  AND D.VALOR1      = TRIM(TO_CHAR(PnIdePol));
+          R_TRAN Q_TRAN%ROWTYPE;          
 
-R_NUMREG Q_NUMREG%ROWTYPE;
+          CURSOR Q_DOMI (pCODPOSTAL VARCHAR2, pCODIGO_COLONIA VARCHAR2) IS
+                SELECT DISTINCT                              
+                       PA.CODPAIS,       
+                       M.CODESTADO,
+                       D.CODCIUDAD  ,
+                       C.CODMUNICIPIO                       
+                  FROM SICAS_OC.APARTADO_POSTAL CP INNER JOIN SICAS_OC.CORREGIMIENTO M ON M.CODMUNICIPIO = CP.CODMUNICIPIO AND M.CODPAIS = CP.CODPAIS AND M.CODESTADO = CP.CODESTADO AND M.CODCIUDAD = CP.CODCIUDAD 
+                                                   INNER JOIN SICAS_OC.COLONIA       C ON C.CODPAIS = CP.CODPAIS AND C.CODESTADO = CP.CODESTADO AND C.CODCIUDAD = CP.CODCIUDAD AND C.CODMUNICIPIO = M.CODMUNICIPIO AND C.CODIGO_POSTAL = CP.CODIGO_POSTAL
+                                                   INNER JOIN SICAS_OC.PROVINCIA     P ON P.CODPAIS = CP.CODPAIS AND P.CODESTADO = CP.CODESTADO
+                                                   INNER JOIN DISTRITO               D ON D.CODPAIS = CP.CODPAIS AND D.CODESTADO = CP.CODESTADO AND D.CODCIUDAD = C.CODCIUDAD 
+                                                   INNER JOIN SICAS_OC.PAIS          PA ON PA.CODPAIS = CP.CODPAIS                                   
+                WHERE CP.CODIGO_POSTAL      =    pCODPOSTAL
+                  AND C.CODIGO_COLONIA      =    pCODIGO_COLONIA;
 
-CURSOR Q_TRAN (PnIdePol NUMBER) IS
-   SELECT D.IDTRANSACCION      
-     FROM DETALLE_TRANSACCION D
-    WHERE CodCia           = nCodCia
-      AND CodEmpresa       = nCodEmpresa
-      AND D.CODSUBPROCESO  = 'POL'
-      AND D.OBJETO         = 'POLIZAS'
-      AND D.VALOR1         = TRIM(TO_CHAR(PnIdePol));
-       
-R_TRAN Q_TRAN%ROWTYPE;          
+          R_DOMI Q_DOMI%ROWTYPE;          
 
-CURSOR Q_DOMI (pCODPOSTAL VARCHAR2, pCODIGO_COLONIA VARCHAR2) IS
-   SELECT DISTINCT                              
-        PA.Codpais,       
-        M.CodEstado,
-        D.CODCIUDAD  ,
-        C.CODMUNICIPIO                       
-   FROM SICAS_OC.APARTADO_POSTAL CP INNER JOIN SICAS_OC.CORREGIMIENTO M ON M.CODMUNICIPIO = CP.CODMUNICIPIO AND M.CODPAIS = CP.CODPAIS AND M.CODESTADO = CP.CODESTADO AND M.CODCIUDAD = CP.CODCIUDAD 
-                                    INNER JOIN SICAS_OC.COLONIA       C ON C.CODPAIS = CP.CODPAIS AND C.CODESTADO = CP.CODESTADO AND C.CODCIUDAD = CP.CODCIUDAD AND C.CODMUNICIPIO = M.CODMUNICIPIO AND C.CODIGO_POSTAL = CP.CODIGO_POSTAL
-                                    INNER JOIN SICAS_OC.PROVINCIA     P ON P.CODPAIS = CP.CODPAIS AND P.CODESTADO = CP.CODESTADO
-                                    INNER JOIN DISTRITO               D ON D.CODPAIS = CP.CODPAIS AND D.CODESTADO = CP.CODESTADO AND D.CODCIUDAD = C.CODCIUDAD 
-                                    INNER JOIN SICAS_OC.PAIS          PA ON PA.CODPAIS = CP.CODPAIS                                   
-   WHERE CP.CODIGO_POSTAL      =    pCODPOSTAL
-   AND C.CODIGO_COLONIA      =    pCODIGO_COLONIA;
 
-R_DOMI Q_DOMI%ROWTYPE;          
+         CURSOR DETPOL_Q IS
+           SELECT *
+             FROM DETALLE_POLIZA
+            WHERE CODCIA        = nCodCia
+              AND CODEMPRESA    = nCodEmpresa
+              AND IDPOLIZA      = nIdPoliza
+            ORDER BY IDPOLIZA;                           
 
-CURSOR DETPOL_Q IS
-   SELECT CodCia, CodEmpresa, IdPoliza, IDetPol, IdTipoSeg, PlanCob,
-          Tasa_Cambio, FecIniVig, FecFinVig
-     FROM DETALLE_POLIZA
-    WHERE CodCia        = nCodCia
-      AND CodEmpresa    = nCodEmpresa
-      AND IdPoliza      = nIdPoliza
-    ORDER BY IdPoliza;                           
-
- BEGIN
-   IF cIdPoliza IS NULL THEN
-      IF SICAS_OC.GT_COTIZACIONES.EXISTE_COTIZACION_EMITIDA(NCODCIA, NCODEMPRESA, NIDCOTIZACION ) = 'N' THEN
-        RETURN 'Esta cotización no esta emitida: ' || NIDCOTIZACION;
-      END IF;
-   
-      OPEN  Q_NUMREG;
-      FETCH Q_NUMREG INTO R_NUMREG;      
-      CLOSE Q_NUMREG;   
-       
-      BEGIN
-         SELECT IdTipoSeg, PlanCob
-           INTO cIdTipoSeg, cPlanCob
-           FROM COTIZACIONES
-          WHERE CodCia        = nCodCia
-            AND CodEmpresa    = nCodEmpresa
-            AND IdCotizacion  = nIdCotizacion;
-      EXCEPTION
-         WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20200,'Error al determinar la cotización '||nIdCotizacion);
-      END;	
-         --
-      INSERT INTO API_LOG_EMISION (Descripcion, Fecha, Id_Cotizacion) VALUES(cCadena, SYSDATE, nIdCotizacion);
-      FOR ENT IN (SELECT COLUMN_VALUE Fila FROM table(GT_WEB_SERVICES.SPLIT(cCadena, '|'))) LOOP
-         IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,3,',') IS NOT NULL OR OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,3,',') != '' THEN
-            CRFC := OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,3,',');
-         ELSE
-            CRFC := OC_PERSONA_NATURAL_JURIDICA.NUMERO_TRIBUTARIO_RFC(CAMBIA_ACENTOS(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,4,',')),
-                                                                      CAMBIA_ACENTOS(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,5,',')),
-                                                                      (OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,6,',')),
-                                                                      TO_DATE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,8,','), 'DD/MM/YYYY'),
-                                                                      'FISICA');
-         END IF;                                                                              
-         cTipoDocIdentAseg := OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,2,',');
-         cNumDocIdentAseg  := CRFC;                                
-        --
-         IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,1,',') = 'C' AND nIdPoliza IS NULL  THEN  
-            nCodCliente := OC_CLIENTES.CODIGO_CLIENTE(cTipoDocIdentAseg, cNumDocIdentAseg);
-         END IF;
-      
-         BEGIN
-            OPEN  Q_DOMI(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,18,','), OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,16,','));                    
-            FETCH Q_DOMI INTO R_DOMI;      
-            CLOSE Q_DOMI;   
-         
-            cCodPaisRes := R_DOMI.CodPais; 
-            cCodProvRes := R_DOMI.CodEstado;   
-            cCodDistRes := R_DOMI.CodCiudad;
-            cCodCorrRes := R_DOMI.CodMunicipio;
-         EXCEPTION WHEN OTHERS THEN
-            NULL;
-         END;
-      
-         IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,2,','), CRFC) = 'N' THEN
-            OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,2,','),   --cTipo_Doc_Identificacion
-                                                         CRFC,                                              --cNum_Doc_Identificacion
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,4,','),   --cNombre
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,5,','),   --cApellidoPat
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,6,','),   --cApellidoMat
-                                                         NULL,                                              --cApeCasada
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,7,','),   --cSexo
-                                                         NULL,                                              --cEstadoCivil
-                                                         TO_DATE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,8,','), 'DD/MM/YYYY'),   --dFecNacimiento
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,13,','),  --cDirecRes
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,14,','),  --cNumInterior
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,15,','),  --cNumExterior
-                                                         cCodPaisRes,                                       --cCodPaisRes
-                                                         cCodProvRes,  --OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,16,','),  --cCodProvRes
-                                                         cCodDistRes,                                       --cCodDistRes       
-                                                         cCodCorrRes,                                       --cCodCorrRes
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,18,','),  --cCodPosRes
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,16,','),  --cCodColonia
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,20,','),  --cTelRes
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,21,','),  --cEmail
-                                                         OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,19,',')); --cLadaTelRes
-            IF LENGTH(CRFC) = 13 THEN
-               cTipPersona := 'FISICA';
-            ELSE
-               cTipPersona := 'MORAL';
-            END IF;                                                                     
-            
-            UPDATE PERSONA_NATURAL_JURIDICA J SET J.Tipo_Persona        = cTipPersona,
-                                                  J.Tipo_Id_Tributaria  = 'RFC',
-                                                  J.Num_Tributario      = NVL(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,10,','), 'XAXX010101000'),
-                                                  J.Nacionalidad        = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,22,',')
-             WHERE  J.Tipo_Doc_Identificacion   = 'RFC'
-               AND  J.Num_Doc_Identificacion    = CRFC;
-         ELSE 
-            UPDATE PERSONA_NATURAL_JURIDICA
-               SET CodPaisRes      = cCodPaisRes,
-                   CodProvRes      = cCodProvRes,
-                   CodDistRes      = cCodDistRes,
-                   CodCorrRes      = cCodCorrRes,
-                   CodPosRes       = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,18,','),
-                   ZipRes          = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,18,','),
-                   CodColRes       = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,16,','),
-                   DirecRes        = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,13,','),  --cDirecRes
-                   NumInterior     = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,14,','),  --cNumInterior
-                   NumExterior     = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,15,','),  --cNumExterior
-                   Nacionalidad    = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,22,','),  -- Nacionalidad
-                   Num_Tributario  = NVL(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,10,','), 'XAXX010101000')
-             WHERE Tipo_Doc_Identificacion   = cTipoDocIdentAseg
-               AND Num_Doc_Identificacion    = cNumDocIdentAseg;
-         END IF;
-        --
-         IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,1,',') = 'C' AND nIdePol = 1 AND nIdPoliza IS NULL AND OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,23,',') IS NOT NULL THEN
-            BEGIN
-               SELECT NVL(MAX(IdFormaCobro),0)
-                 INTO nIdFormaCobro
-                 FROM MEDIOS_DE_COBRO
-                WHERE Tipo_Doc_Identificacion  = cTipoDocIdentAseg
-                  AND Num_Doc_Identificacion   = cNumDocIdentAseg;
-            END;
-            
-            IF nIdFormaCobro = 0 THEN 
-               nIdFormaCobro := 1;
-            ELSE
-               nIdFormaCobro := nIdFormaCobro + 1;
-            END IF;
-            
-            OC_MEDIOS_DE_COBRO.INSERTAR(cTipoDocIdentAseg, cNumDocIdentAseg, nIdFormaCobro, 'S', 'CTC');
-            UPDATE MEDIOS_DE_COBRO MD SET MD.CodFormaCobro     = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,23,','),
-                                          MD.CodEntidadFinan   = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,24,','),
-                                          MD.NumCuentaBancaria = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,25,','),
-                                          MD.NumCuentaClabe    = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,26,','),
-                                          MD.NumTarjeta        = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,27,','),
-                                          MD.FechaVencTarjeta  = TO_DATE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,28,','), 'DD/MM/YYYY'),
-                                          MD.NombreTitular     = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,29,',')
-             WHERE MD.Tipo_Doc_Identificacion   = cTipoDocIdentAseg
-               AND MD.Num_Doc_Identificacion    = cNumDocIdentAseg
-               AND MD.IdFormaCobro              = nIdFormaCobro;
-         END IF;
-        --
-         IF nIdPoliza IS NULL and OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,1,',') = 'C'  THEN
-            --
-            IF NVL(nCodCliente, 0) = 0 THEN
-               nCodCliente    := OC_CLIENTES.INSERTAR_CLIENTE(cTipoDocIdentAseg,cNumDocIdentAseg);
-               UPDATE CLIENTES CTE  
-                  SET TipoCliente = 'BAJO'
-                WHERE CTE.CodCliente = nCodCliente;
-            END IF;      
-         ELSE 
-            IF nIdPoliza IS NULL AND OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,1,',') = 'A'  THEN                        
-               nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
-               IF nCod_Asegurado = 0 THEN
-                  nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
-               END IF;                                      
-             --                 
-             nIdPoliza := gt_cotizaciones.CREAR_POLIZA(nCodCia,nCodEmpresa, nIdCotizacion, nCodCliente, nCod_Asegurado);
-             --   
-             --DBMS_OUTPUT.PUT_LINE(nIdPoliza);
-            
-                SELECT C.NUMCOTIZACIONANT
-                  INTO wIdCotizacion
-                  FROM COTIZACIONES C
-                 WHERE C.CODCIA = nCodCia AND C.CODEMPRESA = nCodEmpresa
-                   AND C.IDCOTIZACION IN (SELECT P.NUM_COTIZACION 
-                                             FROM POLIZAS P 
-                                            WHERE P.CODCIA = nCodCia 
-                                              AND P.CODEMPRESA = nCodEmpresa 
-                                              AND P.IDPOLIZA = nIdPoliza);
-                --
-               --cNUMPOLUNICO := OC_POLIZAS.NUMERO_UNICO(NCODCIA, NIDPOLIZA);
-            
-                  BEGIN
-            --                                    SELECT NUMPOLUNICO, NUMPOLUNICO, P.COD_MONEDA
-            --                                      INTO  cNUMPOLUNICO, cNUMPOLUNICO, cCodMoneda
-                     SELECT P.COD_MONEDA, P.COD_AGENTE
-                       INTO cCodMoneda, nCodAgente
-                       FROM POLIZAS P
-                      WHERE P.CODCIA      = nCodCia
-                        AND P.CODEMPRESA  = nCodEmpresa
-                        AND P.IdPoliza    = nIdPoliza;
-                   --
-                   SELECT COUNT(*)
-                     INTO nCantPol
-                     FROM POLIZAS
-                    WHERE CodCia       = nCodCia
-                      AND NumPolUnico  = cNumPolUnico
-                      AND StsPoliza   IN ('EMI','SOL')
-                      AND IdPoliza    != nIdPoliza;
-            
-            --                                  IF nCantPol > 0 THEN
-            --                                     cNUMPOLUNICO := SUBSTR(cNumPolUnico || '-' || NIDPOLIZA, 1, 30);
-            --                                  END IF;
-            ----------- SE COMENTA 26/11/2019 NO LO REQUIEREN
-            --                               BEGIN
-            --                                     SELECT CODVALOR
-            --                                       INTO cCodValor
-            --                                       FROM VALORES_DE_LISTAS
-            --                                       WHERE CODLISTA = 'AGRUPA'
-            --                                         AND DESCVALLST = 'PLATAFORMA DIGITAL THONAPI'; 
-            --                               EXCEPTION WHEN NO_DATA_FOUND THEN
-            --                                     SELECT TRIM(TO_CHAR(TO_NUMBER(MAX(CODVALOR)) + 1, '0000'))
-            --                                       INTO cCodValor
-            --                                       FROM VALORES_DE_LISTAS
-            --                                      WHERE CODLISTA = 'AGRUPA';
-            --                                     INSERT INTO VALORES_DE_LISTAS VALUES ('AGRUPA', cCodValor, 'PLATAFORMA DIGITAL THONAPI');
-            --                               END;
-                   cCodValor := NULL;
-            
-                      BEGIN
-                        SELECT codvalor
-                          INTO cTipoRiesgo
-                          FROM valores_de_listas 
-                         WHERE codlista = 'TIPRIESG'
-                           AND DESCVALLST IN (SELECT distinct 'RIESGO ' || RIESGOTARIFA 
-                                                FROM COTIZACIONES_DETALLE d 
-                                               WHERE  D.CODCIA = nCodCia 
-                                                 AND D.CODEMPRESA = nCodEmpresa 
-                                                 AND D.IDCOTIZACION IN (nIdCotizacion));                                  
-                      EXCEPTION WHEN OTHERS THEN
-                            cTipoRiesgo := null;
-                      END;
-            
-                 --------------------------------- Comisiones esta dividido en dos etapas, una esta la creacion de la poliza y otra al emitir la poliza
-                   IF NVL(nIdCotizacion, 0) <> 0 THEN     
-                       IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) = 'S' THEN
-                          wPorcComis1     := 0;
-                          wPorcComis2     := 0;
-                          wPorcComis3     := 0;
-                       ELSE                                                                                                          
-                       --Copia Comisiones por nivel a la nueva poliza
-                          SELECT C.PorcComisDir,
-                                 c.PorcComisProm,
-                                 c.PorcComisAgte                                                       
-                            INTO wPorcComis1, wPorcComis2, wPorcComis3
-                            FROM COTIZACIONES C
-                           WHERE C.CODCIA          =   nCodCia
-                             AND C.CODEMPRESA      =   nCodEmpresa
-                             AND C.IDCOTIZACION    =   nIdCotizacion;
-                          --
-                          wPorcComisTot := 0;
-                          FOR COM IN (
-                              SELECT A.CODNIVEL  
-                                FROM AGENTES_DISTRIBUCION_POLIZA A
-                               WHERE A.CODCIA      = nCodCia
-                                 AND A.IDPOLIZA    = nIdPoliza) LOOP
-            
-                                 IF COM.CODNIVEL = 1 THEN
-                                      wPorcComisTot := wPorcComisTot + wPorcComis1;
-                                 ELSIF COM.CODNIVEL = 2 THEN
-                                      wPorcComisTot := wPorcComisTot + wPorcComis2;                                                       
-                                 ELSIF COM.CODNIVEL = 3 THEN
-                                      wPorcComisTot := wPorcComisTot + wPorcComis3;
-                                 END IF;   
-                                -- DBMS_OUTPUT.PUT_LINE('wPorcComisTot '||wPorcComisTot);
-                          END LOOP;
-                       END IF;                                        
-                   END IF;                                                      
-            
-                 --UPDATE POLIZAS P SET NUMPOLUNICO = cNUMPOLUNICO,
-            
-                 UPDATE POLIZAS P SET P.HORAVIGINI   = '12:00',
-                                       P.HORAVIGFIN   = '12:00',
-                                       P.TIPODIVIDENDO = '003',
-                                       --P.IDFORMACOBRO = 1,
-                                       P.CODAGRUPADOR = cCodValor,
-                                       P.TIPORIESGO   = cTipoRiesgo,
-                                       P.CODPLANPAGO = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,33,','),
-                                       P.PORCCOMIS   = NVL(wPorcComisTot, 0),
-                                       P.IdFormaCobro = nIdFormaCobro
-                  WHERE P.CODCIA      = nCodCia
-                    AND P.CODEMPRESA  = nCodEmpresa
-                    AND P.IDPOLIZA    = nIdPoliza;
-            
-                 UPDATE DETALLE_POLIZA P SET P.CODPLANPAGO = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,33,','),
-                                                 P.CODCATEGORIA = NULL
-                  WHERE P.CODCIA      = nCodCia
-                    AND P.CODEMPRESA  = nCodEmpresa
-                    AND P.IDPOLIZA    = nIdPoliza;                               
-            
-                  EXCEPTION WHEN OTHERS THEN
-                    NULL;
-                  END;
-                  --
-                  IF R_NUMREG.EsColectiva = 'N' THEN
-                     IF OC_COBERT_ACT.EXISTE_COBERTURA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza, nIdePol) = 'N' THEN
-                        GT_COTIZACIONES_COBERTURAS.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, nIdePol, nIdPoliza, nIdePol, nCod_Asegurado, R_NUMREG.EsColectiva);
-                     END IF;
-                  ELSIF R_NUMREG.EsColectiva = 'S' THEN
-                     IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza, nIdePol, nCod_Asegurado) = 'N' THEN
-                        GT_COTIZACIONES_COBERT_ASEG.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, nIdePol, nIdPoliza, nIdePol, nCod_Asegurado, R_NUMREG.EsColectiva);
-                     END IF;
-                  END IF;                             
-                  --GT_COTIZACIONES_COBERT_ASEG.CREAR_COBERTURAS(nCodCia,nCodEmpresa, nIdCotizacion, nIdePol, nIdPoliza, nIdePol, nCod_Asegurado, R_NUMREG.ESCOLECTIVA);
-                  --       
-            ELSIF nIdPoliza IS NOT NULL AND OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,1,',') = 'A' THEN
-                nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
-                IF nCod_Asegurado = 0 THEN
-                    nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
-                END IF;     
-                --      
-                nIdePol := nIdePol + 1;
-                IF R_NUMREG.EsColectiva = 'N' THEN
-                     IF OC_COBERT_ACT.EXISTE_COBERTURA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza, nIdePol) = 'N' THEN
-                        GT_COTIZACIONES_COBERTURAS.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, nIdePol, nIdPoliza, nIdePol, nCod_Asegurado, R_NUMREG.EsColectiva);
-                     END IF;
-                ELSIF R_NUMREG.EsColectiva = 'S' THEN
-                     IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza, nIdePol, nCod_Asegurado) = 'N' THEN
-                        GT_COTIZACIONES_COBERT_ASEG.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, nIdePol, nIdPoliza, nIdePol, nCod_Asegurado, R_NUMREG.EsColectiva);
-                     END IF;
-                END IF;    
-                --GT_COTIZACIONES_COBERT_ASEG.CREAR_COBERTURAS(nCodCia,nCodEmpresa, nIdCotizacion, nIdePol, nIdPoliza, nIdePol, nCod_Asegurado, R_NUMREG.ESCOLECTIVA);
-                UPDATE DETALLE_POLIZA D SET D.COD_ASEGURADO = nCod_Asegurado
-                 WHERE D.CODCIA        =   nCodCia
-                   AND D.CODEMPRESA    =   nCodEmpresa
-                   AND D.IDPOLIZA      =   nIdPoliza
-                   AND D.IDETPOL       = nIdePol;
-            END IF;                    
-         
-         END IF;        
-        --           
-        numBenef := 0;            
-        IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,1,',') = 'A' THEN
-            FOR N IN 1..10 LOOP
-                numBenef := (6 * (N -1)); 
-                IF LENGTH(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,41 + numBenef,',')) > 0 THEN
-                    begin
-                        dBenefFecNAc := to_date(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,42+numBenef,','), 'dd/mm/yyyy');
-                    exception when others then null; end;
-                    OC_BENEFICIARIO.INSERTA_BENEFICIARIO(nIdPoliza, nIdePol, nCod_Asegurado, 
-                                                                            OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,40 + numBenef,','),
-                                                                            OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,41 + numBenef,','), 
-                                                                            OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,43 + numBenef,','), 
-                                                                            OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,44 + numBenef,','), 'N', 
-                                                                            dBenefFecNac, 
-                                                                            OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,45 + numBenef,','));
-                ELSE
-                    EXIT;
+    BEGIN
+        IF cIdPoliza IS NULL THEN
+--            ------------- QUITAR!!!!
+--                UPDATE COTIZACIONES C SET IDPOLIZA = NULL, C.STSCOTIZACION = 'EMITID'
+--                WHERE C.CODEMPRESA=nCodEmpresa
+--                  AND C.CODCIA = nCodCia
+--                  AND C.IDCOTIZACION = nIdCotizacion;   
+--            ------------------------------------------------        
+                IF SICAS_OC.GT_COTIZACIONES.EXISTE_COTIZACION_EMITIDA(NCODCIA, NCODEMPRESA, NIDCOTIZACION ) = 'N' THEN
+                    RETURN 'Esta cotización no esta emitida: ' || NIDCOTIZACION;
                 END IF;
-            END LOOP;
-        END IF;          
-      
-      END LOOP;                    
-       --             
-       IF R_NUMREG.ESCOLECTIVA = 'N' AND nIdPoliza IS NOT NULL THEN
-           UPDATE DETALLE_POLIZA D SET CODFILIAL  = NULL
-             WHERE D.CODCIA        =   nCodCia
-               AND D.CODEMPRESA    =   nCodEmpresa
-               AND D.IDPOLIZA       =   nIdPoliza;
-       END IF;                                          
-       --   
-       --------------------------------- comisiones                    
-       DECLARE
-           WCODNIVEL                NUMBER :=0;
-           WPORPRO                  NUMBER :=0;
-           WPORDIST                 NUMBER :=0;    
-           nPorc_Com_Proporcional   NUMBER := 0;                
-       BEGIN            
-            UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Distribuida  = wPorcComis1,
-                                                    Porc_Com_Proporcional = TRUNC(ROUND((wPorcComis1 * 100) / wPorcComisTot, 2), 2), 
-                                                    PORC_COM_POLIZA       = wPorcComisTot
-            WHERE IdPoliza = nIdPoliza
-              AND CODNIVEL = 1
-              AND CodCia   = nCodCia;
-            IF SQL%ROWCOUNT > 0 THEN
-               wPorcComPropT := wPorcComPropT + TRUNC(ROUND((wPorcComis1 * 100) / wPorcComisTot, 2), 2); 
-            END IF;
-   
-                  UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Distribuida  = wPorcComis2,
-                                                          Porc_Com_Proporcional = TRUNC(ROUND((wPorcComis2 * 100) / wPorcComisTot, 2), 2), 
-                                                            PORC_COM_POLIZA       = wPorcComisTot
+
+             OPEN Q_NUMREG;
+             FETCH Q_NUMREG INTO   R_NUMREG;      
+             close Q_NUMREG;   
+             --
+             INSERT INTO API_LOG_EMISION (DESCRIPCION, FECHA, ID_COTIZACION) VALUES(cCadena, sysdate, nIdCotizacion);
+             FOR ENT IN (SELECT COLUMN_VALUE FILA FROM table(GT_WEB_SERVICES.SPLIT(cCadena, '|'))) LOOP
+                 --
+                 IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,3,',') IS NOT NULL OR OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,3,',') != '' THEN
+                     CRFC := OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,3,',');
+                 ELSE
+                     CRFC := OC_PERSONA_NATURAL_JURIDICA.NUMERO_TRIBUTARIO_RFC(CAMBIA_ACENTOS(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,4,',')),
+                                                                               CAMBIA_ACENTOS(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,5,',')),
+                                                                               (OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,6,',')),
+                                                                               TO_DATE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,8,','), 'DD/MM/YYYY'),
+                                                                               'FISICA');
+                 END IF;                                                                              
+                 cTipoDocIdentAseg  :=       OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,2,',');
+                 cNumDocIdentAseg   :=       CRFC;                                
+                 --
+                 IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,1,',') = 'C' AND nIdPoliza IS NULL  THEN  
+                     nCodCliente := OC_CLIENTES.CODIGO_CLIENTE(cTipoDocIdentAseg, cNumDocIdentAseg);
+                 END IF;
+
+                 BEGIN
+                  OPEN Q_DOMI(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,18,','), OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,16,','));                    
+                      FETCH Q_DOMI INTO R_DOMI;      
+                      close Q_DOMI;   
+
+                      cCodPaisRes       := R_DOMI.CODPAIS; 
+                      cCodProvRes       := R_DOMI.CODESTADO;   
+                      cCodDistRes       := R_DOMI.CODCIUDAD;
+                      cCodCorrRes       := R_DOMI.CODMUNICIPIO ;
+                 EXCEPTION WHEN OTHERS THEN
+                  NULL;
+                 END;
+
+                 IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,2,','), CRFC) = 'N' THEN
+                     --             
+                     OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,2,','),   --cTipo_Doc_Identificacion
+                                                                  CRFC,                                              --cNum_Doc_Identificacion
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,4,','),   --cNombre
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,5,','),   --cApellidoPat
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,6,','),   --cApellidoMat
+                                                                  NULL,                                              --cApeCasada
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,7,','),   --cSexo
+                                                                  NULL,                                              --cEstadoCivil
+                                                                  TO_DATE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,8,','), 'DD/MM/YYYY'),   --dFecNacimiento
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,13,','),  --cDirecRes
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,14,','),  --cNumInterior
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,15,','),  --cNumExterior
+                                                                  cCodPaisRes,                                       --cCodPaisRes
+                                                                  cCodProvRes,  --OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,16,','),  --cCodProvRes
+                                                                  cCodDistRes,                                       --cCodDistRes       
+                                                                  cCodCorrRes,                                       --cCodCorrRes
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,18,','),  --cCodPosRes
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,16,','),  --cCodColonia
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,20,','),  --cTelRes
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,21,','),  --cEmail
+                                                                  OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,19,',')); --cLadaTelRes
+                     IF LENGTH(CRFC) = 13 THEN
+                         cTipPersona := 'FISICA';
+                     ELSE
+                         cTipPersona := 'MORAL';
+                     END IF;                                                                     
+                     UPDATE PERSONA_NATURAL_JURIDICA J SET J.TIPO_PERSONA = cTipPersona,
+                                                           J.TIPO_ID_TRIBUTARIA = 'RFC',
+                                                           J.NUM_TRIBUTARIO     = nvl(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,10,','), 'XAXX010101000'),
+                                                           J.NACIONALIDAD       = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,22,',')
+                     WHERE  J.TIPO_DOC_IDENTIFICACION = 'RFC'
+                       AND  J.NUM_DOC_IDENTIFICACION = CRFC;
+                 ELSE 
+                     UPDATE PERSONA_NATURAL_JURIDICA
+                        SET CodPaisRes      = cCodPaisRes,
+                            CodProvRes      = cCodProvRes,
+                            CodDistRes      = cCodDistRes,
+                            CodCorrRes      = cCodCorrRes,
+                            CodPosRes       = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,18,','),
+                            ZipRes          = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,18,','),
+                            CodColRes       = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,16,','),
+                            DirecRes        = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,13,','),  --cDirecRes
+                            NumInterior     = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,14,','),  --cNumInterior
+                            NumExterior     = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,15,','),  --cNumExterior
+                            Nacionalidad    = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,22,','),  -- nacionalidad
+                            Num_Tributario  = NVL(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,10,','), 'XAXX010101000')
+                      WHERE Tipo_Doc_Identificacion   = cTipoDocIdentAseg
+                        AND Num_Doc_Identificacion    = cNumDocIdentAseg;
+                 END IF;
+                 --
+                 --IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,1,',') = 'C' AND nIdePol = 1 AND nIdPoliza IS NULL AND OC_MEDIOS_DE_COBRO.EXISTE_MEDIO_DE_COBRO(cTipoDocIdentAseg, cNumDocIdentAseg, 1) = 'N' THEN
+                 IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,1,',') = 'C' AND nIdePol = 1 AND nIdPoliza IS NULL AND OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,23,',') IS NOT NULL THEN
+                     BEGIN
+                        SELECT NVL(MAX(IdFormaCobro),0)
+                          INTO nIdFormaCobro
+                          FROM MEDIOS_DE_COBRO
+                         WHERE Tipo_Doc_Identificacion  = cTipoDocIdentAseg
+                           AND Num_Doc_Identificacion   = cNumDocIdentAseg;
+                     END;
+                     IF nIdFormaCobro = 0 THEN 
+                        nIdFormaCobro := 1;
+                     ELSE
+                        nIdFormaCobro := nIdFormaCobro + 1;
+                     END IF;
+                     OC_MEDIOS_DE_COBRO.INSERTAR(cTipoDocIdentAseg, cNumDocIdentAseg, nIdFormaCobro, 'S', 'CTC');
+                     UPDATE  MEDIOS_DE_COBRO MD SET MD.CODFORMACOBRO     = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,23,','),
+                                                    MD.CODENTIDADFINAN   = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,24,','),
+                                                    MD.NUMCUENTABANCARIA = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,25,','),
+                                                    MD.NUMCUENTACLABE    = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,26,','),
+                                                    MD.NUMTARJETA        = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,27,','),
+                                                    MD.FECHAVENCTARJETA  = TO_DATE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,28,','), 'DD/MM/YYYY'),
+                                                    MD.NOMBRETITULAR     = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,29,',')
+                     WHERE MD.TIPO_DOC_IDENTIFICACION   = cTipoDocIdentAseg
+                       AND MD.NUM_DOC_IDENTIFICACION    = cNumDocIdentAseg
+                       AND MD.IdFormaCobro              = nIdFormaCobro;
+                 END IF;
+                 --
+                 IF nIdPoliza IS NULL and OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,1,',') = 'C'  THEN
+                     --
+                     IF nvl(nCodCliente, 0) = 0 THEN
+                        nCodCliente    := OC_CLIENTES.INSERTAR_CLIENTE(cTipoDocIdentAseg,cNumDocIdentAseg);
+                        UPDATE CLIENTES CTE SET TIPOCLIENTE = 'BAJO'
+                               WHERE CTE.CODCLIENTE = nCodCliente;
+                     END IF;      
+                 ELSE 
+                     IF nIdPoliza IS NULL AND OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,1,',') = 'A'  THEN                        
+                         nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
+                         IF nCod_Asegurado = 0 THEN
+                            nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
+                         END IF;                                      
+                         --                 
+                         nIdPoliza := gt_cotizaciones.CREAR_POLIZA(nCodCia,nCodEmpresa, nIdCotizacion, nCodCliente, nCod_Asegurado);
+                         --   
+                         --DBMS_OUTPUT.PUT_LINE(nIdPoliza);
+
+                            SELECT C.NUMCOTIZACIONANT
+                              INTO wIdCotizacion
+                              FROM COTIZACIONES C
+                             WHERE C.CODCIA = nCodCia AND C.CODEMPRESA = nCodEmpresa
+                               AND C.IDCOTIZACION IN (SELECT P.NUM_COTIZACION 
+                                                         FROM POLIZAS P 
+                                                        WHERE P.CODCIA = nCodCia 
+                                                          AND P.CODEMPRESA = nCodEmpresa 
+                                                          AND P.IDPOLIZA = nIdPoliza);
+                            --
+                           --cNUMPOLUNICO := OC_POLIZAS.NUMERO_UNICO(NCODCIA, NIDPOLIZA);
+
+                              BEGIN
+--                                    SELECT NUMPOLUNICO, NUMPOLUNICO, P.COD_MONEDA
+--                                      INTO  cNUMPOLUNICO, cNUMPOLUNICO, cCodMoneda
+                                 SELECT P.COD_MONEDA, P.COD_AGENTE
+                                   INTO cCodMoneda, nCodAgente
+                                   FROM POLIZAS P
+                                  WHERE P.CODCIA      = nCodCia
+                                    AND P.CODEMPRESA  = nCodEmpresa
+                                    AND P.IdPoliza    = nIdPoliza;
+                               --
+                               SELECT COUNT(*)
+                                 INTO nCantPol
+                                 FROM POLIZAS
+                                WHERE CodCia       = nCodCia
+                                  AND NumPolUnico  = cNumPolUnico
+                                  AND StsPoliza   IN ('EMI','SOL')
+                                  AND IdPoliza    != nIdPoliza;
+
+--                                  IF nCantPol > 0 THEN
+--                                     cNUMPOLUNICO := SUBSTR(cNumPolUnico || '-' || NIDPOLIZA, 1, 30);
+--                                  END IF;
+----------- SE COMENTA 26/11/2019 NO LO REQUIEREN
+--                               BEGIN
+--                                     SELECT CODVALOR
+--                                       INTO cCodValor
+--                                       FROM VALORES_DE_LISTAS
+--                                       WHERE CODLISTA = 'AGRUPA'
+--                                         AND DESCVALLST = 'PLATAFORMA DIGITAL THONAPI'; 
+--                               EXCEPTION WHEN NO_DATA_FOUND THEN
+--                                     SELECT TRIM(TO_CHAR(TO_NUMBER(MAX(CODVALOR)) + 1, '0000'))
+--                                       INTO cCodValor
+--                                       FROM VALORES_DE_LISTAS
+--                                      WHERE CODLISTA = 'AGRUPA';
+--                                     INSERT INTO VALORES_DE_LISTAS VALUES ('AGRUPA', cCodValor, 'PLATAFORMA DIGITAL THONAPI');
+--                               END;
+                               cCodValor := NULL;
+
+                                  BEGIN
+                                    SELECT codvalor
+                                      INTO cTIPORIESGO
+                                      FROM valores_de_listas 
+                                     WHERE codlista = 'TIPRIESG'
+                                       AND DESCVALLST IN (SELECT distinct 'RIESGO ' || RIESGOTARIFA 
+                                                            FROM COTIZACIONES_DETALLE d 
+                                                           WHERE  D.CODCIA = nCodCia 
+                                                             AND D.CODEMPRESA = nCodEmpresa 
+                                                             AND D.IDCOTIZACION IN (nIdCotizacion));                                  
+                                  EXCEPTION WHEN OTHERS THEN
+                                        cTIPORIESGO := null;
+                                  END;
+
+                             --------------------------------- Comisiones esta dividido en dos etapas, una esta la creacion de la poliza y otra al emitir la poliza
+                               IF NVL(nIdCotizacion, 0) <> 0 THEN     
+                                   IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) = 'S' THEN
+                                      wPorcComis1     := 0;
+                                      wPorcComis2     := 0;
+                                      wPorcComis3     := 0;
+                                   ELSE                                                                                                          
+                                   --Copia Comisiones por nivel a la nueva poliza
+                                      SELECT C.PorcComisDir,
+                                             c.PorcComisProm,
+                                             c.PorcComisAgte                                                       
+                                        INTO wPorcComis1, wPorcComis2, wPorcComis3
+                                        FROM COTIZACIONES C
+                                       WHERE C.CODCIA          =   nCodCia
+                                         AND C.CODEMPRESA      =   nCodEmpresa
+                                         AND C.IDCOTIZACION    =   nIdCotizacion;
+                                      --
+                                      wPorcComisTot := 0;
+                                      FOR COM IN (
+                                          SELECT A.CODNIVEL  
+                                            FROM AGENTES_DISTRIBUCION_POLIZA A
+                                           WHERE A.CODCIA      = nCodCia
+                                             AND A.IDPOLIZA    = nIdPoliza) LOOP
+
+                                             IF COM.CODNIVEL = 1 THEN
+                                                  wPorcComisTot := wPorcComisTot + wPorcComis1;
+                                             ELSIF COM.CODNIVEL = 2 THEN
+                                                  wPorcComisTot := wPorcComisTot + wPorcComis2;                                                       
+                                             ELSIF COM.CODNIVEL = 3 THEN
+                                                  wPorcComisTot := wPorcComisTot + wPorcComis3;
+                                             END IF;   
+                                            -- DBMS_OUTPUT.PUT_LINE('wPorcComisTot '||wPorcComisTot);
+                                      END LOOP;
+                                   END IF;                                        
+                               END IF;                                                      
+
+                             --UPDATE POLIZAS P SET NUMPOLUNICO = cNUMPOLUNICO,
+
+                             UPDATE POLIZAS P SET P.HORAVIGINI   = '12:00',
+                                                   P.HORAVIGFIN   = '12:00',
+                                                   P.TIPODIVIDENDO = '003',
+                                                   --P.IDFORMACOBRO = 1,
+                                                   P.CODAGRUPADOR = cCodValor,
+                                                   P.TIPORIESGO   = cTIPORIESGO,
+                                                   P.CODPLANPAGO = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,33,','),
+                                                   P.PORCCOMIS   = NVL(wPorcComisTot, 0),
+                                                   P.IdFormaCobro = nIdFormaCobro
+                              WHERE P.CODCIA      = nCodCia
+                                AND P.CODEMPRESA  = nCodEmpresa
+                                AND P.IDPOLIZA    = nIdPoliza;
+
+                             UPDATE DETALLE_POLIZA P SET P.CODPLANPAGO = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,33,','),
+                                                             P.CODCATEGORIA = NULL
+                              WHERE P.CODCIA      = nCodCia
+                                AND P.CODEMPRESA  = nCodEmpresa
+                                AND P.IDPOLIZA    = nIdPoliza;                               
+
+                              EXCEPTION WHEN OTHERS THEN
+                                NULL;
+                              END;
+                              --
+                              GT_COTIZACIONES_COBERT_ASEG.CREAR_COBERTURAS(nCodCia,nCodEmpresa, nIdCotizacion, nIdePol, nIdPoliza, nIdePol, nCod_Asegurado, R_NUMREG.ESCOLECTIVA);
+                              --       
+                        ELSIF nIdPoliza IS NOT NULL AND OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,1,',') = 'A' THEN
+                            nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
+                            IF nCod_Asegurado = 0 THEN
+                                nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
+                            END IF;     
+                            --      
+                            nIdePol := nIdePol + 1;
+                            GT_COTIZACIONES_COBERT_ASEG.CREAR_COBERTURAS(nCodCia,nCodEmpresa, nIdCotizacion, nIdePol, nIdPoliza, nIdePol, nCod_Asegurado, R_NUMREG.ESCOLECTIVA);
+                            UPDATE DETALLE_POLIZA D SET D.COD_ASEGURADO = nCod_Asegurado
+                             WHERE D.CODCIA        =   nCodCia
+                               AND D.CODEMPRESA    =   nCodEmpresa
+                               AND D.IDPOLIZA      =   nIdPoliza
+                               AND D.IDETPOL       = nIdePol;
+                        END IF;                    
+
+                 END IF;        
+                 --           
+                 numBenef := 0;            
+                 IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,1,',') = 'A' THEN
+                     FOR N IN 1..10 LOOP
+                         numBenef := (6 * (N -1)); 
+                         IF LENGTH(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,41 + numBenef,',')) > 0 THEN
+                             begin
+                                 dBenefFecNAc := to_date(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,42+numBenef,','), 'dd/mm/yyyy');
+                             exception when others then null; end;
+                             OC_BENEFICIARIO.INSERTA_BENEFICIARIO(nIdPoliza, nIdePol, nCod_Asegurado, 
+                                                                                     OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,40 + numBenef,','),
+                                                                                     OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,41 + numBenef,','), 
+                                                                                     OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,43 + numBenef,','), 
+                                                                                     OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,44 + numBenef,','), 'N', 
+                                                                                     dBenefFecNac, 
+                                                                                     OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.FILA,45 + numBenef,','));
+                         ELSE
+                             EXIT;
+                         END IF;
+                     END LOOP;
+                 END IF;          
+
+             END LOOP;                    
+             --             
+             IF R_NUMREG.ESCOLECTIVA = 'N' AND nIdPoliza IS NOT NULL THEN
+                 UPDATE DETALLE_POLIZA D SET CODFILIAL  = NULL
+                   WHERE D.CODCIA        =   nCodCia
+                     AND D.CODEMPRESA    =   nCodEmpresa
+                     AND D.IDPOLIZA       =   nIdPoliza;
+             END IF;                                          
+             --   
+             --------------------------------- comisiones                    
+             DECLARE
+                 WCODNIVEL                NUMBER :=0;
+                 WPORPRO                  NUMBER :=0;
+                 WPORDIST                 NUMBER :=0;    
+                 nPorc_Com_Proporcional   NUMBER := 0;                
+             BEGIN            
+                  UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Distribuida  = wPorcComis1,
+                                                          Porc_Com_Proporcional = TRUNC(ROUND((wPorcComis1 * 100) / wPorcComisTot, 2), 2), 
+                                                          PORC_COM_POLIZA       = wPorcComisTot
                   WHERE IdPoliza = nIdPoliza
-                    AND CODNIVEL = 2
+                    AND CODNIVEL = 1
                     AND CodCia   = nCodCia;
                   IF SQL%ROWCOUNT > 0 THEN
-                     wPorcComPropT := wPorcComPropT + TRUNC(ROUND((wPorcComis2 * 100) / wPorcComisTot, 2), 2); 
+                     wPorcComPropT := wPorcComPropT + TRUNC(ROUND((wPorcComis1 * 100) / wPorcComisTot, 2), 2); 
                   END IF;
-   
-            IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) != 'S' THEN
-                IF wPorcComisTot = 0 THEN wPorcComisTot := 1; END IF;
-                IF wPorcComis3 = 0 THEN wPorcComis3 := 1;     END IF;
-            END IF;
-   
-            BEGIN
-               SELECT TRUNC(ROUND((wPorcComis3 * 100) / wPorcComisTot, 2), 2)
-                 INTO nPorc_Com_Proporcional
-                 FROM DUAL;
-            EXCEPTION 
-               WHEN ZERO_DIVIDE THEN
-                  nPorc_Com_Proporcional := 0;
-            END;
-   
-            UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Distribuida   = wPorcComis3,
-                                                    Porc_Com_Proporcional  = nPorc_Com_Proporcional, 
-                                                    Porc_Com_Poliza        = wPorcComisTot
-             WHERE IdPoliza = nIdPoliza
-               AND CODNIVEL = 3
-               AND CodCia   = nCodCia;
-            IF SQL%ROWCOUNT > 0 THEN
-               --wPorcComPropT := wPorcComPropT + TRUNC(ROUND((wPorcComis3 * 100) / wPorcComisTot, 2), 2); 
-               wPorcComPropT := wPorcComPropT + nPorc_Com_Proporcional;
-            END IF;
-   
-                  UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Proporcional = Porc_Com_Proporcional + (100 - wPorcComPropT)  
-                  WHERE IdPoliza = nIdPoliza
-                    AND CODNIVEL = 3
-                    AND CodCia   = nCodCia;
-   
-                  DELETE AGENTES_DISTRIBUCION_COMISION
-                   WHERE CodCia   = nCodCia
-                    AND IdPoliza = nIdPoliza;
-   
-                  DELETE AGENTES_DETALLES_POLIZAS
-                   WHERE CodCia   = nCodCia
-                    AND IdPoliza = nIdPoliza;
-   
-                  UPDATE DETALLE_POLIZA D SET D.PORCCOMIS = wPorcComisTot
-                  WHERE D.CODCIA = nCodCia
-                    AND D.CODEMPRESA = nCodEmpresa
-                    and D.IDPOLIZA   = nIdPoliza;
-   
-                  OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza); 
-   
-          END;                  
-          BEGIN
-                 FOR W IN DETPOL_Q LOOP
-                    OC_DETALLE_POLIZA.ACTUALIZA_VALORES(W.CODCIA, W.IDPOLIZA, W.IDETPOL, 0);
-                    OC_ASISTENCIAS_DETALLE_POLIZA.CARGAR_ASISTENCIAS(W.CODCIA, W.CodEmpresa, W.IDTIPOSEG , W.PLANCOB,  W.IDPOLIZA, W.IDETPOL, W.TASA_CAMBIO, cCodMoneda, W.FECINIVIG, W.FECFINVIG);
-                    OC_ASISTENCIAS_DETALLE_POLIZA.EMITIR(W.CODCIA, W.CodEmpresa, W.IDPOLIZA, W.IDETPOL, 0);
-                 END LOOP;
-          EXCEPTION WHEN OTHERS THEN
-              NULL;
-          END;             
-   END IF;                        
-         --
-   IF cIdPoliza IS NOT NULL THEN
-      nIdPoliza := cIdPoliza;
-   END IF;
 
-   BEGIN
-      SELECT NVL(GastosExpedicion,0)
-        INTO nGastosExpedicion
-        FROM COTIZACIONES
-       WHERE CodCia        = nCodCia
-         AND CodEmpresa    = nCodEmpresa
-         AND IdCotizacion  = nIdCotizacion;
-   END;
+                        UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Distribuida  = wPorcComis2,
+                                                                Porc_Com_Proporcional = TRUNC(ROUND((wPorcComis2 * 100) / wPorcComisTot, 2), 2), 
+                                                                  PORC_COM_POLIZA       = wPorcComisTot
+                        WHERE IdPoliza = nIdPoliza
+                          AND CODNIVEL = 2
+                          AND CodCia   = nCodCia;
+                        IF SQL%ROWCOUNT > 0 THEN
+                           wPorcComPropT := wPorcComPropT + TRUNC(ROUND((wPorcComis2 * 100) / wPorcComisTot, 2), 2); 
+                        END IF;
 
-   IF nGastosExpedicion = 0 THEN 
-      UPDATE POLIZAS
-         SET IndCalcDerechoEmis = 'N'
-       WHERE CodCia        = nCodCia
-         AND CodEmpresa    = nCodEmpresa
-         AND IdPoliza      = nIdPoliza;
-   END IF;
+                  IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) != 'S' THEN
+                      IF wPorcComisTot = 0 THEN wPorcComisTot := 1; END IF;
+                      IF wPorcComis3 = 0 THEN wPorcComis3 := 1;     END IF;
+                  END IF;
 
-   BEGIN             -- SE COMENTA, POR EL MOMENTO TODAS LAS POLIZAS QEU VAN A PLD SOLO SE MARCAN PERO SI SE EMITEN                           
-      OC_POLIZAS.EMITIR_POLIZA(nCodCia, nIdPoliza, nCodEmpresa);
-   EXCEPTION
-      WHEN OTHERS THEN
-         IF OC_POLIZAS.BLOQUEADA_PLD(nCodCia, nCodEmpresa, nIdPoliza) = 'S' THEN
-            DECLARE
-               CURSOR PLD_Q IS
-               SELECT XMLElement("FACTURA", XMLATTRIBUTES("IDPOLIZA", "CODIGO","DESCRIPCION")
-                                ) XMLPld
-                 FROM (SELECT nIdPoliza IDPOLIZA, 'PLD' CODIGO,'LA POLIZA HA SIDO ENVIADA A PLD PARA SU VALIDACION' DESCRIPCION FROM DUAL);
-               R_Pld PLD_Q%ROWTYPE; 
-            BEGIN
-               cFacturas := '<?xml version="1.0" encoding="UTF-8" ?><FACTURAS>';
-               OPEN PLD_Q;
-               LOOP
-                   FETCH PLD_Q INTO   R_Pld;   
-                   EXIT WHEN PLD_Q%NOTFOUND;
-                   cFacturas :=  cFacturas || R_Pld.XMLPld.getclobval();
-               END LOOP;               
-               CLOSE PLD_Q;   
-               cFacturas :=  cFacturas || '</FACTURAS>';
-               RETURN cFacturas;
-            END;
+                  BEGIN
+                     SELECT TRUNC(ROUND((wPorcComis3 * 100) / wPorcComisTot, 2), 2)
+                       INTO nPorc_Com_Proporcional
+                       FROM DUAL;
+                  EXCEPTION 
+                     WHEN ZERO_DIVIDE THEN
+                        nPorc_Com_Proporcional := 0;
+                  END;
+
+                  UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Distribuida   = wPorcComis3,
+                                                          Porc_Com_Proporcional  = nPorc_Com_Proporcional, 
+                                                          Porc_Com_Poliza        = wPorcComisTot
+                   WHERE IdPoliza = nIdPoliza
+                     AND CODNIVEL = 3
+                     AND CodCia   = nCodCia;
+                  IF SQL%ROWCOUNT > 0 THEN
+                     --wPorcComPropT := wPorcComPropT + TRUNC(ROUND((wPorcComis3 * 100) / wPorcComisTot, 2), 2); 
+                     wPorcComPropT := wPorcComPropT + nPorc_Com_Proporcional;
+                  END IF;
+
+                        UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Proporcional = Porc_Com_Proporcional + (100 - wPorcComPropT)  
+                        WHERE IdPoliza = nIdPoliza
+                          AND CODNIVEL = 3
+                          AND CodCia   = nCodCia;
+
+                        DELETE AGENTES_DISTRIBUCION_COMISION
+                         WHERE CodCia   = nCodCia
+                          AND IdPoliza = nIdPoliza;
+
+                        DELETE AGENTES_DETALLES_POLIZAS
+                         WHERE CodCia   = nCodCia
+                          AND IdPoliza = nIdPoliza;
+
+                        UPDATE DETALLE_POLIZA D SET D.PORCCOMIS = wPorcComisTot
+                        WHERE D.CODCIA = nCodCia
+                          AND D.CODEMPRESA = nCodEmpresa
+                          and D.IDPOLIZA   = nIdPoliza;
+
+                        OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza); 
+
+                END;                  
+                BEGIN
+                       FOR W IN DETPOL_Q LOOP
+                          OC_DETALLE_POLIZA.ACTUALIZA_VALORES(W.CODCIA, W.IDPOLIZA, W.IDETPOL, 0);
+                          OC_ASISTENCIAS_DETALLE_POLIZA.CARGAR_ASISTENCIAS(W.CODCIA, W.CodEmpresa, W.IDTIPOSEG , W.PLANCOB,  W.IDPOLIZA, W.IDETPOL, W.TASA_CAMBIO, cCodMoneda, W.FECINIVIG, W.FECFINVIG);
+                          OC_ASISTENCIAS_DETALLE_POLIZA.EMITIR(W.CODCIA, W.CodEmpresa, W.IDPOLIZA, W.IDETPOL, 0);
+                       END LOOP;
+                EXCEPTION WHEN OTHERS THEN
+                    NULL;
+                END;             
+        END IF;                        
+            --
+         IF cIdPoliza IS NOT NULL THEN
+             nIdPoliza := cIdPoliza;
          END IF;
-   END;
-      --
-   OC_POLIZAS.INSERTA_CLAUSULAS(nCodCia,nCodEmpresa, nIdPoliza);              
 
-   -------PRE EMISION
-   OPEN Q_TRAN(nIdPoliza);
-   FETCH Q_TRAN INTO R_TRAN;
-   nIdTransaccion :=  TO_NUMBER(R_TRAN.IdTransaccion);     
-   close Q_TRAN;                       
-   OC_POLIZAS.PRE_EMITE_POLIZA(nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion);
-   ----------------
+         BEGIN
+            SELECT NVL(GastosExpedicion,0)
+              INTO nGastosExpedicion
+              FROM COTIZACIONES
+             WHERE CodCia        = nCodCia
+               AND CodEmpresa    = nCodEmpresa
+               AND IdCotizacion  = nIdCotizacion;
+         END;
 
-   cFacturas := GENERALES_PLATAFORMA_DIGITAL.CONSULTA_FACTURA(nCodCia, nIdPoliza);       
-   RETURN cFacturas;                          
-END PRE_EMITE_POLIZA_NEW; 
+         IF nGastosExpedicion = 0 THEN 
+            UPDATE POLIZAS
+               SET IndCalcDerechoEmis = 'N'
+             WHERE CodCia        = nCodCia
+               AND CodEmpresa    = nCodEmpresa
+               AND IdPoliza      = nIdPoliza;
+         END IF;
+
+         BEGIN             -- SE COMENTA, POR EL MOMENTO TODAS LAS POLIZAS QEU VAN A PLD SOLO SE MARCAN PERO SI SE EMITEN                           
+            OC_POLIZAS.EMITIR_POLIZA(nCodCia, nIdPoliza, nCodEmpresa);
+         EXCEPTION
+            WHEN OTHERS THEN
+               IF OC_POLIZAS.BLOQUEADA_PLD(nCodCia, nCodEmpresa, nIdPoliza) = 'S' THEN
+                  DECLARE
+                     CURSOR PLD_Q IS
+                     SELECT XMLElement("FACTURA", XMLATTRIBUTES("IDPOLIZA", "CODIGO","DESCRIPCION")
+                                      ) XMLPld
+                       FROM (SELECT nIdPoliza IDPOLIZA, 'PLD' CODIGO,'LA POLIZA HA SIDO ENVIADA A PLD PARA SU VALIDACION' DESCRIPCION FROM DUAL);
+                     R_Pld PLD_Q%ROWTYPE; 
+                  BEGIN
+                     cFacturas := '<?xml version="1.0" encoding="UTF-8" ?><FACTURAS>';
+                     OPEN PLD_Q;
+                     LOOP
+                         FETCH PLD_Q INTO   R_Pld;   
+                         EXIT WHEN PLD_Q%NOTFOUND;
+                         cFacturas :=  cFacturas || R_Pld.XMLPld.getclobval();
+                     END LOOP;               
+                     CLOSE PLD_Q;   
+                     cFacturas :=  cFacturas || '</FACTURAS>';
+                     RETURN cFacturas;
+                  END;
+               END IF;
+         END;
+         --
+         OC_POLIZAS.INSERTA_CLAUSULAS(nCodCia,nCodEmpresa, nIdPoliza);              
+
+         -------PRE EMISION
+         OPEN Q_TRAN(nIdPoliza);
+         FETCH Q_TRAN INTO R_TRAN;
+         nIdTransaccion :=  TO_NUMBER(R_TRAN.IdTransaccion);     
+         close Q_TRAN;                       
+         OC_POLIZAS.PRE_EMITE_POLIZA(nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion);
+         ----------------
+
+         cFacturas := GENERALES_PLATAFORMA_DIGITAL.CONSULTA_FACTURA(nCodCia, nIdPoliza);       
+         --dbms_output.put_line(cFacturas);
+         RETURN cFacturas;                          
+    END PRE_EMITE_POLIZA_NEW; 
     --
     FUNCTION CONSULTA_FACTURA(nCodCia NUMBER, nIdPoliza NUMBER) RETURN CLOB IS
         CURSOR Q_FAC IS
@@ -1886,7 +1857,7 @@ BEGIN
       IF cObten_Fecha_Vigencia = 'N' THEN
          OC_POLIZAS.LIBERA_PRE_EMITE(nCodCia, nCodEmpresa, nIdPoliza, TRUNC(SYSDATE));
       ELSE
-         OC_POLIZAS.LIBERA_PRE_EMITE_PLATAFORMA(nCodCia, nCodEmpresa, nIdPoliza, TRUNC(dFechaPag));
+         OC_POLIZAS.LIBERA_PRE_EMITE_PLATAFORMA(nCodCia, nCodEmpresa, nIdPoliza, dFechaPag);
       END IF;
    --         
       OPEN Q_FACTURAS;
@@ -2179,7 +2150,7 @@ END PAGO_FACTURA;
              FROM (SELECT E.CODENTIDAD, 
                           REPLACE(INITCAP (P.NOMBRE), ' De ', ' de ')   NOMBRE,
                           UPPER(P.NOMBRECOMERCIAL)                      NOMBRECOMERCIAL
-                    FROM ENTIDAD_FINANCIERA E INNER JOIN SICAS_OC.PERSONA_NATURAL_JURIDICA P ON P.Tipo_Doc_Identificacion = E.Tipo_Doc_Identificacion AND P.Num_Doc_Identificacion = E.Num_Doc_Identificacion
+                    FROM ENTIDAD_FINANCIERA E INNER JOIN SICAS_OC.PERSONA_NATURAL_JURIDICA P ON P.TIPO_DOC_IDENTIFICACION = E.TIPO_DOC_IDENTIFICACION AND P.NUM_DOC_IDENTIFICACION = E.NUM_DOC_IDENTIFICACION
                    WHERE E.CODCIA = 1
                      AND E.CODENTIDAD = DECODE(pCodEntidad, NULL, CodEntidad, pCodEntidad)
                     ORDER BY P.NOMBRECOMERCIAL);
@@ -2352,7 +2323,7 @@ END PAGO_FACTURA;
             RETURN  CATA;           
     END COTIZACION_CONCEPTOS_PRIMA;           
     --                        
-    FUNCTION MUESTRA_POLIZAS(pCodCia NUMBER, pIDPOLIZA NUMBER, pRFC VARCHAR2, pNombre VARCHAR2, pCodAgente VARCHAR2, nNumRegIni NUMBER, nNumRegFin NUMBER) RETURN CLOB IS 
+    FUNCTION MUESTRA_POLIZAS(pCodCia NUMBER, pIDPOLIZA NUMBER, pRFC varchar2, pNombre VARCHAR2, pCodAgente varchar2, nNumRegIni NUMBER, nNumRegFin NUMBER) RETURN CLOB IS 
         --pCodCia     NUMBER  := 1;
         --pIDPOLIZA   NUMBER  := 0;
         --pRFC        VARCHAR2(15) := null; 
@@ -2394,7 +2365,7 @@ END PAGO_FACTURA;
                    P.FECINIVIG,
                    P.FECFINVIG,
                    P.STSPOLIZA,                   
-                   --OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) NOMBRE_CLIENTE,
+                   --OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) NOMBRE_CLIENTE,
                    TRIM(PNJ.Nombre) ||' ' || TRIM(PNJ.Apellido_Paterno) || ' ' || TRIM(PNJ.Apellido_Materno) || ' ' || DECODE(PNJ.ApeCasada,NULL,'', ' de ' ||PNJ.ApeCasada) NOMBRE_CLIENTE,
                    NVL(PNJ.TELMOVIL, PNJ.TELRES) TELMOVIL,
                    PNJ.EMAIL ,
@@ -2404,14 +2375,14 @@ END PAGO_FACTURA;
                    P.PRIMANETA_MONEDA,
                    ANTERIOR.NOMBRECONTRATANTE NOMPAQ,
                    'REMXX'   REMPLAZO
-            FROM POLIZAS P  INNER JOIN CLIENTES                 CLI         ON CLI.CodCliente = P.CodCliente
+            FROM POLIZAS P  INNER JOIN CLIENTES                 CLI         ON CLI.CodCliente = P.CODCLIENTE
                             INNER JOIN PERSONA_NATURAL_JURIDICA PNJ         ON CLI.Tipo_Doc_Identificacion = PNJ.Tipo_Doc_Identificacion AND CLI.Num_Doc_Identificacion  = PNJ.Num_Doc_Identificacion                            
                             LEFT JOIN COTIZACIONES              C           ON C.CODCIA = P.CODCIA AND C.CODEMPRESA = P.CODEMPRESA AND C.IDCOTIZACION = P.NUM_COTIZACION 
                             LEFT JOIN COTIZACIONES              ANTERIOR    ON ANTERIOR.CODCIA = C.CODCIA AND ANTERIOR.CODEMPRESA = C.CODEMPRESA AND ANTERIOR.IDCOTIZACION = C.NUMCOTIZACIONANT
             WHERE  P.CODCIA                     = NVL(pCodCia, 1)              
               AND  P.COD_AGENTE                 = DECODE(NVL(pCodAgente, '0'), '0', P.COD_AGENTE, pCodAgente)              
               AND  P.IDPOLIZA                   = DECODE(NVL(pIDPOLIZA, 0), 0,  P.IDPOLIZA,   pIDPOLIZA)
-              AND  PNJ.Num_Doc_Identificacion   = DECODE(pRFC, NULL, PNJ.Num_Doc_Identificacion, pRFC)
+              AND  PNJ.NUM_DOC_IDENTIFICACION   = DECODE(pRFC, NULL, PNJ.NUM_DOC_IDENTIFICACION, pRFC)
               AND TRIM(PNJ.Nombre) ||' ' || TRIM(PNJ.Apellido_Paterno) || ' ' || TRIM(PNJ.Apellido_Materno) LIKE DECODE(pNombre, NULL, '%', replace(replace(pNombre, '%', '*'), '@', '%'))
              ORDER BY decode(P.STSPOLIZA, 'PLD', 10, 'PRE', 20, 'EMI', 30, 40), P.IDPOLIZA DESC) ;         
         L_ENACA Q_ENACA%ROWTYPE ;
@@ -2505,11 +2476,12 @@ END PAGO_FACTURA;
     | Version    : 3.0                                                                                                              |
     | Objetivo   : Funcion que obtiene informacion del Agente que coincida con el proporcionado.                                    |
     | Modificado : Si                                                                                                               |
-    | Ult. modif.: 14/04/2021                                                                                                       |
+    | Ult. modif.: 13/08/2021                                                                                                       |
     | Modifico   : J. Alberto Lopez Valle (JALV)                                                                                    |
     | Email      : alopez@thonaseguros.mx                                                                                           |
     |                                                                                                                               |
-    | Obj. Modif.: Colocar orden correcto de apellidos en el Nombre del agente (Ape. Paterno y despues Ape. Materno)                |
+    | Obj. Modif.: Se agrego el codigo del Ejecutivo.                                                                               |
+    |        14/04/2021 Colocar orden correcto de apellidos en el Nombre del agente (Ape. Paterno y despues Ape. Materno).          |
     |        04/03/2021 Correccion para que muestre el Email correcto de acuerdo al Correlativo.                                    |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
@@ -2533,6 +2505,7 @@ END PAGO_FACTURA;
             NOMBRE  VARCHAR(500),
             EMAIL   VARCHAR(500),
             TEL     VARCHAR(500),
+            CODEJE            AGENTES.CODEJECUTIVO%TYPE,    --> JALV(+) 13/08/2021
             EST_AGENTE        AGENTES.EST_AGENTE%TYPE,
             FECALTA           AGENTES.FECALTA%TYPE,
             TIPO_AGENTE       AGENTES.TIPO_AGENTE%TYPE,                                          
@@ -2554,8 +2527,9 @@ END PAGO_FACTURA;
             FOR ENT IN (SELECT A.CODNIVEL NIVEL,
                                A.COD_AGENTE_JEFE, 
                                A.COD_AGENTE,
-                               A.Tipo_Doc_Identificacion,
-                               A.Num_Doc_Identificacion,
+                               A.CODEJECUTIVO,              --> JALV(+) 13/08/2021
+                               A.TIPO_DOC_IDENTIFICACION,
+                               A.NUM_DOC_IDENTIFICACION,
                                A.EST_AGENTE,
                                A.FECALTA,
                                A.IDCUENTACORREO,  
@@ -2573,16 +2547,17 @@ END PAGO_FACTURA;
                 TABLA_NIVELES(NUM).NIVEL      := ENT.NIVEL;
                 TABLA_NIVELES(NUM).JEFE       := ENT.COD_AGENTE;
                 TABLA_NIVELES(NUM).SUB        := ENT.COD_AGENTE_JEFE;
-                SELECT  REPLACE(PA.NOMBRE || ' ' || PA.APELLIDO_PATERNO || ' ' || PA.APELLIDO_MATERNO, '  ', ' '), -- JALV 14/042021
-                        DECODE(ENT.IDCUENTACORREO,NULL,PA.EMAIL,OC_CORREOS_ELECTRONICOS_PNJ.EMAIL_ESPECIFICO(ENT.Tipo_Doc_Identificacion, ENT.Num_Doc_Identificacion, ENT.IDCUENTACORREO)),--PA.EMAIL,   --> 04/03/2021 (JALV +)
+                SELECT  REPLACE(PA.NOMBRE || ' ' || PA.APELLIDO_PATERNO || ' ' || PA.APELLIDO_MATERNO, '  ', ' '), -- JALV 14/04/2021
+                        DECODE(ENT.IDCUENTACORREO,NULL,PA.EMAIL,OC_CORREOS_ELECTRONICOS_PNJ.EMAIL_ESPECIFICO(ENT.TIPO_DOC_IDENTIFICACION, ENT.NUM_DOC_IDENTIFICACION, ENT.IDCUENTACORREO)),--PA.EMAIL,   --> 04/03/2021 (JALV +)
                         NVL(PA.TELMOVIL, NVL(PA.TELOFI, PA.TELRES )) TEL                           
                   INTO  TABLA_NIVELES(NUM).NOMBRE, 
                         TABLA_NIVELES(NUM).EMAIL,
                         TABLA_NIVELES(NUM).TEL
                   FROM  PERSONA_NATURAL_JURIDICA PA  
-                 WHERE  PA.Tipo_Doc_Identificacion = ENT.Tipo_Doc_Identificacion 
-                   AND  PA.Num_Doc_Identificacion = ENT.Num_Doc_Identificacion;
+                 WHERE  PA.TIPO_DOC_IDENTIFICACION = ENT.TIPO_DOC_IDENTIFICACION 
+                   AND  PA.NUM_DOC_IDENTIFICACION = ENT.NUM_DOC_IDENTIFICACION;
                 IF nCOD_AGENTE =  pCODAGENTE THEN                                  
+                    TABLA_NIVELES(NUM).CODEJE        := ENT.CODEJECUTIVO;       --> JALV(+) 13/08/2021
                     TABLA_NIVELES(NUM).EST_AGENTE    := ENT.EST_AGENTE;
                     TABLA_NIVELES(NUM).FECALTA       := ENT.FECALTA;
                     TABLA_NIVELES(NUM).TIPO_AGENTE   := ENT.TIPO_AGENTE;
@@ -2614,6 +2589,7 @@ END PAGO_FACTURA;
                         --' DEP="' || TABLA_NIVELES(NUM).SUB            || '"';
                         IF TABLA_NIVELES(NUM).JEFE  =  pCODAGENTE THEN 
                             Linea :=   Linea ||
+                            ' COD_EJECUTIVO="' || TABLA_NIVELES(NUM).CODEJE   || '"' || --> JALV(+) 13/08/2021
                             ' ESTATUS="' || TABLA_NIVELES(NUM).EST_AGENTE   || '"' ||
                             ' FECHA_ALTA="' || to_char(TABLA_NIVELES(NUM).FECALTA, 'dd/mm/yyyy')      || '"' ||
                             ' TIPO_AGENTE="' || TABLA_NIVELES(NUM).TIPO_AGENTE  || '"' ||
@@ -3029,5 +3005,3 @@ BEGIN
 END CREA_POLIZA;
 
 END GENERALES_PLATAFORMA_DIGITAL;
-/
-create or replace public synonym GENERALES_PLATAFORMA_DIGITAL for thonapi.GENERALES_PLATAFORMA_DIGITAL;
