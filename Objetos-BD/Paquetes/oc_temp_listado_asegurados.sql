@@ -1,38 +1,7 @@
+CREATE OR REPLACE PACKAGE OC_TEMP_LISTADO_ASEGURADOS IS
 --
--- OC_TEMP_LISTADO_ASEGURADOS  (Package) 
+-- SE PROGRAMO LA VALIDACION DE LA MARCA CONCENTRADA PARA POLIZAS A DECLARACION   DECLA 20210604
 --
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   SOLICITUD_DETALLE_ASEG (Table)
---   POLIZAS (Table)
---   OC_ENDOSO (Package)
---   OC_ENDOSO_TEXTO (Package)
---   OC_VALORES_DE_LISTAS (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
---   APARTADO_POSTAL (Table)
---   ASEGURADO (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   CLIENTES (Table)
---   COBERT_ACT_ASEG (Table)
---   TASAS_CAMBIO (Table)
---   TEMP_LISTADO_ASEGURADOS (Table)
---   OC_GENERALES (Package)
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---   OC_POLIZAS_RESUMEN_ENDOSO_CLA (Package)
---   OC_ASEGURADO (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_ASISTENCIAS_ASEGURADO (Package)
---   OC_CLIENTES (Package)
---   OC_CLIENTE_ASEG (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   DETALLE_POLIZA (Table)
---   ENDOSOS (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_TEMP_LISTADO_ASEGURADOS IS
-
   FUNCTION CORRELATIVO_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
   FUNCTION EXISTEN_ASEGURADOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
   PROCEDURE VALIDAR_DATOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
@@ -40,15 +9,12 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_TEMP_LISTADO_ASEGURADOS IS
   PROCEDURE ELIMINAR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
 
 END OC_TEMP_LISTADO_ASEGURADOS;
+ 
+ 
+ 
+ 
 /
-
---
--- OC_TEMP_LISTADO_ASEGURADOS  (Package Body) 
---
---  Dependencies: 
---   OC_TEMP_LISTADO_ASEGURADOS (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_TEMP_LISTADO_ASEGURADOS IS
+CREATE OR REPLACE PACKAGE BODY OC_TEMP_LISTADO_ASEGURADOS IS
 
 FUNCTION CORRELATIVO_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS
 nIdAsegurado     SOLICITUD_DETALLE_ASEG.IdAsegurado%TYPE;
@@ -209,6 +175,9 @@ nCantAsegListado    NUMBER(20);
 nCuentaAseg         NUMBER(20);
 nAsegExiste         NUMBER(20);
 cNaturalidad        VARCHAR2(2);
+--
+CINDCONCENTRADA     POLIZAS.INDCONCENTRADA%TYPE;  --DECLA
+NDETALLE_MODELO     NUMBER;                       --DECLA
 
 CURSOR DET_Q IS
    SELECT DISTINCT T.IDetPol, D.CantAsegModelo + 1 CantAsegModelo, D.IdTipoSeg, D.PlanCob
@@ -265,11 +234,13 @@ BEGIN
    OC_TEMP_LISTADO_ASEGURADOS.VALIDAR_DATOS(nCodCia, nCodEmpresa, nIdPoliza);
 
    BEGIN
-      SELECT FecIniVig, FecFinVig, CodPlanPago,
+      SELECT FecIniVig,  FecFinVig,   CodPlanPago,
+             P.INDCONCENTRADA,  --DECLA
              OC_GENERALES.TASA_DE_CAMBIO(Cod_Moneda, TRUNC(SYSDATE))
         INTO dFecIniVig, dFecFinVig, cCodPlanPago,
+             CINDCONCENTRADA,  --DECLA
              nTasacambio
-        FROM POLIZAS
+        FROM POLIZAS P
        WHERE IdPoliza   = nIdPoliza
          AND CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa;
@@ -281,6 +252,7 @@ BEGIN
    END;
 
    nTotAsegEndosoExc := 0;
+   NDETALLE_MODELO   := 0;  --DECLA
    FOR X IN DET_Q LOOP
       BEGIN
          SELECT AC.Cod_Asegurado
@@ -532,12 +504,29 @@ BEGIN
       OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_AsegModelo);
 
       -- Se quita la Marca y Cantidad de Asegurado Modelo
-      UPDATE DETALLE_POLIZA
+      UPDATE DETALLE_POLIZA DP
          SET IndAsegModelo = 'N',
              CantAsegModelo = 0
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
-         AND IdPoliza   = nIdPoliza;
+         AND IdPoliza   = nIdPoliza
+         AND DP.IDETPOL = nIDetPol;
+      -- SE VALIDA SI YA NO HAY SUBGRUPOS CON ASEGURADO MODELO  DECLA
+      SELECT COUNT(*)
+        INTO NDETALLE_MODELO
+        FROM DETALLE_POLIZA DP
+       WHERE CodCia     = nCodCia
+         AND CodEmpresa = nCodEmpresa
+         AND IdPoliza   = nIdPoliza
+         AND NVL(IndAsegModelo,'N') = 'S';
+      -- SI NO HAY MAS SUBGRUPOS CON ASEGURADO MODELO SE QUITA LA MARCA CONCETRADA  DECLA 
+      IF NDETALLE_MODELO = 0 THEN 
+         UPDATE POLIZAS P
+            SET P.INDCONCENTRADA = 'N'
+          WHERE CodCia     = nCodCia
+            AND CodEmpresa = nCodEmpresa
+            AND IdPoliza   = nIdPoliza;
+      END IF;   
    END LOOP;
 
    -- Actualiza y Emite Endoso de Cambio de Asegurado Modelo por Listado de Asegurados
@@ -576,17 +565,4 @@ BEGIN
 END;
 
 END OC_TEMP_LISTADO_ASEGURADOS;
-/
-
---
--- OC_TEMP_LISTADO_ASEGURADOS  (Synonym) 
---
---  Dependencies: 
---   OC_TEMP_LISTADO_ASEGURADOS (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_TEMP_LISTADO_ASEGURADOS FOR SICAS_OC.OC_TEMP_LISTADO_ASEGURADOS
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_TEMP_LISTADO_ASEGURADOS TO PUBLIC
 /
