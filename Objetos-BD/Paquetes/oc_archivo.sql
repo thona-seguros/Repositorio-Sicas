@@ -38,7 +38,7 @@ PROCEDURE ESCRIBIR_LINEA(cCadena IN VARCHAR2, cIdGen IN VARCHAR2, nLinea IN VARC
 BEGIN
     if nLinea = 1 THEN
 
-      OC_ARCHIVO.cBinDataRow := UTL_RAW.cast_to_raw (dbms_lob.substr (cCadena || chr (10), 4000, 1));
+      OC_ARCHIVO.cBinDataRow := UTL_RAW.cast_to_raw (dbms_lob.substr (cCadena || chr(13) || chr (10), 4000, 1));
     ELSIF  nLinea = 0 then
        IF  cNomRep != 'N' THEN
            NULL;
@@ -48,7 +48,7 @@ BEGIN
              VALUES (OC_ARCHIVO.cBinDataRow, cIdGen);
       END IF;
     ELSE
-      dbms_lob.append (OC_ARCHIVO.cBinDataRow, UTL_RAW.cast_to_raw (dbms_lob.substr (cCadena || chr (10), 4000, 1)));
+      dbms_lob.append (OC_ARCHIVO.cBinDataRow, UTL_RAW.cast_to_raw (dbms_lob.substr (cCadena || chr(13) || chr (10), 4000, 1)));
     END IF ;
 
 END ESCRIBIR_LINEA;
