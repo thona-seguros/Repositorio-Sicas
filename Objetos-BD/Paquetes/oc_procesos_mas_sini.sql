@@ -1,5 +1,11 @@
 CREATE OR REPLACE PACKAGE OC_PROCESOS_MAS_SINI IS
---  16/06/2021  ajuste a Disminucion de reserva  RVAICO
+--
+--  28/02/2017  Rutina para constituir solo reserva en INFONACOT      -- JICO ASEGMAS 
+--  07/08/2018  Ajuste para cambio especial                           -- JICO INFO2
+--  17/08/2018  Devolucion de pagos de INFONACOT                      -- JICO ANUPAG
+--  30/04/2019  Disminucion de reserva                                -- JICO AJUSTES
+--  26/08/2021  Procesos masivo en solicitud                          -- JICO MASSOL
+--
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 --
 PROCEDURE SINIESTROS_INFONACOT(nIdProcMasivo NUMBER);
@@ -10,7 +16,7 @@ PROCEDURE SINIESTROS_INFONACOT_DEV(nIdProcMasivo NUMBER);   --ANUPAG
 --
 PROCEDURE SINIESTROS_INFONACOT_DRV(nIdProcMasivo NUMBER);   --DISRVA
 --
-PROCEDURE SINIESTROS_AJUSTES(nIdProcMasivo NUMBER);         --AJUSTES INI
+PROCEDURE SINIESTROS_AJUSTES(nIdProcMasivo NUMBER);         --AJUSTES 
 --
 PROCEDURE SINIESTROS_PAGOS_RVA(nIdProcMasivo NUMBER);
 --
@@ -31,20 +37,50 @@ PROCEDURE CAMBIA_FECHA_CONTA(nIDTRANSACCION NUMBER, nCodCia NUMBER, DFECHA DATE,
 --
 PROCEDURE CAMBIA_FECHA_OBSERVACION(nIdSiniestro NUMBER, nIdPoliza NUMBER, DFECHA DATE); 
 --
-PROCEDURE MARCA_NO_ENVIO_CONTABILIDAD(nIDTRANSACCION NUMBER, nCodCia NUMBER, DFECHA DATE); --AJUSTES FIN
+PROCEDURE MARCA_NO_ENVIO_CONTABILIDAD(nIDTRANSACCION NUMBER, nCodCia NUMBER, DFECHA DATE); 
 --
 PROCEDURE ACTUALIZA_PAGOS(nIdPoliza NUMBER,   nIdSiniestro  NUMBER,   NIDDETSIN     NUMBER,   cCodCobert   VARCHAR2, 
                           DFECHA    DATE,     nAJUSTELOCAL  NUMBER,   nAJUSTEMONEDA NUMBER,   cID_COL_INDI VARCHAR);
-                          --
+--
+PROCEDURE MASIVOS_SOLICITUD_RESERVA(nIdProcMasivo NUMBER);         --MASSOL 
+--
+PROCEDURE SOLICITUD_RESERVA(NCODCIA        NUMBER,   NCODEMPRESA  NUMBER,     NIDSINIESTRO    NUMBER,
+                            NIDDETSIN      NUMBER,   CCODCOBERT   VARCHAR2,   CCODCPTOTRANSAC VARCHAR2,
+                            NMONTO_RES_MON NUMBER,   CID_COL_INDI VARCHAR2,   nIdProcMasivo   NUMBER);          
+--
+PROCEDURE SOLICITUD_RESERVA_BORRADO(NCODCIA   NUMBER,   NCODEMPRESA   NUMBER,     NIDSINIESTRO   NUMBER,
+                                    NIDDETSIN NUMBER,   CCODCOBERT    VARCHAR2,   CID_COL_INDI   VARCHAR2,   
+                                    NNUMMOD   NUMBER,   nIdProcMasivo NUMBER);
+--                                    
+PROCEDURE SOLICITUD_RESERVA_EMISION(NCODCIA       NUMBER,     NCODEMPRESA NUMBER,     NIDSINIESTRO   NUMBER,
+                                    NIDDETSIN     NUMBER,     CCODCOBERT  VARCHAR2,   NMONTO_RES_MON NUMBER,   
+                                    CID_COL_INDI  VARCHAR2,   NNUMMOD     NUMBER,     CDESCRIPCION   VARCHAR2,
+                                    DFECRES        DATE,      nIdProcMasivo NUMBER);          
+--
+PROCEDURE MASIVOS_SOLICITUD_PAGOS(nIdProcMasivo NUMBER);
+--
+PROCEDURE SOLICITUD_PAGOS(NCODCIA       NUMBER,   NCODEMPRESA     NUMBER,   NIDSINIESTRO NUMBER,
+                          NIDDETSIN     NUMBER,   NNUM_APROBACION NUMBER,   CID_COL_INDI VARCHAR2,   
+                          nIdProcMasivo NUMBER);     
+--
+PROCEDURE SOLICITUD_PAGOS_BORRADO(NCODCIA       NUMBER,   NCODEMPRESA     NUMBER,   NIDSINIESTRO NUMBER,  
+                                  NIDDETSIN     NUMBER,   NNUM_APROBACION NUMBER,   CID_COL_INDI VARCHAR2,
+                                  nIdProcMasivo NUMBER);
+--
+PROCEDURE SOLICITUD_PAGOS_EMISION(NCODCIA      NUMBER,     NCODEMPRESA     NUMBER,   NIDSINIESTRO  NUMBER,
+                                  NIDDETSIN    NUMBER,     NNUM_APROBACION NUMBER,   CID_COL_INDI  VARCHAR2,   
+                                  CDESCRIPCION VARCHAR2,   DFECPAGO        DATE,     nIdProcMasivo NUMBER);    
+--
 END OC_PROCESOS_MAS_SINI;
 /
 CREATE OR REPLACE PACKAGE BODY OC_PROCESOS_MAS_SINI IS
 --
---  28/02/2017  Rutina para constituir solo reserva en INFONACOT                                 -- JICO ASEGMAS 
---  07/08/2018  Ajuste para cambio especial                                                      -- JICO INFO2
---  17/08/2018  Devolucion de pagos de INFONACOT                                                 -- JICO ANUPAG
---  30/04/2019  Disminucion de reserva                                                           -- JICO AJUSTES
-
+--  28/02/2017  Rutina para constituir solo reserva en INFONACOT      -- JICO ASEGMAS 
+--  07/08/2018  Ajuste para cambio especial                           -- JICO INFO2
+--  17/08/2018  Devolucion de pagos de INFONACOT                      -- JICO ANUPAG
+--  30/04/2019  Disminucion de reserva                                -- JICO AJUSTES
+--  06/09/2021  Procesos masivo en solicitud                          -- JICO MASSOL
+--
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
    IF cTipoProceso = 'SINCER' THEN
@@ -58,8 +94,13 @@ BEGIN
    ELSIF cTipoProceso = 'SINAJU' THEN                                  
       OC_PROCESOS_MAS_SINI.SINIESTROS_AJUSTES(nIdProcMasivo);        --AJUSTES
    ELSIF cTipoProceso = 'SINRPA' THEN                                  
-      OC_PROCESOS_MAS_SINI.SINIESTROS_AJUSTES(nIdProcMasivo);    -- CONSTITUYE RESERVA  --AJUSTES
-      OC_PROCESOS_MAS_SINI.SINIESTROS_PAGOS_RVA(nIdProcMasivo);  -- GENERA PAGO         --AJUSTES
+      OC_PROCESOS_MAS_SINI.SINIESTROS_AJUSTES(nIdProcMasivo);        --AJUSTES CONSTITUYE RESERVA
+      OC_PROCESOS_MAS_SINI.SINIESTROS_PAGOS_RVA(nIdProcMasivo);      --AJUSTES GENERA PAGO
+   ELSIF cTipoProceso = 'SIAJRE' THEN                                  
+      OC_PROCESOS_MAS_SINI.MASIVOS_SOLICITUD_RESERVA(nIdProcMasivo);  --MASSOL
+   ELSIF cTipoProceso = 'SIAJPA' THEN
+DBMS_OUTPUT.put_line('PROCESO_REGISTRO -> '||nIdProcMasivo); 
+      OC_PROCESOS_MAS_SINI.MASIVOS_SOLICITUD_PAGOS(nIdProcMasivo);    --MASSOL
    END IF;
 END PROCESO_REGISTRO;
 --
@@ -1652,8 +1693,9 @@ WID_APLICA_CONTA       VARCHAR2(1);
 nIDTRANSACCION         TRANSACCION.IDTRANSACCION%TYPE;
 --
 CURSOR SIN_Q IS
-   SELECT CodCia, CodEmpresa, IdTipoSeg, PlanCob, NumPolUnico,
-          NumDetUnico, RegDatosProc, TipoProceso, IndColectiva
+   SELECT CodCia,       CodEmpresa,   IdTipoSeg, 
+          PlanCob,      NumPolUnico,  NumDetUnico, 
+          RegDatosProc, TipoProceso,  IndColectiva
      FROM PROCESOS_MASIVOS
     WHERE IdProcMasivo   = nIdProcMasivo;
 --
@@ -1800,7 +1842,7 @@ BEGIN
                     RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||cCodCobert);
              END;
              --
-             --IF WSALDO_RESERVA >= nAJUSTEMONEDA THEN  RVAICO
+             --IF WSALDO_RESERVA >= nAJUSTEMONEDA THEN
                 BEGIN
                   INSERT INTO COBERTURA_SINIESTRO
                    (IDDETSIN,               CODCOBERT,              IDSINIESTRO,          IDPOLIZA,
@@ -1820,11 +1862,11 @@ BEGIN
                        cObservacion := 'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO ';
                        RAISE_APPLICATION_ERROR(-20225,'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO'||SQLERRM);
                 END;
-             --ELSE    RVAICO
-             --   nCodError := 99;   RVAICO
-             --   cObservacion := 'LA RESERVA ES INSUFICIENTE PARA ESTE AJUSTE. ';    RVAICO
-             --   RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);   RVAICO
-             --END IF;  RVAICO
+             --ELSE
+             ---   nCodError := 99;
+             --   cObservacion := 'LA RESERVA ES INSUFICIENTE PARA ESTE AJUSTE. ';
+             ---   RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);
+             --END IF;
           END IF;    
        ELSE      
           IF cExisteCob = 'S' THEN
@@ -1970,7 +2012,7 @@ BEGIN
                     RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura (SIN Aseg) de '||cCodCobert);
              END;
              --
-             --IF WSALDO_RESERVA >= nAJUSTEMONEDA THEN RVAICO
+             --IF WSALDO_RESERVA >= nAJUSTEMONEDA THEN
                 BEGIN
                   INSERT INTO COBERTURA_SINIESTRO_ASEG
                    (IDDETSIN,               CODCOBERT,              IDSINIESTRO,          IDPOLIZA,
@@ -1992,11 +2034,11 @@ BEGIN
                        cObservacion := 'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO_ASEG ';
                        RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);
                 END;
-             --ELSE  RVAICO
-             --   nCodError := 99;  RVAICO
-             --   cObservacion := 'LA RESERVA ES INSUFICIENTE PARA ESTE AJUSTE. ';   RVAICO
-             --   RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);  RVAICO
-             --END IF;  RVAICO
+             --ELSE
+             ----   nCodError := 99;
+             --   cObservacion := 'LA RESERVA ES INSUFICIENTE PARA ESTE AJUSTE. ';
+             --   RAISE_APPLICATION_ERROR(-20225,'LA RESERVA '||WSALDO_RESERVA||' ES INSUFICIENTE PARA EL AJUSTE '||nAJUSTEMONEDA||'  '||SQLERRM);
+             --END IF;
           END IF;    
        ELSE      
           IF cExisteCob = 'S' THEN
@@ -2887,6 +2929,1298 @@ BEGIN
          S.MONTO_PAGO_LOCAL  = S.MONTO_PAGO_LOCAL  + nAJUSTELOCAL;
   --
 END ACTUALIZA_PAGOS;  -- AJUSTES FIN--
+--
+--
+PROCEDURE MASIVOS_SOLICITUD_RESERVA(nIdProcMasivo NUMBER) IS     
+NCODCIA                COBERTURA_SINIESTRO_ASEG.CODCIA%TYPE;
+NCODEMPRESA            COBERTURA_SINIESTRO_ASEG.CODEMPRESA%TYPE;
+NIDSINIESTRO           COBERTURA_SINIESTRO_ASEG.IDSINIESTRO%TYPE;
+NIDDETSIN              COBERTURA_SINIESTRO_ASEG.IDDETSIN%TYPE;
+CCODCOBERT             COBERTURA_SINIESTRO_ASEG.CODCOBERT%TYPE;
+NMONTO_RES_MON         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%TYPE;
+CCODCPTOTRANSAC        COBERTURA_SINIESTRO_ASEG.CODCPTOTRANSAC%TYPE;
+NNUMMOD                COBERTURA_SINIESTRO_ASEG.NUMMOD%TYPE;
+DFECRES                COBERTURA_SINIESTRO_ASEG.FECRES%TYPE;
+--
+CID_COL_INDI           VARCHAR2(1);
+CID_SOL_EMI            VARCHAR2(6);
+CDESCRIPCION           OBSERVACION_SINIESTRO.DESCRIPCION%TYPE;
+--
+CURSOR SIN_Q IS
+   SELECT CodCia,        CodEmpresa,   IdTipoSeg, 
+          PlanCob,       NumPolUnico,  NumDetUnico, 
+          RegDatosProc,  TipoProceso,  IndColectiva
+     FROM PROCESOS_MASIVOS
+    WHERE IdProcMasivo = nIdProcMasivo;
+--
+BEGIN
+  --
+  FOR X IN SIN_Q LOOP
+    NCODCIA     := X.CodCia;
+    NCODEMPRESA := X.CodEmpresa;
+    --
+    NIDSINIESTRO    := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,',')));
+    NIDDETSIN       := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,2,',')));
+    CCODCOBERT      :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,3,','));
+    CCODCPTOTRANSAC :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,4,','));
+    NMONTO_RES_MON  := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,',')));
+    CID_COL_INDI    :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,','));
+    CID_SOL_EMI     :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,','));
+    NNUMMOD         :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,','));
+    CDESCRIPCION    :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,9,','));
+    DFECRES         :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,','));
+    --
+    -- ELIGE PROCESO
+    --
+    IF CID_SOL_EMI = 'SOL' THEN
+       SOLICITUD_RESERVA(NCODCIA,          NCODEMPRESA,    NIDSINIESTRO,
+                         NIDDETSIN,        CCODCOBERT,     CCODCPTOTRANSAC,
+                         NMONTO_RES_MON,   CID_COL_INDI,   nIdProcMasivo);
+    ELSIF CID_SOL_EMI = 'DEL' THEN
+       SOLICITUD_RESERVA_BORRADO(NCODCIA,     NCODEMPRESA,   NIDSINIESTRO,
+                                 NIDDETSIN,   CCODCOBERT,    CID_COL_INDI,   
+                                 NNUMMOD,     nIdProcMasivo);
+    ELSIF CID_SOL_EMI = 'EMI' THEN
+       SOLICITUD_RESERVA_EMISION(NCODCIA,          NCODEMPRESA,    NIDSINIESTRO,
+                                 NIDDETSIN,        CCODCOBERT,     NMONTO_RES_MON,   
+                                 CID_COL_INDI,     NNUMMOD,        CDESCRIPCION,
+                                 DFECRES,          nIdProcMasivo);                            
+    END IF;
+    --
+  END LOOP;
+  --
+EXCEPTION
+  WHEN OTHERS THEN
+       ROLLBACK;
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'MASIVOS_SOLICITUD','20225','Error 1: '||SQLERRM);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+END MASIVOS_SOLICITUD_RESERVA;  
+--
+--
+PROCEDURE SOLICITUD_RESERVA(NCODCIA        NUMBER,   NCODEMPRESA  NUMBER,     NIDSINIESTRO    NUMBER,
+                            NIDDETSIN      NUMBER,   CCODCOBERT   VARCHAR2,   CCODCPTOTRANSAC VARCHAR2,
+                            NMONTO_RES_MON NUMBER,   CID_COL_INDI VARCHAR2,   nIdProcMasivo   NUMBER) IS     
+--
+NMONTO_RES_LOC         COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_LOCAL%TYPE;
+CCODTRANSAC            COBERTURA_SINIESTRO_ASEG.CODTRANSAC%TYPE;
+CCOD_TPRESERVA         COBERTURA_SINIESTRO_ASEG.COD_TPRESERVA%TYPE;
+WNIDDETSIN             COBERTURA_SINIESTRO_ASEG.IDDETSIN%TYPE;
+WNNUMMOD               COBERTURA_SINIESTRO_ASEG.NUMMOD%TYPE;
+--
+NIDPOLIZA              POLIZAS.IdPoliza%TYPE;
+NIDETPOL               SINIESTRO.IDetPol%TYPE;
+CCOD_MONEDA            POLIZAS.Cod_Moneda%TYPE;
+nTasaCambio            DETALLE_POLIZA.Tasa_Cambio%TYPE;
+NCOD_ASEGURADO         ASEGURADO.COD_ASEGURADO%TYPE;
+cMsjError              PROCESOS_MASIVOS_LOG.TxtError%TYPE := NULL;
+cExisteCob             VARCHAR2(1);
+nCodError              NUMBER(2) := Null;
+cObservacion           VARCHAR2(100);
+--
+--
+BEGIN
+    --
+    -- VALIDA SINIESTRO
+    --
+    BEGIN
+      SELECT S.IDPOLIZA,  S.IDETPOL,  S.COD_MONEDA,  S.COD_ASEGURADO 
+        INTO NIDPOLIZA,   nIDetPol,   CCOD_MONEDA,   NCOD_ASEGURADO
+        FROM SINIESTRO S
+       WHERE S.IDSINIESTRO = NIDSINIESTRO
+         AND S.CODCIA      = NCODCIA;
+    EXCEPTION 
+      WHEN NO_DATA_FOUND  THEN
+           nCodError    := 41;
+           cObservacion := 'Codigo Error 41: NO EXISTE EL SINIESTRO';
+           RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL SINIESTRO - '||NIDSINIESTRO||' - '||SQLERRM);
+      WHEN OTHERS THEN 
+           nCodError    := 41;
+           cObservacion := 'Codigo Error 41.1: NO EXISTE EL SINIESTRO OTHERS';
+           RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL SINIESTRO  OTHERS- '||NIDSINIESTRO||' - '||SQLERRM);
+    END;
+    --
+    nTasaCambio    := OC_GENERALES.TASA_DE_CAMBIO(CCOD_MONEDA, TRUNC(SYSDATE));
+    NMONTO_RES_LOC := NMONTO_RES_MON * nTasaCambio;
+    --
+    -- PROCESA SINIESTRO SI ES INDIVIDUAL
+    --
+    IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'I' THEN
+       --
+       -- VALIDA DETALLE_SINIESTRO
+       --
+       BEGIN
+         SELECT DS.IDDETSIN
+           INTO WNIDDETSIN
+           FROM DETALLE_SINIESTRO DS
+          WHERE DS.IDSINIESTRO = NIDSINIESTRO
+            AND DS.IDDETSIN    = NIDDETSIN;
+       EXCEPTION 
+         WHEN NO_DATA_FOUND  THEN
+              nCodError    := 51;
+              cObservacion := 'Codigo Error 51: NO EXISTE EL DETALLE DE SINIESTRO';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL DETALLE DE SINIESTRO  - '||NIDSINIESTRO||' - 1 '||SQLERRM);
+         WHEN OTHERS THEN 
+              nCodError    := 51;
+              cObservacion := 'Codigo Error 51.1: NO EXISTE EL DETALLE DE SINIESTRO OTHERS';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL DETALLE DE SINIESTRO OTHERS- '||NIDSINIESTRO||' - 1 '||SQLERRM);
+       END;
+       --
+       CCODTRANSAC := 'OCURRE';
+       --
+       BEGIN
+         SELECT NVL(MAX(NumMod),0) + 1  
+           INTO WNNUMMOD
+           FROM COBERTURA_SINIESTRO
+          WHERE IdSiniestro = NIDSINIESTRO
+            AND IDDETSIN    = NIDDETSIN
+            AND CodCobert   = CCODCOBERT
+            AND IdPoliza    = NIDPOLIZA;
+       END;
+       --
+       BEGIN
+         SELECT DECODE(TS.CODTIPOPLAN,'030','AP'
+                                     ,'010','VIDA'
+                                     ,'OTRO')
+           INTO CCOD_TPRESERVA
+           FROM DETALLE_SINIESTRO   DS,
+                TIPOS_DE_SEGUROS    TS
+          WHERE DS.IDSINIESTRO = NIDSINIESTRO
+            AND DS.IDDETSIN    = NIDDETSIN
+             --
+            AND TS.IDTIPOSEG = DS.IDTIPOSEG;
+       EXCEPTION
+         WHEN NO_DATA_FOUND THEn
+              nCodError := 99;
+              cObservacion := 'Codigo Error 99: NO Existe DETALLE .';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe DETALLE '||NIDDETSIN);
+         WHEN TOO_MANY_ROWS THEn
+              nCodError := 99;
+              cObservacion := 'Codigo Error 99.1:Detalle duplicado.';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe DETALLE '||NIDDETSIN);
+         WHEN OTHERS THEn
+              nCodError := 99;
+              cObservacion := 'Codigo Error 99.2:Detalle por others';
+              RAISE_APPLICATION_ERROR(-20225,'Detalle por others'||NIDDETSIN);
+       END;
+       -- 
+       BEGIN
+         SELECT 'S'
+           INTO cExisteCob
+           FROM COBERTURA_SINIESTRO
+          WHERE IdSiniestro = NIDSINIESTRO
+            AND IDDETSIN    = NIDDETSIN          
+            AND CodCobert   = CCODCOBERT
+            AND IdPoliza    = NIDPOLIZA;
+       EXCEPTION
+         WHEN NO_DATA_FOUND THEn
+              nCodError := 89;
+              cObservacion := 'Codigo Error 89:NO Existe Cobertura .';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||CCODCOBERT);
+         WHEN TOO_MANY_ROWS THEn
+              cExisteCob := 'S'; 
+         WHEN OTHERS THEn
+              nCodError := 89;
+              cObservacion := 'Codigo Error 89:NO Existe Cobertura por others.';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||CCODCOBERT);
+       END;
+       --
+       IF cExisteCob = 'S' THEN
+             BEGIN
+               INSERT INTO COBERTURA_SINIESTRO
+                (IDDETSIN,               CODCOBERT,              IDSINIESTRO,          IDPOLIZA,
+                 DOC_REF_PAGO,           MONTO_PAGADO_MONEDA,    MONTO_PAGADO_LOCAL,   MONTO_RESERVADO_MONEDA, 
+                 MONTO_RESERVADO_LOCAL,  STSCOBERTURA,           NUMMOD,               CODTRANSAC,
+                 --
+                 CODCPTOTRANSAC,         IDTRANSACCION,          SALDO_RESERVA,        INDORIGEN,              
+                 FECRES,                 SALDO_RESERVA_LOCAL,    IDTRANSACCIONANUL,    IDAUTORIZACION,
+                 --
+                 CODCIA,                 CODEMPRESA,             COD_MONEDA,           COD_ASEGURADO,
+                 COD_TPRESERVA,          IDTPRESERVA,            CODUSUARIO,           FECREGISTRO)
+               VALUES
+                (NIDDETSIN,              CCODCOBERT,             NIDSINIESTRO,         NIDPOLIZA, 
+                 'MASIVO',               0,                      0,                    NMONTO_RES_MON,           
+                 NMONTO_RES_LOC,         'SOL',                  WNNUMMOD,              CCODTRANSAC,
+                 --           
+                 CCODCPTOTRANSAC,        NULL,                   0,                    'D',                     
+                 TRUNC(SYSDATE),         0,                      NULL,                 NULL,
+                 --
+                 NCODCIA,                NCODEMPRESA,            CCOD_MONEDA,          NCOD_ASEGURADO,
+                 CCOD_TPRESERVA,         1,                      USER,                 TRUNC(SYSDATE));
+             EXCEPTION
+               WHEN OTHERS THEN
+                    nCodError := 99;
+                    cObservacion := 'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO ';
+                    RAISE_APPLICATION_ERROR(-20225,'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO'||SQLERRM);
+             END;
+       END IF;
+       --
+    END IF;
+    --
+    -- PROCESA SINIESTRO SI ES COLECTIVO
+    --
+    IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'C' THEN
+       --
+       -- VALIDA DETALLE_SINIESTRO
+       --
+       BEGIN
+         SELECT DS.IDDETSIN 
+           INTO WNIDDETSIN
+           FROM DETALLE_SINIESTRO_ASEG DS
+          WHERE DS.IDSINIESTRO = NIDSINIESTRO
+            AND DS.IDDETSIN    = NIDDETSIN;
+       EXCEPTION 
+         WHEN NO_DATA_FOUND  THEN
+              nCodError    := 51;
+              cObservacion := 'Codigo Error 51: NO EXISTE EL DETALLE DE SINIESTRO';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL DETALLE DE SINIESTRO  - '||NIDSINIESTRO||' - 1 '||SQLERRM);
+         WHEN OTHERS THEN 
+              nCodError    := 51;
+              cObservacion := 'Codigo Error 51.1: NO EXISTE EL DETALLE DE SINIESTRO OTHERS';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL DETALLE DE SINIESTRO OTHERS- '||NIDSINIESTRO||' - 1 '||SQLERRM);
+       END;
+       --
+       CCODTRANSAC := 'OCURRE';
+       --
+       SELECT NVL(MAX(NumMod),0) + 1  
+         INTO WNNUMMOD
+         FROM COBERTURA_SINIESTRO_ASEG
+        WHERE IdSiniestro = NIDSINIESTRO
+          AND IDDETSIN    = NIDDETSIN          
+          AND CodCobert   = CCODCOBERT
+          AND IdPoliza    = NIDPOLIZA;
+       --
+       BEGIN
+         SELECT DECODE(TS.CODTIPOPLAN,'030','AP'
+                                     ,'010','VIDA'
+                                     ,'OTRO')
+           INTO CCOD_TPRESERVA
+           FROM DETALLE_SINIESTRO_ASEG   DS,
+                TIPOS_DE_SEGUROS    TS
+          WHERE DS.IDSINIESTRO = NIDSINIESTRO
+            AND DS.IDDETSIN    = NIDDETSIN
+             --
+            AND TS.IDTIPOSEG = DS.IDTIPOSEG;
+       EXCEPTION
+         WHEN NO_DATA_FOUND THEn
+              nCodError := 99;
+              cObservacion := 'Codigo Error 99: NO Existe DETALLE .';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe DETALLE '||NIDDETSIN);
+         WHEN TOO_MANY_ROWS THEn
+              nCodError := 99;
+              cObservacion := 'Codigo Error 99.1:Detalle duplicado.';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe DETALLE '||NIDDETSIN);
+         WHEN OTHERS THEn
+              nCodError := 99;
+              cObservacion := 'Codigo Error 99.2:Detalle por others';
+              RAISE_APPLICATION_ERROR(-20225,'Detalle por others'||NIDDETSIN);
+       END;
+       -- 
+       BEGIN
+         SELECT 'S'
+           INTO cExisteCob
+           FROM COBERTURA_SINIESTRO_ASEG
+          WHERE IdSiniestro = NIDSINIESTRO
+            AND IDDETSIN    = NIDDETSIN          
+            AND CodCobert   = CCODCOBERT
+            AND IdPoliza    = NIDPOLIZA;
+       EXCEPTION
+         WHEN NO_DATA_FOUND THEn
+              nCodError := 89;
+              cObservacion := 'Codigo Error 89:NO Existe Cobertura .';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||CCODCOBERT);
+         WHEN TOO_MANY_ROWS THEn
+              cExisteCob := 'S'; 
+         WHEN OTHERS THEn
+              nCodError := 89;
+              cObservacion := 'Codigo Error 89:NO Existe Cobertura por others.';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||CCODCOBERT);
+       END;
+       --
+       IF cExisteCob = 'S' THEN
+             BEGIN
+               INSERT INTO COBERTURA_SINIESTRO_ASEG
+                (IDDETSIN,               CODCOBERT,              IDSINIESTRO,          IDPOLIZA,
+                 DOC_REF_PAGO,           MONTO_PAGADO_MONEDA,    MONTO_PAGADO_LOCAL,   MONTO_RESERVADO_MONEDA, 
+                 MONTO_RESERVADO_LOCAL,  STSCOBERTURA,           NUMMOD,               CODTRANSAC,
+                 --
+                 CODCPTOTRANSAC,         IDTRANSACCION,          SALDO_RESERVA,        INDORIGEN,              
+                 FECRES,                 SALDO_RESERVA_LOCAL,    IDTRANSACCIONANUL,    IDAUTORIZACION,
+                 --
+                 CODCIA,                 CODEMPRESA,             COD_MONEDA,           COD_ASEGURADO,
+                 COD_TPRESERVA,          IDTPRESERVA,            CODUSUARIO,           FECREGISTRO)
+               VALUES
+                (NIDDETSIN,              CCODCOBERT,             NIDSINIESTRO,         NIDPOLIZA, 
+                 'MASIVO',               0,                      0,                    NMONTO_RES_MON,           
+                 NMONTO_RES_LOC,         'SOL',                  WNNUMMOD,              CCODTRANSAC,
+                 --           
+                 CCODCPTOTRANSAC,        NULL,                   0,                    'D',                     
+                 TRUNC(SYSDATE),         0,                      NULL,                 NULL,
+                 --
+                 NCODCIA,                NCODEMPRESA,            CCOD_MONEDA,          NCOD_ASEGURADO,
+                 CCOD_TPRESERVA,         1,                      USER,                 TRUNC(SYSDATE));
+             EXCEPTION
+               WHEN OTHERS THEN
+                    nCodError := 99;
+                    cObservacion := 'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO ';
+                    RAISE_APPLICATION_ERROR(-20225,'ERROR AL INSERTAR COBERTURA COBERTURA_SINIESTRO'||SQLERRM);
+             END;
+       END IF;
+       --
+    END IF;
+    --
+    IF cMsjError IS NULL THEN
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'PROCE');
+    ELSE
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Reserva en solicitud: '||cMsjError);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+    END IF;
+    --
+  --
+EXCEPTION
+  WHEN OTHERS THEN
+       ROLLBACK;
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Error 1: '||SQLERRM);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+END SOLICITUD_RESERVA;  
+--
+--
+PROCEDURE SOLICITUD_RESERVA_BORRADO(NCODCIA   NUMBER,   NCODEMPRESA   NUMBER,     NIDSINIESTRO   NUMBER,
+                                    NIDDETSIN NUMBER,   CCODCOBERT    VARCHAR2,   CID_COL_INDI   VARCHAR2,   
+                                    NNUMMOD   NUMBER,   nIdProcMasivo NUMBER) IS     
+--
+cMsjError              PROCESOS_MASIVOS_LOG.TxtError%TYPE := NULL;
+--
+BEGIN
+  --
+  -- PROCESA SINIESTRO SI ES INDIVIDUAL
+  --
+  IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'I' THEN
+     --
+     -- VALIDA DETALLE_SINIESTRO
+     --
+     DELETE COBERTURA_SINIESTRO CS
+      WHERE CS.IDSINIESTRO  = NIDSINIESTRO
+        AND CS.IDDETSIN     = NIDDETSIN
+        AND CS.CODCOBERT    = CCODCOBERT
+        AND CS.NUMMOD       = NNUMMOD
+        AND CS.STSCOBERTURA = 'SOL'
+        AND CS.CODCIA       = NCODCIA
+        AND CS.CODEMPRESA   = NCODEMPRESA;
+     --
+  END IF;
+  --
+  -- PROCESA SINIESTRO SI ES COLECTIVO
+  --
+  IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'C' THEN
+     --
+     -- VALIDA DETALLE_SINIESTRO
+     --
+     DELETE COBERTURA_SINIESTRO_ASEG CS
+      WHERE CS.IDSINIESTRO  = NIDSINIESTRO
+        AND CS.IDDETSIN     = NIDDETSIN
+        AND CS.CODCOBERT    = CCODCOBERT
+        AND CS.NUMMOD       = NNUMMOD
+        AND CS.STSCOBERTURA = 'SOL'
+        AND CS.CODCIA       = NCODCIA
+        AND CS.CODEMPRESA   = NCODEMPRESA;
+     --
+  END IF;
+  --
+  IF cMsjError IS NULL THEN
+     OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'PROCE');
+  ELSE
+     OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Reserva en solicitud: '||cMsjError);
+     OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+  END IF;
+  --
+EXCEPTION
+  WHEN OTHERS THEN
+       ROLLBACK;
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Error 1: '||SQLERRM);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+END SOLICITUD_RESERVA_BORRADO;  
+--
+PROCEDURE SOLICITUD_RESERVA_EMISION(NCODCIA       NUMBER,     NCODEMPRESA NUMBER,     NIDSINIESTRO   NUMBER,
+                                    NIDDETSIN     NUMBER,     CCODCOBERT  VARCHAR2,   NMONTO_RES_MON NUMBER,   
+                                    CID_COL_INDI  VARCHAR2,   NNUMMOD     NUMBER,     CDESCRIPCION   VARCHAR2,
+                                    DFECRES        DATE,      nIdProcMasivo NUMBER) IS     
+--
+NIDPOLIZA              POLIZAS.IdPoliza%TYPE;
+CCOD_MONEDA            POLIZAS.Cod_Moneda%TYPE;
+NSUMAASEG_MONEDA       POLIZAS.SUMAASEG_MONEDA%TYPE;
+NSUMASEGURADAREAL      POLIZAS.SUMAASEG_MONEDA%TYPE;
+WNIDDETSIN             COBERTURA_SINIESTRO_ASEG.IDDETSIN%TYPE;
+DFECHA                 COBERTURA_SINIESTRO_ASEG.FECRES%TYPE;
+CCODTRANSAC            COBERTURA_SINIESTRO_ASEG.CODTRANSAC%TYPE;
+NIDETPOL               SINIESTRO.IDetPol%TYPE;
+NCOD_ASEGURADO         ASEGURADO.COD_ASEGURADO%TYPE;
+NIDTRANSACCION         TRANSACCION.IDTRANSACCION%TYPE;
+cMsjError              PROCESOS_MASIVOS_LOG.TxtError%TYPE := NULL;
+cExisteCob             VARCHAR2(1);
+nCodError              NUMBER(2) := Null;
+cObservacion           VARCHAR2(100);
+--
+--
+BEGIN
+    --
+    -- VALIDA SINIESTRO
+    --
+    BEGIN
+      SELECT S.IDPOLIZA,  S.IDETPOL,  S.COD_MONEDA,  S.COD_ASEGURADO 
+        INTO NIDPOLIZA,   NIDETPOL,   CCOD_MONEDA,   NCOD_ASEGURADO
+        FROM SINIESTRO S
+       WHERE S.IDSINIESTRO = NIDSINIESTRO
+         AND S.CODCIA      = NCODCIA;
+    EXCEPTION 
+      WHEN NO_DATA_FOUND  THEN
+           nCodError    := 01;
+           cObservacion := 'Codigo Error 02: NO EXISTE EL SINIESTRO';
+           RAISE_APPLICATION_ERROR(-20225,'Codigo Error 01: NO EXISTE EL SINIESTRO - '||NIDSINIESTRO||' - '||SQLERRM);
+      WHEN OTHERS THEN 
+           nCodError    := 01;
+           cObservacion := 'Codigo Error 02: NO EXISTE EL SINIESTRO OTHERS';
+           RAISE_APPLICATION_ERROR(-20225,'Codigo Error 01: NO EXISTE EL SINIESTRO  OTHERS- '||NIDSINIESTRO||' - '||SQLERRM);
+    END;
+    --
+    CCODTRANSAC := 'OCURRE';
+    --
+    -- PROCESA SINIESTRO SI ES INDIVIDUAL
+    --
+    IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'I' THEN
+       --
+       -- VALIDA DETALLE_SINIESTRO
+       --
+       BEGIN
+         SELECT DS.IDDETSIN
+           INTO WNIDDETSIN
+           FROM DETALLE_SINIESTRO DS
+          WHERE DS.IDSINIESTRO = NIDSINIESTRO
+            AND DS.IDDETSIN    = NIDDETSIN;
+       EXCEPTION 
+         WHEN NO_DATA_FOUND  THEN
+              nCodError    := 02;
+              cObservacion := 'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO  - '||NIDSINIESTRO||' - 1 '||SQLERRM);
+         WHEN OTHERS THEN 
+              nCodError    := 02;
+              cObservacion := 'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO OTHERS';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO OTHERS- '||NIDSINIESTRO||' - 1 '||SQLERRM);
+       END;       
+       --
+       -- VALIDA COBERTURA
+       --
+       BEGIN
+         SELECT 'S',
+                CS.FECRES    
+           INTO cExisteCob,
+                dFECHA
+           FROM COBERTURA_SINIESTRO CS
+          WHERE CS.IDSINIESTRO  = NIDSINIESTRO
+            AND CS.CODCOBERT    = CCODCOBERT
+            AND CS.IDPOLIZA     = NIDPOLIZA
+            AND CS.NUMMOD       = NNUMMOD
+            AND CS.IDDETSIN     = NIDDETSIN
+            AND CS.STSCOBERTURA = 'SOL';
+       EXCEPTION
+         WHEN NO_DATA_FOUND THEn
+              nCodError := 03;
+              cObservacion := 'Codigo Error 03:NO Existe Cobertura .';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||CCODCOBERT||' - REGISTRO No. '||NNUMMOD);
+         WHEN TOO_MANY_ROWS THEn
+              cExisteCob := 'S'; 
+         WHEN OTHERS THEn
+              nCodError := 03;
+              cObservacion := 'Codigo Error 03:NO Existe Cobertura por others.';
+              RAISE_APPLICATION_ERROR(-20225,'OTHERS NO Existe Cobertura de '||CCODCOBERT||' - REGISTRO No. '||NNUMMOD);
+       END;
+       --
+       -- VALIDA SUMA ASEGURADA
+       --
+       --       
+       IF OC_COBERTURA_SINIESTRO.VALIDA_SUMA_ASEGURADA(NCODCIA, NIDPOLIZA, NIDETPOL, CCODCOBERT, CCODTRANSAC, NMONTO_RES_MON) = 'S' THEN
+          nCodError    := 04;
+          cObservacion := 'Codigo Error 04: Monto de la Reserva es mayor a la Suma Asegurada de la Cobertura';  
+          RAISE_APPLICATION_ERROR(-20225,'Error Monto de la Reserva es mayor a la Suma Asegurada de la Cobertura SA:  '||NSUMASEGURADAREAL||' - '||SQLERRM);
+       END IF;
+       IF cExisteCob = 'S' THEN
+          --
+          IF DFECRES IS NULL THEN
+             DFECHA := TRUNC(SYSDATE);
+          ELSE 
+             DFECHA := DFECRES;
+          END IF;
+          --
+          OC_COBERTURA_SINIESTRO.EMITE_RESERVA(nCodCia, nCodEmpresa, NIDSINIESTRO, NIDPOLIZA, NIDDETSIN, CCODCOBERT, NNUMMOD, NULL);            
+          -- 
+          IF DFECRES IS NOT NULL THEN
+             --
+             UPDATE COBERTURA_SINIESTRO_ASEG CS
+                SET CS.FECRES = DFECHA
+              WHERE CS.IDSINIESTRO = NIDSINIESTRO
+                AND CS.CODCOBERT   = CCODCOBERT
+                AND CS.IDPOLIZA    = NIDPOLIZA
+                AND CS.NUMMOD      = NNUMMOD
+                AND CS.IDDETSIN    = NIDDETSIN;
+             --
+             NIDTRANSACCION := OBTIENE_TRANSA_RVA_IND(NIDPOLIZA, NIDSINIESTRO, NIDDETSIN, CCODCOBERT, NNUMMOD,DFECHA); 
+             --
+             CAMBIA_FECHA_CONTA(NIDTRANSACCION, nCodCia, DFECHA, nCodEmpresa); 
+             CAMBIA_FECHA_OBSERVACION(NIDSINIESTRO, NIDPOLIZA, DFECHA);
+             --
+          END IF;          
+          --
+       END IF;
+       --
+    END IF;
+    --
+    -- PROCESA SINIESTRO SI ES COLECTIVO
+    --
+    IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'C' THEN
+       --
+       -- VALIDA DETALLE_SINIESTRO
+       --
+       BEGIN
+         SELECT DS.IDDETSIN
+           INTO WNIDDETSIN
+           FROM DETALLE_SINIESTRO_ASEG DS
+          WHERE DS.IDSINIESTRO = NIDSINIESTRO
+            AND DS.IDDETSIN    = NIDDETSIN;
+       EXCEPTION 
+         WHEN NO_DATA_FOUND  THEN
+              nCodError    := 02;
+              cObservacion := 'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO  - '||NIDSINIESTRO||' - 1 '||SQLERRM);
+         WHEN OTHERS THEN 
+              nCodError    := 02;
+              cObservacion := 'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO OTHERS';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO OTHERS- '||NIDSINIESTRO||' - 1 '||SQLERRM);
+       END;       
+       --
+       -- VALIDA COBERTURA
+       --
+       BEGIN
+         SELECT 'S',
+                CS.FECRES    
+           INTO cExisteCob,
+                dFECHA
+           FROM COBERTURA_SINIESTRO_ASEG CS
+          WHERE CS.IDSINIESTRO  = NIDSINIESTRO
+            AND CS.CODCOBERT    = CCODCOBERT
+            AND CS.IDPOLIZA     = NIDPOLIZA
+            AND CS.NUMMOD       = NNUMMOD
+            AND CS.IDDETSIN     = NIDDETSIN
+            AND CS.STSCOBERTURA = 'SOL';
+       EXCEPTION
+         WHEN NO_DATA_FOUND THEn
+              nCodError := 03;
+              cObservacion := 'Codigo Error 03:NO Existe Cobertura .';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||CCODCOBERT||' - REGISTRO No. '||NNUMMOD);
+         WHEN TOO_MANY_ROWS THEn
+              cExisteCob := 'S'; 
+         WHEN OTHERS THEn
+              nCodError := 03;
+              cObservacion := 'Codigo Error 03:NO Existe Cobertura por others.';
+              RAISE_APPLICATION_ERROR(-20225,'OTHERS NO Existe Cobertura de '||CCODCOBERT||' - REGISTRO No. '||NNUMMOD);
+       END;
+       --
+       --VALIDA SUMAS ASEG DE POLIZA
+       --
+       BEGIN
+         SELECT UNIQUE(A.SUMAASEG_MONEDA)
+           INTO NSUMAASEG_MONEDA
+           FROM COBERT_ACT_ASEG A
+          WHERE A.IDPOLIZA      = NIDPOLIZA
+            AND A.CodCobert     = CCODCOBERT
+            AND A.COD_ASEGURADO = NCOD_ASEGURADO
+            AND A.IDETPOL       = NIDETPOL;
+       EXCEPTION
+         WHEN DUP_VAL_ON_INDEX   THEN
+              NSUMAASEG_MONEDA := 0;
+         WHEN NO_DATA_FOUND THEN
+              NSUMAASEG_MONEDA := 0;
+         WHEN OTHERS THEN 
+              NSUMAASEG_MONEDA := 0;
+       END;
+       --
+       -- VALIDA SUMA ASEGURADA
+       --
+       IF NSUMAASEG_MONEDA > 0 THEN
+          NSUMASEGURADAREAL := OC_COBERTURA_SINIESTRO_ASEG.SUM_ASEG_REMANENTE(NCODCIA, NIDPOLIZA, NIDETPOL, NCOD_ASEGURADO, CCODCOBERT);
+       END IF; 
+       --
+       IF NSUMASEGURADAREAL < NMONTO_RES_MON THEN 
+          nCodError    := 04;
+          cObservacion := 'Codigo Error 04: Monto de la Reserva es mayor a la Suma Asegurada de la Cobertura';  
+          RAISE_APPLICATION_ERROR(-20225,'Error Monto de la Reserva es mayor a la Suma Asegurada de la Cobertura SA:  '||NSUMASEGURADAREAL||' - '||SQLERRM);
+       END IF;
+       --
+       IF cExisteCob = 'S' THEN
+          --
+          IF DFECRES IS NULL THEN
+             DFECHA := TRUNC(SYSDATE);
+          ELSE 
+             DFECHA := DFECRES;
+          END IF;
+          --
+          OC_COBERTURA_SINIESTRO_ASEG.EMITE_RESERVA(nCodCia, nCodEmpresa, nIdSiniestro, nIdPoliza, NIDDETSIN, NCOD_ASEGURADO, cCodCobert, nNumMod, NULL);
+          -- 
+          IF DFECRES IS NOT NULL THEN
+             --
+             UPDATE COBERTURA_SINIESTRO_ASEG CS
+                SET CS.FECRES = DFECHA
+              WHERE CS.IDSINIESTRO = NIDSINIESTRO
+                AND CS.CODCOBERT   = CCODCOBERT
+                AND CS.IDPOLIZA    = NIDPOLIZA
+                AND CS.NUMMOD      = NNUMMOD
+                AND CS.IDDETSIN    = NIDDETSIN;
+             --
+             NIDTRANSACCION := OBTIENE_TRANSA_RVA_COL(NIDPOLIZA, NIDSINIESTRO, NIDDETSIN, CCODCOBERT, NNUMMOD, NCOD_ASEGURADO ,DFECHA); 
+             --
+             CAMBIA_FECHA_CONTA(NIDTRANSACCION, nCodCia, DFECHA, nCodEmpresa); 
+             CAMBIA_FECHA_OBSERVACION(NIDSINIESTRO, NIDPOLIZA, DFECHA);
+             --
+          END IF;          
+          --
+       END IF;
+       --
+    END IF;
+    --
+    IF cMsjError IS NULL THEN
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'PROCE');
+    ELSE
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Reserva en solicitud: '||cMsjError);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+    END IF;
+    --
+  --
+EXCEPTION
+  WHEN OTHERS THEN
+       ROLLBACK;
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Error 1: '||SQLERRM);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+END SOLICITUD_RESERVA_EMISION;  
+--
+--
+PROCEDURE MASIVOS_SOLICITUD_PAGOS(nIdProcMasivo NUMBER) IS     
+NCODCIA                APROBACION_ASEG.CODCIA%TYPE;
+NCODEMPRESA            APROBACION_ASEG.CODEMPRESA%TYPE;
+NIDDETSIN              APROBACION_ASEG.IDDETSIN%TYPE;
+NIDSINIESTRO           APROBACION_ASEG.IDSINIESTRO%TYPE;
+NNUM_APROBACION        APROBACION_ASEG.NUM_APROBACION%TYPE;
+CCODCPTOTRANSAC        DETALLE_APROBACION_ASEG.CODCPTOTRANSAC%TYPE;
+DFECPAGO               APROBACION_ASEG.FECPAGO%TYPE;
+--
+CID_COL_INDI           VARCHAR2(1);
+CID_SOL_EMI            VARCHAR2(6);
+CDESCRIPCION           OBSERVACION_SINIESTRO.DESCRIPCION%TYPE;
+--
+CURSOR SIN_Q IS
+   SELECT CodCia,        CodEmpresa,   IdTipoSeg, 
+          PlanCob,       NumPolUnico,  NumDetUnico, 
+          RegDatosProc,  TipoProceso,  IndColectiva
+     FROM PROCESOS_MASIVOS
+    WHERE IdProcMasivo = nIdProcMasivo;
+--
+BEGIN
+  --
+  FOR X IN SIN_Q LOOP
+    NCODCIA     := X.CodCia;
+    NCODEMPRESA := X.CodEmpresa;
+    --
+    NIDSINIESTRO    := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,',')));
+    NIDDETSIN       := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,2,',')));
+    NNUM_APROBACION := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,3,',')));
+    CID_COL_INDI    :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,4,','));
+    CID_SOL_EMI     :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,','));
+    CCODCPTOTRANSAC :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,','));
+    CDESCRIPCION    :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,','));
+    DFECPAGO        :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,','));
+    --
+    -- ELIGE PROCESO
+    --
+    IF CID_SOL_EMI = 'SOL' THEN
+       SOLICITUD_PAGOS(NCODCIA,     NCODEMPRESA,       NIDSINIESTRO,
+                       NIDDETSIN,   NNUM_APROBACION,   CID_COL_INDI,
+                       nIdProcMasivo);
+    ELSIF CID_SOL_EMI = 'DEL' THEN
+       SOLICITUD_PAGOS_BORRADO(NCODCIA,     NCODEMPRESA,       NIDSINIESTRO,
+                               NIDDETSIN,   NNUM_APROBACION,   CID_COL_INDI,
+                               nIdProcMasivo);
+    ELSIF CID_SOL_EMI = 'EMI' THEN
+       SOLICITUD_PAGOS_EMISION(NCODCIA,        NCODEMPRESA,       NIDSINIESTRO,
+                               NIDDETSIN,      NNUM_APROBACION,   CID_COL_INDI,          
+                               CDESCRIPCION,   DFECPAGO,          nIdProcMasivo);                            
+    END IF;
+    --
+  END LOOP;
+  --
+EXCEPTION
+  WHEN OTHERS THEN
+       ROLLBACK;
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'MASIVOS_SOLICITUD','20225','Error 1: '||SQLERRM);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+END MASIVOS_SOLICITUD_PAGOS;  
+--
+--
+PROCEDURE SOLICITUD_PAGOS(NCODCIA       NUMBER,   NCODEMPRESA     NUMBER,   NIDSINIESTRO NUMBER,
+                          NIDDETSIN     NUMBER,   NNUM_APROBACION NUMBER,   CID_COL_INDI VARCHAR2,   
+                          nIdProcMasivo NUMBER) IS     
+--
+NNUM_APROBACION_NVO    APROBACION_ASEG.NUM_APROBACION%TYPE;
+--
+WNIDSINIESTRO          SINIESTRO.IDSINIESTRO%TYPE;
+cMsjError              PROCESOS_MASIVOS_LOG.TxtError%TYPE := NULL;
+cExisteAPRO            VARCHAR2(1);
+nCodError              NUMBER(2) := Null;
+cObservacion           VARCHAR2(100);
+WNIDDETSIN             COBERTURA_SINIESTRO_ASEG.IDDETSIN%TYPE;
+--
+--
+BEGIN
+  --
+  -- VALIDA SINIESTRO
+  --
+  BEGIN
+    SELECT S.IDSINIESTRO
+      INTO WNIDSINIESTRO
+      FROM SINIESTRO S
+     WHERE S.IDSINIESTRO = NIDSINIESTRO
+       AND S.CODCIA      = NCODCIA;
+  EXCEPTION 
+    WHEN NO_DATA_FOUND  THEN
+         nCodError    := 41;
+         cObservacion := 'Codigo Error 41: NO EXISTE EL SINIESTRO';
+         RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL SINIESTRO - '||NIDSINIESTRO||' - '||SQLERRM);
+    WHEN OTHERS THEN 
+         nCodError    := 41;
+         cObservacion := 'Codigo Error 41.1: NO EXISTE EL SINIESTRO OTHERS';
+         RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL SINIESTRO  OTHERS- '||NIDSINIESTRO||' - '||SQLERRM);
+  END;
+  --
+  -- PROCESA SINIESTRO SI ES INDIVIDUAL
+  --
+  IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'I' THEN
+     --
+     BEGIN
+       SELECT DS.IDDETSIN
+         INTO WNIDDETSIN
+         FROM DETALLE_SINIESTRO DS
+        WHERE DS.IDSINIESTRO = NIDSINIESTRO
+          AND DS.IDDETSIN    = NIDDETSIN;
+     EXCEPTION 
+       WHEN NO_DATA_FOUND  THEN
+            nCodError    := 51;
+            cObservacion := 'Codigo Error 51: NO EXISTE EL DETALLE DE SINIESTRO';
+            RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL DETALLE DE SINIESTRO  - '||NIDSINIESTRO||' - 1 '||SQLERRM);
+       WHEN OTHERS THEN 
+            nCodError    := 51;
+            cObservacion := 'Codigo Error 51.1: NO EXISTE EL DETALLE DE SINIESTRO OTHERS';
+            RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL DETALLE DE SINIESTRO OTHERS- '||NIDSINIESTRO||' - 1 '||SQLERRM);
+     END;
+     --
+     BEGIN
+       SELECT NVL(MAX(A.NUM_APROBACION),0) + 1  
+         INTO NNUM_APROBACION_NVO
+         FROM APROBACIONES A
+        WHERE A.IDSINIESTRO = NIDSINIESTRO
+          AND A.CODCIA      = NCODCIA;
+     END;
+     --
+     BEGIN
+       SELECT 'S'
+         INTO cExisteAPRO
+         FROM APROBACIONES A
+        WHERE A.IDSINIESTRO    = NIDSINIESTRO
+          AND A.NUM_APROBACION = NNUM_APROBACION
+          AND A.CODCIA         = NCODCIA;
+     EXCEPTION
+       WHEN NO_DATA_FOUND THEn
+            nCodError := 89;
+            cObservacion := 'Codigo Error 89:NO Existe Aprobacion .';
+            RAISE_APPLICATION_ERROR(-20225,'NO Existe Aprobacion de '||NNUM_APROBACION);
+       WHEN TOO_MANY_ROWS THEN
+            cExisteAPRO := 'S'; 
+       WHEN OTHERS THEn
+            nCodError := 89;
+            cObservacion := 'Codigo Error 89:NO Existe Aprobacion por others.';
+            RAISE_APPLICATION_ERROR(-20225,'NO Existe Aprobacion de '||NNUM_APROBACION);
+     END;
+     --
+     IF cExisteAPRO = 'S' THEN
+        INSERT INTO APROBACIONES
+          SELECT NNUM_APROBACION_NVO, --NUM_APROBACION
+                 IDSINIESTRO,
+                 IDPOLIZA,
+                 IDDETSIN,
+                 TIPO_APROBACION,
+                 MONTO_LOCAL,
+                 MONTO_MONEDA,
+                 'SOL', --STSAPROBACION,
+                 TIPO_DE_APROBACION,
+                 '',--IDTRANSACCION,
+                 INDDISPERSION,
+                 CTALIQUIDADORA,
+                 IDEFACTEXT,
+                 BENEF,
+                 '',--IDTRANSACCIONANUL
+                 '',--FECHFONDOSINI
+                 USER,--CODUSUARIO
+                 TERMINAL,--TERMINAL
+                 '',--INDFONDOSINI
+                 TRUNC(SYSDATE),--FECPAGO,
+                 NUMPAGREF,
+                 '', --IDAUTORIZACION,
+                 CODCIA,
+                 CODEMPRESA,
+                 COD_MONEDA,
+                 CODCOBERT,
+                 COD_ASEGURADO,
+                 'MASIVO',--CODUSUARIO_ALTA
+                 TRUNC(SYSDATE)--FECREGISTRO;
+            FROM APROBACIONES A
+           WHERE A.IDSINIESTRO    = NIDSINIESTRO
+             AND A.NUM_APROBACION = NNUM_APROBACION
+             AND A.IDDETSIN       = NIDDETSIN
+             AND A.CODCIA         = NCODCIA;
+        --
+        INSERT INTO DETALLE_APROBACION
+          SELECT NNUM_APROBACION_NVO, --NNUM_APROBACION
+                 IDDETAPROB,
+                 COD_PAGO,
+                 MONTO_LOCAL,
+                 MONTO_MONEDA,
+                 IDSINIESTRO,
+                 CODTRANSAC,
+                 CODCPTOTRANSAC,
+                 CODCIA,
+                 CODEMPRESA,
+                 COD_MONEDA
+            FROM DETALLE_APROBACION A
+           WHERE A.IDSINIESTRO    = NIDSINIESTRO
+             AND A.NUM_APROBACION = NNUM_APROBACION;
+         --
+     END IF;
+     --
+  END IF;
+  --
+  -- PROCESA SINIESTRO SI ES COLECTIVO
+  --
+  IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'C' THEN
+     --
+     BEGIN
+       SELECT DS.IDDETSIN
+         INTO WNIDDETSIN
+         FROM DETALLE_SINIESTRO_ASEG DS
+        WHERE DS.IDSINIESTRO = NIDSINIESTRO
+          AND DS.IDDETSIN    = NIDDETSIN;
+     EXCEPTION 
+       WHEN NO_DATA_FOUND  THEN
+            nCodError    := 51;
+            cObservacion := 'Codigo Error 51: NO EXISTE EL DETALLE DE SINIESTRO';
+            RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL DETALLE DE SINIESTRO  - '||NIDSINIESTRO||' - 1 '||SQLERRM);
+       WHEN OTHERS THEN 
+            nCodError    := 51;
+            cObservacion := 'Codigo Error 51.1: NO EXISTE EL DETALLE DE SINIESTRO OTHERS';
+            RAISE_APPLICATION_ERROR(-20225,'Codigo Error 41: NO EXISTE EL DETALLE DE SINIESTRO OTHERS- '||NIDSINIESTRO||' - 1 '||SQLERRM);
+     END;
+     --
+     BEGIN
+       SELECT NVL(MAX(A.NUM_APROBACION),0) + 1  
+         INTO NNUM_APROBACION_NVO
+         FROM APROBACION_ASEG A
+        WHERE A.IDSINIESTRO = NIDSINIESTRO
+          AND A.CODCIA      = NCODCIA;
+     END;
+     --
+     BEGIN
+       SELECT 'S'
+         INTO cExisteAPRO
+         FROM APROBACION_ASEG A
+        WHERE A.IDSINIESTRO    = NIDSINIESTRO
+          AND A.NUM_APROBACION = NNUM_APROBACION
+          AND A.CODCIA         = NCODCIA;
+     EXCEPTION
+       WHEN NO_DATA_FOUND THEn
+            nCodError := 89;
+            cObservacion := 'Codigo Error 89:NO Existe Aprobacion .';
+            RAISE_APPLICATION_ERROR(-20225,'NO Existe Aprobacion de '||NNUM_APROBACION);
+       WHEN TOO_MANY_ROWS THEN
+            cExisteAPRO := 'S'; 
+       WHEN OTHERS THEn
+            nCodError := 89;
+            cObservacion := 'Codigo Error 89:NO Existe Aprobacion por others.';
+            RAISE_APPLICATION_ERROR(-20225,'NO Existe Aprobacion de '||NNUM_APROBACION);
+     END;
+     --
+     IF cExisteAPRO = 'S' THEN
+        INSERT INTO APROBACION_ASEG
+          SELECT NNUM_APROBACION_NVO, --NUM_NUM_APROBACION
+                 IDSINIESTRO,
+                 IDPOLIZA,
+                 IDDETSIN,
+                 COD_ASEGURADO,
+                 TIPO_APROBACION,
+                 MONTO_LOCAL,
+                 MONTO_MONEDA,
+                 'SOL', --STSAPROBACION
+                 TIPO_DE_APROBACION,
+                 '', --IDTRANSACCION
+                 INDDISPERSION,
+                 CTALIQUIDADORA,
+                 IDEFACTEXT,
+                 BENEF,
+                 '', --IDTRANSACCIONANUL
+                 '', --IDPOLIZAPAGO
+                 '',--INDFONDOSINI
+                 '',--FECHFONDOSINI
+                 USER,--CODUSUARIO
+                 TERMINAL,--TERMINAL
+                 TRUNC(SYSDATE), --FECPAGO
+                 NUMPAGREF,
+                 '', --IDAUTORIZACION
+                 CODCIA,
+                 CODEMPRESA,
+                 COD_MONEDA,
+                 CODCOBERT,
+                 USER,--CODUSUARIO_ALTA
+                 TRUNC(SYSDATE) --FECREGISTRO
+            FROM APROBACION_ASEG A
+           WHERE A.IDSINIESTRO    = NIDSINIESTRO
+             AND A.NUM_APROBACION = NNUM_APROBACION
+             AND A.CODCIA         = NCODCIA;
+        --
+        INSERT INTO DETALLE_APROBACION_ASEG
+          SELECT NNUM_APROBACION_NVO, --NNUM_APROBACION
+                 IDDETAPROB,
+                 COD_PAGO,
+                 MONTO_LOCAL,
+                 MONTO_MONEDA,
+                 IDSINIESTRO,
+                 CODTRANSAC,
+                 CODCPTOTRANSAC,
+                 CODCIA,
+                 CODEMPRESA,
+                 COD_MONEDA
+            FROM DETALLE_APROBACION_ASEG A
+           WHERE A.IDSINIESTRO    = NIDSINIESTRO
+             AND A.NUM_APROBACION = NNUM_APROBACION;
+         --
+     END IF;
+     --
+  END IF;
+  --
+  IF cMsjError IS NULL THEN
+     OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'PROCE');
+  ELSE
+     OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Reserva en solicitud: '||cMsjError);
+     OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+  END IF;
+  --
+  --
+EXCEPTION
+  WHEN OTHERS THEN
+       ROLLBACK;
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Error 1: '||SQLERRM);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+END SOLICITUD_PAGOS;  
+--
+--
+PROCEDURE SOLICITUD_PAGOS_BORRADO(NCODCIA       NUMBER,   NCODEMPRESA     NUMBER,   NIDSINIESTRO NUMBER,  
+                                  NIDDETSIN     NUMBER,   NNUM_APROBACION NUMBER,   CID_COL_INDI VARCHAR2,
+                                  nIdProcMasivo NUMBER) IS     
+--
+cMsjError   PROCESOS_MASIVOS_LOG.TxtError%TYPE := NULL;
+NBORRADO    NUMBER;
+--
+BEGIN
+  --
+  -- PROCESA SINIESTRO SI ES INDIVIDUAL
+  --
+  IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'I' THEN
+     --
+     DELETE APROBACIONES A
+      WHERE A.IDSINIESTRO    = NIDSINIESTRO
+        AND A.NUM_APROBACION = NNUM_APROBACION
+        AND A.STSAPROBACION  = 'SOL'
+        AND A.CODCIA         = NCODCIA
+        AND A.CODEMPRESA     = NCODEMPRESA;
+     --   
+     NBORRADO := SQL%ROWCOUNT;
+     --
+     IF NBORRADO > 0 THEN
+        DELETE DETALLE_APROBACION A
+         WHERE A.IDSINIESTRO    = NIDSINIESTRO
+           AND A.NUM_APROBACION = NNUM_APROBACION
+           AND A.CODCIA         = NCODCIA;
+     END IF;
+     --
+  END IF;
+  --
+  -- PROCESA SINIESTRO SI ES COLECTIVO
+  --
+  IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'C' THEN
+     --
+     -- VALIDA DETALLE_SINIESTRO
+     --
+     DELETE APROBACION_ASEG A
+      WHERE A.IDSINIESTRO    = NIDSINIESTRO
+        AND A.IDDETSIN       = NIDDETSIN
+        AND A.NUM_APROBACION = NNUM_APROBACION
+        AND A.STSAPROBACION  = 'SOL'
+        AND A.CODCIA         = NCODCIA
+        AND A.CODEMPRESA     = NCODEMPRESA;
+     --   
+     NBORRADO := SQL%ROWCOUNT;
+     --
+     IF NBORRADO > 0 THEN
+        DELETE DETALLE_APROBACION_ASEG A
+         WHERE A.IDSINIESTRO    = NIDSINIESTRO
+           AND A.NUM_APROBACION = NNUM_APROBACION
+           AND A.CODCIA         = NCODCIA;
+     END IF;
+     --
+  END IF;
+  --
+  IF cMsjError IS NULL THEN
+     OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'PROCE');
+  ELSE
+     OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Reserva en solicitud: '||cMsjError);
+     OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+  END IF;
+  --
+EXCEPTION
+  WHEN OTHERS THEN
+       ROLLBACK;
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Error 1: '||SQLERRM);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+END SOLICITUD_PAGOS_BORRADO;  
+--
+--
+PROCEDURE SOLICITUD_PAGOS_EMISION(NCODCIA      NUMBER,     NCODEMPRESA     NUMBER,   NIDSINIESTRO  NUMBER,
+                                  NIDDETSIN    NUMBER,     NNUM_APROBACION NUMBER,   CID_COL_INDI  VARCHAR2,   
+                                  CDESCRIPCION VARCHAR2,   DFECPAGO        DATE,     nIdProcMasivo NUMBER) IS     
+--
+NIDPOLIZA              POLIZAS.IdPoliza%TYPE;
+CCOD_MONEDA            POLIZAS.Cod_Moneda%TYPE;
+NSUMAASEG_MONEDA       POLIZAS.SUMAASEG_MONEDA%TYPE;
+NSUMASEGURADAREAL      POLIZAS.SUMAASEG_MONEDA%TYPE;
+WNIDDETSIN             COBERTURA_SINIESTRO_ASEG.IDDETSIN%TYPE;
+DFECHA                 COBERTURA_SINIESTRO_ASEG.FECRES%TYPE;
+CCODTRANSAC            COBERTURA_SINIESTRO_ASEG.CODTRANSAC%TYPE;
+NCOD_ASEGURADO         COBERTURA_SINIESTRO_ASEG.COD_ASEGURADO%TYPE;
+NIDETPOL               SINIESTRO.IDetPol%TYPE;
+NIDTRANSACCION         TRANSACCION.IDTRANSACCION%TYPE;
+cMsjError              PROCESOS_MASIVOS_LOG.TxtError%TYPE := NULL;
+cExisteCob             VARCHAR2(1);
+nCodError              NUMBER(2) := Null;
+cObservacion           VARCHAR2(100);
+--
+--
+BEGIN
+    --
+    -- VALIDA SINIESTRO
+    --
+    BEGIN
+      SELECT S.IDPOLIZA,  S.IDETPOL,  S.COD_MONEDA,  S.COD_ASEGURADO 
+        INTO NIDPOLIZA,   NIDETPOL,   CCOD_MONEDA,   NCOD_ASEGURADO
+        FROM SINIESTRO S
+       WHERE S.IDSINIESTRO = NIDSINIESTRO
+         AND S.CODCIA      = NCODCIA;
+    EXCEPTION 
+      WHEN NO_DATA_FOUND  THEN
+           nCodError    := 01;
+           cObservacion := 'Codigo Error 02: NO EXISTE EL SINIESTRO';
+           RAISE_APPLICATION_ERROR(-20225,'Codigo Error 01: NO EXISTE EL SINIESTRO - '||NIDSINIESTRO||' - '||SQLERRM);
+      WHEN OTHERS THEN 
+           nCodError    := 01;
+           cObservacion := 'Codigo Error 02: NO EXISTE EL SINIESTRO OTHERS';
+           RAISE_APPLICATION_ERROR(-20225,'Codigo Error 01: NO EXISTE EL SINIESTRO  OTHERS- '||NIDSINIESTRO||' - '||SQLERRM);
+    END;
+    --
+    CCODTRANSAC := 'OCURRE';
+    --
+    -- PROCESA SINIESTRO SI ES INDIVIDUAL
+    --
+    IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'I' THEN
+       --
+       -- VALIDA DETALLE_SINIESTRO
+       --
+       BEGIN
+         SELECT DS.IDDETSIN
+           INTO WNIDDETSIN
+           FROM DETALLE_SINIESTRO DS
+          WHERE DS.IDSINIESTRO = NIDSINIESTRO
+            AND DS.IDDETSIN    = NIDDETSIN;
+       EXCEPTION 
+         WHEN NO_DATA_FOUND  THEN
+              nCodError    := 02;
+              cObservacion := 'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO  - '||NIDSINIESTRO||' - 1 '||SQLERRM);
+         WHEN OTHERS THEN 
+              nCodError    := 02;
+              cObservacion := 'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO OTHERS';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO OTHERS- '||NIDSINIESTRO||' - 1 '||SQLERRM);
+       END;       
+       --
+       -- VALIDA APROBACION
+       --
+       BEGIN
+         SELECT 'S'
+           INTO cExisteCob
+           FROM APROBACIONES A
+          WHERE A.IDSINIESTRO    = NIDSINIESTRO
+            AND A.NUM_APROBACION = NNUM_APROBACION
+            AND A.CODCIA         = NCODCIA
+            AND A.IDDETSIN       = NIDDETSIN
+            AND A.STSAPROBACION  = 'SOL';
+       EXCEPTION
+         WHEN NO_DATA_FOUND THEn
+              nCodError := 03;
+              cObservacion := 'Codigo Error 03:NO Existe Aprobacion .';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe Aprobacion de '||NNUM_APROBACION);
+         WHEN TOO_MANY_ROWS THEn
+              cExisteCob := 'S'; 
+         WHEN OTHERS THEn
+              nCodError := 03;
+              cObservacion := 'Codigo Error 03:NO Existe Aprobacion por others.';
+              RAISE_APPLICATION_ERROR(-20225,'OTHERS NO Existe Aprobacion de '||NNUM_APROBACION);
+       END;
+       --
+       IF cExisteCob = 'S' THEN
+          --
+          IF DFECPAGO IS NULL THEN
+             DFECHA := TRUNC(SYSDATE);
+          ELSE 
+             DFECHA := DFECPAGO;
+          END IF;
+          --
+          BEGIN
+            OC_APROBACIONES.PAGAR(NCODCIA, NCODEMPRESA, NNUM_APROBACION, NIDSINIESTRO, NIDPOLIZA, NIDDETSIN);
+          EXCEPTION
+            WHEN OTHERS THEN
+                 nCodError := 99;
+                 cObservacion := 'Error al Pagar la Aprobación del Siniestro.';
+                 RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobación del Siniestro: '|| NIDSINIESTRO || ' ' || SQLERRM);
+          END;
+          -- 
+          IF DFECHA IS NOT NULL THEN
+             --
+             UPDATE APROBACIONES A
+                SET A.FECPAGO = DFECHA
+              WHERE A.IDSINIESTRO    = NIDSINIESTRO
+                AND A.NUM_APROBACION = NNUM_APROBACION
+                AND A.CODCIA         = NCODCIA
+                AND A.IDDETSIN       = NIDDETSIN;
+             --
+             nIDTRANSACCION := OBTIENE_TRANSA_PAG_IND(nNUM_APROBACION, nIdPoliza , nIdSiniestro , NIDDETSIN , DFECHA);          
+             --
+             CAMBIA_FECHA_CONTA(NIDTRANSACCION, nCodCia, DFECHA, nCodEmpresa); 
+             CAMBIA_FECHA_OBSERVACION(NIDSINIESTRO, NIDPOLIZA, DFECHA);
+             --
+          END IF;          
+          --
+       END IF;
+       --
+    END IF;
+    --
+    -- PROCESA SINIESTRO SI ES COLECTIVO
+    --
+    IF NIDSINIESTRO > 0 AND CID_COL_INDI = 'C' THEN
+       --
+       -- VALIDA DETALLE_SINIESTRO
+       --
+       BEGIN
+         SELECT DS.IDDETSIN
+           INTO WNIDDETSIN
+           FROM DETALLE_SINIESTRO_ASEG DS
+          WHERE DS.IDSINIESTRO = NIDSINIESTRO
+            AND DS.IDDETSIN    = NIDDETSIN;
+       EXCEPTION 
+         WHEN NO_DATA_FOUND  THEN
+              nCodError    := 02;
+              cObservacion := 'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO  - '||NIDSINIESTRO||' - 1 '||SQLERRM);
+         WHEN OTHERS THEN 
+              nCodError    := 02;
+              cObservacion := 'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO OTHERS';
+              RAISE_APPLICATION_ERROR(-20225,'Codigo Error 02: NO EXISTE EL DETALLE DE SINIESTRO OTHERS- '||NIDSINIESTRO||' - 1 '||SQLERRM);
+       END;       
+       --
+       -- VALIDA APROBACION
+       --
+       BEGIN
+         SELECT 'S'
+           INTO cExisteCob
+           FROM APROBACION_ASEG A
+          WHERE A.IDSINIESTRO     = NIDSINIESTRO
+            AND A.NUM_APROBACION = NNUM_APROBACION
+            AND A.CODCIA          = NCODCIA
+            AND A.IDDETSIN        = NIDDETSIN
+            AND A.STSAPROBACION    = 'SOL';
+       EXCEPTION
+         WHEN NO_DATA_FOUND THEn
+              nCodError := 03;
+              cObservacion := 'Codigo Error 03:NO Existe Aprobacion .';
+              RAISE_APPLICATION_ERROR(-20225,'NO Existe Aprobacion de '||NNUM_APROBACION);
+         WHEN TOO_MANY_ROWS THEn
+              cExisteCob := 'S'; 
+         WHEN OTHERS THEn
+              nCodError := 03;
+              cObservacion := 'Codigo Error 03:NO Existe Aprobacion por others.';
+              RAISE_APPLICATION_ERROR(-20225,'OTHERS NO Existe Aprobacion de '||NNUM_APROBACION);
+       END;
+       --
+       IF cExisteCob = 'S' THEN
+          --
+          IF DFECPAGO IS NULL THEN
+             DFECHA := TRUNC(SYSDATE);
+          ELSE 
+             DFECHA := DFECPAGO;
+          END IF;
+          --
+          BEGIN
+            OC_APROBACION_ASEG.PAGAR(NCODCIA, NCODEMPRESA, NNUM_APROBACION,NIDSINIESTRO, NIDPOLIZA, NCOD_ASEGURADO, NIDDETSIN);
+         EXCEPTION
+            WHEN OTHERS THEN
+                 nCodError := 99;
+                 cObservacion := 'Error al Pagar la Aprobación del Siniestro.';
+                 RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobación del Siniestro: '|| NIDSINIESTRO || ' ' || SQLERRM);
+          END;
+          -- 
+          IF DFECHA IS NOT NULL THEN
+             --
+             UPDATE APROBACION_ASEG A
+                SET A.FECPAGO = DFECHA
+              WHERE A.IDSINIESTRO     = NIDSINIESTRO
+                AND A.NUM_APROBACION = NNUM_APROBACION
+                AND A.CODCIA          = NCODCIA
+                AND A.IDDETSIN        = NIDDETSIN;
+             --
+             nIDTRANSACCION := OBTIENE_TRANSA_PAG_COL(nNUM_APROBACION, nIdPoliza , nIdSiniestro , NIDDETSIN , DFECHA, nCod_Asegurado);
+             --
+             CAMBIA_FECHA_CONTA(NIDTRANSACCION, nCodCia, DFECHA, nCodEmpresa); 
+             CAMBIA_FECHA_OBSERVACION(NIDSINIESTRO, NIDPOLIZA, DFECHA);
+             --
+          END IF;          
+          --
+       END IF;
+       --
+    END IF;
+    --
+    IF cMsjError IS NULL THEN
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'PROCE');
+    ELSE
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Reserva en solicitud: '||cMsjError);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+    END IF;
+    --
+  --
+EXCEPTION
+  WHEN OTHERS THEN
+       ROLLBACK;
+       OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','Error 1: '||SQLERRM);
+       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+END SOLICITUD_PAGOS_EMISION;  
 --
 --
 --

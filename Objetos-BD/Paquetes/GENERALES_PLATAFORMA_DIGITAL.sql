@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
+create or replace PACKAGE         GENERALES_PLATAFORMA_DIGITAL AS
 /******************************************************************************
    NOMBRE:       GENERALES_PLATAFORMA_DIGITAL
    1.0        12/07/2019      CPEREZ<       1. Created this package.
@@ -56,10 +56,11 @@ CREATE OR REPLACE PACKAGE THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
     --PROCEDURE RECIBE_GENERALES_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER, xGenerales XMLTYPE);
     PROCEDURE RECIBE_GENERALES_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, xGenerales XMLTYPE);
     FUNCTION CREA_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, cCadena VARCHAR2) RETURN NUMBER;
+    PROCEDURE CANCELACION_POLIZAS(nCodCia NUMBER,nCodEmpresa NUMBER,nIdPoliza NUMBER,cMotivAnul VARCHAR2,cRespuesta OUT VARCHAR2,cTipoProceso VARCHAR2,cCod_Moneda OUT VARCHAR2, xRespuesta OUT NUMBER, fechaAnulacion DATE);
     --
 END GENERALES_PLATAFORMA_DIGITAL;
 /
-CREATE OR REPLACE PACKAGE BODY THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
+create or replace PACKAGE BODY         GENERALES_PLATAFORMA_DIGITAL AS
 /******************************************************************************
    NOMBRE:       GENERALES_PLATAFORMA_DIGITAL
    1.0        12/07/2019      CPEREZ<       1. Created this package.
@@ -1154,7 +1155,7 @@ CURSOR Q_TRAN (PnIdePol NUMBER) IS
       AND D.CODSUBPROCESO  = 'POL'
       AND D.OBJETO         = 'POLIZAS'
       AND D.VALOR1         = TRIM(TO_CHAR(PnIdePol));
-       
+
 R_TRAN Q_TRAN%ROWTYPE;          
 
 CURSOR Q_DOMI (pCODPOSTAL VARCHAR2, pCODIGO_COLONIA VARCHAR2) IS
@@ -1187,11 +1188,11 @@ CURSOR DETPOL_Q IS
       IF SICAS_OC.GT_COTIZACIONES.EXISTE_COTIZACION_EMITIDA(NCODCIA, NCODEMPRESA, NIDCOTIZACION ) = 'N' THEN
         RETURN 'Esta cotización no esta emitida: ' || NIDCOTIZACION;
       END IF;
-   
+
       OPEN  Q_NUMREG;
       FETCH Q_NUMREG INTO R_NUMREG;      
       CLOSE Q_NUMREG;   
-       
+
       BEGIN
          SELECT IdTipoSeg, PlanCob
            INTO cIdTipoSeg, cPlanCob
@@ -1221,12 +1222,12 @@ CURSOR DETPOL_Q IS
          IF OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,1,',') = 'C' AND nIdPoliza IS NULL  THEN  
             nCodCliente := OC_CLIENTES.CODIGO_CLIENTE(cTipoDocIdentAseg, cNumDocIdentAseg);
          END IF;
-      
+
          BEGIN
             OPEN  Q_DOMI(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,18,','), OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,16,','));                    
             FETCH Q_DOMI INTO R_DOMI;      
             CLOSE Q_DOMI;   
-         
+
             cCodPaisRes := R_DOMI.CodPais; 
             cCodProvRes := R_DOMI.CodEstado;   
             cCodDistRes := R_DOMI.CodCiudad;
@@ -1234,7 +1235,7 @@ CURSOR DETPOL_Q IS
          EXCEPTION WHEN OTHERS THEN
             NULL;
          END;
-      
+
          IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,2,','), CRFC) = 'N' THEN
             OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,2,','),   --cTipo_Doc_Identificacion
                                                          CRFC,                                              --cNum_Doc_Identificacion
@@ -1262,7 +1263,7 @@ CURSOR DETPOL_Q IS
             ELSE
                cTipPersona := 'MORAL';
             END IF;                                                                     
-            
+
             UPDATE PERSONA_NATURAL_JURIDICA J SET J.Tipo_Persona        = cTipPersona,
                                                   J.Tipo_Id_Tributaria  = 'RFC',
                                                   J.Num_Tributario      = NVL(OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,10,','), 'XAXX010101000'),
@@ -1295,13 +1296,13 @@ CURSOR DETPOL_Q IS
                 WHERE Tipo_Doc_Identificacion  = cTipoDocIdentAseg
                   AND Num_Doc_Identificacion   = cNumDocIdentAseg;
             END;
-            
+
             IF nIdFormaCobro = 0 THEN 
                nIdFormaCobro := 1;
             ELSE
                nIdFormaCobro := nIdFormaCobro + 1;
             END IF;
-            
+
             OC_MEDIOS_DE_COBRO.INSERTAR(cTipoDocIdentAseg, cNumDocIdentAseg, nIdFormaCobro, 'S', 'CTC');
             UPDATE MEDIOS_DE_COBRO MD SET MD.CodFormaCobro     = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,23,','),
                                           MD.CodEntidadFinan   = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,24,','),
@@ -1333,7 +1334,7 @@ CURSOR DETPOL_Q IS
              nIdPoliza := gt_cotizaciones.CREAR_POLIZA(nCodCia,nCodEmpresa, nIdCotizacion, nCodCliente, nCod_Asegurado);
              --   
              --DBMS_OUTPUT.PUT_LINE(nIdPoliza);
-            
+
                 SELECT C.NUMCOTIZACIONANT
                   INTO wIdCotizacion
                   FROM COTIZACIONES C
@@ -1345,7 +1346,7 @@ CURSOR DETPOL_Q IS
                                               AND P.IDPOLIZA = nIdPoliza);
                 --
                --cNUMPOLUNICO := OC_POLIZAS.NUMERO_UNICO(NCODCIA, NIDPOLIZA);
-            
+
                   BEGIN
             --                                    SELECT NUMPOLUNICO, NUMPOLUNICO, P.COD_MONEDA
             --                                      INTO  cNUMPOLUNICO, cNUMPOLUNICO, cCodMoneda
@@ -1363,7 +1364,7 @@ CURSOR DETPOL_Q IS
                       AND NumPolUnico  = cNumPolUnico
                       AND StsPoliza   IN ('EMI','SOL')
                       AND IdPoliza    != nIdPoliza;
-            
+
             --                                  IF nCantPol > 0 THEN
             --                                     cNUMPOLUNICO := SUBSTR(cNumPolUnico || '-' || NIDPOLIZA, 1, 30);
             --                                  END IF;
@@ -1382,7 +1383,7 @@ CURSOR DETPOL_Q IS
             --                                     INSERT INTO VALORES_DE_LISTAS VALUES ('AGRUPA', cCodValor, 'PLATAFORMA DIGITAL THONAPI');
             --                               END;
                    cCodValor := NULL;
-            
+
                       BEGIN
                         SELECT codvalor
                           INTO cTipoRiesgo
@@ -1396,7 +1397,7 @@ CURSOR DETPOL_Q IS
                       EXCEPTION WHEN OTHERS THEN
                             cTipoRiesgo := null;
                       END;
-            
+
                  --------------------------------- Comisiones esta dividido en dos etapas, una esta la creacion de la poliza y otra al emitir la poliza
                    IF NVL(nIdCotizacion, 0) <> 0 THEN     
                        IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) = 'S' THEN
@@ -1420,7 +1421,7 @@ CURSOR DETPOL_Q IS
                                 FROM AGENTES_DISTRIBUCION_POLIZA A
                                WHERE A.CODCIA      = nCodCia
                                  AND A.IDPOLIZA    = nIdPoliza) LOOP
-            
+
                                  IF COM.CODNIVEL = 1 THEN
                                       wPorcComisTot := wPorcComisTot + wPorcComis1;
                                  ELSIF COM.CODNIVEL = 2 THEN
@@ -1432,9 +1433,9 @@ CURSOR DETPOL_Q IS
                           END LOOP;
                        END IF;                                        
                    END IF;                                                      
-            
+
                  --UPDATE POLIZAS P SET NUMPOLUNICO = cNUMPOLUNICO,
-            
+
                  UPDATE POLIZAS P SET P.HORAVIGINI   = '12:00',
                                        P.HORAVIGFIN   = '12:00',
                                        P.TIPODIVIDENDO = '003',
@@ -1447,13 +1448,13 @@ CURSOR DETPOL_Q IS
                   WHERE P.CODCIA      = nCodCia
                     AND P.CODEMPRESA  = nCodEmpresa
                     AND P.IDPOLIZA    = nIdPoliza;
-            
+
                  UPDATE DETALLE_POLIZA P SET P.CODPLANPAGO = OC_PROCESOS_MASIVOS.VALOR_CAMPO(ENT.Fila,33,','),
                                                  P.CODCATEGORIA = NULL
                   WHERE P.CODCIA      = nCodCia
                     AND P.CODEMPRESA  = nCodEmpresa
                     AND P.IDPOLIZA    = nIdPoliza;                               
-            
+
                   EXCEPTION WHEN OTHERS THEN
                     NULL;
                   END;
@@ -1492,7 +1493,7 @@ CURSOR DETPOL_Q IS
                    AND D.IDPOLIZA      =   nIdPoliza
                    AND D.IDETPOL       = nIdePol;
             END IF;                    
-         
+
          END IF;        
         --           
         numBenef := 0;            
@@ -1515,7 +1516,7 @@ CURSOR DETPOL_Q IS
                 END IF;
             END LOOP;
         END IF;          
-      
+
       END LOOP;                    
        --             
        IF R_NUMREG.ESCOLECTIVA = 'N' AND nIdPoliza IS NOT NULL THEN
@@ -1541,7 +1542,7 @@ CURSOR DETPOL_Q IS
             IF SQL%ROWCOUNT > 0 THEN
                wPorcComPropT := wPorcComPropT + TRUNC(ROUND((wPorcComis1 * 100) / wPorcComisTot, 2), 2); 
             END IF;
-   
+
                   UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Distribuida  = wPorcComis2,
                                                           Porc_Com_Proporcional = TRUNC(ROUND((wPorcComis2 * 100) / wPorcComisTot, 2), 2), 
                                                             PORC_COM_POLIZA       = wPorcComisTot
@@ -1551,12 +1552,12 @@ CURSOR DETPOL_Q IS
                   IF SQL%ROWCOUNT > 0 THEN
                      wPorcComPropT := wPorcComPropT + TRUNC(ROUND((wPorcComis2 * 100) / wPorcComisTot, 2), 2); 
                   END IF;
-   
+
             IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, nCodAgente) != 'S' THEN
                 IF wPorcComisTot = 0 THEN wPorcComisTot := 1; END IF;
                 IF wPorcComis3 = 0 THEN wPorcComis3 := 1;     END IF;
             END IF;
-   
+
             BEGIN
                SELECT TRUNC(ROUND((wPorcComis3 * 100) / wPorcComisTot, 2), 2)
                  INTO nPorc_Com_Proporcional
@@ -1565,7 +1566,7 @@ CURSOR DETPOL_Q IS
                WHEN ZERO_DIVIDE THEN
                   nPorc_Com_Proporcional := 0;
             END;
-   
+
             UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Distribuida   = wPorcComis3,
                                                     Porc_Com_Proporcional  = nPorc_Com_Proporcional, 
                                                     Porc_Com_Poliza        = wPorcComisTot
@@ -1576,27 +1577,27 @@ CURSOR DETPOL_Q IS
                --wPorcComPropT := wPorcComPropT + TRUNC(ROUND((wPorcComis3 * 100) / wPorcComisTot, 2), 2); 
                wPorcComPropT := wPorcComPropT + nPorc_Com_Proporcional;
             END IF;
-   
+
                   UPDATE AGENTES_DISTRIBUCION_POLIZA SET  Porc_Com_Proporcional = Porc_Com_Proporcional + (100 - wPorcComPropT)  
                   WHERE IdPoliza = nIdPoliza
                     AND CODNIVEL = 3
                     AND CodCia   = nCodCia;
-   
+
                   DELETE AGENTES_DISTRIBUCION_COMISION
                    WHERE CodCia   = nCodCia
                     AND IdPoliza = nIdPoliza;
-   
+
                   DELETE AGENTES_DETALLES_POLIZAS
                    WHERE CodCia   = nCodCia
                     AND IdPoliza = nIdPoliza;
-   
+
                   UPDATE DETALLE_POLIZA D SET D.PORCCOMIS = wPorcComisTot
                   WHERE D.CODCIA = nCodCia
                     AND D.CODEMPRESA = nCodEmpresa
                     and D.IDPOLIZA   = nIdPoliza;
-   
+
                   OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza); 
-   
+
           END;                  
           BEGIN
                  FOR W IN DETPOL_Q LOOP
@@ -1912,7 +1913,7 @@ BEGIN
    EXCEPTION WHEN OTHERS THEN
       nIdOpenPay := 0;            
    END;
-   
+
    IF NVL(nIdOpenPay, 0) = 0 THEN                
       BEGIN
          SELECT NVL(MAX(IdOpenPay),0) + 1 
@@ -1936,7 +1937,7 @@ BEGIN
             AND D.IdPoliza = FC.IdPoliza
             AND D.IDetPol  = FC.IDetPol;
       END;
-      
+
       IF FC.IndContabilizada = 'N' THEN
          nIdTransaccion := OC_TRANSACCION.CREA(nCodCia, FC.CodEmpresa, 14, 'CONFAC');
          OC_DETALLE_TRANSACCION.CREA(nIdTransaccion, nCodCia, FC.CodEmpresa, 14, 'CONFAC',
@@ -1948,9 +1949,9 @@ BEGIN
           WHERE IdFactura = FC.IdFactura;
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(1, nIdTransaccion, 'C');
       END IF;
-      
+
       nIdTransac := OC_TRANSACCION.CREA(1,  FC.CodEmpresa, 12, 'PAG');
-      
+
       IF GT_FAI_FONDOS_DETALLE_POLIZA.EXISTEN_FONDOS(1, FC.CodEmpresa, FC.IdPoliza, FC.IDetPol, nCodAsegurado) = 'N' THEN
          nCobrar := OC_FACTURAS.PAGAR (FC.IdFactura, FC.NumApprob_OpenPay, SYSDATE, FC.MontoPago_Moneda, cCodFormaPago, FC.CodEntidad, nIdTransac);
       ELSE             
@@ -1963,7 +1964,7 @@ BEGIN
          END IF;
          nCobrar := OC_FACTURAS.PAGAR_FONDOS(FC.IdFactura, FC.NumApprob_OpenPay, SYSDATE, FC.Monto_Fact_Moneda, cCodFormaPago, FC.CodEntidad, nIdTransac, nPrimaNivelada, nAporteFondo);
       END IF;
-      
+
       IF nCobrar = 1 THEN
          bTerminoOk := TRUE;
          UPDATE PAGOS P 
@@ -1973,21 +1974,21 @@ BEGIN
             AND P.CodEmpresa     = nCodEmpresa
             AND P.IdFactura      = FC.IdFactura
             AND P.IdTransaccion  = nIdTransac;
-      
+
          UPDATE FACTURAS
             SET FecSts         = TRUNC(SYSDATE),
                 IndDomiciliado = NULL
           WHERE CodCia    = nCodCia
             AND IdFactura = FC.IdFactura;
-   
+
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(1, nIdTransac, 'C');
-      
+
          cCodCFDI := OC_FACTURAS.FACTURA_ELECTRONICA(FC.IdFactura, 1, 1, 'A', 'S');
           --               
          IF OC_GENERALES.BUSCA_PARAMETRO(R_Facturas.CodCia, '026') = cCodCFDI THEN --201
             NULL;
          END IF;
-      
+
       END IF;
    END LOOP;                                 
    RETURN bTerminoOk ;                      
@@ -2505,11 +2506,12 @@ END PAGO_FACTURA;
     | Version    : 3.0                                                                                                              |
     | Objetivo   : Funcion que obtiene informacion del Agente que coincida con el proporcionado.                                    |
     | Modificado : Si                                                                                                               |
-    | Ult. modif.: 14/04/2021                                                                                                       |
+    | Ult. modif.: 13/08/2021                                                                                                       |
     | Modifico   : J. Alberto Lopez Valle (JALV)                                                                                    |
     | Email      : alopez@thonaseguros.mx                                                                                           |
     |                                                                                                                               |
-    | Obj. Modif.: Colocar orden correcto de apellidos en el Nombre del agente (Ape. Paterno y despues Ape. Materno)                |
+    | Obj. Modif.: Se agrego el codigo del Ejecutivo.                                                                               |
+    |        14/04/2021 Colocar orden correcto de apellidos en el Nombre del agente (Ape. Paterno y despues Ape. Materno).          |
     |        04/03/2021 Correccion para que muestre el Email correcto de acuerdo al Correlativo.                                    |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
@@ -2533,6 +2535,7 @@ END PAGO_FACTURA;
             NOMBRE  VARCHAR(500),
             EMAIL   VARCHAR(500),
             TEL     VARCHAR(500),
+            CODEJE            AGENTES.CODEJECUTIVO%TYPE,    --> JALV(+) 13/08/2021
             EST_AGENTE        AGENTES.EST_AGENTE%TYPE,
             FECALTA           AGENTES.FECALTA%TYPE,
             TIPO_AGENTE       AGENTES.TIPO_AGENTE%TYPE,                                          
@@ -2554,8 +2557,9 @@ END PAGO_FACTURA;
             FOR ENT IN (SELECT A.CODNIVEL NIVEL,
                                A.COD_AGENTE_JEFE, 
                                A.COD_AGENTE,
-                               A.Tipo_Doc_Identificacion,
-                               A.Num_Doc_Identificacion,
+                               A.CODEJECUTIVO,              --> JALV(+) 13/08/2021
+                               A.TIPO_DOC_IDENTIFICACION,
+                               A.NUM_DOC_IDENTIFICACION,
                                A.EST_AGENTE,
                                A.FECALTA,
                                A.IDCUENTACORREO,  
@@ -2583,6 +2587,7 @@ END PAGO_FACTURA;
                  WHERE  PA.Tipo_Doc_Identificacion = ENT.Tipo_Doc_Identificacion 
                    AND  PA.Num_Doc_Identificacion = ENT.Num_Doc_Identificacion;
                 IF nCOD_AGENTE =  pCODAGENTE THEN                                  
+                    TABLA_NIVELES(NUM).CODEJE        := ENT.CODEJECUTIVO;       --> JALV(+) 13/08/2021
                     TABLA_NIVELES(NUM).EST_AGENTE    := ENT.EST_AGENTE;
                     TABLA_NIVELES(NUM).FECALTA       := ENT.FECALTA;
                     TABLA_NIVELES(NUM).TIPO_AGENTE   := ENT.TIPO_AGENTE;
@@ -2614,6 +2619,7 @@ END PAGO_FACTURA;
                         --' DEP="' || TABLA_NIVELES(NUM).SUB            || '"';
                         IF TABLA_NIVELES(NUM).JEFE  =  pCODAGENTE THEN 
                             Linea :=   Linea ||
+                            ' COD_EJECUTIVO="' || TABLA_NIVELES(NUM).CODEJE   || '"' || --> JALV(+) 13/08/2021
                             ' ESTATUS="' || TABLA_NIVELES(NUM).EST_AGENTE   || '"' ||
                             ' FECHA_ALTA="' || to_char(TABLA_NIVELES(NUM).FECALTA, 'dd/mm/yyyy')      || '"' ||
                             ' TIPO_AGENTE="' || TABLA_NIVELES(NUM).TIPO_AGENTE  || '"' ||
@@ -3028,6 +3034,11 @@ BEGIN
    RETURN nIdPoliza;
 END CREA_POLIZA;
 
+PROCEDURE CANCELACION_POLIZAS(nCodCia NUMBER,nCodEmpresa NUMBER,nIdPoliza NUMBER,cMotivAnul VARCHAR2,cRespuesta OUT VARCHAR2,cTipoProceso VARCHAR2,cCod_Moneda OUT VARCHAR2, xRespuesta OUT NUMBER, fechaAnulacion DATE) IS
+    dFecAnul DATE := TRUNC(TO_DATE(fechaAnulacion, 'DD/MM/RRRR'));
+    BEGIN
+        cCod_Moneda := OC_POLIZAS.MONEDA(nCodCia, nCodEmpresa, nIdPoliza);
+        xRespuesta := OC_POLIZAS_SERVICIOS_WEB.ANULAR_POLIZA(nCodCia, nCodEmpresa, nIdPoliza, dFecAnul, cMotivAnul, cCod_Moneda, cRespuesta, cTipoProceso);
+    END CANCELACION_POLIZAS;
+
 END GENERALES_PLATAFORMA_DIGITAL;
-/
-create or replace public synonym GENERALES_PLATAFORMA_DIGITAL for thonapi.GENERALES_PLATAFORMA_DIGITAL;
