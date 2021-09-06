@@ -1,4 +1,4 @@
-create or replace PACKAGE          GT_COTIZACIONES IS
+CREATE OR REPLACE PACKAGE  SICAS_OC.GT_COTIZACIONES IS
 
    FUNCTION VALIDAR_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2;
    PROCEDURE EMITIR_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER);
@@ -38,8 +38,8 @@ create or replace PACKAGE          GT_COTIZACIONES IS
 
 END GT_COTIZACIONES;
 /
-create or replace PACKAGE BODY          GT_COTIZACIONES IS
 
+CREATE OR REPLACE PACKAGE BODY  SICAS_OC.GT_COTIZACIONES IS
 FUNCTION VALIDAR_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2 IS
 cIndAsegModelo              COTIZACIONES.IndAsegModelo%TYPE;
 cIndListadoAseg             COTIZACIONES.IndListadoAseg%TYPE;
@@ -1084,6 +1084,16 @@ nNivEstruct3      AGENTES.CODNIVEL%TYPE;
 
 cHoraVigIni       POLIZAS.HoraVigIni%TYPE;
 cHoraVigFin       POLIZAS.HoraVigFin%TYPE;
+nDifCantAsegModelo  NUMBER := 0;
+cIndConcentrada     POLIZAS.IndConcentrada%TYPE;
+--
+cCodGrupoEc               GRUPO_ECONOMICO.CodGrupoEc%TYPE;
+cCodFilial                FILIALES.CodFilial%TYPE;
+cTipo_Doc_Identificacion  FILIALES.Tipo_Doc_Identificacion%TYPE;
+cNum_Doc_Identificacion   FILIALES.Num_Doc_Identificacion%TYPE;
+cDescFilial               FILIALES.Descripcion%TYPE;
+cCodCategoria             FILIALES_CATEGORIAS.CodCategoria%TYPE;
+cDescCategoria            FILIALES_CATEGORIAS.Descripcion%TYPE;
 --
 CURSOR COTIZ_Q IS
   SELECT CodCotizador, NumUnicoCotizacion, NumCotizacionRef, FecIniVigCot, FecFinVigCot,
@@ -1177,6 +1187,39 @@ BEGIN
             cHoraVigFin := X.HorasVig;
          END IF;
          --
+         IF NVL(x.IndCotizacionWeb, 'N') = 'S' AND cIndPolCol = 'S' THEN
+         
+            --Determino Grupo Económico
+            cCodGrupoEc := OC_GRUPO_ECONOMICO.ALTA_AUTOMATICA( nCodCliente, nCodCia );
+
+            --Determino Filial
+            cCodFilial  := 1;
+            cDescFilial := NULL;
+            --
+            SELECT Tipo_Doc_Identificacion, Num_Doc_Identificacion
+            INTO   cTipo_Doc_Identificacion, cNum_Doc_Identificacion
+            FROM   CLIENTES
+            WHERE  CodCliente = nCodCliente;
+            --
+            OC_FILIALES.VALIDA_CREA( nCodCia, cCodGrupoEc, cTipo_Doc_Identificacion, cNum_Doc_Identificacion, cCodFilial, cDescFilial );
+                      
+            --Determino Categoria
+            cCodCategoria  := 'ASEGURADOS';
+            cDescCategoria := 'ASEGURADOS';
+            
+            OC_FILIALES_CATEGORIAS.VALIDA_CREA( nCodCia, cCodGrupoEc, cCodFilial, cCodCategoria, cDescCategoria );
+         ELSE
+            cCodGrupoEc   := NULL;
+            cCodFilial    := NULL;
+            cCodCategoria := NULL;
+         END IF;
+         --
+         IF NVL(x.IndAsegModelo, 'N') = 'S' THEN
+            cIndConcentrada := 'S';
+         ELSE
+            cIndConcentrada := NULL;
+         END IF;
+         --
          UPDATE POLIZAS
             SET Num_Cotizacion       = nIdCotizacion,
                 FecFinVig            = X.FecFinVigCot,
@@ -1216,17 +1259,28 @@ BEGIN
                 CODOFICINA           = X.CODOFICINA,
                 CODCATEGO            = X.CODCATEGO,
                 NumPolUnico          = cNumPolUnico,
-                DescPoliza           = SUBSTR(X.DescElegibilidad, 1, 2000)
-          WHERE CodCia     = nCodCia
-            AND CodEmpresa = nCodEmpresa
-            AND IdPoliza   = nIdPoliza;
-
+                DescPoliza           = SUBSTR(X.DescElegibilidad, 1, 2000),
+                IndConcentrada       = NVL(cIndConcentrada, IndConcentrada),
+                CodGrupoEc           = NVL(cCodGrupoEc, CodGrupoEc)
+         WHERE  CodCia     = nCodCia
+           AND  CodEmpresa = nCodEmpresa
+           AND  IdPoliza   = nIdPoliza;
+         --
          nIDetPol := GT_COTIZACIONES_DETALLE.CREAR_CERTIFICADO(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza, nCodAsegurado, cIndPolCol);
          GT_POLIZAS_TEXTO_COTIZACION.INSERTA(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza);
          GT_COTIZACIONES_CLAUSULAS.CREAR_CLAUSULAS_POL(nCodCia, nCodEmpresa, nIdCotizacion, nIdPoliza);
          --
+         IF x.IndAsegModelo = 'S' THEN
+            nDifCantAsegModelo := 1;
+         ELSE
+            nDifCantAsegModelo := 0;
+         END IF;
+         --
          UPDATE DETALLE_POLIZA P 
-         SET    P.PorcComis = nPorcComis
+         SET    P.PorcComis      = nPorcComis
+           ,    P.CantAsegModelo = NVL(P.CantAsegModelo, 0) + nDifCantAsegModelo
+           ,    P.CodFilial      = NVL(cCodFilial, CodFilial)
+           ,    P.CodCategoria   = NVL(cCodCategoria, CodCategoria)
          WHERE  P.CodCia     = nCodCia
            AND  P.CodEmpresa = nCodEmpresa
            AND  P.IdPoliza   = nIdPoliza;
@@ -1336,6 +1390,8 @@ BEGIN
            AND  CodEmpresa   = nCodEmpresa
            AND  IdCotizacion = nIdCotizacion;
       END LOOP;
+      --
+      OC_POLIZAS.ACTUALIZA_VALORES( nCodCia, nIdPoliza, NULL );
       --
       RETURN(nIdPoliza);
       --
@@ -1484,3 +1540,10 @@ BEGIN
 END COPIAR_COTIZACION_WEB;
 
 END GT_COTIZACIONES;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM GT_COTIZACIONES FOR SICAS_OC.GT_COTIZACIONES
+/
+
+GRANT EXECUTE ON SICAS_OC.GT_COTIZACIONES TO PUBLIC
+/

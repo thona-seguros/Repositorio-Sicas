@@ -1,4 +1,4 @@
-create or replace PACKAGE          GT_COTIZACIONES_COBERTURAS IS
+CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES_COBERTURAS IS
 
   FUNCTION EXISTEN_COBERTURAS_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER) RETURN VARCHAR2;
   PROCEDURE RECOTIZACION_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIdRecotizacion NUMBER);
@@ -16,7 +16,8 @@ create or replace PACKAGE          GT_COTIZACIONES_COBERTURAS IS
 
 END GT_COTIZACIONES_COBERTURAS;
 /
-create or replace PACKAGE BODY          GT_COTIZACIONES_COBERTURAS IS
+
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_COTIZACIONES_COBERTURAS IS
 
 FUNCTION EXISTEN_COBERTURAS_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER) RETURN VARCHAR2 IS
 cExisteCob      VARCHAR2(1);
@@ -369,7 +370,7 @@ BEGIN
                   IF NVL(nDiasVig,0) > 0 THEN
                      nTasa := NVL(nTasa,0) * (NVL(nDiasVig,0) / 365);
                   END IF;
-                  
+
                   /*IF cTipoProrrata = 'D365' THEN
                      nTasa := (NVL(nTasa,0) / 365) * (dFecFinVigCot - dFecIniVigCot);
                   END IF;
@@ -616,12 +617,13 @@ END COPIAR_COBERTURAS;
 PROCEDURE CREAR_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER,
                            nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER, cIndPolCol VARCHAR2) IS
 
-cIndCambioSAMI   COBERT_ACT.IndCambioSAMI%TYPE;
-nSumaAsegLocal   ASEGURADO_CERTIFICADO.SumaAseg%TYPE         := 0;
-nSumaAsegMoneda  ASEGURADO_CERTIFICADO.SumaAseg_Moneda%TYPE  := 0;
-nPrimaNeta       ASEGURADO_CERTIFICADO.PrimaNeta%TYPE        := 0;
-nPrimaNeta_Mon   ASEGURADO_CERTIFICADO.PrimaNeta_Moneda%TYPE := 0;
-
+cIndCambioSAMI     COBERT_ACT.IndCambioSAMI%TYPE;
+nSumaAsegLocal     ASEGURADO_CERTIFICADO.SumaAseg%TYPE         := 0;
+nSumaAsegMoneda    ASEGURADO_CERTIFICADO.SumaAseg_Moneda%TYPE  := 0;
+nPrimaNeta         ASEGURADO_CERTIFICADO.PrimaNeta%TYPE        := 0;
+nPrimaNeta_Mon     ASEGURADO_CERTIFICADO.PrimaNeta_Moneda%TYPE := 0;
+cIndCotizacionWeb  COTIZACIONES.IndCotizacionWeb%TYPE;
+nCantAsegurados    COTIZACIONES.CantAsegurados%TYPE := 0;
 CURSOR COTCOB_Q IS
    SELECT C.IdTipoSeg, M.CodCobert, M.SumaAsegCobLocal, M.SumaAsegCobMoneda, M.Tasa,
           M.PrimaCobLocal, M.PrimaCobMoneda, M.DeducibleCobLocal, M.DeducibleCobMoneda,
@@ -638,61 +640,110 @@ CURSOR COTCOB_Q IS
       AND C.IdCotizacion   = nIdCotizacion
       AND M.IDetCotizacion = nIDetCotizacion;
 BEGIN
+   SELECT IndCotizacionWeb , CantAsegurados
+   INTO   cIndCotizacionWeb, nCantAsegurados
+   FROM   COTIZACIONES
+   WHERE  CodCia       = nCodCia
+     AND  CodEmpresa   = nCodEmpresa
+     AND  IdCotizacion = nIdCotizacion;
+   --
    IF NVL(cIndPolCol,'N') = 'S' THEN
       INSERT INTO ASEGURADO_CERTIFICADO
             (CodCia, IdPoliza, IDetPol, Cod_Asegurado, Estado, SumaAseg, 
              PrimaNeta, IdEndoso, SumaAseg_Moneda, PrimaNeta_Moneda)
       VALUES(nCodCia, nIdPoliza, nIDetPol, nCodAsegurado, 'SOL', nSumaAsegLocal, 
              nPrimaNeta, 0, nSumaAsegMoneda, nPrimaNeta_Mon);
-
+      --
       FOR X IN COTCOB_Q LOOP
-         IF X.SAMIAutorizado > 0 THEN
-            cIndCambioSAMI     := 'S';
-         END IF;
-
-         INSERT INTO COBERT_ACT_ASEG
-               (CodEmpresa, CodCia, IdPoliza, IDetPol, IdTipoSeg, TipoRef, NumRef, CodCobert, 
-                SumaAseg_Local, SumaAseg_Moneda, Tasa, Prima_Local, Prima_Moneda, IdEndoso, 
-                StsCobertura, PlanCob, Cod_Moneda, Deducible_Local, Deducible_Moneda,
-                Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
-                SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, 
-                SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
-                PrimaNivMoneda, PrimaNivLocal)
-         VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert, 
-                X.SumaAsegCobLocal, X.SumaAsegCobMoneda, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0,
-                'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
-                nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario, 
-                X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
-                X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada, 
-                0, 0);
-         nSumaAsegLocal    := nSumaAsegLocal  + X.SumaAsegCobLocal;
-         nSumaAsegMoneda   := nSumaAsegMoneda + X.SumaAsegCobMoneda;
-         nPrimaNeta        := nPrimaNeta      + X.PrimaCobLocal;
-         nPrimaNeta_Mon    := nPrimaNeta_Mon  + X.PrimaCobMoneda;
+          IF X.SAMIAutorizado > 0 THEN
+             cIndCambioSAMI     := 'S';
+          END IF;
+          --
+--          IF cIndCotizacionWeb = 'S' THEN
+             INSERT INTO COBERT_ACT_ASEG
+                   (CodEmpresa, CodCia, IdPoliza, IDetPol, IdTipoSeg, TipoRef, NumRef, CodCobert, 
+                    SumaAseg_Local, SumaAseg_Moneda, Tasa, Prima_Local, Prima_Moneda, IdEndoso, 
+                    StsCobertura, PlanCob, Cod_Moneda, Deducible_Local, Deducible_Moneda,
+                    Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
+                    SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, 
+                    SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
+                    PrimaNivMoneda, PrimaNivLocal)
+             VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert, 
+                    X.SumaAsegCobLocal/nCantAsegurados, X.SumaAsegCobMoneda/nCantAsegurados, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0,
+                    'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
+                    nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario, 
+                    X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
+                    X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada, 
+                    0, 0);
+             --
+             nSumaAsegLocal    := nSumaAsegLocal  + (X.SumaAsegCobLocal/nCantAsegurados);
+             nSumaAsegMoneda   := nSumaAsegMoneda + (X.SumaAsegCobMoneda/nCantAsegurados);
+             nPrimaNeta        := nPrimaNeta      + X.PrimaCobLocal;
+             nPrimaNeta_Mon    := nPrimaNeta_Mon  + X.PrimaCobMoneda;
+/*          ELSE
+             INSERT INTO COBERT_ACT_ASEG
+                   (CodEmpresa, CodCia, IdPoliza, IDetPol, IdTipoSeg, TipoRef, NumRef, CodCobert, 
+                    SumaAseg_Local, SumaAseg_Moneda, Tasa, Prima_Local, Prima_Moneda, IdEndoso, 
+                    StsCobertura, PlanCob, Cod_Moneda, Deducible_Local, Deducible_Moneda,
+                    Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
+                    SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, 
+                    SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
+                    PrimaNivMoneda, PrimaNivLocal)
+             VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert, 
+                    X.SumaAsegCobLocal, X.SumaAsegCobMoneda, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0,
+                    'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
+                    nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario, 
+                    X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
+                    X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada, 
+                    0, 0);
+             --
+             nSumaAsegLocal    := nSumaAsegLocal  + X.SumaAsegCobLocal;
+             nSumaAsegMoneda   := nSumaAsegMoneda + X.SumaAsegCobMoneda;
+             nPrimaNeta        := nPrimaNeta      + X.PrimaCobLocal;
+             nPrimaNeta_Mon    := nPrimaNeta_Mon  + X.PrimaCobMoneda;
+          END IF;*/          
       END LOOP;
-      
+      --
       OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado);
    ELSE
       FOR X IN COTCOB_Q LOOP
-         IF X.SAMIAutorizado > 0 THEN
-            cIndCambioSAMI     := 'S';
-         END IF;
-
-         INSERT INTO COBERT_ACT
-               (CodEmpresa, CodCia, IdPoliza, IDetPol, IdTipoSeg, TipoRef, NumRef, CodCobert,
-                SumaAseg_Local, SumaAseg_Moneda, Tasa, Prima_Local, Prima_Moneda, IdEndoso, 
-                StsCobertura, PlanCob, Cod_Moneda, Deducible_Local, Deducible_Moneda,
-                Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
-                SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
-                SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
-                PrimaNivMoneda, PrimaNivLocal)
-         VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert,
-                X.SumaAsegCobLocal, X.SumaAsegCobMoneda, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0, 
-                'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
-                nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario, 
-                X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
-                X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada,
-                0, 0);
+          IF X.SAMIAutorizado > 0 THEN
+             cIndCambioSAMI     := 'S';
+          END IF;
+          --
+--          IF cIndCotizacionWeb = 'S' THEN
+             INSERT INTO COBERT_ACT
+                   (CodEmpresa, CodCia, IdPoliza, IDetPol, IdTipoSeg, TipoRef, NumRef, CodCobert,
+                    SumaAseg_Local, SumaAseg_Moneda, Tasa, Prima_Local, Prima_Moneda, IdEndoso, 
+                    StsCobertura, PlanCob, Cod_Moneda, Deducible_Local, Deducible_Moneda,
+                    Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
+                    SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
+                    SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
+                    PrimaNivMoneda, PrimaNivLocal)
+             VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert,
+                    X.SumaAsegCobLocal/nCantAsegurados, X.SumaAsegCobMoneda/nCantAsegurados, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0, 
+                    'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
+                    nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario, 
+                    X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
+                    X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada,
+                    0, 0);
+/*          ELSE
+             INSERT INTO COBERT_ACT
+                   (CodEmpresa, CodCia, IdPoliza, IDetPol, IdTipoSeg, TipoRef, NumRef, CodCobert,
+                    SumaAseg_Local, SumaAseg_Moneda, Tasa, Prima_Local, Prima_Moneda, IdEndoso, 
+                    StsCobertura, PlanCob, Cod_Moneda, Deducible_Local, Deducible_Moneda,
+                    Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
+                    SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
+                    SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
+                    PrimaNivMoneda, PrimaNivLocal)
+             VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert,
+                    X.SumaAsegCobLocal, X.SumaAsegCobMoneda, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0, 
+                    'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
+                    nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario, 
+                    X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
+                    X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada,
+                    0, 0);
+          END IF;*/
       END LOOP;
    END IF;
 EXCEPTION
@@ -701,3 +752,10 @@ EXCEPTION
 END CREAR_COBERTURAS;
 
 END GT_COTIZACIONES_COBERTURAS;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM GT_COTIZACIONES_COBERTURAS FOR SICAS_OC.GT_COTIZACIONES_COBERTURAS
+/
+
+GRANT EXECUTE ON SICAS_OC.GT_COTIZACIONES_COBERTURAS TO PUBLIC
+/

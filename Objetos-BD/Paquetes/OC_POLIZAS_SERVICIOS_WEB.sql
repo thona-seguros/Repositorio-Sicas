@@ -1,4 +1,4 @@
-create or replace PACKAGE OC_POLIZAS_SERVICIOS_WEB AS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS_SERVICIOS_WEB AS
    FUNCTION CONSULTA_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN XMLTYPE;
 
    FUNCTION LISTADO_POLIZA(nCodCia         NUMBER,     nCodEmpresa     NUMBER,     nIdPoliza       NUMBER,     nCodAgente      NUMBER,
@@ -28,8 +28,8 @@ create or replace PACKAGE OC_POLIZAS_SERVICIOS_WEB AS
     --
 END OC_POLIZAS_SERVICIOS_WEB;
 /
-SET DEFINE OFF
-create or replace PACKAGE BODY OC_POLIZAS_SERVICIOS_WEB IS
+
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS_SERVICIOS_WEB IS
 /*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
@@ -745,7 +745,7 @@ create or replace PACKAGE BODY OC_POLIZAS_SERVICIOS_WEB IS
           IF cIndRequierePago = 'S' THEN
             OC_POLIZAS.PRE_EMITE_POLIZA(nCodCia, nCodEmpresa, nIdPoliza, nIdTransaccion);
           END IF;
-          
+
           --
           cFacturas := GENERALES_PLATAFORMA_DIGITAL.CONSULTA_FACTURA(nCodCia, nIdPoliza);       
           --      
@@ -920,11 +920,11 @@ create or replace PACKAGE BODY OC_POLIZAS_SERVICIOS_WEB IS
                             '|P_IDENDOSO=' || ENT.IDENDOSO || 
                             '|P_POLIZA='   || ENT.IDPOLIZA;
                     */
-                                                 
+
                     cUrl := cUrl || 'ENDOSOS'        ||
                             '|'  || ENT.IDENDOSO ; 
 --                            '|'  || ENT.IDPOLIZA;
-                    
+
                     --                               
                 END LOOP;
                 --                                 
@@ -933,7 +933,7 @@ create or replace PACKAGE BODY OC_POLIZAS_SERVICIOS_WEB IS
                 --cRESPUESTA := REPLACE(cUrl, '|', '&');
                 cRESPUESTA := cUrl; 
                 --
-                
+
             EXCEPTION WHEN OTHERS THEN
                 cRESPUESTA    := SQLERRM;                           
             END;
@@ -952,3 +952,10 @@ create or replace PACKAGE BODY OC_POLIZAS_SERVICIOS_WEB IS
     END ANULAR_POLIZA;
     --
 END OC_POLIZAS_SERVICIOS_WEB;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM OC_POLIZAS_SERVICIOS_WEB FOR SICAS_OC.OC_POLIZAS_SERVICIOS_WEB
+/
+
+GRANT EXECUTE ON SICAS_OC.OC_POLIZAS_SERVICIOS_WEB TO PUBLIC
+/

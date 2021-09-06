@@ -1,4 +1,4 @@
-create or replace PACKAGE          GT_COTIZACIONES_DETALLE IS
+CREATE OR REPLACE PACKAGE SICAS_OC.GT_COTIZACIONES_DETALLE IS
 
    FUNCTION EXISTE_DETALLE_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2;
    PROCEDURE RECOTIZACION_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIdRecotizacion NUMBER);
@@ -30,7 +30,8 @@ create or replace PACKAGE          GT_COTIZACIONES_DETALLE IS
                                    , nIDetCotizacion COTIZACIONES_DETALLE.IDetCotizacion%TYPE);                                   
 END GT_COTIZACIONES_DETALLE;
 /
-create or replace PACKAGE BODY          GT_COTIZACIONES_DETALLE IS
+
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_COTIZACIONES_DETALLE IS
 
 FUNCTION EXISTE_DETALLE_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) RETURN VARCHAR2 IS
 cExisteDet      VARCHAR2(1);
@@ -463,7 +464,8 @@ FUNCTION CREAR_CERTIFICADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUM
    nIDetPol         DETALLE_POLIZA.IDetPol%TYPE;
    cIndAsegMod      DETALLE_POLIZA.IndAsegModelo%TYPE;
    nCantAsegurados  DETALLE_POLIZA.CantAsegModelo%TYPE;
-
+   cMenor12Anios    VARCHAR2(1);
+   --
 CURSOR COTDET_Q IS
    SELECT C.IdTipoSeg, C.PlanCob, C.Cod_Moneda, OC_GENERALES.FUN_TASA_CAMBIO(C.Cod_Moneda,TRUNC(SYSDATE)) TipoCambio,
           C.PorcComisAgte, C.CodPlanPago, C.FecIniVigCot, C.FecFinVigCot, C.IndAsegModelo, C.IndCensoSubGrupo,
@@ -515,11 +517,38 @@ BEGIN
                                       nIdPoliza, nIDetPol);
       
       IF X.IndAsegModelo = 'S' THEN
-         GT_COTIZACIONES_COBERTURAS.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion,
-                                                     nIdPoliza, nIDetPol, nCodAsegurado, cIndPolCol);
+         IF NVL(cIndPolCol, 'N') = 'S' THEN
+            BEGIN
+               SELECT 'S'
+               INTO   cMenor12Anios
+               FROM   COTIZACIONES_COBERTURAS M
+                  ,   COTIZACIONES C
+               WHERE  M.CodCia       = C.CodCia
+                 AND  M.CodEmpresa   = C.CodEmpresa
+                 AND  M.IdCotizacion = C.IdCotizacion
+                 AND  C.CodCia       = nCodCia
+                 AND  C.CodEmpresa   = nCodEmpresa
+                 AND  C.IdCotizacion = nIdCotizacion
+                 AND  M.Edad_Maxima  = 12;
+            EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                 cMenor12Anios := 'N';
+            WHEN TOO_MANY_ROWS THEN
+                 cMenor12Anios := 'S';
+            END;
+            --
+            IF cMenor12Anios = 'S' THEN
+               --Se utiliza el Asegurado Modelo menor para menores de 12 años  Codigo Asegurado 256656
+               GT_COTIZACIONES_COBERTURAS.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion, nIdPoliza, nIDetPol, 256656, cIndPolCol);
+            ELSE
+               --Se utiliza el Asegurado Modelo menor para mayores de 12 años  Codigo Asegurado 256655
+               GT_COTIZACIONES_COBERTURAS.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion, nIdPoliza, nIDetPol, 256655, cIndPolCol);
+            END IF;
+         ELSE
+            GT_COTIZACIONES_COBERTURAS.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion, nIdPoliza, nIDetPol, nCodAsegurado, cIndPolCol);
+         END IF;
       ELSIF X.IndListadoAseg = 'S' OR X.IndCensoSubGrupo = 'S' THEN
-         GT_COTIZACIONES_COBERT_ASEG.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion,
-                                                      nIdPoliza, nIDetPol, nCodAsegurado, cIndPolCol);
+         GT_COTIZACIONES_COBERT_ASEG.CREAR_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion, nIdPoliza, nIDetPol, nCodAsegurado, cIndPolCol);
       END IF;
 
       -- Censo
@@ -528,6 +557,9 @@ BEGIN
                                                           nIdPoliza, nIDetPol);
       END IF;
    END LOOP;
+   --
+   OC_DETALLE_POLIZA.ACTUALIZA_VALORES( nCodCia, nIdPoliza, nIDetPol, NULL );
+   --
    RETURN(nIDetPol);
 EXCEPTION
    WHEN OTHERS THEN
@@ -697,3 +729,10 @@ BEGIN
 END RESTAURA_FACTORAJUSTE;
 
 END GT_COTIZACIONES_DETALLE;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM GT_COTIZACIONES_DETALLE FOR SICAS_OC.GT_COTIZACIONES_DETALLE
+/
+
+GRANT EXECUTE ON SICAS_OC.GT_COTIZACIONES_DETALLE TO PUBLIC
+/

@@ -1,65 +1,3 @@
---
--- OC_DETALLE_POLIZA  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   NOTAS_DE_CREDITO (Table)
---   POLIZAS (Table)
---   FAI_FONDOS_DETALLE_POLIZA (Table)
---   FZ_DETALLE_FIANZAS (Table)
---   OC_DETALLE_TRANSACCION (Package)
---   OC_FACTURAR (Package)
---   OC_FACTURAS (Package)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
---   DATOS_PARTICULARES_BIENES (Table)
---   DATOS_PARTICULARES_PERSONAS (Table)
---   DATOS_PARTICULARES_VEHICULO (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_TRANSACCION (Package)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO_CERT (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLAUSULAS (Table)
---   CLAUSULAS_DETALLE (Table)
---   CLAUSULAS_PLAN_COBERTURAS (Table)
---   CLAUSULAS_TIPOS_SEGUROS (Table)
---   COBERTURAS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   TASAS_CAMBIO (Table)
---   OC_GENERALES (Package)
---   OC_NOTAS_DE_CREDITO (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_ASISTENCIAS_ASEGURADO (Package)
---   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
---   OC_BENEFICIARIO (Package)
---   OC_CLAUSULAS_COBERT_ACT (Package)
---   OC_CLAUSULAS_COBERT_ACT_ASEG (Package)
---   OC_CLAUSULAS_DETALLE (Package)
---   OC_COBERT_ACT (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   OC_COMISIONES (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   DETALLE_POLIZA (Table)
---   DETALLE_TRANSACCION (Table)
---   ENDOSOS (Table)
---   FACTURAS (Table)
---   TIPOS_DE_SEGUROS (Table)
---   TRANSACCION (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_DETALLE_POLIZA IS
 
   FUNCTION INSERTAR_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
@@ -100,13 +38,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_DETALLE_POLIZA IS
 END OC_DETALLE_POLIZA;
 /
 
---
--- OC_DETALLE_POLIZA  (Package Body) 
---
---  Dependencies: 
---   OC_DETALLE_POLIZA (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_detalle_poliza IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DETALLE_POLIZA IS
 --
 -- BITACORA DE CAMBIOS
 -- SE AGREGO LA FUNCIONALIDAD PARA RENOVACION DE CLAUSULAS 10/08/2017  CLAUREN
@@ -598,8 +530,26 @@ FUNCTION TOTAL_ASEGURADOS( nCodCia      NUMBER
                          , nCodEmpresa  NUMBER
                          , nIdPoliza    NUMBER
                          , nIDetPol     NUMBER ) RETURN NUMBER IS
-   nTotalAseg      NUMBER(10);
+   nTotalAseg         NUMBER(10);
+   nCantAsegModelo    NUMBER(10);
+   cIndCotizacionWeb  COTIZACIONES.IndCotizacionWeb%TYPE;
 BEGIN
+   BEGIN
+      SELECT NVL(C.IndCotizacionWeb, 'N')
+      INTO   cIndCotizacionWeb
+      FROM   COTIZACIONES C
+         ,   POLIZAS      P
+      WHERE  C.CodCia       = P.CodCia
+        AND  C.CodEmpresa   = P.CodEmpresa
+        AND  C.IdCotizacion = P.Num_Cotizacion
+        AND  P.CodCia       = nCodCia
+        AND  P.CodEmpresa   = nCodEmpresa
+        AND  P.IdPoliza     = nIdPoliza;
+   EXCEPTION
+   WHEN NO_DATA_FOUND THEN
+        cIndCotizacionWeb := 'N';
+   END;
+   --
    SELECT COUNT (*)
    INTO   nTotalAseg
    FROM   ASEGURADO_CERTIFICADO AC
@@ -611,21 +561,41 @@ BEGIN
      AND  D.IdPoliza  = nIdPoliza
      AND  D.IDetPol   = nIDetPol
      AND  D.CodCia    = nCodCia;
-
-   SELECT NVL(SUM(CantAsegModelo),0) + NVL(nTotalAseg,0)
-   INTO   nTotalAseg
-   FROM   TIPOS_DE_SEGUROS  TS
-      ,   DETALLE_POLIZA    D
-   WHERE  TS.IdTipoSeg    = D.IdTipoSeg
-     AND  TS.CodEmpresa   = D.CodEmpresa
-     AND  TS.CodCia       = D.CodCia
-     AND  TS.TipoSeg      = 'P'
-     AND  D.IndAsegModelo = 'S'
-     AND  D.StsDetalle   IN ('SOL', 'XRE', 'EMI')
-     AND  D.IdPoliza      = nIdPoliza
-     AND  D.IDetPol       = nIDetPol
-     AND  D.CodCia        = nCodCia;
-
+   --
+   IF cIndCotizacionWeb = 'S' THEN
+      SELECT NVL(SUM(CantAsegModelo), 0)
+      INTO   nCantAsegModelo
+      FROM   TIPOS_DE_SEGUROS  TS
+         ,   DETALLE_POLIZA    D
+      WHERE  TS.IdTipoSeg    = D.IdTipoSeg
+        AND  TS.CodEmpresa   = D.CodEmpresa
+        AND  TS.CodCia       = D.CodCia
+        AND  TS.TipoSeg      = 'P'
+        AND  D.IndAsegModelo = 'S'
+        AND  D.StsDetalle   IN ('SOL', 'XRE', 'EMI')
+        AND  D.IdPoliza      = nIdPoliza
+        AND  D.IDetPol       = nIDetPol
+        AND  D.CodCia        = nCodCia;
+        --
+        IF nCantAsegModelo > 0 THEN
+           nTotalAseg := nCantAsegModelo;
+        END IF;
+   ELSE
+      SELECT NVL(SUM(CantAsegModelo),0) + NVL(nTotalAseg,0)
+      INTO   nTotalAseg
+      FROM   TIPOS_DE_SEGUROS  TS
+         ,   DETALLE_POLIZA    D
+      WHERE  TS.IdTipoSeg    = D.IdTipoSeg
+        AND  TS.CodEmpresa   = D.CodEmpresa
+        AND  TS.CodCia       = D.CodCia
+        AND  TS.TipoSeg      = 'P'
+        AND  D.IndAsegModelo = 'S'
+        AND  D.StsDetalle   IN ('SOL', 'XRE', 'EMI')
+        AND  D.IdPoliza      = nIdPoliza
+        AND  D.IDetPol       = nIDetPol
+        AND  D.CodCia        = nCodCia;
+   END IF;
+   --
    IF NVL(nTotalAseg,0) = 0 THEN
       SELECT COUNT(*)
         INTO nTotalAseg
@@ -1225,15 +1195,8 @@ END MONTO_APORTE_FONDOS;
 END OC_DETALLE_POLIZA;
 /
 
---
--- OC_DETALLE_POLIZA  (Synonym) 
---
---  Dependencies: 
---   OC_DETALLE_POLIZA (Package)
---
 CREATE OR REPLACE PUBLIC SYNONYM OC_DETALLE_POLIZA FOR SICAS_OC.OC_DETALLE_POLIZA
 /
-
 
 GRANT EXECUTE ON SICAS_OC.OC_DETALLE_POLIZA TO PUBLIC
 /
