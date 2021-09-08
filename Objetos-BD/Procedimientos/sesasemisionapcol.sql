@@ -201,6 +201,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
            , NVL(D.CantAsegModelo,0)                           CantAsegModelo
            , D.Cod_Asegurado
            , 'IND'                                             TipoDetalle
+           , 0                                                 IdEndoso
         FROM DETALLE_POLIZA            D
            , POLIZAS                   P
            , ASEGURADO                 A
@@ -231,6 +232,18 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
          AND PC.CodCia      = D.CodCia
          AND PC.PlanCob     = D.PlanCob
          AND PC.CodTipoPlan = '033'
+         AND ( ( D.IndAsegModelo = 'S'
+                 AND NOT EXISTS ( SELECT 'N'
+                                  FROM ENDOSOS
+                                  WHERE IdPoliza   = D.IdPoliza
+                                    AND CodEmpresa = D.CodEmpresa
+                                    AND CodCia     = D.CodCia
+                                    AND IDetPol    = D.IDetPol
+                                    AND TipoEndoso = 'ESV'
+                                   AND MotivAnul  = 'CONSAS' ))
+               OR
+                ( D.IndAsegModelo = 'N' )
+             )
        ORDER BY P.IdPoliza;
    --
    CURSOR POL_COL_Q IS
@@ -262,6 +275,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
            , NVL(D.CantAsegModelo,0)                           CantAsegModelo
            , AC.Cod_Asegurado
            , 'COL'                                             TipoDetalle
+           , AC.IdEndoso
         FROM DETALLE_POLIZA             D
            , POLIZAS                    P
            , ASEGURADO_CERTIFICADO     AC
@@ -320,6 +334,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
            , NVL(D.CantAsegModelo,0)                           CantAsegModelo
            , D.Cod_Asegurado
            , 'IND' TipoDetalle
+           , 0                                                 IdEndoso
         FROM DETALLE_POLIZA             D
            , POLIZAS                    P
            , ASEGURADO                  A
@@ -393,6 +408,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
            , CantAsegModelo
            , Cod_Asegurado
            , TipoDetalle
+           , IdEndoso
       FROM TEMP_SESAS_COMPAPCOL1
       MINUS
       SELECT Poliza
@@ -423,6 +439,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
            , CantAsegModelo
            , Cod_Asegurado
            , TipoDetalle
+           , IdEndoso
       FROM TEMP_SESAS_COMPAPCOL2
       ORDER BY IdPoliza;
 
@@ -1216,7 +1233,8 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
                               cCerti VARCHAR2, cMoneda VARCHAR2, cIni_Vig VARCHAR2,
                               cFin_Vig VARCHAR2, cFecha_Alta VARCHAR2, cFecha_Baja VARCHAR2, cFecha_Nac VARCHAR2, 
                               cSexo VARCHAR2, cForma_Vta VARCHAR2, cTipoDividendo VARCHAR2, nMontoDividendo NUMBER,
-                              nAnioPoliza NUMBER,  dFecIniVig DATE, nCantAseg_1 NUMBER, nCantAseg_2  NUMBER, cCodEntrega VARCHAR2 ) IS
+                              nAnioPoliza NUMBER,  dFecIniVig DATE, nCantAseg_1 NUMBER, nCantAseg_2  NUMBER, cCodEntrega VARCHAR2,
+                              nIdEndoso NUMBER ) IS
    BEGIN
       nContadorReg := nContadorReg + 1;
       IF nContadorReg > 5000 THEN
@@ -1313,7 +1331,11 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.SESASEMISIONAPCOL( nCodCia      ENTREGAS_CN
 
       IF cPolConcentrada = 1 THEN
          IF cIndAsegModelo = 'S' THEN
-            nCantCert := nCantAseg_1;
+            IF nIdEndoso = 0 THEN
+               nCantCert := nCantAseg_1;
+            ELSE
+               nCantCert := 1;
+            END IF;
          ELSE
             nCantCert := nCantAseg_2;
          END IF;
@@ -1544,7 +1566,7 @@ BEGIN
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, 
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
+                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega, W.IdEndoso );
    END LOOP;
    --
    DELETE TEMP_POLIZAS_SESAS
@@ -1584,7 +1606,7 @@ BEGIN
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
+                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega, W.IdEndoso );
    END LOOP;
    --
    DELETE TEMP_POLIZAS_SESAS
@@ -1624,7 +1646,7 @@ BEGIN
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, 
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
+                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega, W.IdEndoso );
    END LOOP;
    --
    DELETE TEMP_POLIZAS_SESAS
@@ -1675,6 +1697,7 @@ BEGIN
         , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                  PlazoPagoPrimas
         , PC.PlanPoliza
         , D.PlanCob
+        , AC.IdEndoso
    FROM DETALLE_POLIZA             D
       , POLIZAS                    P
       , ASEGURADO_CERTIFICADO     AC
@@ -1747,6 +1770,7 @@ BEGIN
         , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                  PlazoPagoPrimas
         , PC.PlanPoliza
         , D.PlanCob
+        , AC.IdEndoso
    FROM DETALLE_POLIZA             D
       , POLIZAS                    P
       , ASEGURADO_CERTIFICADO     AC
@@ -1802,7 +1826,7 @@ BEGIN
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, 
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
+                       W.AnioPoliza, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega, W.IdEndoso );
    END LOOP;
    COMMIT;
    --
@@ -1816,4 +1840,10 @@ EXCEPTION
 WHEN OTHERS THEN
      RAISE_APPLICATION_ERROR(-20200,SQLERRM);
 END SESASEMISIONAPCOL;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM SESASEMISIONAPCOL FOR SICAS_OC.SESASEMISIONAPCOL
+/
+
+GRANT EXECUTE ON SICAS_OC.SESASEMISIONAPCOL TO PUBLIC
 /

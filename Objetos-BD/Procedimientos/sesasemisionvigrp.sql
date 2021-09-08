@@ -274,6 +274,7 @@ CURSOR POL_IND_Q IS
         , NVL(D.CantAsegModelo,0) CantAsegModelo
         , D.Cod_Asegurado
         , 'IND' TipoDetalle
+        , 0                                                 IdEndoso
      FROM POLIZAS        P
         , DETALLE_POLIZA D
         , PLAN_COBERTURAS PC
@@ -306,6 +307,18 @@ CURSOR POL_IND_Q IS
       AND P.CodEmpresa               = nCodEmpresa
       AND P.CodCia                   = nCodCia
       AND P.NumPolUnico       NOT LIKE 'TRD%' -- Infonacot
+         AND ( ( D.IndAsegModelo = 'S'
+                 AND NOT EXISTS ( SELECT 'N'
+                                  FROM ENDOSOS
+                                  WHERE IdPoliza   = D.IdPoliza
+                                    AND CodEmpresa = D.CodEmpresa
+                                    AND CodCia     = D.CodCia
+                                    AND IDetPol    = D.IDetPol
+                                    AND TipoEndoso = 'ESV'
+                                    AND MotivAnul  = 'CONSAS' ))
+               OR
+                ( D.IndAsegModelo = 'N' )
+             )
     ORDER BY P.IdPoliza;
 
 CURSOR POL_COL_Q IS
@@ -341,6 +354,7 @@ CURSOR POL_COL_Q IS
         , NVL(D.CantAsegModelo,0) CantAsegModelo
         , AC.Cod_Asegurado
         , 'COL' TipoDetalle
+        , AC.IdEndoso
      FROM POLIZAS                    P
         , DETALLE_POLIZA             D 
         , PLAN_COBERTURAS           PC
@@ -387,7 +401,7 @@ CURSOR POL_IND_MOV_Q IS
           OC_PLAN_COBERTURAS.PLAN_POLIZA(D.CodCia, D.CodEmpresa, D.IdTipoSeg, D.PlanCob) PlanPoliza,
           PN.CodPaisRes CodPais, PN.CodProvRes CodEstado, P.IdPoliza, P.StsPoliza, P.FecIniVig,
           P.FecFinVig FecFinVigPol, D.IdTipoSeg, D.PlanCob, D.IDetPol, D.StsDetalle, D.FecFinVig, 
-          D.IndAsegModelo, NVL(D.CantAsegModelo,0) CantAsegModelo, D.Cod_Asegurado, 'IND' TipoDetalle
+          D.IndAsegModelo, NVL(D.CantAsegModelo,0) CantAsegModelo, D.Cod_Asegurado, 'IND' TipoDetalle, 0  IdEndoso
      FROM DETALLE_POLIZA D, POLIZAS P, ASEGURADO A, PERSONA_NATURAL_JURIDICA PN
     WHERE PN.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
       AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
@@ -457,6 +471,7 @@ CURSOR POL_COL_MOV_Q IS
         , PlazoPagoPrimas
         , PlanPoliza
         , PlanCob
+        , IdEndoso
    FROM   TEMP_SESAS_COMPVIGRP1
    MINUS
    SELECT Poliza
@@ -491,6 +506,7 @@ CURSOR POL_COL_MOV_Q IS
         , PlazoPagoPrimas
         , PlanPoliza
         , PlanCob
+        , IdEndoso
    FROM   TEMP_SESAS_COMPVIGRP2
    ORDER BY IdPoliza;
 
@@ -1180,7 +1196,8 @@ CURSOR POL_COL_MOV_Q IS
                               cFin_Vig VARCHAR2, cFecha_Alta VARCHAR2, cFecha_Baja VARCHAR2, cFecha_Nac VARCHAR2, 
                               cSexo VARCHAR2, cForma_Vta VARCHAR2, cTipoDividendo VARCHAR2, nMontoDividendo NUMBER,
                               nEmision NUMBER, nAnioPoliza NUMBER, nPlazoPagoPrimas NUMBER, dFecIniVig DATE,
-                              nCantAseg_1 NUMBER, nCantAseg_2  NUMBER, cCodEntrega VARCHAR2 ) IS
+                              nCantAseg_1 NUMBER, nCantAseg_2  NUMBER, cCodEntrega VARCHAR2,
+                              nIdEndoso NUMBER ) IS
    BEGIN
       nContadorReg := nContadorReg + 1;
       IF nContadorReg > 500 THEN
@@ -1276,7 +1293,11 @@ CURSOR POL_COL_MOV_Q IS
       
       IF cPolConcentrada = 1 THEN
          IF cIndAsegModelo = 'S' THEN
-            nCantAseg := nCantAseg_1;
+            IF nIdEndoso = 0 THEN
+               nCantAseg := nCantAseg_1;
+            ELSE
+               nCantAseg := 1;
+            END IF;
          ELSE
             nCantAseg := nCantAseg_2;
          END IF;
@@ -1519,7 +1540,7 @@ BEGIN
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, W.PlanPoliza,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
+                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega, W.IdEndoso );
    END LOOP;
    COMMIT;
    --
@@ -1557,7 +1578,7 @@ BEGIN
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, W.PlanPoliza,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
+                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega, W.IdEndoso );
    END LOOP;
    COMMIT;
    --
@@ -1595,7 +1616,7 @@ BEGIN
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, W.PlanPoliza,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
+                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega, W.IdEndoso );
    END LOOP;
    COMMIT;
    --
@@ -1644,6 +1665,7 @@ BEGIN
         , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                PlazoPagoPrimas
         , PC.PlanPoliza
         , D.PlanCob
+        , AC.IdEndoso
    FROM   DETALLE_POLIZA            D
         , POLIZAS                   P
         , ASEGURADO_CERTIFICADO     AC
@@ -1718,6 +1740,7 @@ BEGIN
         , CEIL(MONTHS_BETWEEN(D.FecFinVig,D.FecIniVig)/12)                 PlazoPagoPrimas
         , PC.PlanPoliza
         , D.PlanCob
+        , AC.IdEndoso
    FROM   DETALLE_POLIZA            D
         , POLIZAS                   P
         , ASEGURADO_CERTIFICADO     AC
@@ -1776,7 +1799,7 @@ BEGIN
                        W.IndAsegModelo, W.CantAsegModelo, W.Certi, W.PlanPoliza,
                        W.Moneda, W.Ini_Vig, W.Fin_Vig, W.Fecha_Alta, W.Fecha_Baja,
                        W.Fecha_Nac, W.Sexo, W.Forma_Vta, W.TipoDividendo, W.MontoDividendo,
-                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega );
+                       W.Emision, W.AnioPoliza, W.PlazoPagoPrimas, W.FecIniVig, nCantAseg_1, nCantAseg_2, cCodEntrega, W.IdEndoso );
    END LOOP;
    COMMIT;
    --
@@ -1790,4 +1813,10 @@ EXCEPTION
 WHEN OTHERS THEN
      RAISE_APPLICATION_ERROR(-20200,SQLERRM);
 END SESASEMISIONVIGRP;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM SESASEMISIONVIGRP FOR SICAS_OC.SESASEMISIONVIGRP
+/
+
+GRANT EXECUTE ON SICAS_OC.SESASEMISIONVIGRP TO PUBLIC
 /
