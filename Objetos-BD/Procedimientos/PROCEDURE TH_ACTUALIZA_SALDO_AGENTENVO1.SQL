@@ -911,7 +911,7 @@ AND TRUNC(TR.FECHATRANSACCION) = TRUNC(FEC_ESTADO)
 --------------------------------------------- JMMD20210813
 --------------------------------------------- JMMD20210823
 ----- JMMD20210903 SE QUITA EL ALL PORQUE ESTABA DUPLICANDO REGISTROS  UNION ALL  ----- DESPAGO DE RECIBOS POR ENDOSO DE ANULACION
-UNION ----- DESPAGO DE RECIBOS POR ENDOSO DE ANULACION
+UNION ALL ----- DESPAGO DE RECIBOS POR ENDOSO DE ANULACION
 select C.IDFACTURA, C.IDNCR, 
 --                    C.Comision_Moneda Comision  -- jmmd20201204 se cambio por case de abajo
        case when

@@ -3,26 +3,28 @@ CREATE OR REPLACE PACKAGE TH_T_EDOCTASALDOS IS
 -- CREACION     21/01/2021                                        --                JMMDP
 -- JMMD 20210628 SE SUSTITUYE EL CURSOR PRINCIPAL POR EL MISMO DEL REPORT CEDOCTA   JMMD20210628
 -- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS 
---               DE MESES Y AÑOS ANTERIORES y AGENTES NO ENCONTRADOS EN AGENTES_DISTRIBUCION_COMISION  JMMD20210723
---
+--               DE MESES Y AÑOS ANTERIORES                                         JMMD20210720
+-- JMMD 20210908 SE INCLUYE EN EL CURSOR PRINCIPAL LOS MOVIMIENTOS DE PRY POR CCO   JMMD20210908
+-- 
+
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_CODCIA       NUMBER,
                               P_FECDESDE     DATE,
                               P_FECHASTA     DATE,
                               P_MONEDA      VARCHAR2);
---
+--                                                            
 
 PROCEDURE GRABA_MOVIMIENTO(P_COD_AGENTE                      NUMBER,
-                            P_FECHA_DESDE                    DATE,
+                            P_FECHA_DESDE                    DATE,                            
                             P_FECHA_HASTA                    DATE,
                             P_NIVEL_AGENTE                   VARCHAR2,
-                            P_DESCRIPCION_RAMO               VARCHAR2,
+                            P_DESCRIPCION_RAMO               VARCHAR2,        
                             P_CODNIVEL                       NUMBER,
                             P_NUMPOLUNICO                    VARCHAR2,
                             P_FEC_GENERACION                 DATE,
                             P_IDPOLIZA                       NUMBER,
                             P_IDENDOSO                       VARCHAR2,
-                            P_NOMCLIENTE                     VARCHAR2,
+                            P_NOMCLIENTE                     VARCHAR2,    
                             P_RECIBO                         VARCHAR2,
                             P_MONEDA                         VARCHAR2,
                             P_PRIMA_COMISINABLE_LOCAL        NUMBER,
@@ -52,8 +54,8 @@ PROCEDURE GRABA_MOVIMIENTO(P_COD_AGENTE                      NUMBER,
                             P_CODTIPOPLAN                    VARCHAR2,
                             P_A_FAVOR                        NUMBER,
                             P_IDCOMISION                     NUMBER,
-                            P_NOMBRE_AGENTE                  VARCHAR2  ,
-                            P_DIRECRES                       VARCHAR2  ,
+                            P_NOMBRE_AGENTE                  VARCHAR2  ,    
+                            P_DIRECRES                       VARCHAR2  ,    
                             P_NUM_TRIBUTARIO                 VARCHAR2,
                             P_NUMCEDULA                      VARCHAR2,
                             P_FECVENCIMIENTO                 DATE,
@@ -67,9 +69,9 @@ PROCEDURE GRABA_MOVIMIENTO(P_COD_AGENTE                      NUMBER,
                             P_FECHA_PAGO                     DATE);
 --
 PROCEDURE BORRA_MOVIMIENTO(P_COD_AGENTE NUMBER,
-                            P_FECHA_DESDE                    DATE,
+                            P_FECHA_DESDE                    DATE,                            
                             P_FECHA_HASTA                    DATE );
---
+--                           
 
 END TH_T_EDOCTASALDOS;
 /
@@ -79,6 +81,7 @@ CREATE OR REPLACE PACKAGE BODY TH_T_EDOCTASALDOS IS
 -- JMMD 20210628 SE SUSTITUYE EL CURSOR PRINCIPAL POR EL MISMO DEL REPORT CEDOCTA                       JMMD20210628
 -- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS 
 --               DE MESES Y AÑOS ANTERIORES y AGENTES NO ENCONTRADOS EN AGENTES_DISTRIBUCION_COMISION   JMMD20210723
+-- JMMD 20210908 SE INCLUYE EN EL CURSOR PRINCIPAL LOS MOVIMIENTOS DE PRY POR CCO   JMMD20210908
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_CODCIA       NUMBER,
                               P_FECDESDE     DATE,
@@ -1817,7 +1820,8 @@ UNION ----- 11
            OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS', PC.CodTipoPlan) Ramo,
            A.CodNivel CodNivel,
            NumPolUnico,
-           F.Fecsts Fec_Generacion,
+--           F.Fecsts Fec_Generacion,
+           T.FECHATRANSACCION Fec_Generacion,           
            PO.IdPoliza IdPoliza,
            F.IdEndoso IdEndoso,
            OC_CLIENTES.NOMBRE_CLIENTE(PO.CodCliente) NomCliente, TRIM(TO_CHAR(F.IdFactura)) Recibo,
@@ -1942,7 +1946,9 @@ UNION ----- 11
                  AND   DC.CODCIA     = C2.CODCIA
                  AND   DC.IDCOMISION = C2.IDCOMISION
                 GROUP BY  DC.CodCia, DC.IdComision, DC.CodConcepto  )
-        GROUP BY CodCia, IdComision) Y
+        GROUP BY CodCia, IdComision) Y,
+        DETALLE_TRANSACCION DT,
+        TRANSACCION T
   WHERE C.Estado = 'PRY'
    AND TRUNC(C.FEC_ESTADO) > P_FECHASTA
    AND C.Cod_Agente   = DECODE(P_AGENTE,NULL,C.Cod_Agente,P_AGENTE)
@@ -1966,6 +1972,10 @@ UNION ----- 11
    AND DP.IdetPol           = ADC.IdetPol
    AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
    AND C.COD_MONEDA = P_MONEDA
+   AND DT.VALOR4 = TO_CHAR(F.IDFACTURA)
+   AND DT.VALOR1 = TO_CHAR(C.IDPOLIZA)
+   AND DT.CODSUBPROCESO = 'PAG'
+   AND T.IDTRANSACCION = DT.IDTRANSACCION   
 UNION
 SELECT   ---   '12',  NUEVA
            C.Cod_Agente,
