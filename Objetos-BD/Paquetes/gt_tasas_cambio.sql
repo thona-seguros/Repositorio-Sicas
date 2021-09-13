@@ -34,8 +34,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TASAS_CAMBIO AS
             WHERE T.FECHA_HORA_CAMBIO = (SELECT MAX(TT.FECHA_HORA_CAMBIO) 
                                            FROM TASAS_CAMBIO TT            
                                           WHERE TT.TASA_CAMBIO > 0
-                                            AND TT.COD_MONEDA        =  TIPO_MONEDA
-                                            AND TRUNC(TT.FECHA_HORA_CAMBIO) <= TRUNC(FECHA) )
+                                            AND TT.COD_MONEDA        =  TIPO_MONEDA)
               AND T.COD_MONEDA        =  TIPO_MONEDA;
         END IF;
         --   
@@ -48,10 +47,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_TASAS_CAMBIO AS
         END IF;   
         
         BEGIN
-           GT_TASAS_CAMBIO.INSERTA (trunc(FECHA+1), REPLACE(UPPER(TIPO_MONEDA), 'FX', ''),  nMONTO );
+           GT_TASAS_CAMBIO.INSERTA (trunc(FECHA)+1, REPLACE(UPPER(TIPO_MONEDA), 'FX', ''),  nMONTO );
         EXCEPTION WHEN OTHERS THEN
             UPDATE TASAS_CAMBIO T SET T.TASA_CAMBIO = nMONTO
-             WHERE T.FECHA_HORA_CAMBIO = trunc(FECHA+1)
+             WHERE T.FECHA_HORA_CAMBIO = trunc(FECHA)+1
                AND T.COD_MONEDA        =  REPLACE(UPPER(TIPO_MONEDA), 'FX', '');
         END;
         --
