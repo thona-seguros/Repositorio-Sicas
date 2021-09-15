@@ -675,7 +675,7 @@ CURSOR POLIZAS_Q IS
     WHERE   P.CodCia     = nCodCia
     AND     P.CodEmpresa = nCodEmpresa 
     --AND     P.FecEmision >= NVL(dFecEmision, P.FecEmision)
-    AND     P.StsPoliza  = 'EMI' 
+    AND     P.StsPoliza  IN ('EMI', 'REN') 
     AND     P.CodCia     = DP.CodCia
     AND     P.CodEmpresa = DP.CodEmpresa
     AND     P.IdPoliza   = DP.IdPoliza
@@ -950,7 +950,6 @@ cAnioEdoCta         VARCHAR2(4);
 cIndGeneraEdoCta    VARCHAR2(1) := 'N';
 cDiaIniVig          VARCHAR2(2);
 dFecMesAniversario  DATE;
---dIniMesAniversario  DATE;
 
 CURSOR POLIZAS_Q IS
     SELECT  P.IdPoliza,
@@ -987,7 +986,7 @@ CURSOR REPORTES_Q IS
             Reporte
     FROM    REPORTE        
     WHERE   (REPORTE  = cNomReporte AND cNomReporte IS NOT NULL)    -- IdReporte IN (94,93)
-    OR      (REPORTE IN ('POLIZAVF','ESTCTAFO') AND cNomReporte IS NULL)
+    OR      (REPORTE IN ('POLIZAVF','ESTCTAFO', 'APORTREG', 'APORTEXT') AND cNomReporte IS NULL)
     ORDER BY IdReporte;
     
 BEGIN    
@@ -1025,35 +1024,24 @@ BEGIN
             
             IF J.Reporte = 'POLIZAVF' AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '002', cMesEdoCta, cAnioEdoCta) = 'N' THEN
                 cTipoReporte:= '001';                
-                --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', NULL, NULL, cNombrePdf|, cDirSFTPNas, cDirectorio');
-                -->> GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), NULL, NULL, cNombrePdf, cDirSFTPNas , cDirectorio);
-                
-                DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', NULL, NULL, ''POLIZAVF'', NULL, NULL');
+                --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', NULL, NULL, ''POLIZAVF'', NULL, NULL');
                 GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), NULL, NULL, J.Reporte, NULL , NULL);
-                --DBMS_OUTPUT.PUT_LINE('Tipo Reporte 001, POLIZAVF; Tipo Reporte:'||cTipoReporte||', Reporte: '||J.Reporte||', Mesversario: '||dFecFin);
             
             ELSIF J.Reporte = 'ESTCTAFO' AND cIndGeneraEdoCta = 'S' AND TO_CHAR(TRUNC(SYSDATE),'DD') = cDiaIniVig THEN
                cTipoReporte:= '002';                
-                -->> GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, cNombrePdf, cDirSFTPNas , cDirectorio);
-                DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''ESTCTAFO'', NULL, NULL');
-                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, J.Reporte, NULL, NULL);
-                --DBMS_OUTPUT.PUT_LINE('Tipo Reporte 002, ESTCTAFO; Tipo Reporte:'||cTipoReporte||', Reporte: '||J.Reporte||', Mesversario: '||dFecFin);                    
+                --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''ESTCTAFO'', NULL, NULL');
+                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, J.Reporte, NULL, NULL);                   
             
             ELSIF J.Reporte = 'APORTREG' AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '009', NULL, NULL) = 'N' THEN
                cTipoReporte:= '009';
-                
-                -->> GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, cNombrePdf, cDirSFTPNas , cDirectorio);
-                DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''APORTREG'', NULL, NULL);');
+                --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''APORTREG'', NULL, NULL);');
                 GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, J.Reporte, NULL , NULL);
-                DBMS_OUTPUT.PUT_LINE('Tipo Reporte 009, APORTREG; Tipo Reporte:'||cTipoReporte||', Reporte: '||J.Reporte||', Mesversario: '||dFecFin);
                 
             ELSIF J.Reporte = 'APORTEXT' AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '010', NULL, NULL) = 'N' THEN
-               cTipoReporte:= '010';
-                
-                -->> GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, cNombrePdf, cDirSFTPNas , cDirectorio);
-                DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''APORTEXT'', NULL, NULL);');
+               cTipoReporte:= '010';                
+                --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''APORTEXT'', NULL, NULL);');
                 GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, J.Reporte, NULL , NULL);
-                --DBMS_OUTPUT.PUT_LINE('Tipo Reporte 010, APORTEXT; Tipo Reporte:'||cTipoReporte||', Reporte: '||J.Reporte||', Mesversario: '||dFecFin);                
+             
             END IF;
             
         END LOOP;
