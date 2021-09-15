@@ -81,11 +81,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DOMICILIACION IS
           nMtoIva         := NULL;
           cTitular_Cuenta := NULL;
           nCodEmpresa     := D.CodEmpresa;
-          IF (cTipo_Configuracion = 'D' AND D.CodFormaCobro IS NULL) OR 
-             ((D.NumTarjeta IS NULL OR D.FechaVencTarjeta IS NULL) AND D.NumCuentaClabe IS NULL ) THEN
+          IF cTipo_Configuracion = 'D' AND D.CodFormaCobro IS NULL OR 
+             (D.NumTarjeta IS NULL OR D.FechaVencTarjeta IS NULL) THEN
              cIndFaltaDatos := 'S';
           ELSIF cTipo_Configuracion = 'T' AND D.CodFormaCobro = 'DOMI' AND 
-             (D.NumTarjeta IS NULL OR D.FechaVencTarjeta IS NULL) THEN
+             D.NumTarjeta IS NULL OR D.FechaVencTarjeta IS NULL THEN
              cIndFaltaDatos := 'S';
           ELSIF cTipo_Configuracion = 'T' AND D.CodFormaCobro = 'CLAB' AND 
              D.NumCuentaClabe IS NULL THEN
@@ -93,14 +93,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DOMICILIACION IS
           ELSE
              cIndFaltaDatos := 'N';
           END IF;
-          
-          SELECT NVL(SUM(Monto_Det_Local),0)
+
+          SELECT NVL(SUM(Monto_Det_MONEDA),0)
             INTO nMtoIva
             FROM DETALLE_FACTURAS
            WHERE IdFactura  = D.IdFactura
              AND CodCpto    = 'IVASIN';
 
-          SELECT NVL(SUM(Monto_Det_Local),0)
+          SELECT NVL(SUM(Monto_Det_MONEDA),0)
             INTO nImporteSinIva
             FROM DETALLE_FACTURAS
            WHERE IdFactura  = D.IdFactura
@@ -171,11 +171,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DOMICILIACION IS
                  (CodCia, IdProceso, IdFactura, Monto, Cod_Moneda, FecVencimiento, CodFormaPago, NumTarjeta,
                   FecVenTarjeta, Estado, IndFaltaDatos, IndNoTrasl, IndContabilizada, FecAplica, Referencia,
                   ImporteSinIva, Iva, ReferenciaNumerica, CodCliente, Titular_Cuenta, TipoAutorizacion,
-                  NumAprob, Cantidad_Intentos, Num_Referenciado, NumCuentaClabe, CodEntidadFinan)
+                  NumAprob, Cantidad_Intentos, Num_Referenciado, NumCuentaClabe, CodEntidadFinan, CAMBIO_MONEDA_ENVIO)
           VALUES (D.CodCia, P_IdProceso, D.IdFactura, nMonto, D.Cod_Moneda, D.FecVenc, D.CodFormaCobro, D.NumTarjeta,
                   D.FechaVencTarjeta, 'GEN', cIndFaltaDatos, 'S', 'N', SYSDATE, cReferencia, 
                   nImporteSinIva, nMtoIva, TO_CHAR(D.FecVenc,'DDMMYY'), D.CodCliente,
-                  cTitular_Cuenta, NULL, NULL, 0, NULL, D.NumCuentaClabe, D.CodEntidadFinan);
+                  cTitular_Cuenta, NULL, NULL, 0, NULL, D.NumCuentaClabe, D.CodEntidadFinan, 0);
           
           UPDATE FACTURAS
              SET IndDomiciliado = 'S',
