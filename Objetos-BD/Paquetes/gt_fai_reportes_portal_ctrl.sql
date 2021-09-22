@@ -1,34 +1,46 @@
---
--- GT_FAI_REPORTES_PORTAL_CTRL  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   XMLTYPE (Type)
---   UTL_FILE (Synonym)
---   DUAL (Synonym)
---   DBMS_LOB (Synonym)
---   ALL_DIRECTORIES (Synonym)
---   XMLAGG (Synonym)
---   XMLTYPE (Synonym)
---   XMLTYPE (Synonym)
---   SYS_IXMLAGG (Function)
---   VALORES_DE_LISTAS (Table)
---   GT_REPORTE_FORMATO (Package)
---   POLIZAS (Table)
---   FAI_FONDOS_DETALLE_POLIZA (Table)
---   FAI_REPORTES_PORTAL_CTRL (Table)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   OC_TIPOS_DE_SEGUROS (Package)
---   PARAMETROS_GLOBALES (Table)
---   REPORTE (Table)
---   REPORTE_FORMATO (Table)
---   REPORTE_PARAMETRO (Table)
---   OC_GENERALES (Package)
---   DETALLE_POLIZA (Table)
---   ENDOSOS (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.GT_FAI_REPORTES_PORTAL_CTRL AS
+/*   _______________________________________________________________________________________________________________________________
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: N/A                                                                                                              |    
+	| Nombre     : GT_FAI_REPORTES_PORTAL_CTRL                                                                                      |
+    | Objetivo   : Package gestiona y/o controla la reporteria que es utilizada desde la Plataforma Digital.                        |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 13/08/2021                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle [JALV ]                                                                                   |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
+    |                                                                                                                               |
+    | Obj. Modif.: N/A                                                                                                              |
+    |                                                                                                                               |
+    | Dependencias:                                                                                                                 |
+    |       - STANDARD (Package)                                                                                                    |
+    |       - XMLTYPE (Type)                                                                                                        |
+    |       - UTL_FILE (Synonym)                                                                                                    |
+    |       - DUAL (Synonym)                                                                                                        |
+    |       - DBMS_LOB (Synonym)                                                                                                    |
+    |       - ALL_DIRECTORIES (Synonym)                                                                                             |
+    |       - XMLAGG (Synonym)                                                                                                      |
+    |       - XMLTYPE (Synonym)                                                                                                     |
+    |       - XMLTYPE (Synonym)                                                                                                     |
+    |       - SYS_IXMLAGG (Function)                                                                                                |
+    |       - VALORES_DE_LISTAS (Table)                                                                                             |
+    |       - GT_REPORTE_FORMATO (Package)                                                                                          |
+    |       - POLIZAS (Table)                                                                                                       |
+    |       - FAI_FONDOS_DETALLE_POLIZA (Table)                                                                                     |
+    |       - FAI_REPORTES_PORTAL_CTRL (Table)                                                                                      |
+    |       - GT_FAI_FONDOS_DETALLE_POLIZA (Package)                                                                                |
+    |       - OC_TIPOS_DE_SEGUROS (Package)                                                                                         |
+    |       - PARAMETROS_GLOBALES (Table)                                                                                           |
+    |       - REPORTE (Table)                                                                                                       |
+    |       - REPORTE_FORMATO (Table)                                                                                               |
+    |       - REPORTE_PARAMETRO (Table)                                                                                             |
+    |       - OC_GENERALES (Package)                                                                                                |
+    |       - DETALLE_POLIZA (Table)                                                                                                |
+    |       - ENDOSOS (Table)                                                                                                       |
+    |_______________________________________________________________________________________________________________________________|
+*/ 
     FUNCTION NUMERO_REPORTE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER) RETURN NUMBER;
     FUNCTION NOMBRE_REPORTE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdReporte IN NUMBER) RETURN VARCHAR2;
     FUNCTION RUTA_REPORTE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdReporte IN NUMBER) RETURN VARCHAR2;
@@ -47,6 +59,10 @@ CREATE OR REPLACE PACKAGE SICAS_OC.GT_FAI_REPORTES_PORTAL_CTRL AS
                                xReportes OUT XMLTYPE);
     PROCEDURE GENERA_REPORTERIA (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, dFecEmision IN DATE, 
                                  cNomReporte VARCHAR2);
+    FUNCTION GENERA_REPORTERIA_V2 (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, cTipoReporte IN VARCHAR2,
+                                    nIdPoliza IN NUMBER, nCodCliente IN VARCHAR2, cMes IN VARCHAR2,
+                                    cAnio IN VARCHAR2) RETURN XMLTYPE;
+    PROCEDURE CHECA_MESVERSARIO (nCodCia IN NUMBER, nCodEmpresa IN NUMBER);
 END GT_FAI_REPORTES_PORTAL_CTRL;
 /
 
@@ -140,6 +156,33 @@ END TIPO_REPORTE;
 FUNCTION EXISTE_REPORTE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nCodCliente IN NUMBER,
                             nIdPoliza IN NUMBER, cTipoReporte IN VARCHAR2, cMesReporte IN VARCHAR2,
                             cAnioReporte IN VARCHAR2) RETURN VARCHAR2 IS
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: N/A                                                                                                              |    
+	| Nombre     : EXISTE_REPORTE	                                                                                                |
+    | Objetivo   : Funcion que valida la existencia y/o disponibilidad del tipo de reportey demas criterios recibidos.              |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 13/08/2021                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
+    |                                                                                                                               |
+    | Obj. Modif.: Correccion de filtros de busqueda que omitian resultados cuando cMesReporte y cAnioReporte se reciben como Nulos |
+    |              en combinacion con algunos cTipoReporte (p.e.'001').                                                             |
+    |                                                                                                                               |
+    | Parametros:                                                                                                                   |
+    |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+    |			nCodEmpresa			Codigo de la Empresa	        (Entrada)                                                       |
+    |           nCodCliente         Codigo de Cliente               (Entrada)                                                       |
+    |			nIdPoliza			ID de la Poliza			        (Entrada)                                                       |
+    |           cTipoReporte        Tipo de Reporte                 (Entrada)                                                       |
+    |           cMesReporte         Mes de interes del Reporte      (Entrada)                                                       |
+    |           cAnioReporte        Año de interes del Reporte      (Entrada)                                                       |
+    |_______________________________________________________________________________________________________________________________|
+	
+*/                             
 cExiste VARCHAR2(1);                            
 BEGIN
    BEGIN
@@ -151,8 +194,10 @@ BEGIN
          AND CodCliente                   = nCodCliente
          AND IdPoliza                     = nIdPoliza
          AND TipoReporte                  = cTipoReporte
-         AND NVL(MesReporte,cMesReporte)  = NVL(cMesReporte,MesReporte)
-         AND NVL(AnioReporte,cAnioReporte)= NVL(cAnioReporte,AnioReporte);
+         AND NVL(MesReporte,cMesReporte)  = NVL(cMesReporte,MesReporte)       --> JALV(-) 13/08/2021
+         AND NVL(AnioReporte,cAnioReporte)= NVL(cAnioReporte,AnioReporte);    --> JALV(-) 13/08/2021
+         --AND (NVL(MesReporte, cMesReporte)  = NVL(cMesReporte,MesReporte) OR NVL(MesReporte,'NULO') = NVL2(cMesReporte, MesReporte, 'NULO'))      --> JALV(+) 13/08/2021
+         --AND (NVL(AnioReporte, cAnioReporte)= NVL(cAnioReporte,AnioReporte) OR  NVL(AnioReporte,'NULO') = NVL2(cAnioReporte, AnioReporte, 'NULO')); --> JALV(+) 13/08/2021
    EXCEPTION
       WHEN NO_DATA_FOUND THEN 
          cExiste := 'N';
@@ -239,8 +284,7 @@ BEGIN
     FROM DUAL;
 END CONTROL_ARCHIVOS;
 
-PROCEDURE GENERA_REPORTERIA (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, dFecEmision IN DATE, 
-                                 cNomReporte VARCHAR2) IS
+PROCEDURE GENERA_REPORTERIA (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, dFecEmision IN DATE, cNomReporte VARCHAR2) IS
 cCmd                VARCHAR2(2000);
 cRutaReporte        PARAMETROS_GLOBALES.Descripcion%TYPE    := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'002');
 cRutaRepEjecutable  PARAMETROS_GLOBALES.Descripcion%TYPE    := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'045');
@@ -297,7 +341,7 @@ CURSOR POLIZAS_Q IS
        AND P.IdPoliza   = DP.IdPoliza
        AND OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(P.CodCia, P.CodEmpresa, DP.IdTipoSeg) = 'S'  
        AND GT_FAI_FONDOS_DETALLE_POLIZA.EXISTEN_FONDOS(P.CodCia, P.CodEmpresa, P.IdPoliza, DP.IDetPol, DP.Cod_Asegurado) = 'S'
-       AND P.IdPoliza = 27670
+       AND P.IdPoliza = 27670 -- Comentar
      /*  AND NOT EXISTS (SELECT 'S'
                          FROM FAI_REPORTES_PORTAL_CTRL
                         WHERE CodCia        = nCodCia
@@ -321,6 +365,7 @@ CURSOR PARAMREP_Q IS
      WHERE IdReporte = nIdReporte
      ORDER BY NumOrden;                       
 BEGIN
+    -- No hacer esta validacion de archivo, pero validar existencia del registro en la tabla FAI_REPORTES_PORTAL_CTRL
     IF DBMS_LOB.FILEEXISTS(BFILENAME(cDirectorio, cNomArchBat)) = 1 THEN
         UTL_FILE.FREMOVE(cDirectorio,cNomArchBat);
     END IF;
@@ -529,8 +574,8 @@ BEGIN
     END LOOP;
     UTL_FILE.PUT_LINE(fArchivoSql,cFooter);
     UTL_FILE.FCLOSE (fArchivoSql);
-    cCmd        := 'start /B /WAIT C:\app\SicasProd\product\11.2.0\dbhome_1\BIN\sqlplus SICAS_OC/Es7e35elPr0duct1V0@SICASPROD @'||cNomArchSql;
-    --cCmd        := 'start /B /WAIT C:\app\oracle11g\product\11.2.0\dbhome_1\BIN\sqlplus SICAS_OC/Nu3v0T35T@PRUEBAS @'||cNomArchSql;
+    cCmd        := 'start /B /WAIT C:\app\SicasProd\product\11.2.0\dbhome_1\BIN\sqlplus SICAS_OC/Es7e35elPr0duct1V0@SICASPROD @'||cNomArchSql;  --> Producción
+    --cCmd        := 'start /B /WAIT C:\app\oracle11g\product\11.2.0\dbhome_1\BIN\sqlplus SICAS_OC/Nu3v0T35T@PRUEBAS @'||cNomArchSql;             --> Pruebas
     UTL_FILE.PUT_LINE(fArchivoBat,cCmd);
     
     cNomFileLog  := 'TransferLog'||'_'||TO_CHAR(SYSDATE,'DDMMYYYY')||'_'||TO_CHAR(SYSDATE,'HHMISS')||'.log';
@@ -562,6 +607,451 @@ EXCEPTION
         UTL_FILE.FCLOSE (fArchivoBat);
         UTL_FILE.FCLOSE (fArchivoSql);
 END GENERA_REPORTERIA;
+
+FUNCTION GENERA_REPORTERIA_V2 (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, cTipoReporte IN VARCHAR2, nIdPoliza IN NUMBER, nCodCliente IN VARCHAR2, cMes IN VARCHAR2, cAnio IN VARCHAR2)
+RETURN XMLTYPE IS
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: 13/08/2021                                                                                                       |    
+	| Nombre     : GENERA_REPORTERIA_V2                                                                                             |
+    | Objetivo   : Funcion que obtiene y genera archivo XML con el nombre del reporte que corresponda al Tipo de Reporte            |
+    |              proporcionado y los parametros necesarios para que sea ejecutado desde Plataforma Digital.                       |
+    | Modificado : No                                                                                                               |
+    | Ult. modif.: N/A                                                                                                              |
+    | Modifico   : N/A                                                                                                              |
+    |                                                                                                                               |
+    | Obj. Modif.: N/A                                                                                                              |
+    |                                                                                                                               |
+    | Parametros:                                                                                                                   |
+    |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+    |			nCodEmpresa			Codigo de la Empresa	        (Entrada)                                                       |
+    |           cTipoReporte        Tipo de Reporte                 (Entrada)                                                       |
+    |			nIdPoliza			ID de la Poliza			        (Entrada)                                                       |
+    |           nCodCliente         Codigo de Cliente               (Entrada)                                                       |      
+    |           cMes                Mes de interes del Reporte      (Entrada)                                                       |
+    |           cAnio               Año de interes del Reporte      (Entrada)                                                       |
+    |_______________________________________________________________________________________________________________________________|
+	
+*/  
+nIdReporte          REPORTE.IdReporte%TYPE;
+cValorParam         VARCHAR2(1000);
+cNomReporte         REPORTE.Reporte%TYPE;
+
+nIDetPolIni         DETALLE_POLIZA.IDetPol%TYPE;
+nIDetPolFin         DETALLE_POLIZA.IDetPol%TYPE;
+nCodAsegIni         DETALLE_POLIZA.Cod_Asegurado%TYPE;
+nCodAsegFin         DETALLE_POLIZA.Cod_Asegurado%TYPE;
+nIdEndosoIni        ENDOSOS.IdEndoso%TYPE;
+nIdEndosoFin        ENDOSOS.IdEndoso%TYPE;
+nCodAsegurado       FAI_FONDOS_DETALLE_POLIZA.CodAsegurado%TYPE;
+dFecIni             DATE; 
+dFecFin             DATE;
+cExisteReporte      VARCHAR2(1);
+
+cValorParamSC       VARCHAR2(1000);
+cSQLXML             VARCHAR2(1000) := '   SELECT XMLELEMENT("DATA",'||CHR(10)||'                       ';
+xPrevReporte        XMLTYPE;
+xReporte            XMLTYPE;
+
+dFecMesAniversario  DATE;
+
+CURSOR POLIZAS_Q IS
+    SELECT  P.IdPoliza,
+            DP.IDetPol,
+            DP.Cod_Asegurado,
+            DP.IdTipoSeg,
+            P.CodCliente,
+            P.FecIniVig,
+            P.FecFinVig,
+            TO_CHAR(P.FecIniVig,'DD')                       DIAINIVIG,
+            ROUND(MONTHS_BETWEEN(P.FecFinVig,P.FecIniVig))  MESESVIGENCIA,
+            ROUND(MONTHS_BETWEEN( TRUNC(SYSDATE), P.FecIniVig)) NUM_MES_VIG
+    FROM    POLIZAS         P,
+            DETALLE_POLIZA  DP
+    WHERE   P.CodCia     = nCodCia
+    AND     P.CodEmpresa = nCodEmpresa 
+    --AND     P.FecEmision >= NVL(dFecEmision, P.FecEmision)
+    AND     P.StsPoliza  IN ('EMI', 'REN') 
+    AND     P.CodCia     = DP.CodCia
+    AND     P.CodEmpresa = DP.CodEmpresa
+    AND     P.IdPoliza   = DP.IdPoliza
+    AND     OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(P.CodCia, P.CodEmpresa, DP.IdTipoSeg)                                         = 'S'  
+    AND     GT_FAI_FONDOS_DETALLE_POLIZA.EXISTEN_FONDOS(P.CodCia, P.CodEmpresa, P.IdPoliza, DP.IDetPol, DP.Cod_Asegurado)   = 'S'
+    AND     P.IdPoliza   =  nIdPoliza
+    /*AND     EXISTS (SELECT 'S'
+                     FROM FAI_REPORTES_PORTAL_CTRL
+                    WHERE CodCia        = nCodCia
+                      AND CodEmpresa    = nCodEmpresa
+                      AND CodCliente    = P.CodCliente
+                      AND IdPoliza      = P.IdPoliza
+                      AND EstadoReporte = 'GENERADO')*/
+                          ;                          
+CURSOR REPORTES_Q IS
+    SELECT  IdReporte,
+            Reporte
+    FROM    REPORTE        
+    WHERE   (REPORTE  = cNomReporte AND cNomReporte IS NOT NULL)
+    OR      (REPORTE IN ('POLIZAVF','ESTCTAFO') AND cNomReporte IS NULL)
+    ORDER BY IdReporte;
+     
+CURSOR PARAMREP_Q IS
+    SELECT  UPPER(Nom_Param) NOM_PARAM,
+            Tipo_Param
+    FROM    REPORTE_PARAMETRO
+    WHERE   IdReporte = nIdReporte
+    ORDER BY NumOrden;
+    
+BEGIN
+    -- Validar existencia del registro en la tabla FAI_REPORTES_PORTAL_CTRL
+    cExisteReporte := GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, nCodCliente, nIdPoliza, cTipoReporte, cMes, cAnio);
+    
+    --DBMS_OUTPUT.PUT_LINE('Se puede obtener el Reporte? = '||cExisteReporte);
+    SELECT CASE cTipoReporte WHEN '001' THEN 'POLIZAVF'
+                             WHEN '002' THEN 'ESTCTAFO'
+                             WHEN '009' THEN 'APORTREG'
+                             WHEN '010' THEN 'APORTEXT'
+            ELSE cTipoReporte
+            END
+    INTO    cNomReporte
+    FROM    DUAL;
+    
+    FOR X IN POLIZAS_Q LOOP      
+        SELECT MIN(DP.IDetPol),
+               MAX(DP.IDetPol),
+               MIN(DP.Cod_Asegurado),
+               MAX(DP.Cod_Asegurado)
+          INTO nIDetPolIni, nIDetPolFin, nCodAsegIni, nCodAsegFin
+          FROM DETALLE_POLIZA   DP
+         WHERE DP.CodCia        = nCodCia
+           AND DP.CodEmpresa    = nCodEmpresa
+           AND DP.IdPoliza      = X.IdPoliza
+           AND DP.IDetPol       = X.IDetPol
+           AND DP.StsDetalle    = 'EMI';
+           
+        SELECT MIN(IdEndoso),
+               MAX(IdEndoso)
+          INTO nIdEndosoIni, nIdEndosoFin
+          FROM ENDOSOS  E
+         WHERE E.CodCia     = nCodCia
+           AND E.CodEmpresa = nCodEmpresa
+           AND E.IdPoliza   = X.IdPoliza
+           AND E.IDetPol    = X.IDetPol
+           AND E.StsEndoso  = 'EMI';
+           
+       SELECT DISTINCT CodAsegurado
+         INTO nCodAsegurado
+         FROM FAI_FONDOS_DETALLE_POLIZA
+        WHERE CodCia        = nCodCia
+          AND CodEmpresa    = nCodEmpresa
+          AND IdPoliza      = X.IdPoliza
+          AND IDetPol       = X.IDetPol;
+       
+       -- Obtener Parametros segun el Tipo y/o Nombre del reporte
+       IF cExisteReporte = 'S' THEN
+            FOR J IN REPORTES_Q LOOP
+                nIdReporte  := J.IdReporte;
+                cValorParam := 'XMLAGG(XMLELEMENT("'||J.Reporte||'",' || CHR(10);                
+                dFecMesAniversario := TRUNC(ADD_MONTHS(X.FecIniVig, X.num_mes_vig ));
+                /*
+                IF (dFecMesAniversario + 1) <= TRUNC(SYSDATE) THEN
+                    dFecIni := ADD_MONTHS(dFecMesAniversario,-1);
+                    dFecFin := dFecMesAniversario;
+                END IF;*/
+                dFecIni := TO_DATE(TO_CHAR(X.FecIniVig,'DD')||'/'||cMes||'/'||cAnio);
+                dFecFin := TRUNC(ADD_MONTHS(dFecIni, 1));
+                
+                IF J.Reporte = 'POLIZAVF' /*AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '002', cMesEdoCta, cAnioEdoCta) = 'N'*/ THEN
+                    --cTipoReporte:= '001';                    
+                    FOR W IN PARAMREP_Q LOOP
+                        IF W.Nom_Param LIKE '%CODCIA%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nCodCia))     ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nCodCia))     ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%POLIZA%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(X.IdPoliza))  ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(X.IdPoliza))  ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%IDETPOLINI%' THEN
+                          --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nIDetPolIni)) ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nIDetPolIni)) ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%IDETPOLFIN%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nIDetPolFin)) ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nIDetPolFin)) ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%CODASEGINI%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nCodAsegIni)) ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nCodAsegIni)) ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%CODASEGFIN%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nCodAsegFin)) ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nCodAsegFin)) ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%ENDOSOINI%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nIdEndosoIni))||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nIdEndosoIni)) ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%ENDOSOFIN%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nIdEndosoFin))||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nIdEndosoFin)) ||'), '|| CHR(10);
+                        ELSE
+                           cValorParam := '9999999';
+                        END IF;
+                    END LOOP;
+                    
+                ELSIF J.Reporte = 'ESTCTAFO' /*AND cIndGeneraEdoCta = 'S'*/ THEN
+                   --cTipoReporte:= '002';              
+                    FOR W IN PARAMREP_Q LOOP
+                        IF W.Nom_Param LIKE '%CODCIA%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nCodCia))     ||' ';
+                           --cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", TRIM(TO_CHAR(nCodCia)) ),'|| CHR(10);
+                           --cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||", TRIM(TO_CHAR(nCodCia)) '),'|| CHR(10);
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nCodCia))     ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%IDPOLIZA%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(X.IdPoliza))  ||' ';
+                           --cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", TRIM(TO_CHAR(X.IdPoliza)) ),'|| CHR(10);
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(X.IdPoliza))  ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%IDETPOL%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(X.IDetPol)) ||' ';
+                           --cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", TRIM(TO_CHAR(X.IDetPol)) ),'|| CHR(10);
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(X.IDetPol)) ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%CODEMPRESA%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nCodEmpresa)) ||' ';
+                           --cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", TRIM(TO_CHAR(nCodEmpresa)) ),'|| CHR(10);
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nCodEmpresa)) ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%CODASEGURADO%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nCodAsegurado)) ||' ';
+                           --cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", TRIM(TO_CHAR(nCodAsegurado)) ),'|| CHR(10);
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nCodAsegurado)) ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%FECINI%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR('TO_DATE('||''''||dFecIni||''''||','||''''||'DD/MM/YYYY'||''''||')'))||' ';
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(''''||TO_CHAR(dFecIni,'DD/MM/YYYY')||''''))||' ';
+                           --cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", TRIM(TO_CHAR(''''||TO_CHAR(dFecIni,''DD/MM/YYYY'')||'''')) ),'|| CHR(10);
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(''''||TO_CHAR(dFecIni,'DD/MM/YYYY')||''''))||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%FECFIN%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(''''||TO_CHAR(dFecFin,'DD/MM/YYYY')||''''))||' ';
+                           --cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", TRIM(TO_CHAR(''''||TO_CHAR(dFecFin,''DD/MM/YYYY'')||'''')) ),'|| CHR(10);
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR('TO_DATE('||''''||dFecFin||''''||','||''''||'DD/MM/RRRR'||''''||')'))||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(''''||TO_CHAR(dFecFin,'DD/MM/YYYY')||''''))||'), '|| CHR(10);
+                        ELSE
+                           cValorParam := '9999999';
+                        END IF;
+                    END LOOP;
+                        
+                ELSIF J.Reporte = 'APORTREG' /*AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '009', NULL, NULL) = 'N'*/ THEN
+                   --cTipoReporte:= '009';                    
+                    FOR W IN PARAMREP_Q LOOP
+                        IF W.Nom_Param LIKE '%CODCIA%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nCodCia))     ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nCodCia))     ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%POLIZA%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(X.IdPoliza))  ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(X.IdPoliza))     ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%IDETPOLINI%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nIDetPolIni)) ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nIDetPolIni))     ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%IDETPOLFIN%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nIDetPolFin)) ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nIDetPolFin))     ||'), '|| CHR(10);
+                        ELSE
+                           cValorParam := '9999999';
+                        END IF;
+                    END LOOP;
+                    
+                ELSIF J.Reporte = 'APORTEXT' /*AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '010', NULL, NULL) = 'N'*/ THEN
+                   --cTipoReporte:= '010';                    
+                    FOR W IN PARAMREP_Q LOOP
+                        IF W.Nom_Param LIKE '%CODCIA%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nCodCia))     ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nCodCia))     ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%POLIZA%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(X.IdPoliza))  ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(X.IdPoliza))     ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%IDETPOLINI%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nIDetPolIni)) ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nIDetPolIni))     ||'), '|| CHR(10);
+                        ELSIF W.Nom_Param LIKE '%IDETPOLFIN%' THEN
+                           --cValorParam := cValorParam||W.Nom_Param||'='||TRIM(TO_CHAR(nIDetPolFin)) ||' ';
+                           cValorParam := cValorParam||'                                           XMLELEMENT("'||W.Nom_Param||'", '||TRIM(TO_CHAR(nIDetPolFin))     ||'), '|| CHR(10);
+                        ELSE
+                           cValorParam := '9999999';
+                        END IF;
+                    END LOOP;
+                
+                END IF;
+    
+            END LOOP;
+            --DBMS_OUTPUT.PUT_LINE(cValorParam);
+    ELSE
+        --cValorParam := 'XMLAGG(XMLELEMENT("'||cNomReporte||'",' || CHR(10);
+        --cValorParam := cValorParam||'                                           XMLELEMENT("'||cTipoReporte||'", ''''Reporte NO disponible por el momento''''), '|| CHR(10);
+        RAISE_APPLICATION_ERROR(-20200,'El Reporte '||cTipoReporte||'-"'||cNomReporte||'" no se encuentra disponible aún.');     
+        
+   END IF; --cExisteReporte
+        -- Completar cadena:
+        cValorParamSC :=  SUBSTR(cValorParam, 1, (LENGTH(cValorParam))-3);
+        cSQLXML := cSQLXML||cValorParamSC;
+        cSQLXML := cSQLXML||CHR(10)||'                                         )'||CHR(10)||'                               )'||CHR(10)||'                     )'||CHR(10)||
+            '   FROM   DUAL'||CHR(10);
+            
+    -- Generar XML, con nombre del Reporte a invocar y los Parametros que necesita
+    BEGIN
+        EXECUTE IMMEDIATE cSQLXML INTO xPrevReporte;
+        DBMS_OUTPUT.PUT_LINE('FecMesAniversario: '||dFecMesAniversario);
+        DBMS_OUTPUT.PUT_LINE('FecIni: '||dFecIni);
+        DBMS_OUTPUT.PUT_LINE('FecFin: '||dFecFin);
+        EXCEPTION
+              WHEN NO_DATA_FOUND THEN
+                 RAISE_APPLICATION_ERROR(-20200,'No se encontraron Parametros para este Reporte.');
+    END;
+    
+    SELECT  XMLROOT (xPrevReporte, VERSION '1.0" encoding="UTF-8')
+    INTO    xReporte
+    FROM    DUAL;
+    END LOOP;    
+    
+    RETURN xReporte;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Problema detectado en la Poliza: '||nIdPoliza||' y Tipo de Reporte: '||cTipoReporte||'; Error: '||SQLERRM);
+        --DBMS_OUTPUT.PUT_LINE(cSQLXML);
+END GENERA_REPORTERIA_V2;
+
+PROCEDURE CHECA_MESVERSARIO (nCodCia IN NUMBER, nCodEmpresa IN NUMBER) IS
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: 13/08/2021                                                                                                       |    
+	| Nombre     : CHECA_MESVERSARIO                                                                                                |
+    | Objetivo   : Procedimiento que valida y genera el registro del reporte segun el tipo de reporte de que se trate, en el caso   |
+    |              de los Estados de cuenta cuando sea la fecha de de corte (Mesversario). Esta informacion sera explotada desde    |
+    |              Plataforma Digital. Este proceso se ejecutara diariamente.                                                       |
+    | Modificado : No                                                                                                               |
+    | Ult. modif.: N/A                                                                                                              |
+    | Modifico   : N/A                                                                                                              |
+    |                                                                                                                               |
+    | Obj. Modif.: N/A                                                                                                              |
+    |                                                                                                                               |
+    | Parametros:                                                                                                                   |
+    |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+    |			nCodEmpresa			Codigo de la Empresa	        (Entrada)                                                       |
+    |_______________________________________________________________________________________________________________________________|
+	
+*/  
+nIdReporte          REPORTE.IdReporte%TYPE;
+cTipoReporte        FAI_REPORTES_PORTAL_CTRL.TipoReporte%TYPE;
+cNomReporte         VARCHAR2(100);
+nIdPoliza           FAI_REPORTES_PORTAL_CTRL.IdPoliza%TYPE;
+dFecIni             DATE; 
+dFecFin             DATE;
+cMesEdoCta          VARCHAR2(2);
+cAnioEdoCta         VARCHAR2(4);
+cIndGeneraEdoCta    VARCHAR2(1) := 'N';
+cDiaIniVig          VARCHAR2(2);
+dFecMesAniversario  DATE;
+
+CURSOR POLIZAS_Q IS
+    SELECT  P.IdPoliza,
+            DP.IDetPol,
+            DP.Cod_Asegurado,
+            DP.IdTipoSeg,
+            P.CodCliente,
+            P.FecIniVig,
+            P.FecFinVig,
+            TO_CHAR(P.FecIniVig,'DD')                       DIAINIVIG,
+            ROUND(MONTHS_BETWEEN(P.FecFinVig,P.FecIniVig))  MESESVIGENCIA
+    FROM    POLIZAS         P,
+            DETALLE_POLIZA  DP
+    WHERE   P.CodCia     = nCodCia
+    AND     P.CodEmpresa = nCodEmpresa 
+    --AND     P.FecEmision >= NVL(dFecEmision, P.FecEmision)
+    AND     P.StsPoliza  = 'EMI' 
+    AND     P.CodCia     = DP.CodCia
+    AND     P.CodEmpresa = DP.CodEmpresa
+    AND     P.IdPoliza   = DP.IdPoliza
+    AND     OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(P.CodCia, P.CodEmpresa, DP.IdTipoSeg)                                         = 'S'  
+    AND     GT_FAI_FONDOS_DETALLE_POLIZA.EXISTEN_FONDOS(P.CodCia, P.CodEmpresa, P.IdPoliza, DP.IDetPol, DP.Cod_Asegurado)   = 'S'
+    --AND     P.IdPoliza   =  nIdPoliza
+    AND NOT EXISTS (SELECT  'S'
+                     FROM   FAI_REPORTES_PORTAL_CTRL
+                    WHERE   CodCia        = nCodCia
+                      AND   CodEmpresa    = nCodEmpresa
+                      AND   CodCliente    = P.CodCliente
+                      AND   IdPoliza      = P.IdPoliza
+                      AND   EstadoReporte = 'GENERADO');
+                          
+CURSOR REPORTES_Q IS
+    SELECT  IdReporte,
+            Reporte
+    FROM    REPORTE        
+    WHERE   (REPORTE  = cNomReporte AND cNomReporte IS NOT NULL)    -- IdReporte IN (94,93)
+    OR      (REPORTE IN ('POLIZAVF','ESTCTAFO', 'APORTREG', 'APORTEXT') AND cNomReporte IS NULL)
+    ORDER BY IdReporte;
+    
+BEGIN    
+    FOR x IN POLIZAS_Q LOOP
+        cIndGeneraEdoCta := 'N';
+        cDiaIniVig       := x.DiaIniVig;
+        nIdPoliza        := x.IdPoliza;
+        --DBMS_OUTPUT.PUT_LINE('cDiaIniVig = '||cDiaIniVig);        
+       
+       FOR W IN 1.. x.MesesVigencia LOOP
+          dFecMesAniversario := TRUNC(ADD_MONTHS(X.FecIniVig,W));
+          
+          SELECT TO_CHAR(dFecMesAniversario,'MM'), TO_CHAR(dFecMesAniversario,'YYYY')
+            INTO cMesEdoCta, cAnioEdoCta
+            FROM DUAL;
+            
+            --DBMS_OUTPUT.PUT_LINE('cMesEdoCta = '||cMesEdoCta||', cAnioEdoCta= '||cAnioEdoCta);
+            
+          IF GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '002', cMesEdoCta, cAnioEdoCta) = 'N' AND (dFecMesAniversario + 1) <= TRUNC(SYSDATE) THEN
+            dFecIni          := ADD_MONTHS(dFecMesAniversario,-1);
+            dFecFin          := dFecMesAniversario;
+            cIndGeneraEdoCta := 'S';
+            --DBMS_OUTPUT.PUT_LINE('dFecIni = '||dFecIni||', dFecFin= '||dFecFin);
+            EXIT;
+          END IF;
+          
+       END LOOP;    
+       
+       IF cIndGeneraEdoCta = 'S' THEN
+            NULL; 
+       END IF;
+       
+        FOR J IN REPORTES_Q LOOP
+            nIdReporte  := J.IdReporte;
+            
+            IF J.Reporte = 'POLIZAVF' AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '002', cMesEdoCta, cAnioEdoCta) = 'N' THEN
+                cTipoReporte:= '001';                
+                --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', NULL, NULL, ''POLIZAVF'', NULL, NULL');
+                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), NULL, NULL, J.Reporte, NULL , NULL);
+            
+            ELSIF J.Reporte = 'ESTCTAFO' AND cIndGeneraEdoCta = 'S' AND TO_CHAR(TRUNC(SYSDATE),'DD') = cDiaIniVig THEN
+               cTipoReporte:= '002';                
+                --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''ESTCTAFO'', NULL, NULL');
+                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, J.Reporte, NULL, NULL);                   
+            
+            ELSIF J.Reporte = 'APORTREG' AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '009', NULL, NULL) = 'N' THEN
+               cTipoReporte:= '009';
+                --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''APORTREG'', NULL, NULL);');
+                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, J.Reporte, NULL , NULL);
+                
+            ELSIF J.Reporte = 'APORTEXT' AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '010', NULL, NULL) = 'N' THEN
+               cTipoReporte:= '010';                
+                --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''APORTEXT'', NULL, NULL);');
+                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, J.Reporte, NULL , NULL);
+             
+            END IF;
+            
+        END LOOP;
+
+    END LOOP;        
+
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Problema detectado en la Poliza: '||nIdPoliza||' y reporte: '||nIdReporte||'; Error: '||SQLERRM);
+END CHECA_MESVERSARIO;
 
 END GT_FAI_REPORTES_PORTAL_CTRL;
 /
