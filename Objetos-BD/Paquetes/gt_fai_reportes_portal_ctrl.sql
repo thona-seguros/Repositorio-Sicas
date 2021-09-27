@@ -949,6 +949,7 @@ cMesEdoCta          VARCHAR2(2);
 cAnioEdoCta         VARCHAR2(4);
 cIndGeneraEdoCta    VARCHAR2(1) := 'N';
 cDiaIniVig          VARCHAR2(2);
+cMesIniVig          VARCHAR2(2);
 dFecMesAniversario  DATE;
 
 CURSOR POLIZAS_Q IS
@@ -960,26 +961,29 @@ CURSOR POLIZAS_Q IS
             P.FecIniVig,
             P.FecFinVig,
             TO_CHAR(P.FecIniVig,'DD')                       DIAINIVIG,
+            TO_CHAR(P.FecIniVig,'MM')                       MESINIVIG,
             ROUND(MONTHS_BETWEEN(P.FecFinVig,P.FecIniVig))  MESESVIGENCIA
     FROM    POLIZAS         P,
             DETALLE_POLIZA  DP
     WHERE   P.CodCia     = nCodCia
     AND     P.CodEmpresa = nCodEmpresa 
     --AND     P.FecEmision >= NVL(dFecEmision, P.FecEmision)
-    AND     P.StsPoliza  = 'EMI' 
+    AND     P.StsPoliza  IN ('EMI', 'REN')
     AND     P.CodCia     = DP.CodCia
     AND     P.CodEmpresa = DP.CodEmpresa
     AND     P.IdPoliza   = DP.IdPoliza
     AND     OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(P.CodCia, P.CodEmpresa, DP.IdTipoSeg)                                         = 'S'  
     AND     GT_FAI_FONDOS_DETALLE_POLIZA.EXISTEN_FONDOS(P.CodCia, P.CodEmpresa, P.IdPoliza, DP.IDetPol, DP.Cod_Asegurado)   = 'S'
+    AND     P.FecFinVig > TRUNC(SYSDATE) -- Hoy
     --AND     P.IdPoliza   =  nIdPoliza
-    AND NOT EXISTS (SELECT  'S'
+    /*AND NOT EXISTS (SELECT  'S'
                      FROM   FAI_REPORTES_PORTAL_CTRL
                     WHERE   CodCia        = nCodCia
                       AND   CodEmpresa    = nCodEmpresa
                       AND   CodCliente    = P.CodCliente
                       AND   IdPoliza      = P.IdPoliza
-                      AND   EstadoReporte = 'GENERADO');
+                      AND   EstadoReporte = 'GENERADO')*/
+                      ;
                           
 CURSOR REPORTES_Q IS
     SELECT  IdReporte,
@@ -993,6 +997,7 @@ BEGIN
     FOR x IN POLIZAS_Q LOOP
         cIndGeneraEdoCta := 'N';
         cDiaIniVig       := x.DiaIniVig;
+        cMesIniVig       := x.MesIniVig;
         nIdPoliza        := x.IdPoliza;
         --DBMS_OUTPUT.PUT_LINE('cDiaIniVig = '||cDiaIniVig);        
        
@@ -1025,12 +1030,14 @@ BEGIN
             IF J.Reporte = 'POLIZAVF' AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '002', cMesEdoCta, cAnioEdoCta) = 'N' THEN
                 cTipoReporte:= '001';                
                 --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', NULL, NULL, ''POLIZAVF'', NULL, NULL');
-                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), NULL, NULL, J.Reporte, NULL , NULL);
+                --GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), NULL, NULL, J.Reporte, NULL , NULL);
+                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, J.Reporte, NULL , NULL);
             
-            ELSIF J.Reporte = 'ESTCTAFO' AND cIndGeneraEdoCta = 'S' AND TO_CHAR(TRUNC(SYSDATE),'DD') = cDiaIniVig THEN
+            --ELSIF J.Reporte = 'ESTCTAFO' AND cIndGeneraEdoCta = 'S' AND TO_CHAR(TRUNC(SYSDATE),'DD') = cDiaIniVig THEN
+            ELSIF J.Reporte = 'ESTCTAFO' AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '002', cMesEdoCta, cAnioEdoCta) = 'N' AND cIndGeneraEdoCta = 'S' AND TO_CHAR(TRUNC(SYSDATE),'DD') = cDiaIniVig AND TO_CHAR(TRUNC(SYSDATE),'MM') = cMesIniVig THEN
                cTipoReporte:= '002';                
                 --DBMS_OUTPUT.PUT_LINE('Insertar: GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR('||nCodCia||', '||nCodEmpresa||', '||X.CodCliente||', '||X.IdPoliza||', '||cTipoReporte||', '||TRUNC(SYSDATE)||', '||TO_CHAR(SYSDATE,'HH:MI:SS')||', '||cMesEdoCta||', '||cAnioEdoCta||', ''ESTCTAFO'', NULL, NULL');
-                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesEdoCta, cAnioEdoCta, J.Reporte, NULL, NULL);                   
+                GT_FAI_REPORTES_PORTAL_CTRL.INSERTAR(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, cTipoReporte, TRUNC(SYSDATE), TO_CHAR(SYSDATE,'HH:MI:SS'), cMesIniVig, cAnioEdoCta, J.Reporte, NULL, NULL);                   
             
             ELSIF J.Reporte = 'APORTREG' AND GT_FAI_REPORTES_PORTAL_CTRL.EXISTE_REPORTE(nCodCia, nCodEmpresa, X.CodCliente, X.IdPoliza, '009', NULL, NULL) = 'N' THEN
                cTipoReporte:= '009';
@@ -1050,7 +1057,7 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Problema detectado en la Poliza: '||nIdPoliza||' y reporte: '||nIdReporte||'; Error: '||SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Problema detectado en Proc. CHECA_MESVERSARIO en la Poliza: '||nIdPoliza||', reporte: '||nIdReporte||', Tipo de Reporte: '||cTipoReporte||' y Mesversario : '||dFecMesAniversario||'; Error: '||SQLERRM);
 END CHECA_MESVERSARIO;
 
 END GT_FAI_REPORTES_PORTAL_CTRL;
