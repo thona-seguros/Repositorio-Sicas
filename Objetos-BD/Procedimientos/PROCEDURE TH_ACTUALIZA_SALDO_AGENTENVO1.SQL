@@ -5,7 +5,7 @@ CREATE OR REPLACE PROCEDURE TH_ACTUALIZA_SALDO_AGENTENVO1  IS
 ----- JMMD20210813          SE COMPLEMENTA QUERY PARA RECUPERAR RECIBOS QUE SE PAGAN VARIAS VECES EL MISMO RECIBO EN EL MISMO DIA
 ----- JMMD20210823          SE COMPLEMENTA QUERY PARA RECUPERAR RECIBOS QUE SE DESPAGAN Y SE HACE UN ENDOSO DE CANCELACION POR REEXPEDICION
 ----- JMMD20210902          SE COMPLEMENTA QUERY PARA RECUPERAR TODOS LOS RECIBOS QUE SE PAGAN SIN IMPORTAR EL STATUS DEL RECIBO EN FACTURAS
------ JMMD20211001          SE COMPLEMENTA QUERY PARA EVITAR DUPLICIDAD DE RECIBOS ANULADOS POR CAMBIO DE COMISIONES
+----- JMMD20211007          SE COMPLEMENTA QUERY PARA EVITAR DUPLICIDAD DE RECIBOS ANULADOS POR CAMBIO DE COMISIONES
 
 nCdAgente          AGENTES.COD_AGENTE%TYPE;
 
@@ -195,28 +195,38 @@ FOR X IN AGENTES_Q LOOP
 
 select C.IDFACTURA, C.IDNCR, 
 --                    C.Comision_Moneda Comision  -- jmmd20201204 se cambio por case de abajo
-       case when
+       case 
+       WHEN trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta  AND trunc(C.FEC_ESTADO) = TRUNC(C.FEC_LIQUIDACION) THEN 0  -----JMMD20211007       
+       when
           trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then C.Comision_Moneda
-          else 0
+       else 0
        end  Comision ,
        C.ESTADO, TRUNC(C.FEC_GENERACION) FECHA_GENERA, TRUNC(C.FEC_LIQUIDACION) FECHA_LIQUIDA,
        C.IDENDOSO ENDOSO, C.FEC_ESTADO FECHA_ESTADO, C.IDNOMINA NOMINA, C.ORIGEN ORIGEN,
        Y.MTOCOMISI MONTO_COMISION, 
-       case when
+       case 
+       WHEN trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta  AND trunc(C.FEC_ESTADO) = TRUNC(C.FEC_LIQUIDACION) THEN 0  -----JMMD20211007       
+       when
             trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVA
-           else 0
+       else 0
        end  MONTO_IVA, 
-       case when
+       case 
+       WHEN trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta  AND trunc(C.FEC_ESTADO) = TRUNC(C.FEC_LIQUIDACION) THEN 0  -----JMMD20211007       
+       when
           trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOIVARET
-          else 0
+       else 0
        end  MONTO_IVARET, 
-       case when
+       case 
+       WHEN trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta  AND trunc(C.FEC_ESTADO) = TRUNC(C.FEC_LIQUIDACION) THEN 0  -----JMMD20211007       
+       when
           trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISR
-          else 0
+       else 0
        end   MONTO_ISR, 
-       case when
+       case 
+       WHEN trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta  AND trunc(C.FEC_ESTADO) = TRUNC(C.FEC_LIQUIDACION) THEN 0  -----JMMD20211007       
+       when
           trunc(C.FEC_ESTADO) BETWEEN dFecDesde AND dFecHasta then Y.MTOISRRET
-          else 0
+       else 0
        end  MONTO_ISRRET, 
        Y.SUBTOTAL MONTO_SUBTOTAL,
                DECODE(SIGN(Y.SubTotal), -1, Y.SubTotal, 0) En_contra,-- PC.CodTipoPlan CodTipoPlan,                            
@@ -994,7 +1004,7 @@ AND TS.IDTIPOSEG = DP.IDTIPOSEG
 AND TS.CODTIPOPLAN = X.CODVALOR
 AND F.IDFACTURA = C.IDFACTURA
 --------
-AND F.STSFACT = 'ANU'
+----- JMMD20211007 AND F.STSFACT = 'ANU'
 AND DTR.CODSUBPROCESO = 'REVPAG'
 AND DTR.VALOR4 = TO_CHAR(C.IDFACTURA)
 AND DTR.VALOR1 = TO_CHAR(C.IDPOLIZA)
