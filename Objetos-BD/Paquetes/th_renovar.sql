@@ -1,36 +1,7 @@
+CREATE OR REPLACE PACKAGE TH_RENOVAR IS
 --
--- TH_RENOVAR  (Package) 
+-- Ajuste a primas  20/10/2021 AJU --JICO
 --
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   OC_AGENTES (Package)
---   OC_AGENTES_DETALLES_POLIZAS (Package)
---   OC_AGENTES_DISTRIBUCION_POLIZA (Package)
---   POLIZAS (Table)
---   DATOS_PART_EMISION (Table)
---   OC_TAREA (Package)
---   OC_TIPOS_DE_SEGUROS (Package)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   AGENTES_DISTRIBUCION_POLIZA (Table)
---   AGENTE_POLIZA (Table)
---   OC_CONFIG_COMISIONES (Package)
---   OC_DETALLE_POLIZA (Package)
---   COBERTURAS (Table)
---   COBERT_ACT (Table)
---   OC_GENERALES (Package)
---   OC_PLAN_COBERTURAS (Package)
---   OC_POLIZAS (Package)
---   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
---   OC_BENEFICIARIO (Package)
---   OC_COBERT_ACT (Package)
---   OC_COMISIONES (Package)
---   DETALLE_POLIZA (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.TH_RENOVAR IS
-  
 PROCEDURE RENOVAR_MEXCAL(P_CODCIA            NUMBER, 
                          P_POLIZA_ORI        NUMBER,
                          P_POLIZA_REN    OUT NUMBER,
@@ -44,29 +15,23 @@ PROCEDURE RENOVAR_MEXCAL_CAMBIO(P_CODCIA            NUMBER,
                                 P_MENSAJE_ERROR OUT VARCHAR2);
 END TH_RENOVAR;
 /
-
---
--- TH_RENOVAR  (Package Body) 
---
---  Dependencies: 
---   TH_RENOVAR (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.TH_RENOVAR IS
+CREATE OR REPLACE PACKAGE BODY TH_RENOVAR IS
 --
 -- Creadoo 2016/12/05
-
+-- Ajuste a primas  20/10/2021 AJU --JICO
+--
 PROCEDURE RENOVAR_MEXCAL(P_CODCIA            NUMBER,  
                          P_POLIZA_ORI        NUMBER, 
                          P_POLIZA_REN    OUT NUMBER,
                          P_MENSAJE_ERROR OUT VARCHAR2) IS
-dFecHoy       DATE;
-nIdPoliza     POLIZAS.IdPoliza%TYPE;
-nIDetPol      DETALLE_POLIZA.IDetPol%TYPE;
-cNumPolUnico  POLIZAS.NumPolUnico%TYPE;
-p_msg_regreso varchar2(50);
-nTasaCambio   DETALLE_POLIZA.Tasa_Cambio%TYPE;
-W_CONTINUA           BOOLEAN;
-W_MENSAJE_ERROR      VARCHAR2(2000);
+dFecHoy          DATE;
+nIdPoliza        POLIZAS.IdPoliza%TYPE;
+nIDetPol         DETALLE_POLIZA.IDetPol%TYPE;
+cNumPolUnico     POLIZAS.NumPolUnico%TYPE;
+p_msg_regreso    varchar2(50);
+nTasaCambio      DETALLE_POLIZA.Tasa_Cambio%TYPE;
+W_CONTINUA       BOOLEAN;
+W_MENSAJE_ERROR  VARCHAR2(2000);
 --
 CURSOR POL_Q IS
    SELECT CodEmpresa, TipoPol, NumPolRef, SumaAseg_Local, SumaAseg_Moneda,
@@ -95,10 +60,12 @@ CURSOR DET_Q IS
       AND CodCia   = P_CODCIA;
 
 CURSOR COB_Q IS
-  SELECT CA.IDetPol, CA.CodEmpresa, CA.CodCia, DP.IdTipoSeg, CA.CodCobert,
-         CA.SumaAseg_Moneda, CA.Prima_Moneda, TipoRef, CA.NumRef, CA.IdEndoso,
-         CA.PlanCob, CA.Cod_Moneda, CA.Deducible_Local, CA.Deducible_Moneda,
-         CA.Cod_Asegurado
+  SELECT CA.IDetPol,            CA.CodEmpresa,        CA.CodCia,           
+         DP.IdTipoSeg,          CA.CodCobert,         CA.SumaAseg_Moneda,  
+         CA.Prima_Moneda,       CA.SUMAASEG_LOCAL,    CA.PRIMA_LOCAL,   
+         CA.TipoRef,            CA.NumRef,            CA.IdEndoso,
+         CA.PlanCob,            CA.Cod_Moneda,        CA.Deducible_Local,  
+         CA.Deducible_Moneda,   CA.Cod_Asegurado
     FROM COBERT_ACT CA, DETALLE_POLIZA DP
    WHERE DP.IDetPol  = CA.IDetPol
      AND DP.IdPoliza = CA.IdPoliza
@@ -128,9 +95,10 @@ CURSOR AGTE_POL_Q IS
       AND IdPoliza = P_POLIZA_ORI;
 
 CURSOR AGTE_DIST_POL_Q IS
-   SELECT Cod_Agente, CodNivel, Cod_Agente_Distr, Porc_Comision_Agente,
-          Porc_Com_Distribuida, Porc_Comision_Plan, Porc_Com_Proporcional,
-          Cod_Agente_Jefe, Porc_Com_Poliza, Origen
+   SELECT Cod_Agente,             CodNivel,               Cod_Agente_Distr, 
+          Porc_Comision_Agente,   Porc_Com_Distribuida,   Porc_Comision_Plan, 
+          Porc_Com_Proporcional,  Cod_Agente_Jefe,        Porc_Com_Poliza, 
+          Origen
      FROM AGENTES_DISTRIBUCION_POLIZA
     WHERE CodCia   = P_CODCIA
       AND IdPoliza = P_POLIZA_ORI;
@@ -150,43 +118,14 @@ CURSOR AGTE_DIST_DET_Q IS
     WHERE IDetPol  = nIDetPol
       AND CodCia   = P_CODCIA
       AND IdPoliza = P_POLIZA_ORI;   
+--
+CURSOR POL_REN_Q IS
+ SELECT *
+   FROM POLIZAS
+  WHERE IdPoliza = P_POLIZA_ORI
+    AND CodCia   = P_CODCIA;
+--
       
-/*
-CURSOR PER_Q IS
-   SELECT IDetPol, Estatura, Peso, Cavidad_Toraxica_Min, Cavidad_Toraxica_Max,
-          Capacidad_Abdominal, Presion_Arterial_Min, Presion_Arterial_Max,
-          Pulso, Mortalidad, Suma_Aseg_Moneda, Suma_Aseg_Local,
-          Extra_Prima_Moneda, Extra_Prima_Local, Id_Fumador,
-          Observaciones, Porc_SubNormal, Prima_Local, Prima_Moneda
-     FROM DATOS_PARTICULARES_PERSONAS
-    WHERE IdPoliza = P_POLIZA_ORI
-      AND CodCia   = P_CODCIA;
-
-CURSOR BIEN_Q IS
-   SELECT Num_Bien, IDetPol, CodPais, CodEstado, CodCiudad, CodMunicipio,
-          Ubicacion_Bien, Tipo_Bien, Suma_Aseg_Local_Bien, Suma_Aseg_Moneda_Bien,
-          Prima_Neta_Local_Bien, Prima_Neta_Moneda_Bien
-     FROM DATOS_PARTICULARES_BIENES
-    WHERE IdPoliza = P_POLIZA_ORI
-      AND CodCia   = P_CODCIA;
-
-CURSOR AUTO_Q IS
-   SELECT IDetPol, Num_Vehi, Cod_Marca, Cod_Version, Cod_Modelo, Anio_Vehiculo,
-          Placa, Cantidad_Pasajeros, Tarjeta_Circulacion, Color, Numero_Chasis,
-          Numero_Motor, SumaAseg_Local, SumaAseg_Moneda, PrimaNeta_Local,
-          PrimaNeta_Moneda
-     FROM DATOS_PARTICULARES_VEHICULO
-    WHERE IdPoliza = P_POLIZA_ORI
-      AND CodCia   = P_CODCIA;
-
-CURSOR ASEG_CERT_Q IS
-   SELECT CodCia, IdPoliza, Cod_Asegurado, FechaAlta, FechaBaja, CodEmpresa,
-          SumaAseg, Primaneta
-     FROM ASEGURADO_CERT
-    WHERE IDetPol  = nIDetPol
-      AND IdPoliza = P_POLIZA_ORI
-      AND CodCia   = P_CODCIA;
-*/
 BEGIN
   SELECT TRUNC(SYSDATE)
     INTO dFecHoy
@@ -214,28 +153,28 @@ BEGIN
                 NumPolRef,          FecIniVig,         FecFinVig,          FecSolicitud, 
                 FecEmision,         FecRenovacion,     StsPoliza,          FecSts, 
                 FecAnul,            MotivAnul,         SumaAseg_Local,     SumaAseg_Moneda,
-                PrimaNeta_Local,    PrimaNeta_Moneda,  DescPoliza,         PorcComis, 
                 --
+                PrimaNeta_Local,    PrimaNeta_Moneda,  DescPoliza,         PorcComis, 
                 NumRenov,           IndExaInsp,        Cod_Moneda,         Num_Cotizacion, 
                 CodCliente,         Cod_Agente,        CodPlanPago,        Medio_Pago, 
-                NumPolUnico,        IndPolCol,         IndProcFact,        Caracteristica, 
+                NumPolUnico,        IndPolCol,         IndProcFact,        Caracteristica,
+                -- 
                 IndFactPeriodo,     FormaVenta,        TipoRiesgo,         IndConcentrada, 
                 TipoDividendo,      CodGrupoEc,        IndAplicoSami,      SamiPoliza, 
-                --
                 TipoAdministracion, HoraVigIni,        HoraVigFin,         CodAgrupador,
                 IndFacturaPol,      IndFactElectronica,IndCalcDerechoEmis, CodDirecRegional)
         VALUES (nIdPoliza,          X.CodEmpresa,      P_CODCIA,           X.TipoPol, 
                 P_POLIZA_ORI,       ADD_MONTHS(X.FECINIVIG,12),   ADD_MONTHS(X.FECFINVIG,12), X.FECSOLICITUD, 
-                dFecHoy   ,         ADD_MONTHS(X.FECINIVIG,12), 'SOL',        dFecHoy, 
-                NULL,              NULL,               X.SumaAseg_Local,   X.SumaAseg_Moneda,
-                X.PrimaNeta_Local, X.PrimaNeta_Moneda, X.DescPoliza,       X.PorcComis,
+                dFecHoy   ,         ADD_MONTHS(X.FECINIVIG,12), 'SOL',     dFecHoy, 
+                NULL,               NULL,              X.SumaAseg_Local,   X.SumaAseg_Moneda,
                 --
-                NVL(X.NumRenov,0) + 1, X.IndExaInsp,  X.Cod_Moneda,       X.Num_Cotizacion, 
+                X.PrimaNeta_Local, X.PrimaNeta_Moneda, X.DescPoliza,       X.PorcComis,
+                NVL(X.NumRenov,0) + 1, X.IndExaInsp,   X.Cod_Moneda,       X.Num_Cotizacion, 
                 X.CodCliente,      X.Cod_Agente,       X.CodPlanPago,      X.Medio_Pago,
                 cNumPolUnico,      X.IndPolCol,        X.IndProcFact,      X.Caracteristica, 
+                --
                 X.IndFactPeriodo,  X.FormaVenta,       X.TipoRiesgo,       X.IndConcentrada, 
                 X.TipoDividendo,   X.CodGrupoEc,       'N',                0, 
-                --
                 X.TipoAdministracion, X.HoraVigIni,    X.HoraVigFin,       X.CodAgrupador,
                 X.IndFacturaPol,   X.IndFactElectronica, X.IndCalcDerechoEmis, X.CodDirecRegional);
       --
@@ -247,7 +186,8 @@ BEGIN
              INSERT INTO AGENTE_POLIZA
                  (IdPoliza,             CodCia,                  Cod_Agente, 
                   Porc_Comision,        Ind_Principal,           Origen)
-             VALUES (nIdPoliza,            P_CODCIA,                G.Cod_Agente, 
+             VALUES 
+                 (nIdPoliza,            P_CODCIA,                G.Cod_Agente, 
                   G.Porc_Comision,      G.Ind_Principal,         G.Origen);
              --
              IF sqlcode <> 0 THEN  W_CONTINUA := FALSE; W_MENSAJE_ERROR := 'RENUEVA MEXCAL - ERROR EN INSERT DE AGENTE_POLIZA'; END IF;     
@@ -264,7 +204,8 @@ BEGIN
                    CodNivel,               Cod_Agente_Distr,      Porc_Comision_Agente, 
                    Porc_Com_Distribuida,   Porc_Comision_Plan,    Porc_Com_Proporcional, 
                    Cod_Agente_Jefe,        Porc_Com_Poliza,       Origen)
-             VALUES (nIdPoliza,              P_CODCIA,              D.Cod_Agente, 
+             VALUES 
+                  (nIdPoliza,              P_CODCIA,              D.Cod_Agente, 
                    D.CodNivel,             D.Cod_Agente_Distr,    D.Porc_Comision_Agente,
                    D.Porc_Com_Distribuida, D.Porc_Comision_Plan,  D.Porc_Com_Proporcional,
                    D.Cod_Agente_Jefe,      D.Porc_Com_Poliza,     D.Origen);
@@ -283,24 +224,27 @@ BEGIN
                   (IdPoliza,                   IDetPol,                  CodCia, 
                    Cod_Asegurado,              CodEmpresa,               CodPlanPago,
                    Suma_Aseg_Local,            Suma_Aseg_Moneda,         Prima_Local, 
-                   Prima_Moneda,               FecIniVig,                FecFinVig, 
+                   Prima_Moneda,               FecIniVig,                FecFinVig,
+                   -- 
                    IdTipoSeg,                  Tasa_Cambio,              PorcComis, 
-                   --
                    StsDetalle,                 PlanCob,                  MontoComis, 
                    NumDetRef,                  FecAnul,                  Motivanul, 
                    CodPromotor,                IndDeclara,               IndSinAseg, 
+                   --
                    CodFilial,                  CodCategoria,             IndFactElectronica,
                    IndAsegModelo,              CantAsegModelo,           MontoComisH,
                    PorcComisH)
-             VALUES(nIdPoliza,                  Y.IDetPol,                P_CODCIA, 
+             VALUES
+                   (nIdPoliza,                 Y.IDetPol,                P_CODCIA, 
                    Y.Cod_Asegurado,            Y.CodEmpresa,             Y.CodPlanPago,
-                   Y.Suma_Aseg_Local,          Y.Suma_Aseg_Moneda,       Y.Prima_Local, 
+                   Y.Suma_Aseg_Local,          Y.Suma_Aseg_Moneda,       Y.Prima_Local * nTasaCambio,  --AJU
                    Y.Prima_Moneda,             ADD_MONTHS(Y.FECINIVIG,12), ADD_MONTHS(Y.FECFINVIG,12), 
-                   Y.IdTipoSeg,                nTasaCambio,              Y.PorcComis, 
                    --
+                   Y.IdTipoSeg,                nTasaCambio,              Y.PorcComis, 
                    'SOL',                      Y.PlanCob,                Y.MontoComis, 
                    Y.NumDetRef,                '',                       '', 
-                   Y.CodPromotor,              Y.IndDeclara,             Y.IndSinAseg, 
+                   Y.CodPromotor,              Y.IndDeclara,             Y.IndSinAseg,
+                   -- 
                    Y.CodFilial,                Y.CodCategoria,           Y.IndFactElectronica,
                    Y.IndAsegModelo,            Y.CantAsegModelo,         Y.MontoComisH, 
                    Y.PorcComisH);
@@ -314,7 +258,8 @@ BEGIN
                        (IdPoliza,              IdetPol,          IdTiposeg, 
                         Cod_Agente,            Porc_Comision,    Ind_Principal, 
                         CodCia,                Origen)
-                    VALUES (nIdPoliza,             nIDetPol,         Y.IdTiposeg,
+                    VALUES 
+                       (nIdPoliza,             nIDetPol,         Y.IdTiposeg,
                         J.Cod_Agente,          J.Porc_Comision,  J.Ind_Principal,
                         P_CODCIA,              J.Origen);
                 END LOOP;
@@ -331,7 +276,8 @@ BEGIN
                         CodNivel,                 Cod_Agente,              Cod_Agente_Distr,
                         Porc_Comision_Plan,       Porc_Comision_Agente,    Porc_Com_Distribuida,
                         Porc_Com_Proporcional,    Cod_Agente_Jefe,         Origen)
-                    VALUES (P_CODCIA,                 nIdPoliza,               nIDetPol, 
+                    VALUES 
+                       (P_CODCIA,                 nIdPoliza,               nIDetPol, 
                         H.CodNivel,               H.Cod_Agente,            H.Cod_Agente_Distr,
                         H.Porc_Comision_Plan,     H.Porc_Comision_Agente,  H.Porc_Com_Distribuida,
                         H.Porc_Com_Proporcional,  H.Cod_Agente_Jefe,       H.Origen);
@@ -351,14 +297,25 @@ BEGIN
          --
          FOR Z IN COB_Q LOOP
              INSERT INTO COBERT_ACT
-                  (IdPoliza,  IDetPol, CodEmpresa, CodCia, CodCobert, StsCobertura,
-                  SumaAseg_Local, SumaAseg_Moneda, Prima_Local, Prima_Moneda, Tasa,
-                  IdEndoso, IdTipoSeg, TipoRef, NumRef, PlanCob, Cod_Moneda, 
-                  Deducible_Local, Deducible_Moneda, Cod_Asegurado)
-             VALUES (nIdPoliza, Z.IDetPol, Z.CodEmpresa, Z.CodCia, Z.CodCobert, 'SOL',
-                  Z.SumaAseg_Moneda, Z.SumaAseg_Moneda, Z.Prima_Moneda, Z.Prima_Moneda, NULL,
-                  0, Z.IdTipoSeg, Z.TipoRef, Z.NumRef, Z.PlanCob, Z.Cod_Moneda, 
-                  Z.Deducible_Local, Z.Deducible_Moneda, Z.Cod_Asegurado);
+                  (IdPoliza,              IDetPol,                 CodEmpresa,        
+                   CodCia,                CodCobert,               StsCobertura,     
+                   SumaAseg_Local,        SumaAseg_Moneda,         Prima_Local, 
+                   --      
+                   Prima_Moneda,          Tasa,                    IdEndoso, 
+                   IdTipoSeg,             TipoRef,                 NumRef,
+                   PlanCob,               Cod_Moneda,              Deducible_Local,
+                   --  
+                   Deducible_Moneda,      Cod_Asegurado)
+             VALUES
+                  (nIdPoliza,             Z.IDetPol,               Z.CodEmpresa, 
+                   Z.CodCia,              Z.CodCobert,             'SOL',
+                   Z.SUMAASEG_LOCAL ,     Z.SumaAseg_Moneda,       Z.PRIMA_LOCAL * nTasaCambio,  --AJU
+                   -- 
+                   Z.Prima_Moneda,        nTasaCambio,             0, 
+                   Z.IdTipoSeg,           Z.TipoRef,               Z.NumRef, 
+                   Z.PlanCob,             Z.Cod_Moneda,            Z.Deducible_Local * nTasaCambio, --AJU
+                   --
+                   Z.Deducible_Moneda,    Z.Cod_Asegurado);
              --
              IF sqlcode <> 0 THEN  W_CONTINUA := FALSE; W_MENSAJE_ERROR := 'RENUEVA MEXCAL - ERROR EN INSERT DE AGENTES_DISTRIBUCION_COMISION'; END IF;     
              --
@@ -372,14 +329,17 @@ BEGIN
                  (IDPOLIZA,                 IDETPOL,           CODEMPRESA,
                   IDTIPOSEG,                CODCIA,            CODCOBERT,
                   IDENDOSO,                 STSCOBERTURA,      SUMA_ASEGURADA_LOCAL,
+                  --
                   SUMA_ASEGURADA_MONEDA,    PRIMA_LOCAL,       PRIMA_MONEDA,
                   TASA,                     PLANCOB,           MODIFICACION,
                   DEDUCIBLE_LOCAL,          DEDUCIBLE_MONEDA)
-             VALUES (nIdPoliza,                T.IDETPOL,         T.CODEMPRESA,
+             VALUES 
+                 (nIdPoliza,                T.IDETPOL,         T.CODEMPRESA,
                   T.IDTIPOSEG,              T.CODCIA,          T.CODCOBERT,
                   T.IDENDOSO,               'SOL',             T.SUMA_ASEGURADA_LOCAL,
-                  T.SUMA_ASEGURADA_MONEDA,  T.PRIMA_LOCAL,     T.PRIMA_MONEDA,
-                  T.TASA,                   T.PLANCOB,         T.MODIFICACION,
+                  --
+                  T.SUMA_ASEGURADA_MONEDA,  T.PRIMA_LOCAL * nTasaCambio,     T.PRIMA_MONEDA,
+                  nTasaCambio,              T.PLANCOB,         T.MODIFICACION,
                   T.DEDUCIBLE_LOCAL,        T.DEDUCIBLE_MONEDA);
              --
              IF sqlcode <> 0 THEN  W_CONTINUA := FALSE; W_MENSAJE_ERROR := 'RENUEVA MEXCAL - ERROR EN INSERT DE AGENTES_DISTRIBUCION_COMISION'; END IF;     
@@ -631,17 +591,4 @@ END RENOVAR_MEXCAL_CAMBIO;
 
 
 END TH_RENOVAR;
-/
-
---
--- TH_RENOVAR  (Synonym) 
---
---  Dependencies: 
---   TH_RENOVAR (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM TH_RENOVAR FOR SICAS_OC.TH_RENOVAR
-/
-
-
-GRANT EXECUTE ON SICAS_OC.TH_RENOVAR TO PUBLIC
 /
