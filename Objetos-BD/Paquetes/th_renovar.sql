@@ -1,6 +1,7 @@
 CREATE OR REPLACE PACKAGE TH_RENOVAR IS
 --
 -- Ajuste a primas  20/10/2021 AJU --JICO
+-- Ajuste a primas  25/11/2021 AJU2 --JICO
 --
 PROCEDURE RENOVAR_MEXCAL(P_CODCIA            NUMBER, 
                          P_POLIZA_ORI        NUMBER,
@@ -19,6 +20,7 @@ CREATE OR REPLACE PACKAGE BODY TH_RENOVAR IS
 --
 -- Creadoo 2016/12/05
 -- Ajuste a primas  20/10/2021 AJU --JICO
+-- Ajuste a primas  25/11/2021 AJU2 --JICO
 --
 PROCEDURE RENOVAR_MEXCAL(P_CODCIA            NUMBER,  
                          P_POLIZA_ORI        NUMBER, 
@@ -237,7 +239,7 @@ BEGIN
              VALUES
                    (nIdPoliza,                 Y.IDetPol,                P_CODCIA, 
                    Y.Cod_Asegurado,            Y.CodEmpresa,             Y.CodPlanPago,
-                   Y.Suma_Aseg_Local,          Y.Suma_Aseg_Moneda,       Y.Prima_Local * nTasaCambio,  --AJU
+                   Y.Suma_Aseg_Local,          Y.Suma_Aseg_Moneda,       Y.Prima_Local, --AJU2
                    Y.Prima_Moneda,             ADD_MONTHS(Y.FECINIVIG,12), ADD_MONTHS(Y.FECFINVIG,12), 
                    --
                    Y.IdTipoSeg,                nTasaCambio,              Y.PorcComis, 
@@ -309,11 +311,11 @@ BEGIN
              VALUES
                   (nIdPoliza,             Z.IDetPol,               Z.CodEmpresa, 
                    Z.CodCia,              Z.CodCobert,             'SOL',
-                   Z.SUMAASEG_LOCAL ,     Z.SumaAseg_Moneda,       Z.PRIMA_LOCAL * nTasaCambio,  --AJU
+                   Z.SUMAASEG_LOCAL ,     Z.SumaAseg_Moneda,       Z.PRIMA_LOCAL,  --AJU2
                    -- 
                    Z.Prima_Moneda,        nTasaCambio,             0, 
                    Z.IdTipoSeg,           Z.TipoRef,               Z.NumRef, 
-                   Z.PlanCob,             Z.Cod_Moneda,            Z.Deducible_Local * nTasaCambio, --AJU
+                   Z.PlanCob,             Z.Cod_Moneda,            Z.Deducible_Local, --AJU2
                    --
                    Z.Deducible_Moneda,    Z.Cod_Asegurado);
              --
@@ -338,7 +340,7 @@ BEGIN
                   T.IDTIPOSEG,              T.CODCIA,          T.CODCOBERT,
                   T.IDENDOSO,               'SOL',             T.SUMA_ASEGURADA_LOCAL,
                   --
-                  T.SUMA_ASEGURADA_MONEDA,  T.PRIMA_LOCAL * nTasaCambio,     T.PRIMA_MONEDA,
+                  T.SUMA_ASEGURADA_MONEDA,  T.PRIMA_LOCAL,     T.PRIMA_MONEDA,
                   nTasaCambio,              T.PLANCOB,         T.MODIFICACION,
                   T.DEDUCIBLE_LOCAL,        T.DEDUCIBLE_MONEDA);
              --
