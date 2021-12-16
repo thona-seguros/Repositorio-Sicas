@@ -1,46 +1,35 @@
---
--- OC_CLIENTES  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_STANDARD (Package)
---   SQ_COD_CLIENTE (Sequence)
---   PERSONA_NATURAL_JURIDICA (Table)
---   OC_CORREGIMIENTO (Package)
---   CLIENTES (Table)
---   OC_COLONIA (Package)
---   OC_PROVINCIA (Package)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_CLIENTES IS
-  FUNCTION CODIGO_CLIENTE   (cTipo_Doc_Identificacion VARCHAR2, 
-                             cNum_Doc_Identificacion  VARCHAR2) RETURN NUMBER;
-  FUNCTION NOMBRE_CLIENTE   (nCodCliente NUMBER) RETURN VARCHAR2;
-  FUNCTION INSERTAR_CLIENTE (cTipo_Doc_Identificacion VARCHAR2, 
-                             cNum_Doc_Identificacion  VARCHAR2) RETURN NUMBER;
-  FUNCTION IDENTIFICACION_TRIBUTARIA(nCodCliente NUMBER) RETURN VARCHAR2;
-  FUNCTION AUXILIAR_CONTABLE        (nCodCliente NUMBER) RETURN VARCHAR2;
-  FUNCTION DIRECCION_CLIENTE        (nCodCliente NUMBER) RETURN VARCHAR2;
-  FUNCTION EN_LISTA_DE_REFERENCIA   (nCodCliente NUMBER) RETURN VARCHAR2;
-  FUNCTION CODIGO_LISTA_REFERENCIA  (nCodCliente NUMBER) RETURN VARCHAR2;
-  FUNCTION ID_COD_CLIENTE RETURN NUMBER; --SEQ XDS 14/07/2016
-  FUNCTION ES_CLIENTE_ALTO          (cTipoDocIdentEmp VARCHAR2, 
-                                     cNumDocIdentEmp  VARCHAR2) RETURN VARCHAR2;
-END OC_CLIENTES;
-/
-
---
--- OC_CLIENTES  (Package Body) 
---
---  Dependencies: 
---   OC_CLIENTES (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_CLIENTES IS
+CREATE OR REPLACE PACKAGE OC_CLIENTES IS
 --
 -- BITACORA DE CAMBIO
--- CAMBIO - SE AGREGO LA FUNCION ES_CLIENTE_ALTO   JICO 20170518  LAVADO DE DINERO
+-- SE AGREGO LA FUNCION ES_CLIENTE_ALTO           JICO 20170518  LAVADO DE DINERO
+--  16/12/2021  Reingenieria F2  SE AGREGO LA FUNCION NOMBRE_CLIENTE_TIPO   
 --
+  FUNCTION CODIGO_CLIENTE(cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion  VARCHAR2) RETURN NUMBER;
+  
+  FUNCTION NOMBRE_CLIENTE(nCodCliente NUMBER) RETURN VARCHAR2;
+  
+  FUNCTION INSERTAR_CLIENTE(cTipo_Doc_Identificacion VARCHAR2,cNum_Doc_Identificacion  VARCHAR2) RETURN NUMBER;
+  
+  FUNCTION IDENTIFICACION_TRIBUTARIA(nCodCliente NUMBER) RETURN VARCHAR2;
+  
+  FUNCTION AUXILIAR_CONTABLE(nCodCliente NUMBER) RETURN VARCHAR2;
+  
+  FUNCTION DIRECCION_CLIENTE(nCodCliente NUMBER) RETURN VARCHAR2;
+  
+  FUNCTION EN_LISTA_DE_REFERENCIA(nCodCliente NUMBER) RETURN VARCHAR2;
+  
+  FUNCTION CODIGO_LISTA_REFERENCIA(nCodCliente NUMBER) RETURN VARCHAR2;
+  
+  FUNCTION ID_COD_CLIENTE RETURN NUMBER; --SEQ XDS 14/07/2016
+  
+  FUNCTION ES_CLIENTE_ALTO(cTipoDocIdentEmp VARCHAR2, cNumDocIdentEmp  VARCHAR2) RETURN VARCHAR2;
+  
+  FUNCTION NOMBRE_CLIENTE_TIPO(nCodCliente NUMBER) RETURN VARCHAR2;
+  
+END OC_CLIENTES;
+/
+CREATE OR REPLACE PACKAGE BODY OC_CLIENTES IS
+
 FUNCTION CODIGO_CLIENTE(cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN NUMBER IS
 nCodCliente   CLIENTES.CodCliente%TYPE;
 BEGIN
@@ -96,16 +85,11 @@ BEGIN
          RAISE_APPLICATION_ERROR(-20225,'Existe varios Clientes con el Mismo Documento de Identificación.');
    END;
    IF NVL(nCodCliente,0) = 0 THEN
-/*       SELECT NVL(MAX(CodCliente),0)+1
+      --
+      SELECT SQ_COD_CLIENTE.NEXTVAL
         INTO nCodCliente
-        FROM CLIENTES;
-*/        
-       /*Cambio de  Sequencia XDS*/
-      SELECT  SQ_COD_CLIENTE.NEXTVAL
-          INTO nCodCliente
-          FROM DUAL;
-
-
+        FROM DUAL;
+      --
       BEGIN
          INSERT INTO CLIENTES
                (CodCliente, Tipo_Doc_Identificacion, Num_Doc_Identificacion,
@@ -140,33 +124,27 @@ BEGIN
       WHEN TOO_MANY_ROWS THEN
          RAISE_APPLICATION_ERROR(-20225,'Codigo de Cliente: '||TRIM(TO_CHAR(nCodCliente)) || ' Duplicado');
    END;
-
---   RSR Si existe el Tributario, es el que regresa, si es nulo regresa el Doc_identificacion.
---   IF cTipo_Doc_Identificacion = 'RFC' THEN
---      RETURN(cNum_Doc_Identificacion);
---   ELSE
-      BEGIN
-      -- RSR Si existe el Tributario, es el que regresa, si es nulo regresa el Doc_identificacion.
-      -- SELECT num_tributario --Linea Original
-SELECT DECODE(  NVL(LTRIM(RTRIM(pnj.num_tributario)),'N'),'N',pnj.num_doc_identificacion,pnj.num_tributario)  --  AEVS     
-           INTO cNum_Tributario
-           FROM CLIENTES CLI, PERSONA_NATURAL_JURIDICA PNJ
-          WHERE CLI.Tipo_Doc_Identificacion = PNJ.Tipo_Doc_Identificacion
-            AND CLI.Num_Doc_Identificacion  = PNJ.Num_Doc_Identificacion
-            AND CLI.CodCliente              = nCodCliente;
-      EXCEPTION
-         WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20225,'Codigo de Cliente: '||TRIM(TO_CHAR(nCodCliente)) || ' NO Existe');
-         WHEN TOO_MANY_ROWS THEN
-            RAISE_APPLICATION_ERROR(-20225,'Codigo de Cliente: '||TRIM(TO_CHAR(nCodCliente)) || ' Duplicado');
-      END;
-      IF cNum_Tributario IS NULL THEN
-         RAISE_APPLICATION_ERROR(-20225,'Cliente: '||TRIM(TO_CHAR(nCodCliente)) || ' No Posee Identificación Tributaria');
-      ELSE
-         RETURN(cNum_Tributario);
-      END IF;
---   END IF;
---   RSR Si existe el Tributario, es el que regresa, si es nulo regresa el Doc_identificacion.
+  --
+   BEGIN
+     SELECT DECODE(  NVL(LTRIM(RTRIM(pnj.num_tributario)),'N'),'N',pnj.num_doc_identificacion,pnj.num_tributario)     
+       INTO cNum_Tributario
+       FROM CLIENTES CLI, PERSONA_NATURAL_JURIDICA PNJ
+      WHERE CLI.Tipo_Doc_Identificacion = PNJ.Tipo_Doc_Identificacion
+        AND CLI.Num_Doc_Identificacion  = PNJ.Num_Doc_Identificacion
+        AND CLI.CodCliente              = nCodCliente;
+   EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+          RAISE_APPLICATION_ERROR(-20225,'Codigo de Cliente: '||TRIM(TO_CHAR(nCodCliente)) || ' NO Existe');
+     WHEN TOO_MANY_ROWS THEN
+          RAISE_APPLICATION_ERROR(-20225,'Codigo de Cliente: '||TRIM(TO_CHAR(nCodCliente)) || ' Duplicado');
+   END;
+   --
+   IF cNum_Tributario IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20225,'Cliente: '||TRIM(TO_CHAR(nCodCliente)) || ' No Posee Identificación Tributaria');
+   ELSE
+      RETURN(cNum_Tributario);
+   END IF;
+   --
 END IDENTIFICACION_TRIBUTARIA;
 
 FUNCTION AUXILIAR_CONTABLE(nCodCliente NUMBER) RETURN VARCHAR2 IS
@@ -245,25 +223,21 @@ BEGIN
    RETURN(cCodListaRef);
 END CODIGO_LISTA_REFERENCIA;
 
-FUNCTION ID_COD_CLIENTE RETURN NUMBER IS --IN. SEQ XDS 14/07/2016
+FUNCTION ID_COD_CLIENTE RETURN NUMBER IS --INI SEQ XDS 11/07/2016
 nIdCodCliente CLIENTES.CODCLIENTE%TYPE;
 BEGIN
-    BEGIN
-/*      SELECT NVL(MAX(CodCliente),0)+1
-        INTO nIdCodCliente
-        FROM CLIENTES;
-*/        
-          SELECT  SQ_COD_CLIENTE.NEXTVAL
-          INTO nIdCodCliente
-          FROM DUAL;
-
-    EXCEPTION
-         WHEN DUP_VAL_ON_INDEX THEN
+  BEGIN
+    SELECT SQ_COD_CLIENTE.NEXTVAL
+      INTO nIdCodCliente
+      FROM DUAL;
+  EXCEPTION
+    WHEN DUP_VAL_ON_INDEX THEN
          RAISE_APPLICATION_ERROR(-20225,'YA Existe la Secuencia  para Cliente ');
-    END;
-    RETURN(nIdCodCliente);
+  END;
+  --
+  RETURN(nIdCodCliente);
+  --
 END ID_COD_CLIENTE;                       --FIN SEQ XDS 11/07/2016
-
   
 FUNCTION ES_CLIENTE_ALTO(cTipoDocIdentEmp VARCHAR2, cNumDocIdentEmp VARCHAR2) RETURN VARCHAR2 IS
 cESCLIENTE     VARCHAR2(1);
@@ -285,18 +259,28 @@ BEGIN
    RETURN(cESCLIENTE);
 END ES_CLIENTE_ALTO;
 
+FUNCTION NOMBRE_CLIENTE_TIPO(nCodCliente NUMBER) RETURN VARCHAR2 IS
+cNombreCliente  VARCHAR2(2000);
+BEGIN
+   BEGIN
+      SELECT DECODE(NVL(PNJ.TIPO_PERSONA,'FISICA'),'FISICA',
+                                      INITCAP(TRIM(PNJ.Nombre)||' '||TRIM(PNJ.Apellido_Paterno)||' '||TRIM(PNJ.Apellido_Materno)),
+                                        UPPER(TRIM(PNJ.Nombre)||' '||TRIM(PNJ.Apellido_Paterno)||' '||TRIM(PNJ.Apellido_Materno)))                                   
+        INTO cNombreCliente
+        FROM CLIENTES CLI, 
+             PERSONA_NATURAL_JURIDICA PNJ
+       WHERE CLI.CodCliente = nCodCliente
+         --
+         AND PNJ.Tipo_Doc_Identificacion = CLI.Tipo_Doc_Identificacion
+         AND PNJ.Num_Doc_Identificacion  = CLI.Num_Doc_Identificacion;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cNombreCliente := 'CLIENTE NO VALIDO';
+      WHEN TOO_MANY_ROWS THEN
+         cNombreCliente := 'CLIENTE DUPLICADO';
+   END;
+   RETURN TRIM(cNombreCliente);
+END NOMBRE_CLIENTE_TIPO;
+
 END OC_CLIENTES;
-/
-
---
--- OC_CLIENTES  (Synonym) 
---
---  Dependencies: 
---   OC_CLIENTES (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_CLIENTES FOR SICAS_OC.OC_CLIENTES
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_CLIENTES TO PUBLIC
 /

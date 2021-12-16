@@ -1,28 +1,27 @@
---
--- OC_LETRAS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_LETRAS AS
+--
+-- 16/12/2021 SE AGREGO LA FUNCION LETRAS_FINIQUITO Reingenieria F2  
+--
 FUNCTION miles (mil IN NUMBER) RETURN VARCHAR2;
+
 FUNCTION millones (millon IN NUMBER) RETURN VARCHAR2;
+
 FUNCTION nombre_decenas (digito IN NUMBER) RETURN VARCHAR2;
+
 FUNCTION Letras (numero In NUMBER, cDescMoneda VARCHAR2) RETURN VARCHAR2;
+
 FUNCTION Unidades (unidad IN NUMBER) RETURN VARCHAR2;
+
 FUNCTION cientos (cien IN NUMBER) RETURN VARCHAR2;
+
 FUNCTION decenas (decena IN NUMBER) RETURN VARCHAR2;
+
+FUNCTION LETRAS_FINIQUITO (numero In NUMBER, cDescMoneda VARCHAR2) RETURN VARCHAR2;
+
 END OC_LETRAS;
 /
-
---
--- OC_LETRAS  (Package Body) 
---
---  Dependencies: 
---   OC_LETRAS (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_LETRAS AS
+
 FUNCTION miles (mil IN NUMBER) RETURN VARCHAR2 IS
   numero    varchar(6);
   digitos   number;
@@ -53,6 +52,7 @@ BEGIN
     return('');
   end if;
 END;
+
 FUNCTION millones (millon IN NUMBER) RETURN VARCHAR2 IS
   numero    varchar(12);
   digitos   number;
@@ -83,6 +83,7 @@ BEGIN
     return('');
   end if;
 END;
+
 FUNCTION decenas (decena IN NUMBER) RETURN VARCHAR2 IS
 -- Convierte numeros de dos digitos a letras
   numero  varchar2(2);
@@ -128,6 +129,7 @@ BEGIN
     return('');
   end if;
 END;
+
 FUNCTION nombre_decenas (digito IN NUMBER) RETURN VARCHAR2 IS
 BEGIN
   if digito = 1 then
@@ -154,6 +156,7 @@ BEGIN
     return('');
   end if;
 END;
+
 FUNCTION Letras (numero In NUMBER, cDescMoneda VARCHAR2) RETURN VARCHAR2 IS
   temp         NUMBER;
 BEGIN
@@ -164,6 +167,7 @@ BEGIN
         RETURN UPPER (millones(temp)||' '||cDescMoneda||' con '||Lpad(TO_CHAR(((numero - temp) * 100)),2,'0')||'/100');
      end if;
 END;
+
 FUNCTION Unidades (unidad IN NUMBER) RETURN VARCHAR2 IS
 -- Convierte los numero desde 0 hasta 9 a letras
 BEGIN
@@ -191,6 +195,7 @@ BEGIN
     return('');
   end if;
 END;
+
 FUNCTION cientos (cien IN NUMBER) RETURN VARCHAR2 IS
 -- convierte numeros de tres o menos digitos as letras
   numero   varchar2(3);
@@ -241,18 +246,20 @@ BEGIN
     return('');
   end if;
 END;
+
+FUNCTION LETRAS_FINIQUITO (numero In NUMBER, cDescMoneda VARCHAR2) RETURN VARCHAR2 IS
+  temp         NUMBER;
+BEGIN
+  temp := trunc(numero);
+     If numero - temp = 0 Then
+        RETURN UPPER (millones(temp)||' '||cDescMoneda||' '||'00/100 M.N.');
+      Else
+        RETURN UPPER (millones(temp)||' '||cDescMoneda||' '||Lpad(TO_CHAR(((numero - temp) * 100)),2,'0')||'/100 M.N.');
+     end if;
+END;
+
+--
+--
+--
 END OC_LETRAS;
-/
-
---
--- OC_LETRAS  (Synonym) 
---
---  Dependencies: 
---   OC_LETRAS (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_LETRAS FOR SICAS_OC.OC_LETRAS
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_LETRAS TO PUBLIC
 /

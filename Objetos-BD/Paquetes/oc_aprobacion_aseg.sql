@@ -1,49 +1,7 @@
---
--- OC_APROBACION_ASEG  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DUAL (Table)
---   DBMS_STANDARD (Package)
---   VALORES_DE_LISTAS (Table)
---   OBSERVACION_SINIESTRO (Table)
---   OC_APROBACIONES (Package)
---   SUB_PROCESO (Table)
---   REQUISITOS (Table)
---   REQUISITOS_SINIESTRO (Table)
---   REQ_COBERT_SIN (Table)
---   SINIESTRO (Table)
---   PROCESOS_MASIVOS_SEGUIMIENTO (Table)
---   PROC_TAREA (Table)
---   FECHA_CONTABLE_EQUIVALENTE (Table)
---   OC_DETALLE_SINIESTRO_ASEG (Package)
---   OC_DETALLE_TRANSACCION (Package)
---   CPTOS_TRANSAC_SINIESTROS (Table)
---   DETALLE_APROBACION (Table)
---   DETALLE_APROBACION_ASEG (Table)
---   OC_TRANSACCION (Package)
---   PAGOS_POR_OTROS_CONCEPTOS (Table)
---   APROBACIONES (Table)
---   APROBACION_ASEG (Table)
---   COBERTURA_SINIESTRO (Table)
---   COBERTURA_SINIESTRO_ASEG (Table)
---   COMPROBANTES_CONTABLES (Table)
---   TAREA (Table)
---   OC_OBSERVACION_SINIESTRO (Package)
---   OC_BENEF_SIN_PAGOS (Package)
---   OC_COBERTURA_SINIESTRO_ASEG (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   DETALLE_SINIESTRO (Table)
---   DETALLE_SINIESTRO_ASEG (Table)
---   OC_PROC_TAREA (Package)
---   OC_SUB_PROCESO (Package)
---   GT_FECHA_CONTABLE_EQUIVALENTE (Package)
---   GT_REA_DISTRIBUCION (Package)
---   TRANSACCION (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_APROBACION_ASEG IS
+CREATE OR REPLACE PACKAGE OC_APROBACION_ASEG IS
+  --
+  -- BITACORA DE CAMBIOS
+  --  16/12/2021  Reingenieria F2  GRABADO DE FONDEO   
   --
   FUNCTION INSERTA_APROBACION(nIdSiniestro  NUMBER, nIdPoliza  NUMBER, nCodAsegurado NUMBER, nMonto_Local NUMBER,
                               nMonto_Moneda NUMBER, cTipoAprobacion VARCHAR2, cSubTipoAprobacion VARCHAR2,
@@ -69,14 +27,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_APROBACION_ASEG IS
                                    cNum_Aprobacion VARCHAR2, nCod_Asegurado NUMBER) RETURN NUMBER;
 END OC_APROBACION_ASEG;
 /
-
---
--- OC_APROBACION_ASEG  (Package Body) 
---
---  Dependencies: 
---   OC_APROBACION_ASEG (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_APROBACION_ASEG IS
+CREATE OR REPLACE PACKAGE BODY OC_APROBACION_ASEG IS
 --
 --
 --
@@ -266,15 +217,10 @@ nRegis               NUMBER(10);
 nRegisCobert         NUMBER(10);
 nNumMod              COBERTURA_SINIESTRO_ASEG.NumMod%TYPE := 0;
 cObservaciones       OBSERVACION_SINIESTRO.Descripcion%TYPE;
-
-
 HabemusReserva       COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%type;
 ReservaCobertura     COBERTURA_SINIESTRO_ASEG.MONTO_RESERVADO_MONEDA%type;
- 
 HabemusCodigus       NUMBER:=0;
-
 wMntoMoneda          DETALLE_APROBACION_ASEG.Monto_Moneda%type :=0 ;
-
 cExisteCodPagoNoCob VARCHAR2(1);
 cIndFecEquivPro   PROC_TAREA.IndFecEquiv%TYPE;
 cIndFecEquiv      SUB_PROCESO.IndFecEquiv%TYPE;
@@ -283,7 +229,9 @@ dFechaCont        FECHA_CONTABLE_EQUIVALENTE.FECHACONTABLE%TYPE;
 dFechaReal        FECHA_CONTABLE_EQUIVALENTE.FECHAREAL%TYPE;
 cCodEmpresa       SINIESTRO.CODEMPRESA%TYPE;
 cCodCia           SINIESTRO.CODCIA%TYPE;
-
+PMENSAJE             VARCHAR2(2000);
+CIDTIPO_PAGO         BENEF_SIN.IDTIPO_PAGO%TYPE;   -- FONDEO
+MONTO_MONEDA_FONDEO  DETALLE_APROBACION_ASEG.Monto_Moneda%type;  -- FONDEO
 --
 CURSOR C_RESERVA IS
   SELECT SUM(C.Saldo_Reserva) nMonto, C.CodCobert, C.NumMod
@@ -465,9 +413,9 @@ BEGIN
   END;
   --
   FOR W IN COB_Q LOOP
-  
+    -- 
     cCod_Pago := W.Cod_Pago;
-    
+    MONTO_MONEDA_FONDEO := NVL(W.Monto_Moneda,0);  -- FONDEO
     --
     BEGIN
       SELECT 'S'
@@ -613,6 +561,28 @@ BEGIN
     WHEN OTHERS THEN
       RAISE_APPLICATION_ERROR(-20225,'Error Actualizando Pagos :'||SQLERRM);
   END;
+  --
+  -- FONDEO
+  --
+  BEGIN
+    SELECT B.IDTIPO_PAGO
+      INTO CIDTIPO_PAGO
+      FROM BENEF_SIN B
+     WHERE B.IDSINIESTRO = nIdSiniestro
+       AND B.BENEF       = nBenef
+       AND B.CODCIA      = nCodCia;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+         CIDTIPO_PAGO := 'NDFXXX';
+    WHEN OTHERS THEN
+         CIDTIPO_PAGO := 'OTHXXX';
+  END;
+  --
+  BEGIN
+    TH_FONDEO.INSERTA(nCodCia, cCodEmpresa, nIdSiniestro, nIdDetSin, nNum_Aprobacion, nBenef, dFechaCamb, CIDTIPO_PAGO, MONTO_MONEDA_FONDEO,PMENSAJE);
+  END;
+  --
+  -- FONDEO
   --
   BEGIN
     cIndFecEquivPro := OC_PROC_TAREA.INDICA_FEC_EQUIVALENTE_PRO(6);
@@ -1179,17 +1149,4 @@ BEGIN
 END NUMERO_AUTORIZACION;
 
 END OC_APROBACION_ASEG;
-/
-
---
--- OC_APROBACION_ASEG  (Synonym) 
---
---  Dependencies: 
---   OC_APROBACION_ASEG (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_APROBACION_ASEG FOR SICAS_OC.OC_APROBACION_ASEG
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_APROBACION_ASEG TO PUBLIC
 /

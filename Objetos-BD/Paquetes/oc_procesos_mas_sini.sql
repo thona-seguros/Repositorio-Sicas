@@ -4,7 +4,8 @@ CREATE OR REPLACE PACKAGE OC_PROCESOS_MAS_SINI IS
 --  07/08/2018  Ajuste para cambio especial                           -- JICO INFO2
 --  17/08/2018  Devolucion de pagos de INFONACOT                      -- JICO ANUPAG
 --  30/04/2019  Disminucion de reserva                                -- JICO AJUSTES
---  26/08/2021  Procesos masivo en solicitud                          -- JICO MASSOL
+--  06/09/2021  Procesos masivo en solicitud                          -- JICO MASSOL
+--  16/12/2021  Reingenieria F2                                       -- JICO RF2
 --
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 --
@@ -38,9 +39,6 @@ PROCEDURE CAMBIA_FECHA_CONTA(nIDTRANSACCION NUMBER, nCodCia NUMBER, DFECHA DATE,
 PROCEDURE CAMBIA_FECHA_OBSERVACION(nIdSiniestro NUMBER, nIdPoliza NUMBER, DFECHA DATE); 
 --
 PROCEDURE MARCA_NO_ENVIO_CONTABILIDAD(nIDTRANSACCION NUMBER, nCodCia NUMBER, DFECHA DATE); 
---
-PROCEDURE ACTUALIZA_PAGOS(nIdPoliza NUMBER,   nIdSiniestro  NUMBER,   NIDDETSIN     NUMBER,   cCodCobert   VARCHAR2, 
-                          DFECHA    DATE,     nAJUSTELOCAL  NUMBER,   nAJUSTEMONEDA NUMBER,   cID_COL_INDI VARCHAR);
 --
 PROCEDURE MASIVOS_SOLICITUD_RESERVA(nIdProcMasivo NUMBER);         --MASSOL 
 --
@@ -80,6 +78,7 @@ CREATE OR REPLACE PACKAGE BODY OC_PROCESOS_MAS_SINI IS
 --  17/08/2018  Devolucion de pagos de INFONACOT                      -- JICO ANUPAG
 --  30/04/2019  Disminucion de reserva                                -- JICO AJUSTES
 --  06/09/2021  Procesos masivo en solicitud                          -- JICO MASSOL
+--  06/09/2021  Reingenieria F2                                       -- JICO RF2
 --
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
@@ -2143,7 +2142,6 @@ cAPE_MAT_BENEF         BENEF_SIN.APELLIDO_MATERNO%TYPE;
 nPORC_PART             BENEF_SIN.PORCEPART%TYPE;
 nID_PARENTESCO         BENEF_SIN.CODPARENT%TYPE;
 cID_SEXO               BENEF_SIN.SEXO%TYPE;
-cDOCTO                 BENEF_SIN.TIPO_ID_TRIBUTARIO%TYPE  := 'RFC';
 cRFC                   BENEF_SIN.NUM_DOC_TRIBUTARIO%TYPE;
 nCUENTA_CLAVE	         BENEF_SIN.NUMCUENTABANCARIA%TYPE;
 cID_BANCO              BENEF_SIN.ENT_FINANCIERA%TYPE;
@@ -2151,6 +2149,14 @@ WEXISTE_BENEF          NUMBER  := 0;
 cID_APLICA_IVA         VARCHAR2(1);
 nIVA_AJUSTEMONEDA      NUMBER(28,2);
 nIVA_AJUSTELOCAL       NUMBER(28,2);
+WCNUMCUENTABANCARIA    BENEF_SIN.NUMCUENTABANCARIA%TYPE;  --  RF2  CAMPOS NUEVOS ABENEFICIARIO
+WCINDAPLICAISR         BENEF_SIN.INDAPLICAISR%TYPE;
+WNPORCENTISR           BENEF_SIN.PORCENTISR %TYPE;
+WCIDTIPO_PAGO          BENEF_SIN.IDTIPO_PAGO%TYPE;
+WCID_EDAD_MINORIA      BENEF_SIN.ID_EDAD_MINORIA%TYPE;
+WCNOMBRE_MINORIA       BENEF_SIN.NOMBRE_MINORIA%TYPE;
+WNPORC_MINORIA         BENEF_SIN.PORC_MINORIA%TYPE;
+CTIPO_PAGO             BENEF_SIN.TIPO_PAGO%TYPE;
 --
 CURSOR SIN_Q IS
    SELECT CodCia, CodEmpresa, IdTipoSeg, PlanCob, NumPolUnico,
@@ -2165,26 +2171,33 @@ BEGIN
     nCodempresa      := X.CodEmpresa;
     cMsjError        := NULL;
     --
-    nIdSiniestro     := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,',')));
-    cCodCobert       :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,2,','));
-    WCODTRANSAC      :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,3,','));
-    WCODCPTOTRANSAC  :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,4,','));
-    nAJUSTEMONEDA    := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,',')));
-    WFECHA           :=   TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,',')),'dd/mm/yyyy');
-    WID_COL_INDI     :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,','));
-    WID_APLICA_CONTA :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,','));
-    cDescSiniestro   :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,9,','));
-    nCod_Asegurado   := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,',')));
-    cNOMBRE_BENEF    :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,','));
-    cAPE_PAT_BENEF   :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,12,','));
-    cAPE_MAT_BENEF   :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,13,','));
-    nPORC_PART       := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,14,',')));
-    nID_PARENTESCO   :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,15,','));
-    cID_SEXO         :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,16,','));
-    cRFC             :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,17,','));
-    nCUENTA_CLAVE    :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,18,','));
-    cID_BANCO        :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,19,','));
-    cID_APLICA_IVA   :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,20,','));
+    nIdSiniestro        := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,',')));
+    cCodCobert          :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,2,','));
+    WCODTRANSAC         :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,3,','));
+    WCODCPTOTRANSAC     :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,4,','));
+    nAJUSTEMONEDA       := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,',')));
+    WFECHA              :=   TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,',')),'dd/mm/yyyy');
+    WID_COL_INDI        :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,','));
+    WID_APLICA_CONTA    :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,','));
+    cDescSiniestro      :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,9,','));
+    nCod_Asegurado      := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,',')));
+    cNOMBRE_BENEF       :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,','));
+    cAPE_PAT_BENEF      :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,12,','));
+    cAPE_MAT_BENEF      :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,13,','));
+    nPORC_PART          := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,14,',')));
+    nID_PARENTESCO      :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,15,','));
+    cID_SEXO            :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,16,','));
+    cRFC                :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,17,','));
+    nCUENTA_CLAVE       :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,18,','));
+    cID_BANCO           :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,19,','));
+    cID_APLICA_IVA      :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,20,','));
+    WCNUMCUENTABANCARIA :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,21,','));     --  RF2  CAMPOS NUEVOS ABENEFICIARIO
+    WCINDAPLICAISR      :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,22,','));
+    WNPORCENTISR        := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,23,',')));
+    WCIDTIPO_PAGO       :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,24,','));
+    WCID_EDAD_MINORIA   :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,25,','));
+    WCNOMBRE_MINORIA    :=           LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,26,','));
+    WNPORC_MINORIA      := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,27,',')));
     --
     -- VALIDA SINIESTRO
     --
@@ -2304,6 +2317,8 @@ BEGIN
           --
        END IF;
        --
+       CTIPO_PAGO := SUBSTR(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('PAGOBENEF','TRS'),1,30);   --  RF2  SE CAMBIO FUNCIONALIDAD DE BENEF
+       --
        SELECT COUNT(*)
          INTO WEXISTE_BENEF
          FROM BENEF_SIN BS
@@ -2311,7 +2326,7 @@ BEGIN
           AND BS.IDPOLIZA      = nIdPoliza
           AND BS.COD_ASEGURADO = nCod_Asegurado;
        --
-       IF WEXISTE_BENEF = 0 THEN
+       IF WEXISTE_BENEF > 0 THEN
           BEGIN
             SELECT MAX(NVL(BS.BENEF,0)) + 1
               INTO nBENEF
@@ -2327,46 +2342,50 @@ BEGIN
                  RAISE_APPLICATION_ERROR(-20225,'Error al extraer maximo beneficiarios error: '||SQLERRM);
           END;
        ELSE
-          BEGIN
-            SELECT BS.BENEF
-              INTO nBENEF
-              FROM BENEF_SIN BS
-             WHERE BS.IDSINIESTRO   = nIdSiniestro
-               AND BS.IDPOLIZA      = nIdPoliza
-               AND BS.COD_ASEGURADO = nCod_Asegurado;
-          EXCEPTION
-            WHEN OTHERS THEN
-                 nCodError := 99;
-                 cObservacion := 'Error al extraer beneficiarios';
-                 RAISE_APPLICATION_ERROR(-20225,'Error al extraer beneficiarios error: '||SQLERRM);
-          END;
+           nBENEF := 1;
        END IF;
        --
-       IF WEXISTE_BENEF = 0 THEN
-          BEGIN
-            INSERT INTO BENEF_SIN
-               (IdSiniestro,         IdPoliza,         Cod_Asegurado,          Benef, 
-                Nombre,              Apellido_Paterno, Apellido_Materno,       PorcePart,
-                CodParent,           Estado,           Sexo,                   FecEstado, 
-                FecAlta,             Obervaciones,     
-                IndAplicaISR,        PorcentISR,       Ent_Financiera,         Cuenta_Clave,
-                TIPO_ID_TRIBUTARIO,  NUM_DOC_TRIBUTARIO)
-            VALUES(nIdSiniestro,     nIdPoliza,        nCod_Asegurado,         nBENEF, 
-                cNOMBRE_BENEF,       cAPE_PAT_BENEF,   cAPE_MAT_BENEF,         nPORC_PART,
-                nID_PARENTESCO,      'ACT',            cID_SEXO,               TRUNC(SYSDATE),
-                TRUNC(SYSDATE),      'Pago por el Siniestro No. '||nIdSiniestro||' - '||cNumSiniRef,
-                'N',                 Null,             cID_BANCO,               nCUENTA_CLAVE,
-                cDOCTO,              cRFC);
-          EXCEPTION
-            WHEN OTHERS THEN
-                 nCodError := 99;
-                 cObservacion := 'Error al Insertar Beneficiario de Pago.';
-                 RAISE_APPLICATION_ERROR(-20225,'Error al Insertar Beneficiario de Pago '|| cNumSiniRef || ' ' || SQLERRM);
-          END;
-       ELSE
-          nBENEF := WEXISTE_BENEF;
-       END IF;
-       --
+       BEGIN
+         INSERT INTO BENEF_SIN
+           (IDSINIESTRO,         IDPOLIZA,           COD_ASEGURADO,         BENEF,
+            NOMBRE,              PORCEPART,          CODPARENT,             ESTADO,
+            SEXO,                FECESTADO,          FECALTA,               FECBAJA,
+            --
+            MOTBAJA,             OBERVACIONES,       DIRECCION,             EMAIL,
+            TELEFONO,            CUENTA_CLAVE,       ENT_FINANCIERA,        INDPAGO,
+            PORCEAPL,            FECNAC,             NUMCUENTABANCARIA,     INDAPLICAISR,
+            --
+            PORCENTISR,          TIPO_ID_TRIBUTARIO, NUM_DOC_TRIBUTARIO,    APELLIDO_PATERNO,
+            APELLIDO_MATERNO,    TIPO_PAGO,          FECFIRMARECLAMACION,   TELEFONO_LOCAL,
+            CODCIA,              CODEMPRESA,         CODUSUARIO,            FECREGISTRO,
+            --
+            IDTIPO_PAGO,         TP_IDENTIFICACION,  NUM_IDENTIFICACION,    COD_CONVENIO,
+            ID_EDAD_MINORIA,     NOMBRE_MINORIA,     PORC_MINORIA,          SIT_CLIENTE,
+            SIT_REFERENCIA,      SIT_CONCEPTO
+            )
+         VALUES
+            (nIdSiniestro,       nIdPoliza,          nCod_Asegurado,         nBENEF, 
+             cNOMBRE_BENEF,      nPORC_PART,         nID_PARENTESCO,         'ACT',
+             cID_SEXO,           TRUNC(SYSDATE),     TRUNC(SYSDATE),         '',
+             --
+             '',                 'Carga masiva',     '',                     '',
+             '',                 nCUENTA_CLAVE,      cID_BANCO,              '',         
+             '',                 '',                 WCNUMCUENTABANCARIA,    WCINDAPLICAISR,
+             --
+             WNPORCENTISR,       'RFC',              cRFC,                   cAPE_PAT_BENEF,
+             cAPE_MAT_BENEF,     CTIPO_PAGO,         TRUNC(SYSDATE),         '',
+             nCodCia,            nCodempresa,        USER,                   TRUNC(SYSDATE),
+             --
+             WCIDTIPO_PAGO,      '',                 '',                     '',
+             WCID_EDAD_MINORIA,  WCNOMBRE_MINORIA,   WNPORC_MINORIA,         '',
+             '',                 '');
+       EXCEPTION
+         WHEN OTHERS THEN
+              nCodError := 99;
+              cObservacion := 'Error al Insertar Beneficiario de Pago.';
+              RAISE_APPLICATION_ERROR(-20225,'Error al Insertar Beneficiario de Pago '|| cNumSiniRef || ' ' || SQLERRM);
+       END;
+       --       
        BEGIN
          UPDATE APROBACIONES
             SET BENEF          = nBenef,
@@ -2389,8 +2408,6 @@ BEGIN
               cObservacion := 'Error al Pagar la Aprobación del Siniestro.';
               RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobación del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
        END;
-       --
-       ACTUALIZA_PAGOS(nIdPoliza , nIdSiniestro, NIDDETSIN, cCodCobert , DFECHA , nAJUSTELOCAL , nAJUSTEMONEDA ,  WID_COL_INDI);
        --
        IF WFECHA IS NOT NULL OR WID_APLICA_CONTA = 'N' THEN
           nIDTRANSACCION := OBTIENE_TRANSA_PAG_IND(nNUM_APROBACION, nIdPoliza , nIdSiniestro , NIDDETSIN , DFECHA);          
@@ -2504,6 +2521,7 @@ BEGIN
           END;
           --
        END IF;
+       CTIPO_PAGO := SUBSTR(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('PAGOBENEF','TRS'),1,30); --  RF2  SE CAMBIO FUNCIONALIDAD DE BENEF
        --
        SELECT COUNT(*)
          INTO WEXISTE_BENEF
@@ -2512,7 +2530,7 @@ BEGIN
           AND BS.IDPOLIZA      = nIdPoliza
           AND BS.COD_ASEGURADO = nCod_Asegurado;
        --
-       IF WEXISTE_BENEF = 0 THEN
+       IF WEXISTE_BENEF > 0 THEN
           BEGIN
             SELECT MAX(NVL(BS.BENEF,0)) + 1
               INTO nBENEF
@@ -2527,50 +2545,51 @@ BEGIN
                  cObservacion := 'Error al extraer maximo beneficiarios';
                  RAISE_APPLICATION_ERROR(-20225,'Error al extraer maximo beneficiarios error: '||SQLERRM);
           END;
-          IF nBENEF IS NULL THEN
-             nBENEF := 1;
-          END IF;
        ELSE
-          BEGIN
-            SELECT BS.BENEF
-              INTO nBENEF
-              FROM BENEF_SIN BS
-             WHERE BS.IDSINIESTRO   = nIdSiniestro
-               AND BS.IDPOLIZA      = nIdPoliza
-               AND BS.COD_ASEGURADO = nCod_Asegurado;
-          EXCEPTION
-            WHEN OTHERS THEN
-                 nCodError := 99;
-                 cObservacion := 'Error al extraer beneficiarios';
-                 RAISE_APPLICATION_ERROR(-20225,'Error al extraer beneficiarios error: '||SQLERRM);
-          END;
+           nBENEF := 1;
        END IF;
        --
-       IF WEXISTE_BENEF = 0 THEN
-          BEGIN
-            INSERT INTO BENEF_SIN
-               (IdSiniestro,         IdPoliza,         Cod_Asegurado,          Benef, 
-                Nombre,              Apellido_Paterno, Apellido_Materno,       PorcePart,
-                CodParent,           Estado,           Sexo,                   FecEstado, 
-                FecAlta,             Obervaciones,     
-                IndAplicaISR,        PorcentISR,       Ent_Financiera,         Cuenta_Clave,
-                TIPO_ID_TRIBUTARIO,  NUM_DOC_TRIBUTARIO)
-            VALUES(nIdSiniestro,     nIdPoliza,        nCod_Asegurado,         nBENEF, 
-                cNOMBRE_BENEF,       cAPE_PAT_BENEF,   cAPE_MAT_BENEF,         nPORC_PART,
-                nID_PARENTESCO,      'ACT',            cID_SEXO,               TRUNC(SYSDATE),
-                TRUNC(SYSDATE),      'Pago por el Siniestro No. '||nIdSiniestro||' - '||cNumSiniRef,
-                'N',                 Null,             cID_BANCO,               nCUENTA_CLAVE,
-                cDOCTO,              cRFC);
-          EXCEPTION
-            WHEN OTHERS THEN
-                 nCodError := 99;
-                 cObservacion := 'Error al Insertar Beneficiario de Pago.';
-                 RAISE_APPLICATION_ERROR(-20225,'Error al Insertar Beneficiario de Pago '|| cNumSiniRef || ' ' || SQLERRM);
-          END;
-       ELSE
-          nBENEF := WEXISTE_BENEF;
-       END IF;
-       --
+       BEGIN
+         INSERT INTO BENEF_SIN
+           (IDSINIESTRO,         IDPOLIZA,           COD_ASEGURADO,         BENEF,
+            NOMBRE,              PORCEPART,          CODPARENT,             ESTADO,
+            SEXO,                FECESTADO,          FECALTA,               FECBAJA,
+            --
+            MOTBAJA,             OBERVACIONES,       DIRECCION,             EMAIL,
+            TELEFONO,            CUENTA_CLAVE,       ENT_FINANCIERA,        INDPAGO,
+            PORCEAPL,            FECNAC,             NUMCUENTABANCARIA,     INDAPLICAISR,
+            --
+            PORCENTISR,          TIPO_ID_TRIBUTARIO, NUM_DOC_TRIBUTARIO,    APELLIDO_PATERNO,
+            APELLIDO_MATERNO,    TIPO_PAGO,          FECFIRMARECLAMACION,   TELEFONO_LOCAL,
+            CODCIA,              CODEMPRESA,         CODUSUARIO,            FECREGISTRO,
+            --
+            IDTIPO_PAGO,         TP_IDENTIFICACION,  NUM_IDENTIFICACION,    COD_CONVENIO,
+            ID_EDAD_MINORIA,     NOMBRE_MINORIA,     PORC_MINORIA,          SIT_CLIENTE,
+            SIT_REFERENCIA,      SIT_CONCEPTO
+            )
+         VALUES
+            (nIdSiniestro,       nIdPoliza,          nCod_Asegurado,         nBENEF, 
+             cNOMBRE_BENEF,      nPORC_PART,         nID_PARENTESCO,         'ACT',
+             cID_SEXO,           TRUNC(SYSDATE),     TRUNC(SYSDATE),         '',
+             --
+             '',                 'Carga masiva',     '',                     '',
+             '',                 nCUENTA_CLAVE,      cID_BANCO,              '',         
+             '',                 '',                 WCNUMCUENTABANCARIA,    WCINDAPLICAISR,
+             --
+             WNPORCENTISR,       'RFC',              cRFC,                   cAPE_PAT_BENEF,
+             cAPE_MAT_BENEF,     CTIPO_PAGO,         TRUNC(SYSDATE),         '',
+             nCodCia,            nCodempresa,        USER,                   TRUNC(SYSDATE),
+             --
+             WCIDTIPO_PAGO,      '',                 '',                     '',
+             WCID_EDAD_MINORIA,  WCNOMBRE_MINORIA,   WNPORC_MINORIA,         '',
+             '',                 '');
+       EXCEPTION
+         WHEN OTHERS THEN
+              nCodError := 99;
+              cObservacion := 'Error al Insertar Beneficiario de Pago.';
+              RAISE_APPLICATION_ERROR(-20225,'Error al Insertar Beneficiario de Pago '|| cNumSiniRef || ' ' || SQLERRM);
+       END;
+       --       
        BEGIN
          UPDATE APROBACION_ASEG
             SET BENEF          = nBenef,
@@ -2593,7 +2612,7 @@ BEGIN
               cObservacion := 'Error al Pagar la Aprobación aseg del Siniestro.';
               RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobación aseg del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
        END;
-       --  
+       --
        IF WFECHA IS NOT NULL OR WID_APLICA_CONTA = 'N' THEN
           nIDTRANSACCION := OBTIENE_TRANSA_PAG_COL(nNUM_APROBACION, nIdPoliza , nIdSiniestro , NIDDETSIN , DFECHA, nCod_Asegurado);
           IF WFECHA IS NOT NULL THEN
@@ -2760,11 +2779,11 @@ BEGIN
        AND CC.NUMTRANSACCION = nIDTRANSACCION;    
   EXCEPTION
     WHEN NO_DATA_FOUND THEn
-         RAISE_APPLICATION_ERROR(-20225,'NO Existe Comprobante Contable de transacion - '||nIDTRANSACCION);
+         RAISE_APPLICATION_ERROR(-20225,'NO Existe Comprobante Contable de transacion CAMBIA_FECHA_CONTA - '||nIDTRANSACCION);
     WHEN TOO_MANY_ROWS THEn
-         RAISE_APPLICATION_ERROR(-20225,'Comprobante Contable Duplicada  de transacion - '||nIDTRANSACCION);
+         RAISE_APPLICATION_ERROR(-20225,'Comprobante Contable Duplicada  de transacion CAMBIA_FECHA_CONTA- '||nIDTRANSACCION);
     WHEN OTHERS THEn
-         RAISE_APPLICATION_ERROR(-20225,'Comprobante Contable con problemas  de transacion - '||nIDTRANSACCION);
+         RAISE_APPLICATION_ERROR(-20225,'Comprobante Contable con problemas  de transacion CAMBIA_FECHA_CONTA- '||nIDTRANSACCION);
   END;
   --  
   UPDATE TRANSACCION T
@@ -2829,11 +2848,11 @@ BEGIN
        AND CC.NUMTRANSACCION = nIDTRANSACCION;    
   EXCEPTION
     WHEN NO_DATA_FOUND THEn
-         RAISE_APPLICATION_ERROR(-20225,'NO Existe Comprobante Contable de transacion - '||nIDTRANSACCION);
+         RAISE_APPLICATION_ERROR(-20225,'NO Existe Comprobante Contable de transacion MARCA_NO_ENVIO_CONTABILIDAD- '||nIDTRANSACCION);
     WHEN TOO_MANY_ROWS THEn
-         RAISE_APPLICATION_ERROR(-20225,'Comprobante Contable Duplicada  de transacion - '||nIDTRANSACCION);
+         RAISE_APPLICATION_ERROR(-20225,'Comprobante Contable Duplicada  de transacion MARCA_NO_ENVIO_CONTABILIDAD- '||nIDTRANSACCION);
     WHEN OTHERS THEn
-         RAISE_APPLICATION_ERROR(-20225,'Comprobante Contable con problemas  de transacion - '||nIDTRANSACCION);
+         RAISE_APPLICATION_ERROR(-20225,'Comprobante Contable con problemas  de transacion MARCA_NO_ENVIO_CONTABILIDAD- '||nIDTRANSACCION);
   END;
   --  
   UPDATE COMPROBANTES_CONTABLES CC
@@ -2844,91 +2863,6 @@ BEGIN
      AND CC.NUMCOMPROB = nNUMCOMPROB;
   --
 END MARCA_NO_ENVIO_CONTABILIDAD;  
---
---
-PROCEDURE ACTUALIZA_PAGOS(nIdPoliza NUMBER,   nIdSiniestro  NUMBER,   NIDDETSIN     NUMBER,   cCodCobert   VARCHAR2, 
-                          DFECHA    DATE,     nAJUSTELOCAL  NUMBER,   nAJUSTEMONEDA NUMBER,   cID_COL_INDI VARCHAR) IS 
---
-nNUMMOD  COBERTURA_SINIESTRO.NUMMOD%TYPE;
---
-BEGIN
-  IF cID_COL_INDI = 'I' THEN
-     BEGIN
-       SELECT MAX(C.NUMMOD)
-         INTO nNUMMOD
-         FROM COBERTURA_SINIESTRO C
-        WHERE C.IDPOLIZA      = nIdPoliza
-          AND C.IDSINIESTRO   = nIdSiniestro
-          AND C.IDDETSIN      = NIDDETSIN
-          AND C.CODCOBERT     = cCodCobert
-          AND C.FECRES        = DFECHA;
-     EXCEPTION
-       WHEN OTHERS THEN
-            nNUMMOD := 0;
-     END;
-     --
-     UPDATE COBERTURA_SINIESTRO C
-        SET C.MONTO_PAGADO_MONEDA = nAJUSTEMONEDA,
-            C.MONTO_PAGADO_LOCAL  = nAJUSTELOCAL,
-            C.SALDO_RESERVA       = C.SALDO_RESERVA       - nAJUSTEMONEDA,
-            C.SALDO_RESERVA_LOCAL = C.SALDO_RESERVA_LOCAL - nAJUSTELOCAL
-      WHERE C.IDPOLIZA    = nIdPoliza
-        AND C.IDSINIESTRO = nIdSiniestro
-        AND C.IDDETSIN    = NIDDETSIN
-        AND C.CODCOBERT   = cCodCobert
-        AND C.FECRES      = DFECHA
-        AND C.NUMMOD      = nNUMMOD;
-     --
-     UPDATE DETALLE_SINIESTRO DS
-        SET DS.MONTO_PAGADO_MONEDA = DS.MONTO_PAGADO_MONEDA + nAJUSTEMONEDA,
-            DS.MONTO_PAGADO_LOCAL  = DS.MONTO_PAGADO_LOCAL  + nAJUSTELOCAL
-      WHERE DS.IDSINIESTRO = nIdSiniestro
-        AND DS.IDPOLIZA    = nIdPoliza
-        AND DS.IDDETSIN    = NIDDETSIN;
-     --
-  END IF;
-  --
-  IF cID_COL_INDI = 'C' THEN
-     BEGIN
-       SELECT MAX(CA.NUMMOD)
-         INTO nNUMMOD
-         FROM COBERTURA_SINIESTRO_ASEG CA
-        WHERE CA.IDPOLIZA      = nIdPoliza
-          AND CA.IDSINIESTRO   = nIdSiniestro
-          AND CA.IDDETSIN      = NIDDETSIN
-          AND CA.CODCOBERT     = cCodCobert
-          AND CA.FECRES        = DFECHA;
-     EXCEPTION
-       WHEN OTHERS THEN
-            nNUMMOD := 0;
-     END;
-     --
-     UPDATE COBERTURA_SINIESTRO_ASEG C
-        SET C.MONTO_PAGADO_MONEDA = nAJUSTEMONEDA,
-            C.MONTO_PAGADO_LOCAL  = nAJUSTELOCAL,
-            C.SALDO_RESERVA       = C.SALDO_RESERVA       - nAJUSTEMONEDA,
-            C.SALDO_RESERVA_LOCAL = C.SALDO_RESERVA_LOCAL - nAJUSTELOCAL
-      WHERE C.IDPOLIZA    = nIdPoliza
-        AND C.IDSINIESTRO = nIdSiniestro
-        AND C.IDDETSIN    = NIDDETSIN
-        AND C.CODCOBERT   = cCodCobert
-        AND C.FECRES      = DFECHA
-        AND C.NUMMOD      = nNUMMOD;
-     -- 
-     UPDATE DETALLE_SINIESTRO_ASEG DSA
-        SET DSA.MONTO_PAGADO_MONEDA = DSA.MONTO_PAGADO_MONEDA + nAJUSTEMONEDA,
-            DSA.MONTO_PAGADO_LOCAL  = DSA.MONTO_PAGADO_LOCAL  + nAJUSTELOCAL
-      WHERE DSA.IDSINIESTRO = nIdSiniestro
-        AND DSA.IDPOLIZA    = nIdPoliza
-        AND DSA.IDDETSIN    = NIDDETSIN;
-     --
-  END IF;
-  --
-  UPDATE SINIESTRO S
-     SET S.MONTO_PAGO_MONEDA = S.MONTO_PAGO_MONEDA + nAJUSTEMONEDA,
-         S.MONTO_PAGO_LOCAL  = S.MONTO_PAGO_LOCAL  + nAJUSTELOCAL;
-  --
-END ACTUALIZA_PAGOS;  -- AJUSTES FIN--
 --
 --
 PROCEDURE MASIVOS_SOLICITUD_RESERVA(nIdProcMasivo NUMBER) IS     

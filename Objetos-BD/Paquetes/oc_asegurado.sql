@@ -1,29 +1,19 @@
+CREATE OR REPLACE PACKAGE oc_asegurado IS
 --
--- OC_ASEGURADO  (Package) 
+--  BITACORA DE CAMBIOS , VERSION PRODUCTIVA   17/11/2015  1:17 pm
 --
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Synonym)
---   DBMS_STANDARD (Package)
---   SQ_ASEGURADO (Sequence)
---   PERSONA_NATURAL_JURIDICA (Table)
---   ASEGURADO (Table)
---   OC_CORREGIMIENTO (Package)
---   OC_COLONIA (Package)
---   OC_PROVINCIA (Package)
+--  ------------------------------
+-- SE COLOCO LA SECUENCIA PARA ASEGURADO Y SE AGREGO EL INDICE 1  JICO 20160504   SECUEN
+--  16/12/2021  Reingenieria F2  SE AGREGO LA FUNCION NOMBRE_CLIENTE_TIPO 
 --
-CREATE OR REPLACE PACKAGE SICAS_OC.oc_asegurado IS
 
   FUNCTION EDAD_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, nCodAsegurado NUMBER, dFecEdad DATE) RETURN NUMBER;
 
   FUNCTION NOMBRE_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, nCodAsegurado NUMBER) RETURN VARCHAR2;
 
-  FUNCTION CODIGO_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, cTipo_Doc_Identificacion VARCHAR2,
-                            cNum_Doc_Identificacion VARCHAR2) RETURN VARCHAR2;
+  FUNCTION CODIGO_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN VARCHAR2;
 
-  FUNCTION INSERTAR_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER,
-                              cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN NUMBER;
+  FUNCTION INSERTAR_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN NUMBER;
 
   FUNCTION SEXO_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, nCodAsegurado NUMBER) RETURN VARCHAR2;
 
@@ -36,23 +26,12 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_asegurado IS
   FUNCTION ID_ASEGURADO RETURN NUMBER; --SEQ XDS 11/07/2016
 
   FUNCTION IDENTIFICACION_TRIBUTARIA_ASEG (nCodCia NUMBER, nCodEmpresa NUMBER, nCodAsegurado NUMBER) RETURN VARCHAR2;
-
+ 
+  FUNCTION NOMBRE_ASEGURADO_TIPO(nCOD_ASEGURADO NUMBER) RETURN VARCHAR2;
+   
 END OC_ASEGURADO;
 /
-
---
--- OC_ASEGURADO  (Package Body) 
---
---  Dependencies: 
---   OC_ASEGURADO (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_asegurado IS
---
---  BITACORA DE CAMBIOS , VERSION PRODUCTIVA   17/11/2015  1:17 pm
---
---  ------------------------------
---  SE COLOCO LA SECUENCIA PARA ASEGURADO Y SE AGREGO EL INDICE 1  JICO 20160504   SECUEN
---
+CREATE OR REPLACE PACKAGE BODY oc_asegurado IS
 
 FUNCTION EDAD_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, nCodAsegurado NUMBER, dFecEdad DATE) RETURN NUMBER IS
 dFecNacimiento    PERSONA_NATURAL_JURIDICA.FecNacimiento%TYPE;
@@ -130,18 +109,9 @@ FUNCTION INSERTAR_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER,
                             cTipo_Doc_Identificacion VARCHAR2, cNum_Doc_Identificacion VARCHAR2) RETURN NUMBER IS
 nCod_Asegurado   ASEGURADO.Cod_Asegurado%TYPE;
 BEGIN
-
---   SELECT NVL(MAX(Cod_Asegurado),0)+1      -- SECUEN
---     INTO nCod_Asegurado                   -- SECUEN
---     FROM ASEGURADO;                       -- SECUEN
-
-
   SELECT SQ_ASEGURADO.NEXTVAL      -- SECUEN
     INTO nCod_Asegurado            -- SECUEN
     FROM DUAL;                     -- SECUEN
-
-
-
    BEGIN
       INSERT INTO ASEGURADO
             (Cod_Asegurado, CodCia, CodEmpresa, Tipo_Doc_Identificacion,
@@ -245,14 +215,9 @@ FUNCTION ID_ASEGURADO  RETURN NUMBER IS  --IN. SEQ XDS 11/07/2016
 nIdAsegurado ASEGURADO.COD_ASEGURADO%TYPE;
 BEGIN
     BEGIN
-     --  SELECT NVL(MAX(Cod_Asegurado),0)+1      -- SECUEN
-     --  INTO nCod_Asegurado
-     --  FROM ASEGURADO;
-
-
-          SELECT SQ_ASEGURADO.NEXTVAL
-          INTO nIdAsegurado
-          FROM DUAL;
+      SELECT SQ_ASEGURADO.NEXTVAL
+        INTO nIdAsegurado
+        FROM DUAL;
     EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
          RAISE_APPLICATION_ERROR(-20225,'YA Existe la Secuencia para la Compañia, ');
@@ -281,18 +246,29 @@ BEGIN
     END;
 END IDENTIFICACION_TRIBUTARIA_ASEG;
 
+FUNCTION NOMBRE_ASEGURADO_TIPO(nCOD_ASEGURADO NUMBER) RETURN VARCHAR2 IS
+cNombreasegurado  VARCHAR2(2000);
+BEGIN
+   BEGIN
+      SELECT DECODE(NVL(PNJ.TIPO_PERSONA,'FISICA'),'FISICA',
+                                      INITCAP(TRIM(PNJ.Nombre)||' '||TRIM(PNJ.Apellido_Paterno)||' '||TRIM(PNJ.Apellido_Materno)),
+                                        UPPER(TRIM(PNJ.Nombre)||' '||TRIM(PNJ.Apellido_Paterno)||' '||TRIM(PNJ.Apellido_Materno)))                                   
+        INTO cNombreasegurado
+        FROM ASEGURADO ASE, 
+             PERSONA_NATURAL_JURIDICA PNJ
+       WHERE ASE.COD_ASEGURADO = nCOD_ASEGURADO
+         --
+         AND PNJ.Tipo_Doc_Identificacion = ASE.Tipo_Doc_Identificacion
+         AND PNJ.Num_Doc_Identificacion  = ASE.Num_Doc_Identificacion;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cNombreasegurado := 'ASEGURADO NO VALIDO';
+      WHEN TOO_MANY_ROWS THEN
+         cNombreasegurado := 'ASEGURADO DUPLICADO';
+   END;
+   RETURN TRIM(cNombreasegurado);
+END NOMBRE_ASEGURADO_TIPO;
+
+
 END OC_ASEGURADO;
-/
-
---
--- OC_ASEGURADO  (Synonym) 
---
---  Dependencies: 
---   OC_ASEGURADO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_ASEGURADO FOR SICAS_OC.OC_ASEGURADO
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_ASEGURADO TO PUBLIC
 /
