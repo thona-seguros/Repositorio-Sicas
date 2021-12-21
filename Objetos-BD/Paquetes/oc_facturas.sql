@@ -1,89 +1,5 @@
---
--- OC_FACTURAS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   VALORES_DE_LISTAS (Table)
---   NOTAS_DE_CREDITO (Table)
---   NOTIFICACOBRANZAOK (Procedure)
---   OC_AGENTES (Package)
---   OC_AGENTE_POLIZA_T (Package)
---   OC_ARCHIVO (Package)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   PRIMAS_DEPOSITO (Table)
---   FAI_CONCENTRADORA_FONDO (Table)
---   FAI_FONDOS_DETALLE_POLIZA (Table)
---   FAI_MOVIMIENTOS_FONDOS (Table)
---   OC_DETALLE_TRANSACCION (Package)
---   OC_DISTRITO (Package)
---   OC_EJECUTIVO_COMERCIAL (Package)
---   OC_EMPRESAS (Package)
---   OC_FACTURAR (Package)
---   OC_FACT_ELECT_CONF_DOCTO (Package)
---   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
---   GT_FAI_CONCENTRADORA_FONDO (Package)
---   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
---   GT_FAI_MOVIMIENTOS_FONDOS (Package)
---   GT_FAI_TIPOS_DE_FONDOS (Package)
---   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
---   CONCEPTOS_PLAN_DE_PAGOS (Table)
---   CORREOS_ELECTRONICOS_PNJ (Table)
---   DETALLE_COMISION (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_TRANSACCION (Package)
---   PAGOS (Table)
---   PARAMETROS_EMISION (Table)
---   PARAMETROS_ENUM_FAC (Table)
---   PARAMETROS_GLOBALES (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   AGENTES (Table)
---   AGENTES_DETALLES_POLIZAS (Table)
---   AGENTES_DISTRIBUCION_COMISION (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO (Table)
---   PROVINCIA (Table)
---   OC_CORREOS_ELECTRONICOS_PNJ (Package)
---   OC_DETALLE_COMISION (Package)
---   OC_DETALLE_FACTURAS (Package)
---   OC_DETALLE_PRIMAS_DEPOSITO (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLIENTES (Table)
---   COLONIA (Table)
---   COMISIONES (Table)
---   TASAS_CAMBIO (Table)
---   OC_FILIALES (Package)
---   OC_GENERALES (Package)
---   OC_MONEDA (Package)
---   OC_NOTAS_DE_CREDITO (Package)
---   OC_PAGOS (Package)
---   OC_PLAN_DE_PAGOS (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_CLIENTES (Package)
---   OC_COLONIA (Package)
---   OC_COMISIONES (Package)
---   OC_COMISION_COBRADOR (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   OC_CONCEPTOS_PLAN_DE_PAGOS (Package)
---   DETALLE_POLIZA (Table)
---   DETALLE_TRANSACCION (Table)
---   DIRECCIONES_PNJ (Table)
---   DISTRITO (Table)
---   EMPRESAS (Table)
---   ENDOSOS (Table)
---   FACTURAS (Table)
---   OC_PRIMAS_DEPOSITO (Package)
---   OC_PROVINCIA (Package)
---   TIPO_DE_DOCUMENTO (Table)
---   TRANSACCION (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
-
+CREATE OR REPLACE PACKAGE OC_FACTURAS IS
+-- PLAN DE PAGOS CATORCENAL                                               2021/12/03  JMMD 20211221
 PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                    dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER);
 
@@ -170,7 +86,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO   2018/03/09  ICO FINVIG
 -- FORMAS DE PAGO                                                         2018/11/05  ICO FREPAG
 -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                   2019/03/27  ICO LARPLA
---
+-- PLAN DE PAGOS CATORCENAL                                               2021/12/03  JMMD 20211221            
+---
 PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                    dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER) IS
 nCodCia                  EMPRESAS.CodCia%TYPE;
@@ -1970,6 +1887,10 @@ BEGIN
          cDescFrecPago := 'QUINCENAL'; -- FREPAG
       ELSIF nFrecPagos = 7 THEN        -- FREPAG
          cDescFrecPago := 'SEMANAL';   -- FREPAG
+------------- jmmd20211203
+      ELSIF nFrecPagos = 14 THEN        -- FREPAG
+         cDescFrecPago := 'CATORCENAL';   -- FREPAG 
+------------- jmmd20211203                 
       END IF;
    END IF;
    RETURN(cDescFrecPago);
@@ -2757,6 +2678,14 @@ BEGIN
         ELSE
            dFecFinVigFact := dFecIniVigFact + nFrecPagos;
         END IF;
+----------- JMMD20211203
+     ELSIF nFrecPagos = 14 THEN
+        IF nNUMCUOTA = 26 THEN
+           dFecFinVigFact := dFecFinVigPol;
+        ELSE
+           dFecFinVigFact := dFecIniVigFact + nFrecPagos;
+        END IF;
+----------- JMMD20211203                
      ELSIF nFrecPagos = 7 THEN
         IF nNUMCUOTA = 52 THEN
            dFecFinVigFact := dFecFinVigPol;

@@ -1,4 +1,5 @@
-create or replace PACKAGE          OC_FACTURAR IS
+CREATE OR REPLACE PACKAGE OC_FACTURAR IS
+-- PLAN DE PAGOS CATORCENAL                                               2021/12/03  JMMD 20211221
    PROCEDURE PROC_EMITE_FACTURAS (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_POL (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_END (nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER,nTransa NUMBER);
@@ -24,8 +25,9 @@ create or replace PACKAGE BODY          OC_FACTURAR IS
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO      2018/03/09  ICOFINVIG
 -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 -- CORRECCION DEL TIPO DE CAMBIO PARA COMPONENTES                            2019/06/12  ICO LARPLA1
--- CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES                                  2019/08/21  ICO LARPLA2
---
+-- CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES                                  2019/08/21  ICO LARPLA2 
+-- PLAN DE PAGOS CATORCENAL                                                  2021/12/03  JMMD 20211221
+---
 PROCEDURE PROC_EMITE_FACTURAS(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS
 nIdFactura               FACTURAS.IdFactura%TYPE;
 nNumPagos                PLAN_DE_PAGOS.NumPagos%TYPE;
@@ -400,7 +402,8 @@ BEGIN
                nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1) ;
                nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0) ;
                nMtoComisi       := nMtoPago * X.PorcComis / 100;
-               IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
+               IF nFrecPagos NOT IN (15,14,7) THEN               
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -674,7 +677,8 @@ BEGIN
                      nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1) ;
                      nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0) ;
                      nMtoComisi       := nMtoPago * X.PorcComis / 100;
-                     IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203                     IF nFrecPagos NOT IN (15,7) THEN
+                     IF nFrecPagos NOT IN (15,14,7) THEN                     
                         dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                      ELSE
                         dFecPago         := dFecPago + nFrecPagos;
@@ -1259,7 +1263,8 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
-               IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
+               IF nFrecPagos NOT IN (15,14,7) THEN               
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -1585,7 +1590,8 @@ BEGIN
                   nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                   nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                   nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
-                  IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203                  IF nFrecPagos NOT IN (15,7) THEN
+                  IF nFrecPagos NOT IN (15,14,7) THEN                  
                      dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                   ELSE
                      dFecPago         := dFecPago + nFrecPagos;
@@ -2080,7 +2086,8 @@ BEGIN
                nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1);
                nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi       := nMtoPago * X.PorcComis / 100;
-               IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
+               IF nFrecPagos NOT IN (15,14,7) THEN               
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -2284,7 +2291,8 @@ BEGIN
                   nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1);
                   nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                   nMtoComisi       := nMtoPago * X.PorcComis / 100;
-                  IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203                  IF nFrecPagos NOT IN (15,7) THEN
+                  IF nFrecPagos NOT IN (15,14,7) THEN                  
                      dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                   ELSE
                      dFecPago         := dFecPago + nFrecPagos;
@@ -2871,7 +2879,8 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
-               IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD 20211203               IF nFrecPagos NOT IN (15,7) THEN
+               IF nFrecPagos NOT IN (15,14,7) THEN               
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -3180,7 +3189,8 @@ BEGIN
                   nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                   nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                   nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
-                  IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203                  IF nFrecPagos NOT IN (15,7) THEN
+                  IF nFrecPagos NOT IN (15,14,7) THEN                  
                      dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                   ELSE
                      dFecPago         := dFecPago + nFrecPagos;
@@ -3664,7 +3674,8 @@ BEGIN
                     nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1) ;
                     nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0) ;
                     nMtoComisi       := nMtoPago * X.PorcComis / 100;
-                    IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD 20211203                    IF nFrecPagos NOT IN (15,7) THEN
+                    IF nFrecPagos NOT IN (15,14,7) THEN                    
                        dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                     ELSE
                        dFecPago         := dFecPago + nFrecPagos;
@@ -3988,7 +3999,8 @@ BEGIN
                     nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1) ;
                     nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0) ;
                     nMtoComisi       := nMtoPago * X.PorcComis / 100;
-                    IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203                    IF nFrecPagos NOT IN (15,7) THEN
+                    IF nFrecPagos NOT IN (15,14,7) THEN                    
                        dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                     ELSE
                        dFecPago         := dFecPago + nFrecPagos;
@@ -5178,7 +5190,8 @@ BEGIN
         nMtoComisiMonedaRest := NVL(nMtoComisiM,0)  - NVL(nMtoComisiMonedaPag,0);
         NP := nCuota;
         BEGIN
-           IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203           IF nFrecPagos NOT IN (15,7) THEN
+           IF nFrecPagos NOT IN (15,14,7) THEN           
               SELECT TRUNC(NVL(ADD_MONTHS(MAX(FECVENC),1),SYSDATE))
                 INTO dFecPago
                 FROM FACTURAS
@@ -5489,7 +5502,8 @@ BEGIN
          NP := nCuota;
      -- nNumPagos := 12;
          BEGIN
-            IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203            IF nFrecPagos NOT IN (15,7) THEN
+            IF nFrecPagos NOT IN (15,14,7) THEN            
                SELECT TRUNC(NVL(ADD_MONTHS(MAX(FECVENC),1),SYSDATE))
                  INTO dFecPago
                  FROM FACTURAS
@@ -5516,7 +5530,8 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
-               IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
+               IF nFrecPagos NOT IN (15,14,7) THEN               
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -6069,7 +6084,8 @@ BEGIN
             nMtoComisiMonedaPag := NVL(nMtoComisiMonedaPag,0) + (NVL(X.PrimaMoneda,0) * X.PorcComis / 100) / nNumPagos ;
          END IF;
          IF X.StsPoliza = 'EMI' THEN
-            IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD 20211203            IF nFrecPagos NOT IN (15,7) THEN
+            IF nFrecPagos NOT IN (15,14,7) THEN            
                BEGIN
                   SELECT TRUNC(NVL(ADD_MONTHS(MAX(FECVENC),nFrecPagos),SYSDATE))
                     INTO dFecPago
@@ -6415,7 +6431,8 @@ BEGIN
       --   FOR NP IN 1..nNumPagos LOOP
           NP := nCuota;
          IF cStsPoliza = 'EMI' THEN
-            IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203            IF nFrecPagos NOT IN (15,7) THEN
+            IF nFrecPagos NOT IN (15,14,7) THEN            
                BEGIN
                   SELECT TRUNC(NVL(ADD_MONTHS(MAX(FECVENC),nFrecPagos),SYSDATE))
                     INTO dFecPago
@@ -6447,7 +6464,8 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
-               IF nFrecPagos NOT IN (15,7) THEN
+-----JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
+               IF nFrecPagos NOT IN (15,14,7) THEN               
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -7334,7 +7352,8 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
-               IF nFrecPagos NOT IN (15,7) THEN
+----- JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
+               IF nFrecPagos NOT IN (15,14,7) THEN               
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
