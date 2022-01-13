@@ -61,7 +61,6 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
 /
-
 --
 -- OC_DET_FACT_ELECT_CONF_DOCTO  (Package Body) 
 --
@@ -88,6 +87,37 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                                         cProceso IN VARCHAR2,cCodIdLinea IN VARCHAR2,cCodAtributo IN VARCHAR2,
                                         cTipoCfdi IN VARCHAR2,cCodCpto IN VARCHAR2 DEFAULT NULL, cCodRutinaCalc VARCHAR2,
                                         cIndRelaciona VARCHAR2) RETURN VARCHAR2 IS
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |
+    | Email      : ??                                                                                                               |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: ??                                                                                                               |    
+	| Nombre     : GENERA_VALOR_ATRIBUTO                                                                                            |
+    | Objetivo   : Funcion que genera el valor de los atributos de acuerdo con los valores recibidos.                               |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 10/01/2022                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
+    |                                                                                                                               |
+    | Obj. Modif.: Modificar y colocar la Fecha de Pago correcta, dado que para esta se tomaba la misma fecha de timbrado de la     |
+    |              factura.                                                                                                         |
+    |                                                                                                                               |
+    | Parametros:                                                                                                                   |
+    |           nIdFactura          Numero de Recibo o Factura.     (Entrada)                                                       |
+    |           nIdNcr              ID de la Nota de Credito.       (Entrada)                                                       |
+    |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+    |			nCodEmpresa			Codigo de la Empresa	        (Entrada)                                                       |
+    |           cProceso            Proceso                         (Entrada)                                                       |
+    |           cCodIdLinea         Codigo del ID de Linea          (Entrada)                                                       |
+    |           cCodAtributo        Codigo del Atributo             (Entrada)                                                       |
+    |           cTipoCfdi           Tipo del CFDI                   (Entrada)                                                       |
+    |           cCodCpto            Codigo de Concepto              (Entrada)                                                       |
+    |           cCodRutinaCalc      Codigo de rutina de calculo     (Entrada)                                                       |
+    |           cIndRelaciona       Indicador de Relaciona          (Entrada)                                                       |
+    |_______________________________________________________________________________________________________________________________|
+*/                                        
         cValorAtributo          DETALLE_FACT_ELECT_CONF_DOCTO.ValorAtributo%TYPE := NULL;
         cTipoComprobante        VARCHAR2(1);
         cSerie                  FACT_ELECT_SERIES_FOLIOS.Serie%TYPE;
@@ -136,6 +166,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
         cLeyendaEsp             VARCHAR2(1000) :=  NULL;
         --nIdEndoso               FACTURAS.IdEndoso%TYPE;
         cCodPlanPagos           PLAN_DE_PAGOS.CodPlanPago%TYPE;
+        nIdProceso              FACTURAS.IdProceso%TYPE;        --> JALV(+) 10/01/2022
+        cIndDomiciliado         FACTURAS.IndDomiciliado%TYPE;   --> JALV(+) 10/01/2022
+        dFecha_Pago             DATE;                           --> JALV(+) 10/01/2022
+        dFecha_Pago_CM          DATE;                           --> JALV(+) 10/01/2022
 
     BEGIN
         IF NVL(nIdFactura,0) != 0 AND cProceso IN ('EMI','PAG') THEN
@@ -148,16 +182,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                 SELECT Cod_Moneda,Tasa_Cambio,CodCliente,
                        Tipo_Doc_Identificacion,Num_Doc_Identificacion,
                        IdPoliza,IDetpol,IdTransaccion,
-                       IdTransaccionAnu,IdEndoso,FecPago
+                       IdTransaccionAnu,IdEndoso,FecPago,
+                       ReciboPago, IdProceso, IndDomiciliado    --> JALV(+) 10/01/2022
                   INTO cCodMoneda,nTasaCambio,cCodCliente,
                        cTipoDocIdentificacion,cNumDocIdentificacion,
                        nIdPoliza,nIdDetPol,nIdTransaccion,
-                       nIdTransaccionAnu,nIdEndoso,dFecPago
+                       nIdTransaccionAnu,nIdEndoso,dFecPago,
+                       dFecPago, nIdProceso, cIndDomiciliado    --> JALV(+) 10/01/2022
                   FROM (
                         SELECT F.Cod_Moneda,F.Tasa_Cambio,F.CodCliente,
                                C.Tipo_Doc_Identificacion,C.Num_Doc_Identificacion,
                                F.IdPoliza,F.IDetpol,F.IdTransaccion,
-                               F.IdTransaccionAnu,IdEndoso,F.FecPago
+                               F.IdTransaccionAnu,IdEndoso,F.FecPago,
+                               ReciboPago, IdProceso, IndDomiciliado    --> JALV(+) 10/01/2022
                           FROM FACTURAS F,POLIZAS PO,CLIENTES C
                          WHERE F.CodCia             = nCodCia
                            AND F.IdFactura          = nIdFactura
@@ -172,7 +209,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                         SELECT F.Cod_Moneda,F.Tasa_Cambio,PO.CodCliente,
                                P.Tipo_Doc_Identificacion,P.Num_Doc_Identificacion,
                                F.IdPoliza,F.IDetpol,F.IdTransaccion,
-                               F.IdTransaccionAnu,IdEndoso,F.FecPago
+                               F.IdTransaccionAnu,IdEndoso,F.FecPago,
+                               ReciboPago, IdProceso, IndDomiciliado    --> JALV(+) 10/01/2022
                           FROM FACTURAS F, POLIZAS PO, DETALLE_POLIZA D, ASEGURADO A, PERSONA_NATURAL_JURIDICA P
                          WHERE P.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
                            AND P.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
@@ -683,7 +721,20 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
             WHEN 'PAGSVAL01' THEN
                 NULL;
             WHEN 'PAGSVAL02' THEN
-                cValorAtributo := TO_CHAR(SYSDATE,'yyyy-mm-dd')||'T'||TO_CHAR(SYSDATE,'hh:mm:ss');
+                --cValorAtributo := TO_CHAR(SYSDATE,'yyyy-mm-dd')||'T'||TO_CHAR(SYSDATE,'hh:mm:ss');    --> JALV (-) 10/01/2022
+                --> Inicia: JALV (-) 10/01/2022
+                    IF nIdProceso IS NOT NULL AND cIndDomiciliado = 'S' THEN
+                        --Tomar campo indicado en COBRANZA MASIVA
+                        SELECT  FechaCobro  --FecAplica 
+                        INTO    dFecha_Pago_CM
+                        FROM    DETALLE_DOMICI_REFERE
+                        WHERE   idFactura = nIdFactura;
+                        cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh:mm:ss');
+                    ELSE
+                        --Tomar dato de indicado en COBRANZA MANUAL
+                        cValorAtributo := TO_CHAR(dFecha_Pago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago,'hh:mm:ss');
+                    END IF;
+                --> Fin JALV (-) 10/01/2022
             WHEN 'PAGSVAL03' THEN
                 cValorAtributo := OC_FACT_ELECT_FORMA_PAGO.FORMA_PAGO_FACT_ELECT(nCodCia,cFormaPago);
             WHEN 'PAGSVAL04' THEN
