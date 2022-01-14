@@ -170,6 +170,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
         cIndDomiciliado         FACTURAS.IndDomiciliado%TYPE;   --> JALV(+) 10/01/2022
         dFecha_Pago             DATE;                           --> JALV(+) 10/01/2022
         dFecha_Pago_CM          DATE;                           --> JALV(+) 10/01/2022
+        cIndPlataforma          VARCHAR2(1);
 
     BEGIN
         IF NVL(nIdFactura,0) != 0 AND cProceso IN ('EMI','PAG') THEN
@@ -188,7 +189,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                        cTipoDocIdentificacion,cNumDocIdentificacion,
                        nIdPoliza,nIdDetPol,nIdTransaccion,
                        nIdTransaccionAnu,nIdEndoso,dFecPago,
-                       dFecPago, nIdProceso, cIndDomiciliado    --> JALV(+) 10/01/2022
+                       dFecha_Pago, nIdProceso, cIndDomiciliado    --> JALV(+) 10/01/2022
                   FROM (
                         SELECT F.Cod_Moneda,F.Tasa_Cambio,F.CodCliente,
                                C.Tipo_Doc_Identificacion,C.Num_Doc_Identificacion,
@@ -721,19 +722,40 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
             WHEN 'PAGSVAL01' THEN
                 NULL;
             WHEN 'PAGSVAL02' THEN
+               BEGIN
+                  SELECT 'S'
+                    INTO cIndPlataforma
+                    FROM POLIZAS P, COTIZACIONES C
+                   WHERE P.CodCia               = C.CodCia
+                     AND P.CodEmpresa           = C.CodEmpresa
+                     AND P.Num_Cotizacion       = C.IdCotizacion
+                     AND P.IdPoliza             = C.IdPoliza
+                     AND P.CodCia               = nCodCia
+                     AND P.CodEmpresa           = nCodEmpresa
+                     AND P.IdPoliza             = nIdPoliza
+                     AND C.IndCotizacionWeb     = 'S'
+                     AND C.IndCotizacionBaseWeb = 'N';
+               EXCEPTION
+                  WHEN NO_DATA_FOUND THEN 
+                     cIndPlataforma := 'N';
+               END;
                 --cValorAtributo := TO_CHAR(SYSDATE,'yyyy-mm-dd')||'T'||TO_CHAR(SYSDATE,'hh:mm:ss');    --> JALV (-) 10/01/2022
                 --> Inicia: JALV (-) 10/01/2022
-                    IF nIdProceso IS NOT NULL AND cIndDomiciliado = 'S' THEN
-                        --Tomar campo indicado en COBRANZA MASIVA
-                        SELECT  FechaCobro  --FecAplica 
-                        INTO    dFecha_Pago_CM
-                        FROM    DETALLE_DOMICI_REFERE
-                        WHERE   idFactura = nIdFactura;
-                        cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh:mm:ss');
-                    ELSE
-                        --Tomar dato de indicado en COBRANZA MANUAL
-                        cValorAtributo := TO_CHAR(dFecha_Pago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago,'hh:mm:ss');
-                    END IF;
+                
+              IF nIdProceso IS NOT NULL AND cIndDomiciliado = 'S' THEN
+                  --Tomar campo indicado en COBRANZA MASIVA
+                  SELECT  FechaCobro  --FecAplica 
+                    INTO  dFecha_Pago_CM
+                    FROM  DETALLE_DOMICI_REFERE
+                   WHERE   idFactura = nIdFactura;
+                  
+                  cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh:mm:ss');
+              ELSIF NVL(cIndPlataforma,'N') = 'S' THEN
+                  cValorAtributo := TO_CHAR(dFecPago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecPago,'hh:mm:ss');
+              ELSE
+                  --Tomar dato de indicado en COBRANZA MANUAL
+                  cValorAtributo := TO_CHAR(dFecha_Pago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago,'hh:mm:ss');
+              END IF;
                 --> Fin JALV (-) 10/01/2022
             WHEN 'PAGSVAL03' THEN
                 cValorAtributo := OC_FACT_ELECT_FORMA_PAGO.FORMA_PAGO_FACT_ELECT(nCodCia,cFormaPago);
