@@ -751,7 +751,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                   
                   cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh:mm:ss');
               ELSIF NVL(cIndPlataforma,'N') = 'S' THEN
-                  cValorAtributo := TO_CHAR(dFecPago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecPago,'hh:mm:ss');
+                  --cValorAtributo := TO_CHAR(dFecPago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecPago,'hh:mm:ss');
+                  cValorAtributo := TO_CHAR(TO_DATE(dFecPago,'DD/MM/RRRR'),'yyyy-mm-dd')||'T'||TO_CHAR(TO_DATE(dFecPago,'DD/MM/RRRR'),'hh:mm:ss');
               ELSE
                   --Tomar dato de indicado en COBRANZA MANUAL
                   cValorAtributo := TO_CHAR(dFecha_Pago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago,'hh:mm:ss');
