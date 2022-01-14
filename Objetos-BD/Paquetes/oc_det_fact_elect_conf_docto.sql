@@ -168,7 +168,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
         cCodPlanPagos           PLAN_DE_PAGOS.CodPlanPago%TYPE;
         nIdProceso              FACTURAS.IdProceso%TYPE;        --> JALV(+) 10/01/2022
         cIndDomiciliado         FACTURAS.IndDomiciliado%TYPE;   --> JALV(+) 10/01/2022
-        dFecha_Pago             DATE;                           --> JALV(+) 10/01/2022
+        dFecha_Pago             VARCHAR(50);                           --> JALV(+) 10/01/2022
         dFecha_Pago_CM          DATE;                           --> JALV(+) 10/01/2022
         cIndPlataforma          VARCHAR2(1);
 
