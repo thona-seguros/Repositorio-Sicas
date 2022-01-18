@@ -755,7 +755,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                   cValorAtributo := TO_CHAR(TO_DATE(dFecPago,'DD/MM/RRRR'),'yyyy-mm-dd')||'T'||TO_CHAR(TO_DATE(dFecPago,'DD/MM/RRRR'),'hh:mm:ss');
               ELSE
                   --Tomar dato de indicado en COBRANZA MANUAL
-                  cValorAtributo := TO_CHAR(dFecha_Pago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago,'hh:mm:ss');
+                  --cValorAtributo := TO_CHAR(dFecha_Pago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago,'hh:mm:ss');
+                  cValorAtributo := TO_CHAR(TO_DATE(dFecha_Pago,'DD/MM/RRRR'),'yyyy-mm-dd')||'T'||TO_CHAR(TO_DATE(dFecha_Pago,'DD/MM/RRRR'),'hh:mm:ss');
               END IF;
                 --> Fin JALV (-) 10/01/2022
             WHEN 'PAGSVAL03' THEN
