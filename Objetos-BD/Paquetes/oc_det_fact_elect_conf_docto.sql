@@ -742,7 +742,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                 --cValorAtributo := TO_CHAR(SYSDATE,'yyyy-mm-dd')||'T'||TO_CHAR(SYSDATE,'hh:mm:ss');    --> JALV (-) 10/01/2022
                 --> Inicia: JALV (-) 10/01/2022
                 
-              IF nIdProceso IS NOT NULL AND cIndDomiciliado = 'S' THEN
+              IF nIdProceso IS NOT NULL OR NVL(cIndDomiciliado,'N') = 'S' THEN
                   --Tomar campo indicado en COBRANZA MASIVA
                   SELECT  FechaCobro  --FecAplica 
                     INTO  dFecha_Pago_CM
