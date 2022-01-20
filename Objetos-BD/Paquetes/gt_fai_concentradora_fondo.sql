@@ -425,7 +425,11 @@ BEGIN
                                  nIdFondo || ' ' || SQLERRM);
    END;
 
-   IF NVL(nIdTransaccion,0) > 0 THEN
+   IF (NVL(nIdTransaccion,0) > 0 AND
+      OC_POLIZAS.ALTURA_CERO(nCodCia, nCodEmpresa,nIdPoliza) = 'N' AND
+      OC_POLIZAS.APLICA_RETIRO_PRIMA_NIVELADA(nCodCia, nCodEmpresa, nIdPoliza) = 'N') OR 
+      (NVL(nIdTransaccion,0) > 0 AND 
+      GT_FAI_MOVIMIENTOS_FONDOS.TIPO_MOVIMIENTO(nCodCia, nCodEmpresa, cTipoFondo, cCodCptoMov) != 'RPP') THEN
       OC_DETALLE_TRANSACCION.CREA(nIdTransaccion, nCodCia, nCodEmpresa,  21, 'MOVFON', 'FAI_CONCENTRADORA_FONDO',
                                   nIdPoliza, nIDetPol, nIdFondo, cCodCptoMov, NVL(nMontoMovMoneda,0));
    END IF;

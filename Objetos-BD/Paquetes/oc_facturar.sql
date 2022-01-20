@@ -1,5 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_FACTURAR IS
--- PLAN DE PAGOS CATORCENAL                                               2021/12/03  JMMD 20211221
+create or replace PACKAGE          OC_FACTURAR IS
    PROCEDURE PROC_EMITE_FACTURAS (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_POL (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_END (nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER,nTransa NUMBER);
@@ -17,6 +16,7 @@ CREATE OR REPLACE PACKAGE OC_FACTURAR IS
    FUNCTION FUNC_VALIDA_FECHA (nCodCia NUMBER,nCodEmpresa NUMBER ,nIdPoliza NUMBER, dFecIni DATE,cCodPlanPlago VARCHAR2)RETURN VARCHAR2 ;
    PROCEDURE PROC_EMITE_FACT_ENDO_PERIODO(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER,nCuota NUMBER );
    FUNCTION F_GET_FACT ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;--SEQ XDS 2016/07/27
+   PROCEDURE ACTUALIZA_VALORES_ALTURA_CERO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetPol NUMBER, nIdFactura NUMBER, nMontoDetMoneda  NUMBER, nMontoPrimacompMoneda NUMBER);
 END OC_FACTURAR;
 /
 create or replace PACKAGE BODY          OC_FACTURAR IS
@@ -25,87 +25,90 @@ create or replace PACKAGE BODY          OC_FACTURAR IS
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO      2018/03/09  ICOFINVIG
 -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 -- CORRECCION DEL TIPO DE CAMBIO PARA COMPONENTES                            2019/06/12  ICO LARPLA1
--- CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES                                  2019/08/21  ICO LARPLA2 
--- PLAN DE PAGOS CATORCENAL                                                  2021/12/03  JMMD 20211221
----
+-- CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES                                  2019/08/21  ICO LARPLA2
+--
 PROCEDURE PROC_EMITE_FACTURAS(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS
-nIdFactura               FACTURAS.IdFactura%TYPE;
-nNumPagos                PLAN_DE_PAGOS.NumPagos%TYPE;
-nNumPagosReal            PLAN_DE_PAGOS.NumPagos%TYPE;
+nIdFactura                 FACTURAS.IdFactura%TYPE;
+nNumPagos                  PLAN_DE_PAGOS.NumPagos%TYPE;
+nNumPagosReal              PLAN_DE_PAGOS.NumPagos%TYPE;
 /* nFrecPagos               PLAN_DE_PAGOS.FrecPagos%TYPE; */
-nPorcInicial             PLAN_DE_PAGOS.PorcInicial%TYPE;
-nCodCliente              POLIZAS.CodCliente%TYPE;
-cIdTipoSeg               DETALLE_POLIZA.IdTipoSeg%TYPE;
-nTotPrimas               DETALLE_FACTURAS.Monto_Det_Local%TYPE;
-nDifer                   DETALLE_FACTURAS.Monto_Det_Local%TYPE;
-nDiferMoneda             DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-nMtoDet                  DETALLE_FACTURAS.Monto_Det_Local%TYPE;
-nMtoDetMoneda            DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-nMtoTotal                DETALLE_FACTURAS.Monto_Det_Local%TYPE;
-nMtoTotalMoneda          DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-cCodMoneda               POLIZAS.Cod_Moneda%TYPE;
-nPrimaNetaMoneda         POLIZAS.PrimaNeta_Moneda%TYPE;
-nMtoPagoMoneda           FACTURAS.Monto_Fact_Moneda%TYPE;
-cCodMonedaLocal          EMPRESAS.Cod_Moneda%TYPE;
-nPrimaRestMoneda         POLIZAS.PrimaNeta_Moneda%TYPE;
-nMtoComisiMoneda         FACTURAS.MtoComisi_Local%TYPE;
-nTotPrimasMoneda         POLIZAS.PrimaNeta_Moneda%TYPE;
-nCodCia                  POLIZAS.CodCia%TYPE;
-nCodEmpresa              POLIZAS.CodEmpresa%TYPE;
-cCodPlanPago             DETALLE_POLIZA.CodPlanPago%TYPE;
-nTasaCambio              DETALLE_POLIZA.Tasa_Cambio%TYPE;
-nMtoCpto                 CONCEPTOS_PLAN_DE_PAGOS.MtoCpto%TYPE;
-nPorcCpto                CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
-cAplica                  CONCEPTOS_PLAN_DE_PAGOS.Aplica%TYPE;
-nCod_Agente              AGENTES_DETALLES_POLIZAS.Cod_Agente%TYPE;
+nPorcInicial               PLAN_DE_PAGOS.PorcInicial%TYPE;
+nCodCliente                POLIZAS.CodCliente%TYPE;
+cIdTipoSeg                 DETALLE_POLIZA.IdTipoSeg%TYPE;
+nTotPrimas                 DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nDifer                     DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nDiferMoneda               DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+nMtoDet                    DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nMtoDetMoneda              DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+nMtoTotal                  DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nMtoTotalMoneda            DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+cCodMoneda                 POLIZAS.Cod_Moneda%TYPE;
+nPrimaNetaMoneda           POLIZAS.PrimaNeta_Moneda%TYPE;
+nMtoPagoMoneda             FACTURAS.Monto_Fact_Moneda%TYPE;
+cCodMonedaLocal            EMPRESAS.Cod_Moneda%TYPE;
+nPrimaRestMoneda           POLIZAS.PrimaNeta_Moneda%TYPE;
+nMtoComisiMoneda           FACTURAS.MtoComisi_Local%TYPE;
+nTotPrimasMoneda           POLIZAS.PrimaNeta_Moneda%TYPE;
+nCodCia                    POLIZAS.CodCia%TYPE;
+nCodEmpresa                POLIZAS.CodEmpresa%TYPE;
+cCodPlanPago               DETALLE_POLIZA.CodPlanPago%TYPE;
+nTasaCambio                DETALLE_POLIZA.Tasa_Cambio%TYPE;
+nMtoCpto                   CONCEPTOS_PLAN_DE_PAGOS.MtoCpto%TYPE;
+nPorcCpto                  CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
+cAplica                    CONCEPTOS_PLAN_DE_PAGOS.Aplica%TYPE;
+nCod_Agente                AGENTES_DETALLES_POLIZAS.Cod_Agente%TYPE;
 --
-nMtoRecD_Local           DETALLE_RECARGO.Monto_Local%TYPE;
-nMtoRecD_Moneda          DETALLE_RECARGO.Monto_Moneda%TYPE;
-nMtoDescD_Local          DETALLE_DESCUENTO.Monto_Local%TYPE;
-nMtoDescD_Moneda         DETALLE_DESCUENTO.Monto_Moneda%TYPE;
+nMtoRecD_Local             DETALLE_RECARGO.Monto_Local%TYPE;
+nMtoRecD_Moneda            DETALLE_RECARGO.Monto_Moneda%TYPE;
+nMtoDescD_Local            DETALLE_DESCUENTO.Monto_Local%TYPE;
+nMtoDescD_Moneda           DETALLE_DESCUENTO.Monto_Moneda%TYPE;
 --
-nMtoRec_Local            RECARGOS.Monto_Local%TYPE;
-nMtoRec_Moneda           RECARGOS.Monto_Moneda%TYPE;
-nMtoDesc_Local           DESCUENTOS.Monto_Local%TYPE;
-nMtoDesc_Moneda          DESCUENTOS.Monto_Moneda%TYPE;
-nPrimaTotalM             DETALLE_POLIZA.Prima_Moneda%TYPE;
-nPrimaTotalL             DETALLE_POLIZA.Prima_Local%TYPE;
-nRec_Local               RECARGOS.Monto_Local%TYPE ;
-nRec_Moneda              RECARGOS.Monto_Moneda%TYPE;
-nDesc_Local              DESCUENTOS.Monto_Local%TYPE;
-nDesc_Moneda             DESCUENTOS.Monto_Moneda%TYPE;
-nNumCert                 DETALLE_POLIZA.IDetPol%type;
-nPorcResPago             RESPONSABLE_PAGO_DET.PorcResPago%TYPE;
-nCodTipoDoc              TIPO_DE_DOCUMENTO.CodTipoDoc%type;
-cContabilidad_Automatica EMPRESAS.Contabilidad_Automatica%TYPE;
-nIdTranc                 TRANSACCION.IdTransaccion%TYPE;
-nIdTransac               TRANSACCION.IdTransaccion%TYPE;
-nMtoT                    FACTURAS.Monto_Fact_Local%TYPE := 0;
-nMtoTM                   FACTURAS.Monto_Fact_Local%TYPE := 0;
-nTotComi                 COMISIONES.Comision_Local%TYPE;
-nMtoAsistLocal           ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
-nMtoAsistMoneda          ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
-nAsistRestLocal          ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
-nAsistRestMoneda         ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
-nTotAsistLocal           ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
-nTotAsistMoneda          ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
-nFactor                  NUMBER (14,8);
-cRespPol                 VARCHAR2(1):='N';
-cRespDet                 VARCHAR2(1):='N';
-Dummy                    NUMBER(5);
-dFecPago                 DATE;
-nMtoPago                 NUMBER(18,2);
-nMtoComisi               NUMBER(18,2);
-nPrimaRest               NUMBER(18,2);
-cGraba                   VARCHAR2(1);
-nCantPagosReal           NUMBER(5);
-nFrecPagos               PLAN_DE_PAGOS.FrecPagos%TYPE;
-fFecfinvig               FACTURAS.FECFINVIG%TYPE;      -- ICOFINVIG
+nMtoRec_Local              RECARGOS.Monto_Local%TYPE;
+nMtoRec_Moneda             RECARGOS.Monto_Moneda%TYPE;
+nMtoDesc_Local             DESCUENTOS.Monto_Local%TYPE;
+nMtoDesc_Moneda            DESCUENTOS.Monto_Moneda%TYPE;
+nPrimaTotalM               DETALLE_POLIZA.Prima_Moneda%TYPE;
+nPrimaTotalL               DETALLE_POLIZA.Prima_Local%TYPE;
+nRec_Local                 RECARGOS.Monto_Local%TYPE ;
+nRec_Moneda                RECARGOS.Monto_Moneda%TYPE;
+nDesc_Local                DESCUENTOS.Monto_Local%TYPE;
+nDesc_Moneda               DESCUENTOS.Monto_Moneda%TYPE;
+nNumCert                   DETALLE_POLIZA.IDetPol%type;
+nPorcResPago               RESPONSABLE_PAGO_DET.PorcResPago%TYPE;
+nCodTipoDoc                TIPO_DE_DOCUMENTO.CodTipoDoc%type;
+cContabilidad_Automatica   EMPRESAS.Contabilidad_Automatica%TYPE;
+nIdTranc                   TRANSACCION.IdTransaccion%TYPE;
+nIdTransac                 TRANSACCION.IdTransaccion%TYPE;
+nMtoT                      FACTURAS.Monto_Fact_Local%TYPE := 0;
+nMtoTM                     FACTURAS.Monto_Fact_Local%TYPE := 0;
+nTotComi                   COMISIONES.Comision_Local%TYPE;
+nMtoAsistLocal             ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
+nMtoAsistMoneda            ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
+nAsistRestLocal            ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
+nAsistRestMoneda           ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
+nTotAsistLocal             ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
+nTotAsistMoneda            ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
+nFactor                    NUMBER (14,8);
+cRespPol                   VARCHAR2(1):='N';
+cRespDet                   VARCHAR2(1):='N';
+Dummy                      NUMBER(5);
+dFecPago                   DATE;
+nMtoPago                   NUMBER(18,2);
+nMtoComisi                 NUMBER(18,2);
+nPrimaRest                 NUMBER(18,2);
+cGraba                     VARCHAR2(1);
+nCantPagosReal             NUMBER(5);
+nFrecPagos                 PLAN_DE_PAGOS.FrecPagos%TYPE;
+fFecfinvig                 FACTURAS.FECFINVIG%TYPE;      -- ICOFINVIG
+
+nMontoPrimaCompMoneda      DETALLE_POLIZA.MontoPrimacompMoneda%TYPE;
+nMontoPrimaAlturaCero      NUMBER(18,2);
+
 
 CURSOR DET_POL_Q IS
    SELECT D.Prima_Local PrimaLocal, D.Prima_Moneda PrimaMoneda, D.CodPlanPago, D.PorcComis,
           P.FecIniVig, P.FecFinVig, P.FecEmision, D.IDetPol, D.Tasa_Cambio, D.IdTipoSeg,
-          P.IndCalcDerechoEmis, P.IndFactElectronica
+          P.IndCalcDerechoEmis, P.IndFactElectronica, NVL(D.MontoPrimacompMoneda,0) MontoPrimacompMoneda
      FROM DETALLE_POLIZA D, POLIZAS P
     WHERE D.Prima_Moneda  > 0
       AND D.IdPoliza      = P.IdPoliza
@@ -335,7 +338,7 @@ BEGIN
             WHEN NO_DATA_FOUND THEN
                RAISE_APPLICATION_ERROR (-20100,'No Existe Plan de Pagos '||X.CodPlanPago);
          END;
-
+         nMontoPrimaCompMoneda := X.MontoPrimacompMoneda / nNumPagos;
          -- Determina Meses de Vigencia para Plan de Pagos
          IF nNumPagos <= 12 THEN
             nCantPagosReal  := FLOOR(MONTHS_BETWEEN(X.FecFinVig, X.FecIniVig) / nFrecPagos);
@@ -348,7 +351,7 @@ BEGIN
          IF nCantPagosReal < nNumPagos THEN
             nNumPagos := nCantPagosReal;
          END IF;
-
+         
          -- Fecha del Primer Pago Siempre a Inicio de Vigencia
          dFecPago := X.FecIniVig;
          /*IF X.FecIniVig > X.FecEmision THEN
@@ -402,8 +405,7 @@ BEGIN
                nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1) ;
                nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0) ;
                nMtoComisi       := nMtoPago * X.PorcComis / 100;
------ JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
-               IF nFrecPagos NOT IN (15,14,7) THEN               
+               IF nFrecPagos NOT IN (15,7) THEN
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -454,7 +456,7 @@ BEGIN
             -- Genera comisiones por agente por certificado
             PROC_COMISIONAG (nIdPoliza, X.IDetPol, nCodCia, nCodEmpresa, X.IdTipoSeg,
                              cCodMoneda, nIdFactura, nMtoPago, nMtoPagoMoneda, nTasaCambio);
-
+            nMontoPrimaAlturaCero := nMtoPagoMoneda;
             --PROC_COMISIONAG (nIdPoliza, X.IDetPol, nCodCia, nCodEmpresa, X.IdTipoSeg,
             --                cCodMoneda, nIdFactura, nMtot, nMtoTM, nTasaCambio);
 
@@ -534,6 +536,13 @@ BEGIN
                   nMtoT := nMtoT + nMtoDet;
                END IF;
             END LOOP;
+            /*HGONZALEZ: CUANDO UNA POLIZA LLEG A ALTURA CERO Y REQUIERE DE RETIRO DE PRIMA NIVELADA, SE DEBE CALCULAR LA COMISION SOBRE LA PRIMA MENOS EL MONTO DE RETIRO (PRIMA COMPLEMENTARIA) */   
+            IF OC_POLIZAS.ALTURA_CERO(nCodCia, nCodEmpresa, nIdPoliza) = 'S' AND
+               OC_POLIZAS.APLICA_RETIRO_PRIMA_NIVELADA(nCodCia, nCodEmpresa, nIdPoliza) = 'S' AND
+               OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, nCodEmpresa, cIdTipoSeg) = 'S' THEN 
+               OC_FACTURAR.ACTUALIZA_VALORES_ALTURA_CERO(nCodCia, nCodEmpresa, nIdPoliza, X.IDetPol, nIdFactura, nMontoPrimaAlturaCero, nMontoPrimaCompMoneda);
+            END IF;
+            
             OC_FACTURAS.ACTUALIZA_FACTURA(nIdFactura);
          END LOOP;
          -------------->
@@ -608,7 +617,7 @@ BEGIN
                   WHEN NO_DATA_FOUND THEN
                      RAISE_APPLICATION_ERROR (-20100,'No Existe Plan de Pagos '||X.CodPlanPago);
                END;
-
+               nMontoPrimaCompMoneda := X.MontoPrimacompMoneda / nNumPagos;
                -- Determina Meses de Vigencia para Plan de Pagos
                IF nNumPagos <= 12 THEN
                   nCantPagosReal  := FLOOR(MONTHS_BETWEEN(X.FecFinVig, X.FecIniVig) / nFrecPagos);
@@ -677,8 +686,7 @@ BEGIN
                      nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1) ;
                      nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0) ;
                      nMtoComisi       := nMtoPago * X.PorcComis / 100;
------ JMMD20211203                     IF nFrecPagos NOT IN (15,7) THEN
-                     IF nFrecPagos NOT IN (15,14,7) THEN                     
+                     IF nFrecPagos NOT IN (15,7) THEN
                         dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                      ELSE
                         dFecPago         := dFecPago + nFrecPagos;
@@ -729,7 +737,7 @@ BEGIN
                   -- Genera comisiones por agente por certificado
                   PROC_COMISIONAG (nIdPoliza, X.IdetPol, nCodCia, nCodEmpresa, X.IdTipoSeg,
                                    cCodMoneda, nIdFactura, nMtoPago, nMtoPagoMoneda, nTasaCambio);
-
+                  nMontoPrimaAlturaCero := nMtoPagoMoneda;
                   -- PROC_COMISIONAG (nIdPoliza, X.IdetPol, nCodCia, nCodEmpresa, X.IdTipoSeg,
                     --                cCodMoneda, nIdFactura, nMtot, nMtoTM, nTasaCambio);
                   -- Distribuye la comision por agente.
@@ -807,6 +815,12 @@ BEGIN
                         nMtoT := nMtoT + nMtoDet;
                      END IF;
                   END LOOP;
+                  /*HGONZALEZ: CUANDO UNA POLIZA LLEG A ALTURA CERO Y REQUIERE DE RETIRO DE PRIMA NIVELADA, SE DEBE CALCULAR LA COMISION SOBRE LA PRIMA MENOS EL MONTO DE RETIRO (PRIMA COMPLEMENTARIA) */   
+                  IF OC_POLIZAS.ALTURA_CERO(nCodCia, nCodEmpresa, nIdPoliza) = 'S' AND
+                     OC_POLIZAS.APLICA_RETIRO_PRIMA_NIVELADA(nCodCia, nCodEmpresa, nIdPoliza) = 'S' AND
+                     OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, nCodEmpresa, cIdTipoSeg) = 'S' THEN 
+                     OC_FACTURAR.ACTUALIZA_VALORES_ALTURA_CERO(nCodCia, nCodEmpresa, nIdPoliza, X.IDetPol, nIdFactura, nMontoPrimaAlturaCero,  nMontoPrimaCompMoneda);
+                  END IF;
                   OC_FACTURAS.ACTUALIZA_FACTURA(nIdFactura);
                END LOOP;
                IF NVL(J.PorcResPago,0) != 0 THEN
@@ -861,96 +875,100 @@ BEGIN
 END PROC_EMITE_FACTURAS;
 
 PROCEDURE PROC_EMITE_FACT_POL(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS
-nIdFactura               FACTURAS.IdFactura%TYPE;
-nNumPagos                PLAN_DE_PAGOS.NumPagos%TYPE;
-nFrecPagos               PLAN_DE_PAGOS.FrecPagos%TYPE;
-nPorcInicial             PLAN_DE_PAGOS.PorcInicial%TYPE;
-nCodCliente              POLIZAS.CodCliente%TYPE;
-cIdTipoSeg               DETALLE_POLIZA.IdTipoSeg%TYPE;
-nTotPrimas               DETALLE_FACTURAS.Monto_Det_Local%TYPE;
-nDifer                   DETALLE_FACTURAS.Monto_Det_Local%TYPE;
-nDiferMoneda             DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-nMtoDet                  DETALLE_FACTURAS.Monto_Det_Local%TYPE;
-nMtoDetMoneda            DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-nMtoTotal                DETALLE_FACTURAS.Monto_Det_Local%TYPE;
-nMtoTotalMoneda          DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-cCodMoneda               POLIZAS.Cod_Moneda%TYPE;
-nPrimaNetaMoneda         POLIZAS.PrimaNeta_Moneda%TYPE;
-nMtoPagoMoneda           FACTURAS.Monto_Fact_Moneda%TYPE;
-cCodMonedaLocal          EMPRESAS.Cod_Moneda%TYPE;
-nPrimaRestMoneda         POLIZAS.PrimaNeta_Moneda%TYPE;
-nMtoComisiMoneda         FACTURAS.MtoComisi_Local%TYPE;
-nTotPrimasMoneda         POLIZAS.PrimaNeta_Moneda%TYPE;
-nCodCia                  POLIZAS.CodCia%TYPE;
-nCodEmpresa              POLIZAS.CodEmpresa%TYPE;
-cCodPlanPago             DETALLE_POLIZA.CodPlanPago%TYPE;
-nTasaCambio              DETALLE_POLIZA.Tasa_Cambio%TYPE;
-nMtoCpto                 CONCEPTOS_PLAN_DE_PAGOS.MtoCpto%TYPE;
-nPorcCpto                CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
-cAplica                  CONCEPTOS_PLAN_DE_PAGOS.Aplica%TYPE;
-Dummy                    NUMBER(5);
-dFecPago                 DATE;
-nMtoPago                 NUMBER(18,2);
-nMtoComisi               NUMBER(18,2);
-nPrimaRest               NUMBER(18,2);
-dFecHoy                  DATE;
-cGraba                   VARCHAR2(1);
-nCod_Agente              AGENTES_DETALLES_POLIZAS.Cod_Agente%TYPE;
-nMtoRecD_Local           DETALLE_RECARGO.Monto_Local%TYPE;
-nMtoRecD_Moneda          DETALLE_RECARGO.Monto_Moneda%TYPE;
-nMtoDescD_Local          DETALLE_DESCUENTO.Monto_Local%TYPE;
-nMtoDescD_Moneda         DETALLE_DESCUENTO.Monto_Moneda%TYPE;
-nMtoRec_Local            RECARGOS.Monto_Local%TYPE;
-nMtoRec_Moneda           RECARGOS.Monto_Moneda%TYPE;
-nMtoDesc_Local           DESCUENTOS.Monto_Local%TYPE;
-nMtoDesc_Moneda          DESCUENTOS.Monto_Moneda%TYPE;
-nPrimaTotalM             DETALLE_POLIZA.Prima_Moneda%TYPE;
-nPrimaTotalL             DETALLE_POLIZA.Prima_Local%TYPE;
-nFactor                  NUMBER (14,8);
-nRec_Local               RECARGOS.Monto_Local%TYPE ;
-nRec_Moneda              RECARGOS.Monto_Moneda%TYPE;
-nDesc_Local              DESCUENTOS.Monto_Local%TYPE;
-nDesc_Moneda             DESCUENTOS.Monto_Moneda%TYPE;
-cCodPlanPagoPol          POLIZAS.CodPlanPago%TYPE;
-nPorcComis               DETALLE_POLIZA.PorcComis%TYPE;
-nNumCert                 DETALLE_POLIZA.IdetPol%TYPE;
-nPrimaLocal              NUMBER(18,2);
-nPrimaMoneda             NUMBER(18,2);
-nIdTransac               NUMBER(14,0);
-nMtoComisiRest           NUMBER(18,2);
-nMtoComisiMonedaRest     NUMBER(18,2);
-nMtoComisiPag            NUMBER(18,2);
-nMtoComisiMonedaPag      NUMBER(18,2);
-nMtoComiTot              NUMBER(18,2);
-nMtoComisiMonedaTot      NUMBER(18,2);
-nMtoComiL                NUMBER(18,2);
-nMtoComisiM              NUMBER(18,2);
-nDiferC                  DETALLE_FACTURAS.Monto_Det_Local%TYPE;
-nDiferCMon               DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-cRespPol                 VARCHAR2(1):='N';
-cRespDet                 VARCHAR2(1):='N';
-nPorcT                   NUMBER(18,2);
-nFact                    NUMBER(18,2);
-nCodTipoDoc              TIPO_DE_DOCUMENTO.CodTipoDoc%TYPE;
-nIdetPol                 DETALLE_POLIZA.IdetPol%TYPE := 0;
-cContabilidad_Automatica EMPRESAS.Contabilidad_Automatica%TYPE;
-nIdTranc                 TRANSACCION.idtransaccion%TYPE;
-nMtoT                    FACTURAS.monto_fact_local%TYPE := 0;
-nMtoTM                   FACTURAS.monto_fact_local%TYPE := 0;
-nMtoAsistLocal           ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
-nMtoAsistMoneda          ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
-nAsistRestLocal          ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
-nAsistRestMoneda         ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
-nTotAsistLocal           ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
-nTotAsistMoneda          ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
-cIndFactElectronica      POLIZAS.IndFactElectronica%TYPE;
-cIndCalcDerechoEmis      POLIZAS.IndCalcDerechoEmis%TYPE;
-nCantPagosReal           NUMBER(5);
-fFecfinvig               FACTURAS.FECFINVIG%TYPE;      -- ICOFINVIG
+nIdFactura                 FACTURAS.IdFactura%TYPE;
+nNumPagos                  PLAN_DE_PAGOS.NumPagos%TYPE;
+nFrecPagos                 PLAN_DE_PAGOS.FrecPagos%TYPE;
+nPorcInicial               PLAN_DE_PAGOS.PorcInicial%TYPE;
+nCodCliente                POLIZAS.CodCliente%TYPE;
+cIdTipoSeg                 DETALLE_POLIZA.IdTipoSeg%TYPE;
+nTotPrimas                 DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nDifer                     DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nDiferMoneda               DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+nMtoDet                    DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nMtoDetMoneda              DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+nMtoTotal                  DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nMtoTotalMoneda            DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+cCodMoneda                 POLIZAS.Cod_Moneda%TYPE;
+nPrimaNetaMoneda           POLIZAS.PrimaNeta_Moneda%TYPE;
+nMtoPagoMoneda             FACTURAS.Monto_Fact_Moneda%TYPE;
+cCodMonedaLocal            EMPRESAS.Cod_Moneda%TYPE;
+nPrimaRestMoneda           POLIZAS.PrimaNeta_Moneda%TYPE;
+nMtoComisiMoneda           FACTURAS.MtoComisi_Local%TYPE;
+nTotPrimasMoneda           POLIZAS.PrimaNeta_Moneda%TYPE;
+nCodCia                    POLIZAS.CodCia%TYPE;
+nCodEmpresa                POLIZAS.CodEmpresa%TYPE;
+cCodPlanPago               DETALLE_POLIZA.CodPlanPago%TYPE;
+nTasaCambio                DETALLE_POLIZA.Tasa_Cambio%TYPE;
+nMtoCpto                   CONCEPTOS_PLAN_DE_PAGOS.MtoCpto%TYPE;
+nPorcCpto                  CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
+cAplica                    CONCEPTOS_PLAN_DE_PAGOS.Aplica%TYPE;
+Dummy                      NUMBER(5);
+dFecPago                   DATE;
+nMtoPago                   NUMBER(18,2);
+nMtoComisi                 NUMBER(18,2);
+nPrimaRest                 NUMBER(18,2);
+dFecHoy                    DATE;
+cGraba                     VARCHAR2(1);
+nCod_Agente                AGENTES_DETALLES_POLIZAS.Cod_Agente%TYPE;
+nMtoRecD_Local             DETALLE_RECARGO.Monto_Local%TYPE;
+nMtoRecD_Moneda            DETALLE_RECARGO.Monto_Moneda%TYPE;
+nMtoDescD_Local            DETALLE_DESCUENTO.Monto_Local%TYPE;
+nMtoDescD_Moneda           DETALLE_DESCUENTO.Monto_Moneda%TYPE;
+nMtoRec_Local              RECARGOS.Monto_Local%TYPE;
+nMtoRec_Moneda             RECARGOS.Monto_Moneda%TYPE;
+nMtoDesc_Local             DESCUENTOS.Monto_Local%TYPE;
+nMtoDesc_Moneda            DESCUENTOS.Monto_Moneda%TYPE;
+nPrimaTotalM               DETALLE_POLIZA.Prima_Moneda%TYPE;
+nPrimaTotalL               DETALLE_POLIZA.Prima_Local%TYPE;
+nFactor                    NUMBER (14,8);
+nRec_Local                 RECARGOS.Monto_Local%TYPE ;
+nRec_Moneda                RECARGOS.Monto_Moneda%TYPE;
+nDesc_Local                DESCUENTOS.Monto_Local%TYPE;
+nDesc_Moneda               DESCUENTOS.Monto_Moneda%TYPE;
+cCodPlanPagoPol            POLIZAS.CodPlanPago%TYPE;
+nPorcComis                 DETALLE_POLIZA.PorcComis%TYPE;
+nNumCert                   DETALLE_POLIZA.IdetPol%TYPE;
+nPrimaLocal                NUMBER(18,2);
+nPrimaMoneda               NUMBER(18,2);
+nIdTransac                 NUMBER(14,0);
+nMtoComisiRest             NUMBER(18,2);
+nMtoComisiMonedaRest       NUMBER(18,2);
+nMtoComisiPag              NUMBER(18,2);
+nMtoComisiMonedaPag        NUMBER(18,2);
+nMtoComiTot                NUMBER(18,2);
+nMtoComisiMonedaTot        NUMBER(18,2);
+nMtoComiL                  NUMBER(18,2);
+nMtoComisiM                NUMBER(18,2);
+nDiferC                    DETALLE_FACTURAS.Monto_Det_Local%TYPE;
+nDiferCMon                 DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+cRespPol                   VARCHAR2(1):='N';
+cRespDet                   VARCHAR2(1):='N';
+nPorcT                     NUMBER(18,2);
+nFact                      NUMBER(18,2);
+nCodTipoDoc                TIPO_DE_DOCUMENTO.CodTipoDoc%TYPE;
+nIdetPol                   DETALLE_POLIZA.IdetPol%TYPE := 0;
+cContabilidad_Automatica   EMPRESAS.Contabilidad_Automatica%TYPE;
+nIdTranc                   TRANSACCION.idtransaccion%TYPE;
+nMtoT                      FACTURAS.monto_fact_local%TYPE := 0;
+nMtoTM                     FACTURAS.monto_fact_local%TYPE := 0;
+nMtoAsistLocal             ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
+nMtoAsistMoneda            ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
+nAsistRestLocal            ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
+nAsistRestMoneda           ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
+nTotAsistLocal             ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
+nTotAsistMoneda            ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
+cIndFactElectronica        POLIZAS.IndFactElectronica%TYPE;
+cIndCalcDerechoEmis        POLIZAS.IndCalcDerechoEmis%TYPE;
+nCantPagosReal             NUMBER(5);
+fFecfinvig                 FACTURAS.FECFINVIG%TYPE;      -- ICOFINVIG
+
+nMontoPrimaCompMoneda      DETALLE_POLIZA.MontoPrimaCompMoneda%TYPE;
+nMontoPrimaAlturaCero      NUMBER(18,2);
 
 CURSOR DET_POL_Q IS
    SELECT D.Prima_Local PrimaLocal, D.Prima_Moneda PrimaMoneda, D.CodPlanPago, D.PorcComis,
-          P.FecIniVig, P.FecFinVig, P.FecEmision, D.IDetPol, D.Tasa_Cambio, D.IdTipoSeg
+          P.FecIniVig, P.FecFinVig, P.FecEmision, D.IDetPol, D.Tasa_Cambio, D.IdTipoSeg,
+          D.MontoPrimacompMoneda
      FROM DETALLE_POLIZA D, POLIZAS P
     WHERE D.Prima_Moneda  > 0
       AND D.IdPoliza      = P.IdPoliza
@@ -1174,7 +1192,7 @@ BEGIN
          ELSE
             nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
          END IF;
-
+         nMontoPrimaCompMoneda := X.MontoPrimacompMoneda / nNumPagos;
          -- Determina Meses de Vigencia para Plan de Pagos
          IF nNumPagos <= 12 THEN
             nCantPagosReal  := FLOOR(MONTHS_BETWEEN(X.FecFinVig, X.FecIniVig) / nFrecPagos);
@@ -1263,8 +1281,7 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
------ JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
-               IF nFrecPagos NOT IN (15,14,7) THEN               
+               IF nFrecPagos NOT IN (15,7) THEN
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -1318,7 +1335,7 @@ BEGIN
             -- Genera comisiones por agente por Poliza
             PROC_COMISIONPOL (nIdPoliza, nIDetPol, nCodCia, nCodEmpresa, cIdTipoSeg, cCodMoneda, nIdFactura,
                               nMtoComisiPag/nNumCert, nMtoComisiMonedaPag/nNumCert, nTasaCambio);
-
+            nMontoPrimaAlturaCero := nMtoPagoMoneda;
            -- Distribuye la comision por agente.
             FOR Y IN CPTO_PLAN_Q LOOP
                BEGIN
@@ -1401,6 +1418,12 @@ BEGIN
                   nMtoT := nMtoT + nMtoDet;
                END IF;
             END LOOP;
+            /*HGONZALEZ: CUANDO UNA POLIZA LLEG A ALTURA CERO Y REQUIERE DE RETIRO DE PRIMA NIVELADA, SE DEBE CALCULAR LA COMISION SOBRE LA PRIMA MENOS EL MONTO DE RETIRO (PRIMA COMPLEMENTARIA) */   
+            IF OC_POLIZAS.ALTURA_CERO(nCodCia, nCodEmpresa, nIdPoliza) = 'S' AND
+               OC_POLIZAS.APLICA_RETIRO_PRIMA_NIVELADA(nCodCia, nCodEmpresa, nIdPoliza) = 'S' AND
+               OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, nCodEmpresa, cIdTipoSeg) = 'S' THEN 
+               OC_FACTURAR.ACTUALIZA_VALORES_ALTURA_CERO(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdFactura, nMontoPrimaAlturaCero, nMontoPrimaCompMoneda);
+            END IF;
             OC_FACTURAS.ACTUALIZA_FACTURA(nIdFactura);
             OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdFactura,'IVASIN');
          END LOOP;
@@ -1499,7 +1522,7 @@ BEGIN
             ELSE
                nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
             END IF;
-
+            nMontoPrimaCompMoneda := X.MontoPrimacompMoneda / nNumPagos;
             -- Determina Meses de Vigencia para Plan de Pagos
             IF nNumPagos <= 12 THEN
                nCantPagosReal  := FLOOR(MONTHS_BETWEEN(X.FecFinVig, X.FecIniVig) / nFrecPagos);
@@ -1590,8 +1613,7 @@ BEGIN
                   nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                   nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                   nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
------ JMMD20211203                  IF nFrecPagos NOT IN (15,7) THEN
-                  IF nFrecPagos NOT IN (15,14,7) THEN                  
+                  IF nFrecPagos NOT IN (15,7) THEN
                      dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                   ELSE
                      dFecPago         := dFecPago + nFrecPagos;
@@ -1641,7 +1663,7 @@ BEGIN
                nMtoT := nMtoT + nMtoPago;-- + nTotAsistLocal;
                PROC_COMISIONPOL (nIdPoliza, nIDetPol, nCodCia, nCodEmpresa, cIdTipoSeg, cCodMoneda, nIdFactura,
                                  nMtoComisiPag/nNumCert, nMtoComisiMonedaPag/nNumCert, nTasaCambio);
-
+               nMontoPrimaAlturaCero := nMtoPagoMoneda;
                -- Distribuye la comision por agente.
                FOR Y IN CPTO_PLAN_Q LOOP
                   BEGIN
@@ -1725,6 +1747,12 @@ BEGIN
                      nMtoT := nMtoT + nMtoDet;
                   END IF;
                END LOOP;
+               /*HGONZALEZ: CUANDO UNA POLIZA LLEG A ALTURA CERO Y REQUIERE DE RETIRO DE PRIMA NIVELADA, SE DEBE CALCULAR LA COMISION SOBRE LA PRIMA MENOS EL MONTO DE RETIRO (PRIMA COMPLEMENTARIA) */   
+               IF OC_POLIZAS.ALTURA_CERO(nCodCia, nCodEmpresa, nIdPoliza) = 'S' AND
+                  OC_POLIZAS.APLICA_RETIRO_PRIMA_NIVELADA(nCodCia, nCodEmpresa, nIdPoliza) = 'S' AND
+                  OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, nCodEmpresa, cIdTipoSeg) = 'S' THEN 
+                  OC_FACTURAR.ACTUALIZA_VALORES_ALTURA_CERO(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdFactura, nMontoPrimaAlturaCero, nMontoPrimaCompMoneda);
+               END IF;
                OC_FACTURAS.ACTUALIZA_FACTURA(nIdFactura);
                OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdFactura,'IVASIN');
             END LOOP;
@@ -2086,8 +2114,7 @@ BEGIN
                nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1);
                nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi       := nMtoPago * X.PorcComis / 100;
------ JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
-               IF nFrecPagos NOT IN (15,14,7) THEN               
+               IF nFrecPagos NOT IN (15,7) THEN
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -2291,8 +2318,7 @@ BEGIN
                   nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1);
                   nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                   nMtoComisi       := nMtoPago * X.PorcComis / 100;
------ JMMD20211203                  IF nFrecPagos NOT IN (15,7) THEN
-                  IF nFrecPagos NOT IN (15,14,7) THEN                  
+                  IF nFrecPagos NOT IN (15,7) THEN
                      dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                   ELSE
                      dFecPago         := dFecPago + nFrecPagos;
@@ -2879,8 +2905,7 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
------ JMMD 20211203               IF nFrecPagos NOT IN (15,7) THEN
-               IF nFrecPagos NOT IN (15,14,7) THEN               
+               IF nFrecPagos NOT IN (15,7) THEN
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -3189,8 +3214,7 @@ BEGIN
                   nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                   nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                   nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
------ JMMD20211203                  IF nFrecPagos NOT IN (15,7) THEN
-                  IF nFrecPagos NOT IN (15,14,7) THEN                  
+                  IF nFrecPagos NOT IN (15,7) THEN
                      dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                   ELSE
                      dFecPago         := dFecPago + nFrecPagos;
@@ -3674,8 +3698,7 @@ BEGIN
                     nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1) ;
                     nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0) ;
                     nMtoComisi       := nMtoPago * X.PorcComis / 100;
------ JMMD 20211203                    IF nFrecPagos NOT IN (15,7) THEN
-                    IF nFrecPagos NOT IN (15,14,7) THEN                    
+                    IF nFrecPagos NOT IN (15,7) THEN
                        dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                     ELSE
                        dFecPago         := dFecPago + nFrecPagos;
@@ -3999,8 +4022,7 @@ BEGIN
                     nMtoPago         := NVL(nPrimaRest,0) / (nNumPagos - 1) ;
                     nTotPrimas       := NVL(nTotPrimas,0) + NVL(nMtoPago,0) ;
                     nMtoComisi       := nMtoPago * X.PorcComis / 100;
------ JMMD20211203                    IF nFrecPagos NOT IN (15,7) THEN
-                    IF nFrecPagos NOT IN (15,14,7) THEN                    
+                    IF nFrecPagos NOT IN (15,7) THEN
                        dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                     ELSE
                        dFecPago         := dFecPago + nFrecPagos;
@@ -4342,13 +4364,14 @@ PROCEDURE PROC_COMISIONAG(nIdPoliza NUMBER, nIdetPol NUMBER, nCodCia NUMBER,
                           nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cCodMoneda VARCHAR2,
                           nIdFactura NUMBER, nMontoDetLocal NUMBER, nMontoDetMoneda NUMBER,
                           nTasaCambio NUMBER) IS
-nMontoComiLocal   COMISIONES.Comision_Local%TYPE;
-nMontoComiMoneda  COMISIONES.Comision_Moneda%TYPE;
-nPorcComisiones   DETALLE_POLIZA.PorcComis%TYPE;
-nMontoComisiones  DETALLE_POLIZA.MontoComis%TYPE;
-nIdTransac        TRANSACCION.IdTransaccion%TYPE;
-nMonto            COMISIONES.Comision_Local%TYPE := 0;
-nCod_Agente       COMISIONES.Cod_Agente%TYPE;
+nMontoComiLocal         COMISIONES.Comision_Local%TYPE;
+nMontoComiMoneda        COMISIONES.Comision_Moneda%TYPE;
+nPorcComisiones         DETALLE_POLIZA.PorcComis%TYPE;
+nMontoComisiones        DETALLE_POLIZA.MontoComis%TYPE;
+nIdTransac              TRANSACCION.IdTransaccion%TYPE;
+nMonto                  COMISIONES.Comision_Local%TYPE := 0;
+nCod_Agente             COMISIONES.Cod_Agente%TYPE;
+nMontoPrimaCompMoneda   DETALLE_POLIZA.MontoPrimaCompMoneda%TYPE := 0;
 
 CURSOR C_AGENTES IS
    SELECT Cod_Agente, Porc_Comision
@@ -4380,7 +4403,8 @@ BEGIN
           WHERE IdPoliza    = nIdPoliza
             AND Correlativo = nIdetPol
             AND CodCia      = nCodCia
-            AND IDTIPOSEG   = CIDTIPOSEG;
+            AND IDTIPOSEG   = cIdTipoSeg;
+         
 
          IF NVL(nMontoComisiones,0) = 0 THEN
             nMontoComiLocal  := nMontoDetLocal * R_Agentes.Porc_Com_Distribuida/100 * (I.Porc_Comision/100);
@@ -5190,8 +5214,7 @@ BEGIN
         nMtoComisiMonedaRest := NVL(nMtoComisiM,0)  - NVL(nMtoComisiMonedaPag,0);
         NP := nCuota;
         BEGIN
------ JMMD20211203           IF nFrecPagos NOT IN (15,7) THEN
-           IF nFrecPagos NOT IN (15,14,7) THEN           
+           IF nFrecPagos NOT IN (15,7) THEN
               SELECT TRUNC(NVL(ADD_MONTHS(MAX(FECVENC),1),SYSDATE))
                 INTO dFecPago
                 FROM FACTURAS
@@ -5502,8 +5525,7 @@ BEGIN
          NP := nCuota;
      -- nNumPagos := 12;
          BEGIN
------ JMMD20211203            IF nFrecPagos NOT IN (15,7) THEN
-            IF nFrecPagos NOT IN (15,14,7) THEN            
+            IF nFrecPagos NOT IN (15,7) THEN
                SELECT TRUNC(NVL(ADD_MONTHS(MAX(FECVENC),1),SYSDATE))
                  INTO dFecPago
                  FROM FACTURAS
@@ -5530,8 +5552,7 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
------ JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
-               IF nFrecPagos NOT IN (15,14,7) THEN               
+               IF nFrecPagos NOT IN (15,7) THEN
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -6084,8 +6105,7 @@ BEGIN
             nMtoComisiMonedaPag := NVL(nMtoComisiMonedaPag,0) + (NVL(X.PrimaMoneda,0) * X.PorcComis / 100) / nNumPagos ;
          END IF;
          IF X.StsPoliza = 'EMI' THEN
------ JMMD 20211203            IF nFrecPagos NOT IN (15,7) THEN
-            IF nFrecPagos NOT IN (15,14,7) THEN            
+            IF nFrecPagos NOT IN (15,7) THEN
                BEGIN
                   SELECT TRUNC(NVL(ADD_MONTHS(MAX(FECVENC),nFrecPagos),SYSDATE))
                     INTO dFecPago
@@ -6431,8 +6451,7 @@ BEGIN
       --   FOR NP IN 1..nNumPagos LOOP
           NP := nCuota;
          IF cStsPoliza = 'EMI' THEN
------ JMMD20211203            IF nFrecPagos NOT IN (15,7) THEN
-            IF nFrecPagos NOT IN (15,14,7) THEN            
+            IF nFrecPagos NOT IN (15,7) THEN
                BEGIN
                   SELECT TRUNC(NVL(ADD_MONTHS(MAX(FECVENC),nFrecPagos),SYSDATE))
                     INTO dFecPago
@@ -6464,8 +6483,7 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
------JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
-               IF nFrecPagos NOT IN (15,14,7) THEN               
+               IF nFrecPagos NOT IN (15,7) THEN
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -7352,8 +7370,7 @@ BEGIN
                nMtoComisiPag       := NVL(nMtoComisiRest,0) / (nNumPagos - 1);
                nTotPrimas          := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                nMtoComisi          := NVL(nMtoComisi,0) + NVL(nMtoComisiPag,0);
------ JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
-               IF nFrecPagos NOT IN (15,14,7) THEN               
+               IF nFrecPagos NOT IN (15,7) THEN
                   dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
                ELSE
                   dFecPago         := dFecPago + nFrecPagos;
@@ -7565,5 +7582,80 @@ END PROC_EMITE_FACT_ENDO_PERIODO;
          rollback;
          return 0;
  END F_GET_FACT;
+ 
+PROCEDURE ACTUALIZA_VALORES_ALTURA_CERO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetPol NUMBER, nIdFactura NUMBER, nMontoDetMoneda  NUMBER, nMontoPrimacompMoneda NUMBER) IS
+nCodAgente        AGENTES_DETALLES_POLIZAS.Cod_Agente%TYPE;
+cIdTipoSeg        AGENTES_DETALLES_POLIZAS.IdTipoSeg%TYPE;
+cCodMoneda        POLIZAS.Cod_Moneda%TYPE;
+nTasaCambio       DETALLE_POLIZA.Tasa_Cambio%TYPE;
+dFecIniVig        POLIZAS.FecIniVig%TYPE;
+nComisionMoneda   COMISIONES.Comision_Moneda%TYPE;
+nComisionLocal    COMISIONES.Comision_Local%TYPE;
+BEGIN
+   -- PRIMERO REGENERAMOS COMISIONES 
+   DELETE DETALLE_COMISION 
+    WHERE IdComision IN (SELECT IdComision
+                           FROM COMISIONES
+                          WHERE CodCia       = nCodCia
+                            AND CodEmpresa   = nCodEmpresa
+                            AND IdPoliza     = nIdPoliza
+                            AND IdetPol      = nIdetPol
+                            AND IdFactura    = nIdFactura);
+                            
+   DELETE COMISIONES
+    WHERE CodCia       = nCodCia
+      AND CodEmpresa   = nCodEmpresa
+      AND IdPoliza     = nIdPoliza
+      AND IdetPol      = nIdetPol
+      AND IdFactura    = nIdFactura;
+      
+   BEGIN
+      SELECT D.IdTipoSeg, P.Cod_Moneda, D.Tasa_Cambio
+        INTO cIdTipoSeg, cCodMoneda, nTasaCambio
+        FROM DETALLE_POLIZA D, POLIZAS P 
+       WHERE D.CodCia      = P.CodCia
+         AND D.CodEmpresa  = P.CodEmpresa
+         AND D.IdPoliza    = P.IdPoliza
+         AND P.CodCia      = nCodCia
+         AND P.IdPoliza    = nIdPoliza
+         AND D.IdetPol     = nIdetPol;
+   END;
+   OC_FACTURAR.PROC_COMISIONAG(nIdPoliza, nIdetPol, nCodCia, nCodEmpresa, cIdTipoSeg, cCodMoneda, nIdFactura, nMontoDetMoneda + nMontoPrimacompMoneda, nMontoDetMoneda + nMontoPrimacompMoneda, nTasaCambio);
+   --- UNA VEZ RECALCULADAS LAS COMISIONES, SE AJUSTA LA COMISION EN EL DETALLE DE FACTURAS, FACTURAS Y DETALLE DE POLIZA
+   SELECT SUM(Comision_Moneda), SUM(Comision_Local)
+     INTO nComisionMoneda, nComisionLocal
+     FROM COMISIONES 
+    WHERE CodCia       = nCodCia
+      AND CodEmpresa   = nCodEmpresa
+      AND IdPoliza     = nIdPoliza
+      AND IdetPol      = nIdetPol
+      AND IdFactura    = nIdFactura;
+      
+   UPDATE FACTURAS   
+      SET MtoComisi_Local        = nComisionLocal,
+          MtoComisi_Moneda       = nComisionMoneda,
+          MontoPrimaCompMoneda   = nMontoPrimacompMoneda,
+          MontoPrimaCompLocal    = nMontoPrimacompMoneda * nTasaCambio
+    WHERE CodCia       = nCodCia
+      AND IdPoliza     = nIdPoliza
+      AND IdetPol      = nIdetPol
+      AND IdFactura    = nIdFactura;
+  
+--   SELECT SUM(MtoComisi_Moneda) 
+--     INTO nComisionMoneda
+--     FROM FACTURAS
+--    WHERE CodCia       = nCodCia
+--      AND IdPoliza     = nIdPoliza
+--      AND IdetPol      = nIdetPol
+--      AND IdFactura    = nIdFactura;
+--      
+--   UPDATE DETALLE_POLIZA
+--      SET MontoComis = nComisionMoneda
+--    WHERE CodCia       = nCodCia
+--      AND CodEmpresa   = nCodEmpresa
+--      AND IdPoliza     = nIdPoliza
+--      AND IdetPol      = nIdetPol;
+--      
+END ACTUALIZA_VALORES_ALTURA_CERO;
 
 END OC_FACTURAR;

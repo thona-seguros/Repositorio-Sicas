@@ -81,20 +81,24 @@ BEGIN
 END INSERTAR_DETALLE;
 
 PROCEDURE ACTUALIZA_VALORES(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) IS
-nSumaLocal          COBERTURAS.Suma_Asegurada_Local%TYPE;
-nSumaMoneda         COBERTURAS.Suma_Asegurada_Moneda%TYPE;
-nPrimaLocal         COBERTURAS.Prima_Local%TYPE;
-nPrimaMoneda        COBERTURAS.Prima_Moneda%TYPE;
-cIndDeclara         DETALLE_POLIZA.IndDeclara%TYPE;
-cIndSinAseg         DETALLE_POLIZA.IndSinAseg%TYPE;
-nMontoAsistLocal    ASISTENCIAS_ASEGURADO.MontoAsistLocal%TYPE;
-nMontoAsistMoneda   ASISTENCIAS_ASEGURADO.MontoAsistMoneda%TYPE;
+nSumaLocal              COBERTURAS.Suma_Asegurada_Local%TYPE;
+nSumaMoneda             COBERTURAS.Suma_Asegurada_Moneda%TYPE;
+nPrimaLocal             COBERTURAS.Prima_Local%TYPE;
+nPrimaMoneda            COBERTURAS.Prima_Moneda%TYPE;
+cIndDeclara             DETALLE_POLIZA.IndDeclara%TYPE;
+cIndSinAseg             DETALLE_POLIZA.IndSinAseg%TYPE;
+nMontoAsistLocal        ASISTENCIAS_ASEGURADO.MontoAsistLocal%TYPE;
+nMontoAsistMoneda       ASISTENCIAS_ASEGURADO.MontoAsistMoneda%TYPE;
+nMontoPrimaCompMoneda   DETALLE_POLIZA.MontoPrimaCompMoneda%TYPE;
+nMontoPrimaCompLocal    DETALLE_POLIZA.MontoPrimaCompLocal%TYPE;
 
 BEGIN
    SELECT NVL(SUM(SumaAseg_Local),0), NVL(SUM(SumaAseg_Moneda),0),
-          NVL(SUM(Prima_Local),0), NVL(SUM(Prima_Moneda),0)
+          NVL(SUM(Prima_Local),0), NVL(SUM(Prima_Moneda),0),
+          NVL(SUM(PrimaNivMoneda),0), NVL(SUM(PrimaNivLocal),0)
      INTO nSumaLocal, nSumaMoneda,
-          nPrimaLocal, nPrimaMoneda
+          nPrimaLocal, nPrimaMoneda,
+          nMontoPrimaCompMoneda, nMontoPrimaCompLocal
      FROM COBERT_ACT
     WHERE CodCia         = nCodCia
       AND IdPoliza       = nIdPoliza
@@ -110,9 +114,11 @@ BEGIN
       AND StsAsistencia NOT IN ('EXCLUI');
 
    SELECT NVL(nSumaLocal,0) + NVL(SUM(SumaAseg_Local),0), NVL(nSumaMoneda,0) + NVL(SUM(SumaAseg_Moneda),0),
-          NVL(nPrimaLocal,0) + NVL(SUM(Prima_Local),0), NVL(nPrimaMoneda,0) + NVL(SUM(Prima_Moneda),0)
+          NVL(nPrimaLocal,0) + NVL(SUM(Prima_Local),0), NVL(nPrimaMoneda,0) + NVL(SUM(Prima_Moneda),0),
+          NVL(nMontoPrimaCompMoneda,0) + NVL(SUM(PrimaNivMoneda),0), NVL(nMontoPrimaCompLocal,0) + NVL(SUM(PrimaNivLocal),0)
      INTO nSumaLocal, nSumaMoneda,
-          nPrimaLocal, nPrimaMoneda
+          nPrimaLocal, nPrimaMoneda,
+          nMontoPrimaCompMoneda, nMontoPrimaCompLocal
      FROM COBERT_ACT_ASEG
     WHERE CodCia         = nCodCia
       AND IdPoliza       = nIdPoliza
@@ -127,12 +133,19 @@ BEGIN
       AND IdPoliza        = nIdPoliza
       AND IDetPol         = nIDetPol
       AND StsAsistencia NOT IN ('EXCLUI');
+      
+   IF NVL(nMontoPrimaCompMoneda,0) > 0 THEN --- SOLO SE DEBERÁ ACTUALIZAR EL MONTO DE RETIRO CUANDO LA PRIMA COMPLEMENTARIA SEA <= 0 (ALTURA CERO DE LA PÓLIZA)
+      nMontoPrimaCompMoneda   := 0;
+      nMontoPrimaCompLocal    := 0;
+   END IF;
 
    UPDATE DETALLE_POLIZA
-      SET Suma_Aseg_Local  = NVL(nSumaLocal,0),
-          Suma_Aseg_Moneda = NVL(nSumaMoneda,0),
-          Prima_Local      = NVL(nPrimaLocal,0) + NVL(nMontoAsistLocal,0),
-          Prima_Moneda     = NVL(nPrimaMoneda,0) + NVL(nMontoAsistMoneda,0)
+      SET Suma_Aseg_Local        = NVL(nSumaLocal,0),
+          Suma_Aseg_Moneda       = NVL(nSumaMoneda,0),
+          Prima_Local            = NVL(nPrimaLocal,0) + NVL(nMontoAsistLocal,0),
+          Prima_Moneda           = NVL(nPrimaMoneda,0) + NVL(nMontoAsistMoneda,0),
+          MontoPrimaCompMoneda   = NVL(nMontoPrimaCompMoneda,0),
+          MontoPrimaCompLocal    = NVL(nMontoPrimaCompLocal,0)
     WHERE CodCia    = nCodCia
       AND IdPoliza  = nIdPoliza
       AND IDetPol   = nIDetPol;

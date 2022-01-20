@@ -414,7 +414,7 @@ BEGIN
       cCodPlanPago := OC_POLIZAS.PLAN_DE_PAGOS(nCodCia, nCodEmpresa, nIdPoliza);
       nCantReg     := OC_PLAN_DE_PAGOS.CANTIDAD_PAGOS(nCodCia, nCodEmpresa, cCodPlanPago);
    END IF;
-   nCantReg       := CEIL(nCantReg/nMeses);
+   --nCantReg       := CEIL(nCantReg/nMeses);
    nTasaCambio    := OC_GENERALES.TASA_DE_CAMBIO(GT_FAI_TIPOS_DE_FONDOS.MONEDA_FONDO(nCodCia, nCodEmpresa, cTipoFondo), dFecAporte);
    dFecTasaCambio := dFecAporte;
    WHILE(nNumAporte < nCantReg) LOOP

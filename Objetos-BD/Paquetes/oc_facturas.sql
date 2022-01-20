@@ -1,5 +1,89 @@
-CREATE OR REPLACE PACKAGE OC_FACTURAS IS
--- PLAN DE PAGOS CATORCENAL                                               2021/12/03  JMMD 20211221
+--
+-- OC_FACTURAS  (Package) 
+--
+--  Dependencies: 
+--   STANDARD (Package)
+--   STANDARD (Package)
+--   DBMS_STANDARD (Package)
+--   VALORES_DE_LISTAS (Table)
+--   NOTAS_DE_CREDITO (Table)
+--   NOTIFICACOBRANZAOK (Procedure)
+--   OC_AGENTES (Package)
+--   OC_AGENTE_POLIZA_T (Package)
+--   OC_ARCHIVO (Package)
+--   PLAN_DE_PAGOS (Table)
+--   POLIZAS (Table)
+--   PRIMAS_DEPOSITO (Table)
+--   FAI_CONCENTRADORA_FONDO (Table)
+--   FAI_FONDOS_DETALLE_POLIZA (Table)
+--   FAI_MOVIMIENTOS_FONDOS (Table)
+--   OC_DETALLE_TRANSACCION (Package)
+--   OC_DISTRITO (Package)
+--   OC_EJECUTIVO_COMERCIAL (Package)
+--   OC_EMPRESAS (Package)
+--   OC_FACTURAR (Package)
+--   OC_FACT_ELECT_CONF_DOCTO (Package)
+--   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
+--   GT_FAI_CONCENTRADORA_FONDO (Package)
+--   GT_FAI_FONDOS_DETALLE_POLIZA (Package)
+--   GT_FAI_MOVIMIENTOS_FONDOS (Package)
+--   GT_FAI_TIPOS_DE_FONDOS (Package)
+--   GT_FAI_TIPOS_FONDOS_PRODUCTOS (Package)
+--   CONCEPTOS_PLAN_DE_PAGOS (Table)
+--   CORREOS_ELECTRONICOS_PNJ (Table)
+--   DETALLE_COMISION (Table)
+--   DETALLE_FACTURAS (Table)
+--   DETALLE_NOTAS_DE_CREDITO (Table)
+--   OC_TIPOS_DE_SEGUROS (Package)
+--   OC_TRANSACCION (Package)
+--   PAGOS (Table)
+--   PARAMETROS_EMISION (Table)
+--   PARAMETROS_ENUM_FAC (Table)
+--   PARAMETROS_GLOBALES (Table)
+--   PERSONA_NATURAL_JURIDICA (Table)
+--   AGENTES (Table)
+--   AGENTES_DETALLES_POLIZAS (Table)
+--   AGENTES_DISTRIBUCION_COMISION (Table)
+--   AGENTE_POLIZA (Table)
+--   ASEGURADO (Table)
+--   PROVINCIA (Table)
+--   OC_CORREOS_ELECTRONICOS_PNJ (Package)
+--   OC_DETALLE_COMISION (Package)
+--   OC_DETALLE_FACTURAS (Package)
+--   OC_DETALLE_PRIMAS_DEPOSITO (Package)
+--   CATALOGO_DE_CONCEPTOS (Table)
+--   CLIENTES (Table)
+--   COLONIA (Table)
+--   COMISIONES (Table)
+--   TASAS_CAMBIO (Table)
+--   OC_FILIALES (Package)
+--   OC_GENERALES (Package)
+--   OC_MONEDA (Package)
+--   OC_NOTAS_DE_CREDITO (Package)
+--   OC_PAGOS (Package)
+--   OC_PLAN_DE_PAGOS (Package)
+--   OC_ASEGURADO_CERTIFICADO (Package)
+--   OC_CATALOGO_DE_CONCEPTOS (Package)
+--   OC_CLIENTES (Package)
+--   OC_COLONIA (Package)
+--   OC_COMISIONES (Package)
+--   OC_COMISION_COBRADOR (Package)
+--   OC_COMPROBANTES_CONTABLES (Package)
+--   OC_CONCEPTOS_PLAN_DE_PAGOS (Package)
+--   DETALLE_POLIZA (Table)
+--   DETALLE_TRANSACCION (Table)
+--   DIRECCIONES_PNJ (Table)
+--   DISTRITO (Table)
+--   EMPRESAS (Table)
+--   ENDOSOS (Table)
+--   FACTURAS (Table)
+--   OC_PRIMAS_DEPOSITO (Package)
+--   OC_PROVINCIA (Package)
+--   TIPO_DE_DOCUMENTO (Table)
+--   TRANSACCION (Table)
+--
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
+
 PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                    dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER);
 
@@ -44,7 +128,7 @@ FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoli
                         nIdFactura     NUMBER,   nIdEndoso      NUMBER,  dFecIniVigFact DATE,
                         dFecFinVigPol  DATE,     nNUMCUOTA      NUMBER,  cCodPlanPagos  VARCHAR2) RETURN DATE;   -- INICIA FINVIG  LARPLA
 
-FUNCTION F_GET_FACT ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER; --SEQ XDS 2016/07/27
+FUNCTION F_GET_FACT ( P_Msg_Regreso    out  nocopy varchar2 ) RETURN NUMBER; --SEQ XDS 2016/07/27
 
 FUNCTION EN_COBRANZA_MASIVA(nCodCia NUMBER, nIdFactura NUMBER) RETURN VARCHAR2;
 
@@ -65,16 +149,18 @@ PROCEDURE ACTUALIZA_NUMERO_INTENTOS (nIdFactura  NUMBER, nCodCia  NUMBER, nNumIn
 PROCEDURE MARCA_INTENTOS_CUMPLIDOS (nIdFactura  NUMBER, nCodCia  NUMBER);
 
 FUNCTION CALCULA_AÑO_POLIZA(nIdPoliza NUMBER, nFechaproceso  DATE) RETURN NUMBER;
---FUNCTION APLICAR_APORTES_FONDOS(cNumReciboPago VARCHAR2, dFecPago DATE, 
---                               nMontoPago NUMBER, cFormPago VARCHAR2, cEntPago VARCHAR2, 
---                               nIdTransaccion NUMBER, nPrimaNivelada NUMBER, nMontoAporteFondo NUMBER) RETURN NUMBER;
 
+FUNCTION PRIMA_COMPLEMENTARIA (nCodCia NUMBER, nIdPoliza NUMBER, nIdFactura NUMBER) RETURN NUMBER;
+
+FUNCTION PAGAR_ALTURA_CERO(nIdFactura NUMBER, cNumReciboPago VARCHAR2, dFecPago DATE, nMontoPago NUMBER, 
+                           cFormPago VARCHAR2, cEntPago VARCHAR2, nIdTransaccion NUMBER, 
+                           nMontoPrimaCompMoneda NUMBER, nMontoAporteFondo NUMBER) RETURN NUMBER;
 
 END OC_FACTURAS;
 /
 
 --
--- OC_FACTURAS  (Package Body) 
+-- OC_FACTURAS  (Package B) 
 --
 --  Dependencies: 
 --   OC_FACTURAS (Package)
@@ -86,8 +172,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO   2018/03/09  ICO FINVIG
 -- FORMAS DE PAGO                                                         2018/11/05  ICO FREPAG
 -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                   2019/03/27  ICO LARPLA
--- PLAN DE PAGOS CATORCENAL                                               2021/12/03  JMMD 20211221            
----
+--
 PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                    dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER) IS
 nCodCia                  EMPRESAS.CodCia%TYPE;
@@ -342,61 +427,61 @@ FUNCTION INSERTAR(nIdPoliza     NUMBER,    nIDetPol        NUMBER,   nCodCliente
                   ) RETURN NUMBER IS
 --
 nIdFactura      FACTURAS.IDFACTURA%TYPE;
-p_msg_regreso   VARCHAR2(50);                 -- XDS
-nID_AÑO_POLIZA  FACTURAS.ID_AÑO_POLIZA%TYPE;  
-dFECFINVIGFACT  FACTURAS.FECFINVIG%TYPE;      
-dFECFINVIGPOL   POLIZAS.FECFINVIG%TYPE;       
-nCODEMPRESA     POLIZAS.CODEMPRESA%TYPE;      
-cCODPLANPAGO    POLIZAS.CODPLANPAGO%TYPE;     
+P_Msg_Regreso   VARCHAR2(50);                 -- XDS
+nId_Año_Poliza  FACTURAS.Id_Año_Poliza%TYPE;  
+dFecFinVigFact  FACTURAS.FecFinVig%TYPE;      
+dFecFinVigPol   POLIZAS.FecFinVig%TYPE;       
+nCodEmpresa     POLIZAS.CodEmpresa%TYPE;      
+cCodPlanPago    POLIZAS.CodPlanPago%TYPE;     
 BEGIN
   --
   BEGIN     
-    SELECT P.FECFINVIG,   P.CODEMPRESA,   P.CODPLANPAGO
-      INTO dFECFINVIGPOL, nCODEMPRESA,    cCODPLANPAGO   
+    SELECT P.FecFinVig,   P.CodEmpresa,   P.CodPlanPago
+      INTO dFecFinVigPol, nCodEmpresa,    cCodPlanPago   
       FROM POLIZAS P
      WHERE P.IDPOLIZA = nIdPoliza;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
-         dFECFINVIGPOL := '';
-         nCODEMPRESA   := '';
-         cCODPLANPAGO  := '';
+         dFecFinVigPol := '';
+         nCodEmpresa   := '';
+         cCodPlanPago  := '';
     WHEN TOO_MANY_ROWS THEN
-         dFECFINVIGPOL := '';
-         nCODEMPRESA   := '';
-         cCODPLANPAGO  := '';
+         dFecFinVigPol := '';
+         nCodEmpresa   := '';
+         cCodPlanPago  := '';
     WHEN OTHERS THEN
-         dFECFINVIGPOL := '';
-         nCODEMPRESA   := '';
-         cCODPLANPAGO  := '';
+         dFecFinVigPol := '';
+         nCodEmpresa   := '';
+         cCodPlanPago  := '';
   END;                
   --
-  nIdFactura     := OC_FACTURAS.F_GET_FACT(p_msg_regreso);  -- Cambio a secuencia XDS
+  nIdFactura     := OC_FACTURAS.F_GET_FACT(P_Msg_Regreso);  -- Cambio a secuencia XDS
   --
-  nID_AÑO_POLIZA := OC_FACTURAS.CALCULA_AÑO_POLIZA(nIdPoliza, dFecPago); 
+  nId_Año_Poliza := OC_FACTURAS.CALCULA_AÑO_POLIZA(nIdPoliza, dFecPago); 
   --
-  dFECFINVIGFACT := OC_FACTURAS.VIGENCIA_FINAL(nCodCia,       nCODEMPRESA,  nIdPoliza, 
+  dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL(nCodCia,       nCodEmpresa,  nIdPoliza, 
                                                nIdFactura,    nIdEndoso,    dFecPago,
-                                               dFecFinVigPol, nNumPago,     cCODPLANPAGO);
+                                               dFecFinVigPol, nNumPago,     cCodPlanPago);
   --
   INSERT INTO FACTURAS
-          (IdFactura,            IdPoliza,           IDetPol,           CodCliente, 
-           NumFact,              FecVenc,            Monto_Fact_Local,  Monto_Fact_Moneda, 
-           StsFact,              FecSts,             ReciboPago,        FecAnul, 
-           MotivAnul,            IdEndoso,           MtoComisi_Local,   MtoComisi_Moneda, 
-           NumCuota,             Tasa_Cambio,        CodGenerador,      CodTipoDoc,
-           CodCia,               Saldo_Local,        Saldo_Moneda,      Cod_Moneda, 
-           CodResPago,           IdTransaccion,      IndContabilizada,  FecContabilizada,
-           IndFactElectronica,   IndGenAviCob,       FecGenAviCob,      FECFINVIG,
-           CODPLANPAGO,          ID_AÑO_POLIZA)
-  VALUES  (nIdFactura,           nIdPoliza,          nIDetPol,          nCodCliente, 
-           NULL,                 dFecPago,           nMtoPagoLocal,     nMtoPagoMoneda, 
-           'EMI',                TRUNC(SYSDATE),     NULL,              NULL, 
-           NULL,                 nIdEndoso,          nMtoComisiLocal,   nMtoComisiMoneda, 
-           nNumPago,             nTasaCambio,        cCod_Agente,       cCodTipoDoc,
-           nCodCia,              nMtoPagoLocal,      nMtoPagoMoneda,    cCodMoneda, 
-           nCodResPago,          nIdTransaccion,     'N',               NULL,
-           cIndFactElectronica,  'N',                NULL,              dFECFINVIGFACT,
-           cCODPLANPAGO,         nID_AÑO_POLIZA);
+          (IdFactura,            IdPoliza,           IDetPol,              CodCliente, 
+           NumFact,              FecVenc,            Monto_Fact_Local,     Monto_Fact_Moneda, 
+           StsFact,              FecSts,             ReciboPago,           FecAnul, 
+           MotivAnul,            IdEndoso,           MtoComisi_Local,      MtoComisi_Moneda, 
+           NumCuota,             Tasa_Cambio,        CodGenerador,         CodTipoDoc,
+           CodCia,               Saldo_Local,        Saldo_Moneda,         Cod_Moneda, 
+           CodResPago,           IdTransaccion,      IndContabilizada,     FecContabilizada,
+           IndFactElectronica,   IndGenAviCob,       FecGenAviCob,         FecFinVig,
+           CodPlanPago,          Id_Año_Poliza,      MontoPrimaCompLocal,  MontoPrimaCompMoneda)
+  VALUES  (nIdFactura,           nIdPoliza,          nIDetPol,             nCodCliente, 
+           NULL,                 dFecPago,           nMtoPagoLocal,        nMtoPagoMoneda, 
+           'EMI',                TRUNC(SYSDATE),     NULL,                 NULL, 
+           NULL,                 nIdEndoso,          nMtoComisiLocal,      nMtoComisiMoneda, 
+           nNumPago,             nTasaCambio,        cCod_Agente,          cCodTipoDoc,
+           nCodCia,              nMtoPagoLocal,      nMtoPagoMoneda,       cCodMoneda, 
+           nCodResPago,          nIdTransaccion,     'N',                  NULL,
+           cIndFactElectronica,  'N',                NULL,                 dFecFinVigFact,
+           cCodPlanPago,         nId_Año_Poliza,     0,                    0);
   --
   RETURN(nIdFactura);
   --
@@ -1463,7 +1548,7 @@ CURSOR FACT_Q IS
                                    END FormaPago                                          --  FIN                                           MAGO
      FROM FACTURAS
     WHERE CodCia             = nCodCia
-      AND IdFactura          = nIdFactura -- Se Agrega para Mandar solo Facturas Seleccionadas por el usuario
+      AND IdFactura          = nIdFactura -- Se Agrega para MANDar solo Facturas Seleccionadas por el usuario
       AND IndFactElectronica = 'S'
       AND FecEnvFactElec    IS NULL
     ORDER BY IdFactura;
@@ -1495,7 +1580,7 @@ BEGIN
          SELECT numpagos
            INTO nTotFacturas
            FROM PLAN_DE_PAGOS
-          WHERE CODPLANPAGO = cCodPlanPagos;
+          WHERE CodPlanPago = cCodPlanPagos;
       ELSE
          SELECT TipoEndoso
            INTO cTipoEndoso
@@ -1518,7 +1603,7 @@ BEGIN
             SELECT numpagos
               INTO nTotFacturas
               FROM PLAN_DE_PAGOS
-             WHERE CODPLANPAGO = (SELECT CODPLANPAGO
+             WHERE CodPlanPago = (SELECT CodPlanPago
                                     FROM ENDOSOS
                                    WHERE IdPoliza    = W.IdPoliza
                                      AND IdEndoso    = W.IdEndoso);
@@ -1686,7 +1771,7 @@ BEGIN
       SET FecEnvFactElec     = SYSDATE,
           CodUsuarioEnvFact  = USER
     WHERE CodCia             = nCodCia
-      AND IdFactura          = nIdFactura -- Se Agrega para Mandar solo Facturas Seleccionadas por el usuario
+      AND IdFactura          = nIdFactura -- Se Agrega para MANDar solo Facturas Seleccionadas por el usuario
       AND IndFactElectronica = 'S'
       AND FecEnvFactElec    IS NULL;
 EXCEPTION
@@ -1729,7 +1814,7 @@ CURSOR FACT_Q IS
           IdTransaccion, NumCuota, FolioFactElec
      FROM FACTURAS
     WHERE CodCia               = nCodCia
-      AND IdFactura            = nIdFactura -- Se Agrega para Mandar solo Facturas Seleccionadas por el usuario
+      AND IdFactura            = nIdFactura -- Se Agrega para MANDar solo Facturas Seleccionadas por el usuario
       AND IndFactElectronica   = 'S'
       AND FolioFactElec       IS NOT NULL
       AND CodUsuarioEnvFactAnu = 'XENVIAR'
@@ -1887,10 +1972,6 @@ BEGIN
          cDescFrecPago := 'QUINCENAL'; -- FREPAG
       ELSIF nFrecPagos = 7 THEN        -- FREPAG
          cDescFrecPago := 'SEMANAL';   -- FREPAG
-------------- jmmd20211203
-      ELSIF nFrecPagos = 14 THEN        -- FREPAG
-         cDescFrecPago := 'CATORCENAL';   -- FREPAG 
-------------- jmmd20211203                 
       END IF;
    END IF;
    RETURN(cDescFrecPago);
@@ -2047,12 +2128,12 @@ END ANULAR;
 
 PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFacturaAnu NUMBER, nIdTransaccion NUMBER) IS
 nIdFactura    FACTURAS.IdFactura%TYPE;
-fFecfinvig    FACTURAS.FECFINVIG%TYPE;      -- ICOFINVIG
+fFecFinVig    FACTURAS.FecFinVig%TYPE;      -- ICOFINVIG
 
 CURSOR FACT_Q IS
    SELECT IdPoliza, IDetPol, CodCliente, FecVenc, Monto_Fact_Local, Monto_Fact_Moneda, IdEndoso,
           MtoComisi_Local, MtoComisi_Moneda, NumCuota, Tasa_Cambio, CodGenerador, CodTipoDoc,
-          Cod_Moneda, CodResPago, IndFactElectronica, IndGenAviCob, FecGenAviCob, FECFINVIG, CODPLANPAGO           --ICOFINVIG
+          Cod_Moneda, CodResPago, IndFactElectronica, IndGenAviCob, FecGenAviCob, FecFinVig, CodPlanPago           --ICOFINVIG
      FROM FACTURAS
     WHERE CodCia    = nCodCia
       AND IdFactura = nIdFacturaAnu;
@@ -2259,7 +2340,7 @@ nCod_Agente        AGENTE_POLIZA.Cod_Agente%TYPE;
 nIdNcr             NOTAS_DE_CREDITO.IdNcr%TYPE;
 nIdNcrAnt          NOTAS_DE_CREDITO.IdNcr%TYPE;
 cExiste            VARCHAR2(1);
-fFecfinvig         FACTURAS.FECFINVIG%TYPE;      -- ICOFINVIG
+fFecFinVig         FACTURAS.FecFinVig%TYPE;      -- ICOFINVIG
 
 CURSOR PAG_Q IS
    SELECT F.IdFactura, F.CodCobrador, F.IDetPol,
@@ -2298,7 +2379,7 @@ CURSOR FACT_ANU_Q IS
           F.MtoComisi_Local, F.MtoComisi_Moneda, F.NumCuota, F.Tasa_Cambio, F.CodGenerador, F.CodTipoDoc,
           F.Cod_Moneda, F.CodResPago, F.IndFactElectronica, F.IndGenAviCob, F.FecGenAviCob, D.IdTipoSeg,
           F.IdFactura,
-          F.FECFINVIG,           F.CODPLANPAGO           --ICOFINVIG
+          F.FecFinVig,           F.CodPlanPago           --ICOFINVIG
      FROM FACTURAS F, DETALLE_POLIZA D
     WHERE F.CodCia           = nCodCia
       AND F.IdPoliza         = nIdPoliza
@@ -2319,7 +2400,7 @@ CURSOR NCR_ANU_Q IS
    SELECT N.IdPoliza, N.IDetPol, N.CodCliente, N.FecDevol, N.Monto_Ncr_Local, N.Monto_Ncr_Moneda, N.IdEndoso,
           N.MtoComisi_Local, N.MtoComisi_Moneda, N.Tasa_Cambio, N.Cod_Agente, N.CodTipoDoc,
           N.CodMoneda, N.IndFactElectronica, D.IdTipoSeg, N.IdNcr,
-          N.FECFINVIG,            N.CODPLANPAGO
+          N.FecFinVig,            N.CodPlanPago
      FROM NOTAS_DE_CREDITO N, DETALLE_POLIZA D
     WHERE N.CodCia           = nCodCia
       AND N.IdPoliza         = nIdPoliza
@@ -2678,14 +2759,6 @@ BEGIN
         ELSE
            dFecFinVigFact := dFecIniVigFact + nFrecPagos;
         END IF;
------------ JMMD20211203
-     ELSIF nFrecPagos = 14 THEN
-        IF nNUMCUOTA = 26 THEN
-           dFecFinVigFact := dFecFinVigPol;
-        ELSE
-           dFecFinVigFact := dFecIniVigFact + nFrecPagos;
-        END IF;
------------ JMMD20211203                
      ELSIF nFrecPagos = 7 THEN
         IF nNUMCUOTA = 52 THEN
            dFecFinVigFact := dFecFinVigPol;
@@ -2711,58 +2784,50 @@ END VIGENCIA_FINAL;   -- FIN FINVIG  LARPLA
 --------------------------------------------------------------------
    -- Funcion para buscar el proximo numero de Facturas   ---
 --------------------------------------------------------------------
- FUNCTION F_GET_FACT ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER AS
+FUNCTION F_GET_FACT ( P_Msg_Regreso OUT NOCOPY VARCHAR2 ) RETURN NUMBER AS
+PRAGMA AUTONOMOUS_TRANSACTION;
 
+vNumFACT        PARAMETROS_ENUM_FAC.Paen_Cont_Fin%type;
+vNombreTabla    varchar2(30);
+vIdProducto     number(6);
+BEGIN
+ -- Buscar el nombre de la tabla de la cual se obtendra por la descripcion y la bANDera
+   SELECT PA.Pame_Ds_Numerador, PA.Paem_Id_Producto
+     INTO vNombreTabla, vIdProducto
+     FROM PARAMETROS_EMISION PA
+    WHERE PA.Paem_Cd_Producto   =  4
+      AND PA.Paem_Des_Producto  = 'FACTURAS'
+      AND Pa.Paem_Flag          =  1;
 
-      vNumFACT        parametros_enum_fac.paen_cont_fin%type;
-      vNombreTabla    varchar2(30);
-      vIdProducto     number(6);
+ -- Obtener el numero de facturas
 
+  SELECT PNF.Paen_Cont_Fin
+    INTO vNumFACT
+    FROM PARAMETROS_ENUM_FAC PNF
+   WHERE PNF.Paen_Id_Fac = vIdProducto;
+     --FOR UPDATE OF pnf.paen_cont_fin;
 
+--  Actualizar al siguiente numero
    BEGIN
-    -- Buscar el nombre de la tabla de la cual se obtendra por la descripcion y la bandera
-      select pa.pame_ds_numerador,
-             pa.paem_id_producto
-        into vNombreTabla,
-             vIdProducto
-        from PARAMETROS_EMISION pa
-       where pa.paem_cd_producto   =  4
-         and pa.paem_des_producto  = 'FACTURAS'
-         and pa.paem_flag          =  1;
-
-    -- Obtener el numero de facturas
-
-     select pnf.paen_cont_fin
-       into vNumFACT
-       from parametros_enum_fac pnf
-      where pnf.paen_id_fac = vIdProducto;
-        --FOR UPDATE OF pnf.paen_cont_fin;
-
- --  Actualizar al siguiente numero
-   BEGIN
-      update parametros_enum_fac pe
-         set pe.paen_cont_fin = vNumFACT +1
-       where pe.paen_id_fac  = vIdProducto;
-       commit;
+      UPDATE PARAMETROS_ENUM_FAC PE
+         SET PE.Paen_Cont_Fin = vNumFACT + 1
+       WHERE PE.Paen_Id_Fac  = vIdProducto;
+       COMMIT;
    END;
-
- -- Hacer permanentes los cambios para evitar bloqueo de la tabla
+-- Hacer permanentes los cambios para evitar bloqueo de la tabla
 --       commit;
+   RETURN vNumFACT;
 
-
-     return vNumFACT;
-
-
- EXCEPTION
-      when no_data_found then
-         p_msg_regreso := '.:: No se ha dado de alta '|| vNombreTabla ||' en PARAMETROS_EMISION ::.'||sqlerrm;
-         rollback;
-        return 0;
-      when others then
-         p_msg_regreso := '.:: Error en "OC_UTILS.F_GET_FACT" .:: -> '||sqlerrm;
-         rollback;
-         return 0;
- END F_GET_FACT;
+EXCEPTION
+   WHEN NO_DATA_FOUND THEN
+      P_Msg_Regreso := '.:: No se ha dado de alta '|| vNombreTabla ||' en PARAMETROS_EMISION ::.'||SQLERRM;
+      ROLLBACK;
+     RETURN 0;
+   WHEN OTHERS THEN
+      P_Msg_Regreso := '.:: Error en "OC_UTILS.F_GET_FACT" .:: -> '||SQLERRM;
+      ROLLBACK;
+      RETURN 0;
+END F_GET_FACT;
 
 FUNCTION EN_COBRANZA_MASIVA(nCodCia NUMBER, nIdFactura NUMBER) RETURN VARCHAR2 IS
 cIndDomiciliado   FACTURAS.IndDomiciliado%TYPE;
@@ -2988,483 +3053,456 @@ EXCEPTION
         RAISE_APPLICATION_ERROR (-20100,'Error al Actualizar el Aviso de Cobro '||nIdFactura||' como Intentos de Cobro Cumplidos');       
 END MARCA_INTENTOS_CUMPLIDOS;
 
-FUNCTION CALCULA_AÑO_POLIZA(nIdPoliza NUMBER, nFechaproceso  DATE) RETURN NUMBER IS --LARPLA
-    AÑO_POLIZA FACTURAS.ID_AÑO_POLIZA%TYPE;
+FUNCTION CALCULA_AÑO_POLIZA(nIdPoliza NUMBER, nFechaproceso DATE) RETURN NUMBER IS --LARPLA
+nAño_Poliza FACTURAS.Id_Año_Poliza%TYPE;
 BEGIN 
-  BEGIN
-    SELECT TRUNC(ABS((P.FECINIVIG - nFechaproceso))/365) + 1
-      INTO AÑO_POLIZA
-      FROM POLIZAS P
-     WHERE P.IDPOLIZA = nIdPoliza;
+   BEGIN
+      SELECT TRUNC(ABS((P.FecIniVig - nFechaproceso))/365) + 1
+        INTO nAño_Poliza
+        FROM POLIZAS P
+       WHERE P.IdPoliza = nIdPoliza;
        --
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
-           AÑO_POLIZA := 1;
+         nAño_Poliza := 1;
       WHEN OTHERS THEN
-           AÑO_POLIZA := 1;
-    END;
-    RETURN AÑO_POLIZA;
+         nAño_Poliza := 1;
+   END;
+   RETURN nAño_Poliza;
 END CALCULA_AÑO_POLIZA;
 
---FUNCTION APLICAR_APORTES_FONDOS(cNumReciboPago VARCHAR2, dFecPago DATE, nMontoPago NUMBER, 
---                      cFormPago VARCHAR2, cEntPago VARCHAR2, nIdTransaccion NUMBER, 
---                      nPrimaNivelada NUMBER, nMontoAporteFondo NUMBER) RETURN NUMBER IS
---nCodCia                  EMPRESAS.CodCia%TYPE;
---nCodEmpresa              DETALLE_POLIZA.CodEmpresa%TYPE;
---nSldoFactL               FACTURAS.Saldo_Local%TYPE;
---nSldoFactM               FACTURAS.Saldo_Moneda%TYPE;
---nPorcApl                 FACTURAS.Saldo_Local%TYPE;
---nMonto_Fact_Moneda       FACTURAS.Monto_Fact_Moneda%TYPE;
---nMontoPago_Local         FACTURAS.Monto_Fact_Moneda%TYPE;
---nCodCobrador             FACTURAS.CodCobrador%TYPE;
---cIndPago                 VARCHAR2(1);
---dFecHoy                  DATE;
---cCodMoneda               FACTURAS.Cod_Moneda%type;
---nTasaCambioMov           TASAS_CAMBIO.Tasa_Cambio%TYPE;
---nCodCliente              FACTURAS.CodCliente%type;
---nNumPD                   primas_deposito.idprimadeposito%type;
---nIdRecibo                PAGOS.IdRecibo%TYPE;
---nIdPoliza                POLIZAS.IdPoliza%TYPE;
---nIDetPol                 DETALLE_POLIZA.IDetPol%TYPE;
---nIdEndoso                ENDOSOS.IdEndoso%TYPE;
---nCodAsegurado            DETALLE_POLIZA.Cod_Asegurado%TYPE;
---nNumCuota                FACTURAS.NumCuota%TYPE;
---cObservaciones           PRIMAS_DEPOSITO.Observaciones%TYPE;
---cCodCptoMov              FAI_MOVIMIENTOS_FONDOS.CodCptoMov%TYPE;
---nIdFondo                 FAI_CONCENTRADORA_FONDO.IdFondo%TYPE;
---nIdPrimaDeposito         PRIMAS_DEPOSITO.IdPrimaDeposito%TYPE;
---nIdTransaccionMov        TRANSACCION.IdTransaccion%TYPE;
---nIdTransaccionFact       TRANSACCION.IdTransaccion%TYPE;
---nIdTransaccionPag        TRANSACCION.IdTransaccion%TYPE;
---nMontoMovMoneda          FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
---nMontoMovLocal           FAI_CONCENTRADORA_FONDO.MontoMovLocal%TYPE;
---nSaldoPorAplicar         FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
---nSaldoRestante           FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
---nMontoPrimaDepMon        PRIMAS_DEPOSITO.Monto_Moneda%TYPE;
---nMontoPrimaDepLoc        PRIMAS_DEPOSITO.Monto_Local%TYPE;
---nPorcComis               DETALLE_POLIZA.PorcComis%TYPE;
---nIdFacturaPN             FACTURAS.IdFactura%TYPE;
---nIdFacturaAportes        FACTURAS.IdFactura%TYPE;
---nMtoComisiMoneda         FACTURAS.MtoComisi_Moneda%TYPE;
---nMtoComisiLocal          FACTURAS.MtoComisi_Local%TYPE;
---nTotComiMoneda           FACTURAS.MtoComisi_Moneda%TYPE;
---cIdTipoSeg               DETALLE_POLIZA.IdTipoSeg%TYPE;
---nCod_Agente              AGENTES_DETALLES_POLIZAS.Cod_Agente%TYPE;
---nCodTipoDoc              TIPO_DE_DOCUMENTO.CodTipoDoc%TYPE;
---cIndFactElectronica      DETALLE_POLIZA.IndFactElectronica%TYPE;
---cCodPlanPago             DETALLE_POLIZA.CodPlanPago%TYPE;
---dFecFinVigFact           FACTURAS.FecFinVig%TYPE;
---nSaldoFondo              FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
---nMontoInteres            FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
---cTipoFondo               FAI_FONDOS_DETALLE_POLIZA.TipoFondo%TYPE;
---nExisteRecPrevio         NUMBER(5);
---cFondoPagoPrimas         VARCHAR2(1);
---cCobroFactura            VARCHAR2(1);
---
---nIdFactura               FACTURAS.IdFactura%TYPE := 0;
---
---CURSOR FOND_Q IS
---    SELECT TipoFondo, NumSolicitud, PorcFondo, IdFondo
---      FROM FAI_FONDOS_DETALLE_POLIZA
---     WHERE CodCia        = nCodCia
---       AND CodEmpresa    = nCodEmpresa
---       AND IdPoliza      = nIdPoliza
---       AND IDetPol       = nIDetPol
---       AND CodAsegurado  = nCodAsegurado
---       AND GT_FAI_TIPOS_DE_FONDOS.INDICADORES(CodCia, CodEmpresa, TipoFondo, 'EPP') = cFondoPagoPrimas
---     ORDER BY IdFondo;
---CURSOR CONCEN_Q IS
---    SELECT IdFondo, IdMovimiento, CodCptoMov, MontoMovMoneda
---      FROM FAI_CONCENTRADORA_FONDO
---     WHERE CodCia        = nCodCia
---       AND CodEmpresa    = nCodEmpresa
---       AND IdPoliza      = nIdPoliza
---       AND IDetPol       = nIDetPol
---       AND CodAsegurado  = nCodAsegurado
---       AND IdFondo       = nIdFondo
---       AND StsMovimiento = 'SOLICI'
---       AND GT_FAI_MOVIMIENTOS_FONDOS.TIPO_MOVIMIENTO(CodCia, CodEmpresa, cTipoFondo, CodCptoMov) IN ('AA','AP');
---BEGIN
-----   BEGIN
-----      SELECT F.CodCia, F.Saldo_Moneda, F.Saldo_Local, F.Monto_Fact_Moneda, 
-----             DP.CodEmpresa, F.Cod_Moneda, F.CodCliente, DP.IdPoliza, F.CodCobrador,
-----             DP.IDetPol, F.IdEndoso, DP.Cod_Asegurado, F.NumCuota, DP.PorcComis,
-----             DP.IdTipoSeg, DP.IndFactElectronica, DP.CodPlanPago
-----        INTO nCodCia, nSldoFactM, nSldoFactL, nMonto_Fact_Moneda, 
-----             nCodEmpresa, cCodMoneda, nCodCliente, nIdPoliza, nCodCobrador,
-----             nIDetPol, nIdEndoso, nCodAsegurado, nNumCuota, nPorcComis,
-----             cIdTipoSeg, cIndFactElectronica, cCodPlanPago
-----        FROM FACTURAS F, DETALLE_POLIZA DP
-----       WHERE DP.IdPoliza = F.IdPoliza
-----         AND DP.IDetPol  = F.IDetPol
-----         AND F.IdFactura = nIdFactura;
-----   EXCEPTION
-----      WHEN NO_DATA_FOUND THEN
-----         RETURN(2);
-----   END;
---
-----   BEGIN
-----      SELECT Cod_Agente
-----        INTO nCod_Agente
-----        FROM AGENTES_DETALLES_POLIZAS
-----       WHERE IdPoliza      = nIdPoliza
-----         AND IdetPol       = nIDetPol
-----         AND IdTipoSeg     = cIdTipoSeg
-----         AND Ind_Principal = 'S';
-----   EXCEPTION
-----      WHEN NO_DATA_FOUND THEN
-----         RAISE_APPLICATION_ERROR (-20100,'No Existe un Agente Definido para el Tipo de Seguro '||cIdTipoSeg);
-----      WHEN TOO_MANY_ROWS THEN
-----         RAISE_APPLICATION_ERROR (-20100,'Existe Mas de un Agente Definido como Principal');
-----      WHEN OTHERS THEN
-----         RAISE_APPLICATION_ERROR (-20100,'Existe un error de otros');
-----   END;
---
---   BEGIN
---      SELECT CodTipoDoc
---        INTO nCodTipoDoc
---        FROM TIPO_DE_DOCUMENTO
---       WHERE CodClase = 'F'
---         AND Sugerido = 'S';
---   EXCEPTION
---      WHEN NO_DATA_FOUND THEN
---         nCodTipoDoc := NULL;
---   END;
---   
-----   SELECT COUNT(*)
-----     INTO nExisteRecPrevio
-----     FROM FACTURAS
-----    WHERE CodCia     = nCodCia
-----      AND IdPoliza   = nIdPoliza
-----      AND IDetPol    = nIDetPol
-----      AND IdEndoso   = nIdEndoso
-----      AND IdFactura  < nIdFactura
-----      AND StsFact    = 'EMI';
-----
-----   IF NVL(nExisteRecPrevio,0) > 0 THEN
-----      RAISE_APPLICATION_ERROR (-20100,'Existen Factura Anteriores Pendientes de Pago.  NO puede Realizar la Cobranza de la Factura No. '||nIdFactura);
-----   END IF;
---
-----   IF NVL(nMontoPago,0) < (NVL(nSldoFactM,0) + NVL(nPrimaNivelada,0) + NVL(nMontoAporteFondo,0)) AND
-----      nNumCuota = 1 THEN
-----      RAISE_APPLICATION_ERROR (-20100,'Para Pólizas con Manejo de Fondos, debe Cubrir Completo el 1er. Pago para Activarla.  ' ||
-----                               ' NO puede Realizar la Cobranza de la Factura No. '||nIdFactura);
-----   END IF;
---
---   nTasaCambioMov   := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(dFecPago));
---
---   --nSaldoPorAplicar := NVL(nMontoPago,0);
---   nSaldoPorAplicar := NVL(nMontoAporteFondo,0);
---   cCobroFactura    := 'N';
---
---   -- Se realiza el Cobro de la Factura con Prima en Depósito
---   --IF NVL(nSaldoPorAplicar,0) >= NVL(nSldoFactM,0) THEN
---   IF NVL(nSaldoPorAplicar,0) > 0 THEN
---      cObservaciones     := 'Aportación Extraordinaria a Fondos de Ahorro con Valor de ' || NVL(nSaldoPorAplicar,0);
---      nIdPrimaDeposito   := OC_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, NVL(nSaldoPorAplicar,0), cCodMoneda, 
---                                                        cObservaciones, nIdPoliza, nIDetPol);
---      OC_PRIMAS_DEPOSITO.EMITIR(nCodCia, nCodEmpresa, nIdPrimaDeposito, dFecPago, cNumReciboPago);
---      --nIdTransaccionMov  := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 10, 'EMI');
-----      OC_FACTURAS.PAGAR_CON_PRIMA_DEPOSITO(nIdFactura, nIdPrimaDeposito, cNumReciboPago,
-----                                           TRUNC(SYSDATE), NULL, nIdTransaccionMov);
---
---      BEGIN
---         SELECT MAX(IdRecibo)
---           INTO nIdRecibo
---           FROM PAGOS
---          WHERE CodCia    = nCodCia
---            AND IdFactura = nIdFactura
---            ;
---      END;
---      
---      --OC_DETALLE_TRANSACCION.CREA (nIdTransaccionMov, nCodCia, 1, 10, 'EMIPRD', 'PRIMAS_DEPOSITO', nIdPrimaDeposito, NULL, NULL, NULL, NULL);
---
---      OC_DETALLE_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, nIdRecibo, nIdPrimaDeposito,
---                                          nIdFactura, nIdPoliza, nSldoFactM, 'PAT');
---      OC_PRIMAS_DEPOSITO.APLICAR_FACTURA(nCodCia, nCodEmpresa, nIdPrimaDeposito,
---                                         TRUNC(SYSDATE), nIdRecibo, nSldoFactM,
---                                         nSldoFactL, nSldoFactM, nSldoFactL,
---                                         nIdTransaccionMov);
---      --OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccionMov, 'C');
---      nSaldoPorAplicar  := NVL(nSaldoPorAplicar,0) - NVL(nSldoFactM,0);
---      cCobroFactura     := 'S';
---   END IF;
---
---   -- Fondos Exclusivos para Pago de Primas
---   cFondoPagoPrimas  := 'S';
---   nIdRecibo         := NULL;
---   nIdTransaccionMov := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'MOVFON');
---   FOR W IN FOND_Q LOOP
---      -- Se ingresa la Fondo el Monto de la Factura / Prima
---      IF cCobroFactura = 'N' THEN
---         IF NVL(nSaldoPorAplicar,0) > 0 THEN
---            nMontoMovMoneda   := NVL(nSaldoPorAplicar,0);
---            cCodCptoMov       := GT_FAI_MOVIMIENTOS_FONDOS.CONCEPTO_MOVIMIENTO(nCodCia, nCodEmpresa, W.TipoFondo, 'CP');
---            OC_DETALLE_TRANSACCION.CREA(nIdTransaccionMov, nCodCia, nCodEmpresa,  21, 'MOVFON', 'FAI_CONCENTRADORA_FONDO',
---                                        nIdPoliza, nIDetPol, W.IdFondo, cCodCptoMov, NVL(nMontoMovMoneda,0));
---            nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
---            GT_FAI_CONCENTRADORA_FONDO.INSERTA_MOV_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                                 nCodAsegurado, W.IdFondo, cCodCptoMov, 
---                                                                 nIdTransaccionMov, cCodMoneda, nMontoMovMoneda, nMontoMovLocal, 
---                                                                 'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago), 
---                                                                 OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
---            nSaldoPorAplicar := 0;
---         END IF;
---      ELSE
---         nMontoMovMoneda   := NVL(nSldoFactM,0);
---         cCodCptoMov       := GT_FAI_MOVIMIENTOS_FONDOS.CONCEPTO_MOVIMIENTO(nCodCia, nCodEmpresa, W.TipoFondo, 'CP');
---         nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
---         GT_FAI_CONCENTRADORA_FONDO.INSERTA_MOV_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                              nCodAsegurado, W.IdFondo, cCodCptoMov, 
---                                                              0, cCodMoneda, nMontoMovMoneda, nMontoMovLocal, 
---                                                              'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago), 
---                                                              OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
---         GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo, 0);
---         GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo, 0);
---      END IF;
---
---      -- Se ingresa la Fondo el Monto de la Prima Nivelada
---      IF NVL(nSaldoPorAplicar,0) >= NVL(nPrimaNivelada,0) THEN
---         nMontoMovMoneda   := NVL(nPrimaNivelada,0);
---         nSaldoPorAplicar  := NVL(nSaldoPorAplicar,0) - NVL(nPrimaNivelada,0);
---      ELSE
---         nMontoMovMoneda   := NVL(nSaldoPorAplicar,0);
---      END IF;
---      IF NVL(nMontoMovMoneda,0) > 0 THEN
---         cCodCptoMov       := GT_FAI_MOVIMIENTOS_FONDOS.CONCEPTO_MOVIMIENTO(nCodCia, nCodEmpresa, W.TipoFondo, 'AA');
---         OC_DETALLE_TRANSACCION.CREA(nIdTransaccionMov, nCodCia, nCodEmpresa,  21, 'MOVFON', 'FAI_CONCENTRADORA_FONDO',
---                                     nIdPoliza, nIDetPol, W.IdFondo, cCodCptoMov, NVL(nMontoMovMoneda,0));
---         nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
---         GT_FAI_CONCENTRADORA_FONDO.INSERTA_MOV_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                              nCodAsegurado, W.IdFondo, cCodCptoMov, 
---                                                              nIdTransaccionMov, cCodMoneda, nMontoMovMoneda, nMontoMovLocal, 
---                                                              'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago), 
---                                                              OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
---
---         -- Generación de Factura por Movimiento de Prima Nivelada
---         nIdTransaccionFact := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'FACFON');
---
---         nMtoComisiMoneda := NVL(nMontoMovMoneda,0) * nPorcComis / 100;
---         nMtoComisiLocal  := NVL(nMontoMovLocal,0) * nPorcComis / 100;
---
---         nIdFacturaPN := OC_FACTURAS.INSERTAR(nIdPoliza, nIDetPol, nCodCliente, TRUNC(dFecPago), NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0), 
---                                              0, NVL(nMtoComisiLocal,0), NVL(nMtoComisiMoneda,0), nNumCuota, nTasaCambioMov, 
---                                              nCod_Agente, nCodTipoDoc, nCodCia, cCodMoneda, NULL, nIdTransaccionFact, cIndFactElectronica);
---         dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL(nCodCia, nIdFacturaPN);
---
---         UPDATE FACTURAS
---            SET FecFinVig        = dFecFinVigFact,
---                Codplanpago      = cCodPlanPago/*,
---                IndContabilizada = 'S',
---                IdTransacContab  = nIdTransaccionMov*/
---          WHERE CodCia    = nCodCia
---            AND IdFactura = nIdFacturaPN;
---
---         OC_DETALLE_FACTURAS.INSERTAR(nIdFacturaPN, cCodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
---         OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFacturaPN, cCodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
---         OC_FACTURAR.PROC_COMISIONAG (nIdPoliza, nIDetPol, nCodCia, nCodEmpresa, cIdTipoSeg, cCodMoneda, nIdFacturaPN, 
---                                      NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0), nTasaCambioMov);
---         OC_FACTURAS.ACTUALIZA_FACTURA(nIdFacturaPN);
---         OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia, nIdFacturaPN, 'IVASIN');
---         BEGIN
---            SELECT NVL(SUM(Comision_Moneda),0)
---              INTO nTotComiMoneda
---              FROM COMISIONES C
---             WHERE CodCia     = nCodCia
---               AND IdComision > 0
---               AND IdPoliza   = nIdPoliza
---               AND EXISTS (SELECT 1
---                             FROM FACTURAS F
---                            WHERE F.IdFactura     = C.IdFactura
---                              AND F.IdTransaccion = nIdTransaccionFact);
---         END;
---         OC_DETALLE_TRANSACCION.CREA (nIdTransaccionFact, nCodCia, nCodEmpresa, 21, 'FACFON', 'FACTURAS',
---                                      nIdPoliza, nIDetPol, W.IdFondo, nIdFacturaPN, NVL(nMontoMovMoneda,0));
---         OC_DETALLE_TRANSACCION.CREA (nIdTransaccionFact, nCodCia, nCodEmpresa, 7, 'COMFON', 'COMISIONES',
---                                      nIdPoliza, nIDetPol, nIdFacturaPN, NULL, NVL(nTotComiMoneda,0));
---         GT_FAI_CONCENTRADORA_FONDO.ACTUALIZA_FACTURA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
---                                                                  nIdTransaccionMov, nIdFacturaPN);
---         -- Se Registra el Pago
---         nIdTransaccionPag := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 12, 'PAGPRD');
---         OC_FACTURAS.PAGAR_CON_PRIMA_DEPOSITO(nIdFacturaPN, nIdPrimaDeposito, cNumReciboPago, TRUNC(dFecPago),
---                                              NULL, nIdTransaccionPag);
---         BEGIN
---            SELECT MAX(IdRecibo)
---              INTO nIdRecibo
---              FROM PAGOS
---             WHERE CodCia    = nCodCia
---               AND IdFactura = nIdFacturaPN;
---         END;
---         OC_DETALLE_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, nIdRecibo, nIdPrimaDeposito,
---                                             nIdFacturaPN, nIdPoliza, NVL(nMontoMovMoneda,0), 'PAT');
---
---         OC_PRIMAS_DEPOSITO.APLICAR_FACTURA(nCodCia, nCodEmpresa, nIdPrimaDeposito, TRUNC(dFecPago), nIdRecibo, 
---                                            NVL(nMontoPrimaDepMon,0), NVL(nMontoPrimaDepMon,0), NVL(nMontoMovMoneda,0), 
---                                            NVL(nMontoMovLocal,0), nIdTransaccionPag);
---      END IF;
---      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                    nCodAsegurado, W.IdFondo, nIdTransaccionMov);
---      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                         nCodAsegurado, W.IdFondo, nIdTransaccionMov);
---
---      /*-- Se Registra Retiro Parcial para Pago de Factura de Prima
---      IF GT_FAI_CONCENTRADORA_FONDO.SALDO_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                        nCodAsegurado, W.IdFondo,  TRUNC(dFecPago)) > NVL(nSldoFactM,0) THEN
---         nIdTransaccionMov := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'MOVFON');
---         nMontoMovMoneda   := NVL(nSldoFactM,0);
---         cCodCptoMov       := GT_FAI_MOVIMIENTOS_FONDOS.CONCEPTO_MOVIMIENTO(nCodCia, nCodEmpresa, W.TipoFondo, 'RP');
---         OC_DETALLE_TRANSACCION.CREA(nIdTransaccionMov, nCodCia, nCodEmpresa,  21, 'MOVFON', 'FAI_CONCENTRADORA_FONDO',
---                                     nIdPoliza, nIDetPol, W.IdFondo, cCodCptoMov, NVL(nMontoMovMoneda,0));
---         nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
---         GT_FAI_CONCENTRADORA_FONDO.INSERTA_MOV_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                              nCodAsegurado, W.IdFondo, cCodCptoMov, 
---                                                              nIdTransaccionMov, cCodMoneda, nMontoMovMoneda, nMontoMovLocal, 
---                                                              'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago), 
---                                                              OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
---      END IF;*/
---   END LOOP;
---   
---   -- Si Existe Saldo para Aportes se Crea Factura de Movimientos
---   IF NVL(nSaldoPorAplicar,0) > 0 THEN
---      -- Generación de Factura por Movimiento de Aportes Iniciales al Fondo
---      nIdTransaccionFact := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'FACFON');
---
---      --nMtoComisiMoneda := NVL(nSaldoPorAplicar,0) * nPorcComis / 100;
---      --nMtoComisiLocal  := NVL(nSaldoPorAplicar,0) * nTasaCambioMov * nPorcComis / 100;
---      nMtoComisiMoneda := 0;
---      nMtoComisiLocal  := 0;
---
---      nIdFacturaAportes := OC_FACTURAS.INSERTAR(nIdPoliza, nIDetPol, nCodCliente, TRUNC(dFecPago), NVL(nSaldoPorAplicar,0), NVL(nSaldoPorAplicar,0), 
---                                                0, NVL(nMtoComisiLocal,0), NVL(nMtoComisiMoneda,0), nNumCuota, nTasaCambioMov, 
---                                                nCod_Agente, nCodTipoDoc, nCodCia, cCodMoneda, NULL, nIdTransaccionFact, cIndFactElectronica);
---      dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL(nCodCia, nIdFacturaAportes);
---
---      UPDATE FACTURAS
---         SET FecFinVig        = dFecFinVigFact,
---             Codplanpago      = cCodPlanPago/*,
---             IndContabilizada = 'S',
---             IdTransacContab  = nIdTransaccionMov*/
---       WHERE CodCia    = nCodCia
---         AND IdFactura = nIdFacturaAportes;
---   END IF;
---
---   -- Fondos para Ahorro o Jubilación NO Exclusivos para Pago de Primas
---   cFondoPagoPrimas := 'N';
---   nSaldoRestante   := NVL(nSaldoPorAplicar,0);
---   FOR W IN FOND_Q LOOP
---      nIdFondo   := W.IdFondo;
---      cTipoFondo := W.TipoFondo;
---      IF nNumCuota = 1 THEN
---         FOR Y IN CONCEN_Q LOOP
---            OC_DETALLE_TRANSACCION.CREA(nIdTransaccionMov, nCodCia, nCodEmpresa,  21, 'MOVFON', 'FAI_CONCENTRADORA_FONDO',
---                                        nIdPoliza, nIDetPol, Y.IdFondo, Y.CodCptoMov, NVL(Y.MontoMovMoneda,0));
---
---            -- Se Aplica el Saldo Proporcional a los Fondos y se Actualiza el Valor de Cada Aporte Inicial
---            -- Por si el Asegurado paga más en el primer pago de lo esperado.
---            nMontoMovMoneda   := NVL(nSaldoRestante,0) * W.PorcFondo / 100;
---            nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
---
---            UPDATE FAI_CONCENTRADORA_FONDO
---               SET IdTransaccion   = nIdTransaccionMov,
---                   MontoMovMoneda  = nMontoMovMoneda,
---                   MontoMovLocal   = nMontoMovLocal,
---                   FecTasaCambio   = TRUNC(dFecPago),
---                   TasaCambioMov   = nTasaCambioMov,
---                   FecMovimiento   = TRUNC(dFecPago),
---                   FecRealRegistro = TRUNC(dFecPago)
---             WHERE CodCia        = nCodCia
---               AND CodEmpresa    = nCodEmpresa
---               AND IdPoliza      = nIdPoliza
---               AND IDetPol       = nIDetPol
---               AND CodAsegurado  = nCodAsegurado
---               AND IdFondo       = Y.IdFondo
---               AND IdMovimiento  = Y.IdMovimiento;
---
---            OC_DETALLE_FACTURAS.INSERTAR(nIdFacturaAportes, Y.CodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
---            OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFacturaAportes, Y.CodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
---            GT_FAI_CONCENTRADORA_FONDO.ACTUALIZA_FACTURA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
---                                                                     nIdTransaccionMov, nIdFacturaAportes);
---         END LOOP;
---      ELSE
---         nMontoMovMoneda   := NVL(nSaldoRestante,0) * W.PorcFondo / 100;
---         nSaldoPorAplicar  := NVL(nSaldoPorAplicar,0) - NVL(nMontoMovMoneda,0);
---         IF NVL(nMontoMovMoneda,0) > 0 THEN
---            cCodCptoMov       := GT_FAI_MOVIMIENTOS_FONDOS.CONCEPTO_MOVIMIENTO(nCodCia, nCodEmpresa, W.TipoFondo, 'AA');
---            nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
---            GT_FAI_CONCENTRADORA_FONDO.INSERTA_MOV_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                                 nCodAsegurado, W.IdFondo, cCodCptoMov, 
---                                                                 nIdTransaccionMov, cCodMoneda, nMontoMovMoneda, nMontoMovLocal, 
---                                                                 'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago), 
---                                                                 OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
---            OC_DETALLE_FACTURAS.INSERTAR(nIdFacturaAportes, cCodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
---            OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFacturaAportes, cCodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
---            GT_FAI_CONCENTRADORA_FONDO.ACTUALIZA_FACTURA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
---                                                                     nIdTransaccionMov, nIdFacturaAportes);
---         END IF;
---      END IF;
---      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
---                                                    nIdTransaccionMov);
---      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                         nCodAsegurado, W.IdFondo, nIdTransaccionMov);
---      -- Para Movimientos que NO tienen Transacción
---      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
---                                                    0);
---      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                         nCodAsegurado, W.IdFondo, 0);
---   END LOOP;
---
---   -- Complementa Factura y su Pago
---   IF NVL(nIdFacturaAportes,0) > 0 THEN
---      /*OC_FACTURAR.PROC_COMISIONAG (nIdPoliza, nIDetPol, nCodCia, nCodEmpresa, cIdTipoSeg, cCodMoneda, nIdFacturaAportes, 
---                                   NVL(nSaldoPorAplicar,0) * nTasaCambioMov, NVL(nSaldoPorAplicar,0), nTasaCambioMov);*/
---      OC_FACTURAS.ACTUALIZA_FACTURA(nIdFacturaAportes);
---      OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia, nIdFacturaAportes, 'IVASIN');
---      OC_DETALLE_TRANSACCION.CREA (nIdTransaccionFact, nCodCia, nCodEmpresa, 21, 'FACFON', 'FACTURAS',
---                                   nIdPoliza, nIDetPol, nIdFondo, nIdFacturaAportes, NVL(nSaldoRestante,0));
---      -- Se Registra el Pago
---      nIdTransaccionPag := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 12, 'PAGPRD');
---      OC_FACTURAS.PAGAR_CON_PRIMA_DEPOSITO(nIdFacturaAportes, nIdPrimaDeposito, cNumReciboPago, TRUNC(dFecPago),
---                                           NULL, nIdTransaccionPag);
---      BEGIN
---         SELECT MAX(IdRecibo)
---           INTO nIdRecibo
---           FROM PAGOS
---          WHERE CodCia    = nCodCia
---            AND IdFactura = nIdFacturaAportes;
---      END;
---      OC_DETALLE_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, nIdRecibo, nIdPrimaDeposito,
---                                          nIdFacturaAportes, nIdPoliza, NVL(nSaldoRestante,0), 'PAT');
---
---      OC_PRIMAS_DEPOSITO.APLICAR_FACTURA(nCodCia, nCodEmpresa, nIdPrimaDeposito, TRUNC(dFecPago), nIdRecibo, 
---                                         NVL(nSaldoRestante,0), NVL(nSaldoRestante,0) * nTasaCambioMov, 
---                                         NVL(nSaldoRestante,0), NVL(nSaldoRestante,0) * nTasaCambioMov, nIdTransaccionPag);
---   END IF;
---   OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccionMov, 'C');
---
---   /*-- Fondos Exclusivos para Pago de Primas
---   cFondoPagoPrimas  := 'S';
---   nIdTransaccionMov := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'MOVFON');
---   FOR W IN FOND_Q LOOP
---      nSaldoFondo := GT_FAI_CONCENTRADORA_FONDO.SALDO_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                                    nCodAsegurado, W.IdFondo, TRUNC(dFecPago));
---      GT_FAI_CONCENTRADORA_FONDO.CALCULA_INTERES_FONDO(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                       nCodAsegurado, W.TipoFondo, W.IdFondo,
---                                                       TRUNC(dFecPago), nSaldoFondo, NULL, nMontoInteres);
---   END LOOP;
---   cFondoPagoPrimas  := 'N';
---   FOR W IN FOND_Q LOOP
---      nSaldoFondo := GT_FAI_CONCENTRADORA_FONDO.SALDO_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                                    nCodAsegurado, W.IdFondo, TRUNC(dFecPago));
---      GT_FAI_CONCENTRADORA_FONDO.CALCULA_INTERES_FONDO(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
---                                                       nCodAsegurado, W.TipoFondo, W.IdFondo,
---                                                       TRUNC(dFecPago), nSaldoFondo, NULL, nMontoInteres);
---   END LOOP;*/
---   RETURN(nIdTransaccionMov);
---EXCEPTION
---   WHEN OTHERS THEN
---      RAISE_APPLICATION_ERROR (-20100,'Error en Proceso de Fondos para Pago de Factura: '||nIdFactura||SQLERRM);
---  --  RETURN(0);
---END APLICAR_APORTES_FONDOS;
+FUNCTION PRIMA_COMPLEMENTARIA (nCodCia NUMBER, nIdPoliza NUMBER, nIdFactura NUMBER) RETURN NUMBER IS
+nMontoPrimaCompMoneda FACTURAS.MontoPrimaCompMoneda%TYPE;
+BEGIN
+   BEGIN
+      SELECT NVL(MontoPrimaCompMoneda,0)
+        INTO nMontoPrimaCompMoneda
+        FROM FACTURAS
+       WHERE CodCia     = nCodCia
+         AND IdPoliza   = nIdPoliza
+         AND IdFactura  = nIdFactura;
+   END;
+   RETURN nMontoPrimaCompMoneda;
+END PRIMA_COMPLEMENTARIA;
+
+FUNCTION PAGAR_ALTURA_CERO(nIdFactura NUMBER, cNumReciboPago VARCHAR2, dFecPago DATE, nMontoPago NUMBER, 
+                           cFormPago VARCHAR2, cEntPago VARCHAR2, nIdTransaccion NUMBER, 
+                           nMontoPrimaCompMoneda NUMBER, nMontoAporteFondo NUMBER) RETURN NUMBER IS
+nCodCia                 EMPRESAS.CodCia%TYPE;
+nCodEmpresa             DETALLE_POLIZA.CodEmpresa%TYPE;
+nSldoFactL              FACTURAS.Saldo_Local%TYPE;
+nSldoFactM              FACTURAS.Saldo_Moneda%TYPE;
+nPorcApl                FACTURAS.Saldo_Local%TYPE;
+nMonto_Fact_Moneda      FACTURAS.Monto_Fact_Moneda%TYPE;
+nMontoPago_Local        FACTURAS.Monto_Fact_Moneda%TYPE;
+nCodCobrador            FACTURAS.CodCobrador%TYPE;
+cIndPago                VARCHAR2(1);
+dFecHoy                 DATE;
+cCodMoneda              FACTURAS.Cod_Moneda%type;
+nTasaCambioMov          TASAS_CAMBIO.Tasa_Cambio%TYPE;
+nCodCliente             FACTURAS.CodCliente%type;
+nNumPD                  primas_deposito.idprimadeposito%type;
+nIdRecibo               PAGOS.IdRecibo%TYPE;
+nIdPoliza               POLIZAS.IdPoliza%TYPE;
+nIDetPol                DETALLE_POLIZA.IDetPol%TYPE;
+nIdEndoso               ENDOSOS.IdEndoso%TYPE;
+nCodAsegurado           DETALLE_POLIZA.Cod_Asegurado%TYPE;
+nNumCuota               FACTURAS.NumCuota%TYPE;
+cObservaciones          PRIMAS_DEPOSITO.Observaciones%TYPE;
+cCodCptoMov             FAI_MOVIMIENTOS_FONDOS.CodCptoMov%TYPE;
+nIdFondo                FAI_CONCENTRADORA_FONDO.IdFondo%TYPE;
+nIdPrimaDeposito        PRIMAS_DEPOSITO.IdPrimaDeposito%TYPE;
+nIdTransaccionMov       TRANSACCION.IdTransaccion%TYPE;
+nIdTransaccionFact      TRANSACCION.IdTransaccion%TYPE;
+nIdTransaccionPag       TRANSACCION.IdTransaccion%TYPE;
+nIdTransaccionRetiro    TRANSACCION.IdTransaccion%TYPE;
+nMontoMovMoneda         FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
+nMontoMovLocal          FAI_CONCENTRADORA_FONDO.MontoMovLocal%TYPE;
+nSaldoPorAplicar        FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
+nSaldoRestante          FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
+nMontoPrimaDepMon       PRIMAS_DEPOSITO.Monto_Moneda%TYPE;
+nMontoPrimaDepLoc       PRIMAS_DEPOSITO.Monto_Local%TYPE;
+nPorcComis              DETALLE_POLIZA.PorcComis%TYPE;
+nIdFacturaPN            FACTURAS.IdFactura%TYPE;
+nIdFacturaAportes       FACTURAS.IdFactura%TYPE;
+nMtoComisiMoneda        FACTURAS.MtoComisi_Moneda%TYPE;
+nMtoComisiLocal         FACTURAS.MtoComisi_Local%TYPE;
+nTotComiMoneda          FACTURAS.MtoComisi_Moneda%TYPE;
+cIdTipoSeg              DETALLE_POLIZA.IdTipoSeg%TYPE;
+cPlanCob                DETALLE_POLIZA.PlanCob%TYPE;
+nCod_Agente             AGENTES_DETALLES_POLIZAS.Cod_Agente%TYPE;
+nCodTipoDoc             TIPO_DE_DOCUMENTO.CodTipoDoc%TYPE;
+cIndFactElectronica     DETALLE_POLIZA.IndFactElectronica%TYPE;
+cCodPlanPago            DETALLE_POLIZA.CodPlanPago%TYPE;
+dFecFinVigFact          FACTURAS.FecFinVig%TYPE;
+nSaldoFondo             FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
+nMontoInteres           FAI_CONCENTRADORA_FONDO.MontoMovMoneda%TYPE;
+cTipoFondo              FAI_FONDOS_DETALLE_POLIZA.TipoFondo%TYPE;
+cNumPolUnico            POLIZAS.NumPolUnico%TYPE;
+nIdPolizaAnu            POLIZAS.IdPoliza%TYPE;
+nExisteRecPrevio        NUMBER(5);
+cFondoPagoPrimas        VARCHAR2(1);
+cCobroFactura           VARCHAR2(1);
+cIndTipoAporte          VARCHAR2(1);
+
+cIndContabilizada       FACTURAS.IndContabilizada%TYPE;
+nIdTransaccionCont      TRANSACCION.IdTransaccion%TYPE;
+
+CURSOR FOND_Q IS
+   SELECT TipoFondo, NumSolicitud, PorcFondo, IdFondo
+     FROM FAI_FONDOS_DETALLE_POLIZA
+    WHERE CodCia        = nCodCia
+      AND CodEmpresa    = nCodEmpresa
+      AND IdPoliza      = nIdPoliza
+      AND IDetPol       = nIDetPol
+      AND CodAsegurado  = nCodAsegurado
+      AND GT_FAI_TIPOS_DE_FONDOS.INDICADORES(CodCia, CodEmpresa, TipoFondo, 'EPP') = cFondoPagoPrimas
+    ORDER BY IdFondo;
+CURSOR CONCEN_Q IS
+   SELECT IdFondo, IdMovimiento, CodCptoMov, MontoMovMoneda
+     FROM FAI_CONCENTRADORA_FONDO
+    WHERE CodCia        = nCodCia
+      AND CodEmpresa    = nCodEmpresa
+      AND IdPoliza      = nIdPoliza
+      AND IDetPol       = nIDetPol
+      AND CodAsegurado  = nCodAsegurado
+      AND IdFondo       = nIdFondo
+      AND StsMovimiento = 'SOLICI'
+      AND GT_FAI_MOVIMIENTOS_FONDOS.TIPO_MOVIMIENTO(CodCia, CodEmpresa, cTipoFondo, CodCptoMov) IN ('AA','AP');
+BEGIN
+   BEGIN
+      SELECT F.CodCia, F.Saldo_Moneda, F.Saldo_Local, F.Monto_Fact_Moneda, 
+             DP.CodEmpresa, F.Cod_Moneda, F.CodCliente, DP.IdPoliza, F.CodCobrador,
+             DP.IDetPol, F.IdEndoso, DP.Cod_Asegurado, F.NumCuota, DP.PorcComis,
+             DP.IdTipoSeg, DP.IndFactElectronica, DP.CodPlanPago, DP.PlanCob,
+             F.IndContabilizada
+        INTO nCodCia, nSldoFactM, nSldoFactL, nMonto_Fact_Moneda, 
+             nCodEmpresa, cCodMoneda, nCodCliente, nIdPoliza, nCodCobrador,
+             nIDetPol, nIdEndoso, nCodAsegurado, nNumCuota, nPorcComis,
+             cIdTipoSeg, cIndFactElectronica, cCodPlanPago, cPlanCob,
+             cIndContabilizada
+        FROM FACTURAS F, DETALLE_POLIZA DP
+       WHERE DP.IdPoliza = F.IdPoliza
+         AND DP.IDetPol  = F.IDetPol
+         AND F.IdFactura = nIdFactura;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RETURN(2);
+   END;
+
+   BEGIN
+      SELECT Cod_Agente
+        INTO nCod_Agente
+        FROM AGENTES_DETALLES_POLIZAS
+       WHERE IdPoliza      = nIdPoliza
+         AND IdetPol       = nIDetPol
+         AND IdTipoSeg     = cIdTipoSeg
+         AND Ind_Principal = 'S';
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR (-20100,'No Existe un Agente Definido para el Tipo de Seguro '||cIdTipoSeg);
+      WHEN TOO_MANY_ROWS THEN
+         RAISE_APPLICATION_ERROR (-20100,'Existen Varios Agentes Definidos como Principal');
+      WHEN OTHERS THEN
+         RAISE_APPLICATION_ERROR (-20100,'Existe un Error NO Definido de Cobranza de Factura con Fondos');
+   END;
+
+   SELECT COUNT(*)
+     INTO nExisteRecPrevio
+     FROM FACTURAS
+    WHERE CodCia     = nCodCia
+      AND IdPoliza   = nIdPoliza
+      AND IDetPol    = nIDetPol
+      AND IdEndoso   = nIdEndoso
+      AND IdFactura  < nIdFactura
+      AND StsFact    = 'EMI';
+
+   IF NVL(nExisteRecPrevio,0) > 0 THEN
+      RAISE_APPLICATION_ERROR (-20100,'Existen Factura Anteriores Pendientes de Pago.  NO puede Realizar la Cobranza de la Factura No. '||nIdFactura);
+   END IF;
+
+   IF NVL(nMontoPago,0) < (NVL(nSldoFactM,0) + NVL(nMontoPrimaCompMoneda,0) + NVL(nMontoAporteFondo,0)) THEN
+      RAISE_APPLICATION_ERROR (-20100,'Para Pólizas con Manejo de Fondos, debe Cubrir Completo el Pago.  ' ||
+                               ' NO puede Realizar la Cobranza de la Factura No. '||nIdFactura);
+   END IF;
+
+   BEGIN
+      SELECT CodTipoDoc
+        INTO nCodTipoDoc
+        FROM TIPO_DE_DOCUMENTO
+       WHERE CodClase = 'F'
+         AND Sugerido = 'S';
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         nCodTipoDoc := NULL;
+   END;
+
+   -- Se aplica retiro al fondo de pago de primas y se contabiliza.
+   nTasaCambioMov       := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(dFecPago));
+   cFondoPagoPrimas     := 'S';
+   nIdTransaccionRetiro := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'RETPP');
+   nMontoMovMoneda      := nMontoPrimaCompMoneda;
+   FOR W IN FOND_Q LOOP
+      cCodCptoMov := GT_FAI_MOVIMIENTOS_FONDOS.CONCEPTO_MOVIMIENTO(nCodCia, nCodEmpresa, W.TipoFondo, 'RPP');
+      OC_DETALLE_TRANSACCION.CREA(nIdTransaccionRetiro, nCodCia, nCodEmpresa,  21, 'RETPP', 'FAI_CONCENTRADORA_FONDO',
+                                  nIdPoliza, nIDetPol, W.IdFondo, cCodCptoMov, NVL(nMontoMovMoneda,0));
+      nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
+      GT_FAI_CONCENTRADORA_FONDO.INSERTA_MOV_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
+                                                           nCodAsegurado, W.IdFondo, cCodCptoMov, 
+                                                           nIdTransaccionRetiro, cCodMoneda, nMontoMovMoneda, nMontoMovLocal, 
+                                                           'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago), 
+                                                           OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
+      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
+                                                    nCodAsegurado, W.IdFondo, nIdTransaccionRetiro);
+      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
+                                                         nCodAsegurado, W.IdFondo, nIdTransaccionRetiro);
+      OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccionRetiro, 'C');
+   END LOOP;
+   
+   -- Se realiza el Cobro de la Factura con Prima en Depósito, se agregan Primas en Deposito para el saldo de la factura menos prima complementaria
+   IF cFormPago != 'PRD' THEN
+      cObservaciones    := 'Primas para Pago en Póliza con Fondos de Ahorro de Factura No. ' || nIdFactura || ' con Valor de ' || NVL(nMonto_Fact_Moneda,0);
+      nIdPrimaDeposito  := OC_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, NVL(nSldoFactM,0), cCodMoneda, 
+                                                       cObservaciones, nIdPoliza, nIDetPol);
+      OC_PRIMAS_DEPOSITO.EMITIR(nCodCia, nCodEmpresa, nIdPrimaDeposito, dFecPago, cNumReciboPago);
+   ELSE
+      SELECT MAX(NumPolUnico)
+        INTO cNumPolUnico
+        FROM POLIZAS
+       WHERE CodCia    = nCodCia
+         AND IdPoliza  = nIdPoliza;
+
+      SELECT NVL(MAX(IdPoliza),0)
+        INTO nIdPolizaAnu
+        FROM POLIZAS
+       WHERE CodCia       = nCodCia
+         AND IdPoliza     < nIdPoliza
+         AND MotivAnul    = 'REEX'
+         AND StsPoliza    = 'ANU'
+         AND NumPolUnico  = cNumPolUnico;
+
+      IF NVL(nIdPolizaAnu,0) = 0 THEN
+         RAISE_APPLICATION_ERROR (-20100, 'Solo puede Realizar Cobranza con Primas en Depósito por Reexpedición de Póliza '||
+                                          ' y NO existe una Póliza Anulada con el No. '                                    || cNumPolUnico);
+      ELSE
+         SELECT NVL(MIN(IdPrimaDeposito),0)
+           INTO nIdPrimaDeposito
+           FROM PRIMAS_DEPOSITO
+          WHERE CodCliente    = nCodCliente
+            AND IdPoliza      = nIdPolizaAnu
+            AND Cod_Moneda    = cCodMoneda
+            AND Saldo_Moneda >= nSldoFactM
+            AND Estado        = 'PAF'; -- Por Aplicar en Fondo;
+
+         IF NVL(nIdPrimaDeposito,0) = 0 THEN
+            RAISE_APPLICATION_ERROR (-20100, 'No Existe Primas en Depósito Con Saldo en Póliza Anulada No. '|| nIdPolizaAnu ||
+                                             ' y No. de Póliza Unico '                                      || cNumPolUnico || 
+                                             ' por un Monto Mayor o Igual al Saldo de la Factura de '       || nSldoFactM);
+         END IF;
+      END IF;
+   END IF;
+      
+   nIdTransaccionMov  := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 12, 'PAG');
+   OC_FACTURAS.PAGAR_CON_PRIMA_DEPOSITO(nIdFactura, nIdPrimaDeposito, cNumReciboPago,
+                                        TRUNC(SYSDATE), NULL, nIdTransaccionMov);
+   BEGIN
+      SELECT MAX(IdRecibo)
+        INTO nIdRecibo
+        FROM PAGOS
+       WHERE CodCia    = nCodCia
+         AND IdFactura = nIdFactura;
+   END;
+   -- Genera detalle de Prima en Deposito por el monto del recibo menos monto de retiro
+   OC_DETALLE_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, nIdRecibo, nIdPrimaDeposito,
+                                       nIdFactura, nIdPoliza, (nSldoFactM + nMontoPrimaCompMoneda), 'PAT');
+   FOR W IN FOND_Q LOOP
+      -- Genera detalle de Prima en Deposito por el monto de retiro disrtibuido por cada fondo para pago de primas
+      nSaldoPorAplicar := ABS(nMontoPrimaCompMoneda * (W.PorcFondo / 100));
+      OC_DETALLE_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, nIdRecibo, nIdPrimaDeposito,
+                                       nIdFactura, nIdPoliza, nSaldoPorAplicar, 'PAT');                 
+   END LOOP;
+   OC_PRIMAS_DEPOSITO.APLICAR_FACTURA(nCodCia, nCodEmpresa, nIdPrimaDeposito,
+                                      TRUNC(SYSDATE), nIdRecibo, nSldoFactM,
+                                      nSldoFactM, nSldoFactM, nSldoFactM,
+                                      nIdTransaccionMov);
+   OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccionMov, 'C');
+   --DBMS_OUTPUT.PUT_LINE(nIdTransaccionMov);
+   
+   -- se agrega movimiento de prima basica al fondo base
+   cFondoPagoPrimas  := 'S';
+   nIdRecibo         := NULL;
+   nIdTransaccionMov := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'MOVFON');
+   nSaldoPorAplicar  := nMonto_Fact_Moneda;
+   FOR W IN FOND_Q LOOP
+      IF cCobroFactura = 'N' THEN
+         IF NVL(nSaldoPorAplicar,0) > 0 THEN
+            nMontoMovMoneda   := NVL(nSaldoPorAplicar,0);
+            cCodCptoMov       := GT_FAI_MOVIMIENTOS_FONDOS.CONCEPTO_MOVIMIENTO(nCodCia, nCodEmpresa, W.TipoFondo, 'CP');
+            OC_DETALLE_TRANSACCION.CREA(nIdTransaccionMov, nCodCia, nCodEmpresa,  21, 'MOVFON', 'FAI_CONCENTRADORA_FONDO',
+                                        nIdPoliza, nIDetPol, W.IdFondo, cCodCptoMov, NVL(nMontoMovMoneda,0));
+            nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
+            GT_FAI_CONCENTRADORA_FONDO.INSERTA_MOV_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
+                                                                 nCodAsegurado, W.IdFondo, cCodCptoMov, 
+                                                                 nIdTransaccionMov, cCodMoneda, nMontoMovMoneda, nMontoMovLocal, 
+                                                                 'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago), 
+                                                                 OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
+            nSaldoPorAplicar := 0;
+         END IF;
+      ELSE
+         nMontoMovMoneda   := NVL(nSldoFactM,0);
+         cCodCptoMov       := GT_FAI_MOVIMIENTOS_FONDOS.CONCEPTO_MOVIMIENTO(nCodCia, nCodEmpresa, W.TipoFondo, 'CP');
+         nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
+         GT_FAI_CONCENTRADORA_FONDO.INSERTA_MOV_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
+                                                              nCodAsegurado, W.IdFondo, cCodCptoMov, 
+                                                              0, cCodMoneda, nMontoMovMoneda, nMontoMovLocal, 
+                                                              'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago), 
+                                                              OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
+         GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo, 0);
+         GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo, 0);
+      END IF;
+   END LOOP;
+   
+   ----------------
+   nSaldoPorAplicar := NVL(nMontoAporteFondo,0);
+   cCobroFactura    := 'S';  
+   --- Si Existe Saldo para Aportes se Crea Factura de Movimientos
+   IF NVL(nSaldoPorAplicar,0) > 0 THEN
+      nMontoPrimaDepMon  := NVL(nSaldoPorAplicar,0);
+      nMontoPrimaDepLoc  := NVL(nMontoPrimaDepMon,0) * nTasaCambioMov;
+      -- Generación de Factura por Movimiento de Aportes Iniciales al Fondo
+      nIdTransaccionFact := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'FACFON');
+
+      nMtoComisiMoneda := 0;
+      nMtoComisiLocal  := 0;
+      nIdFacturaAportes := OC_FACTURAS.INSERTAR(nIdPoliza,               nIDetPol,                nCodCliente,    TRUNC(dFecPago), 
+                                                NVL(nSaldoPorAplicar,0), NVL(nSaldoPorAplicar,0), 0,              NVL(nMtoComisiLocal,0), 
+                                                NVL(nMtoComisiMoneda,0), NVL(nNumCuota,1),        nTasaCambioMov, nCod_Agente, 
+                                                nCodTipoDoc,             nCodCia,                 cCodMoneda,     NULL, 
+                                                nIdTransaccionFact,      cIndFactElectronica);
+      
+      IF cFormPago != 'PRD' THEN
+         -- Se Crea Prima en Depósito Por la Prima Nivelada y Aportes al Fondo
+         cObservaciones   := 'Primas para Aportes al Fondo de Factura No. ' || nIdFacturaAportes ||
+                             ' con un Aporte a Fondos de ' || NVL(nMontoAporteFondo,0);
+
+         nIdPrimaDeposito   := OC_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, NVL(nMontoPrimaDepMon,0), cCodMoneda, 
+                                                           cObservaciones, nIdPoliza, nIDetPol);
+         OC_PRIMAS_DEPOSITO.EMITIR(nCodCia, nCodEmpresa, nIdPrimaDeposito, dFecPago, cNumReciboPago);
+      ELSE
+         SELECT NVL(MIN(IdPrimaDeposito),0), NVL(SUM(Saldo_Moneda),0), NVL(SUM(Saldo_Local),0)
+           INTO nIdPrimaDeposito, nMontoPrimaDepMon, nMontoPrimaDepLoc
+           FROM PRIMAS_DEPOSITO
+          WHERE CodCliente    = nCodCliente
+            AND IdPoliza      = nIdPoliza
+            AND Cod_Moneda    = cCodMoneda
+            AND Saldo_Moneda >= NVL(nMontoAporteFondo,0)
+            AND Estado        = 'PAF'; -- Por Aplicar en Fondo
+
+         IF NVL(nIdPrimaDeposito,0) = 0 THEN
+            RAISE_APPLICATION_ERROR (-20100,'No Existen Primas en Depósito Con Saldo Mayor o Igual al Aporte al Fondo en Póliza No. ' || nIdPoliza );
+         END IF;
+      END IF;
+   END IF;
+   cFondoPagoPrimas  := 'N';
+   nSaldoRestante    := NVL(nSaldoPorAplicar,0);      
+   nIdTransaccionMov := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'MOVFON');
+   FOR W IN FOND_Q LOOP
+      nIdFondo   := W.IdFondo;
+      cTipoFondo := W.TipoFondo;
+      IF NVL(nNumCuota,0) = 1 THEN
+         FOR Y IN CONCEN_Q LOOP
+            OC_DETALLE_TRANSACCION.CREA(nIdTransaccionMov, nCodCia, nCodEmpresa,  21, 'MOVFON', 'FAI_CONCENTRADORA_FONDO',
+                                        nIdPoliza, nIDetPol, Y.IdFondo, Y.CodCptoMov, NVL(Y.MontoMovMoneda,0));
+
+            -- Se Aplica el Saldo Proporcional a los Fondos y se Actualiza el Valor de Cada Aporte Inicial
+            -- Por si el Asegurado paga más en el primer pago de lo esperado.
+            nMontoMovMoneda   := NVL(nSaldoRestante,0) * W.PorcFondo / 100;
+            nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
+
+            UPDATE FAI_CONCENTRADORA_FONDO
+               SET IdTransaccion   = nIdTransaccionMov,
+                   MontoMovMoneda  = nMontoMovMoneda,
+                   MontoMovLocal   = nMontoMovLocal,
+                   FecTasaCambio   = TRUNC(dFecPago),
+                   TasaCambioMov   = nTasaCambioMov,
+                   FecMovimiento   = TRUNC(dFecPago),
+                   FecRealRegistro = TRUNC(dFecPago)
+             WHERE CodCia        = nCodCia
+               AND CodEmpresa    = nCodEmpresa
+               AND IdPoliza      = nIdPoliza
+               AND IDetPol       = nIDetPol
+               AND CodAsegurado  = nCodAsegurado
+               AND IdFondo       = Y.IdFondo
+               AND IdMovimiento  = Y.IdMovimiento;
+
+            OC_DETALLE_FACTURAS.INSERTAR(nIdFacturaAportes, Y.CodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
+            OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFacturaAportes, Y.CodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
+            GT_FAI_CONCENTRADORA_FONDO.ACTUALIZA_FACTURA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
+                                                                     nIdTransaccionMov, nIdFacturaAportes);
+         END LOOP;
+      ELSE
+         nMontoMovMoneda   := NVL(nSaldoRestante,0) * W.PorcFondo / 100;
+         nSaldoPorAplicar  := NVL(nSaldoPorAplicar,0) - NVL(nMontoMovMoneda,0);
+         IF NVL(nMontoMovMoneda,0) > 0 THEN
+            cCodCptoMov       := GT_FAI_MOVIMIENTOS_FONDOS.CONCEPTO_MOVIMIENTO(nCodCia, nCodEmpresa, W.TipoFondo, 'AA');
+            nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
+            GT_FAI_CONCENTRADORA_FONDO.INSERTA_MOV_CONCENTRADORA(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
+                                                                 nCodAsegurado, W.IdFondo, cCodCptoMov, 
+                                                                 nIdTransaccionMov, cCodMoneda, nMontoMovMoneda, nMontoMovLocal, 
+                                                                 'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago), 
+                                                                 OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
+            OC_DETALLE_FACTURAS.INSERTAR(nIdFacturaAportes, cCodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
+            OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFacturaAportes, cCodCptoMov, 'S', NVL(nMontoMovLocal,0), NVL(nMontoMovMoneda,0));
+            GT_FAI_CONCENTRADORA_FONDO.ACTUALIZA_FACTURA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
+                                                                     nIdTransaccionMov, nIdFacturaAportes);
+         END IF;
+      END IF;
+      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
+                                                    nIdTransaccionMov);
+      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
+                                                         nCodAsegurado, W.IdFondo, nIdTransaccionMov);
+      -- Para Movimientos que NO tienen Transacción
+      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
+                                                    0);
+      GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, 
+                                                         nCodAsegurado, W.IdFondo, 0);
+   END LOOP;
+
+   -- Complementa Factura y su Pago
+   IF NVL(nIdFacturaAportes,0) > 0 THEN
+      /*OC_FACTURAR.PROC_COMISIONAG (nIdPoliza, nIDetPol, nCodCia, nCodEmpresa, cIdTipoSeg, cCodMoneda, nIdFacturaAportes, 
+                                   NVL(nSaldoPorAplicar,0) * nTasaCambioMov, NVL(nSaldoPorAplicar,0), nTasaCambioMov);*/
+      OC_FACTURAS.ACTUALIZA_FACTURA(nIdFacturaAportes);
+      OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia, nIdFacturaAportes, 'IVASIN');
+      OC_DETALLE_TRANSACCION.CREA (nIdTransaccionFact, nCodCia, nCodEmpresa, 21, 'FACFON', 'FACTURAS',
+                                   nIdPoliza, nIDetPol, nIdFondo, nIdFacturaAportes, NVL(nSaldoRestante,0));
+      -- Se Registra el Pago
+      nIdTransaccionPag := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 12, 'PAGPRD');
+      OC_FACTURAS.PAGAR_CON_PRIMA_DEPOSITO(nIdFacturaAportes, nIdPrimaDeposito, SUBSTR(cNumReciboPago,1,20), TRUNC(dFecPago),
+                                           NULL, nIdTransaccionPag);
+      BEGIN
+         SELECT MAX(IdRecibo)
+           INTO nIdRecibo
+           FROM PAGOS
+          WHERE CodCia    = nCodCia
+            AND IdFactura = nIdFacturaAportes;
+      END;
+      OC_DETALLE_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, nIdRecibo, nIdPrimaDeposito,
+                                          nIdFacturaAportes, nIdPoliza, NVL(nSaldoRestante,0), 'PAT');
+
+      OC_PRIMAS_DEPOSITO.APLICAR_FACTURA(nCodCia, nCodEmpresa, nIdPrimaDeposito, TRUNC(dFecPago), nIdRecibo, 
+                                         NVL(nSaldoRestante,0), NVL(nSaldoRestante,0) * nTasaCambioMov, 
+                                         NVL(nSaldoRestante,0), NVL(nSaldoRestante,0) * nTasaCambioMov, nIdTransaccionPag);
+   END IF;
+   OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccionMov, 'C');          
+   
+   IF cFormPago IN ('CLAB','CTC','DOMI','LIN') AND OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(nCodCia, nIdPoliza, nIDetPol, nCodAsegurado) = 'N' THEN
+      IF OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, nCodEmpresa, cIdTipoSeg) = 'S' THEN
+         NOTIFICACOBRANZAOK(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdFactura);
+      END IF;
+   END IF;
+   RETURN(1);
+END PAGAR_ALTURA_CERO;
 
 END OC_FACTURAS;
 /

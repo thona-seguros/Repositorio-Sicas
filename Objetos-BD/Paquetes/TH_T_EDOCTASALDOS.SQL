@@ -179,7 +179,7 @@ SELECT   ---   '01',  NUEVA
                              AND C.CodCia           = F.CodCia
                              AND (D.IndCptoPrima    = 'S'
                               OR C.IndCptoServicio  = 'S')
-                             AND D.IdFactura        = F.IdFactura)
+                             AND D.IdFactura        = F.IdFactura)  + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura))
          ELSE 0
         END                                                        CASE_MtoPrimaFactura,
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
@@ -195,7 +195,7 @@ SELECT   ---   '01',  NUEVA
            AND C.CodCia           = F.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
+           AND D.IdFactura        = F.IdFactura)  + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura)) MtoPrimaFactura
       ,C.IDNOMINA NOMINA_COM,
     CASE
        WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null
@@ -367,7 +367,7 @@ SELECT    ---  '02',
                              AND C.CodCia           = F.CodCia
                              AND (D.IndCptoPrima    = 'S'
                               OR C.IndCptoServicio  = 'S')
-                             AND D.IdFactura        = F.IdFactura)
+                             AND D.IdFactura        = F.IdFactura)  + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura))
          ELSE 0
         END                                                        CASE_MtoPrimaFactura,
        ---------------------------------------------------------------------------------------------
@@ -384,7 +384,7 @@ SELECT    ---  '02',
            AND C.CodCia           = F.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
+           AND D.IdFactura        = F.IdFactura)  + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura)) MtoPrimaFactura
       ,C.IDNOMINA NOMINA_COM,
     CASE
        WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null--TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')
@@ -549,7 +549,7 @@ SELECT    ---  '03',
                              AND C.CodCia           = F.CodCia
                              AND (D.IndCptoPrima    = 'S'
                               OR C.IndCptoServicio  = 'S')
-                             AND D.IdFactura        = F.IdFactura)
+                             AND D.IdFactura        = F.IdFactura)  + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura))
         END                                                        CASE_MtoPrimaFactura,
        ---------------------------------------------------------------------------------------------
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
@@ -565,7 +565,7 @@ SELECT    ---  '03',
            AND C.CodCia           = F.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
+           AND D.IdFactura        = F.IdFactura) + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura)) MtoPrimaFactura
       ,C.IDNOMINA NOMINA_COM,
      CASE
        WHEN NC.STSNCR IN ('PAG','APL')  AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')
@@ -727,7 +727,7 @@ SELECT   ---  '04',
                              AND C.CodCia           = F.CodCia
                              AND (D.IndCptoPrima    = 'S'
                               OR C.IndCptoServicio  = 'S')
-                             AND D.IdFactura        = F.IdFactura)
+                             AND D.IdFactura        = F.IdFactura)  + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura))
         END                                                        CASE_MtoPrimaFactura,
        ---------------------------------------------------------------------------------------------
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
@@ -743,7 +743,7 @@ SELECT   ---  '04',
            AND C.CodCia           = F.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
+           AND D.IdFactura        = F.IdFactura) + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura)) MtoPrimaFactura
       ,C.IDNOMINA NOMINA_COM,
     CASE
        WHEN NC.STSNCR = 'APL' AND  NC.FECSTS IS NULL THEN TO_CHAR(TRUNC(C.FEC_LIQUIDACION), 'DD/MM/YYYY')
@@ -943,7 +943,7 @@ SELECT --- '05',
                          AND C.CodCia           = N.CodCia
                          AND (D.IndCptoPrima    = 'S'
                           OR C.IndCptoServicio  = 'S')
-                         AND D.IdNcr            = N.IdNcr)
+                         AND D.IdNcr            = N.IdNcr) + 0
         END                                                        CASE_MtoPrimaFactura,
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
        DECODE(SIGN(SubTotal), -1, 0, SubTotal) A_FAVOR, C.IdComision IdComision,
@@ -957,7 +957,7 @@ SELECT --- '05',
            AND C.CodCia           = N.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdNcr            = N.IdNcr) MtoPrimaFactura
+           AND D.IdNcr            = N.IdNcr) + 0 MtoPrimaFactura
         ,C.IDNOMINA NOMINA_COMISION,
       --%%%%%%%-----
     CASE
@@ -1221,7 +1221,7 @@ SELECT   ---   '07',  NUEVA
                              AND C.CodCia           = F.CodCia
                              AND (D.IndCptoPrima    = 'S'
                               OR C.IndCptoServicio  = 'S')
-                             AND D.IdFactura        = F.IdFactura)
+                             AND D.IdFactura        = F.IdFactura)  + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura))
          ELSE 0
         END                                                        CASE_MtoPrimaFactura,
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
@@ -1237,7 +1237,7 @@ SELECT   ---   '07',  NUEVA
            AND C.CodCia           = F.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
+           AND D.IdFactura        = F.IdFactura) + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura)) MtoPrimaFactura
       ,C.IDNOMINA NOMINA_COM,
     CASE
        WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null
@@ -1383,7 +1383,7 @@ SELECT   ---   '08',  NUEVA
                              AND C.CodCia           = F.CodCia
                              AND (D.IndCptoPrima    = 'S'
                               OR C.IndCptoServicio  = 'S')
-                             AND D.IdFactura        = F.IdFactura)
+                             AND D.IdFactura        = F.IdFactura)  + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura))
 ----- JMMD20210720         ELSE 0
         END                                                        CASE_MtoPrimaFactura,
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
@@ -1399,7 +1399,7 @@ SELECT   ---   '08',  NUEVA
            AND C.CodCia           = F.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
+           AND D.IdFactura        = F.IdFactura) + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura)) MtoPrimaFactura
       ,C.IDNOMINA NOMINA_COM,
     CASE
        WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null
@@ -1560,7 +1560,7 @@ SELECT --- '09',
                          AND C.CodCia           = N.CodCia
                          AND (D.IndCptoPrima    = 'S'
                           OR C.IndCptoServicio  = 'S')
-                         AND D.IdNcr            = N.IdNcr)
+                         AND D.IdNcr            = N.IdNcr) + 0
         ELSE 0  -----JMMD20210720
         END                                                        CASE_MtoPrimaFactura,
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
@@ -1575,7 +1575,7 @@ SELECT --- '09',
            AND C.CodCia           = N.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdNcr            = N.IdNcr) MtoPrimaFactura
+           AND D.IdNcr            = N.IdNcr) + 0 MtoPrimaFactura
         ,C.IDNOMINA NOMINA_COMISION,
       --%%%%%%%-----
     CASE
@@ -1745,7 +1745,7 @@ SELECT --- '10',
                          AND C.CodCia           = N.CodCia
                          AND (D.IndCptoPrima    = 'S'
                           OR C.IndCptoServicio  = 'S')
-                         AND D.IdNcr            = N.IdNcr)
+                         AND D.IdNcr            = N.IdNcr) + 0
         END                                                        CASE_MtoPrimaFactura,
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
        DECODE(SIGN(SubTotal), -1, 0, SubTotal) A_FAVOR, C.IdComision IdComision,
@@ -1759,7 +1759,7 @@ SELECT --- '10',
            AND C.CodCia           = N.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdNcr            = N.IdNcr) MtoPrimaFactura
+           AND D.IdNcr            = N.IdNcr) + 0 MtoPrimaFactura
         ,C.IDNOMINA NOMINA_COMISION,
       --%%%%%%%-----
     CASE
@@ -1909,7 +1909,7 @@ UNION ----- 11
                              AND C.CodCia           = F.CodCia
                              AND (D.IndCptoPrima    = 'S'
                               OR C.IndCptoServicio  = 'S')
-                             AND D.IdFactura        = F.IdFactura)
+                             AND D.IdFactura        = F.IdFactura) + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura))
          ELSE 0
         END                                                        CASE_MtoPrimaFactura,
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
@@ -1926,7 +1926,7 @@ UNION ----- 11
            AND C.CodCia           = F.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
+           AND D.IdFactura        = F.IdFactura) + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura)) MtoPrimaFactura
       ,C.IDNOMINA NOMINA_COM,
     CASE
        WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null
@@ -2071,7 +2071,7 @@ SELECT   ---   '12',  NUEVA
                              AND C.CodCia           = F.CodCia
                              AND (D.IndCptoPrima    = 'S'
                               OR C.IndCptoServicio  = 'S')
-                             AND D.IdFactura        = F.IdFactura)
+                             AND D.IdFactura        = F.IdFactura) + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura))
          ELSE 0
         END                                                        CASE_MtoPrimaFactura,
        DECODE(SIGN(SubTotal), -1, SubTotal, 0) En_contra, PC.CodTipoPlan CodTipoPlan,
@@ -2087,7 +2087,7 @@ SELECT   ---   '12',  NUEVA
            AND C.CodCia           = F.CodCia
            AND (D.IndCptoPrima    = 'S'
             OR C.IndCptoServicio  = 'S')
-           AND D.IdFactura        = F.IdFactura) MtoPrimaFactura
+           AND D.IdFactura        = F.IdFactura) + (OC_FACTURAS.PRIMA_COMPLEMENTARIA (PO.CodCia, PO.IdPoliza, F.IdFactura)) MtoPrimaFactura
       ,C.IDNOMINA NOMINA_COM,
     CASE
        WHEN F.STSFACT  = 'PAG' and  f.Fecsts <= P_FECHASTA and TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA then null

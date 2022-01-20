@@ -1633,6 +1633,7 @@ CURSOR FONDOS_Q IS
       AND CodAsegurado  = nCodAseguradoOrig
       AND StsFondo      = 'EMITID'
       AND IdFondo       > 0;
+          
 BEGIN
    BEGIN
       SELECT StsPoliza, CodPlanPago

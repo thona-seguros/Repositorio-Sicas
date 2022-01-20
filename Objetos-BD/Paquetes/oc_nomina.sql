@@ -15,6 +15,10 @@ PROCEDURE PROCESA_NOTAS_COMISION (nCodCia NUMBER, nCodEmpresa NUMBER, nIdNomina 
 PROCEDURE GENERA_DETALLE_NOMINA_COM(nCodCia NUMBER, nIdNomina NUMBER);
 PROCEDURE REVERTIR_NOMINA (nCodCia NUMBER, nCodEmpresa NUMBER, nIdNomina NUMBER);
 PROCEDURE ACTUALIZA_AUTORIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNomina NUMBER, nIdAutorizacion NUMBER);
+
+FUNCTION REVISAR(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2;
+PROCEDURE DESMARCA_PROCESA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNomina NUMBER);
+FUNCTION GENERAR_NC(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2;
 END OC_NOMINA;
 /
 CREATE OR REPLACE PACKAGE BODY OC_NOMINA IS
@@ -650,5 +654,49 @@ EXCEPTION
        RAISE_APPLICATION_ERROR(-20225,'Error al Asignar Autorización: '||nIdAutorizacion||' '||SQLERRM);
 END ACTUALIZA_AUTORIZACION;
 
+FUNCTION REVISAR(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2 IS
+cIndEjecuto VARCHAR2(1) := 'N';
+CURSOR REVISA_NOM IS
+   SELECT IdNomina
+     FROM NOMINA_COMISION
+    WHERE CodCia              = nCodCia
+      AND CodEmpresa          = nCodEmpresa
+      AND Estado              = 'EMI'
+      AND NVL(IndProcesa,'N') = 'S';
+BEGIN
+   FOR W IN REVISA_NOM LOOP
+      OC_NOMINA.PROC_ACTSTSNOM(nCodCia, nCodEmpresa, W.IdNomina, 'REVISA');
+      OC_NOMINA.DESMARCA_PROCESA(nCodCia, nCodEmpresa, W.IdNomina);
+      cIndEjecuto := 'S';
+   END LOOP;
+   RETURN cIndEjecuto;
+END REVISAR;
+
+PROCEDURE DESMARCA_PROCESA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNomina NUMBER) IS 
+BEGIN 
+   UPDATE NOMINA_COMISION
+      SET IndProcesa = 'N'
+   WHERE CodCia     = nCodCia
+     AND CodEmpresa = nCodEmpresa
+     AND IdNomina   = nIdNomina;
+END DESMARCA_PROCESA;
+
+FUNCTION GENERAR_NC(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2 IS
+cIndEjecuto VARCHAR2(1) := 'N';
+CURSOR REVISA_NOM IS
+   SELECT IdNomina
+     FROM NOMINA_COMISION
+    WHERE CodCia              = nCodCia
+      AND CodEmpresa          = nCodEmpresa
+      AND Estado              = 'REVISA'
+      AND NVL(IndProcesa,'N') = 'S';
+BEGIN
+   FOR W IN REVISA_NOM LOOP
+      OC_NOMINA.PROCESA_NOTAS_COMISION(nCodCia, nCodEmpresa, W.IdNomina);
+      OC_NOMINA.DESMARCA_PROCESA(nCodCia, nCodEmpresa, W.IdNomina);
+      cIndEjecuto := 'S';
+   END LOOP;
+   RETURN cIndEjecuto;
+END GENERAR_NC;
 END OC_NOMINA;
 /

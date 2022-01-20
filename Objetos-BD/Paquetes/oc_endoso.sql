@@ -62,7 +62,7 @@
 --   TRANSACCION (Table)
 --
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
-
+   
    FUNCTION CREAR (nIdPoliza NUMBER ) RETURN NUMBER;
    FUNCTION NATURALIDAD(cTipoEndoso VARCHAR2) RETURN VARCHAR2;
    PROCEDURE INSERTA (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER,
@@ -380,20 +380,26 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_endoso IS
 	   RETURN(nIdEndoso);
 	END NUMERO_CP;
 
-	PROCEDURE EMITIR(nCodcia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetPol NUMBER,
-			 nIdEndoso NUMBER, cTipoEndoso VARCHAR2) IS
-	cIndFactPeriodo    POLIZAS.IndFactPeriodo%TYPE;
-	nIdFactura         FACTURAS.IdFactura%TYPE;
-	nSuma_Aseg_Moneda  ENDOSOS.Suma_Aseg_Moneda%TYPE;
-	nPrima_Moneda      ENDOSOS.Prima_Neta_Moneda%TYPE;
-	nIdTransacAnul     TRANSACCION.IdTransaccion%TYPE;
-	dFecIniVig         ENDOSOS.FecIniVig%TYPE;
-	cIndFacturaPol     POLIZAS.IndFacturaPol%TYPE;
-	cCodPlanPago       ENDOSOS.CodPlanPago%TYPE;
-	nRegis             NUMBER(6);
-	cNaturalidad       VARCHAR2(2);
-	nNaturalidad       NUMBER;
-	nIdTrn             NUMBER(10);
+PROCEDURE EMITIR(nCodcia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetPol NUMBER,
+                  nIdEndoso NUMBER, cTipoEndoso VARCHAR2) IS
+   cIndFactPeriodo      POLIZAS.IndFactPeriodo%TYPE;
+	nIdFactura           FACTURAS.IdFactura%TYPE;
+	nSuma_Aseg_Moneda    ENDOSOS.Suma_Aseg_Moneda%TYPE;
+	nPrima_Moneda        ENDOSOS.Prima_Neta_Moneda%TYPE;
+	nIdTransacAnul       TRANSACCION.IdTransaccion%TYPE;
+	dFecIniVig           ENDOSOS.FecIniVig%TYPE;
+	cIndFacturaPol       POLIZAS.IndFacturaPol%TYPE;
+	cCodPlanPago         ENDOSOS.CodPlanPago%TYPE;
+	nRegis               NUMBER(6);
+	cNaturalidad         VARCHAR2(2);
+	nNaturalidad         NUMBER;
+	nIdTrn               NUMBER(10);
+   nMontoAporteFondo    ENDOSOS.MontoAporteFondo%TYPE;
+   nMtoAporteIniMoneda  FAI_FONDOS_DETALLE_POLIZA.MtoAporteIniMoneda%TYPE;
+   nMtoAporteIniLocal   FAI_FONDOS_DETALLE_POLIZA.MtoAporteIniLocal%TYPE;
+   nCodAsegurado        DETALLE_POLIZA.Cod_Asegurado%TYPE;
+   cCodMoneda           POLIZAS.Cod_Moneda%TYPE;
+   
 
 	CURSOR COBERT_Q IS
 	   SELECT IdTipoSeg, CodCobert, SumaAseg_Local,
@@ -460,140 +466,183 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_endoso IS
 			     AND IdEndoso   > F.IdEndoso
 			     AND TipoEndoso = 'CFP')))
 	      AND F.StsFact       = 'EMI';
-	BEGIN
-	   SELECT NVL(IndFactPeriodo,'N')
-	     INTO cIndFactPeriodo
-	     FROM POLIZAS
-	    WHERE CodCia   = nCodCia
-	      AND IdPoliza = nIdPoliza;
+         
+CURSOR FOND_Q IS
+    SELECT TipoFondo, PorcFondo, IdFondo
+      FROM FAI_FONDOS_DETALLE_POLIZA
+     WHERE CodCia        = nCodCia
+       AND CodEmpresa    = nCodEmpresa
+       AND IdPoliza      = nIdPoliza
+       AND IDetPol       = nIDetPol
+       AND CodAsegurado  = nCodAsegurado
+       AND GT_FAI_TIPOS_DE_FONDOS.INDICADORES(CodCia, CodEmpresa, TipoFondo, 'EPP') = 'N'
+     ORDER BY IdFondo;         
+     
+BEGIN
+   SELECT Cod_Asegurado
+     INTO nCodAsegurado
+     FROM DETALLE_POLIZA
+    WHERE CodCia        = nCodCia
+      AND CodEmpresa    = nCodEmpresa
+      AND IdPoliza      = nIdPoliza
+      AND IDetPol       = nIDetPol;
+   
+   SELECT NVL(IndFactPeriodo,'N'), Cod_Moneda
+     INTO cIndFactPeriodo, cCodMoneda
+     FROM POLIZAS
+    WHERE CodCia   = nCodCia
+      AND IdPoliza = nIdPoliza;
 
-	    SELECT Suma_Aseg_Moneda, Prima_Neta_Moneda, FecIniVig, CodPlanPago
-	     INTO nSuma_Aseg_Moneda, nPrima_Moneda, dFecIniVig, cCodPlanPago
-	     FROM ENDOSOS
-	    WHERE CodCia   = nCodCia
-	      AND IdPoliza = nIdPoliza
-	      AND IDetPol  = nIDetPol
-	      AND IdEndoso = nIdEndoso;
+    SELECT Suma_Aseg_Moneda, Prima_Neta_Moneda, FecIniVig, CodPlanPago,
+           NVL(MontoAporteFondo,0)
+     INTO nSuma_Aseg_Moneda, nPrima_Moneda, dFecIniVig, cCodPlanPago,
+          nMontoAporteFondo
+     FROM ENDOSOS
+    WHERE CodCia   = nCodCia
+      AND IdPoliza = nIdPoliza
+      AND IDetPol  = nIDetPol
+      AND IdEndoso = nIdEndoso;
 
-	   UPDATE COBERTURAS
-	      SET StsCobertura = 'EMI'
-	    WHERE CodCia   = nCodCia
-	      AND IdPoliza = nIdPoliza
-	      AND IDetPol  = nIDetPol
-	      AND IdEndoso = nIdEndoso;
+   UPDATE COBERTURAS
+      SET StsCobertura = 'EMI'
+    WHERE CodCia   = nCodCia
+      AND IdPoliza = nIdPoliza
+      AND IDetPol  = nIDetPol
+      AND IdEndoso = nIdEndoso;
 
-	   IF cTipoEndoso NOT IN ('EXC','DIS','CFP') THEN
-	      IF OC_ASEGURADO_CERTIFICADO.TIENE_ASEGURADOS(nCodCia, nIdPoliza, nIDetPol, nIdEndoso) = 'N' THEN
-		 OC_COBERT_ACT.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso);
-		 OC_ASISTENCIAS_DETALLE_POLIZA.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso);
-		 OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, nIdEndoso);
-	      ELSE
-		 FOR W IN ASEG_Q LOOP
-		    OC_COBERT_ACT_ASEG.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, W.Cod_Asegurado, nIdEndoso);
-		    OC_ASISTENCIAS_ASEGURADO.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, W.Cod_Asegurado, nIdEndoso);
-		    OC_ASEGURADO_CERTIFICADO.EMITIR(nCodCia, nIdPoliza, W.IDetPol, W.Cod_Asegurado, nIdEndoso);
-		 END LOOP;
-		 FOR Z IN DET_Q LOOP
-		    OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, Z.IDetPol, nIdEndoso);
-		    OC_DETALLE_POLIZA.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, Z.IDetPol);
-		 END LOOP;
-	      END IF;
-	   END IF;
+   IF cTipoEndoso NOT IN ('EXC','DIS','CFP') THEN
+      IF OC_ASEGURADO_CERTIFICADO.TIENE_ASEGURADOS(nCodCia, nIdPoliza, nIDetPol, nIdEndoso) = 'N' THEN
+          OC_COBERT_ACT.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso);
+          OC_ASISTENCIAS_DETALLE_POLIZA.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso);
+          OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, nIdEndoso);
+            ELSE
+          FOR W IN ASEG_Q LOOP
+             OC_COBERT_ACT_ASEG.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, W.Cod_Asegurado, nIdEndoso);
+             OC_ASISTENCIAS_ASEGURADO.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, W.Cod_Asegurado, nIdEndoso);
+             OC_ASEGURADO_CERTIFICADO.EMITIR(nCodCia, nIdPoliza, W.IDetPol, W.Cod_Asegurado, nIdEndoso);
+          END LOOP;
+          FOR Z IN DET_Q LOOP
+             OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, Z.IDetPol, nIdEndoso);
+             OC_DETALLE_POLIZA.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, Z.IDetPol);
+          END LOOP;
+      END IF;
+   END IF;
 
-	   cNaturalidad := OC_ENDOSO.NATURALIDAD(cTipoEndoso);
+   cNaturalidad := OC_ENDOSO.NATURALIDAD(cTipoEndoso);
 
-	   IF cNaturalidad = '-' THEN
-	      nNaturalidad := -1;
-	   ELSE
-	      nNaturalidad := 1;
-	   END IF;
+   IF cNaturalidad = '-' THEN
+      nNaturalidad := -1;
+   ELSE
+      nNaturalidad := 1;
+   END IF;
 
-	   IF cTipoEndoso = 'CFP' THEN
-	      nIdTransacAnul := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, 'ANUFAC');
+   IF cTipoEndoso = 'CFP' THEN
+      nIdTransacAnul := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, 'ANUFAC');
 
-	      OC_DETALLE_TRANSACCION.CREA (nIdTransacAnul, nCodCia,  nCodEmpresa, 8, 'ANUFAC', 'ENDOSOS',
-					   nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
+      OC_DETALLE_TRANSACCION.CREA (nIdTransacAnul, nCodCia,  nCodEmpresa, 8, 'ANUFAC', 'ENDOSOS',
+               nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
 
-	      FOR X IN FACT_Q LOOP
-		 OC_FACTURAS.ANULAR(nCodCia, X.IdFactura, dFecIniVig, 'CFP', X.CodCobrador, nIdTransacAnul);
-		 OC_DETALLE_TRANSACCION.CREA (nIdTransacAnul, nCodCia,  nCodEmpresa, 8, 'ANUFAC', 'FACTURAS',
-					      nIdPoliza, X.IDetPol, X.IdEndoso, X.IdFactura, NVL(X.Monto_Fact_Moneda,0));
-	      END LOOP;
-	      OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacAnul, 'C');
+      FOR X IN FACT_Q LOOP
+    OC_FACTURAS.ANULAR(nCodCia, X.IdFactura, dFecIniVig, 'CFP', X.CodCobrador, nIdTransacAnul);
+    OC_DETALLE_TRANSACCION.CREA (nIdTransacAnul, nCodCia,  nCodEmpresa, 8, 'ANUFAC', 'FACTURAS',
+                  nIdPoliza, X.IDetPol, X.IdEndoso, X.IdFactura, NVL(X.Monto_Fact_Moneda,0));
+      END LOOP;
+      OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacAnul, 'C');
 
-	      UPDATE POLIZAS
-		 SET CodPlanPago = cCodPlanPago
-	       WHERE CodCia   = nCodCia
-		 AND IdPoliza = nIdPoliza;
+      UPDATE POLIZAS
+    SET CodPlanPago = cCodPlanPago
+       WHERE CodCia   = nCodCia
+    AND IdPoliza = nIdPoliza;
 
-	      UPDATE DETALLE_POLIZA
-		 SET CodPlanPago = cCodPlanPago
-	       WHERE CodCia   = nCodCia
-		 AND IdPoliza = nIdPoliza;
-	   END IF;
+      UPDATE DETALLE_POLIZA
+    SET CodPlanPago = cCodPlanPago
+       WHERE CodCia   = nCodCia
+    AND IdPoliza = nIdPoliza;
+   END IF;
 
-	   IF cTipoEndoso NOT IN ('ESV','ESVTL','CLA') THEN
+   IF cTipoEndoso NOT IN ('ESV','ESVTL','CLA','EAAF') THEN
 
-	      /*FOR X IN COBERT_Q LOOP
-		 SELECT NVL(COUNT(*),0)
-		   INTO nRegis
-		   FROM COBERT_ACT
-		  WHERE CodCia    = nCodCia
-		    AND IdPoliza  = nIdPoliza
-		    AND IDetPol   = nIDetPol
-		    AND CodCobert = X.CodCobert;
+      /*FOR X IN COBERT_Q LOOP
+    SELECT NVL(COUNT(*),0)
+      INTO nRegis
+      FROM COBERT_ACT
+     WHERE CodCia    = nCodCia
+       AND IdPoliza  = nIdPoliza
+       AND IDetPol   = nIDetPol
+       AND CodCobert = X.CodCobert;
 
-		 IF NVL(nRegis,0) > 0 THEN
-		    UPDATE COBERT_ACT
-		       SET SumaAseg_Local  = NVL(SumaAseg_Local,0)  + (X.SumaAseg_Local  * nNaturalidad),
-			   SumaAseg_Moneda = NVL(SumaAseg_Moneda,0) + (X.SumaAseg_Moneda * nNaturalidad),
-			   Prima_Local     = NVL(Prima_Local,0)  + (X.Prima_Local  *  nNaturalidad),
-			   Prima_Moneda    = NVL(Prima_Moneda,0) + (X.Prima_Moneda * nNaturalidad)
-			  -- ,                          StsCobertura = 'CEX'
-		     WHERE CodCia    = nCodCia
-		       AND IdPoliza  = nIdPoliza
-		       AND IDetPol   = nIDetPol
-		       AND CodCobert = X.CodCobert;
-		 END IF;
-	      END LOOP;*/
+    IF NVL(nRegis,0) > 0 THEN
+       UPDATE COBERT_ACT
+          SET SumaAseg_Local  = NVL(SumaAseg_Local,0)  + (X.SumaAseg_Local  * nNaturalidad),
+         SumaAseg_Moneda = NVL(SumaAseg_Moneda,0) + (X.SumaAseg_Moneda * nNaturalidad),
+         Prima_Local     = NVL(Prima_Local,0)  + (X.Prima_Local  *  nNaturalidad),
+         Prima_Moneda    = NVL(Prima_Moneda,0) + (X.Prima_Moneda * nNaturalidad)
+        -- ,                          StsCobertura = 'CEX'
+        WHERE CodCia    = nCodCia
+          AND IdPoliza  = nIdPoliza
+          AND IDetPol   = nIDetPol
+          AND CodCobert = X.CodCobert;
+    END IF;
+      END LOOP;*/
 
-	      nIdTrn := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, cTipoEndoso);
-	      OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, cTipoEndoso, 'ENDOSOS',
-					  nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
-	      IF NVL(cIndFactPeriodo,'N') = 'N' THEN
-		 IF cNaturalidad = '+' AND nPrima_Moneda != 0 THEN
-		    OC_FACTURAR.PROC_EMITE_FACT_END (nIdPoliza, nIDetPol, nIdEndoso, nIdTrn);
-		 ELSIF cNaturalidad = '-' AND nPrima_Moneda != 0 THEN
-		    OC_NOTAS_DE_CREDITO.EMITIR_NOTA_CREDITO(nIdPoliza, nIDetPol, nIdEndoso, nIdTrn);
-		 END IF;
-	      ELSE
-		 IF cNaturalidad = '+' AND nPrima_Moneda != 0 THEN
-		    OC_FACTURAR.PROC_EMITE_FACT_ENDO_PERIODO(nIdPoliza, 0, nCodCia, nIdTrn, 1);
-		 END IF;
-	      END IF;
-	      OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTrn, 'C');
-	   ELSE
-	      nIdTrn := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, cTipoEndoso);
-	      OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, cTipoEndoso, 'ENDOSOS',
-					  nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
-	   END IF;
+      nIdTrn := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, cTipoEndoso);
+      OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, cTipoEndoso, 'ENDOSOS',
+              nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
+      IF NVL(cIndFactPeriodo,'N') = 'N' THEN
+    IF cNaturalidad = '+' AND nPrima_Moneda != 0 THEN
+       OC_FACTURAR.PROC_EMITE_FACT_END (nIdPoliza, nIDetPol, nIdEndoso, nIdTrn);
+    ELSIF cNaturalidad = '-' AND nPrima_Moneda != 0 THEN
+       OC_NOTAS_DE_CREDITO.EMITIR_NOTA_CREDITO(nIdPoliza, nIDetPol, nIdEndoso, nIdTrn);
+    END IF;
+      ELSE
+    IF cNaturalidad = '+' AND nPrima_Moneda != 0 THEN
+       OC_FACTURAR.PROC_EMITE_FACT_ENDO_PERIODO(nIdPoliza, 0, nCodCia, nIdTrn, 1);
+    END IF;
+      END IF;
+      OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTrn, 'C');
+   ELSIF cTipoEndoso IN ('EAAF') THEN
+      UPDATE DETALLE_POLIZA
+         SET MontoAporteFondo = nMontoAporteFondo
+       WHERE CodCia    = nCodCia
+         AND IdPoliza  = nIdPoliza
+         AND IDetPol   = nIDetPol;
+         
+      FOR X IN FOND_Q LOOP
+         nMtoAporteIniMoneda  := nMontoAporteFondo * (X.PorcFondo / 100);
+         nMtoAporteIniLocal   := nMtoAporteIniMoneda * OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(dFecIniVig));
+         
+         UPDATE FAI_FONDOS_DETALLE_POLIZA
+            SET MtoAporteIniLocal   = nMtoAporteIniLocal,
+                MtoAporteIniMoneda  = nMtoAporteIniMoneda
+          WHERE CodCia        = nCodCia
+            AND CodEmpresa    = nCodEmpresa
+            AND IdPoliza      = nIdPoliza
+            AND IDetPol       = nIDetPol
+            AND CodAsegurado  = nCodAsegurado
+            AND IdFondo       = X.IdFondo;
+      END LOOP;
+   ELSE
+      nIdTrn := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, cTipoEndoso);
+      OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, cTipoEndoso, 'ENDOSOS',
+              nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
+   END IF;
+   
+   OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, nIdEndoso);
+   OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIdEndoso);
 
-	   OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, nIdEndoso);
-	   OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIdEndoso);
+   UPDATE ENDOSOS
+      SET StsEndoso = 'EMI',
+     FecSts    = TRUNC(SYSDATE)
+    WHERE CodCia    = nCodCia
+      AND IdPoliza  = nIdPoliza
+      AND IDetPol   = nIDetPol
+      AND IdEndoso  = nIdEndoso;
 
-	   UPDATE ENDOSOS
-	      SET StsEndoso = 'EMI',
-		  FecSts    = TRUNC(SYSDATE)
-	    WHERE CodCia    = nCodCia
-	      AND IdPoliza  = nIdPoliza
-	      AND IDetPol   = nIDetPol
-	      AND IdEndoso  = nIdEndoso;
-
-	   GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza, nIdTrn, TRUNC(SYSDATE), 'ENDOSOS');
-	EXCEPTION
-	    WHEN OTHERS THEN
-	      RAISE_APPLICATION_ERROR(-20225,'ERROR GENERAL Endoso.EMITIR  '||sqlerrm);
-	END EMITIR;
+   GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza, nIdTrn, TRUNC(SYSDATE), 'ENDOSOS');
+EXCEPTION
+    WHEN OTHERS THEN
+      RAISE_APPLICATION_ERROR(-20225,'ERROR GENERAL Endoso.EMITIR  '||sqlerrm);
+END EMITIR;
 
 	PROCEDURE EMITIR_AUMENTO(nCodcia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetPol NUMBER,
 				 nIdEndoso NUMBER, cTipoEndoso VARCHAR2) IS
@@ -871,7 +920,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_endoso IS
 	   --
 	   --TERMINA LAVDIN 
 	   --
-	    IF cStsEndoso = 'EMI' AND cTipoEndoso NOT IN ('ESV', 'ESVTL', 'CLA') THEN
+	    IF cStsEndoso = 'EMI' AND cTipoEndoso NOT IN ('ESV', 'ESVTL', 'CLA','EAAF') THEN
 	      BEGIN
 		 SELECT COUNT(*)
 		   INTO nComprobantes
@@ -978,7 +1027,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_endoso IS
 		 END IF;
 	      END IF;
 	   ELSE
-	      IF cTipoEndoso NOT IN ('ESV', 'ESVTL', 'EXA', 'RSS', 'NSS', 'EAD','CFP') THEN
+	      IF cTipoEndoso NOT IN ('ESV', 'ESVTL', 'EXA', 'RSS', 'NSS', 'EAD','CFP','EAAF') THEN
 		 SELECT SUM(Suma_Aseg_Moneda)
 		   INTO nSumaAseg
 		   FROM ENDOSOS

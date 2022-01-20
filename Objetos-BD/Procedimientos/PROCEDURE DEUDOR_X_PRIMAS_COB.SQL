@@ -1,5 +1,23 @@
 CREATE OR REPLACE PROCEDURE DEUDOR_X_PRIMAS_COB  IS
------ ESTABA INSERTANDO UNA LINEA EN BLANCO EN EL ARCHIVO Y FALTABA EL ENCABEZADO DE TASA_IVA     JMMD20210729 
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: N/A                                                                                                              |    
+	| Nombre     : DEUDOR_X_PRIMAS_COB                                                                                              |
+    | Objetivo   : Procedimiento que obtiene el reporte de deudores de Polizas VIFLEX por Prima de Cobertura.                       |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 09/11/2021                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
+    |                                                                                                                               |
+    | Obj. Modif.: Se Agregan Campos para Prima de Retiro Moneda y Prima de Retiro Local.                                           |
+    |        JMMD20210729   ESTABA INSERTANDO UNA LINEA EN BLANCO EN EL ARCHIVO Y FALTABA EL ENCABEZADO DE TASA_IVA                 |
+    | Parametros:                                                                                                                   |
+    |			N/A                                                                                                                 |
+    |_______________________________________________________________________________________________________________________________|
+*/  
 cLimitador      VARCHAR2(1) :='|'; 
 nLinea          NUMBER;
 nLineaimp       NUMBER := 1;
@@ -178,8 +196,10 @@ CURSOR EMI_Q IS
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA  
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA,
           --
+          F.MontoPrimaCompMoneda																		MONTOPRIMARETIROMON,	--> JALV (+) 09/11/2021
+          F.MontoPrimaCompLocal																		MONTOPRIMARETIROLOC		--> JALV (+) 09/11/2021
      FROM FACTURAS        F, 
           TRANSACCION     T, 
           POLIZAS         P, 
@@ -223,7 +243,7 @@ CURSOR EMI_Q IS
       AND CGO.CODEMPRESA(+)          = P.CODEMPRESA 
       AND CGO.CODTIPONEGOCIO(+)      = P.CODTIPONEGOCIO 
       AND CGO.CODCATEGO(+)           = P.CODCATEGO
-    UNION
+UNION
    SELECT P.IdPoliza,                    P.NumPolUnico, 
           P.NumPolRef,                   DP.CodFilial,
           OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || 
@@ -257,8 +277,10 @@ CURSOR EMI_Q IS
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA  
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA,
           --
+          F.MontoPrimaCompMoneda																		MONTOPRIMARETIROMON,	--> JALV (+) 09/11/2021
+          F.MontoPrimaCompLocal																		MONTOPRIMARETIROLOC		--> JALV (+) 09/11/2021
      FROM FACTURAS        F,  
           TRANSACCION     T, 
           POLIZAS         P, 
@@ -309,7 +331,7 @@ CURSOR EMI_Q IS
       AND CGO.CODEMPRESA(+)          = P.CODEMPRESA 
       AND CGO.CODTIPONEGOCIO(+)      = P.CODTIPONEGOCIO 
       AND CGO.CODCATEGO(+)           = P.CODCATEGO
-    UNION
+UNION
    SELECT P.IdPoliza,                   P.NumPolUnico, 
           P.NumPolRef,                  DP.CodFilial,
           OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || 
@@ -343,8 +365,10 @@ CURSOR EMI_Q IS
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA  
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA, 
           --
+          F.MontoPrimaCompMoneda																		MONTOPRIMARETIROMON,	--> JALV (+) 09/11/2021
+          F.MontoPrimaCompLocal																		MONTOPRIMARETIROLOC		--> JALV (+) 09/11/2021
      FROM FACTURAS        F, 
           PAGOS           PG, 
           TRANSACCION     T, 
@@ -456,7 +480,7 @@ CURSOR NC_Q IS
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA  
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA
           --
      FROM NOTAS_DE_CREDITO N, 
           TRANSACCION      T, 
@@ -765,6 +789,8 @@ BEGIN
                      'Dias Antiguedad'||cLimitador||
                      'Antiguedad'||cLimitador||
                      'Prima Neta'||cLimitador||
+                     'Prima de Retiro Moneda'||cLimitador||	--> JALV (+) 09/11/2021
+                     'Prima de Retiro Local'||cLimitador||	--> JALV (+) 09/11/2021
                      'Reducción de Prima'||cLimitador||
                      'Recargos'||cLimitador||
                      'Derechos'||cLimitador||
@@ -1089,6 +1115,8 @@ BEGIN
                     TO_CHAR(nDiasAntiguedad,'99990')               ||cLimitador||
                     cRangoAntig                                    ||cLimitador||
                     TO_CHAR(nPrimaNeta,'99999999999990.00')        ||cLimitador||
+                    TO_CHAR(NVL(X.MontoPrimaRetiroMon,0),'99999999999990.00')        ||cLimitador|| --> JALV (+) 09/11/2021
+                    TO_CHAR(NVL(X.MontoPrimaRetiroLoc,0),'99999999999990.00')        ||cLimitador||	--> JALV (+) 09/11/2021
                     TO_CHAR(nReducPrima,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nRecargos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||
@@ -1394,6 +1422,8 @@ BEGIN
                     TO_CHAR(nDiasAntiguedad,'99990')               ||cLimitador||
                     cRangoAntig                                    ||cLimitador||
                     TO_CHAR(nPrimaNeta,'99999999999990.00')        ||cLimitador||
+                    TO_CHAR(0,'99999999999990.00')                 ||cLimitador|| --> JALV (+) 09/11/2021
+                    TO_CHAR(0,'99999999999990.00')                 ||cLimitador||	--> JALV (+) 09/11/2021
                     TO_CHAR(nReducPrima,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nRecargos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||

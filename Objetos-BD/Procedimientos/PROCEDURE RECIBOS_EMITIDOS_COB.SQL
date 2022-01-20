@@ -1,4 +1,23 @@
 CREATE OR REPLACE PROCEDURE RECIBOS_EMITIDOS_COB  IS
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: N/A                                                                                                              |    
+	| Nombre     : RECIBOS_EMITIDOS_COB                                                                                             |
+    | Objetivo   : Procedimiento que obtiene el reporte de Recibos Emitidos de Polizas VIFLEX por Prima de Cobertura.               |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 09/11/2021                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
+    |                                                                                                                               |
+    | Obj. Modif.: Se Agregan Campos para Prima de Retiro Moneda y Prima de Retiro Local.                                           |
+    |                                                                                                                               |
+    | Parametros:                                                                                                                   |
+    |			N/A                                                                                                                 |
+    |_______________________________________________________________________________________________________________________________|
+*/
 cLimitador      VARCHAR2(1) :='|';
 nLinea          NUMBER;
 nLineaimp       NUMBER := 1;
@@ -136,7 +155,6 @@ cTexto4                     varchar2(1000)   := ' Saludos. ';
 ----
 
 CURSOR EMI_Q  IS
-
 SELECT
        IDPOLIZA,               NUMPOLUNICO, 
        NUMPOLREF,              IDETPOL, 
@@ -164,7 +182,9 @@ SELECT
        FUENTERECURSOS,
        CODPAQCOMERCIAL,
        CATEGORIA,
-       CANALFORMAVENTA
+       CANALFORMAVENTA,
+       MONTOPRIMARETIROMON,     --> JALV (+) 09/11/2021
+       MONTOPRIMARETIROLOC		--> JALV (+) 09/11/2021
 FROM 
 (  
    SELECT /*+RULE*/
@@ -198,7 +218,10 @@ FROM
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'INVALIDA','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'INVALIDA','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA,
+          --
+          F.MontoPrimaCompMoneda																		MONTOPRIMARETIROMON,	--> JALV (+) 09/11/2021
+          F.MontoPrimaCompLocal																		MONTOPRIMARETIROLOC		--> JALV (+) 09/11/2021
      FROM TRANSACCION         T,
           DETALLE_TRANSACCION DT,
           FACTURAS        F,           
@@ -296,7 +319,9 @@ UNION
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'INVALIDA','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA          
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'INVALIDA','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA,
+          F.MontoPrimaCompMoneda																		MONTOPRIMARETIROMON,	--> JALV (+) 09/11/2021
+          F.MontoPrimaCompLocal																		MONTOPRIMARETIROLOC		--> JALV (+) 09/11/2021
      FROM TRANSACCION         T,
           DETALLE_TRANSACCION DT,
           FACTURAS        F, 
@@ -427,8 +452,10 @@ CURSOR NC_Q IS
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA  
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA,
           --
+          0																		MONTOPRIMARETIROMON,	--> JALV (+) 09/11/2021
+          0																		MONTOPRIMARETIROLOC		--> JALV (+) 09/11/2021
      FROM NOTAS_DE_CREDITO N, 
           TRANSACCION      T, 
           POLIZAS          P, 
@@ -733,6 +760,8 @@ BEGIN
                      'Inicio Vigencia'||cLimitador||
                      'Fin Vigencia'||cLimitador|| 
                      'Prima Neta'||cLimitador||
+                     'Prima de Retiro Moneda'||cLimitador||	--> JALV (+) 09/11/2021
+                     'Prima de Retiro Local'||cLimitador||	--> JALV (+) 09/11/2021
                      'Reducción de Prima'||cLimitador||
                      'Recargos'||cLimitador||
                      'Derechos'||cLimitador|| 
@@ -1177,6 +1206,8 @@ BEGIN
                     X.FecVenc                                      ||cLimitador||
                     cFecFin                                        ||cLimitador||
                     TO_CHAR(nPrimaNeta,'99999999999990.00')        ||cLimitador||
+                    TO_CHAR(NVL(X.MontoPrimaRetiroMon,0),'99999999999990.00')        ||cLimitador|| --> JALV (+) 09/11/2021
+                    TO_CHAR(NVL(X.MontoPrimaRetiroLoc,0),'99999999999990.00')        ||cLimitador||	--> JALV (+) 09/11/2021
                     TO_CHAR(nReducPrima,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nRecargos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||
@@ -1539,6 +1570,8 @@ BEGIN
                     X.FecDevol                                     ||cLimitador||
                     cFecFin                                        ||cLimitador||
                     TO_CHAR(nPrimaNeta,'99999999999990.00')        ||cLimitador||
+                    TO_CHAR(0,'99999999999990.00')                 ||cLimitador|| --> JALV (+) 09/11/2021
+                    TO_CHAR(0,'99999999999990.00')                 ||cLimitador||	--> JALV (+) 09/11/2021
                     TO_CHAR(nReducPrima,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nRecargos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||

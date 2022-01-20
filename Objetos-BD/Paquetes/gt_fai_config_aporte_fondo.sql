@@ -175,12 +175,13 @@ BEGIN
   UPDATE FAI_CONFIG_APORTE_FONDO
      SET StsConfAportes = 'ACTIVO',
          FecStatus      = TRUNC(SYSDATE)
-   WHERE CodCia       = nCodCia
-     AND CodEmpresa   = nCodEmpresa
-     AND IdPoliza     = nIdPoliza
-     AND IDetPol      = nIDetPol
-     AND CodAsegurado = nCodAsegurado
-     AND IdFondo      = nIdFondo;
+   WHERE CodCia         = nCodCia
+     AND CodEmpresa     = nCodEmpresa
+     AND IdPoliza       = nIdPoliza
+     AND IDetPol        = nIDetPol
+     AND CodAsegurado   = nCodAsegurado
+     AND IdFondo        = nIdFondo
+     AND StsConfAportes = 'ANULAD';
   GT_FAI_CONFIG_APORTE_FONDO_DET.REVERTIR_ANULACION(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, nIdFondo);
 EXCEPTION
    WHEN OTHERS THEN

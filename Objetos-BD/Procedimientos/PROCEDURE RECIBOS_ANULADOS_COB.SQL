@@ -1,6 +1,24 @@
 CREATE OR REPLACE PROCEDURE RECIBOS_ANULADOS_COB  IS
------ SE ESTABA GRABANDO UN REGISTRO EN BLANCO Y SE CORRIGIO LA COMISION DEL AGENTE     ----- JMMD20210729
------ SE INCLUYO EL CONCEPTO DE IVAHON EN CURSOR 					 ----- JMMD20210729
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.: N/A                                                                                                              |    
+	| Nombre     : RECIBOS_ANULADOS_COB                                                                                             |
+    | Objetivo   : Procedimiento que obtiene el reporte de Recibos Anulados de Polizas VIFLEX por Prima de Cobertura.               |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 09/11/2021                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
+    |                                                                                                                               |
+    | Obj. Modif.: Se Agregan Campos para Prima de Retiro Moneda y Prima de Retiro Local.                                           |
+    |        JMMD20210729   SE ESTABA GRABANDO UN REGISTRO EN BLANCO Y SE CORRIGIO LA COMISION DEL AGENTE                           |
+    |       JMMD20210729    SE INCLUYO EL CONCEPTO DE IVAHON EN CURSOR                                                              |
+    | Parametros:                                                                                                                   |
+    |			N/A                                                                                                                 |
+    |_______________________________________________________________________________________________________________________________|
+*/  
 cLimitador             VARCHAR2(1) :='|';
 nLinea                 NUMBER;
 nLineaimp              NUMBER := 1;
@@ -173,7 +191,10 @@ CURSOR ANU_Q IS
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA 
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA,
+          --
+          F.MontoPrimaCompMoneda																		MONTOPRIMARETIROMON,	--> JALV (+) 09/11/2021
+          F.MontoPrimaCompLocal																		MONTOPRIMARETIROLOC		--> JALV (+) 09/11/2021
      FROM TRANSACCION         T,                    -- MLJS SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION 28/05/2020
           DETALLE_TRANSACCION DT,                   -- MLJS SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION 28/05/2020
           FACTURAS        F,
@@ -305,7 +326,8 @@ CURSOR NC_Q IS
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA  
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA
+          --
      -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION      
      -- SE ASEGURA LA OBTENCIÓN DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO
      FROM TRANSACCION      T,              -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION  
@@ -413,7 +435,8 @@ UNION
 --          P.CODCATEGO                                               CODCATEGO,
           CGO.DESCCATEGO                                            CATEGORIA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
-          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA  
+          DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA
+          --
      -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION      
      -- SE ASEGURA LA OBTENCIÓN DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO
      FROM TRANSACCION      T,              -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION  
@@ -758,6 +781,8 @@ BEGIN
                      'Fecha de Anulación'||cLimitador||
                      'Motivo Anulación'||cLimitador||
                      'Prima Neta'||cLimitador||
+                     'Prima de Retiro Moneda'||cLimitador||	--> JALV (+) 09/11/2021
+                     'Prima de Retiro Local'||cLimitador||	--> JALV (+) 09/11/2021
                      'Reducción de Prima'||cLimitador||
                      'Recargos'||cLimitador||
                      'Derechos'||cLimitador||
@@ -1208,6 +1233,8 @@ BEGIN
                     X.FecAnul                                      ||cLimitador||
                     X.MotivAnul                                    ||cLimitador||                   
                     TO_CHAR(nPrimaNeta,'99999999999990.00')        ||cLimitador||
+                    TO_CHAR(NVL(X.MontoPrimaRetiroMon,0),'99999999999990.00')        ||cLimitador|| --> JALV (+) 09/11/2021
+                    TO_CHAR(NVL(X.MontoPrimaRetiroLoc,0),'99999999999990.00')        ||cLimitador||	--> JALV (+) 09/11/2021
                     TO_CHAR(nReducPrima,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nRecargos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||
@@ -1575,6 +1602,8 @@ BEGIN
                     X.FecAnul                                     ||cLimitador||
                     X.MotivAnul                                    ||cLimitador||
                     TO_CHAR(nPrimaNeta,'99999999999990.00')        ||cLimitador||
+                    TO_CHAR(0,'99999999999990.00')                 ||cLimitador||   --> JALV (+) 09/11/2021
+                    TO_CHAR(0,'99999999999990.00')                 ||cLimitador||	--> JALV (+) 09/11/2021
                     TO_CHAR(nReducPrima,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nRecargos,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||

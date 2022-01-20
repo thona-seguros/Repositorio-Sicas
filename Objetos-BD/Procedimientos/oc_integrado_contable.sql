@@ -38,14 +38,16 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.oc_integrado_contable( dFecDesde     DATE
                                                           , cNombreCia    VARCHAR2
                                                           , cCodUser      VARCHAR2
                                                           , cStsComprob   VARCHAR2 ) IS
-   cLlave_IdPoliza      VARCHAR2(100) := 'IDPOLIZA';
-   cLlave_IdetPol       VARCHAR2(100) := 'IDETPOL';
-   cLlave_IdFactura     VARCHAR2(100) := 'IDFACTURA';
-   cLlave_IdNcr         VARCHAR2(100) := 'IDNCR';
-   cLlave_IdEndoso      VARCHAR2(100) := 'IDENDOSO';
-   cLlave_IdSiniestro   VARCHAR2(100) := 'IDSINIESTRO';
-   cLlave_IdDetSin      VARCHAR2(100) := 'IDDETSIN';
-   cLlave_NumAprobacion VARCHAR2(100) := 'NUM_APROBACION';
+   cLlave_IdPoliza         VARCHAR2(100) := 'IDPOLIZA';
+   cLlave_IdetPol          VARCHAR2(100) := 'IDETPOL';
+   cLlave_IdFactura        VARCHAR2(100) := 'IDFACTURA';
+   cLlave_IdNcr            VARCHAR2(100) := 'IDNCR';
+   cLlave_IdEndoso         VARCHAR2(100) := 'IDENDOSO';
+   cLlave_IdSiniestro      VARCHAR2(100) := 'IDSINIESTRO';
+   cLlave_IdDetSin         VARCHAR2(100) := 'IDDETSIN';
+   cLlave_NumAprobacion    VARCHAR2(100) := 'NUM_APROBACION';
+   cLlave_IdPrimaDeposito  VARCHAR2(100) := 'IdPrimaDeposito';
+   
    --
    cLimitador           VARCHAR2(1) :='|';
    nLinea               NUMBER;
@@ -65,6 +67,7 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.oc_integrado_contable( dFecDesde     DATE
    nIdFactura           NUMBER;
    nIdNcr               NUMBER;
    nIdEndoso            NUMBER;
+   nIdPrimaDeposito     PRIMAS_DEPOSITO.IdPrimaDeposito%TYPE;
    --
    cNomContratante      VARCHAR2(250);
    cFecIniVigPol        VARCHAR2(250);
@@ -399,6 +402,7 @@ BEGIN
       cNomAsegu       := NULL;
       nCod_Asegurado  := NULL;
       cNumPolUnico    := NULL;
+      nIdPrimaDeposito:= NULL;
       --          
       nNumComprob := X.NumComprob;
       --
@@ -415,6 +419,11 @@ BEGIN
       --Obtengo la Información Dinámica
       --
       FOR z IN c_val_dinamicos( x.CodCia, x.TipoComprob, x.NumComprob, x.IdTransaccion ) LOOP
+         IF nIdPrimaDeposito IS NULL THEN
+            SELECT DECODE( cLlave_IdPrimaDeposito, z.Campo1, z.Valor1, z.Campo2, z.Valor2, z.Campo3, z.Valor3, z.Campo4, z.Valor4, NULL )
+            INTO   nIdPrimaDeposito
+            FROM   DUAL;
+         END IF;
          --
          IF nIdPoliza IS NULL THEN
             SELECT DECODE( cLlave_IdPoliza, z.Campo1, z.Valor1, z.Campo2, z.Valor2, z.Campo3, z.Valor3, z.Campo4, z.Valor4, NULL )
@@ -507,6 +516,17 @@ BEGIN
          WHEN OTHERS THEN
             nCod_Asegurado := NULL;
             nIdetPol       := NULL;                          
+         END;
+      ELSIF nIdPrimaDeposito IS NOT NULL THEN
+         BEGIN
+            SELECT NULL, IDetPol, IdPoliza
+              INTO nCod_Asegurado, nIdetPol, nIdPoliza
+              FROM PRIMAS_DEPOSITO
+             WHERE IdPrimaDeposito = nIdPrimaDeposito;
+         EXCEPTION
+            WHEN OTHERS THEN
+               nCod_Asegurado := NULL;
+               nIdetPol       := NULL;  
          END;
          --     
       END IF;

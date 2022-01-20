@@ -87,6 +87,8 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
     PROCEDURE LIBERA_PRE_EMITE_PLATAFORMA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFechaPago DATE);
 
     FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
+    
+    fUNCTION ALTURA_CERO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
 
 END OC_POLIZAS;
 /
@@ -1344,27 +1346,27 @@ cIndPolCol        POLIZAS.IndPolCol%TYPE;
 
 CURSOR POL_REN_Q IS
    SELECT TipoPol, CodCliente, CodEmpresa,  NumPolRef, CodCia, NumPolUnico,
-     FecRenovacion, DescPoliza, SumaAseg_Moneda, PrimaNeta_Moneda,
-     PorcComis, NumRenov, IndExaInsp, Cod_Moneda, CodGrupoEc, IndPolCol,
-     Cod_Agente, CodPlanPago, Medio_Pago, IndProcFact,Caracteristica,
-     IndFactPeriodo, FormaVenta, TipoRiesgo, IndConcentrada,TipoDividendo,
-     TipoAdministracion, IndFacturaPol, CodAgrupador, HoraVigIni, HoraVigFin,
-     IndFactElectronica, IndCalcDerechoEmis, CodDirecRegional, PorcDescuento, 
-     PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste, MontoDeducible,
-     FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
-     IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
-     FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos
+          FecRenovacion, DescPoliza, SumaAseg_Moneda, PrimaNeta_Moneda,
+          PorcComis, NumRenov, IndExaInsp, Cod_Moneda, CodGrupoEc, IndPolCol,
+          Cod_Agente, CodPlanPago, Medio_Pago, IndProcFact,Caracteristica,
+          IndFactPeriodo, FormaVenta, TipoRiesgo, IndConcentrada,TipoDividendo,
+          TipoAdministracion, IndFacturaPol, CodAgrupador, HoraVigIni, HoraVigFin,
+          IndFactElectronica, IndCalcDerechoEmis, CodDirecRegional, PorcDescuento, 
+          PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste, MontoDeducible,
+          FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
+          IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
+          FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos
      FROM POLIZAS
     WHERE IdPoliza = nIdPolizaRen
       AND CodCia   = nCodCia;
 
 CURSOR DET_POL_RENOVAR_Q IS
    SELECT IDetPol, CodCia, Cod_Asegurado, CodEmpresa, CodPlanPago,
-     Suma_Aseg_Moneda, Prima_Moneda, PorcComis, PlanCob,
-     FecIniVig, FecFinVig, IdTipoSeg, CodPromotor, IndDeclara,
-     IndSinAseg, CodFilial, CodCategoria, IndFactElectronica,
-     IndAsegModelo, CantAsegModelo, MontoComisH, PorcComisH,
-     IdDirecAviCob, IdFormaCobro, MontoAporteFondo
+          Suma_Aseg_Moneda, Prima_Moneda, PorcComis, PlanCob,
+          FecIniVig, FecFinVig, IdTipoSeg, CodPromotor, IndDeclara,
+          IndSinAseg, CodFilial, CodCategoria, IndFactElectronica,
+          IndAsegModelo, CantAsegModelo, MontoComisH, PorcComisH,
+          IdDirecAviCob, IdFormaCobro, MontoAporteFondo
      FROM DETALLE_POLIZA
     WHERE IdPoliza = nIdPolizaRen
       AND CodCia   = nCodCia;
@@ -1378,13 +1380,13 @@ CURSOR AGENTES_Q IS
 
 CURSOR COB_REN_Q IS
   SELECT CA.IDetPol, CA.CodEmpresa, CA.CodCia, DP.IdTipoSeg,
-    CA.CodCobert, CA.SumaAseg_Moneda, CA.Prima_Moneda,
-    CA.TipoRef, CA.NumRef, CA.Cod_Asegurado, CA.Cod_Moneda,
-    CA.Deducible_Local, CA.Deducible_Moneda, DP.PlanCob,
-    CA.SumaAsegCalculada, CA.SalarioMensual, CA.VecesSalario,
-    CA.Edad_Minima, CA.Edad_Maxima, CA.Edad_Exclusion,
-    CA.SumaAseg_Maxima, CA.SumaAseg_Minima, CA.PorcExtraPrimaDet,
-    CA.MontoExtraPrimaDet, CA.SumaIngresada
+          CA.CodCobert, CA.SumaAseg_Moneda, CA.Prima_Moneda,
+          CA.TipoRef, CA.NumRef, CA.Cod_Asegurado, CA.Cod_Moneda,
+          CA.Deducible_Local, CA.Deducible_Moneda, DP.PlanCob,
+          CA.SumaAsegCalculada, CA.SalarioMensual, CA.VecesSalario,
+          CA.Edad_Minima, CA.Edad_Maxima, CA.Edad_Exclusion,
+          CA.SumaAseg_Maxima, CA.SumaAseg_Minima, CA.PorcExtraPrimaDet,
+          CA.MontoExtraPrimaDet, CA.SumaIngresada
     FROM COBERT_ACT CA, DETALLE_POLIZA DP
    WHERE DP.IDetPol  = CA.IDetPol
      AND DP.IdPoliza = CA.IdPoliza
@@ -2164,7 +2166,7 @@ BEGIN
       SET Estado = 'RENOVA'
     WHERE IdPoliza     = nIdPolizaRen
       AND CodCia       = nCodCia;
-
+   DBMS_OUTPUT.PUT_LINE(cEmitePoliza);
    IF cEmitePoliza = 'S' THEN
       BEGIN
          OC_POLIZAS.EMITIR_POLIZA(nCodCia, nIdPoliza, nCodEmpresa);
@@ -4703,9 +4705,9 @@ END RENOVAR;
         CURSOR rMONEDA IS
             SELECT P.COD_MONEDA
               FROM POLIZAS P
-            WHERE CODCIA     = NCODCIA
-              AND CODEMPRESA = NCODEMPRESA
-              AND IDPOLIZA   = NIDPOLIZA;
+            WHERE CodCia     = nCodCia
+              AND CodEmpresa = nCodEmpresa
+              AND IdPoliza   = nIdPoliza;
 
     BEGIN
         FOR ENT in rMONEDA LOOP
@@ -4714,8 +4716,27 @@ END RENOVAR;
         RETURN cCODMONEDA;
     EXCEPTION WHEN OTHERS THEN
         RETURN NULL;    
-    END;
+    END MONEDA;
     --
+fUNCTION ALTURA_CERO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS
+cAlturaCero             VARCHAR2(1);
+nMontoPrimaCompMoneda   DETALLE_POLIZA.MontoPrimaCompMoneda%TYPE;
+BEGIN
+   SELECT NVL(SUM(MontoPrimaCompMoneda),0)
+     INTO nMontoPrimaCompMoneda
+     FROM DETALLE_POLIZA
+    WHERE CodCia     = nCodCia
+      AND CodEmpresa = nCodEmpresa
+      AND IdPoliza   = nIdPoliza;
+      
+   IF NVL(nMontoPrimaCompMoneda,0) < 0 THEN 
+      cAlturaCero := 'S';
+   ELSE
+      cAlturaCero := 'N';
+   END IF;
+   RETURN cAlturaCero;
+END ALTURA_CERO;  
+
 END OC_POLIZAS;
 /
 

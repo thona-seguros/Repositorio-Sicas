@@ -68,6 +68,7 @@ FUNCTION DEDUCIBLE(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER,
 
 FUNCTION TOTAL_PRIMA_NIVELADA(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, 
                               nCod_Asegurado NUMBER, nIdEndoso NUMBER) RETURN NUMBER;
+                                                            
 
 END OC_COBERT_ACT;
 /
@@ -133,6 +134,7 @@ PROCEDURE CARGAR_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCH
     nIdPolizaEmision        POLIZAS.IdPoliza%TYPE;
     dFecIniVigEmision       POLIZAS.FecIniVig%TYPE;
     nPorcGtoAdminTar        TARIFA_SEXO_EDAD_RIESGO.PorcGtoAdmin%TYPE;
+    cIndManejaFondos        POLIZAS.IndManejaFondos%TYPE;
 
     CURSOR COB_Q IS
        SELECT CodCobert, Porc_Tasa, TipoTasa, Prima_Cobert,
@@ -179,10 +181,12 @@ BEGIN
       BEGIN
          SELECT P.Cod_Moneda, TRUNC(P.FecEmision), TRUNC(P.FecIniVig), TRUNC(P.FecFinVig),
                 HorasVig, DiasVig, PorcDescuento, PorcGtoAdmin, PorcGtoAdqui, 
-                PorcUtilidad, FactorAjuste, MontoDeducible, FactFormulaDeduc, NumRenov
+                PorcUtilidad, FactorAjuste, MontoDeducible, FactFormulaDeduc, NumRenov,
+                IndManejaFondos
            INTO nCod_Moneda, dFecEmision, dFecIniVig, dFecFinVig, nHorasVig, nDiasVig,
                 nPorcDescuento, nPorcGtoAdmin, nPorcGtoAdqui, nPorcUtilidad, 
-                nFactorAjuste, nMontoDeducible, nFactFormulaDeduc, nNumRenov
+                nFactorAjuste, nMontoDeducible, nFactFormulaDeduc, nNumRenov,
+                cIndManejaFondos
            FROM POLIZAS P
           WHERE P.CodCia    = nCodCia
             AND P.IdPoliza  = nIdPoliza;
@@ -293,7 +297,7 @@ BEGIN
                END IF;
                nSumaAsegMoneda := X.SumaAsegurada;
                nSumaAsegLocal  := X.SumaAsegurada * nTasaCambio;
-            ELSE
+            ELSE            
                IF OC_TARIFA_DINAMICA.TARIFA_VIGENTE(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecEmision) = 0 THEN
                   IF nIdTarifa = 0 THEN
                      RAISE_APPLICATION_ERROR(-20225,'NO Existe Tarifa Vigente por Sexo, Edad y Riesgo para el Tipo de Seguro ' || cIdTipoSeg || 
@@ -310,7 +314,7 @@ BEGIN
                      nTasa           := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
                                                                                X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
                      IF NVL(nSumaAsegMoneda,0) = 0 THEN
-                        IF NVL(nSumaAsegManual,0) != 0 THEN
+                        IF NVL(nSumaAsegManual,0) != 0 AND NVL(cIndManejaFondos,'N') = 'N' THEN
                            nSumaAsegMoneda := NVL(nSumaAsegManual,0);
                         ELSE
                            nSumaAsegMoneda := NVL(X.SumaAsegurada,0);
@@ -339,7 +343,11 @@ BEGIN
                      cRiesgo           := 'NA'; --OC_ACTIVIDADES_ECONOMICAS.RIESGO_ACTIVIDAD(cCodActividad);
                      --nPorcExtraPrima   := OC_PLAN_COBERTURAS.PORCENTAJE_EXTRAPRIMA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob);
                      --nMontoExtraPrima  := OC_PLAN_COBERTURAS.MONTO_EXTRAPRIMA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob);
-                   
+-----------JMMD20211028
+                     IF cHabitoTarifa IS NULL THEN
+                        cHabitoTarifa := 'NA';
+                     END IF;
+-----------JMMD20211028
                      nSumaAsegMoneda := OC_TARIFA_SEXO_EDAD_RIESGO.SUMA_ASEGURADA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
                                                                                   X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,cHabitoTarifa);
 
@@ -362,18 +370,18 @@ BEGIN
 
                      IF NVL(nTasa,0) > 0 THEN
                         nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
-    
+
                         nTasa := NVL(nTasa,0) * (1 + (NVL(nPorcExtraPrima,0) / 100));
-                      
+
                         nTasa := NVL(nTasa,0) + NVL(nMontoExtraPrima,0);
-                      
+
                         IF NVL(nFactorAjuste,0) > 0 THEN  
                             nTasa := NVL(nTasa,0) * NVL(nFactorAjuste,0);
                         END IF;
-    
+
                         -- Factor Deducible ??
                         nTasa := (1-(NVL(nFactFormulaDeduc,0) * NVL(nMontoDeducible,0))) * NVL(nTasa,0);
-                      
+
                         IF NVL(nHorasVig,0) > 0 THEN
                            nTasa := NVL(nTasa,0) * (NVL(nHorasVig,0) / 24);
                         END IF;
@@ -381,7 +389,7 @@ BEGIN
                         IF NVL(nDiasVig,0) > 0 THEN
                            nTasa := NVL(nTasa,0) * (NVL(nDiasVig,0) / 365);
                         END IF;
-    
+
                         --IF cTipoProrrata = 'D365' THEN
                            --nTasa := (NVL(nTasa,0) / 365) * (dFecFinVig - dFecIniVig);
                         --END IF;
@@ -389,7 +397,7 @@ BEGIN
                         /*IF NVL(nDiasVig,0) > 0 THEN
                            nTasa := NVL(nTasa,0) * (NVL(nDiasVig,0) / OC_GENERALES.DIAS_ANIO(dFecIniVig, dFecFinVig));
                         END IF;*/
-                      
+
                         nTasa := NVL(nTasa,0) / (1 - (NVL(nPorcGtoAdqui,0) / 100) - (NVL(nPorcUtilidad,0) / 100) - 
                                  (NVL(nPorcGtoAdmin,0) / 100)  -  (NVL(nPorcGtoAdminTar,0) / 100));
                      END IF;

@@ -55,6 +55,8 @@ FUNCTION MONTO_IMPUESTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2) RETURN 
 
 FUNCTION MONTO_CONCEPTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
 
+FUNCTION MONTO_PRIMA_COMPLEMENTARIA(nIdFactura NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
+
 END OC_DETALLE_FACTURAS;
 /
 
@@ -139,10 +141,12 @@ BEGIN
       INSERT INTO DETALLE_FACTURAS
              (IdFactura, CodCpto, Monto_Det_Local, Monto_Det_Moneda,
               Saldo_Det_Local, Saldo_Det_Moneda, IndCptoPrima,
-              MtoOrigDetLocal, MtoOrigDetMoneda)
+              MtoOrigDetLocal, MtoOrigDetMoneda, MontoPrimaCompMoneda,
+              MontoPrimaCompLocal)
       VALUES (nIdFactura, cCodCpto, nMtoPagoLocal, nMtoPagoMoneda,
               nMtoPagoLocal, nMtoPagoMoneda, cIndCptoPrima,
-              nMtoPagoLocal, nMtoPagoMoneda);
+              nMtoPagoLocal, nMtoPagoMoneda, 0,
+              0);
    EXCEPTION
       WHEN DUP_VAL_ON_INDEX THEN
          UPDATE DETALLE_FACTURAS
@@ -652,6 +656,19 @@ BEGIN
       AND D.CodCpto                  = CC.CodConcepto;
    RETURN(nMonto_Det_Moneda);
 END MONTO_CONCEPTO_FACT_ELECT;
+
+FUNCTION MONTO_PRIMA_COMPLEMENTARIA(nIdFactura NUMBER, cCodCpto VARCHAR2) RETURN NUMBER IS
+nMontoPrimaCompMoneda   DETALLE_FACTURAS.MontoPrimaCompMoneda%TYPE;
+BEGIN
+   BEGIN
+      SELECT NVL(MontoPrimaCompMoneda,0)
+        INTO nMontoPrimaCompMoneda
+        FROM DETALLE_FACTURAS
+       WHERE IdFactura  = nIdFactura
+         AND CodCpto    = cCodCpto;
+   END;
+   RETURN nMontoPrimaCompMoneda;
+END MONTO_PRIMA_COMPLEMENTARIA;
 
 END OC_DETALLE_FACTURAS;
 /
