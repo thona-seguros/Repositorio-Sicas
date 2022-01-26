@@ -1,68 +1,11 @@
---
--- OC_ENDOSO  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DUAL (Table)
---   DBMS_STANDARD (Package)
---   VALORES_DE_LISTAS (Table)
---   NOTAS_DE_CREDITO (Table)
---   OC_ADMON_RIESGO (Package)
---   SUB_PROCESO (Table)
---   SAI_CAT_GENERAL (Table)
---   SINIESTRO (Table)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   PROPIEDADES_VALORES (Table)
---   OC_DETALLE_TRANSACCION (Package)
---   OC_ENDOSO_TEXTO (Package)
---   OC_FACTURAR (Package)
---   OC_FACTURAS (Package)
---   DETALLE_COMISION (Table)
---   DETALLE_ENDOSO (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   OC_TRANSACCION (Package)
---   ASEGURADO (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   OC_DETALLE_POLIZA (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLIENTES (Table)
---   COBERTURAS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERTURA_ASEG (Table)
---   COBERT_ACT (Table)
---   COBERT_ACT_ASEG (Table)
---   COMISIONES (Table)
---   COMPROBANTES_CONTABLES (Table)
---   COMPROBANTES_DETALLE (Table)
---   TASAS_CAMBIO (Table)
---   OC_GENERALES (Package)
---   OC_NOTAS_DE_CREDITO (Package)
---   OC_PLAN_COBERTURAS (Package)
---   OC_PLAN_DE_PAGOS (Package)
---   OC_POLIZAS (Package)
---   OC_ASEGURADO (Package)
---   OC_ASEGURADO_CERTIFICADO (Package)
---   OC_ASISTENCIAS_ASEGURADO (Package)
---   OC_ASISTENCIAS_DETALLE_POLIZA (Package)
---   OC_BENEFICIARIO (Package)
---   OC_COBERT_ACT (Package)
---   OC_COBERT_ACT_ASEG (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   DETALLE_POLIZA (Table)
---   DETALLE_TRANSACCION (Table)
---   ENDOSOS (Table)
---   FACTURAS (Table)
---   OC_PROCESO_AUTORIZA_USUARIO (Package)
---   GT_REA_DISTRIBUCION (Package)
---   TRANSACCION (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
-   
+  --
+  -- BITACORA DE CAMBIO
+  -- SE AGREGO LA FUNCIONALIDAD DE LAVADO DE DINERO  JICO 20180626     LAVDIN
+  -- ENDOSO DE ANULACION                             JICO 20181203     ENDCAN
+  -- HOMOLOGACION                                    JICO 20191001
+  -- SE CORRIGIO INCIDENCIA                          JICO 20220125  INCI
+  --
    FUNCTION CREAR (nIdPoliza NUMBER ) RETURN NUMBER;
    FUNCTION NATURALIDAD(cTipoEndoso VARCHAR2) RETURN VARCHAR2;
    PROCEDURE INSERTA (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER,
@@ -101,13 +44,6 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
    
 END OC_ENDOSO;
 /
-
---
--- OC_ENDOSO  (Package Body) 
---
---  Dependencies: 
---   OC_ENDOSO (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_endoso IS
 	--
 	-- BITACORA DE CAMBIO
@@ -2305,7 +2241,7 @@ END EMITIR;
 	  --
 	  -- INICIALIZA
 	  --     
-	  nIDetPol          := 0;   -- SE LIGA POR DEFAUL AL DETALLE 1
+	  nIDetPol          := 1;   -- SE LIGA POR DEFAUL AL DETALLE 1 regresado
 	  cNumEndRef        := 'END-' ||nIdPoliza||'-'||nIDENDOSO;
 	  dFecIniVig        := dFecAnulacion;
 	  nSuma_Aseg_Moneda := 0;
@@ -2488,17 +2424,4 @@ END EMITIR;
 	END MONEDA;
 
 END OC_ENDOSO;
-/
-
---
--- OC_ENDOSO  (Synonym) 
---
---  Dependencies: 
---   OC_ENDOSO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_ENDOSO FOR SICAS_OC.OC_ENDOSO
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_ENDOSO TO PUBLIC
 /
