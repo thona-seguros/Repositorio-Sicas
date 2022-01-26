@@ -1,32 +1,45 @@
---
--- OC_FACT_ELECT_DETALLE_TIMBRE  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   NOTAS_DE_CREDITO (Table)
---   PLAN_COBERTURAS (Table)
---   POLIZAS (Table)
---   OC_FACTURAS (Package)
---   DETALLE_COMISION (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   OC_VALORES_DE_LISTAS (Package)
---   AGENTES (Table)
---   CATALOGO_DE_CONCEPTOS (Table)
---   COMISIONES (Table)
---   OC_FILIALES (Package)
---   OC_GENERALES (Package)
---   OC_POLIZAS (Package)
---   OC_CLIENTES (Package)
---   DETALLE_POLIZA (Table)
---   FACTURAS (Table)
---   FACT_ELECT_DETALLE_TIMBRE (Table)
---   TRANSACCION (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_DETALLE_TIMBRE IS
-
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |    
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.:??                                                                                                                |    
+	| Nombre     : OC_FACT_ELECT_DETALLE_TIMBRE                                                                                     |
+    | Objetivo   : Paquete que realiza las diferentes acciones relacionadas con el detalle del timbrado de la Facturacion           |
+    |              electronica.                                                                                                     |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 24/01/2022                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
+    |                                                                                                                               |
+    | Obj. Modif.: En Proc. INSERTA_DETALLE: se agregan modificaciones para incorporar el motivo de cancelacion de facturas de      |
+    |              acuerdo con las disposiciones del SAT [Enero 2022].                                                              |
+    |                                                                                                                               |
+    | Dependencias:                                                                                                                 |
+    |           STANDARD (Package)                                                                                                  |
+    |           DBMS_STANDARD (Package)                                                                                             |
+    |           NOTAS_DE_CREDITO (Table)                                                                                            |
+    |           PLAN_COBERTURAS (Table)                                                                                             |
+    |           POLIZAS (Table)                                                                                                     |
+    |           OC_FACTURAS (Package)                                                                                               |
+    |           DETALLE_COMISION (Table)                                                                                            |
+    |           DETALLE_FACTURAS (Table)                                                                                            |
+    |           DETALLE_NOTAS_DE_CREDITO (Table)                                                                                    |
+    |           OC_VALORES_DE_LISTAS (Package)                                                                                      |
+    |           AGENTES (Table)                                                                                                     |
+    |           CATALOGO_DE_CONCEPTOS (Table)                                                                                       |
+    |           COMISIONES (Table)                                                                                                  |
+    |           OC_FILIALES (Package)                                                                                               |
+    |           OC_GENERALES (Package)                                                                                              |
+    |           OC_POLIZAS (Package)                                                                                                |
+    |           OC_CLIENTES (Package)                                                                                               |
+    |           DETALLE_POLIZA (Table)                                                                                              |
+    |           FACTURAS (Table)                                                                                                    |
+    |           FACT_ELECT_DETALLE_TIMBRE (Table)                                                                                   |
+    |           TRANSACCION (Table)                                                                                                 |
+    |_______________________________________________________________________________________________________________________________|
+*/
    FUNCTION NUMERO_TIMBRE(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN NUMBER;
    FUNCTION EXISTE_PROCESO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura NUMBER,
                            nIdNcr NUMBER, cCodProceso VARCHAR2) RETURN VARCHAR2;
@@ -41,7 +54,9 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_DETALLE_TIMBRE IS
    PROCEDURE INSERTA_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura NUMBER ,
                              nIdNcr NUMBER , cCodProceso VARCHAR2, cUuid VARCHAR2,
                              dFechaUuid DATE, cFolioFiscal VARCHAR2, cSerie VARCHAR2,
-                             cCodRespuestaSat VARCHAR2,cUuidCancelado VARCHAR2, pIdTimbre IN OUT NUMBER);
+                             cCodRespuestaSat VARCHAR2,cUuidCancelado VARCHAR2, 
+                             cCve_MotivCancFact VARCHAR2, -- cUuidRelacionado   VARCHAR2, --> 24/01/2022 JALV(+)
+                             pIdTimbre IN OUT NUMBER);
    PROCEDURE ACTUALIZA_DETALLE(nCodCia NUMBER,         nCodEmpresa NUMBER, nIdTimbre NUMBER, 
                             cCodProceso VARCHAR2,   cUuid VARCHAR2,   dFECHAUUID DATE,  cCodRespuestaSat VARCHAR2,
                             cUuidCancelado VARCHAR2);
@@ -237,7 +252,41 @@ END ASIGNA_STATUS;
 PROCEDURE INSERTA_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura NUMBER ,
                           nIdNcr NUMBER , cCodProceso VARCHAR2, cUuid VARCHAR2,
                           dFechaUuid DATE, cFolioFiscal VARCHAR2, cSerie VARCHAR2,
-                          cCodRespuestaSat VARCHAR2,cUuidCancelado VARCHAR2, pIdTimbre IN OUT NUMBER) IS
+                          cCodRespuestaSat VARCHAR2,cUuidCancelado VARCHAR2,
+                          cCve_MotivCancFact VARCHAR2, -- cUuidRelacionado, --> 24/01/2022 JALV(+)
+                          pIdTimbre IN OUT NUMBER) IS
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |    
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.:??                                                                                                                |    
+	| Nombre     : INSERTA_DETALLE	                                                                                                |
+    | Objetivo   : Procedimiento que inserta el detalle para el timbrado de la Facturacion electronica.                             |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 24/01/2022                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
+    |                                                                                                                               |
+    | Obj. Modif.: Se agregan modificaciones para incorporar el motivo de cancelacion de facturas segun SAT [Enero 2022].           |
+    |                                                                                                                               |
+    | Parametros:                                                                                                                   |
+    |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+    |           nCodEmpresa         Codigo de la Empresa            (Entrada)                                                       |
+    |			nIdFactura			ID de la Factura o Recibo       (Entrada)                                                       |
+    |           nIdNcr              ID de la Nota de Credito        (Entrada)                                                       |
+    |           cCodProceso         Codigo de Proceso               (Entrada)                                                       |
+    |           cUuid               UUID de Timbrado                (Entrada)                                                       |
+    |           dFechaUuid          Fecha del UUID                  (Entrada)                                                       |
+    |           cFolioFiscal        Folio Fiscal                    (Entrada)                                                       |
+    |           cSerie              Serie Fiscal                    (Entrada)                                                       |
+    |           cCodRespuestaSat    Respuesta de timbrado del SAT   (Entrada)                                                       |
+    |           cUuidCancelado      UUID que se cancela             (Entrada)                                                       |
+    |           cCve_MotivCancFact  Clave del Motivo de Cancelacion (Entrada)                                                       |
+    |           cUuidRelacionado    UUID que sustituye al cancelado (Entrada)                                                       |
+    |           pIdTimbre           ID del Timbre Fiscal obtenido   (Salida)                                                        |
+    |_______________________________________________________________________________________________________________________________|
+*/                          
    PRAGMA AUTONOMOUS_TRANSACTION;
    nIdTimbre   NUMBER;
    cStsTimbre  FACT_ELECT_DETALLE_TIMBRE.StsTimbre%TYPE;
@@ -251,11 +300,15 @@ BEGIN
     INSERT INTO FACT_ELECT_DETALLE_TIMBRE(CodCia, CodEmpresa, IdTimbre, IdFactura, IdNcr,
                                           CodProceso, Uuid, FechaUuid, FolioFiscal, Serie,
                                           CodRespuestaSat, StsTimbre, FecStatus, CodUsuario,
-                                          UuidCancelado)
+                                          UuidCancelado
+                                          ,Cve_MotivCancFact--, UUIDReracionado --> 24/01/2022 JALV(+)
+                                          )
          VALUES (nCodCia, nCodEmpresa, nIdTimbre, nIdFactura, nIdNcr,
                  cCodProceso, cUuid, dFechaUuid, cFolioFiscal, cSerie,
                  cCodRespuestaSat, cStsTimbre, TRUNC(SYSDATE), USER,
-                 cUuidCancelado);
+                 cUuidCancelado
+                 ,cCve_MotivCancFact    --, cUuidRelacionado, --> 24/01/2022 JALV(+)
+                 );
     IF SQL%ROWCOUNT = 0 THEN
       RAISE_APPLICATION_ERROR(-20200,'Error al insertar detalle timbre: '||SQLERRM);
     END IF;
