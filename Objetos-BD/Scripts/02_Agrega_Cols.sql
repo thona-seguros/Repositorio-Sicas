@@ -1,0 +1,14 @@
+-- Agregar columnas de Cancelacion de Facturas
+ALTER TABLE FACT_ELECT_DETALLE_TIMBRE ADD Cve_MotivCancFact VARCHAR2(30 BYTE);
+COMMENT ON COLUMN FACT_ELECT_DETALLE_TIMBRE.Cve_MotivCancFact IS 'Código De Cancelacion';
+ALTER TABLE FACT_ELECT_DETALLE_TIMBRE ADD UUIDRelacionado VARCHAR2(100 BYTE);
+COMMENT ON COLUMN FACT_ELECT_DETALLE_TIMBRE.UUIDReracionado IS 'Nuevo UUID relacionado que sustituye al cancelado';
+/
+ALTER TABLE FACTURAS ADD Cve_MotivCancFact VARCHAR2(30 BYTE);
+COMMENT ON COLUMN FACTURAS.Cve_MotivCancFact IS 'Código de Motivo de Cancelacion';
+/
+ALTER TABLE NOTAS_DE_CREDITO ADD Cve_MotivCancFact VARCHAR2(30 BYTE);
+COMMENT ON COLUMN NOTAS_DE_CREDITO.Cve_MotivCancFact IS 'Código de Motivo de Cancelacion';
+/
+COMMIT;
+/

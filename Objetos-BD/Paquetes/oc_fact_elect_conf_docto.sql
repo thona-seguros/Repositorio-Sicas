@@ -1,45 +1,58 @@
---
--- OC_FACT_ELECT_CONF_DOCTO  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   UTL_HTTP (Synonym)
---   DBMS_LOB (Synonym)
---   DBMS_LOCK (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   NOTAS_DE_CREDITO (Table)
---   OC_AGE_DISTRIBUCION_COMISION (Package)
---   POLIZAS (Table)
---   OC_DET_FACT_ELECT_CONF_DOCTO (Package)
---   OC_EJECUTIVO_COMERCIAL (Package)
---   OC_EMPRESAS (Package)
---   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
---   CORREOS_ELECTRONICOS_PNJ (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_FACT_ELECT_CONF_DOCTO (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   OC_USUARIOS (Package)
---   OC_VALORES_DE_LISTAS (Package)
---   PERSONA_NATURAL_JURIDICA (Table)
---   AGENTES (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO (Table)
---   OC_DDL_OBJETOS (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   OC_GENERALES (Package)
---   OC_MAIL (Package)
---   OC_POLIZAS (Package)
---   OC_ASEGURADO (Package)
---   OC_CLIENTES (Package)
---   DETALLE_POLIZA (Table)
---   FACTURAS (Table)
---   FACT_ELECT_CONF_DOCTO (Table)
---   FACT_ELECT_DETALLE_TIMBRE (Table)
---   FACT_ELECT_REGISTROS_XML (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
+/*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |    
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.:??                                                                                                                |    
+	| Nombre     : OC_FACT_ELECT_CONF_DOCTO                                                                                         |
+    | Objetivo   : Paquete que realiza las diferentes acciones para el timbrado de la Facturacion electronica.                      |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 24/01/2022                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
+    |                                                                                                                               |
+    | Obj. Modif.: En Proc. TIMBRAR, se agregan modificaciones para incorporar el motivo de cancelacion de facturas de acuerdo con  |
+    |              las disposiciones del SAT [Enero 2022].                                                                          |
+    |                                                                                                                               |
+    | Dependencias:                                                                                                                 |
+    |           STANDARD (Package)                                                                                                  |
+    |           UTL_HTTP (Synonym)                                                                                                  |
+    |           DBMS_LOB (Synonym)                                                                                                  |
+    |           DBMS_LOCK (Synonym)                                                                                                 |
+    |           DBMS_OUTPUT (Synonym)                                                                                               |
+    |           DBMS_STANDARD (Package)                                                                                             |
+    |           NOTAS_DE_CREDITO (Table)                                                                                            |
+    |           OC_AGE_DISTRIBUCION_COMISION (Package)                                                                              |
+    |           POLIZAS (Table)                                                                                                     |
+    |           OC_DET_FACT_ELECT_CONF_DOCTO (Package)                                                                              |
+    |           OC_EJECUTIVO_COMERCIAL (Package)                                                                                    |
+    |           OC_EMPRESAS (Package)                                                                                               |
+    |           OC_FACT_ELECT_DETALLE_TIMBRE (Package)                                                                              |
+    |           CORREOS_ELECTRONICOS_PNJ (Table)                                                                                    |
+    |           DETALLE_FACTURAS (Table)                                                                                            |
+    |           DETALLE_FACT_ELECT_CONF_DOCTO (Table)                                                                               |
+    |           DETALLE_NOTAS_DE_CREDITO (Table)                                                                                    |
+    |           OC_USUARIOS (Package)                                                                                               |
+    |           OC_VALORES_DE_LISTAS (Package)                                                                                      |
+    |           PERSONA_NATURAL_JURIDICA (Table)                                                                                    |
+    |           AGENTES (Table)                                                                                                     |
+    |           AGENTE_POLIZA (Table)                                                                                               |
+    |           ASEGURADO (Table)                                                                                                   |
+    |           OC_DDL_OBJETOS (Package)                                                                                            |
+    |           CATALOGO_DE_CONCEPTOS (Table)                                                                                       |
+    |           OC_GENERALES (Package)                                                                                              |
+    |           OC_MAIL (Package)                                                                                                   |
+    |           OC_POLIZAS (Package)                                                                                                |
+    |           OC_ASEGURADO (Package)                                                                                              |
+    |           OC_CLIENTES (Package)                                                                                               |
+    |           DETALLE_POLIZA (Table)                                                                                              |
+    |           FACTURAS (Table)                                                                                                    |
+    |           FACT_ELECT_CONF_DOCTO (Table)                                                                                       |
+    |           FACT_ELECT_DETALLE_TIMBRE (Table)                                                                                   |
+    |           FACT_ELECT_REGISTROS_XML (Table)                                                                                    |
+    |_______________________________________________________________________________________________________________________________|
+*/
     cLineaCom        VARCHAR2(1000) := NULL;
     cLineaExe        VARCHAR2(1000) := NULL;
     cLineaCRels      VARCHAR2(1000) := NULL;
@@ -382,6 +395,33 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     END CONCEPTO_IMPUESTO;
 
     PROCEDURE TIMBRAR(PnIdFactura  NUMBER DEFAULT NULL,PnIdNcr  NUMBER DEFAULT NULL,nCodCia  NUMBER,nCodEmpresa  NUMBER, cProceso  VARCHAR2,cTipoCfdi VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL, cCodRespuesta OUT VARCHAR2, IndOtroPac VARCHAR2 DEFAULT NULL) IS
+    /*   _______________________________________________________________________________________________________________________________	
+    |                                                                                                                               |
+    |                                                           HISTORIA                                                            |
+    | Elaboro    : ??                                                                                                               |    
+    | Para       : THONA Seguros                                                                                                    |
+    | Fecha Elab.:??                                                                                                                |    
+	| Nombre     : TIMBRAR                                                                                                          |
+    | Objetivo   : Procedimiento que realiza el timbrado de la Facturacion electronica.                                             |
+    | Modificado : Si                                                                                                               |
+    | Ult. modif.: 24/01/2022                                                                                                       |
+    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
+    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
+    |                                                                                                                               |
+    | Obj. Modif.: Se agregan modificaciones para incorporar el motivo de cancelacion de facturas segun SAT [Enero 2022].           |
+    |                                                                                                                               |
+    | Parametros:                                                                                                                   |
+    |           PnIdFactura         ID de la Factura                (Entrada)                                                       |
+    |           PnIdNcr             ID de la Nota de Credito        (Entrada)                                                       |           
+    |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+    |           nCodEmpresa         Codigo de la Empresa            (Entrada)                                                       |
+    |           cProceso            Codigo de Proceso               (Entrada)                                                       |
+    |           cTipoCfdi           Tipo de CFDI                    (Entrada)                                                       |
+    |           cIndRelaciona       Indicador Relacionado           (Entrada)                                                       |
+    |           cCodRespuesta       Codigo de respuesta             (Salida)                                                        |
+    |           IndOtroPac          Indicador de PAC alterno        (Entrada)                                                       |
+    |_______________________________________________________________________________________________________________________________|
+*/
         nError             NUMBER;
         cDocto             VARCHAR2(10000);
         cSoapRequest       VARCHAR2 (30000);
@@ -421,6 +461,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
         cNoCertificado     VARCHAR2(1000);
         cCertificado       VARCHAR2(5000);
         cSelloSAT          VARCHAR2(5000);
+        cDoctoRel          VARCHAR2 (50) := NULL;   --> 24/01/2022  JALV(+)
+        cCve_MotivCancFact VARCHAR2(30);            --> 24/01/2022  JALV(+)
 
         TYPE Varchar2Table IS TABLE OF VARCHAR2(32767) INDEX BY BINARY_INTEGER;
         vtStrXml           Varchar2Table;
@@ -506,15 +548,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
             IF NVL(IndOtroPac,'N') = 'S' THEN -- CANCELACION OTRO PAC
                 cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'038');
                 IF NVL(nIdFactura,0) != 0 THEN
-                    SELECT NVL(SUM(F.Monto_Fact_Local),0),IdPoliza,CodCliente
-                      INTO nTotal,nIdPoliza,cCodCliente
+                    SELECT NVL(SUM(F.Monto_Fact_Local),0),IdPoliza,CodCliente, Cve_MotivCancFact    --> 24/01/2022 JALV(+)
+                      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
                       FROM FACTURAS F
                      WHERE F.Codcia    = nCodCia
                        AND F.IdFactura = nIdFactura
                      GROUP BY IdPoliza,CodCliente;
                 ELSIF NVL(nIdNcr,0) != 0 THEN
-                    SELECT NVL(SUM(N.Monto_Ncr_Local),0),IdPoliza,CodCliente
-                      INTO nTotal,nIdPoliza,cCodCliente
+                    SELECT NVL(SUM(N.Monto_Ncr_Local),0),IdPoliza,CodCliente, cCve_MotivCancFact    --> 24/01/2022 JALV(+)
+                      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
                       FROM NOTAS_DE_CREDITO N
                      WHERE N.Codcia    = nCodCia
                        AND N.IdNcr     = nIdNcr
@@ -572,6 +614,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                          <usuario xsi:type="xsd:string">'|| cUser ||'</usuario>
                          <contra xsi:type="xsd:string">'|| cPwd ||'</contra>
                          <uuid xsi:type="xsd:string">'|| cDocto ||'</uuid>
+                         <motivo xsi:type="xsd:string">'|| cCve_MotivCancFact ||'</motivo>              --> JALV (+)    21/01/2022 
+                         <uuid_relacionado xsi:type="xsd:string">'|| cDoctoRel ||'</uuid_relacionado>           --> JALV (+)    21/01/2022 
                       </CancelarCFDI>
                    </soapenv:Body>
                 </soapenv:Envelope>';
@@ -791,6 +835,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                                                      nIdNcr, cProceso, cUuid,
                                                      TRUNC(SYSDATE), cFolio, cSerie,
                                                      cCodRespuesta,cUuidCancelado,
+                                                     cCve_MotivCancFact,            --> 24/01/2022 JALV(+)
+                                                     -- cDoctoRel,                  --> 24/01/2022  JALV(+)
                                                      nIdTimbre);
         --OC_FACT_ELECT_DETALLE_TIMBRE.ACTUALIZA_DETALLE(nCodCia, nCodEmpresa, nIdTimbre, cProceso, cUuid, TRUNC(SYSDATE),cCodRespuesta, cUuidCancelado);
         cLinea := 'Linea 9';    
