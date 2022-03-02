@@ -551,14 +551,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                   FROM FACTURAS F
                  WHERE F.Codcia    = nCodCia
                    AND F.IdFactura = nIdFactura
-                 GROUP BY IdPoliza,CodCliente;
+                 GROUP BY IdPoliza,CodCliente, Cve_MotivCancFact;
             ELSIF NVL(nIdNcr,0) != 0 THEN
                 SELECT NVL(SUM(N.Monto_Ncr_Local),0),IdPoliza,CodCliente, cCve_MotivCancFact    --> 24/01/2022 JALV(+)
                   INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
                   FROM NOTAS_DE_CREDITO N
                  WHERE N.Codcia    = nCodCia
                    AND N.IdNcr     = nIdNcr
-                 GROUP BY IdPoliza,CodCliente;
+                 GROUP BY IdPoliza,CodCliente, Cve_MotivCancFact;
             END IF;
             --
             cCve_MotivCancFact := NVL(cCve_MotivCancFact, '02');
