@@ -545,24 +545,28 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
             </soapenv:Envelope>';
         ELSIF  cProceso = 'CAN' THEN
             --cUuidCancelado := cDocto;
+            IF NVL(nIdFactura,0) != 0 THEN
+                SELECT NVL(SUM(F.Monto_Fact_Local),0),IdPoliza,CodCliente, Cve_MotivCancFact    --> 24/01/2022 JALV(+)
+                  INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
+                  FROM FACTURAS F
+                 WHERE F.Codcia    = nCodCia
+                   AND F.IdFactura = nIdFactura
+                 GROUP BY IdPoliza,CodCliente;
+            ELSIF NVL(nIdNcr,0) != 0 THEN
+                SELECT NVL(SUM(N.Monto_Ncr_Local),0),IdPoliza,CodCliente, cCve_MotivCancFact    --> 24/01/2022 JALV(+)
+                  INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
+                  FROM NOTAS_DE_CREDITO N
+                 WHERE N.Codcia    = nCodCia
+                   AND N.IdNcr     = nIdNcr
+                 GROUP BY IdPoliza,CodCliente;
+            END IF;
+            --
+            cCve_MotivCancFact := NVL(cCve_MotivCancFact, '02');
+            IF  cCve_MotivCancFact = '01' THEN            
+                RAISE_APPLICATION_ERROR(-20200,'El procedimiento de cancelación, debe ser ejecutado desde otro sitio que no sea en OC_FACT_ELECT_CONF_DOCTO.timbrar por la opción 01 de motivo de cancelación CFDI (20220101)');
+            END IF;
             IF NVL(IndOtroPac,'N') = 'S' THEN -- CANCELACION OTRO PAC
                 cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'038');
-                IF NVL(nIdFactura,0) != 0 THEN
-                    SELECT NVL(SUM(F.Monto_Fact_Local),0),IdPoliza,CodCliente, Cve_MotivCancFact    --> 24/01/2022 JALV(+)
-                      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
-                      FROM FACTURAS F
-                     WHERE F.Codcia    = nCodCia
-                       AND F.IdFactura = nIdFactura
-                     GROUP BY IdPoliza,CodCliente;
-                ELSIF NVL(nIdNcr,0) != 0 THEN
-                    SELECT NVL(SUM(N.Monto_Ncr_Local),0),IdPoliza,CodCliente, cCve_MotivCancFact    --> 24/01/2022 JALV(+)
-                      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
-                      FROM NOTAS_DE_CREDITO N
-                     WHERE N.Codcia    = nCodCia
-                       AND N.IdNcr     = nIdNcr
-                     GROUP BY IdPoliza,CodCliente;
-                END IF;
-
                 IF OC_POLIZAS.FACTURA_POR_POLIZA(nCodCia, nCodEmpresa, nIdPoliza) = 'S' THEN
                    cRFC := OC_CLIENTES.IDENTIFICACION_TRIBUTARIA(cCodCliente);
                 ELSE
