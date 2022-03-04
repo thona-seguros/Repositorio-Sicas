@@ -1,73 +1,18 @@
---
--- OC_DET_FACT_ELECT_CONF_DOCTO  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   NOTAS_DE_CREDITO (Table)
---   MONEDA (Table)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   OC_DISTRITO (Package)
---   OC_EMPRESAS (Package)
---   OC_EMPRESAS_DE_SEGUROS (Package)
---   OC_FACTURAS (Package)
---   OC_FACT_ELECT_CLAVE_UNIDAD (Package)
---   OC_FACT_ELECT_CONF_DOCTO (Package)
---   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
---   OC_FACT_ELECT_FORMA_PAGO (Package)
---   OC_FACT_ELECT_SERIES_FOLIOS (Package)
---   CORREGIMIENTO (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_FACT_ELECT_CONF_DOCTO (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   OC_TIPOS_DE_SEGUROS (Package)
---   OC_TRANSACCION (Package)
---   PAGOS (Table)
---   PAGO_DETALLE (Table)
---   PAIS (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   ASEGURADO (Table)
---   PROVINCIA (Table)
---   OC_CORREGIMIENTO (Package)
---   OC_DETALLE_FACTURAS (Package)
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---   CAMBIA_ACENTOS (Function)
---   CLIENTES (Table)
---   COLONIA (Table)
---   TASAS_CAMBIO (Table)
---   OC_MONEDA (Package)
---   OC_PAIS (Package)
---   OC_PERSONA_NATURAL_JURIDICA (Package)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---   OC_COLONIA (Package)
---   DETALLE_POLIZA (Table)
---   DIRECCIONES_PNJ (Table)
---   DISTRITO (Table)
---   FACTURAS (Table)
---   FACT_ELECT_CONF_DOCTO (Table)
---   FACT_ELECT_SERIES_FOLIOS (Table)
---   OC_PROVINCIA (Package)
---   TIPOS_DE_SEGUROS (Table)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
+CREATE OR REPLACE PACKAGE OC_DET_FACT_ELECT_CONF_DOCTO IS
+
+-- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
     FUNCTION  EXTRAE_VALOR_ATRIBUTO(cLinea IN VARCHAR2,cCodAtributo IN VARCHAR2) RETURN VARCHAR2;
     FUNCTION  GENERA_VALOR_ATRIBUTO (nIdFactura IN NUMBER,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,nCodEmpresa IN NUMBER,
                                         cProceso IN VARCHAR2,cCodIdLinea IN VARCHAR2,cCodAtributo IN VARCHAR2,
                                         cTipoCfdi IN VARCHAR2,cCodCpto IN VARCHAR2 DEFAULT NULL, cCodRutinaCalc VARCHAR2,
-                                        cIndRelaciona VARCHAR2) RETURN VARCHAR2;
+                                        cIndRelaciona VARCHAR2, cCodTipoPlan VARCHAR2 DEFAULT NULL) RETURN VARCHAR2;
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
 /
---
--- OC_DET_FACT_ELECT_CONF_DOCTO  (Package Body) 
---
---  Dependencies: 
---   OC_DET_FACT_ELECT_CONF_DOCTO (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
+CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
+
+-- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
     FUNCTION  EXTRAE_VALOR_ATRIBUTO(cLinea IN VARCHAR2,cCodAtributo IN VARCHAR2) RETURN VARCHAR2 IS
         cValorAtributo   DETALLE_FACT_ELECT_CONF_DOCTO.ValorAtributo%TYPE;
@@ -76,9 +21,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
         cSeparaAtrib     VARCHAR2(2) := '||';
         cSeparaValorAtr  VARCHAR2(1) := '|';
     BEGIN
+    DBMS_OUTPUT.put_line('JMMD EL VALOR DE CLINEA ES  '||cLinea);
         cSubCadIdLinea:= SUBSTR(cLinea,INSTR(cLinea,cCodAtributo,1),LENGTH(cLinea));
         cSubCadAtrib  := SUBSTR(cSubCadIdLinea,1,INSTR(cSubCadIdLinea,cSeparaAtrib,1) - 1);
         cValorAtributo:= SUBSTR(cSubCadAtrib,INSTR(cSubCadAtrib,cSeparaValorAtr,1) + 1,LENGTH(cSubCadAtrib));
+    DBMS_OUTPUT.put_line('JMMD EL VALOR DE cValorAtributo ES  '||cValorAtributo);
         RETURN cValorAtributo;
     END EXTRAE_VALOR_ATRIBUTO;
     --
@@ -86,15 +33,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
     FUNCTION  GENERA_VALOR_ATRIBUTO (nIdFactura IN NUMBER,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,nCodEmpresa IN NUMBER,
                                         cProceso IN VARCHAR2,cCodIdLinea IN VARCHAR2,cCodAtributo IN VARCHAR2,
                                         cTipoCfdi IN VARCHAR2,cCodCpto IN VARCHAR2 DEFAULT NULL, cCodRutinaCalc VARCHAR2,
-                                        cIndRelaciona VARCHAR2) RETURN VARCHAR2 IS
-/*   _______________________________________________________________________________________________________________________________	
+                                        cIndRelaciona VARCHAR2, cCodTipoPlan VARCHAR2 DEFAULT NULL) RETURN VARCHAR2 IS
+/*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
     | Elaboro    : ??                                                                                                               |
     | Email      : ??                                                                                                               |
     | Para       : THONA Seguros                                                                                                    |
-    | Fecha Elab.: ??                                                                                                               |    
-	| Nombre     : GENERA_VALOR_ATRIBUTO                                                                                            |
+    | Fecha Elab.: ??                                                                                                               |
+  | Nombre     : GENERA_VALOR_ATRIBUTO                                                                                            |
     | Objetivo   : Funcion que genera el valor de los atributos de acuerdo con los valores recibidos.                               |
     | Modificado : Si                                                                                                               |
     | Ult. modif.: 10/01/2022                                                                                                       |
@@ -107,8 +54,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
     | Parametros:                                                                                                                   |
     |           nIdFactura          Numero de Recibo o Factura.     (Entrada)                                                       |
     |           nIdNcr              ID de la Nota de Credito.       (Entrada)                                                       |
-    |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
-    |			nCodEmpresa			Codigo de la Empresa	        (Entrada)                                                       |
+    |      nCodCia        Codigo de la Compañia          (Entrada)                                                       |
+    |      nCodEmpresa      Codigo de la Empresa          (Entrada)                                                       |
     |           cProceso            Proceso                         (Entrada)                                                       |
     |           cCodIdLinea         Codigo del ID de Linea          (Entrada)                                                       |
     |           cCodAtributo        Codigo del Atributo             (Entrada)                                                       |
@@ -117,7 +64,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
     |           cCodRutinaCalc      Codigo de rutina de calculo     (Entrada)                                                       |
     |           cIndRelaciona       Indicador de Relaciona          (Entrada)                                                       |
     |_______________________________________________________________________________________________________________________________|
-*/                                        
+*/
         cValorAtributo          DETALLE_FACT_ELECT_CONF_DOCTO.ValorAtributo%TYPE := NULL;
         cTipoComprobante        VARCHAR2(1);
         cSerie                  FACT_ELECT_SERIES_FOLIOS.Serie%TYPE;
@@ -567,13 +514,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
             WHEN 'DORVAL09' THEN
                 cValorAtributo := cCodPosRes;
             WHEN 'CONVAL01' THEN
-                cValorAtributo := OC_TIPOS_DE_SEGUROS.CLAVE_FACT_ELECTRONICA(nCodCia,nCodEmpresa,cIdTipoSeg);
+                cValorAtributo := OC_TIPOS_DE_SEGUROS.CLAVE_FACT_ELECTRONICA(nCodCia,nCodEmpresa,cIdTipoSeg, cCodTipoPlan);
             WHEN 'CONVAL02' THEN
                 NULL;
             WHEN 'CONVAL03' THEN
                 NULL;
             WHEN 'CONVAL04' THEN
-                cValorAtributo := OC_FACT_ELECT_CLAVE_UNIDAD.CLAVE_UNIDAD(nCodCia,OC_TIPOS_DE_SEGUROS.CLAVE_FACT_ELECTRONICA(nCodCia,nCodEmpresa,cIdTipoSeg));
+                cValorAtributo := OC_FACT_ELECT_CLAVE_UNIDAD.CLAVE_UNIDAD(nCodCia,OC_TIPOS_DE_SEGUROS.CLAVE_FACT_ELECTRONICA(nCodCia,nCodEmpresa,cIdTipoSeg, cCodTipoPlan));
                 IF cValorAtributo = '0' THEN
                     cValorAtributo := NULL;
                 END IF;
@@ -616,7 +563,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
             WHEN 'CONVAL07' THEN
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'EMI' THEN
-                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, cCodCpto),'9999999999999999999999990.99'));
+                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, cCodCpto, cCodTipoPlan),'9999999999999999999999990.99'));
                 ELSIF NVL(nIdNcr,0) != 0 THEN
                     cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_NOTAS_DE_CREDITO.MONTO_CONCEPTO_FACT_ELECT(nIdNcr, cCodCpto),'9999999999999999999999990.99'));
                 END IF;
@@ -625,7 +572,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
             WHEN 'CONVAL08' THEN
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'EMI' THEN
-                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, cCodCpto),'9999999999999999999999990.99'));
+                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, cCodCpto, cCodTipoPlan),'9999999999999999999999990.99'));
                 ELSIF NVL(nIdNcr,0) != 0 THEN
                     cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_NOTAS_DE_CREDITO.MONTO_CONCEPTO_FACT_ELECT(nIdNcr, cCodCpto),'9999999999999999999999990.99'));
                 END IF;
@@ -638,7 +585,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                 NULL;
             WHEN 'CONITVAL01' THEN
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'EMI' THEN
-                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, cCodCpto),'9999999999999999999999990.99'));
+                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, cCodCpto, cCodTipoPlan),'9999999999999999999999990.99'));
                 ELSIF NVL(nIdNcr,0) != 0 THEN
                     cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_NOTAS_DE_CREDITO.MONTO_CONCEPTO_FACT_ELECT(nIdNcr, cCodCpto),'9999999999999999999999990.99'));
                 END IF;
@@ -659,7 +606,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
             WHEN 'CONITVAL05' THEN
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'EMI' THEN
-                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_IMPUESTO_FACT_ELECT(nIdFactura,cCodCpto),'9999999999999999999999990.99'));
+                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_IMPUESTO_FACT_ELECT(nIdFactura,cCodCpto, cCodTipoPlan),'9999999999999999999999990.99'));
                 ELSIF NVL(nIdNcr,0) != 0 THEN
                     cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_NOTAS_DE_CREDITO.MONTO_IMPUESTO_FACT_ELECT(nIdNcr,cCodCpto),'9999999999999999999999990.99'));
                 END IF;
@@ -698,7 +645,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
             WHEN 'TRAVAL04' THEN
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'EMI' THEN
-                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, cCodImpto),'9999999999999999999999990.99'));
+                    cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, cCodImpto, cCodTipoPlan),'9999999999999999999999990.99'));
                 ELSIF NVL(nIdNcr,0) != 0 THEN
                     cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_NOTAS_DE_CREDITO.MONTO_CONCEPTO_FACT_ELECT(nIdNcr,cCodImpto),'9999999999999999999999990.99'));
                 END IF;
@@ -736,19 +683,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
                      AND C.IndCotizacionWeb     = 'S'
                      AND C.IndCotizacionBaseWeb = 'N';
                EXCEPTION
-                  WHEN NO_DATA_FOUND THEN 
+                  WHEN NO_DATA_FOUND THEN
                      cIndPlataforma := 'N';
                END;
                 --cValorAtributo := TO_CHAR(SYSDATE,'yyyy-mm-dd')||'T'||TO_CHAR(SYSDATE,'hh:mm:ss');    --> JALV (-) 10/01/2022
                 --> Inicia: JALV (-) 10/01/2022
-                
+
               IF nIdProceso IS NOT NULL OR NVL(cIndDomiciliado,'N') = 'S' THEN
                   --Tomar campo indicado en COBRANZA MASIVA
-                  SELECT  FechaCobro  --FecAplica 
+                  SELECT  FechaCobro  --FecAplica
                     INTO  dFecha_Pago_CM
                     FROM  DETALLE_DOMICI_REFERE
                    WHERE   idFactura = nIdFactura;
-                  
+
                   cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh:mm:ss');
               ELSIF NVL(cIndPlataforma,'N') = 'S' THEN
                   --cValorAtributo := TO_CHAR(dFecPago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecPago,'hh:mm:ss');
@@ -820,17 +767,4 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
     END GENERA_VALOR_ATRIBUTO;
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
-/
-
---
--- OC_DET_FACT_ELECT_CONF_DOCTO  (Synonym) 
---
---  Dependencies: 
---   OC_DET_FACT_ELECT_CONF_DOCTO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_DET_FACT_ELECT_CONF_DOCTO FOR SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO TO PUBLIC
 /

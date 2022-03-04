@@ -1,11 +1,14 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
-/*   _______________________________________________________________________________________________________________________________	
+CREATE OR REPLACE PACKAGE OC_FACT_ELECT_CONF_DOCTO IS
+
+-- HOMOLOGACION VIFLEX                                      20220301 JMMD
+
+/*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
-    | Elaboro    : ??                                                                                                               |    
+    | Elaboro    : ??                                                                                                               |
     | Para       : THONA Seguros                                                                                                    |
-    | Fecha Elab.:??                                                                                                                |    
-	| Nombre     : OC_FACT_ELECT_CONF_DOCTO                                                                                         |
+    | Fecha Elab.:??                                                                                                                |
+  | Nombre     : OC_FACT_ELECT_CONF_DOCTO                                                                                         |
     | Objetivo   : Paquete que realiza las diferentes acciones para el timbrado de la Facturacion electronica.                      |
     | Modificado : Si                                                                                                               |
     | Ult. modif.: 24/01/2022                                                                                                       |
@@ -74,7 +77,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
 
     PROCEDURE ASIGNA_LINEA_IDENTIFICADOR (cCodIdLinea  VARCHAR2,cLinea  VARCHAR2);
     FUNCTION  CREA_DOCUMENTO(nIdFactura  NUMBER DEFAULT NULL ,nIdNcr  NUMBER DEFAULT NULL, nCodCia  NUMBER, nCodEmpresa  NUMBER, cProceso  VARCHAR2,cTipoCfdi  VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL) RETURN VARCHAR2;
-    FUNCTION  CREA_IDENTIFICADOR (nIdFactura  NUMBER,nIdNcr  NUMBER DEFAULT NULL,nCodCia  NUMBER,nCodEmpresa  NUMBER, cProceso  VARCHAR2,cCodIdLinea  VARCHAR2,cTipoCfdi  VARCHAR2,cCodCpto  VARCHAR2 DEFAULT NULL, cIndRelaciona VARCHAR2) RETURN VARCHAR2;
+    FUNCTION  CREA_IDENTIFICADOR (nIdFactura  NUMBER,nIdNcr  NUMBER DEFAULT NULL,nCodCia  NUMBER,nCodEmpresa  NUMBER, cProceso  VARCHAR2,cCodIdLinea  VARCHAR2,cTipoCfdi  VARCHAR2,cCodCpto  VARCHAR2 DEFAULT NULL, cIndRelaciona VARCHAR2, cCodTipoPlan VARCHAR2 DEFAULT NULL) RETURN VARCHAR2;
     FUNCTION  CONCEPTO_IMPUESTO (nCodCia NUMBER, cProceso VARCHAR2, cCodIdLea VARCHAR2) RETURN VARCHAR2;
     PROCEDURE TIMBRAR(PnIdFactura  NUMBER DEFAULT NULL, pnIdNcr  NUMBER DEFAULT NULL,nCodCia  NUMBER,nCodEmpresa  NUMBER, cProceso  VARCHAR2,cTipoCfdi VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL, cCodRespuesta OUT VARCHAR2, IndOtroPac VARCHAR2 DEFAULT NULL);
     PROCEDURE ENVIA_CORREO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura  NUMBER DEFAULT NULL,nIdNcr  NUMBER DEFAULT NULL,
@@ -83,14 +86,9 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
 
 END OC_FACT_ELECT_CONF_DOCTO;
 /
+CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
 
---
--- OC_FACT_ELECT_CONF_DOCTO  (Package Body) 
---
---  Dependencies: 
---   OC_FACT_ELECT_CONF_DOCTO (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
+-- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
     PROCEDURE ASIGNA_LINEA_IDENTIFICADOR(cCodIdLinea IN VARCHAR2,cLinea IN VARCHAR2) IS
     BEGIN
@@ -139,6 +137,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
         cDocumento          VARCHAR2(10000) := NULL;
         cCodIdentificador   FACT_ELECT_CONF_DOCTO.CODIDENTIFICADOR%TYPE;
         cExiste             VARCHAR2(1);
+        cExisteImp          VARCHAR2(1);
         CURSOR Q_Dcto IS
             SELECT CodIdentificador, OrdenIdent, IndRecursivo,
                    IndImpuesto, ImptoTraRet, CodCptoImpto,
@@ -171,21 +170,34 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
              ORDER BY OrdenIdent;
 
         CURSOR Q_DetCpto IS
-            SELECT CodCpto,Monto_Det_Local,Saldo_Det_Moneda,
-                   MtoImptoFactElect,IndTipoConcepto,Porcconcepto--,
+            SELECT CodCpto, Monto_Det_Local, Saldo_Det_Moneda,
+                   MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL
                    --Orden_Impresion
               FROM (
-                    SELECT CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
-                           SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,
+                    SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
+                           SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
                            --CC.Orden_Impresion
-                      FROM DETALLE_FACTURAS DF,CATALOGO_DE_CONCEPTOS CC
-                     WHERE IdFactura                 = nIdFactura
+                      FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
+                                               INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
+                                               INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
+                                                                                  AND DP.IDETPOL    = F.IDETPOL
+                                                                                  AND DP.CODCIA     = F.CODCIA
+                                                LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
+                                                                                  AND CS.CODCPTO    = DF.CODCPTO
+                                                                                  AND CS.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                  AND CS.PLANCOB    = DP.PLANCOB
+                     WHERE DF.IdFactura                 = nIdFactura
                        AND NVL(CC.IndEsImpuesto,'N') = 'N'
-                       AND DF.CodCpto                = CC.CodConcepto
-                     GROUP BY CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
+                       AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
+                                                                                 WHERE S.CODCIA     = DP.CODCIA
+                                                                                   AND S.CODCPTO    = DF.CODCPTO
+                                                                                   AND S.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                   AND S.PLANCOB     = DP.PLANCOB ), 'X')
+                     GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL),
+                              CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
                      UNION ALL
-                    SELECT CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
-                           SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,
+                    SELECT NULL RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
+                           SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
                            --CC.Orden_Impresion
                       FROM DETALLE_NOTAS_DE_CREDITO DN,CATALOGO_DE_CONCEPTOS CC
                      WHERE IdNcr                     = nIdNcr
@@ -240,8 +252,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                                     cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                                 END LOOP;
                             ELSIF J.IndRelacion  = 'N' AND J.IndImpuesto  = 'S' AND X.CodIdentificador != 'CRELS' THEN
+                                cExisteImp := 'N';
                                 FOR F IN Q_DetCpto LOOP
-                                    cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona);
+                                    cExiste := 'N';
+                                    cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona,F.RAMOREAL);
                                     OPEN Q_Impto;
                                     FETCH Q_Impto INTO cCodIdentificador;
 
@@ -284,9 +298,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                                     END IF;
 
                                     IF cExiste = 'S' THEN
+                                        cExisteImp := cExiste;
+                                        cExiste := 'N';
                                         FOR I IN Q_Impto LOOP ---CONIT O CONIR
                                             cCodIdentificador := I.CodIdentificador;
-                                            cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona);
+                                            cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona, F.RAMOREAL);
                                         END LOOP;
                                     END IF;
                                 END LOOP;
@@ -311,7 +327,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     --
     FUNCTION  CREA_IDENTIFICADOR (nIdFactura IN NUMBER,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,nCodEmpresa IN NUMBER,
                                     cProceso IN VARCHAR2,cCodIdLinea IN VARCHAR2,cTipoCfdi IN VARCHAR2,cCodCpto IN VARCHAR2 DEFAULT NULL,
-                                    cIndRelaciona VARCHAR2) RETURN VARCHAR2 IS
+                                    cIndRelaciona VARCHAR2, cCodTipoPlan VARCHAR2 DEFAULT NULL) RETURN VARCHAR2 IS
         cLineaIdent      VARCHAR2(32700) := NULL;
         cSeparadorIdent  VARCHAR2(3) := '|||';
         cSeparadorCampo  VARCHAR2(2) := '||';
@@ -344,7 +360,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                     cSqlDinAtrib := X.Consulta;
                     cValorAtributo := OC_DDL_OBJETOS.EJECUTAR_QUERY(cSqlDinAtrib);
                 ELSIF X.TipoValorAtributo = 'D' AND X.Consulta IS NULL THEN
-                    cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi,cCodCpto,X.CodRutinaCalc,cIndRelaciona);
+                    cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi,cCodCpto,X.CodRutinaCalc,cIndRelaciona, cCodTipoPlan);
                 END IF;
             ELSIF X.CondicionAtributo = 'O' AND X.IndEnviaCia = 'S' THEN
                 IF X.TipoValorAtributo = 'F' THEN
@@ -354,7 +370,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                     cSqlDinAtrib := X.Consulta;
                     cValorAtributo := OC_DDL_OBJETOS.EJECUTAR_QUERY(cSqlDinAtrib);
                 ELSIF X.TipoValorAtributo = 'D' AND X.Consulta IS NULL THEN
-                    cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi,cCodCpto,X.CodRutinaCalc,cIndRelaciona);
+                    cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi,cCodCpto,X.CodRutinaCalc,cIndRelaciona, cCodTipoPlan);
                 END IF;
             ELSIF X.CondicionAtributo = 'C' THEN
                 --cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi);
@@ -365,7 +381,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                     cSqlDinAtrib := X.Consulta;
                     cValorAtributo := OC_DDL_OBJETOS.EJECUTAR_QUERY(cSqlDinAtrib);
                 ELSIF X.TipoValorAtributo = 'D' AND X.Consulta IS NULL THEN
-                    cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi,cCodCpto,X.CodRutinaCalc,cIndRelaciona);
+                    cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi,cCodCpto,X.CodRutinaCalc,cIndRelaciona, cCodTipoPlan);
                 END IF;
             END IF;
             IF cValorAtributo IS NOT NULL THEN
@@ -395,13 +411,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     END CONCEPTO_IMPUESTO;
 
     PROCEDURE TIMBRAR(PnIdFactura  NUMBER DEFAULT NULL,PnIdNcr  NUMBER DEFAULT NULL,nCodCia  NUMBER,nCodEmpresa  NUMBER, cProceso  VARCHAR2,cTipoCfdi VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL, cCodRespuesta OUT VARCHAR2, IndOtroPac VARCHAR2 DEFAULT NULL) IS
-    /*   _______________________________________________________________________________________________________________________________	
+    /*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
-    | Elaboro    : ??                                                                                                               |    
+    | Elaboro    : ??                                                                                                               |
     | Para       : THONA Seguros                                                                                                    |
-    | Fecha Elab.:??                                                                                                                |    
-	| Nombre     : TIMBRAR                                                                                                          |
+    | Fecha Elab.:??                                                                                                                |
+  | Nombre     : TIMBRAR                                                                                                          |
     | Objetivo   : Procedimiento que realiza el timbrado de la Facturacion electronica.                                             |
     | Modificado : Si                                                                                                               |
     | Ult. modif.: 24/01/2022                                                                                                       |
@@ -412,8 +428,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
     |           PnIdFactura         ID de la Factura                (Entrada)                                                       |
-    |           PnIdNcr             ID de la Nota de Credito        (Entrada)                                                       |           
-    |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+    |           PnIdNcr             ID de la Nota de Credito        (Entrada)                                                       |
+    |      nCodCia        Codigo de la Compañia          (Entrada)                                                       |
     |           nCodEmpresa         Codigo de la Empresa            (Entrada)                                                       |
     |           cProceso            Codigo de Proceso               (Entrada)                                                       |
     |           cTipoCfdi           Tipo de CFDI                    (Entrada)                                                       |
@@ -442,20 +458,20 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
         cNombreArchivoXml  VARCHAR2 (32747);
         cNombreArchivoTxt  VARCHAR2 (32747);
         cNombreArchivoPdf  VARCHAR2 (32747);
-        cUuid              VARCHAR2 (50);
+        cUuid              VARCHAR2 (100);
         nPos               NUMBER;
         nIndex             NUMBER;
         nCantidad          NUMBER;
         bPdf               BOOLEAN;
         nErrDesc           NUMBER;
         nPosPDF            NUMBER;
-        cValorXml          VARCHAR2(3200);
+        cValorXml          VARCHAR2(32747);
         nPos3              NUMBER;
         nPosErrI           NUMBER;
         nPosErrF           NUMBER;
-        cDatoErr           VARCHAR2(3000);
+        cDatoErr           VARCHAR2(5000);
         cCodigoErr         VARCHAR2(10);
-        cDescEror          VARCHAR2(1000);
+        cDescEror          VARCHAR2(5000);
         cXml3              VARCHAR2(5000);
         cSelloCFD          VARCHAR2(1000);
         cNoCertificado     VARCHAR2(1000);
@@ -525,7 +541,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
         END IF;
         UTL_HTTP.set_wallet('file:'||cPathWallet,cPwdWallet);
         IF cProceso IN ('EMI','PAG') THEN
-            cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia, '023');             
+            cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia, '023');
             cSoapRequest :=
             '<soapenv:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
                 <soapenv:Body>
@@ -545,28 +561,24 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
             </soapenv:Envelope>';
         ELSIF  cProceso = 'CAN' THEN
             --cUuidCancelado := cDocto;
-            IF NVL(nIdFactura,0) != 0 THEN
-                SELECT NVL(SUM(F.Monto_Fact_Local),0),IdPoliza,CodCliente, Cve_MotivCancFact    --> 24/01/2022 JALV(+)
-                  INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
-                  FROM FACTURAS F
-                 WHERE F.Codcia    = nCodCia
-                   AND F.IdFactura = nIdFactura
-                 GROUP BY IdPoliza,CodCliente, Cve_MotivCancFact;
-            ELSIF NVL(nIdNcr,0) != 0 THEN
-                SELECT NVL(SUM(N.Monto_Ncr_Local),0),IdPoliza,CodCliente, cCve_MotivCancFact    --> 24/01/2022 JALV(+)
-                  INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
-                  FROM NOTAS_DE_CREDITO N
-                 WHERE N.Codcia    = nCodCia
-                   AND N.IdNcr     = nIdNcr
-                 GROUP BY IdPoliza,CodCliente, Cve_MotivCancFact;
-            END IF;
-            --
-            cCve_MotivCancFact := NVL(cCve_MotivCancFact, '02');
-            IF  cCve_MotivCancFact = '01' THEN            
-                RAISE_APPLICATION_ERROR(-20200,'El procedimiento de cancelación, debe ser ejecutado desde otro sitio que no sea en OC_FACT_ELECT_CONF_DOCTO.timbrar por la opción 01 de motivo de cancelación CFDI (20220101)');
-            END IF;
             IF NVL(IndOtroPac,'N') = 'S' THEN -- CANCELACION OTRO PAC
                 cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'038');
+                IF NVL(nIdFactura,0) != 0 THEN
+                    SELECT NVL(SUM(F.Monto_Fact_Local),0),IdPoliza,CodCliente, Cve_MotivCancFact    --> 24/01/2022 JALV(+)
+                      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
+                      FROM FACTURAS F
+                     WHERE F.Codcia    = nCodCia
+                       AND F.IdFactura = nIdFactura
+                     GROUP BY IdPoliza,CodCliente;
+                ELSIF NVL(nIdNcr,0) != 0 THEN
+                    SELECT NVL(SUM(N.Monto_Ncr_Local),0),IdPoliza,CodCliente, cCve_MotivCancFact    --> 24/01/2022 JALV(+)
+                      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
+                      FROM NOTAS_DE_CREDITO N
+                     WHERE N.Codcia    = nCodCia
+                       AND N.IdNcr     = nIdNcr
+                     GROUP BY IdPoliza,CodCliente;
+                END IF;
+
                 IF OC_POLIZAS.FACTURA_POR_POLIZA(nCodCia, nCodEmpresa, nIdPoliza) = 'S' THEN
                    cRFC := OC_CLIENTES.IDENTIFICACION_TRIBUTARIA(cCodCliente);
                 ELSE
@@ -618,22 +630,22 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                          <usuario xsi:type="xsd:string">'|| cUser ||'</usuario>
                          <contra xsi:type="xsd:string">'|| cPwd ||'</contra>
                          <uuid xsi:type="xsd:string">'|| cDocto ||'</uuid>
-                         <motivo xsi:type="xsd:string">'|| cCve_MotivCancFact ||'</motivo>              --> JALV (+)    21/01/2022 
-                         <uuid_relacionado xsi:type="xsd:string">'|| cDoctoRel ||'</uuid_relacionado>           --> JALV (+)    21/01/2022 
+                         <motivo xsi:type="xsd:string">'|| cCve_MotivCancFact ||'</motivo>              --> JALV (+)    21/01/2022
+                         <uuid_relacionado xsi:type="xsd:string">'|| cDoctoRel ||'</uuid_relacionado>           --> JALV (+)    21/01/2022
                       </CancelarCFDI>
                    </soapenv:Body>
                 </soapenv:Envelope>';
             END IF;
         END IF;
         --- INSERTAMOS DETALLE DE TIMBRE FISCAL (HISTORIA)
-       -- DBMS_OUTPUT.PUT_LINE('Antes Insert OC_FACT_ELECT_DETALLE_TIMBRE');     
+       -- DBMS_OUTPUT.PUT_LINE('Antes Insert OC_FACT_ELECT_DETALLE_TIMBRE');
         nIdTimbre := 0;
 --                OC_FACT_ELECT_DETALLE_TIMBRE.INSERTA_DETALLE(nCodCia, nCodEmpresa, nIdFactura ,
 --                                                     nIdNcr, cProceso, cUuid,
 --                                                     TRUNC(SYSDATE), cFolio, cSerie,
 --                                                     cCodRespuesta,cUuidCancelado,
 --                                                     nIdTimbre);
-        --DBMS_OUTPUT.PUT_LINE('Despues Insert OC_FACT_ELECT_DETALLE_TIMBRE');                                                         
+        --DBMS_OUTPUT.PUT_LINE('Despues Insert OC_FACT_ELECT_DETALLE_TIMBRE');
         --
         cNombreArchivoXml := LPAD(TO_CHAR(NVL(nIdFactura,nIdNcr)),14,'0') ||TO_CHAR(cFolio) || '.xml';
         cNombreArchivoTxt := LPAD(TO_CHAR(NVL(nIdFactura,nIdNcr)),14,'0') ||TO_CHAR(cFolio) || '.txt';
@@ -716,7 +728,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
             END IF;
         END LOOP;
         IF nIndex = 0 then
-                INSERT INTO FACT_ELECT_REGISTROS_XML VALUES(cClob2Xml, nIdFactura, nIdNcr);        
+                INSERT INTO FACT_ELECT_REGISTROS_XML VALUES(cClob2Xml, nIdFactura, nIdNcr);
         END IF;
 
 
@@ -732,7 +744,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
         BEGIN
             SELECT Valor
               INTO cDatoErr
-              FROM FACT_ELECT_REGISTROS_XML 
+              FROM FACT_ELECT_REGISTROS_XML
               WHERE Valor LIKE '%codigo xsi%'
                    AND IDFACTURA = nIdFactura
                    AND IDNCR     = nIdNcr;
@@ -771,7 +783,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
 
             IF  cProceso != 'CAN' THEN
                 BEGIN
-                    SELECT COUNT(*) INTO nErrDesc FROM FACT_ELECT_REGISTROS_XML 
+                    SELECT COUNT(*) INTO nErrDesc FROM FACT_ELECT_REGISTROS_XML
                      WHERE Valor LIKE '%UUID%'
                        AND IDFACTURA = nIdFactura
                        AND IDNCR     = nIdNcr;
@@ -804,9 +816,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
 
         ELSE
             BEGIN
-            SELECT COUNT(*) 
-              INTO nErrDesc 
-              FROM FACT_ELECT_REGISTROS_XML 
+            SELECT COUNT(*)
+              INTO nErrDesc
+              FROM FACT_ELECT_REGISTROS_XML
              WHERE Valor LIKE '%error parsing SOAP%'
                AND IDFACTURA = nIdFactura
                AND IDNCR     = nIdNcr;
@@ -816,7 +828,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
             cLinea := 'Linea 7 ' || nErrDesc;
             IF nErrDesc = 0 THEN
                 BEGIN
-                    SELECT Valor INTO cDatoErr FROM FACT_ELECT_REGISTROS_XML 
+                    SELECT Valor INTO cDatoErr FROM FACT_ELECT_REGISTROS_XML
                         WHERE Valor LIKE '%<descripcion xsi:type="xsd:string">%'
                            AND IDFACTURA = nIdFactura
                            AND IDNCR     = nIdNcr;
@@ -843,13 +855,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                                                      -- cDoctoRel,                  --> 24/01/2022  JALV(+)
                                                      nIdTimbre);
         --OC_FACT_ELECT_DETALLE_TIMBRE.ACTUALIZA_DETALLE(nCodCia, nCodEmpresa, nIdTimbre, cProceso, cUuid, TRUNC(SYSDATE),cCodRespuesta, cUuidCancelado);
-        cLinea := 'Linea 9';    
-        DBMS_OUTPUT.PUT_LINE(cLinea);                                       
+        cLinea := 'Linea 9';
+        DBMS_OUTPUT.PUT_LINE(cLinea);
         IF cCodRespuesta = OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'026') THEN --- NOTIFICACIONES
             --Aqui se envia la notificacion de que el timbrado fue realizado de manera correcta
             cLinea := 'Linea 10';
             OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(nCodCia,nCodEmpresa,nIdFactura,nIdNcr,cProceso,cCodRespuesta,NULL,cDocto);
-            cLinea := 'Linea 11'; 
+            cLinea := 'Linea 11';
         ELSE
             --Aqui envia mail conmensaje de error conocido
             cLinea := 'Linea 12';
@@ -1081,17 +1093,4 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     END DESTINATARIOS;
 
 END OC_FACT_ELECT_CONF_DOCTO;
-/
-
---
--- OC_FACT_ELECT_CONF_DOCTO  (Synonym) 
---
---  Dependencies: 
---   OC_FACT_ELECT_CONF_DOCTO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_FACT_ELECT_CONF_DOCTO FOR SICAS_OC.OC_FACT_ELECT_CONF_DOCTO
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_FACT_ELECT_CONF_DOCTO TO PUBLIC
 /

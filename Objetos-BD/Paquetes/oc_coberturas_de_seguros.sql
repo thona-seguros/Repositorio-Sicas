@@ -1,19 +1,6 @@
---
--- OC_COBERTURAS_DE_SEGUROS  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   GT_COBERTURAS_EXCLUYENTES (Package)
---   OC_TARIFA_SEXO_EDAD_RIESGO (Package)
---   OC_TEXTO_COBERTURA (Package)
---   COBERTURAS_DE_SEGUROS (Table)
---   TARIFA_SEXO_EDAD_RIESGO (Table)
---   OC_PERDIDAS_ORGANICAS (Package)
---   OC_CLAUSULAS_COBERTURAS (Package)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_COBERTURAS_DE_SEGUROS IS
+CREATE OR REPLACE PACKAGE OC_COBERTURAS_DE_SEGUROS IS
+
+-- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
 
 PROCEDURE COPIAR(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSegOrig VARCHAR2,
                  cPlanCobOrig VARCHAR2, cIdTipoSegDest VARCHAR2, cPlanCobDest VARCHAR2);
@@ -51,16 +38,17 @@ FUNCTION CANCELA_POLIZA_SINIESTRO(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg
 FUNCTION MOTIVO_CANCELA_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
                                cPlanCob VARCHAR2, cCodCobert VARCHAR2) RETURN VARCHAR2;
 
+FUNCTION COBERTURA_IDRAMOREAL(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2, cCodCobert VARCHAR2) RETURN VARCHAR2;
+
+FUNCTION RAMO_REAL_CPTO(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
+                        cPlanCob VARCHAR2, cCodCpto VARCHAR2) RETURN VARCHAR2;
+
+
 END OC_COBERTURAS_DE_SEGUROS;
 /
+CREATE OR REPLACE PACKAGE BODY OC_COBERTURAS_DE_SEGUROS IS
 
---
--- OC_COBERTURAS_DE_SEGUROS  (Package Body) 
---
---  Dependencies: 
---   OC_COBERTURAS_DE_SEGUROS (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COBERTURAS_DE_SEGUROS IS
+-- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
 
 PROCEDURE COPIAR(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSegOrig VARCHAR2,
                  cPlanCobOrig VARCHAR2, cIdTipoSegDest VARCHAR2, cPlanCobDest VARCHAR2) IS
@@ -74,10 +62,10 @@ CURSOR COB_Q IS
           CodRiesgoRea, IndAcumulaSumaRea, IndAcumulaPrimaRea, SumaAsegMinima,
           SumaAsegMaxima, SumaAsegMaxIndiv, IndPerdOrganicas, IndManejaAnticipos,
           PorcenAnticipo, MontoAnticipo, PorcenDeducible, MontoDeducible,
-          PeriodoEsperaAnios, PeriodoesperaMeses, IndSumaSami, CodTarifa, 
+          PeriodoEsperaAnios, PeriodoesperaMeses, IndSumaSami, CodTarifa,
           OrdenImpresion, TabMortalidad, OrdenSESAS, CodGrupoCobert, IndReaSiniestro,
-          IndCancPolSini, CodMotivCancelPol
-     FROM COBERTURAS_DE_SEGUROS
+          IndCancPolSini, CodMotivCancelPol, c.IDRAMOREAL
+     FROM COBERTURAS_DE_SEGUROS c
     WHERE CodCia     = nCodCia
       AND CodEmpresa = nCodEmpresa
       AND IdTipoSeg  = cIdTipoSegOrig
@@ -94,7 +82,7 @@ BEGIN
               PorcenAnticipo, MontoAnticipo, PorcenDeducible, MontoDeducible,
               PeriodoEsperaAnios, PeriodoesperaMeses, IndSumaSami, CodTarifa,
               OrdenImpresion, TabMortalidad, OrdenSESAS, CodGrupoCobert, IndReaSiniestro,
-              IndCancPolSini, CodMotivCancelPol)
+              IndCancPolSini, CodMotivCancelPol, IDRAMOREAL)
       VALUES (nCodCia, nCodEmpresa, cIdTipoSegDest, cPlanCobDest, X.CodCobert, X.DescCobert, X.TipoTasa, X.Porc_Tasa,
               'SOL', X.Prima_Cobert, X.SumaAsegurada, X.Cod_Moneda, X.AcumulaASuma,
               X.Cobertura_Basica, X.Calcula_Prorrata, X.Devuelve_Prima, X.NomRep,
@@ -104,14 +92,14 @@ BEGIN
               X.PorcenAnticipo, X.MontoAnticipo, X.PorcenDeducible, X.MontoDeducible,
               X.PeriodoEsperaAnios, X.PeriodoesperaMeses, X.IndSumaSami, X.CodTarifa,
               X.OrdenImpresion, X.TabMortalidad, X.OrdenSESAS, X.CodGrupoCobert, X.IndReaSiniestro,
-              X.IndCancPolSini, X.CodMotivCancelPol);
+              X.IndCancPolSini, X.CodMotivCancelPol, x.IDRAMOREAL);
    END LOOP;
 
    SELECT NVL(MAX(nIdTarifaOrig),0)
      INTO nIdTarifaOrig
      FROM TARIFA_SEXO_EDAD_RIESGO
     WHERE CodCia     = nCodCia
-      AND CodEmpresa = nCodEmpresa      
+      AND CodEmpresa = nCodEmpresa
       AND IdTipoSeg  = cIdTipoSegOrig
       AND PlanCob    = cPlanCobOrig;
 
@@ -229,7 +217,7 @@ BEGIN
       RETURN(nSumaAsegMaxima);
    ELSIF TipoSuma = 'SAMI' THEN
       RETURN(nSumaAsegMaxIndiv);
-   ELSE 
+   ELSE
       RETURN(0);
    END IF;
 END SUMA_ASEGURADA;
@@ -343,7 +331,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          cIndReaSiniestro  := 'N';
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'Error en Configuración de Coberturas para Indicador de Reasguro en Siniestros del Tipo de Seguro ' || 
+         RAISE_APPLICATION_ERROR(-20220,'Error en Configuración de Coberturas para Indicador de Reasguro en Siniestros del Tipo de Seguro ' ||
                                  cIdTipoSeg || ' Plan de Coberturas ' || cPlanCob || ' y Cobertura ' || cCodCobert);
    END;
    RETURN(cIndReaSiniestro);
@@ -389,18 +377,47 @@ BEGIN
    RETURN(cCodMotivCancelPol);
 END MOTIVO_CANCELA_POLIZA;
 
+    -- CAPELE
+    FUNCTION COBERTURA_IDRAMOREAL(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2, cCodCobert VARCHAR2) RETURN VARCHAR2 IS
+        VALOR VARCHAR2(20);
+    BEGIN
+      SELECT IDRAMOREAL
+        INTO VALOR
+        FROM COBERTURAS_DE_SEGUROS
+       WHERE IDRAMOREAL IS NOT NULL
+         AND CodCia     = nCodCia
+         AND CodEmpresa = nCodEmpresa
+         AND IdTipoSeg  = cIdTipoSeg
+         AND PlanCob    = cPlanCob
+         AND CodCobert  = cCodCobert
+         AND IDRAMOREAL IS NOT NULL;
+
+       RETURN VALOR;
+
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END COBERTURA_IDRAMOREAL;
+
+FUNCTION RAMO_REAL_CPTO(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
+                        cPlanCob VARCHAR2, cCodCpto VARCHAR2) RETURN VARCHAR2 IS
+cIdRamoReal COBERTURAS_DE_SEGUROS.IdRamoReal%TYPE;
+BEGIN
+   BEGIN
+      SELECT DISTINCT IdRamoReal
+        INTO cIdRamoReal
+        FROM COBERTURAS_DE_SEGUROS
+       WHERE CodCia     = nCodCia
+         AND CodEmpresa = nCodEmpresa
+         AND IdTipoSeg  = cIdTipoSeg
+         AND PlanCob    = cPlanCob
+         AND CodCpto    = cCodCpto
+         AND IdRamoReal IS NOT NULL;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cIdRamoReal := NULL;
+   END;
+   RETURN cIdRamoReal;
+END RAMO_REAL_CPTO;
+
 END OC_COBERTURAS_DE_SEGUROS;
-/
-
---
--- OC_COBERTURAS_DE_SEGUROS  (Synonym) 
---
---  Dependencies: 
---   OC_COBERTURAS_DE_SEGUROS (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_COBERTURAS_DE_SEGUROS FOR SICAS_OC.OC_COBERTURAS_DE_SEGUROS
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_COBERTURAS_DE_SEGUROS TO PUBLIC
 /
