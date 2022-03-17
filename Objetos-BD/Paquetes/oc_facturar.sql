@@ -2,6 +2,7 @@ CREATE OR REPLACE PACKAGE OC_FACTURAR IS
 
 -- CALCULO DE COMISIONES PARA RAMOS PAQUETE                                  2022/01/22  JMMD
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
+-- SE MODIFICO PARA CORREGIR INCIDENCIA DE POLIZA PAQUETE COLECTIVOS         2022/03/17  JMMD
 
    PROCEDURE PROC_EMITE_FACTURAS (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_POL (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
@@ -64,6 +65,8 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAR IS
 -- PLAN DE PAGOS CATORCENAL                                                  2021/12/03  JMMD 20211203
 -- CALCULO DE COMISIONES PARA RAMOS PAQUETE                                  2022/01/22  JMMD
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
+-- SE MODIFICO PARA CORREGIR INCIDENCIA DE POLIZA PAQUETE COLECTIVOS         2022/03/17  JMMD
+
 PROCEDURE PROC_EMITE_FACTURAS(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS
 nIdFactura               FACTURAS.IdFactura%TYPE;
 nNumPagos                PLAN_DE_PAGOS.NumPagos%TYPE;
@@ -7861,8 +7864,8 @@ nPrimaMoneda_AP        COMISIONES.Comision_Moneda%TYPE := 0;
 CURSOR C_Agentes IS
   SELECT Cod_Agente, Porc_Comision, IdetPol, IdTipoSeg
     FROM AGENTES_DETALLES_POLIZAS
-   WHERE IdPoliza  = nIdPoliza;
-
+   WHERE IdPoliza  = nIdPoliza
+     AND IDETPOL = nIdetPol; ----- JMMD20220317
 
 CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
   SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
@@ -7929,10 +7932,10 @@ BEGIN
             AND IDETPOL   = I.IDETPOL
             AND CodCia    = nCodCia
             AND IdTipoSeg = I.IdTipoSeg;
-        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPrimaLocal  '||nPrimaLocal);
+/*        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPrimaLocal  '||nPrimaLocal);
         DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPrimaMoneda  '||nPrimaMoneda);
         DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorcComisiones  '||nPorcComisiones);
-        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nMontoComisiones  '||nMontoComisiones);
+        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nMontoComisiones  '||nMontoComisiones);  */
 ----- JMMD 20220113  MULTIRAMO
 -------JMMD20220121
             nFactorComisionVida := 0;
@@ -7954,7 +7957,9 @@ BEGIN
              INTO cCODTIPO
              FROM AGENTES
             WHERE COD_AGENTE = R_Agentes.Cod_Agente;
-
+            
+            DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO R_Agentes.Cod_Agente  '||R_Agentes.Cod_Agente||'  nMontoComisiones  '||nMontoComisiones);
+        
             IF cCODTIPO IN('HONPF', 'HONPM', 'HONORF', 'HONORM') AND R_Agentes.Cod_Agente != 1019 THEN
                nPorc_com_distribuida_Vida := R_Agentes.Porc_com_distribuida / 1.16;
 --               DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorc_com_distribuida_Vida  '||nPorc_com_distribuida_Vida);
@@ -7965,8 +7970,8 @@ BEGIN
               nPorc_com_distribuida_AP := R_Agentes.Porc_com_distribuida;
                DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorc_com_distribuida_AP  '||nPorc_com_distribuida_AP);
             END IF;
-        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nFactorComisionAP  '||nFactorComisionAP);
-        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nFactorComisionVida  '||nFactorComisionVida);
+-----        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nFactorComisionAP  '||nFactorComisionAP);
+-----        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nFactorComisionVida  '||nFactorComisionVida);
 ----- JMMD 20220113  MULTIRAMO
             nPrimaLocal_Vida  := nPrimaLocal * (nFactorComisionVida);
            nPrimaMoneda_Vida := nPrimaMoneda * (nFactorComisionVida);
@@ -8015,7 +8020,7 @@ BEGIN
            WHEN TOO_MANY_ROWS THEN
                cExiste :='S';
          END;
-
+         DBMS_OUTPUT.put_line('JMMD20220310 EN PROC_COMISIONPOL_MULTIRAMO cExiste  '||cExiste);
          IF cExiste = 'N' THEN
             OC_COMISIONES.INSERTAR_COMISION_FACT(nIdFactura, nIdPoliza, I.IdetPol, cCodMoneda, R_Agentes.Cod_Agente,
                                                  nCodCia, nCodEmpresa, nMontoComiLocal, nMontoComiMoneda,
@@ -8042,6 +8047,9 @@ BEGIN
             -- Elimina para Recalcular los Conceptos del Detale
             DELETE DETALLE_COMISION
              WHERE IdComision = nIdComision;
+
+----             DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO ANTES DE INSERTA_DETALLE_COMISION R_Agentes.Cod_Agente  '||R_Agentes.Cod_Agente||'  nIdComision  '||nIdComision||'  R_Agentes.Origen  '||R_Agentes.Origen);       
+
             OC_DETALLE_COMISION.INSERTA_DETALLE_COMISION(nCodCia, nIdPoliza, nIdComision, R_Agentes.Origen, I.IdTipoSeg);
          END IF;
          nMontoComiLocal := 0;
@@ -8049,8 +8057,8 @@ BEGIN
       nMontoComiLocal:=0;
    END LOOP;
 ----- jmmd20220114
-  DELETE T_OC_DETALLE_COMISION_VIFLEX
-   WHERE IDPOLIZA = nIdPoliza;
+--  DELETE T_OC_DETALLE_COMISION_VIFLEX
+--   WHERE IDPOLIZA = nIdPoliza;
 ----- jmmd20220114
 END PROC_COMISIONPOL_MULTIRAMO;
 
