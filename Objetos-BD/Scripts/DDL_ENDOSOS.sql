@@ -1,0 +1,4 @@
+ALTER TABLE ENDOSOS ADD (CVE_MOTIVCANCFACT VARCHAR2(30 char));
+/
+COMMENT ON COLUMN ENDOSOS.CVE_MOTIVCANCFACT IS 'Código Opciión Comprobantes emitidos con errores con relación SAT';
+/

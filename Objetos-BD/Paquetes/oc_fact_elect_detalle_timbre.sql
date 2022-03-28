@@ -1,45 +1,4 @@
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_DETALLE_TIMBRE IS
-/*   _______________________________________________________________________________________________________________________________	
-    |                                                                                                                               |
-    |                                                           HISTORIA                                                            |
-    | Elaboro    : ??                                                                                                               |    
-    | Para       : THONA Seguros                                                                                                    |
-    | Fecha Elab.:??                                                                                                                |    
-	| Nombre     : OC_FACT_ELECT_DETALLE_TIMBRE                                                                                     |
-    | Objetivo   : Paquete que realiza las diferentes acciones relacionadas con el detalle del timbrado de la Facturacion           |
-    |              electronica.                                                                                                     |
-    | Modificado : Si                                                                                                               |
-    | Ult. modif.: 24/01/2022                                                                                                       |
-    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
-    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
-    |                                                                                                                               |
-    | Obj. Modif.: En Proc. INSERTA_DETALLE: se agregan modificaciones para incorporar el motivo de cancelacion de facturas de      |
-    |              acuerdo con las disposiciones del SAT [Enero 2022].                                                              |
-    |                                                                                                                               |
-    | Dependencias:                                                                                                                 |
-    |           STANDARD (Package)                                                                                                  |
-    |           DBMS_STANDARD (Package)                                                                                             |
-    |           NOTAS_DE_CREDITO (Table)                                                                                            |
-    |           PLAN_COBERTURAS (Table)                                                                                             |
-    |           POLIZAS (Table)                                                                                                     |
-    |           OC_FACTURAS (Package)                                                                                               |
-    |           DETALLE_COMISION (Table)                                                                                            |
-    |           DETALLE_FACTURAS (Table)                                                                                            |
-    |           DETALLE_NOTAS_DE_CREDITO (Table)                                                                                    |
-    |           OC_VALORES_DE_LISTAS (Package)                                                                                      |
-    |           AGENTES (Table)                                                                                                     |
-    |           CATALOGO_DE_CONCEPTOS (Table)                                                                                       |
-    |           COMISIONES (Table)                                                                                                  |
-    |           OC_FILIALES (Package)                                                                                               |
-    |           OC_GENERALES (Package)                                                                                              |
-    |           OC_POLIZAS (Package)                                                                                                |
-    |           OC_CLIENTES (Package)                                                                                               |
-    |           DETALLE_POLIZA (Table)                                                                                              |
-    |           FACTURAS (Table)                                                                                                    |
-    |           FACT_ELECT_DETALLE_TIMBRE (Table)                                                                                   |
-    |           TRANSACCION (Table)                                                                                                 |
-    |_______________________________________________________________________________________________________________________________|
-*/
    FUNCTION NUMERO_TIMBRE(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN NUMBER;
    FUNCTION EXISTE_PROCESO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura NUMBER,
                            nIdNcr NUMBER, cCodProceso VARCHAR2) RETURN VARCHAR2;
@@ -56,7 +15,12 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_DETALLE_TIMBRE IS
                              dFechaUuid DATE, cFolioFiscal VARCHAR2, cSerie VARCHAR2,
                              cCodRespuestaSat VARCHAR2,cUuidCancelado VARCHAR2, 
                              cCve_MotivCancFact VARCHAR2, -- cUuidRelacionado   VARCHAR2, --> 24/01/2022 JALV(+)
-                             pIdTimbre IN OUT NUMBER);
+                             pIdTimbre   OUT NUMBER,
+                             cUUID_SUSTITUYE IN VARCHAR2,
+                             cCodigoResp IN VARCHAR2 DEFAULT NULL,
+                             cDescResp   IN VARCHAR2 DEFAULT NULL,
+                             cFechaResp  IN DATE     DEFAULT NULL
+);
    PROCEDURE ACTUALIZA_DETALLE(nCodCia NUMBER,         nCodEmpresa NUMBER, nIdTimbre NUMBER, 
                             cCodProceso VARCHAR2,   cUuid VARCHAR2,   dFECHAUUID DATE,  cCodRespuestaSat VARCHAR2,
                             cUuidCancelado VARCHAR2);
@@ -65,16 +29,11 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_DETALLE_TIMBRE IS
 
    PROCEDURE REPORTE_CONCILIACION (cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                             cCodMoneda VARCHAR2, cCodAgente VARCHAR2, DFECDESDE IN DATE, DFECHASTA IN DATE, CURSOR_BASE OUT SYS_REFCURSOR);
-      
+
+   FUNCTION UUIDRELACIONADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura NUMBER,
+                  nIdNcr NUMBER, cUUID VARCHAR2) RETURN VARCHAR2;
 END OC_FACT_ELECT_DETALLE_TIMBRE;
 /
-
---
--- OC_FACT_ELECT_DETALLE_TIMBRE  (Package Body) 
---
---  Dependencies: 
---   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_DETALLE_TIMBRE IS
 
 FUNCTION NUMERO_TIMBRE(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN NUMBER IS
@@ -112,7 +71,7 @@ BEGIN
        WHERE CodCia     = nCodCia
          AND IdNcr      = nIdNcr;
    END IF;
-   
+
    IF OC_POLIZAS.FACTURA_ELECTRONICA(nCodCia, nCodEmpresa, nIdPoliza) = 'S' THEN
       IF cIndFactElectronica = 'S' THEN 
          IF cCodProceso = 'CAN' THEN
@@ -248,45 +207,25 @@ BEGIN
       AND NVL(IdNcr, 0)      = NVL(nIdNcr, 0);
 END ASIGNA_STATUS;
 
-                                                    
-PROCEDURE INSERTA_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura NUMBER ,
-                          nIdNcr NUMBER , cCodProceso VARCHAR2, cUuid VARCHAR2,
-                          dFechaUuid DATE, cFolioFiscal VARCHAR2, cSerie VARCHAR2,
-                          cCodRespuestaSat VARCHAR2,cUuidCancelado VARCHAR2,
-                          cCve_MotivCancFact VARCHAR2, -- cUuidRelacionado, --> 24/01/2022 JALV(+)
-                          pIdTimbre IN OUT NUMBER) IS
-/*   _______________________________________________________________________________________________________________________________	
-    |                                                                                                                               |
-    |                                                           HISTORIA                                                            |
-    | Elaboro    : ??                                                                                                               |    
-    | Para       : THONA Seguros                                                                                                    |
-    | Fecha Elab.:??                                                                                                                |    
-	| Nombre     : INSERTA_DETALLE	                                                                                                |
-    | Objetivo   : Procedimiento que inserta el detalle para el timbrado de la Facturacion electronica.                             |
-    | Modificado : Si                                                                                                               |
-    | Ult. modif.: 24/01/2022                                                                                                       |
-    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
-    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
-    |                                                                                                                               |
-    | Obj. Modif.: Se agregan modificaciones para incorporar el motivo de cancelacion de facturas segun SAT [Enero 2022].           |
-    |                                                                                                                               |
-    | Parametros:                                                                                                                   |
-    |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
-    |           nCodEmpresa         Codigo de la Empresa            (Entrada)                                                       |
-    |			nIdFactura			ID de la Factura o Recibo       (Entrada)                                                       |
-    |           nIdNcr              ID de la Nota de Credito        (Entrada)                                                       |
-    |           cCodProceso         Codigo de Proceso               (Entrada)                                                       |
-    |           cUuid               UUID de Timbrado                (Entrada)                                                       |
-    |           dFechaUuid          Fecha del UUID                  (Entrada)                                                       |
-    |           cFolioFiscal        Folio Fiscal                    (Entrada)                                                       |
-    |           cSerie              Serie Fiscal                    (Entrada)                                                       |
-    |           cCodRespuestaSat    Respuesta de timbrado del SAT   (Entrada)                                                       |
-    |           cUuidCancelado      UUID que se cancela             (Entrada)                                                       |
-    |           cCve_MotivCancFact  Clave del Motivo de Cancelacion (Entrada)                                                       |
-    |           cUuidRelacionado    UUID que sustituye al cancelado (Entrada)                                                       |
-    |           pIdTimbre           ID del Timbre Fiscal obtenido   (Salida)                                                        |
-    |_______________________________________________________________________________________________________________________________|
-*/                          
+
+PROCEDURE INSERTA_DETALLE(nCodCia NUMBER,   
+                          nCodEmpresa NUMBER,     
+                          nIdFactura NUMBER ,
+                          nIdNcr NUMBER ,   
+                          cCodProceso VARCHAR2,   
+                          cUuid VARCHAR2,
+                          dFechaUuid DATE,  
+                          cFolioFiscal VARCHAR2,  
+                          cSerie VARCHAR2,
+                          cCodRespuestaSat VARCHAR2,
+                          cUuidCancelado VARCHAR2,
+                          cCve_MotivCancFact VARCHAR2, 
+                          pIdTimbre   OUT NUMBER,
+                          cUUID_SUSTITUYE IN VARCHAR2,
+                          cCodigoResp IN VARCHAR2 DEFAULT NULL,
+                          cDescResp   IN VARCHAR2 DEFAULT NULL,
+                          cFechaResp  IN DATE     DEFAULT NULL
+                          ) IS
    PRAGMA AUTONOMOUS_TRANSACTION;
    nIdTimbre   NUMBER;
    cStsTimbre  FACT_ELECT_DETALLE_TIMBRE.StsTimbre%TYPE;
@@ -297,17 +236,29 @@ BEGIN
     ELSE
       cStsTimbre := 'ERROR';
     END IF;
-    INSERT INTO FACT_ELECT_DETALLE_TIMBRE(CodCia, CodEmpresa, IdTimbre, IdFactura, IdNcr,
-                                          CodProceso, Uuid, FechaUuid, FolioFiscal, Serie,
+    INSERT INTO FACT_ELECT_DETALLE_TIMBRE (CodCia, CodEmpresa, IdTimbre, IdFactura, IdNcr,
+                                          CodProceso, 
+                                          Uuid, 
+                                          FechaUuid, FolioFiscal, Serie,
                                           CodRespuestaSat, StsTimbre, FecStatus, CodUsuario,
                                           UuidCancelado
-                                          ,Cve_MotivCancFact--, UUIDReracionado --> 24/01/2022 JALV(+)
+                                          ,Cve_MotivCancFact,--, UUIDReracionado --> 24/01/2022 JALV(+)
+                                          UUIDRELACIONADO,
+                                          SAT_CODRESPUESTAOPC,
+                                          SAT_DESRESPUESTAOPC,
+                                          SAT_FECRESPUESTAOPC
                                           )
          VALUES (nCodCia, nCodEmpresa, nIdTimbre, nIdFactura, nIdNcr,
-                 cCodProceso, cUuid, dFechaUuid, cFolioFiscal, cSerie,
+                 cCodProceso, 
+                 cUuid, 
+                 dFechaUuid, cFolioFiscal, cSerie,
                  cCodRespuestaSat, cStsTimbre, TRUNC(SYSDATE), USER,
                  cUuidCancelado
-                 ,cCve_MotivCancFact    --, cUuidRelacionado, --> 24/01/2022 JALV(+)
+                 ,cCve_MotivCancFact,    --, cUuidRelacionado, --> 24/01/2022 JALV(+)
+                 cUUID_SUSTITUYE,
+                 cCodigoResp,
+                 cDescResp,
+                 cFechaResp
                  );
     IF SQL%ROWCOUNT = 0 THEN
       RAISE_APPLICATION_ERROR(-20200,'Error al insertar detalle timbre: '||SQLERRM);
@@ -338,7 +289,7 @@ BEGIN
     WHERE  CODCIA       = nCodCia
       AND  CODEMPRESA   = nCodEmpresa
       AND  IDTIMBRE     = nIdTimbre;
-          
+
 END ACTUALIZA_DETALLE;
 
 
@@ -368,8 +319,8 @@ PROCEDURE REPORTE_CONCILIACION (cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                            cCodMoneda VARCHAR2, cCodAgente VARCHAR2, DFECDESDE IN DATE, DFECHASTA IN DATE,CURSOR_BASE OUT SYS_REFCURSOR) IS
 
 BEGIN 
-   
- 
+
+
     OPEN CURSOR_BASE FOR
     SELECT 
         PROCESO,
@@ -895,13 +846,31 @@ FROM (
              FECHAUUID,
              FOLIOFISCAL,
              SERIE;
-             
-    END REPORTE_CONCILIACION;
 
+    END REPORTE_CONCILIACION;
+    --
+    FUNCTION UUIDRELACIONADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura NUMBER,
+                          nIdNcr NUMBER, cUUID VARCHAR2) RETURN VARCHAR2 IS
+    cUUIDRELACIONADO      FACT_ELECT_DETALLE_TIMBRE.UUIDRELACIONADO%TYPE;
+    BEGIN
+       BEGIN
+          SELECT D.UUIDRELACIONADO
+            INTO cUUIDRELACIONADO
+            FROM FACT_ELECT_DETALLE_TIMBRE D
+           WHERE CodCia       = nCodCia
+             AND CodEmpresa   = nCodEmpresa
+             AND NVL(IdFactura, 0)  = NVL(nIdFactura, 0)
+             AND NVL(IdNcr, 0)      = NVL(nIdNcr, 0)
+             AND UUID         = cUUID;
+       EXCEPTION
+          WHEN OTHERS THEN
+             cUUIDRELACIONADO := NULL;
+       END;
+       RETURN(CUUIDRELACIONADO);
+    END UUIDRELACIONADO;
 
 END OC_FACT_ELECT_DETALLE_TIMBRE;
 /
-
 --
 -- OC_FACT_ELECT_DETALLE_TIMBRE  (Synonym) 
 --

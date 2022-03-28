@@ -3,18 +3,18 @@ CREATE OR REPLACE PACKAGE SICAS_OC.GT_WEB_SERVICES AS
     xmlString   VARCHAR2(32767);
     xmlResult   XMLTYPE;
     xmlDom      DBMS_XMLDOM.DOMDocument;
-    
-    FUNCTION ExtraStr(cTAG VARCHAR2,            cXxmlString VARCHAR2 := xmlString) return varchar2;
-    FUNCTION SPLIT(p_list varchar2,             p_del varchar2 := ',' ) return split_tbl pipelined;
+
+    FUNCTION ExtraStr(cTAG clob,                cXxmlString clob := xmlString) return varchar2;
+    FUNCTION SPLIT(p_list varchar2,             p_del VARCHAR2 := ',' ) return split_tbl pipelined;
     FUNCTION JOIN(p_cursor sys_refcursor,       p_del varchar2 := ',') return varchar2;
-    FUNCTION RETORNA_PARAM(pParametro VARCHAR2, pParamEntrada VARCHAR2) return VARCHAR2;
+    FUNCTION RETORNA_PARAM(pParametro VARCHAR2, pParamEntrada CLOB) return VARCHAR2;
     FUNCTION REMPLAZA_ISO88591 (pParamEntrada VARCHAR2) return VARCHAR2;
     FUNCTION Ejecuta_WS(pCodCia NUMBER,         pCodEmpresa NUMBER, pIdWeb NUMBER, pIdWebResp NUMBER, Resultado OUT VARCHAR2, pParamSql VARCHAR2 := NULL)  RETURN XMLTYPE;   
     FUNCTION ExtraeDatos_XML(Doc XMLTYPE,       DatosTag varchar2) Return Varchar2;  
     PROCEDURE InicializaDom (Doc XMLTYPE);
     FUNCTION REPLACE_CLOB (I_SOURCE IN CLOB ,   I_SEARCH IN VARCHAR2 ,I_REPLACE IN CLOB) RETURN CLOB;
     FUNCTION GENERA_XML(pCodCia NUMBER,         pCodEmpresa NUMBER, pIdeWebXml NUMBER, cDatosXml VARCHAR2 := NULL) RETURN XMLTYPE;    
-    FUNCTION ExtraeDatos_XmlDom(Tags VARCHAR2) Return Varchar2;
+    FUNCTION ExtraeDatos_XmlDom(Tags clob) Return CLOB;
     FUNCTION Similitud(pCadena1 varchar2,       pCadena2 varchar2) RETURN NUMBER;
     FUNCTION Similitud_Porcentual(pCadena1 varchar2, pCadena2 varchar2) return NUMBER;
     --
@@ -22,40 +22,37 @@ END GT_WEB_SERVICES;
 /
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
     --
-    FUNCTION ExtraStr(cTAG VARCHAR2, cXxmlString VARCHAR2 := xmlString) return varchar2 is        
-        cValor varchar2(32767);
+    FUNCTION ExtraStr(cTAG clob, cXxmlString clob := xmlString) return varchar2 is        
+        cValor clob;
+        cTagUpp clob;
     BEGIN    
+        cTagUpp :=  upper(cTag);
         select VALOR
           INTO cValor
           from (
                 select 
-                        substr(column_value, 1, instr(column_value, '>')-1) tag,
+                        to_clob(upper(substr(column_value, 1, instr(column_value, '>')-1))) tag,
                         substr(column_value, instr(column_value, '>')+1, instr(column_value, '</')-(instr(column_value, '>')+1)) valor
                   from table(GT_WEB_SERVICES.split(cXxmlString, '><'))  
             )
         where TAG IS NOT NULL
-          AND UPPER(TAG) = UPPER(cTag);                              
+          AND DBMS_LOB.Compare(TAG, cTagUpp) = 0;                              
         RETURN cValor;
     EXCEPTION WHEN OTHERS THEN
         RETURN NULL;        
     END ExtraStr;
     --
-    FUNCTION split
-        (
-            p_list VARCHAR2,
-            p_del VARCHAR2 := ','
-        ) return split_tbl pipelined
+    FUNCTION split (p_list varchar2, p_del VARCHAR2 := ',') return split_tbl pipelined
         is
         -- select * from table(split('one,two,three'));
-            l_idx    pls_integer;
-            l_list    VARCHAR2(32767) := p_list;
-        begin
+            l_idx    NUMBER;
+            l_list   varchar2(32727) := p_list;
+    Begin
             loop
                 l_idx := instr(l_list,p_del);
                 if l_idx > 0 then
                     pipe row(substr(l_list,1,l_idx-1));
                     l_list := substr(l_list,l_idx+length(p_del));
-
                 else
                     pipe row(l_list);
                     exit;
@@ -85,15 +82,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
             return l_result;
     END JOIN;
 
-    FUNCTION RETORNA_PARAM(pParametro VARCHAR2, pParamEntrada VARCHAR2) return VARCHAR2 IS
+    FUNCTION RETORNA_PARAM(pParametro VARCHAR2, pParamEntrada CLOB) return VARCHAR2 IS
         cVALOR VARCHAR2(32767);
     BEGIN 
             SELECT value
               INTO cVALOR
               FROM (select trim(SUBSTR(REPLACE(column_value, ':', ''), 1, instr(column_value, '=')-2)) param, rtrim(ltrim(SUBSTR(column_value, instr(column_value, '=')+1))) value 
-                      from table(split(pParamEntrada)))
-             WHERE UPPER(param) = UPPER(pParametro);
-             
+                      from table(GT_WEB_SERVICES.split(pParamEntrada)))
+             WHERE DBMS_LOB.COMPARE(UPPER(param), UPPER(pParametro)) = 0;
+
             return cVALOR;
     EXCEPTION WHEN OTHERS THEN
             return NULL;                          
@@ -162,7 +159,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                 begin
 
                     l_soap_request := GT_WEB_SERVICES.REPLACE_CLOB(c_soap_envelope, '**metodo**', p_Metodo);                                  
-                    
+
                     http_req:= utl_http.begin_request
                                  ( p_target_url
                                  , 'POST'
@@ -171,26 +168,26 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                     utl_http.set_header(http_req, 'Content-Type', 'text/xml');
                     utl_http.set_header(http_req, 'Content-Length', dbms_lob.getlength(l_soap_request));
                     utl_http.set_header(http_req, 'SOAPAction', p_soap_action);
-                    
+
                     --dbms_output.put_line('CHUNK');
                     --utl_http.write_text(http_req, l_soap_request);
                      while(offset < DBMS_LOB.getlength (l_soap_request)) loop
                          dbms_lob.read(l_soap_request, amount, offset, buffer);
-                         --dbms_output.put_line('buffer: ' ||buffer);
-                         
+                         dbms_output.put_line('buffer: ' ||buffer);
+
                          UTL_HTTP.WRITE_TEXT(http_req, buffer);
-                         
+
                          offset := offset + amount;                         
                     end loop;
 
-                    --dbms_output.put_line(l_soap_request);
-                                        
+                    dbms_output.put_line(l_soap_request);
+
                     http_resp:= utl_http.get_response(http_req);
-                    
-                    --dbms_output.put_line('OBTENIENDO RESPUESTA');     
-                                        
+
+                    dbms_output.put_line('OBTENIENDO RESPUESTA');     
+
                     DBMS_LOB.CREATETEMPORARY(l_cLOB, FALSE);
-                    
+
                     --UTL_HTTP.READ_TEXT(http_resp, l_soap_response,32767);
 
                     -- LEE LA RESPUESTA DEL WEBSERVICE EN "CHUNKS"
@@ -208,18 +205,20 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                             UTL_HTTP.END_RESPONSE(http_resp);
                     END;
 
-
+                    dbms_output.put_line('termino de hacer "CHUNKS"');     
+                    
                     IF swISO88591 = 0 AND INSTR(l_cLOB2, 'ISO-8859-1') > 0 THEN
                         swISO88591 := 1;
                         --dbms_output.put_line('l_cLOB2----');
                         --dbms_output.put_line(l_cLOB2);
-                        --dbms_output.put_line('----');
+                        dbms_output.put_line('Entre por el ISO');
                         l_cLOB2 := GT_WEB_SERVICES.REMPLAZA_ISO88591(l_cLOB2);
                         IF INSTR(l_cLOB2, 'bm:') > 0 THEN
+                           --dbms_output.put_line('Realice un replace');
                             l_cLOB2 := REPLACE(l_cLOB2, 'bm:', ''); 
                             l_cLOB2 := substr(l_cLOB2 , instr(l_cLOB2, '<DataSet>') );
                             l_cLOB2 := substr(l_cLOB2 , 1, instr(l_cLOB2, '</DataSet>')+10); 
-                                     
+
                             BEGIN                                              
                             SELECT XMLROOT (XMLTYPE(l_cLOB2), VERSION '1.0" encoding="UTF-8')
                               INTO l_Alterno FROM DUAL;
@@ -233,23 +232,26 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                         END IF;                                                     
                             --l_cLOB2 := REPLACE(l_cLOB2, '<?xml version="1.0" encoding="ISO-8859-1"?>', '');                        
                     END IF;
-                     
+                    dbms_output.put_line('Sali de cambios en el replace');
                     DBMS_LOCK.SLEEP(2);                                        
                     --utl_http.end_response(http_resp);                    
---                    dbms_output.put_line('l_soap_request---------------------------------------------------------------');
---                    dbms_output.put_line(l_soap_request);
---                    dbms_output.put_line('---------------------------------------------------------------');
---                    dbms_output.put_line('l_soap_response2---------------------------------------------------------------');
---                    dbms_output.put_line(l_soap_response2 );
---                    dbms_output.put_line('l_cLOB2---------------------------------------------------------------');
---                    dbms_output.put_line(l_cLOB2);
---                    dbms_output.put_line('---------------------------------------------------------------');
-               
+                    dbms_output.put_line('l_soap_request---------------------------------------------------------------');
+                    dbms_output.put_line(l_soap_request);
+                    dbms_output.put_line('---------------------------------------------------------------');
+                    dbms_output.put_line('l_soap_response2---------------------------------------------------------------');
+                    dbms_output.put_line(l_soap_response2 );
+                    dbms_output.put_line('l_cLOB2---------------------------------------------------------------');
+                    dbms_output.put_line(l_cLOB2);
+                    dbms_output.put_line('---------------------------------------------------------------');
+
                      return XMLType(l_cLOB2);
                     --RETURN l_Alterno;
                 EXCEPTION WHEN OTHERS THEN
+                    IF SQLCODE = -29273 THEN
+                        raise_application_error(-20010,SQLCODE || '-' || SQLERRM);
+                    END IF;
                     --dbms_output.put_line('----------------ERROR-----------------------------------------');
-                    dbms_output.put_line( SQLERRM);
+                    dbms_output.put_line(SQLCODE ||'-'|| SQLERRM);
                     dbms_output.put_line(l_soap_request);
                     --dbms_output.put_line('---------------------------------------------------------------');
                     dbms_output.put_line('l_cLOB---------------------------------------------------------');
@@ -281,9 +283,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                  WHERE WS.CODCIA       = pCodCia
                    AND WS.CODEMPRESA   = pCodEmpresa
                    AND WS.IDWEB        = pIdWeb ;
-                             
+
                 l_SoapAction    := l_namespace || l_metodo;     
-                                                    
+
             EXCEPTION WHEN NO_DATA_FOUND THEN
                 esDatosXML := 'N';
                 cDatosXml := SQLERRM;
@@ -300,15 +302,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                            AND XMLN.CODEMPRESA = pCodEmpresa
                            AND XMLN.IDWEBXML   = pIdWebResp               
                          ORDER BY NIVEL, NVL(XMLN.ORDEN, XMLN.IDWEBXMLNODO)) LOOP
-            
+
                 IF LENGTH(pParamResult) > 0 THEN
                     pParamResult := pParamResult || ',';
                 END IF;
-             
+
                 pParamResult := pParamResult || RESP. NOMBRE;
-            
+
             END LOOP;
-                             
+
             --
         BEGIN
             SELECT upper(XML.DATOSXML), 
@@ -319,14 +321,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
              WHERE XML.CODCIA   = pCodCia
                AND XML.CODEMPRESA = pCodEmpresa
                AND XML.IDWEBXML   = pIdWebResp;
-                        
+
         EXCEPTION WHEN OTHERS THEN
             cRespStrXML := NULL;
         END;
         --DBMS_OUTPUT.PUT_LINE(esDatosXML);
         IF esDatosXML = 'S' then
             --REMPLAZA PARAMETROS
-            FOR PARAM IN (select trim(SUBSTR(column_value, 1, instr(column_value, '=')-1)) param, rtrim(ltrim(SUBSTR(column_value, instr(column_value, '=')+1))) value from table(split(pParamSql))) loop
+            FOR PARAM IN (select trim(SUBSTR(column_value, 1, instr(column_value, '=')-1)) param, rtrim(ltrim(SUBSTR(column_value, instr(column_value, '=')+1))) value from table(GT_WEB_SERVICES.split(pParamSql))) loop
                 --IF LENGTH(sqlParametros) > 0 then
                 --    sqlParametros := sqlParametros || ',' || CHR(10);
                 --END IF;
@@ -334,9 +336,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                 cDatosXml := REPLACE(cDatosXml, PARAM.param, param.value);
             END LOOP;                                
             cDatosXml   := REPLACE(cDatosXml, '®', '''');
-            
+
             --DBMS_OUTPUT.PUT_LINE(cDatosXml);
-            
+
             OPEN curResp FOR cDatosXml; 
             --
             LOOP
@@ -344,7 +346,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                 EXIT WHEN curResp%NOTFOUND;
                     LRESULT := GENERA_XML(pCodCia, pCodEmpresa, l_IDWEBXML, CSTRXML );                                           
                     l_response_payload :=  soap_call(l_namespace, l_metodo, l_target_url, l_SoapAction, LRESULT.getStringVal());
-                    
+
                     Resultado := GT_WEB_SERVICES.ExtraeDatos_XML(l_response_payload, pParamResult);
                     ---
                     IF LENGTH(cRespStrXML) > 0 THEN
@@ -357,7 +359,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                             WHERE PX.CODCIA     = pCodCia
                               AND PX.CODEMPRESA = pCodEmpresa
                               AND PX.IDWEBXML   = pIdWebResp;
-                            
+
                             IF LENGTH(cTabParam) > 0 THEN
                                 begin
                                     EXECUTE IMMEDIATE cRespStrXML USING Resultado, l_response_payload;
@@ -377,7 +379,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
             END LOOP;              
         ELSE
            --- DBMS_OUTPUT.PUT_LINE('Entro: '||pParamSql);
-            FOR PARAM IN (select trim(SUBSTR(column_value, 1, instr(column_value, '=')-1)) param, rtrim(ltrim(SUBSTR(column_value, instr(column_value, '=')+1))) value from table(split(pParamSql))) loop
+            FOR PARAM IN (select trim(SUBSTR(column_value, 1, instr(column_value, '=')-1)) param, rtrim(ltrim(SUBSTR(column_value, instr(column_value, '=')+1))) value from table(GT_WEB_SERVICES.split(pParamSql))) loop
                 sqlParametros := sqlParametros || '     ' || '''' || param.value || '''' || ' ' || replace(PARAM.param, ':', '') || ',' || CHR(10);
                 --cDatosXml := GT_WEB_SERVICES.REPLACE_CLOB (cDatosXml, PARAM.param, param.value);
                 cDatosXml := replace(cDatosXml, PARAM.param, param.value);
@@ -386,7 +388,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
             cDatosXml   := replace(cDatosXml, '®', '''');
             --DBMS_OUTPUT.PUT_LINE(cDatosXml);                        
             GT_WEB_SERVICES.XMLSTRING := NULL;
-            
+
             IF LENGTH(cDatosXml) > 0 THEN
                 begin
                     EXECUTE IMMEDIATE cDatosXml;
@@ -395,47 +397,47 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                  raise_application_error(-20010,'ERROR EN EL EXECUTE: ' || SQLERRM);
                 end;
             END IF;
-            
-            --DBMS_OUTPUT.PUT_LINE('GT_WEB_SERVICES.XMLSTRING  --1: ' || GT_WEB_SERVICES.XMLSTRING );
+
+  --          DBMS_OUTPUT.PUT_LINE('GT_WEB_SERVICES.XMLSTRING  --1: ' || GT_WEB_SERVICES.XMLSTRING );
             IF dbms_lob.getlength(XMLTYPE.getclobval(GT_WEB_SERVICES.xmlResult))  > 0 then
                 clobWorking := GT_WEB_SERVICES.xmlResult.getClobVal();
             else
                 clobWorking := GENERA_XML(pCodCia, pCodEmpresa, l_IDWEBXML).getStringVal();
             end if;
-            
-            
+--DBMS_OUTPUT.PUT_LINE('GT_WEB_SERVICES clobWorking  --2: ' || clobWorking );
+
             l_response_payload :=  soap_call(l_namespace, l_metodo, l_target_url, l_SoapAction, clobWorking);
-            
+
             --dbms_output.put_line('esDatosXMLResp-->' || esDatosXMLResp);
-            --dbms_output.put_line('LENGTH(cRespStrXML)-->' || dbms_lob.getlength(cRespStrXML));
-            --DBMS_OUTPUT.PUT_LINE(pIdWebResp || ' --1: ' || cRespStrXML);
-            
+            --dbms_output.put_line('LENGTH(cRespStrXML)-->' || dbms_lob.getlength(cRespStrXML));            
+            --DBMS_OUTPUT.PUT_LINE(pIdWebResp || ' --1: ' || chr(10) ||  cRespStrXML);
+
             IF dbms_lob.getlength(cRespStrXML) > 0 AND esDatosXMLResp = 'N' THEN  --RESPUESTA                
                 BEGIN --paso l_response_payload
 
-
-                    FOR PARAM IN (select trim(SUBSTR(column_value, 1, instr(column_value, '=')-1)) param, rtrim(ltrim(SUBSTR(column_value, instr(column_value, '=')+1))) value from table(split(pParamSql))) loop
+                    --DBMS_OUTPUT.PUT_LINE('remplazo variables');
+                    FOR PARAM IN (select trim(SUBSTR(column_value, 1, instr(column_value, '=')-1)) param, rtrim(ltrim(SUBSTR(column_value, instr(column_value, '=')+1))) value from table(GT_WEB_SERVICES.split(pParamSql))) loop
                         sqlParametros := sqlParametros || '     ' || '''' || param.value || '''' || ' ' || replace(PARAM.param, ':', '') || ',' || CHR(10);
                         cRespStrXML := GT_WEB_SERVICES.REPLACE_CLOB (cRespStrXML, PARAM.param, param.value);
                     END LOOP;        
                     cRespStrXML   := GT_WEB_SERVICES.REPLACE_CLOB(cRespStrXML, '®', '''');            
 
-
+                    --DBMS_OUTPUT.PUT_LINE('termino de remplazar variables');
                  --DBMS_OUTPUT.PUT_LINE('l_response_payload.getStringVal():' || l_response_payload.getStringVal());
                     GT_WEB_SERVICES.InicializaDom(l_response_payload);
---                    DBMS_OUTPUT.PUT_LINE(pIdWebResp || ' --1: ' || cStrXML);
+                   -- DBMS_OUTPUT.PUT_LINE(pIdWebResp || ' * --1: ' || chr(10) || cStrXML);
                     EXECUTE IMMEDIATE cRespStrXML;
                 exception when others then
-                    DBMS_OUTPUT.PUT_LINE('ERROR-XX21->' || cRespStrXML);
+                    --DBMS_OUTPUT.PUT_LINE('ERROR-XX21->' || cRespStrXML);
                     raise_application_error(-20010, 'No hay Respuesta del WS, posiblemente el periodo o el envÌo no hay datos a procesar' || CHR(10) || SQLERRM);                                        
                 END;
             END IF;
-            
-            
+
+
         END IF;
-            
+
         return l_response_payload;
-            
+
     END Ejecuta_WS;
     --
     FUNCTION GENERA_XML(pCodCia NUMBER, pCodEmpresa NUMBER, pIdeWebXml NUMBER, cDatosXml VARCHAR2 := NULL) RETURN XMLTYPE IS        
@@ -456,9 +458,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
               INDEX BY BINARY_INTEGER;
             --     
             tNodos       TabNodo;
-                    
+
             limit_in  NUMBER := 100;
-                    
+
             CURSOR NIVELES_Q IS
               SELECT XMLN.NIVEL,
                    NVL(XMLN.ORDEN, XMLN.NIVEL) ORDEN,
@@ -470,7 +472,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                AND XMLN.CODEMPRESA = pCodEmpresa
                AND XMLN.IDWEBXML   = pIdeWebXml               
              ORDER BY NIVEL, NVL(XMLN.ORDEN, XMLN.IDWEBXMLNODO);
-                    
+
     BEGIN
             cLinXml := NULL;
             BEGIN
@@ -508,11 +510,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                               AND XMLA.IDWEBXML     = pIdeWebXml
                               AND XMLA.IDWEBXMLNODO = tNodos(NodosListin).IDWEBXMLNODO
                             ORDER BY NVL(XMLA.ORDEN, XMLA.IDWEBXMLATR) ) LOOP
-                                    
+
                     IF LENGTH(cLinXml) > 0 THEN
                         cLinXml := cLinXml || ' ';
                     END IF;
-                                    
+
                     cLinXml := cLinXml || ATRIB.contenido;
                 END LOOP;
                 --                                                                                                                                                                                                                                                                                      
@@ -537,7 +539,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
                         END IF;
                     END LOOP;        
                 END;
-                        
+
             END LOOP;                
             cDoc := xmltype(cLinXml);
             RETURN  cDoc;
@@ -555,17 +557,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
         sValor          VARCHAR2(32767) := null;            
         cLinea          VARCHAR2(32767) := null;        
         Opcion          NUMBER ;
-        
+
     BEGIN         
         DoConvertido     := DBMS_XMLDOM.newDOMDocument(DOC); 
         SELECT COUNT(*) 
           INTO Opcion
-          FROM table(split(DatosTag));
-        
-        FOR PARAM IN (select column_value from table(split(DatosTag))) loop
+          FROM table(GT_WEB_SERVICES.split(DatosTag));
+
+        FOR PARAM IN (select column_value from table(GT_WEB_SERVICES.split(DatosTag))) loop
             NodosList   := DBMS_XMLDOM.getElementsByTagName(DoConvertido, PARAM.column_value);--- '*' extrae todos los nodos
             len  := DBMS_XMLDOM.getLength(NodosList);     
-                  
+
             FOR i IN 0 .. len - 1 LOOP
                 Nodo := DBMS_XMLDOM.item(NodosList, i);
                 --sValor := DBMS_XMLDOM.getNodeName(Nodo) || ' ' || DBMS_XMLDOM.getNodeValue(DBMS_XMLDOM.getFirstChild(Nodo));
@@ -587,9 +589,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
     PROCEDURE InicializaDom (Doc XMLTYPE) is
     BEGIN
         xmlDom     := DBMS_XMLDOM.newDOMDocument(Doc); 
+    EXCEPTION WHEN OTHERS THEN
+        raise_application_error(-20010,'InicializaDom: ' || SQLCODE || '-' || SQLERRM);
     END InicializaDom;
     --
-    
+
     FUNCTION REPLACE_CLOB (I_SOURCE IN CLOB ,I_SEARCH IN VARCHAR2 ,I_REPLACE IN CLOB) RETURN CLOB IS
       L_POS PLS_INTEGER;
     BEGIN
@@ -600,38 +604,42 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
       RETURN I_SOURCE;
     END REPLACE_CLOB;
 
-    FUNCTION ExtraeDatos_XmlDom(Tags VARCHAR2) Return Varchar2 is            
+    FUNCTION ExtraeDatos_XmlDom(Tags clob) Return CLOB is            
         NodosList       DBMS_XMLDOM.DOMNodeList;
         Nodo            DBMS_XMLDOM.DOMNode;         
         len             NUMBER;    
-        sValor          VARCHAR2(32767) := null;            
-        cLinea          VARCHAR2(32767) := null;        
+        sValor          CLOB := null;            
+        cLinea          CLOB := null;        
         Opcion          NUMBER ;
-        
+
     BEGIN         
+        BEGIN
+            SELECT COUNT(*) 
+              INTO Opcion
+              FROM table(GT_WEB_SERVICES.split(Tags));
 
-        SELECT COUNT(*) 
-          INTO Opcion
-          FROM table(split(Tags));
-        
-        FOR PARAM IN (select column_value from table(split(Tags))) loop
-            NodosList   := DBMS_XMLDOM.getElementsByTagName(xmlDom, PARAM.column_value);--- '*' extrae todos los nodos
-            len  := DBMS_XMLDOM.getLength(NodosList);                       
-            FOR i IN 0 .. len - 1 LOOP
-                Nodo := DBMS_XMLDOM.item(NodosList, i);                
-                IF Opcion = 1 THEN
-                    sValor := DBMS_XMLDOM.getNodeValue(DBMS_XMLDOM.getFirstChild(Nodo));
-                    exit;
-                ELSE
-                    IF LENGTH(sValor) > 0 THEN
-                        sValor := sValor || ',';
-                    END IF;
-                    cLinea := ':' || PARAM.column_value || '=' || DBMS_XMLDOM.getNodeValue(DBMS_XMLDOM.getFirstChild(Nodo));            
-                    sValor :=  sValor || cLinea;
-                END IF;                
+            FOR PARAM IN (select column_value from table(GT_WEB_SERVICES.split(Tags))) loop
+                NodosList   := DBMS_XMLDOM.getElementsByTagName(xmlDom, PARAM.column_value);--- '*' extrae todos los nodos
+                len  := DBMS_XMLDOM.getLength(NodosList);                       
+                FOR i IN 0 .. len - 1 LOOP
+                    Nodo := DBMS_XMLDOM.item(NodosList, i);                
+                    IF Opcion = 1 THEN
+                        sValor := DBMS_XMLDOM.getNodeValue(DBMS_XMLDOM.getFirstChild(Nodo));
+                        exit;
+                    ELSE
+                        IF LENGTH(sValor) > 0 THEN
+                            sValor := sValor || ',';
+                        END IF;
+                        cLinea := ':' || PARAM.column_value || '=' || DBMS_XMLDOM.getNodeValue(DBMS_XMLDOM.getFirstChild(Nodo));            
+                        sValor :=  sValor || cLinea;
+                    END IF;                
+                END LOOP;
+
             END LOOP;
-
-        END LOOP;                                
+                       
+        EXCEPTION WHEN OTHERS THEN
+            sValor := 'No se pudo recuperar el NODO de ExtraeDatos_XmlDom ya que es muy larga la cadena: ' || sqlerrm;
+        END;                         
         RETURN sValor; 
     END ExtraeDatos_XmlDom;
     --
@@ -649,14 +657,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
         SELECT TRANSLATE(upper(pCadena2), 'Ò·ÈÌÛ˙‡ËÏÚ˘„ı‚ÍÓÙÙ‰ÎÔˆ¸Á—¡…Õ”⁄¿»Ã“Ÿ√’¬ Œ‘€ƒÀœ÷‹«,.-<>;:_{}[]+*~^¥®ø°\?=)(/&%$#"!|∞¨','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
           INTO Cadena2
         from DUAL;
-                
+
         Cadena1 := Trim(Replace(Cadena1, ' ', ''));
         Cadena2 := Trim(Replace(Cadena2, ' ', ''));
         cnt1 := Length(Cadena1);
         cnt2 := Length(Cadena2);
         Cant := 0;
         Porcentaje := 0;
-            
+
         If cnt1 <= cnt2 Then
             For I IN  1..cnt1 loop
                 If SUBSTR(Cadena1, I, 1) = SUBSTR(Cadena2, I, 1) Then
@@ -672,7 +680,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
             end loop;
             Porcentaje := Cant / cnt1;
         End If;            
-                        
+
         RETURN Round(Porcentaje, 2);
     End Similitud;
     --
@@ -691,7 +699,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
         Cadena1 varchar2(1000); 
         Cadena2 varchar2(1000);
     BEGIN
-    
+
         SELECT TRANSLATE(upper(pCadena1), 'Ò·ÈÌÛ˙‡ËÏÚ˘„ı‚ÍÓÙÙ‰ÎÔˆ¸Á—¡…Õ”⁄¿»Ã“Ÿ√’¬ Œ‘€ƒÀœ÷‹«,.-<>;:_{}[]+*~^¥®ø°\?=)(/&%$#"!|∞¨','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
           INTO Cadena1
         from DUAL;
@@ -712,7 +720,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
         --END LOOP;    
         Cant := 0;    
         Porcentaje := 0;        
-        
+
         If cnt1 > 1 Or cnt2 > 1 Then
             If cnt1 <= cnt2 Then            
                 For I IN REVERSE 1..cnt1 LOOP
@@ -732,9 +740,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
         Else            
             Porcentaje := Similitud(Cadena1, Cadena2) / 100;            
         End If;
-        
+
         RETURN Round(Porcentaje, 2);
-        
+
     EXCEPTION WHEN OTHERS THEN    
         RETURN 0;
     End Similitud_Porcentual;

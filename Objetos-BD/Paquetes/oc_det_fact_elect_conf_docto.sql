@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_DET_FACT_ELECT_CONF_DOCTO IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -10,7 +10,7 @@ CREATE OR REPLACE PACKAGE OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
 /
-CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -21,11 +21,9 @@ CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
         cSeparaAtrib     VARCHAR2(2) := '||';
         cSeparaValorAtr  VARCHAR2(1) := '|';
     BEGIN
-    DBMS_OUTPUT.put_line('JMMD EL VALOR DE CLINEA ES  '||cLinea);
         cSubCadIdLinea:= SUBSTR(cLinea,INSTR(cLinea,cCodAtributo,1),LENGTH(cLinea));
         cSubCadAtrib  := SUBSTR(cSubCadIdLinea,1,INSTR(cSubCadIdLinea,cSeparaAtrib,1) - 1);
         cValorAtributo:= SUBSTR(cSubCadAtrib,INSTR(cSubCadAtrib,cSeparaValorAtr,1) + 1,LENGTH(cSubCadAtrib));
-    DBMS_OUTPUT.put_line('JMMD EL VALOR DE cValorAtributo ES  '||cValorAtributo);
         RETURN cValorAtributo;
     END EXTRAE_VALOR_ATRIBUTO;
     --
@@ -34,37 +32,6 @@ CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                                         cProceso IN VARCHAR2,cCodIdLinea IN VARCHAR2,cCodAtributo IN VARCHAR2,
                                         cTipoCfdi IN VARCHAR2,cCodCpto IN VARCHAR2 DEFAULT NULL, cCodRutinaCalc VARCHAR2,
                                         cIndRelaciona VARCHAR2, cCodTipoPlan VARCHAR2 DEFAULT NULL) RETURN VARCHAR2 IS
-/*   _______________________________________________________________________________________________________________________________
-    |                                                                                                                               |
-    |                                                           HISTORIA                                                            |
-    | Elaboro    : ??                                                                                                               |
-    | Email      : ??                                                                                                               |
-    | Para       : THONA Seguros                                                                                                    |
-    | Fecha Elab.: ??                                                                                                               |
-  | Nombre     : GENERA_VALOR_ATRIBUTO                                                                                            |
-    | Objetivo   : Funcion que genera el valor de los atributos de acuerdo con los valores recibidos.                               |
-    | Modificado : Si                                                                                                               |
-    | Ult. modif.: 10/01/2022                                                                                                       |
-    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
-    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
-    |                                                                                                                               |
-    | Obj. Modif.: Modificar y colocar la Fecha de Pago correcta, dado que para esta se tomaba la misma fecha de timbrado de la     |
-    |              factura.                                                                                                         |
-    |                                                                                                                               |
-    | Parametros:                                                                                                                   |
-    |           nIdFactura          Numero de Recibo o Factura.     (Entrada)                                                       |
-    |           nIdNcr              ID de la Nota de Credito.       (Entrada)                                                       |
-    |      nCodCia        Codigo de la Compañia          (Entrada)                                                       |
-    |      nCodEmpresa      Codigo de la Empresa          (Entrada)                                                       |
-    |           cProceso            Proceso                         (Entrada)                                                       |
-    |           cCodIdLinea         Codigo del ID de Linea          (Entrada)                                                       |
-    |           cCodAtributo        Codigo del Atributo             (Entrada)                                                       |
-    |           cTipoCfdi           Tipo del CFDI                   (Entrada)                                                       |
-    |           cCodCpto            Codigo de Concepto              (Entrada)                                                       |
-    |           cCodRutinaCalc      Codigo de rutina de calculo     (Entrada)                                                       |
-    |           cIndRelaciona       Indicador de Relaciona          (Entrada)                                                       |
-    |_______________________________________________________________________________________________________________________________|
-*/
         cValorAtributo          DETALLE_FACT_ELECT_CONF_DOCTO.ValorAtributo%TYPE := NULL;
         cTipoComprobante        VARCHAR2(1);
         cSerie                  FACT_ELECT_SERIES_FOLIOS.Serie%TYPE;
@@ -118,6 +85,7 @@ CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
         dFecha_Pago             VARCHAR(50);                           --> JALV(+) 10/01/2022
         dFecha_Pago_CM          DATE;                           --> JALV(+) 10/01/2022
         cIndPlataforma          VARCHAR2(1);
+        cCrel                   VARCHAR2(500);
 
     BEGIN
         IF NVL(nIdFactura,0) != 0 AND cProceso IN ('EMI','PAG') THEN
@@ -434,12 +402,24 @@ CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 NULL;
             WHEN 'CRELSVAL01' THEN
                 NULL;
+                IF cProceso = 'EMI' AND NVL(nIdFactura,0) != 0 THEN
+                    -- CAPELEXX
+                    -- SE BUSCA SI EXISTE RELACION DE UNA FACTURA QUE SERA REMPLAZADAPOR UNA ANULACIÓN
+                    IF OC_FACTURAS.FACTURA_RELACIONADA_UUID_CANC(nCodCia, nIdFactura) IS NOT NULL THEN
+                        cValorAtributo := '04';
+                    END IF;
+                END IF;
             WHEN 'CRELVAL01' THEN
-                IF cProceso = 'PAG' AND NVL(nIdFactura,0) != 0 THEN
+                IF cProceso = 'PAG' AND NVL(nIdFactura,0) != 0 THEN                
                     cValorAtributo := OC_FACT_ELECT_DETALLE_TIMBRE.UUID_PROCESO(nCodCia, nCodEmpresa, nIdFactura, nIdNcr, 'EMI'); -- CUANDO SE PAGA SE BUSCA EL UUID DE EMISION
                     IF cValorAtributo IS NULL THEN
                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que No Existe Un UUID De Emisión De La Factura'||nIdFactura||' Por Favor Emita La Facturación Electrónica Para La Emisión Del Recibo');
                     END IF;
+                ELSIF cProceso = 'EMI' AND NVL(nIdFactura,0) != 0 THEN
+                      cCrel := OC_FACTURAS.FACTURA_RELACIONADA_UUID_CANC(nCodCia, nIdFactura);
+                      IF cCrel IS NOT NULL THEN                        
+                        cValorAtributo := cCrel;                        
+                      END IF;
                 END IF;
             WHEN 'REFVAL01' THEN
                 cValorAtributo := OC_EMPRESAS.REGIMEN_FISCAL_FECT_ELECT(nCodCia);

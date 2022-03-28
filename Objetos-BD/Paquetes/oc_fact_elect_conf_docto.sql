@@ -1,61 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_FACT_ELECT_CONF_DOCTO IS
-
--- HOMOLOGACION VIFLEX                                      20220301 JMMD
-
-/*   _______________________________________________________________________________________________________________________________
-    |                                                                                                                               |
-    |                                                           HISTORIA                                                            |
-    | Elaboro    : ??                                                                                                               |
-    | Para       : THONA Seguros                                                                                                    |
-    | Fecha Elab.:??                                                                                                                |
-  | Nombre     : OC_FACT_ELECT_CONF_DOCTO                                                                                         |
-    | Objetivo   : Paquete que realiza las diferentes acciones para el timbrado de la Facturacion electronica.                      |
-    | Modificado : Si                                                                                                               |
-    | Ult. modif.: 24/01/2022                                                                                                       |
-    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
-    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
-    |                                                                                                                               |
-    | Obj. Modif.: En Proc. TIMBRAR, se agregan modificaciones para incorporar el motivo de cancelacion de facturas de acuerdo con  |
-    |              las disposiciones del SAT [Enero 2022].                                                                          |
-    |                                                                                                                               |
-    | Dependencias:                                                                                                                 |
-    |           STANDARD (Package)                                                                                                  |
-    |           UTL_HTTP (Synonym)                                                                                                  |
-    |           DBMS_LOB (Synonym)                                                                                                  |
-    |           DBMS_LOCK (Synonym)                                                                                                 |
-    |           DBMS_OUTPUT (Synonym)                                                                                               |
-    |           DBMS_STANDARD (Package)                                                                                             |
-    |           NOTAS_DE_CREDITO (Table)                                                                                            |
-    |           OC_AGE_DISTRIBUCION_COMISION (Package)                                                                              |
-    |           POLIZAS (Table)                                                                                                     |
-    |           OC_DET_FACT_ELECT_CONF_DOCTO (Package)                                                                              |
-    |           OC_EJECUTIVO_COMERCIAL (Package)                                                                                    |
-    |           OC_EMPRESAS (Package)                                                                                               |
-    |           OC_FACT_ELECT_DETALLE_TIMBRE (Package)                                                                              |
-    |           CORREOS_ELECTRONICOS_PNJ (Table)                                                                                    |
-    |           DETALLE_FACTURAS (Table)                                                                                            |
-    |           DETALLE_FACT_ELECT_CONF_DOCTO (Table)                                                                               |
-    |           DETALLE_NOTAS_DE_CREDITO (Table)                                                                                    |
-    |           OC_USUARIOS (Package)                                                                                               |
-    |           OC_VALORES_DE_LISTAS (Package)                                                                                      |
-    |           PERSONA_NATURAL_JURIDICA (Table)                                                                                    |
-    |           AGENTES (Table)                                                                                                     |
-    |           AGENTE_POLIZA (Table)                                                                                               |
-    |           ASEGURADO (Table)                                                                                                   |
-    |           OC_DDL_OBJETOS (Package)                                                                                            |
-    |           CATALOGO_DE_CONCEPTOS (Table)                                                                                       |
-    |           OC_GENERALES (Package)                                                                                              |
-    |           OC_MAIL (Package)                                                                                                   |
-    |           OC_POLIZAS (Package)                                                                                                |
-    |           OC_ASEGURADO (Package)                                                                                              |
-    |           OC_CLIENTES (Package)                                                                                               |
-    |           DETALLE_POLIZA (Table)                                                                                              |
-    |           FACTURAS (Table)                                                                                                    |
-    |           FACT_ELECT_CONF_DOCTO (Table)                                                                                       |
-    |           FACT_ELECT_DETALLE_TIMBRE (Table)                                                                                   |
-    |           FACT_ELECT_REGISTROS_XML (Table)                                                                                    |
-    |_______________________________________________________________________________________________________________________________|
-*/
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     cLineaCom        VARCHAR2(1000) := NULL;
     cLineaExe        VARCHAR2(1000) := NULL;
     cLineaCRels      VARCHAR2(1000) := NULL;
@@ -76,6 +19,7 @@ CREATE OR REPLACE PACKAGE OC_FACT_ELECT_CONF_DOCTO IS
     cLineaPagsDocRel VARCHAR2(1000) := NULL;
 
     PROCEDURE ASIGNA_LINEA_IDENTIFICADOR (cCodIdLinea  VARCHAR2,cLinea  VARCHAR2);
+    PROCEDURE INICIALIZA_LINEA_IDENTIFICADOR;
     FUNCTION  CREA_DOCUMENTO(nIdFactura  NUMBER DEFAULT NULL ,nIdNcr  NUMBER DEFAULT NULL, nCodCia  NUMBER, nCodEmpresa  NUMBER, cProceso  VARCHAR2,cTipoCfdi  VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL) RETURN VARCHAR2;
     FUNCTION  CREA_IDENTIFICADOR (nIdFactura  NUMBER,nIdNcr  NUMBER DEFAULT NULL,nCodCia  NUMBER,nCodEmpresa  NUMBER, cProceso  VARCHAR2,cCodIdLinea  VARCHAR2,cTipoCfdi  VARCHAR2,cCodCpto  VARCHAR2 DEFAULT NULL, cIndRelaciona VARCHAR2, cCodTipoPlan VARCHAR2 DEFAULT NULL) RETURN VARCHAR2;
     FUNCTION  CONCEPTO_IMPUESTO (nCodCia NUMBER, cProceso VARCHAR2, cCodIdLea VARCHAR2) RETURN VARCHAR2;
@@ -86,7 +30,7 @@ CREATE OR REPLACE PACKAGE OC_FACT_ELECT_CONF_DOCTO IS
 
 END OC_FACT_ELECT_CONF_DOCTO;
 /
-CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
 
 -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -131,13 +75,37 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
         END IF;
     END ASIGNA_LINEA_IDENTIFICADOR;
     --
-    --
+    PROCEDURE INICIALIZA_LINEA_IDENTIFICADOR IS        
+    BEGIN
+            OC_FACT_ELECT_CONF_DOCTO.cLineaCom          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaExe          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaCRels        := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaCRel         := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaRef          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaRec          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaDor          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaCon          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaConit        := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaConir        := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaCup          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaInad         := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaRet          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaTra          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaAdd          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaAdi          := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaPags         := NULL;
+            OC_FACT_ELECT_CONF_DOCTO.cLineaPagsDocRel   := NULL;
+    END INICIALIZA_LINEA_IDENTIFICADOR;
+    --    
     FUNCTION CREA_DOCUMENTO(nIdFactura IN NUMBER DEFAULT NULL,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,nCodEmpresa IN NUMBER,
                                 cProceso IN VARCHAR2,cTipoCfdi IN VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL) RETURN VARCHAR2 IS
         cDocumento          VARCHAR2(10000) := NULL;
+        cLinea              VARCHAR2(10000) := NULL;
         cCodIdentificador   FACT_ELECT_CONF_DOCTO.CODIDENTIFICADOR%TYPE;
         cExiste             VARCHAR2(1);
         cExisteImp          VARCHAR2(1);
+        cCrel               VARCHAR2(5000);
+        --
         CURSOR Q_Dcto IS
             SELECT CodIdentificador, OrdenIdent, IndRecursivo,
                    IndImpuesto, ImptoTraRet, CodCptoImpto,
@@ -225,6 +193,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
 
     BEGIN
         IF cProceso IN ('EMI','PAG') THEN
+            cCrel := OC_FACTURAS.FACTURA_RELACIONADA_UUID_CANC(nCodCia, nIdFactura);
             FOR X IN Q_Dcto LOOP
                 IF cDocumento IS NULL THEN
                     cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
@@ -234,7 +203,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                             cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                         END IF;
                         FOR J IN Q_Rec LOOP
-                            IF J.IndRelacion  = cIndRelaciona AND J.IndImpuesto = 'N' THEN
+                            IF J.IndRelacion  = cIndRelaciona AND J.IndImpuesto = 'N' and (X.CodIdentificador IN ('CREL','CRELS')  AND cCrel IS NOT NULL) THEN                            
                                 IF cProceso != 'PAG' THEN
                                     cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                                 END IF;
@@ -251,7 +220,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                                     cCodIdentificador := I.CodIdentificador;
                                     cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                                 END LOOP;
-                            ELSIF J.IndRelacion  = 'N' AND J.IndImpuesto  = 'S' AND X.CodIdentificador != 'CRELS' THEN
+                            ELSIF J.IndRelacion  = 'N' AND J.IndImpuesto  = 'S' AND (X.CodIdentificador NOT IN ('CREL', 'CRELS') OR cCrel IS NOT NULL ) THEN
                                 cExisteImp := 'N';
                                 FOR F IN Q_DetCpto LOOP
                                     cExiste := 'N';
@@ -299,10 +268,15 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
 
                                     IF cExiste = 'S' THEN
                                         cExisteImp := cExiste;
-                                        cExiste := 'N';
+                                        --cExiste := 'N';
                                         FOR I IN Q_Impto LOOP ---CONIT O CONIR
                                             cCodIdentificador := I.CodIdentificador;
-                                            cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona, F.RAMOREAL);
+                                            cLinea := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona, F.RAMOREAL);
+                                            IF instr(cLinea, 'CONIT|||') > 0 and instr(cLinea, 'Importe|0.00') > 0 and cCodIdentificador = 'CONIT' THEN
+                                                Null;
+                                            ELSE
+                                                cDocumento := cDocumento||cLinea;
+                                            END IF;
                                         END LOOP;
                                     END IF;
                                 END LOOP;
@@ -312,7 +286,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                     ELSE
                         IF X.IndImpuesto = 'S' AND cExiste = 'N' THEN
                             NULL; -- SE DEBE OMITIR EL REGISTRO DE IMPUESTOS CUANDO NO HAY CONCEPTOS DEIMPUESTOS POR LO QUE NO SE GENERAESTA LINEA
-                        ELSE
+                        ELSIF X.CodIdentificador NOT IN ('CREL','CRELS') OR cCrel IS NOT NULL THEN
                             cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                         END IF;
                     END IF;
@@ -325,8 +299,8 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
     END CREA_DOCUMENTO;
     --
     --
-    FUNCTION  CREA_IDENTIFICADOR (nIdFactura IN NUMBER,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,nCodEmpresa IN NUMBER,
-                                    cProceso IN VARCHAR2,cCodIdLinea IN VARCHAR2,cTipoCfdi IN VARCHAR2,cCodCpto IN VARCHAR2 DEFAULT NULL,
+    FUNCTION  CREA_IDENTIFICADOR (nIdFactura IN NUMBER,     nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,    nCodEmpresa IN NUMBER,
+                                    cProceso IN VARCHAR2,   cCodIdLinea IN VARCHAR2,      cTipoCfdi IN VARCHAR2,cCodCpto IN VARCHAR2 DEFAULT NULL,
                                     cIndRelaciona VARCHAR2, cCodTipoPlan VARCHAR2 DEFAULT NULL) RETURN VARCHAR2 IS
         cLineaIdent      VARCHAR2(32700) := NULL;
         cSeparadorIdent  VARCHAR2(3) := '|||';
@@ -347,6 +321,11 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                AND FE.IdIdentificador  = DFE.IdIdentificador
              ORDER BY OrdenAtrib ASC;
     BEGIN
+    
+            IF cCodIdLinea = 'CONIT' THEN
+                NULL;
+            END IF;
+                
         FOR X IN Q_IdLine LOOP
             cValorAtributo := NULL;
             IF cLineaIdent IS NULL THEN
@@ -384,6 +363,11 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                     cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi,cCodCpto,X.CodRutinaCalc,cIndRelaciona, cCodTipoPlan);
                 END IF;
             END IF;
+            
+            IF cCodIdLinea = 'CONIT' THEN
+                NULL;
+            END IF;
+            
             IF cValorAtributo IS NOT NULL THEN
                 cLineaIdent := cLineaIdent||X.CodAtributo||cSeparadorValor||cValorAtributo||cSeparadorCampo;
                 OC_FACT_ELECT_CONF_DOCTO.ASIGNA_LINEA_IDENTIFICADOR(cCodIdLinea,cLineaIdent);
@@ -411,43 +395,19 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
     END CONCEPTO_IMPUESTO;
 
     PROCEDURE TIMBRAR(PnIdFactura  NUMBER DEFAULT NULL,PnIdNcr  NUMBER DEFAULT NULL,nCodCia  NUMBER,nCodEmpresa  NUMBER, cProceso  VARCHAR2,cTipoCfdi VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL, cCodRespuesta OUT VARCHAR2, IndOtroPac VARCHAR2 DEFAULT NULL) IS
-    /*   _______________________________________________________________________________________________________________________________
-    |                                                                                                                               |
-    |                                                           HISTORIA                                                            |
-    | Elaboro    : ??                                                                                                               |
-    | Para       : THONA Seguros                                                                                                    |
-    | Fecha Elab.:??                                                                                                                |
-  | Nombre     : TIMBRAR                                                                                                          |
-    | Objetivo   : Procedimiento que realiza el timbrado de la Facturacion electronica.                                             |
-    | Modificado : Si                                                                                                               |
-    | Ult. modif.: 24/01/2022                                                                                                       |
-    | Modifico   : J. Alberto Lopez Valle   [ JALV ]                                                                                |
-    | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
-    |                                                                                                                               |
-    | Obj. Modif.: Se agregan modificaciones para incorporar el motivo de cancelacion de facturas segun SAT [Enero 2022].           |
-    |                                                                                                                               |
-    | Parametros:                                                                                                                   |
-    |           PnIdFactura         ID de la Factura                (Entrada)                                                       |
-    |           PnIdNcr             ID de la Nota de Credito        (Entrada)                                                       |
-    |      nCodCia        Codigo de la Compañia          (Entrada)                                                       |
-    |           nCodEmpresa         Codigo de la Empresa            (Entrada)                                                       |
-    |           cProceso            Codigo de Proceso               (Entrada)                                                       |
-    |           cTipoCfdi           Tipo de CFDI                    (Entrada)                                                       |
-    |           cIndRelaciona       Indicador Relacionado           (Entrada)                                                       |
-    |           cCodRespuesta       Codigo de respuesta             (Salida)                                                        |
-    |           IndOtroPac          Indicador de PAC alterno        (Entrada)                                                       |
-    |_______________________________________________________________________________________________________________________________|
-*/
         nError             NUMBER;
-        cDocto             VARCHAR2(10000);
-        cSoapRequest       VARCHAR2 (30000);
+        cDocto             VARCHAR2(32767);
+        cSoapRequest       VARCHAR2 (32767);
         BreqLength         BINARY_INTEGER;
-        cBuffer            VARCHAR2(2000);
+        cBuffer            VARCHAR2(32767);
         cBuffer2           VARCHAR2(32767);
         iAmount            PLS_INTEGER := 2000;
         iOffset            PLS_INTEGER := 1;
         cFolio             FACT_ELECT_DETALLE_TIMBRE.FolioFiscal%TYPE;
         cSerie             FACT_ELECT_DETALLE_TIMBRE.Serie%TYPE;
+        cCreels            VARCHAR2(500);
+        cCreel             VARCHAR2(500);
+        cUUIDRel           FACT_ELECT_DETALLE_TIMBRE.UUIDRELACIONADO%Type ;
         eHttpReq           UTL_HTTP.req;
         eHttpResp          UTL_HTTP.resp;
         cClobPDF           CLOB;
@@ -458,7 +418,8 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
         cNombreArchivoXml  VARCHAR2 (32747);
         cNombreArchivoTxt  VARCHAR2 (32747);
         cNombreArchivoPdf  VARCHAR2 (32747);
-        cUuid              VARCHAR2 (100);
+        cUuid              VARCHAR2 (32747);
+        cTimbreFiscal      CLOB;
         nPos               NUMBER;
         nIndex             NUMBER;
         nCantidad          NUMBER;
@@ -497,7 +458,28 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
         nIdFactura         NUMBER;
         nIdNcr             NUMBER;
         cLinea             VARCHAR2(100);
+        --
+        FUNCTION EXTRAE_TIMBREFISCAL(CADENA varchar2, NUM_REG NUMBER) RETURN VARCHAR2 IS
+          ENTRADA VARCHAR2(32727);
+          RESULTADO VARCHAR2(32727);
+          NUMRECORD NUMBER :=0;
+        BEGIN
+    
+                --SELECT SUBSTR(GT_WEB_SERVICES.ExtraeDatos_XML(XMLTYPE(CADENA), 'timbrefiscal'), 1, 32000)
+                --SELECT SUBSTR(GT_WEB_SERVICES.ExtraeDatos_XML(CADENA, 'timbrefiscal'), 1, 32000)
+                -- INTO ENTRADA FROM DUAL;        
+                FOR ENT IN (select COLUMN_VALUE 
+                              from table(GT_WEB_SERVICES.split(CADENA,'|'))) LOOP
+                    NUMRECORD := NUMRECORD +1;
+                    IF NUMRECORD = NUM_REG THEN                      
+                        RESULTADO := ENT.COLUMN_VALUE;
+                        EXIT;
+                    END IF;
+                END LOOP;
 
+            RETURN RESULTADO;
+        END EXTRAE_TIMBREFISCAL;
+    --
     BEGIN
         nIdFactura :=  nvl(PnIdFactura, 0);
         nIdNcr :=  nvl(PnIdNcr, 0);
@@ -533,11 +515,15 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
              WHERE IdNcr = nIdNcr;
         END IF;
 
-
+        OC_FACT_ELECT_CONF_DOCTO.INICIALIZA_LINEA_IDENTIFICADOR;
         cDocto := OC_FACT_ELECT_CONF_DOCTO.CREA_DOCUMENTO(nIdFactura, nIdNcr, nCodCia, nCodEmpresa, cProceso, cTipoCfdi, cIndRelaciona);
+        DBMS_OUTPUT.PUT_LINE(cDocto);
         IF cProceso != 'CAN' THEN
-            cFolio := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaCom,'folio');
-            cSerie := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaCom,'serie');
+            cFolio  := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaCom,'folio');
+            cSerie  := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaCom,'serie');
+            cCreels := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaCrels,'TipoRelacion');
+            cCreel  := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaCrel,'UUID');
+            --DBMS_OUTPUT.PUT_LINE('rELACIÓN: '||cCreel);
         END IF;
         UTL_HTTP.set_wallet('file:'||cPathWallet,cPwdWallet);
         IF cProceso IN ('EMI','PAG') THEN
@@ -560,25 +546,29 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                 </soapenv:Body>
             </soapenv:Envelope>';
         ELSIF  cProceso = 'CAN' THEN
-            --cUuidCancelado := cDocto;
-            IF NVL(IndOtroPac,'N') = 'S' THEN -- CANCELACION OTRO PAC
-                cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'038');
-                IF NVL(nIdFactura,0) != 0 THEN
-                    SELECT NVL(SUM(F.Monto_Fact_Local),0),IdPoliza,CodCliente, Cve_MotivCancFact    --> 24/01/2022 JALV(+)
-                      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
-                      FROM FACTURAS F
-                     WHERE F.Codcia    = nCodCia
-                       AND F.IdFactura = nIdFactura
-                     GROUP BY IdPoliza,CodCliente;
-                ELSIF NVL(nIdNcr,0) != 0 THEN
-                    SELECT NVL(SUM(N.Monto_Ncr_Local),0),IdPoliza,CodCliente, cCve_MotivCancFact    --> 24/01/2022 JALV(+)
-                      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
-                      FROM NOTAS_DE_CREDITO N
-                     WHERE N.Codcia    = nCodCia
-                       AND N.IdNcr     = nIdNcr
-                     GROUP BY IdPoliza,CodCliente;
-                END IF;
-
+		--cUuidCancelado := cDocto;
+		IF NVL(nIdFactura,0) != 0 THEN
+		    SELECT NVL(SUM(F.Monto_Fact_Local),0),IdPoliza,CodCliente, Cve_MotivCancFact    --> 24/01/2022 JALV(+)
+		      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
+		      FROM FACTURAS F
+		     WHERE F.Codcia    = nCodCia
+		       AND F.IdFactura = nIdFactura
+		     GROUP BY IdPoliza,CodCliente, Cve_MotivCancFact;
+		ELSIF NVL(nIdNcr,0) != 0 THEN
+		    SELECT NVL(SUM(N.Monto_Ncr_Local),0),IdPoliza,CodCliente, cCve_MotivCancFact    --> 24/01/2022 JALV(+)
+		      INTO nTotal,nIdPoliza,cCodCliente, cCve_MotivCancFact                         --> 24/01/2022 JALV(+)
+		      FROM NOTAS_DE_CREDITO N
+		     WHERE N.Codcia    = nCodCia
+		       AND N.IdNcr     = nIdNcr
+		     GROUP BY IdPoliza,CodCliente, Cve_MotivCancFact;
+		END IF;
+		--
+		cCve_MotivCancFact := NVL(cCve_MotivCancFact, '02');
+		IF  cCve_MotivCancFact = '01' THEN            
+		    RAISE_APPLICATION_ERROR(-20200,'El procedimiento de cancelación, debe ser ejecutado desde otro sitio que no sea en OC_FACT_ELECT_CONF_DOCTO.timbrar por la opción 01 de motivo de cancelación CFDI (20220101)');
+		END IF;
+		IF NVL(IndOtroPac,'N') = 'S' THEN -- CANCELACION OTRO PAC
+		    cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'038');
                 IF OC_POLIZAS.FACTURA_POR_POLIZA(nCodCia, nCodEmpresa, nIdPoliza) = 'S' THEN
                    cRFC := OC_CLIENTES.IDENTIFICACION_TRIBUTARIA(cCodCliente);
                 ELSE
@@ -676,10 +666,6 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
         DBMS_LOB.CREATETEMPORARY(cClobXml, FALSE);
         cLinea := 'Linea 1';
         eHttpResp := UTL_HTTP.GET_RESPONSE (eHttpReq);
-        --UTL_HTTP.READ_TEXT(eHttpResp,cStrTxt,32767);
-
-        -- LEE LA RESPUESTA DEL WEBSERVICE EN "CHUNKS"
-        -- YA QUE EL TAMA?O DE LA MISMA LO REQUIERE
         BEGIN
             LOOP
                 UTL_HTTP.READ_TEXT(eHttpResp,cBuffer2,32767);
@@ -702,75 +688,41 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
         bPdf := FALSE;
         cClobPDF := '';
         cLinea := 'Linea 2';
-
-        -- RECUPERA LA RESPUESTA DEL WEBSERVICE Y LA ALMACENA EN UNA TABLA FISICA
-        WHILE nPos <= BreqLength
-        LOOP
-            vtStrXml(nIndex) := DBMS_LOB.SUBSTR(cClob2Xml, nCantidad, nPos);
-            nPosPDF := 0;
-            INSERT INTO FACT_ELECT_REGISTROS_XML VALUES(vtStrXml(nIndex), nIdFactura, nIdNcr);
-            nPosPDF := instr(vtStrXml(nIndex),'<documentopdf');
-            IF nPosPDF > 0 THEN
-                cClobPDF := cClobPDF || substr(vtStrXml(nIndex),nPosPDF+36,LENGTH(vtStrXml(nIndex))-(nPosPDF-1));
-                --nPos3 := instr(vtStrXml(nIndex),'UUID');
-                --cXml3 := substr(vtStrXml(nIndex),nPos3+11,36);
-                bPdf := TRUE;
-            ELSE
-                 IF bPdf = TRUE THEN
-                    cClobPDF := cClobPDF || vtStrXml(nIndex);
-                 END IF;
-            END IF;
-            nPos := nPos + 3000;
-            nIndex := nIndex + 1;
-            IF nPos > BreqLength THEN
-                nCantidad := BreqLength - nPos;
-                nPos := nPos - nCantidad;
-            END IF;
-        END LOOP;
-        IF nIndex = 0 then
-                INSERT INTO FACT_ELECT_REGISTROS_XML VALUES(cClob2Xml, nIdFactura, nIdNcr);
+        --
+        GT_WEB_SERVICES.INICIALIZADOM(XMLTYPE(cClob2Xml));
+        cCodRespuesta := GT_WEB_SERVICES.EXTRAEDATOS_XMLDOM('codigo');
+        --DBMS_OUTPUT.PUT_LINE(GT_WEB_SERVICES.EXTRAEDATOS_XMLDOM('codigo'));
+        --
+    --EMITIDOS Y PAGADOS
+        IF cProceso IN ('EMI','PAG') and cCodRespuesta = OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'026')  THEN            
+            cTimbreFiscal := substr(GT_WEB_SERVICES.EXTRAEDATOS_XMLDOM('timbrefiscal'), 1, 10000);
+            --DBMS_OUTPUT.PUT_LINE('cTimbreFiscal: ' || cTimbreFiscal );
+            cUuid := EXTRAE_TIMBREFISCAL(cTimbreFiscal,2);
+            cDescEror := 'Se timbro correctamente';            
+            --cClobPDF :=GT_WEB_SERVICES.EXTRAEDATOS_XMLDOM('documentopdf');
+            --DBMS_OUTPUT.PUT_LINE(GT_WEB_SERVICES.EXTRAEDATOS_XMLDOM('imagencbb'));
+        ELSE
+            --CANCELACIONES U OTROS            
+            --DBMS_OUTPUT.PUT_LINE(GT_WEB_SERVICES.EXTRAEDATOS_XMLDOM('descripcion'));
+            cDescEror := GT_WEB_SERVICES.EXTRAEDATOS_XMLDOM('descripcion');
         END IF;
-
-
-        DBMS_LOCK.SLEEP(2);
-
-        cUuid := '' ;
-        nErrDesc := 0;
-        cValorXml := '';
-        nPos3 := 0;
-        cXml3 := '';
-        cDatoErr := null;
-
-        BEGIN
-            SELECT Valor
-              INTO cDatoErr
-              FROM FACT_ELECT_REGISTROS_XML
-              WHERE Valor LIKE '%codigo xsi%'
-                   AND IDFACTURA = nIdFactura
-                   AND IDNCR     = nIdNcr;
-        cLinea := 'Linea 3';
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                NULL;
-            WHEN OTHERS THEN
-                NULL;
-        END;
-        nPosErrI        := INSTR(cDatoErr,'codigo xsi') + 29;
-        nPosErrF        := INSTR(cDatoErr,'/codigo') - 1;
-        cCodigoErr      := SUBSTR(cDatoErr,nPosErrI,nPosErrF-nPosErrI);
-        cCodRespuesta   := cCodigoErr;
+        IF cCodRespuesta IS NULL OR LENGTH(cCodRespuesta) = 0 THEN
+            cCodRespuesta := '501';
+            cDescEror := GT_WEB_SERVICES.EXTRAEDATOS_XMLDOM('faultstring');
+        END IF;
+        
 
         IF cCodRespuesta = OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'026') THEN   -- SE TIMBRO DE MANERA CORRECTA
             IF cProceso != 'CAN' THEN
                 IF NVL(nIdFactura,0) != 0 and nIdFactura > 0 THEN
-                cLinea := 'Linea 4';
+                        cLinea := 'Linea 4';
                         UPDATE FACTURAS
                            SET FolioFactelec     = cFolio ,
                                FecEnvFactElec    = TRUNC(SYSDATE),
                                CodUsuarioEnvFact = USER
                          WHERE IdFactura         = nIdFactura;
                 ELSIF NVL(nIdNcr,0) != 0 and nIdNcr > 0 THEN
-                cLinea := 'Linea 5';
+                        cLinea := 'Linea 5';
                         UPDATE NOTAS_DE_CREDITO
                            SET FolioFactelec     = cFolio ,
                                FecEnvFactElec    = TRUNC(SYSDATE),
@@ -780,94 +732,27 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
             ELSIF  cProceso = 'CAN' THEN
                 cUuidCancelado := cDocto;
             END IF;
-
-            IF  cProceso != 'CAN' THEN
-                BEGIN
-                    SELECT COUNT(*) INTO nErrDesc FROM FACT_ELECT_REGISTROS_XML
-                     WHERE Valor LIKE '%UUID%'
-                       AND IDFACTURA = nIdFactura
-                       AND IDNCR     = nIdNcr;
-                EXCEPTION WHEN OTHERS THEN
-                     nErrDesc := 0;
-                END;
-                cLinea := 'Linea 6';
-                IF nErrDesc > 0 THEN
-
-                    SELECT Valor INTO cValorXml from FACT_ELECT_REGISTROS_XML
-                     WHERE Valor LIKE '%UUID%'
-                       AND IDFACTURA = nIdFactura
-                       AND IDNCR     = nIdNcr;
-                    nPos3 := INSTR(cValorXml,'UUID');
-                    cXml3 := SUBSTR(cValorXml,nPos3+11,36);
-
-                    cUuid := TRIM(cXml3);
-
-    --                SELECT Valor INTO cValorXml from FACT_ELECT_REGISTROS_XML WHERE Valor LIKE '%<cfdi:Comprobante%';
-    --                nPos3 := INSTR(cValorXml,'<cfdi:Comprobante');
-    --                cXml3 := SUBSTR(cValorXml,nPos3,36);
-                END IF;
-            END IF;
---            cSelloDigital      VARCHAR2(1000);
---
---            SELECT COUNT(*) INTO nErrDesc FROM FACT_ELECT_REGISTROS_XML WHERE Valor LIKE '%UUID%';
---
---            cNoCertificado     VARCHAR2(1000);
---            cCertificado       VARCHAR2(5000);
-
-        ELSE
-            BEGIN
-            SELECT COUNT(*)
-              INTO nErrDesc
-              FROM FACT_ELECT_REGISTROS_XML
-             WHERE Valor LIKE '%error parsing SOAP%'
-               AND IDFACTURA = nIdFactura
-               AND IDNCR     = nIdNcr;
-            EXCEPTION WHEN OTHERS THEN
-                     nErrDesc := 0;
-            END;
-            cLinea := 'Linea 7 ' || nErrDesc;
-            IF nErrDesc = 0 THEN
-                BEGIN
-                    SELECT Valor INTO cDatoErr FROM FACT_ELECT_REGISTROS_XML
-                        WHERE Valor LIKE '%<descripcion xsi:type="xsd:string">%'
-                           AND IDFACTURA = nIdFactura
-                           AND IDNCR     = nIdNcr;
-                EXCEPTION WHEN OTHERS THEN
-                     nErrDesc := 0;
-                END;
-                nPosErrI        := INSTR(cDatoErr,'<descripcion xsi:type="xsd:string">') + 35;
-                nPosErrF        := INSTR(cDatoErr,'/descripcion') - 1;
-                cDescEror      := SUBSTR(cDatoErr,nPosErrI,nPosErrF-nPosErrI);
-            ELSE
---               --- envio de email con error desconocido
-                 cCodRespuesta   := '501';
-                 cLinea := 'Linea 8';
-            END IF;
         END IF;
         --
         cLinea := 'Linea 8.1';
-        --OC_FACT_ELECT_DETALLE_TIMBRE.INSERTA_DETALLE(nCodCia, nCodEmpresa, nIdTimbre, cProceso, cUuid, TRUNC(SYSDATE),cCodRespuesta, cStsTimbre, cUuidCancelado);
         OC_FACT_ELECT_DETALLE_TIMBRE.INSERTA_DETALLE(nCodCia, nCodEmpresa, nIdFactura ,
-                                                     nIdNcr, cProceso, cUuid,
+                                                     nIdNcr, cProceso, 
+                                                     cUuid,
                                                      TRUNC(SYSDATE), cFolio, cSerie,
-                                                     cCodRespuesta,cUuidCancelado,
+                                                     CASE WHEN cCodRespuesta IN ('201','2001') THEN '201' ELSE '501' END,
+                                                     cUuidCancelado,
                                                      cCve_MotivCancFact,            --> 24/01/2022 JALV(+)
                                                      -- cDoctoRel,                  --> 24/01/2022  JALV(+)
-                                                     nIdTimbre);
-        --OC_FACT_ELECT_DETALLE_TIMBRE.ACTUALIZA_DETALLE(nCodCia, nCodEmpresa, nIdTimbre, cProceso, cUuid, TRUNC(SYSDATE),cCodRespuesta, cUuidCancelado);
+                                                     nIdTimbre,
+                          SUBSTR(cCreel,1,100),
+                          cCodRespuesta,
+                          cDescEror,
+                          sysdate
+                                                     );
         cLinea := 'Linea 9';
-        DBMS_OUTPUT.PUT_LINE(cLinea);
-        IF cCodRespuesta = OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'026') THEN --- NOTIFICACIONES
-            --Aqui se envia la notificacion de que el timbrado fue realizado de manera correcta
-            cLinea := 'Linea 10';
-            OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(nCodCia,nCodEmpresa,nIdFactura,nIdNcr,cProceso,cCodRespuesta,NULL,cDocto);
-            cLinea := 'Linea 11';
-        ELSE
-            --Aqui envia mail conmensaje de error conocido
-            cLinea := 'Linea 12';
+        --DBMS_OUTPUT.PUT_LINE(cLinea);
             OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(nCodCia,nCodEmpresa,nIdFactura,nIdNcr,cProceso,cCodRespuesta,cDescEror,cDocto);
-            cLinea := 'Linea 13';
-        END IF;
+        --
         IF nIdFactura != 0 THEN
            DELETE FROM FACT_ELECT_REGISTROS_XML X
             WHERE NVL(X.IdFactura, 0) = nIdFactura;
@@ -894,6 +779,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
         cFolioFiscal       FACT_ELECT_DETALLE_TIMBRE.FolioFiscal%TYPE;
         cUUID              FACT_ELECT_DETALLE_TIMBRE.UUID%TYPE;
         cSerie             FACT_ELECT_DETALLE_TIMBRE.Serie%TYPE;
+        cUUIDRelacionado   FACT_ELECT_DETALLE_TIMBRE.UUIDRELACIONADO%TYPE;
         cNombreCliente     VARCHAR2(2000);
         cIdentFiscal       VARCHAR2(100);
         nIdPoliza          POLIZAS.IdPoliza%TYPE;
@@ -902,6 +788,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
         cUUID        := OC_FACT_ELECT_DETALLE_TIMBRE.UUID_PROCESO(nCodCia, nCodEmpresa, nIdFactura,nIdNcr, cProceso);
         cFolioFiscal := OC_FACT_ELECT_DETALLE_TIMBRE.FOLIO_FISCAL(nCodCia, nCodEmpresa, nIdFactura,nIdNcr, cUUID);
         cSerie       := OC_FACT_ELECT_DETALLE_TIMBRE.SERIE(nCodCia, nCodEmpresa, nIdFactura,nIdNcr, cUUID);
+        cUUIDRelacionado := OC_FACT_ELECT_DETALLE_TIMBRE.UUIDRelacionado(nCodCia, nCodEmpresa, nIdFactura,nIdNcr, cUUID);
         IF NVL(nIdFactura,0) != 0 THEN
             BEGIN
                 SELECT OC_CLIENTES.NOMBRE_CLIENTE(F.CodCliente),OC_CLIENTES.IDENTIFICACION_TRIBUTARIA(F.CodCliente),
@@ -911,13 +798,13 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                  WHERE IdFactura  = nIdFactura
                    AND F.IdPoliza = P.IdPoliza;
             END;
-            cSubjectFactNcr := 'El Aviso de Cobro '||nIdFactura;
+            cSubjectFactNcr := 'El "Aviso de Cobro" '||nIdFactura;
             IF cProceso = 'EMI' THEN
-                cMessageFactNcr := 'El Aviso de Cobro '||nIdFactura;
+                cMessageFactNcr := 'El "Aviso de Cobro" '||nIdFactura;
             ELSIF cProceso = 'CAN' THEN
-                cMessageFactNcr := 'La Cancelación del Aviso de Cobro '||nIdFactura;
+                cMessageFactNcr := 'La "Cancelación del Aviso de Cobro" '||nIdFactura;
             ELSIF cProceso = 'PAG' THEN
-                cMessageFactNcr := 'El Complemento de Pago Para El Aviso de Cobro '||nIdFactura;
+                cMessageFactNcr := 'El "Complemento de pago por el Aviso de Cobro" '||nIdFactura;
             END IF;
         ELSIF NVL(nIdNcr,0) != 0 THEN
             BEGIN
@@ -928,47 +815,55 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                  WHERE IdNcr = nIdNcr
                    AND F.IdPoliza = P.IdPoliza;
             END;
-            cSubjectFactNcr := 'La Nota De Crédito '||nIdNcr;
+            cSubjectFactNcr := 'La "Nota de crédito" '||nIdNcr;
             IF cProceso = 'EMI' THEN
-                cMessageFactNcr := 'Nota De Cédito '||nIdNcr;
+                cMessageFactNcr := '"Nota De cédito" '||nIdNcr;
             ELSIF cProceso = 'CAN' THEN
-                cMessageFactNcr := 'Cancelación de la Nota De Cédito '||nIdNcr;
+                cMessageFactNcr := '"Cancelación de la Nota de cédito" '||nIdNcr;
             END IF;
         END IF;
+        --
         IF cCodRespuesta = OC_GENERALES.BUSCA_PARAMETRO(nCodCia, '026') THEN
-            cSubject := 'Comprobante Fiscal Digital de: '||cNombreCliente||' ('||cIdentFiscal||')'; ---DEFINIR LISTA DE DISTRIBUCION
-            cMessage := 'Estimado Agente
+            cSubject := 'Comprobante fiscal digital de: '||cNombreCliente||' ('||cIdentFiscal||')'; ---DEFINIR LISTA DE DISTRIBUCION
+            cMessage := 'Estimado Agente:
 
-    Se ha generado su Facturación Electrónica para '||cMessageFactNcr||' de la Póliza '||cNumPolUnico||' con los siguientes datos
+    Se ha generado la facturación electrónica para '||cMessageFactNcr||' de la Póliza '||cNumPolUnico||' con los siguientes datos:
 
     UUID: '||cUUID||'
     Folio Fiscal: '||cFolioFiscal||'
-    Serie: '||cSerie||'
+    Serie: '||cSerie||''|| '
+    ' ||CASE WHEN cUUIDRelacionado IS NOT NULL THEN 'Relacionado: ' || cUUIDRelacionado ELSE '' END ||'
+    ' ||CASE WHEN cDescError IS NOT NULL THEN '<' || cDescError || '>' ELSE '' END      ||' 
+    
+    Los archivos XML y PDF se podrán descargar en "Portal de Agentes".
 
-    Los archivos XML y PDF los podrás descargar del Portal de Agentes.
-
-    Este Correo es Generado de Manera Automática, Por Favor no lo Responda
+    Nota: Este correo es generado de manera automática, favor de no responder.
 
     '||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia);
 
-
+---------------------------------
+---------------------------------
         ELSE
             ---    OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CATERRSAT',cCodRespuesta)||'
             --cEmailDest := OC_USUARIOS.EMAIL(nCodCia,USER);
             cSubject   := INITCAP(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('PROCFACELE', cProceso))|| ' Para '||cSubjectFactNcr||' Realizado de Manera Incorrecta';---DEFINIR LISTA DE DISTRIBUCION
-            cMessage   := cMessageFactNcr|| ' no se timbró de manera correcta por la siguiente razón
+            cMessage   := cMessageFactNcr|| ' no se timbró de manera correcta por la siguiente razón:
 
- Error: '||cCodRespuesta||':'||cDescError||'
+    Error: < '||cCodRespuesta||' : '||cDescError||' >
 
- El Documento o UUID de envío al SAT se adjunta a continuación:
+    El documento o UUID para el envío al SAT se adjunta a continuación:
 
  '||
 
- cDocto
+    cDocto
 
  ||'
 
- Favor de Validar el Documento de Envío y ejecutar nuevamente el Timbrado';
+    Favor de validar el documento de envío y de ejecutar nuevamente el Timbrado.
+    
+    Nota: Este correo es generado de manera automática, favor de no responder.
+ 
+ '||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia);
         END IF;
         OC_MAIL.INIT_PARAM;
         OC_MAIL.cCtaEnvio    := cEmailOrig;
@@ -1093,4 +988,16 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
     END DESTINATARIOS;
 
 END OC_FACT_ELECT_CONF_DOCTO;
+/
+--
+-- OC_FACT_ELECT_CONF_DOCTO  (Synonym) 
+--
+--  Dependencies: 
+--   OC_FACT_ELECT_CONF_DOCTO (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_FACT_ELECT_CONF_DOCTO FOR SICAS_OC.OC_FACT_ELECT_CONF_DOCTO
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_FACT_ELECT_CONF_DOCTO TO PUBLIC
 /
