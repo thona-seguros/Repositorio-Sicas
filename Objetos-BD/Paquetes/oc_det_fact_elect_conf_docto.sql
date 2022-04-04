@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
+CREATE OR REPLACE PACKAGE OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -10,7 +10,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
 /
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
+CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -671,11 +671,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
 
               IF nIdProceso IS NOT NULL OR NVL(cIndDomiciliado,'N') = 'S' THEN
                   --Tomar campo indicado en COBRANZA MASIVA
-                  SELECT  FechaCobro  --FecAplica
-                    INTO  dFecha_Pago_CM
-                    FROM  DETALLE_DOMICI_REFERE
-                   WHERE   idFactura = nIdFactura;
-
+                SELECT  FechaCobro  --FecAplica
+                  INTO  dFecha_Pago_CM
+                  FROM  DETALLE_DOMICI_REFERE
+                 WHERE  idFactura = nIdFactura
+                   AND  ESTADO    = 'PAG';   -- 31/03/2022 SE AGREGO ESTA CONDICION 
+                            
                   cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh:mm:ss');
               ELSIF NVL(cIndPlataforma,'N') = 'S' THEN
                   --cValorAtributo := TO_CHAR(dFecPago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecPago,'hh:mm:ss');
