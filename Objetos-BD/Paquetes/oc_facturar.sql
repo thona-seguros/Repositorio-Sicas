@@ -4251,9 +4251,11 @@ CURSOR C_AGENTES_D IS
   SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
          Porc_Com_Distribuida, Origen
     FROM AGENTES_DISTRIBUCION_COMISION
-   WHERE IdPoliza   = nIdPoliza
-     AND IDetPol    = nIdetPol
-     AND Cod_Agente = nCod_Agente;
+   WHERE IdPoliza                = nIdPoliza
+     AND IDetPol                 = nIdetPol
+     AND Cod_Agente              = nCod_Agente
+     AND Porc_Com_Proporcional   > 0
+     AND Porc_Com_Distribuida    > 0;
 BEGIN
    FOR I IN C_AGENTES LOOP
       nCod_Agente := I.Cod_Agente;
@@ -4456,9 +4458,11 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
   SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
          Porc_Com_Distribuida, Origen
     FROM AGENTES_DISTRIBUCION_COMISION
-   WHERE IdPoliza   = nIdPoliza
-     AND IDetPol    = nIdetPol
-     AND Cod_Agente = nCod_Agente;
+   WHERE IdPoliza                = nIdPoliza
+     AND IDetPol                 = nIdetPol
+     AND Cod_Agente              = nCod_Agente
+     AND Porc_Com_Proporcional   > 0
+     AND Porc_Com_Distribuida    > 0;
 BEGIN
    SELECT NumPagos, FrecPagos
      INTO nNumPagos, nFrecPagos
@@ -4595,9 +4599,11 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
   SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
          Porc_Com_Distribuida, Origen
     FROM AGENTES_DISTRIBUCION_COMISION
-   WHERE IdPoliza   = nIdPoliza
-     AND IDetPol    = nIdetPol
-     AND Cod_Agente = nCod_Agente;
+   WHERE IdPoliza                = nIdPoliza
+     AND IDetPol                 = nIdetPol
+     AND Cod_Agente              = nCod_Agente
+     AND Porc_Com_Proporcional   > 0
+     AND Porc_Com_Distribuida    > 0;
 BEGIN
    SELECT NumPagos, FrecPagos
      INTO nNumPagos, nFrecPagos
@@ -7871,9 +7877,11 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
   SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
          Porc_Com_Distribuida, Origen
     FROM AGENTES_DISTRIBUCION_COMISION
-   WHERE IdPoliza   = nIdPoliza
-     AND IDetPol    = nIdetPol
-     AND Cod_Agente = nCod_Agente;
+   WHERE IdPoliza                = nIdPoliza
+     AND IDetPol                 = nIdetPol
+     AND Cod_Agente              = nCod_Agente
+     AND Porc_Com_Proporcional   > 0
+     AND Porc_Com_Distribuida    > 0;
 
 CURSOR P_COB_RAMOS IS
 SELECT DISTINCT C.IDRAMOREAL
@@ -8020,7 +8028,7 @@ BEGIN
            WHEN TOO_MANY_ROWS THEN
                cExiste :='S';
          END;
-         DBMS_OUTPUT.put_line('JMMD20220310 EN PROC_COMISIONPOL_MULTIRAMO cExiste  '||cExiste);
+         --DBMS_OUTPUT.put_line('JMMD20220310 EN PROC_COMISIONPOL_MULTIRAMO cExiste  '||cExiste);
          IF cExiste = 'N' THEN
             OC_COMISIONES.INSERTAR_COMISION_FACT(nIdFactura, nIdPoliza, I.IdetPol, cCodMoneda, R_Agentes.Cod_Agente,
                                                  nCodCia, nCodEmpresa, nMontoComiLocal, nMontoComiMoneda,
