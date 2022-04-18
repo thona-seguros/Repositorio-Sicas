@@ -2,30 +2,30 @@ CREATE OR REPLACE PACKAGE TH_T_EDOCTASALDOS IS
 
 -- CREACION     21/01/2021                                        --                                  JMMDP
 -- JMMD 20210628 SE SUSTITUYE EL CURSOR PRINCIPAL POR EL MISMO DEL REPORT CEDOCTA                     JMMD20210628
--- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS 
+-- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS
 --               DE MESES Y AÑOS ANTERIORES                                                           JMMD20210720
 -- JMMD 20210908 SE INCLUYE EN EL CURSOR PRINCIPAL LOS MOVIMIENTOS DE PRY POR CCO                     JMMD20210908
 -- JMMD 20211229 SE CAMBIA LA FECHA DE INICIO DE ARRASTRE PARA QUE LA TOME DE UN CATALOGO GENERAL     JMMD20211229
--- 
+-- JMMD 20220117 SE INCLUYEN VALIDACIONES PARA NUEVOS CONCEPTOS DE COMISION Y HONORARIOS VIFLEX       JMMD20220117
 
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_CODCIA       NUMBER,
                               P_FECDESDE     DATE,
                               P_FECHASTA     DATE,
                               P_MONEDA      VARCHAR2);
---                                                            
+--
 
 PROCEDURE GRABA_MOVIMIENTO(P_COD_AGENTE                      NUMBER,
-                            P_FECHA_DESDE                    DATE,                            
+                            P_FECHA_DESDE                    DATE,
                             P_FECHA_HASTA                    DATE,
                             P_NIVEL_AGENTE                   VARCHAR2,
-                            P_DESCRIPCION_RAMO               VARCHAR2,        
+                            P_DESCRIPCION_RAMO               VARCHAR2,
                             P_CODNIVEL                       NUMBER,
                             P_NUMPOLUNICO                    VARCHAR2,
                             P_FEC_GENERACION                 DATE,
                             P_IDPOLIZA                       NUMBER,
                             P_IDENDOSO                       VARCHAR2,
-                            P_NOMCLIENTE                     VARCHAR2,    
+                            P_NOMCLIENTE                     VARCHAR2,
                             P_RECIBO                         VARCHAR2,
                             P_MONEDA                         VARCHAR2,
                             P_PRIMA_COMISINABLE_LOCAL        NUMBER,
@@ -55,8 +55,8 @@ PROCEDURE GRABA_MOVIMIENTO(P_COD_AGENTE                      NUMBER,
                             P_CODTIPOPLAN                    VARCHAR2,
                             P_A_FAVOR                        NUMBER,
                             P_IDCOMISION                     NUMBER,
-                            P_NOMBRE_AGENTE                  VARCHAR2  ,    
-                            P_DIRECRES                       VARCHAR2  ,    
+                            P_NOMBRE_AGENTE                  VARCHAR2  ,
+                            P_DIRECRES                       VARCHAR2  ,
                             P_NUM_TRIBUTARIO                 VARCHAR2,
                             P_NUMCEDULA                      VARCHAR2,
                             P_FECVENCIMIENTO                 DATE,
@@ -70,9 +70,9 @@ PROCEDURE GRABA_MOVIMIENTO(P_COD_AGENTE                      NUMBER,
                             P_FECHA_PAGO                     DATE);
 --
 PROCEDURE BORRA_MOVIMIENTO(P_COD_AGENTE NUMBER,
-                            P_FECHA_DESDE                    DATE,                            
+                            P_FECHA_DESDE                    DATE,
                             P_FECHA_HASTA                    DATE );
---                           
+--
 
 END TH_T_EDOCTASALDOS;
 /
@@ -80,11 +80,12 @@ CREATE OR REPLACE PACKAGE BODY TH_T_EDOCTASALDOS IS
 ---
 -- CREACION     21/01/2021                                        --                                    JMMDP
 -- JMMD 20210628 SE SUSTITUYE EL CURSOR PRINCIPAL POR EL MISMO DEL REPORT CEDOCTA                       JMMD20210628
--- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS 
+-- JMMD 20210714 SE AGREGAN UNIONES AL CURSOR PRINCIPAL PARA INCLUIR MOVIMIENTOS
 --               DE MESES Y AÑOS ANTERIORES y AGENTES NO ENCONTRADOS EN AGENTES_DISTRIBUCION_COMISION   JMMD20210723
 -- JMMD 20210908 SE INCLUYE EN EL CURSOR PRINCIPAL LOS MOVIMIENTOS DE PRY POR CCO                       JMMD20210908
 -- JMMD 20211229 SE CAMBIA LA FECHA DE INICIO DE ARRASTRE PARA QUE LA TOME DE UN CATALOGO GENERAL       JMMD20211229
-------
+-- JMMD 20220117 SE INCLUYEN VALIDACIONES PARA NUEVOS CONCEPTOS DE COMISION Y HONORARIOS VIFLEX         JMMD20220117
+-- 
 PROCEDURE CARGA_DETALLE_SALDOS(P_AGENTE       NUMBER,
                               P_CODCIA       NUMBER,
                               P_FECDESDE     DATE,
@@ -210,7 +211,11 @@ SELECT   ---   '01',  NUEVA
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -244,6 +249,7 @@ SELECT   ---   '01',  NUEVA
    AND DP.IdPoliza          = ADC.IdPoliza
    AND DP.IdetPol           = ADC.IdetPol
    AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    AND C.COD_MONEDA = P_MONEDA
 /*   and adc.porc_com_proporcional = (select max(adc1.porc_com_proporcional)
                                       from AGENTES_DISTRIBUCION_COMISION adc1
@@ -400,7 +406,11 @@ SELECT    ---  '02',
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -442,6 +452,7 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND DP.IdetPol           = ADC.IdetPol
    AND DP.CODCIA            = ADC.CODCIA
    AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA
   and XT.IDNCR(+) = NC.IDNCR
@@ -580,7 +591,11 @@ SELECT    ---  '03',
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -618,6 +633,7 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND DP.IdetPol           = ADC.IdetPol
    AND DP.CODCIA            = ADC.CODCIA
    AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA
   AND NC.FECSTS  BETWEEN P_FECDESDE AND P_FECHASTA   ----  AEVS  Limita la busqueda a  notas de credito
@@ -758,7 +774,11 @@ SELECT   ---  '04',
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -799,6 +819,7 @@ WHERE  C.Cod_Agente  =  P_AGENTE
    AND DP.IdetPol           = ADC.IdetPol
    AND DP.CODCIA            = ADC.CODCIA
    AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    --
    AND NC.IDNOMINA(+)   = C.IDNOMINA
   and XT.IDNCR(+) = NC.IDNCR
@@ -975,7 +996,11 @@ SELECT --- '05',
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -1016,6 +1041,7 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND DP.IdetPol              = ADC.IdetPol
    AND DP.CODCIA               = ADC.CODCIA
    AND ADC.COD_AGENTE_DISTR    = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    and XT.IDNCR(+)             = N.IDNCR
    ------------->>>>>>>>>>>
 UNION
@@ -1090,7 +1116,11 @@ SELECT --- '06',
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(dc.CodConcepto, 'AJUCOM',   SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(dc.CodConcepto, 'AJUHON',   SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
@@ -1131,6 +1161,7 @@ WHERE  C.Cod_Agente       = P_AGENTE
    AND DP.IdPoliza          = ADC.IdPoliza
    AND DP.IdetPol           = ADC.IdetPol
    AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    AND DP.CODCIA            = ADC.CODCIA
    AND NC.IDNOMINA(+)   = C.IDNOMINA
    and XT.IDNCR(+) = NC.IDNCR
@@ -1252,7 +1283,11 @@ SELECT   ---   '07',  NUEVA
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -1268,7 +1303,7 @@ SELECT   ---   '07',  NUEVA
         GROUP BY CodCia, IdComision) Y
   WHERE C.Estado = 'REC'
 -----   AND TRUNC(C.FEC_ESTADO) BETWEEN '01/07/2019' AND P_FECDESDE - 1  ----- JMMD20210701
-   AND TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND P_FECDESDE - 1  ----- JMMD20211229  
+   AND TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND P_FECDESDE - 1  ----- JMMD20211229
 --   AND  TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA----- JMMD20210701
    AND C.Cod_Agente   = DECODE(P_AGENTE,NULL,C.Cod_Agente,P_AGENTE)
    AND C.IdFactura    = F.IdFactura
@@ -1291,6 +1326,7 @@ SELECT   ---   '07',  NUEVA
    AND DP.IdPoliza          = ADC.IdPoliza
    AND DP.IdetPol           = ADC.IdetPol
    AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    AND C.COD_MONEDA = P_MONEDA
 UNION
 SELECT   ---   '08',  NUEVA
@@ -1414,7 +1450,11 @@ SELECT   ---   '08',  NUEVA
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -1430,7 +1470,7 @@ SELECT   ---   '08',  NUEVA
         GROUP BY CodCia, IdComision) Y
   WHERE C.Estado = 'LIQ'
 -----   AND TRUNC(C.FEC_ESTADO) BETWEEN '01/07/2019' AND P_FECDESDE - 1  ----- JMMD20210701
-   AND TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND P_FECDESDE - 1  ----- JMMD20211229   
+   AND TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND P_FECDESDE - 1  ----- JMMD20211229
    AND  TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA----- JMMD20210701
    AND C.Cod_Agente   = DECODE(P_AGENTE,NULL,C.Cod_Agente,P_AGENTE)
    AND C.IdFactura    = F.IdFactura
@@ -1453,6 +1493,7 @@ SELECT   ---   '08',  NUEVA
    AND DP.IdPoliza          = ADC.IdPoliza
    AND DP.IdetPol           = ADC.IdetPol
    AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    AND C.COD_MONEDA = P_MONEDA
 UNION
 SELECT --- '09',
@@ -1593,7 +1634,11 @@ SELECT --- '09',
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -1626,7 +1671,7 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND C.Comision_Moneda  != 0
  --  AND N.Fecsts < P_FECDESDE
 -----   AND TRUNC(C.FEC_ESTADO) BETWEEN '01/07/2019' AND  P_FECDESDE - 1
-   AND TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND  P_FECDESDE - 1   
+   AND TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND  P_FECDESDE - 1
 --   OR TRUNC(C.FEC_LIQUIDACION)  > P_FECHASTA )
    AND A.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
@@ -1636,6 +1681,7 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND DP.IdetPol              = ADC.IdetPol
    AND DP.CODCIA               = ADC.CODCIA
    AND ADC.COD_AGENTE_DISTR    = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    and XT.IDNCR(+)             = N.IDNCR
 UNION
 SELECT --- '10',
@@ -1777,7 +1823,11 @@ SELECT --- '10',
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -1810,7 +1860,7 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND C.Comision_Moneda  != 0
  --  AND N.Fecsts < P_FECDESDE
 -----   AND (TRUNC(C.FEC_ESTADO) BETWEEN '01/07/2019' AND  P_FECDESDE - 1
-   AND (TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND  P_FECDESDE - 1   
+   AND (TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND  P_FECDESDE - 1
    AND TRUNC(C.FEC_LIQUIDACION)  > P_FECHASTA )
    AND A.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
    AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
@@ -1820,6 +1870,7 @@ WHERE  C.Cod_Agente   = P_AGENTE
    AND DP.IdetPol              = ADC.IdetPol
    AND DP.CODCIA               = ADC.CODCIA
    AND ADC.COD_AGENTE_DISTR    = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    and XT.IDNCR(+)             = N.IDNCR
 UNION ----- 11
  SELECT   ---   '11',  NUEVA
@@ -1829,7 +1880,7 @@ UNION ----- 11
            A.CodNivel CodNivel,
            NumPolUnico,
 --           F.Fecsts Fec_Generacion,
-           T.FECHATRANSACCION Fec_Generacion,           
+           T.FECHATRANSACCION Fec_Generacion,
            PO.IdPoliza IdPoliza,
            F.IdEndoso IdEndoso,
            OC_CLIENTES.NOMBRE_CLIENTE(PO.CodCliente) NomCliente, TRIM(TO_CHAR(F.IdFactura)) Recibo,
@@ -1941,7 +1992,11 @@ UNION ----- 11
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -1979,11 +2034,12 @@ UNION ----- 11
    AND DP.IdPoliza          = ADC.IdPoliza
    AND DP.IdetPol           = ADC.IdetPol
    AND ADC.COD_AGENTE_DISTR = C.Cod_Agente
+   AND ADC.PORC_COM_DISTRIBUIDA != 0    ----- JMMD20220324   
    AND C.COD_MONEDA = P_MONEDA
    AND DT.VALOR4 = TO_CHAR(F.IDFACTURA)
    AND DT.VALOR1 = TO_CHAR(C.IDPOLIZA)
    AND DT.CODSUBPROCESO = 'PAG'
-   AND T.IDTRANSACCION = DT.IDTRANSACCION   
+   AND T.IDTRANSACCION = DT.IDTRANSACCION
 UNION
 SELECT   ---   '12',  NUEVA
            C.Cod_Agente,
@@ -2102,7 +2158,11 @@ SELECT   ---   '12',  NUEVA
                       DC.CodCia,
                       DC.IdComision,
                       DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                      DECODE(DC.CodConcepto, 'HONACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
                       DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                       DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                       DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet,
@@ -2118,7 +2178,7 @@ SELECT   ---   '12',  NUEVA
         GROUP BY CodCia, IdComision) Y
   WHERE C.Estado = 'REC'
 -----   AND TRUNC(C.FEC_ESTADO) BETWEEN '01/07/2019' AND P_FECDESDE - 1  ----- JMMD20210701
-   AND TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND P_FECDESDE - 1  ----- JMMD20210701   
+   AND TRUNC(C.FEC_ESTADO) BETWEEN cfecinicioarrastre AND P_FECDESDE - 1  ----- JMMD20210701
 --   AND  TRUNC(C.FEC_LIQUIDACION) > P_FECHASTA----- JMMD20210701
    AND C.Cod_Agente   = DECODE(P_AGENTE,NULL,C.Cod_Agente,P_AGENTE)
    AND C.IdFactura    = F.IdFactura
@@ -2144,7 +2204,7 @@ SELECT   ---   '12',  NUEVA
    AND C.COD_AGENTE NOT in(SELECT ADC1.COD_AGENTE_distr FROM AGENTES_DISTRIBUCION_COMISION ADC1
    WHERE ADC1.IDPOLIZA = DP.IDPOLIZA
    AND ADC1.IDETPOL = DP.IDETPOL
-   AND ADC1.COD_AGENTE_distr = P_AGENTE)   
+   AND ADC1.COD_AGENTE_distr = P_AGENTE)
    AND C.COD_MONEDA = P_MONEDA
 
 
@@ -2204,10 +2264,10 @@ BEGIN
 ------------------ jmmd20211229
       select DESCVALLST
         INTO cfecinicioarrastre
-      from valores_de_listas 
+      from valores_de_listas
       where codlista = 'FEINIARRAS'
       AND CODVALOR = 'FARRAS';
-      
+
       dbms_output.put_line('jmmd cfecinicioarrastre  '||cfecinicioarrastre);
 ------------------ jmmd20211229
       FOR D IN DETALLES LOOP
