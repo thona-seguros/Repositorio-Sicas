@@ -1,24 +1,4 @@
---
--- OC_DETALLE_NOTAS_DE_CREDITO  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   NOTAS_DE_CREDITO (Table)
---   MODIFICACION_CONCEPTO_COMISION (Table)
---   CONCEPTOS_PLAN_DE_PAGOS (Table)
---   CONCEPTO_COMISION (Table)
---   CONFIG_RETEN_CANCELACION (Table)
---   DETALLE_NOMINA_COMISION (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   RAMOS_CONCEPTOS_PLAN (Table)
---   OC_CONFIG_RETEN_CANCELACION (Package)
---   OC_CONFIG_RETEN_CANCEL_MOTIV (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   OC_CATALOGO_DE_CONCEPTOS (Package)
---
-CREATE OR REPLACE PACKAGE SICAS_OC.oc_detalle_notas_de_credito IS
+CREATE OR REPLACE PACKAGE oc_detalle_notas_de_credito IS
 
   PROCEDURE INSERTA_DETALLE_NOTA(nIdNcr NUMBER, cCodCpto VARCHAR2, cIndCptoPrima VARCHAR2,
                                  nMtoDetNcrLocal NUMBER, nMtoDetNcrMoneda NUMBER);
@@ -46,15 +26,8 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_detalle_notas_de_credito IS
 
 END OC_DETALLE_NOTAS_DE_CREDITO;
 /
-
---
--- OC_DETALLE_NOTAS_DE_CREDITO  (Package Body) 
---
---  Dependencies: 
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_detalle_notas_de_credito IS
-
+CREATE OR REPLACE PACKAGE BODY oc_detalle_notas_de_credito IS
+ 
 PROCEDURE INSERTA_DETALLE_NOTA(nIdNcr NUMBER, cCodCpto VARCHAR2, cIndCptoPrima VARCHAR2,
                                nMtoDetNcrLocal NUMBER, nMtoDetNcrMoneda NUMBER) IS
     nCodCia NOTAS_DE_CREDITO.CodCia%TYPE;
@@ -97,7 +70,8 @@ CURSOR C_GENERA_CONCEPTO IS
       AND IdNomina = nIdNomina;
 BEGIN
    FOR I IN C_GENERA_CONCEPTO LOOP
-      IF I.CodConcepto in ('PRIMA','COMISI', 'BONO', 'HONORA', 'AJUCOM', 'AJUHON') THEN
+      IF I.CodConcepto in ('PRIMA','COMISI','COMACC','COMVDA', 'HONACC','HONVDA', 'BONO', 'HONORA', 'AJUCOM', 'AJUHON') THEN
+-----         DBMS_OUTPUT.put_line('JMMD ENTRE POR CONCEPTOS NUEVOS EN OC_DETALLE_NOMINA I.CodConcepto  '||I.CodConcepto);
          OC_DETALLE_NOTAS_DE_CREDITO.INSERTA_DETALLE_NOTA(nIdNcr, I.CodConcepto, 'S', I.MontoNetoLocal, I.MontoNetoMoneda);
          OC_DETALLE_NOTAS_DE_CREDITO.AJUSTAR(nCodCia, nIdNcr, I.CodConcepto, 'S', I.MontoNetoLocal, I.MontoNetoMoneda);
       ELSE
@@ -435,17 +409,4 @@ BEGIN
 END MONTO_CONCEPTO_FACT_ELECT;
 
 END OC_DETALLE_NOTAS_DE_CREDITO;
-/
-
---
--- OC_DETALLE_NOTAS_DE_CREDITO  (Synonym) 
---
---  Dependencies: 
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_DETALLE_NOTAS_DE_CREDITO FOR SICAS_OC.OC_DETALLE_NOTAS_DE_CREDITO
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_DETALLE_NOTAS_DE_CREDITO TO PUBLIC
 /
