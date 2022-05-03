@@ -247,7 +247,11 @@ from comisiones C,
                                 DC.CodCia, 
                                 DC.IdComision,
                                 DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONACC', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONVDA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                                 DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                                 DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
@@ -324,7 +328,11 @@ from comisiones C,
                                 DC.CodCia, 
                                 DC.IdComision,
                                 DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONACC', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONVDA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                                 DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                                 DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
@@ -523,7 +531,11 @@ from comisiones C,
                                 DC.CodCia, 
                                 DC.IdComision,
                                 DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONACC', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONVDA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                                 DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                                 DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
@@ -699,7 +711,11 @@ from comisiones C,
                                 DC.CodCia, 
                                 DC.IdComision,
                                 DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONACC', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONVDA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                                 DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                                 DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
@@ -791,7 +807,11 @@ from comisiones C,
                                 DC.CodCia, 
                                 DC.IdComision,
                                 DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONACC', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONVDA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                                 DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                                 DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
@@ -974,7 +994,11 @@ from comisiones C,
                                 DC.CodCia, 
                                 DC.IdComision,
                                 DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONACC', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONVDA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                                 DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                                 DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
@@ -1050,7 +1074,11 @@ tipos_de_seguros ts,
                                 DC.CodCia, 
                                 DC.IdComision,
                                 DECODE(DC.CodConcepto, 'COMISI',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMACC',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'COMVDA',    SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'HONORA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONACC', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +
+                                DECODE(DC.CodConcepto, 'HONVDA', SUM(NVL(DC.Monto_mon_extranjera,0)),0) +                                                                
                                 DECODE(DC.CodConcepto, 'UDI',          SUM(NVL(DC.Monto_mon_extranjera,0)),0) MtoComisi,
                                 DECODE(DC.CodConcepto, 'IVASIN',    SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIva,
                                 DECODE(DC.CodConcepto, 'RETIVA',  SUM(NVL(DC.Monto_mon_extranjera,0)), 0) MtoIvaRet, 
