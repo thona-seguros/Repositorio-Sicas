@@ -260,7 +260,7 @@ BEGIN
                      nTasa        := NVL(nValorMoneda,0) / X.SumaAsegurada;
                   END IF;
                ELSE
-                  nValorMoneda := X.SumaAsegurada * NVL(nTasa,0);
+                  nValorMoneda := X.SumaAsegurada * NVL(nTasa,0) / X.FactorTasa;
                   nValor       := (X.SumaAsegurada * NVL(nTasa,0)) * nTasaCambio;
                END IF;
                nSumaAsegMoneda := X.SumaAsegurada;
@@ -298,7 +298,7 @@ BEGIN
                      END IF;
 
                      IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
-                        nValorMoneda := nSumaAsegMoneda * NVL(nTasa,0);
+                        nValorMoneda := nSumaAsegMoneda * NVL(nTasa,0) / X.FactorTasa;
                      END IF;
                      nValor    := NVL(nValorMoneda,0) * nTasaCambio;
                      IF NVL(nSumaAsegMoneda,0) != 0 AND NVL(nTasa,0) = 0 THEN
