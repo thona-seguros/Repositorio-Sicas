@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_PROCESOS_MASIVOS IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOS_MASIVOS IS
 ------ SE INCLUYEN VALIDACIONES PARA PROVEEDORES SAT Y QEQ (PLD)  JMMD  20200406
 ------  24/06/2020  Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPÈrez)     -- JMMD SAT y PLD 20200624
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
@@ -19,7 +19,8 @@ PROCEDURE COBRANZA(nIdProcMasivo NUMBER);
 PROCEDURE VENTA_TARJETA(nIdProcMasivo NUMBER);
 PROCEDURE EMISION_TARJETA(nIdProcMasivo NUMBER);
 PROCEDURE INSERTA_PROCESO_MASIVO_PROC(nIdProcMasivo NUMBER);
-PROCEDURE EMISION_COLECTIVA_ASEGURADO(nIdProcMasivo NUMBER);
+   PROCEDURE EMISION_COLECTIVA_ASEGURADO( cNomArchivoCarga  PROCESOS_MASIVOS.NomArchivoCarga%TYPE
+                                        , cModificaSexo     VARCHAR2 );
 PROCEDURE ALTA_CERTIFICADO(nIdProcMasivo NUMBER);
 PROCEDURE AUMENTO(nIdProcMasivo NUMBER);
 PROCEDURE BAJA_CERTIFICADO(nIdProcMasivo NUMBER);
@@ -64,10 +65,26 @@ PROCEDURE ACTUALIZA_AUTORIZACION(nCodCia NUMBER, nCodEmpresa NUMBER,nIdProcMasiv
 PROCEDURE ENDOSO_DECLARACION_MASIVO(nIdProcMasivo NUMBER);
 PROCEDURE ASEGURADOS_CON_FONDOS(nIdProcMasivo NUMBER);
 PROCEDURE COBRANZA_APORTES_ASEG_FONDOS(nIdProcMasivo NUMBER);
-
+   --
+   PROCEDURE CARGA_ARCHIVO_ASEGURADOS ( nCodCia             NUMBER
+                                      , cNumPolUnico        VARCHAR2
+                                      , cTipoProceso        VARCHAR2
+                                      , cIndCol             VARCHAR2
+                                      , cCodUsuario         VARCHAR2
+                                      , cIndAsegurado       VARCHAR2
+                                      , cNombreArchivo      VARCHAR2
+                                      , cRegsTotales   OUT  NUMBER
+                                      , cRegsCargados  OUT  NUMBER
+                                      , cRegsErroneos  OUT  NUMBER );
+   --
+   FUNCTION DEPURA_CADENA ( cCadenaEntrada  VARCHAR2 ) RETURN VARCHAR2;
+   --
+   PROCEDURE RECUPERA_LOG_CARGA( cNomArchCarga  VARCHAR2
+                               , cNomArcSalida  VARCHAR2 );
 END OC_PROCESOS_MASIVOS;
 /
-CREATE OR REPLACE PACKAGE BODY OC_PROCESOS_MASIVOS IS
+
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOS_MASIVOS IS
 --
 --  MODIFICACION
 --  17/02/2016  SE ELIMINO LA RUTINA DE REQUESITOS                                               -- JICO REQ
@@ -104,7 +121,9 @@ BEGIN
    ELSIF cTipoProceso = 'COLECT' THEN
       OC_PROCESOS_MASIVOS.EMISION_COLECTIVA(nIdProcMasivo);
    ELSIF cTipoProceso = 'ASEGUR' THEN
-      OC_PROCESOS_MASIVOS.EMISION_COLECTIVA_ASEGURADO(nIdProcMasivo);
+      NULL;
+      --SE DESAHABILITA DEBIDO A QUE SE AGREGAN PARAMETROS DE ENTRADA AL PROCESO Y YA NO ENTRARIA POR ESTA OPCION
+      --OC_PROCESOS_MASIVOS.EMISION_COLECTIVA_ASEGURADO(nIdProcMasivo);
    ELSIF cTipoProceso = 'ENDALT' THEN
       OC_PROCESOS_MASIVOS.ALTA_CERTIFICADO(nIdProcMasivo);
    ELSIF cTipoProceso = 'ENDBAJ' THEN
@@ -1075,13 +1094,10 @@ FUNCTION CREAR(cCodCia NUMBER, cCodEmpresa NUMBER) RETURN NUMBER IS
 nIdProcMasivo  PROCESOS_MASIVOS.IdProcMasivo%TYPE;
 BEGIN
    BEGIN
-      SELECT NVL(UltValor,0) + 1
-        INTO nIdProcMasivo
-        FROM GENERALES
-       WHERE CodCia   = cCodCia
-         AND CodCampo = 'IDPROCMASIVO'
-         FOR UPDATE OF ULTVALOR;  --BLOQUEO
-
+      SELECT IDPROCMASIVO_SEQ.NEXTVAL
+      INTO   nIdProcMasivo
+      FROM   DUAL;
+      --
       UPDATE GENERALES
          SET UltValor = nIdProcMasivo
        WHERE CodCia   = cCodCia
@@ -2015,416 +2031,582 @@ BEGIN
    END;
 END INSERTA_PROCESO_MASIVO_PROC;
 
-PROCEDURE EMISION_COLECTIVA_ASEGURADO(nIdProcMasivo NUMBER) IS
-nCodCliente        CLIENTES.CodCliente%TYPE;
-cTipoDocIdentAseg  CLIENTES.Tipo_Doc_Identificacion%TYPE;
-cNumDocIdentAseg   CLIENTES.Num_Doc_Identificacion%TYPE;
-nCod_Asegurado     ASEGURADO.Cod_Asegurado%TYPE;
-nCodcia            POLIZAS.CodCia%TYPE;
-nCodempresa        POLIZAS.CodEmpresa%TYPE;
-cCodmoneda         POLIZAS.Cod_Moneda%TYPE;
-cPlanCob           PLAN_COBERTURAS.PlanCob%TYPE;
-cExiste            VARCHAR2(1);
-cExisteDet         VARCHAR2(1);
-nIdPoliza          POLIZAS.IdPoliza%TYPE;
-cIdTipoSeg         TIPOS_DE_SEGUROS.IdTipoSeg%TYPE;
-nPorcComis         POLIZAS.PorcComis%TYPE;
-cDescpoliza        POLIZAS.DescPoliza%TYPE;
-nCod_Agente        POLIZAS.Cod_Agente%TYPE;
-cCodPlanPago       POLIZAS.CodPlanPago%TYPE;
-cExisteTipoSeguro  VARCHAR2  (2);
-nTasaCambio        DETALLE_POLIZA.Tasa_Cambio%TYPE;
-nIDetPol           DETALLE_POLIZA.IdetPol%TYPE;
-cIdGrupoTarj       TARJETAS_PREPAGO.IdGrupoTarj%TYPE;
-cCodPromotor       DETALLE_POLIZA.CodPromotor%TYPE;
-cMsjError          PROCESOS_MASIVOS_LOG.TxtError%TYPE := 'N';
-cCodPlantilla      CONFIG_PLANTILLAS_PLANCOB.CodPlantilla%TYPE;
-cNomTabla          CONFIG_PLANTILLAS_CAMPOS.NomTabla%TYPE;
-nOrden             NUMBER(10):= 1  ;
-nOrdenInc          NUMBER(10) ;
-cUpdate            VARCHAR2(4000);
-dFecIniVig         DATE;
-dFecFinVig         DATE;
-cStsPoliza         POLIZAS.StsPoliza%TYPE;
-cExisteParEmi      VARCHAR2(1);
-cExisteAsegCert    VARCHAR2(1);
-cIndSinAseg        VARCHAR2(1);
-cCampo             CONFIG_PLANTILLAS_CAMPOS.NomCampo%TYPE;
-nSuma              COBERT_ACT_ASEG.SumaAseg_Local%TYPE;
-nIdEndoso          ENDOSOS.IdEndoso%TYPE;
-cStsDetalle        DETALLE_POLIZA.StsDetalle%TYPE;
-nIdSolicitud       SOLICITUD_EMISION.IdSolicitud%TYPE;
-
-nSumaAsegurada     COBERT_ACT_ASEG.SumaAseg_Local%TYPE;
-nIdCotizacion      COTIZACIONES.IdCotizacion%TYPE;
-nIDetCotizacion    COTIZACIONES_DETALLE.IDetCotizacion%TYPE;
---
-cIndEdadPromedio   COTIZACIONES_DETALLE.IndEdadPromedio%TYPE;
-cIndCuotaPromedio  COTIZACIONES_DETALLE.IndCuotaPromedio%TYPE;
-cIndPrimaPromedio  COTIZACIONES_DETALLE.IndPrimaPromedio%TYPE;
-
-CURSOR C_CAMPOS (cNomTabla VARCHAR2) IS
-   SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.TipoCampo
-     FROM CONFIG_PLANTILLAS_CAMPOS C
-    WHERE C.CodPlantilla = cCodPlantilla
-      AND C.CodEmpresa   = nCodEmpresa
-      AND C.NomTabla     = cNomTabla
-      AND C.CodCia       = nCodCia
-    ORDER BY OrdenCampo;
-
-CURSOR C_CAMPOS_PART  IS
-   SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.OrdenDatoPart
-     FROM CONFIG_PLANTILLAS_CAMPOS C
-    WHERE C.CodPlantilla = cCodPlantilla
-      AND C.CodEmpresa   = nCodEmpresa
-      AND C.CodCia       = nCodCia
-      AND C.NomTabla     = 'DATOS_PART_EMISION'
-      AND C.IndDatoPart  = 'S'
-    ORDER BY OrdenDatoPart, OrdenCampo;
-
-CURSOR C_CAMPOS_ASEG  IS
-   SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.OrdenDatoPart
-     FROM CONFIG_PLANTILLAS_CAMPOS C
-    WHERE C.CodPlantilla = cCodPlantilla
-      AND C.CodEmpresa   = nCodEmpresa
-      AND C.CodCia       = nCodCia
-      AND C.NomTabla     = 'ASEGURADO_CERTIFICADO'
-      AND C.IndAseg  = 'S'
-    ORDER BY OrdenDatoPart, OrdenCampo;
-
-CURSOR EMI_Q IS
-   SELECT CodCia, CodEmpresa, IdTipoSeg, PlanCob, NumPolUnico,
-          NumDetUnico, RegDatosProc, TipoProceso,IndColectiva, IndAsegurado
-     FROM PROCESOS_MASIVOS
-    WHERE IdProcMasivo   = nIdProcMasivo;
+PROCEDURE EMISION_COLECTIVA_ASEGURADO( cNomArchivoCarga  PROCESOS_MASIVOS.NomArchivoCarga%TYPE
+                                     , cModificaSexo     VARCHAR2 ) IS
+   nCodCliente         CLIENTES.CodCliente%TYPE;
+   cTipoDocIdentAseg   CLIENTES.Tipo_Doc_Identificacion%TYPE;
+   cNumDocIdentAseg    CLIENTES.Num_Doc_Identificacion%TYPE;
+   nCod_Asegurado      ASEGURADO.Cod_Asegurado%TYPE;
+   nCodcia             POLIZAS.CodCia%TYPE;
+   nCodempresa         POLIZAS.CodEmpresa%TYPE;
+   cCodmoneda          POLIZAS.Cod_Moneda%TYPE;
+   cPlanCob            PLAN_COBERTURAS.PlanCob%TYPE;
+   cExiste             VARCHAR2(1);
+   cExisteDet          VARCHAR2(1);
+   nIdPoliza           POLIZAS.IdPoliza%TYPE;
+   cIdTipoSeg          TIPOS_DE_SEGUROS.IdTipoSeg%TYPE;
+   nPorcComis          POLIZAS.PorcComis%TYPE;
+   cDescpoliza         POLIZAS.DescPoliza%TYPE;
+   nCod_Agente         POLIZAS.Cod_Agente%TYPE;
+   cCodPlanPago        POLIZAS.CodPlanPago%TYPE;
+   cExisteTipoSeguro   VARCHAR2  (2);
+   nTasaCambio         DETALLE_POLIZA.Tasa_Cambio%TYPE;
+   nIDetPol            DETALLE_POLIZA.IdetPol%TYPE;
+   cIdGrupoTarj        TARJETAS_PREPAGO.IdGrupoTarj%TYPE;
+   cCodPromotor        DETALLE_POLIZA.CodPromotor%TYPE;
+   cMsjError           PROCESOS_MASIVOS_LOG.TxtError%TYPE := 'N';
+   cCodPlantilla       CONFIG_PLANTILLAS_PLANCOB.CodPlantilla%TYPE;
+   cNomTabla           CONFIG_PLANTILLAS_CAMPOS.NomTabla%TYPE;
+   nOrden              NUMBER(10):= 1  ;
+   nOrdenInc           NUMBER(10) ;
+   cUpdate             VARCHAR2(4000);
+   dFecIniVig          DATE;
+   dFecFinVig          DATE;
+   cStsPoliza          POLIZAS.StsPoliza%TYPE;
+   cExisteParEmi       VARCHAR2(1);
+   cExisteAsegCert     VARCHAR2(1);
+   cIndSinAseg         VARCHAR2(1);
+   cCampo              CONFIG_PLANTILLAS_CAMPOS.NomCampo%TYPE;
+   nSuma               COBERT_ACT_ASEG.SumaAseg_Local%TYPE;
+   nIdEndoso           ENDOSOS.IdEndoso%TYPE;
+   cStsDetalle         DETALLE_POLIZA.StsDetalle%TYPE;
+   nIdSolicitud        SOLICITUD_EMISION.IdSolicitud%TYPE;
+   --
+   nSumaAsegurada      COBERT_ACT_ASEG.SumaAseg_Local%TYPE;
+   nIdCotizacion       COTIZACIONES.IdCotizacion%TYPE;
+   nIDetCotizacion     COTIZACIONES_DETALLE.IDetCotizacion%TYPE;
+   --
+   cIndEdadPromedio    COTIZACIONES_DETALLE.IndEdadPromedio%TYPE;
+   cIndCuotaPromedio   COTIZACIONES_DETALLE.IndCuotaPromedio%TYPE;
+   cIndPrimaPromedio   COTIZACIONES_DETALLE.IndPrimaPromedio%TYPE;
+   --
+   nPorcExtraPrimaDet  POLIZAS.PorcExtraPrima%TYPE  := 0;
+   nMontoExtraPrimaDet POLIZAS.MontoExtraPrima%TYPE := 0;
+   --
+   --Variables para Tunning
+   nCodCiaDep          CONFIG_PLANTILLAS_PLANCOB.CodCia%TYPE;
+   nCodEmpresaDep      CONFIG_PLANTILLAS_PLANCOB.CodEmpresa%TYPE;
+   cIdTipoSegDep       CONFIG_PLANTILLAS_PLANCOB.IdTipoSeg%TYPE;
+   cPlanCobDep         CONFIG_PLANTILLAS_PLANCOB.PlanCob%TYPE;
+   cTipoProcesoDep     CONFIG_PLANTILLAS_PLANCOB.TipoProceso%TYPE;
+   nIdPolizaDep        POLIZAS.IdPoliza%TYPE;
+   nSalarioMensual     COBERT_ACT_ASEG.SalarioMensual%TYPE;
+   nVecesSalario       COBERT_ACT_ASEG.VecesSalario%TYPE;
+   nSumaAseguradaOk    COBERT_ACT_ASEG.SumaAseg_Local%TYPE;
+   nSalarioMensualOk   COBERT_ACT_ASEG.SalarioMensual%TYPE;
+   nVecesSalarioOk     COBERT_ACT_ASEG.VecesSalario%TYPE;
+   nIdProcMasivo       PROCESOS_MASIVOS.IdProcMasivo%TYPE;
+   cExisteCobert       VARCHAR2(1) := 'N';
+   --
+   CURSOR C_CAMPOS (cNomTabla VARCHAR2) IS
+          SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.TipoCampo
+          FROM   CONFIG_PLANTILLAS_CAMPOS C
+          WHERE  C.CodPlantilla = cCodPlantilla
+            AND  C.CodEmpresa   = nCodEmpresa
+            AND  C.NomTabla     = cNomTabla
+            AND  C.CodCia       = nCodCia
+          ORDER BY OrdenCampo;
+   --
+   CURSOR C_CAMPOS_PART  IS
+          SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.OrdenDatoPart
+          FROM   CONFIG_PLANTILLAS_CAMPOS C
+          WHERE  C.CodPlantilla = cCodPlantilla
+            AND  C.CodEmpresa   = nCodEmpresa
+            AND  C.CodCia       = nCodCia
+            AND  C.NomTabla     = 'DATOS_PART_EMISION'
+            AND  C.IndDatoPart  = 'S'
+          ORDER BY OrdenDatoPart, OrdenCampo;
+   --
+   CURSOR C_CAMPOS_ASEG  IS
+          SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.OrdenDatoPart
+          FROM   CONFIG_PLANTILLAS_CAMPOS C
+          WHERE  C.CodPlantilla = cCodPlantilla
+            AND  C.CodEmpresa   = nCodEmpresa
+            AND  C.CodCia       = nCodCia
+            AND  C.NomTabla     = 'ASEGURADO_CERTIFICADO'
+            AND  C.IndAseg  = 'S'
+          ORDER BY OrdenDatoPart, OrdenCampo;
+   --
+   CURSOR EMI_Q IS
+          SELECT CodCia, CodEmpresa, IdTipoSeg, PlanCob, NumPolUnico, NumDetUnico, RegDatosProc, TipoProceso, IndColectiva, IndAsegurado, IdProcMasivo
+          FROM   PROCESOS_MASIVOS
+          WHERE  NomArchivoCarga      = cNomArchivoCarga
+            AND  NVL(IdProcesar, 'N') = 'S'
+          ORDER BY IdProcMasivo;
+   --
+   CURSOR c_coberturas ( c_CodCia       CARGA_COBERTURAS_MASIVA.CodCia%TYPE
+                       , c_CodEmpresa   CARGA_COBERTURAS_MASIVA.CodEmpresa%TYPE
+                       , c_IdTipoSeg    CARGA_COBERTURAS_MASIVA.IdTipoSeg%TYPE
+                       , c_PlanCob      CARGA_COBERTURAS_MASIVA.PlanCob%TYPE
+                       , c_NumPolUnico  CARGA_COBERTURAS_MASIVA.NumPolUnico%TYPE
+                       , c_IdetPol      CARGA_COBERTURAS_MASIVA.IDetPol%TYPE ) IS
+          SELECT A.NumPolUnico                    , A.CodCobert                                  , A.SalarioMensual                       , A.VecesSalario                         ,
+                 A.SumaAsegManual                 , NVL(A.SumaAsegIngresada, 0) SumaAsegIngresada, NVL(B.SumaAsegMinima, 0) SumaAsegMinima, NVL(B.SumaAsegMaxima, 0) SumaAsegMaxima,
+                 NVL(B.Edad_Minima, 0) Edad_Minima, NVL(B.Edad_Maxima      , 0) Edad_Maxima      , NVL(B.Edad_Exclusion, 0) Edad_Exclusion, A.PrimaPromedio
+          FROM   CARGA_COBERTURAS_MASIVA  A
+             ,   COBERTURAS_DE_SEGUROS    B
+          WHERE  B.CodCia       = A.CodCia
+            AND  B.CodEmpresa   = A.CodEmpresa
+            AND  B.IdTipoSeg    = A.IdTipoSeg
+            AND  B.PlanCob      = A.PlanCob
+            AND  B.CodCobert    = A.CodCobert
+            AND  B.StsCobertura = 'ACT'
+            AND  A.CodCia       = c_CodCia
+            AND  A.CodEmpresa   = c_CodEmpresa
+            AND  A.IdTipoSeg    = c_IdTipoSeg
+            AND  A.PlanCob      = c_PlanCob
+            AND  A.NumPolUnico  = c_NumPolUnico
+            AND  A.IdetPol      = c_IDetPol
+          ORDER BY B.OrdenImpresion, B.CodCobert;
 BEGIN
    FOR X IN EMI_Q LOOP
-      nCodcia           :=  X.CodCia;
-      nCodempresa       :=  X.CodEmpresa;
-      cTipoDocIdentAseg := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,',')) ;
-      cNumDocIdentAseg  := UPPER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,',')));
-      cCodPlanPago      := OC_TIPOS_DE_SEGUROS.PLAN_PAGOS(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
-      cCodPlantilla     := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia,X.CodEmpresa,X.IdTipoSeg,X.PlanCob,X.TipoProceso);
-      IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(cTipoDocIdentAseg, cNumDocIdentAseg) = 'N' THEN
-         OC_PROCESOS_MASIVOS.INSERT_DINAMICO(cCodPlantilla, 'PERSONA_NATURAL_JURIDICA', 1, X.RegDatosProc);
-      ELSE
-         nOrden    := 1;
-         nOrdenInc := 0;
-         FOR I IN C_CAMPOS('PERSONA_NATURAL_JURIDICA') LOOP
-            nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
-            IF UPPER(I.NomCampo) = 'FECNACIMIENTO' THEN
-               nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
-               cUpdate := 'UPDATE '||'PERSONA_NATURAL_JURIDICA'||' '||'SET'||' '||I.NomCampo||'='|| 'TO_DATE(' || CHR(39) ||
-                          LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',') || CHR(39) || ','|| CHR(39) ||
-                          'DD/MM/RRRR' || CHR(39) || ') ' ||
-                          'WHERE Tipo_Doc_Identificacion='||''''||cTipoDocIdentAseg||''''||' '||
-                          'AND Num_Doc_Identificacion='||''''||cNumDocIdentAseg||'''');
-               OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate);
-            END IF;
-            nOrden := nOrden + 1;
-         END LOOP;
-      END IF;
-      nOrden    := 1;
-      nOrdenInc := 0;
-      IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia, X.CodEmpresa ,X.IdTipoSeg ,X.PlanCob)= 'N' THEN
-         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
-      END IF;
-      BEGIN
-         SELECT Cod_Agente
-           INTO nCod_Agente
-           FROM PLAN_COBERTURAS
-          WHERE CodCia     = X.CodCia
-            AND CodEmpresa = X.CodEmpresa
-            AND IdTipoSeg  = X.IdTipoSeg
-            AND PlanCob    = X.PlanCob;
-      EXCEPTION
-         WHEN NO_DATA_FOUND THEN
-            nCod_Agente := 0;
-      END;
-      nCodCliente := OC_CLIENTES.CODIGO_CLIENTE(cTipoDocIdentAseg, cNumDocIdentAseg);
-      IF nCodCliente = 0  THEN
-         nCodCliente    := OC_CLIENTES.INSERTAR_CLIENTE(cTipoDocIdentAseg,cNumDocIdentAseg);
-         FOR I IN C_CAMPOS('CLIENTES') LOOP
-            nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
-            cUpdate := 'UPDATE '||'CLIENTES'||' '||'SET'||' '||I.NomCampo||'=';
-            IF I.TipoCampo = 'DATE' THEN
-               cUpdate := cUpdate || ' TO_DATE(' || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) ||
-                          CHR(39) || ','|| CHR(39) || 'DD/MM/RRRR' || CHR(39) || ') ';
-            ELSE
-               cUpdate := cUpdate || '''' ||LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) ||'''';
-            END IF;
-            cUpdate := cUpdate ||' '||'WHERE CODCLIENTE='||nCodCliente;
-            OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate) ;
-            nOrden := nOrden + 1;
-         END LOOP;
-      END IF;
-
-      nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(X.CodCia, X.CodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
-      IF nCod_Asegurado = 0 THEN
-         nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(X.CodCia, X.CodEmpresa,cTipoDocIdentAseg, cNumDocIdentAseg);
-      END IF;
-
-      BEGIN
-         INSERT INTO CLIENTE_ASEG
-               (CodCliente, Cod_Asegurado)
-         VALUES(nCodCliente, nCod_Asegurado);
-      EXCEPTION
-         WHEN DUP_VAL_ON_INDEX THEN
+       nIdProcMasivo     := x.IdProcMasivo;
+       nCodcia           := X.CodCia;
+       nCodempresa       := X.CodEmpresa;
+       cTipoDocIdentAseg := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,',')) ;
+       cNumDocIdentAseg  := UPPER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,',')));
+       --
+--aqui control de misma informacion
+       IF NVL(nCodCiaDep, 0) <> x.CodCia AND NVL(nCodEmpresaDep, 0) <> x.CodEmpresa AND NVL(cIdTipoSegDep, 'X') <> x.IdTipoSeg THEN
+          nCodCiaDep        := x.CodCia;
+          nCodEmpresaDep    := x.CodEmpresa;
+          cIdTipoSegDep     := x.IdTipoSeg;
+          cPlanCobDep       := x.PlanCob;
+          cTipoProcesoDep   := x.TipoProceso;
+          --
+          cCodPlanPago      := OC_TIPOS_DE_SEGUROS.PLAN_PAGOS(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
+          nPorcComis        := OC_CONFIG_COMISIONES.PORCENTAJE_COMISION(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
+          cExisteTipoSeguro := OC_TIPOS_DE_SEGUROS.EXISTE_TIPO_DE_SEGURO(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
+          --
+          cCodMoneda        := OC_PLAN_COBERTURAS.MONEDA_PLANCOB(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob);
+          cCodPlantilla     := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
+          --
+          BEGIN
+             SELECT Cod_Agente
+             INTO   nCod_Agente
+             FROM   PLAN_COBERTURAS
+             WHERE  CodCia     = X.CodCia
+               AND  CodEmpresa = X.CodEmpresa
+               AND  IdTipoSeg  = X.IdTipoSeg
+               AND  PlanCob    = X.PlanCob;
+          EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+               nCod_Agente := 0;
+          END;
+       ELSE
+          IF cPlanCobDep <> x.PlanCob THEN
+             cPlanCobDep := x.PlanCob;
+             cCodMoneda  := OC_PLAN_COBERTURAS.MONEDA_PLANCOB(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob);
+             --
+             BEGIN
+                SELECT Cod_Agente
+                INTO   nCod_Agente
+                FROM   PLAN_COBERTURAS
+                WHERE  CodCia     = X.CodCia
+                  AND  CodEmpresa = X.CodEmpresa
+                  AND  IdTipoSeg  = X.IdTipoSeg
+                  AND  PlanCob    = X.PlanCob;
+             EXCEPTION
+             WHEN NO_DATA_FOUND THEN
+                  nCod_Agente := 0;
+             END;
+             --
+             IF cTipoProcesoDep <> x.TipoProceso THEN
+                cTipoProcesoDep := x.TipoProceso;
+                cCodPlantilla   := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
+             END IF;
+          ELSE
+             IF cTipoProcesoDep <> x.TipoProceso THEN
+                cTipoProcesoDep := x.TipoProceso;
+                cCodPlantilla   := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
+             END IF;
+          END IF;
+       END IF;
+       --
+       IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(cTipoDocIdentAseg, cNumDocIdentAseg) = 'N' THEN
+          OC_PROCESOS_MASIVOS.INSERT_DINAMICO(cCodPlantilla, 'PERSONA_NATURAL_JURIDICA', 1, X.RegDatosProc);
+       ELSE
+          nOrden    := 1;
+          nOrdenInc := 0;
+--aqui modificar UPDATE
+          cUpdate   := 'UPDATE PERSONA_NATURAL_JURIDICA SET ';
+          FOR I IN C_CAMPOS('PERSONA_NATURAL_JURIDICA') LOOP
+              nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION(cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + 5 + nOrden;
+              IF UPPER(I.NomCampo) = 'FECNACIMIENTO' THEN
+                 cUpdate := cUpdate || I.NomCampo || ' = TO_DATE(' || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')) || CHR(39) || ',' || CHR(39) ||
+                              'DD/MM/RRRR' || CHR(39) || '),';
+              ELSIF UPPER(I.NomCampo) = 'SEXO' THEN
+                 cUpdate := cUpdate || I.NomCampo || ' = ' || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')) || CHR(39) || ',';
+              END IF;
+              nOrden := nOrden + 1;
+          END LOOP;
+          cUpdate := SUBSTR(cUpdate, 1, LENGTH(cUpdate) - 1) || ' WHERE Tipo_Doc_Identificacion = ' || CHR(39) || cTipoDocIdentAseg || CHR(39) || ' AND Num_Doc_Identificacion = ' || CHR(39) || cNumDocIdentAseg || CHR(39);
+          OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate);
+       END IF;
+       nOrden    := 1;
+       nOrdenInc := 0;
+       IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob)= 'N' THEN
+          RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
+       END IF;
+       --
+       nCodCliente := OC_CLIENTES.CODIGO_CLIENTE(cTipoDocIdentAseg, cNumDocIdentAseg);
+       IF nCodCliente = 0  THEN
+          nCodCliente := OC_CLIENTES.INSERTAR_CLIENTE(cTipoDocIdentAseg, cNumDocIdentAseg);
+--aqui modificar UPDATE
+          cUpdate := 'UPDATE CLIENTES SET ';
+          FOR I IN C_CAMPOS('CLIENTES') LOOP
+              nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + 5 + nOrden;
+              cUpdate   := cUpdate || I.NomCampo || ' = ';
+              IF I.TipoCampo = 'DATE' THEN
+                 cUpdate := cUpdate || ' TO_DATE(' || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')) ||
+                            CHR(39) || ',' || CHR(39) || 'DD/MM/RRRR' || CHR(39) || '),';
+              ELSE
+                 cUpdate := cUpdate || CHR(39) ||LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')) || CHR(39) || ',';
+              END IF;
+              nOrden := nOrden + 1;
+          END LOOP;
+          cUpdate := SUBSTR(cUpdate, 1, LENGTH(cUpdate) - 1) || ' WHERE CODCLIENTE = ' || nCodCliente;
+          OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate) ;
+       END IF;
+       --
+       nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(X.CodCia, X.CodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
+       IF nCod_Asegurado = 0 THEN
+          nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(X.CodCia, X.CodEmpresa,cTipoDocIdentAseg, cNumDocIdentAseg);
+       END IF;
+       --
+       BEGIN
+          INSERT INTO CLIENTE_ASEG ( CodCliente, Cod_Asegurado )
+          VALUES ( nCodCliente, nCod_Asegurado );
+       EXCEPTION
+       WHEN DUP_VAL_ON_INDEX THEN
             NULL;
-      END;
-      BEGIN
-         SELECT IdPoliza, StsPoliza
-           INTO nIdpoliza, cStsPoliza
-           FROM Polizas
-          WHERE NumPolUnico     = X.NumPolUnico
-            AND CodCia          = X.CodCia
-            AND CodEmpresa      = X.CodEmpresa
-            AND StsPoliza  NOT IN ('ANU','REN');
-      EXCEPTION
-         WHEN NO_DATA_FOUND THEN
+       END;
+       --
+       BEGIN
+          SELECT IdPoliza, StsPoliza
+          INTO   nIdpoliza, cStsPoliza
+          FROM   POLIZAS
+          WHERE  NumPolUnico     = X.NumPolUnico
+            AND  CodCia          = X.CodCia
+            AND  CodEmpresa      = X.CodEmpresa
+            AND  StsPoliza  NOT IN ('ANU','REN');
+       EXCEPTION
+       WHEN NO_DATA_FOUND THEN
             nIdPoliza := 0;
-      END;
-      cExiste     := OC_POLIZAS.EXISTE_POLIZA(X.CodCia, X.CodEmpresa, nIdpoliza);
-      cDescPoliza := 'ActivaciÛn Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
-      cCodMoneda  := OC_PLAN_COBERTURAS.MONEDA_PLANCOB(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob);
-      nPorcComis  := OC_CONFIG_COMISIONES.PORCENTAJE_COMISION(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
-      IF cExiste = 'N' AND  NVL(X.IndColectiva,'N') = 'N' THEN
-         IF dFecIniVig IS NULL THEN
-           dFecIniVig := TRUNC(SYSDATE);
-         END IF;
-         nIdPoliza   := OC_POLIZAS.INSERTAR_POLIZA(X.CodCia, X.CodEmpresa, cDescPoliza, cCodMoneda, nPorcComis,
-                                                   nCodCliente, nCod_Agente, cCodPlanPago, TRIM(TO_CHAR(X.NumPolUnico)),cIdGrupoTarj,dFecIniVig);
-      END IF;
-      nIdSolicitud := OC_SOLICITUD_EMISION.SOLICITUD_POLIZA(X.CodCia, X.CodEmpresa, nIdPoliza);
-      nOrden       := 1;
-      nOrdenInc    := 0;
-      IF NVL(X.IndColectiva,'N') = 'N' THEN
-         FOR I IN C_CAMPOS('POLIZAS') LOOP
-            nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
-            cUpdate := 'UPDATE '||'POLIZAS'||' '||'SET'||' '||I.NomCampo||'=';
-            IF I.TipoCampo = 'DATE' THEN
-               cUpdate := cUpdate || ' TO_DATE(' || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) ||
-                          CHR(39) || ','|| CHR(39) || 'DD/MM/RRRR' || CHR(39) || ') ';
-            ELSE
-               cUpdate := cUpdate || '''' ||LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) ||'''';
-            END IF;
-            cUpdate := cUpdate ||' '||'WHERE IdPoliza='||nIdpoliza||' '||
-                       'AND CodCia='||X.CodCia||' '||'AND CodEmpresa='||X.CodEmpresa;
-            OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate);
-            nOrden := nOrden + 1;
-         END LOOP;
-      END IF;
-
-      cExisteTipoSeguro := OC_TIPOS_DE_SEGUROS.EXISTE_TIPO_DE_SEGURO(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
-      IF cExisteTipoSeguro = 'S' THEN
-         BEGIN
-            -- Inserta Tarea de Seguimiento
-            IF OC_TAREA.EXISTE_TAREA(X.CodCia,nIdPoliza) = 'N' THEN
-               OC_TAREA.INSERTA_TAREA(X.CodCia, 7, 'SOL', 'EMI', nIdPoliza, nCodCliente, 'A','SOL', 'SOLICITUD DE EMISION');
-            END IF;
-            -- Genera Detalle de Poliza
-            nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
-            BEGIN
-               SELECT FecIniVig ,FecFinVig, StsPoliza, Num_Cotizacion
-                 INTO dFecIniVig,dFecFinVig, cStsPoliza, nIdCotizacion
-                 FROM Polizas
-                WHERE IdPoliza   = nIdPoliza
-                  AND CodCia     = X.CodCia
-                  AND CodEmpresa = X.CodEmpresa ;
-            END;
-            BEGIN
-               SELECT IDetPol, IndSinAseg, StsDetalle, CodPlanPago
-                 INTO nIDetPol, cIndSinAseg, cStsDetalle, cCodPlanPago
-                 FROM DETALLE_POLIZA
-                WHERE CodCia      = X.CodCia
-                  AND CodEmpresa  = X.CodEmpresa
-                  AND IdPoliza    = nIdpoliza
-                  AND NumDetRef   = TRIM(TO_CHAR(X.NumDetUnico))
-                  AND IdTipoSeg   = X.IdTipoSeg
-                  AND PlanCob     = X.PlanCob;
-            EXCEPTION
-               WHEN NO_DATA_FOUND THEN
-                  RAISE_APPLICATION_ERROR(-20225,'DETALLE POLIZA NO EXISTE: '|| TRIM(TO_CHAR(X.NumDetUnico)) ||
-                                          ' Con el Producto ' || X.IdTipoSeg || ' y el Plan de Coberturas ' || X.PlanCob);
-            END;
-            nOrden    := 1;
-            nOrdenInc := 0;
-            FOR I IN C_CAMPOS('DETALLE_POLIZA') LOOP
-               nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
-               IF UPPER(I.NomCampo) = 'FECINIVIG' THEN
-                  IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')),'DD/MM/YYYY') NOT BETWEEN  dFecIniVig AND  dFecFinVig  THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza');
-                  END IF;
-               END IF;
-               IF UPPER(I.NomCampo) = 'FECFINVIG' THEN
-                  IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')),'DD/MM/YYYY') NOT BETWEEN  dFecIniVig AND  dFecFinVig  THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza ');
-                  END IF;
-               END IF;
-           /*    nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
-               cUpdate := 'UPDATE '||'DETALLE_POLIZA'||' '||'SET'||' '||I.NomCampo||'=';
-               IF I.TipoCampo = 'DATE' THEN
-                  cUpdate := cUpdate || ' TO_DATE(' || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) ||
-                             CHR(39) || ','|| CHR(39) || 'DD/MM/RRRR' || CHR(39) || ') ';
-               ELSE
-                  cUpdate := cUpdate || '''' ||LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) ||'''';
-               END IF;
-               cUpdate := cUpdate ||' '||'WHERE IdPoliza='||nIdPoliza||' '||'AND IDetPol='||nIDetPol||' '||
-                          'AND CodCia='||X.CodCia||' '||'AND CodEmpresa='||X.CodEmpresa;
-               OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate) ;*/
-               nOrden := nOrden + 1;
-            END LOOP;
-
-            nOrden    := 1;
-            nOrdenInc := 0;
-            IF NVL(X.IndAsegurado,'N') = 'S' THEN
-               nOrden    := 1;
-               nOrdenInc := 0;
-               nIdEndoso := 0;
-               IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(X.CodCia, nIdpoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
-                  IF cStsPoliza = 'SOL' OR cStsDetalle = 'SOL' THEN
-                     OC_ASEGURADO_CERTIFICADO.INSERTA(X.CodCia, nIdpoliza, nIDetPol, nCod_Asegurado, 0);
-                  ELSE
-                     SELECT NVL(MAX(IdEndoso),0)
-                       INTO nIdEndoso
-                       FROM ENDOSOS
-                      WHERE CodCia     = X.CodCia
-                        AND IdPoliza   = nIdPoliza
-                        AND StsEndoso  = 'SOL';
-
-                     IF NVL(nIdEndoso,0) = 0 THEN
-                        nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
-                        OC_ENDOSO.INSERTA (X.CodCia, X.CodEmpresa, nIdPoliza, nIDetPol, nIdEndoso,
-                                           'ESV', 'ENDO-' || TRIM(TO_CHAR(nIdPoliza)) || '-' || TRIM(TO_CHAR(nIdEndoso)),
-                                           dFecIniVig, dFecFinVig, cCodPlanPago, 0, 0, 0, '010', NULL);
-                     END IF;
-                     OC_ASEGURADO_CERTIFICADO.INSERTA(X.CodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndoso);
-                  END IF;
-               ELSE
-                  RAISE_APPLICATION_ERROR(-20225,'Asegurado No. : ' || nCod_Asegurado || ' Duplicado en Certificado No. ' || nIDetPol);
-               END IF;
-
-               FOR I IN C_CAMPOS_ASEG LOOP
-                  nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + 5 + nOrden;
-                  cUpdate   := 'UPDATE '||'ASEGURADO_CERTIFICADO'||' '||'SET'||' '||'CAMPO'||I.OrdenDatoPart||'='||''''||
-                               LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')||''''||' '||
-                               'WHERE IdPoliza = '||nIdPoliza||' '|| 'AND IDetPol= '||nIDetPol||' '||'AND CodCia= '||X.CodCia||
-                               'AND Cod_Asegurado= '||nCod_Asegurado);
-                  OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate);
-                  nSumaAsegurada := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,24,',')));
-                  nOrden := nOrden + 1;
-               END LOOP;
-               nIDetCotizacion := nIDetPol;
-               BEGIN
-                  SELECT NVL(D.IndEdadPromedio,'N'), NVL(D.IndCuotaPromedio,'N'), NVL(D.IndPrimaPromedio,'N')
-                    INTO cIndEdadPromedio, cIndCuotaPromedio, cIndPrimaPromedio
-                    FROM COTIZACIONES C, COTIZACIONES_DETALLE D
-                   WHERE C.CodCia         = nCodCia
-                     AND C.CodEmpresa     = nCodEmpresa
-                     AND D.IdCotizacion   = nIdCotizacion
-                     AND D.IDetCotizacion = nIDetCotizacion
-                     AND C.CodCia         = D.CodCia
-                     AND C.CodEmpresa     = D.CodEmpresa
-                     AND C.IdCotizacion   = D.IdCotizacion;
+       END;
+       --
+       cExiste     := OC_POLIZAS.EXISTE_POLIZA(X.CodCia, X.CodEmpresa, nIdpoliza);
+       cDescPoliza := 'ActivaciÛn Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
+       --
+       IF cExiste = 'N' AND  NVL(X.IndColectiva,'N') = 'N' THEN
+          IF dFecIniVig IS NULL THEN
+             dFecIniVig := TRUNC(SYSDATE);
+          END IF;
+          nIdPoliza := OC_POLIZAS.INSERTAR_POLIZA(X.CodCia, X.CodEmpresa, cDescPoliza, cCodMoneda, nPorcComis, nCodCliente, nCod_Agente, cCodPlanPago, TRIM(TO_CHAR(X.NumPolUnico)), cIdGrupoTarj, dFecIniVig);
+       END IF;
+       --
+       nIdSolicitud := OC_SOLICITUD_EMISION.SOLICITUD_POLIZA(X.CodCia, X.CodEmpresa, nIdPoliza);
+       nOrden       := 1;
+       nOrdenInc    := 0;
+       IF NVL(X.IndColectiva,'N') = 'N' THEN
+--aqui modificar UPDATE
+          cUpdate := 'UPDATE POLIZAS SET ';
+          FOR I IN C_CAMPOS('POLIZAS') LOOP
+              nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla , X.CodCia, X.CodEmpresa, I.OrdenProceso) + 5 + nOrden;
+              cUpdate := cUpdate || I.NomCampo || ' = ';
+              IF I.TipoCampo = 'DATE' THEN
+                 cUpdate := cUpdate || ' TO_DATE(' || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')) ||
+                            CHR(39) || ','|| CHR(39) || 'DD/MM/RRRR' || CHR(39) || '),';
+              ELSE
+                 cUpdate := cUpdate || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')) || CHR(39) || ',';
+              END IF;
+              nOrden := nOrden + 1;
+          END LOOP;
+          cUpdate := SUBSTR(cUpdate, 1, LENGTH(cUpdate) - 1) || ' WHERE IdPoliza = ' || nIdpoliza || ' AND CodCia = ' || X.CodCia || ' AND CodEmpresa = ' || X.CodEmpresa;
+          OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate);
+       END IF;
+       --
+       IF cExisteTipoSeguro = 'S' THEN
+          BEGIN
+             -- Inserta Tarea de Seguimiento
+             IF OC_TAREA.EXISTE_TAREA(X.CodCia, nIdPoliza) = 'N' THEN
+                OC_TAREA.INSERTA_TAREA(X.CodCia, 7, 'SOL', 'EMI', nIdPoliza, nCodCliente, 'A', 'SOL', 'SOLICITUD DE EMISION');
+             END IF;
+             -- Genera Detalle de Poliza
+             nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
+             --
+--aqui control de misma informacion
+             IF NVL(nIdPolizaDep, 0) <> nIdPoliza THEN
+                nIdPolizaDep := nIdPoliza;
+                BEGIN
+                   SELECT FecIniVig , FecFinVig , StsPoliza , Num_Cotizacion, NVL(PorcExtraPrima, 0), NVL(MontoExtraPrima, 0)
+                   INTO   dFecIniVig, dFecFinVig, cStsPoliza, nIdCotizacion , nPorcExtraPrimaDet    , nMontoExtraPrimaDet
+                   FROM   POLIZAS
+                   WHERE  IdPoliza   = nIdPoliza
+                     AND  CodCia     = X.CodCia
+                     AND  CodEmpresa = X.CodEmpresa ;
+                END;
+             END IF;
+             --
+             BEGIN
+                SELECT IDetPol , IndSinAseg , StsDetalle , CodPlanPago
+                INTO   nIDetPol, cIndSinAseg, cStsDetalle, cCodPlanPago
+                FROM   DETALLE_POLIZA
+                WHERE  CodCia     = X.CodCia
+                  AND  CodEmpresa = X.CodEmpresa
+                  AND  IdPoliza   = nIdpoliza
+                  AND  NumDetRef  = TRIM(TO_CHAR(X.NumDetUnico))
+                  AND  IdTipoSeg  = X.IdTipoSeg
+                  AND  PlanCob    = X.PlanCob;
+             EXCEPTION
+             WHEN NO_DATA_FOUND THEN
+                  RAISE_APPLICATION_ERROR(-20225,'DETALLE POLIZA NO EXISTE: ' || TRIM(TO_CHAR(X.NumDetUnico)) || ' Con el Producto ' || X.IdTipoSeg || ' y el Plan de Coberturas ' || X.PlanCob);
+             END;
+             nOrden    := 1;
+             nOrdenInc := 0;
+             --
+             FOR I IN C_CAMPOS('DETALLE_POLIZA') LOOP
+                 nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + 5 + nOrden;
+                 IF UPPER(I.NomCampo) = 'FECINIVIG' THEN
+                    IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')), 'DD/MM/YYYY') NOT BETWEEN dFecIniVig AND dFecFinVig THEN
+                       RAISE_APPLICATION_ERROR(-20225, 'Fecha de Inicio de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza');
+                    END IF;
+                 END IF;
+                 IF UPPER(I.NomCampo) = 'FECFINVIG' THEN
+                    IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')), 'DD/MM/YYYY') NOT BETWEEN dFecIniVig AND dFecFinVig THEN
+                       RAISE_APPLICATION_ERROR(-20225, 'Fecha de Final de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza ');
+                    END IF;
+                 END IF;
+                 /*    nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
+                 cUpdate := 'UPDATE '||'DETALLE_POLIZA'||' '||'SET'||' '||I.NomCampo||'=';
+                 IF I.TipoCampo = 'DATE' THEN
+                    cUpdate := cUpdate || ' TO_DATE(' || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) ||
+                               CHR(39) || ','|| CHR(39) || 'DD/MM/RRRR' || CHR(39) || ') ';
+                 ELSE
+                    cUpdate := cUpdate || '''' ||LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) ||'''';
+                 END IF;
+                 cUpdate := cUpdate ||' '||'WHERE IdPoliza='||nIdPoliza||' '||'AND IDetPol='||nIDetPol||' '||
+                            'AND CodCia='||X.CodCia||' '||'AND CodEmpresa='||X.CodEmpresa;
+                 OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate) ;*/
+                 nOrden := nOrden + 1;
+             END LOOP;
+             --
+             nOrden    := 1;
+             nOrdenInc := 0;
+             IF NVL(X.IndAsegurado,'N') = 'S' THEN
+                nOrden    := 1;
+                nOrdenInc := 0;
+                nIdEndoso := 0;
+                IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(X.CodCia, nIdpoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
+                   IF cStsPoliza = 'SOL' OR cStsDetalle = 'SOL' THEN
+                      OC_ASEGURADO_CERTIFICADO.INSERTA(X.CodCia, nIdpoliza, nIDetPol, nCod_Asegurado, 0);
+                   ELSE
+                      SELECT NVL(MAX(IdEndoso), 0)
+                      INTO   nIdEndoso
+                      FROM   ENDOSOS
+                      WHERE  CodCia    = X.CodCia
+                        AND  IdPoliza  = nIdPoliza
+                        AND  StsEndoso = 'SOL';
+                      --
+                      IF NVL(nIdEndoso,0) = 0 THEN
+                         nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
+                         OC_ENDOSO.INSERTA (X.CodCia, X.CodEmpresa, nIdPoliza, nIDetPol, nIdEndoso, 'ESV', 'ENDO-' || TRIM(TO_CHAR(nIdPoliza)) || '-' || TRIM(TO_CHAR(nIdEndoso)),
+                                            dFecIniVig, dFecFinVig, cCodPlanPago, 0, 0, 0, '010', NULL);
+                      END IF;
+                      OC_ASEGURADO_CERTIFICADO.INSERTA(X.CodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndoso);
+                   END IF;
+                ELSE
+                   RAISE_APPLICATION_ERROR(-20225, 'Asegurado No. : ' || nCod_Asegurado || ' Duplicado en Certificado No. ' || nIDetPol);
+                END IF;
+                --
+--aqui modificar UPDATE
+                cUpdate := 'UPDATE ASEGURADO_CERTIFICADO SET ';
+                FOR I IN C_CAMPOS_ASEG LOOP  --numero de veces
+                    nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + 5 + nOrden;
+                    cUpdate   := cUpdate || ' CAMPO' || I.OrdenDatoPart || ' = ' || CHR(39) || LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',') || CHR(39) || ',');
+                    nOrden    := nOrden + 1;
+                END LOOP;
+                cUpdate := SUBSTR(cUpdate, 1, LENGTH(cUpdate) - 1) || ' WHERE IdPoliza = ' || nIdPoliza || ' AND IDetPol = ' || nIDetPol || ' AND CodCia = ' || X.CodCia || ' AND Cod_Asegurado = ' || nCod_Asegurado;
+                OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate);
+                --
+--aqui meter la extraccion de salario y nveces
+                nSumaAsegurada  := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, 24, ',')));
+                nSalarioMensual := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, 25, ',')));
+                nVecesSalario   := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, 27, ',')));
+                nIDetCotizacion := nIDetPol;
+                BEGIN
+                   SELECT NVL(D.IndEdadPromedio,'N'), NVL(D.IndCuotaPromedio,'N'), NVL(D.IndPrimaPromedio,'N')
+                   INTO   cIndEdadPromedio          , cIndCuotaPromedio          , cIndPrimaPromedio
+                   FROM   COTIZACIONES C, COTIZACIONES_DETALLE D
+                   WHERE  C.CodCia         = nCodCia
+                     AND  C.CodEmpresa     = nCodEmpresa
+                     AND  D.IdCotizacion   = nIdCotizacion
+                     AND  D.IDetCotizacion = nIDetCotizacion
+                     AND  C.CodCia         = D.CodCia
+                     AND  C.CodEmpresa     = D.CodEmpresa
+                     AND  C.IdCotizacion   = D.IdCotizacion;
                      --AND C.IDetCotizacion = D.IDetCotizacion;
-               EXCEPTION
-                  WHEN NO_DATA_FOUND THEN
+                EXCEPTION
+                WHEN NO_DATA_FOUND THEN
                      cIndEdadPromedio  := 'N';
                      cIndCuotaPromedio := 'N';
                      cIndPrimaPromedio := 'N';
-               END;
-               /* Se quita temporalmente la carga de coberturas para agilizar el proceso de EmisiÛn y solo se deja para Endosos*/
-               --IF NVL(nIdEndoso,0) != 0 THEN
-               IF cIndEdadPromedio = 'N' AND cIndCuotaPromedio = 'N' AND cIndPrimaPromedio = 'N' THEN
-                  IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA (X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,
-                                                         nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
-                     IF NVL(cIndSinAseg,'N') = 'N' THEN
-                        IF NVL(nIdSolicitud,0) = 0 THEN
---                           OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,
---                                                                nIdPoliza, nIDetPol, nTasaCambio, nCod_Asegurado);
-                           IF NVL(nIdCotizacion,0) = 0 THEN
-                              OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,nIdPoliza,
-                                                                   nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0);
-                           ELSE
-                              GT_COTIZACIONES_COBERT_MASTER.CREAR_COBERTURAS_POLIZA(X.CodCia, X.CodEmpresa, nIdCotizacion, nIDetCotizacion, nIdPoliza, nIDetPol, nCod_Asegurado, 'S', nSumaAsegurada);
-                           END IF;
-                        ELSE
-                           OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(X.CodCia, X.CodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-                           OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(X.CodCia, X.CodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-                        END IF;
-                     ELSE
-                        BEGIN
-                           SELECT 'CAMPO'||ORDENCAMPO CAMPO
-                             INTO cCampo
-                             FROM CONFIG_PLANTILLAS_CAMPOS
-                            WHERE CodCia        = X.CodCia
-                              AND CodEmpresa    = X.CodEmpresa
-                              AND CodPlantilla  = cCodPlantilla
-                              AND NomCampo LIKE  '%MONTO%CREDITO%'
-                              AND IndAseg       = 'S';
-                        EXCEPTION
-                           WHEN NO_DATA_FOUND THEN
-                              RAISE_APPLICATION_ERROR(-20225,'NO EXISTE CAMPO MONTO CREDITO EN PLANTILLA: '||cCodPlantilla);
-                           WHEN TOO_MANY_ROWS THEN
-                              RAISE_APPLICATION_ERROR(-20225,'EXISTE MAS DE UN CAMPO MONTO CREDITO EN PLANTILLA: '||cCodPlantilla);
-                        END;
-                        nSuma := OC_ASEGURADO_CERTIFICADO.SUMA_ASEGURADO(nCodCia, nIdPoliza,nIdetPol,nCod_Asegurado,cCampo);
-                        OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS_SIN_TARIFA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, nIdPoliza,
-                                                                        nIDetPol, nTasaCambio, nCod_Asegurado, nSuma);
-                     END IF;
-                     IF NVL(nIdEndoso,0) != 0 THEN
-                        UPDATE COBERT_ACT_ASEG
-                           SET IdEndoso = nIdEndoso
-                         WHERE CodCia        = X.CodCia
-                           AND IdPoliza      = nIdPoliza
-                           AND IDetPol       = nIDetPol
-                           AND Cod_Asegurado = nCod_Asegurado;
-                     END IF;
-                     OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(X.CodCia, X.CodEmpresa, nIdPoliza, nIDetPol,nCod_Asegurado);
-                  END IF;
-               ELSIF NVL(nIdCotizacion,0) != 0  AND (cIndEdadPromedio = 'S' OR cIndCuotaPromedio = 'S' OR cIndPrimaPromedio = 'S') THEN
-                  --IF NVL(nIdCotizacion,0) != 0 THEN
-
-                     GT_TEMP_LISTADO_DECLARACIONES.GENERA_COBERTURAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso, nCod_Asegurado,
-                                                                     nIdCotizacion, nIDetCotizacion, X.PlanCob, X.IdTipoSeg, cCodMoneda,
-                                                                     nSumaAsegurada);
-                  --END IF;
-               END IF;
-            END IF;
-
-            IF OC_AGENTES_DETALLES_POLIZAS.EXISTE_AGENTE (X.CodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, nCod_Agente) = 'N' THEN
-               IF nCod_Agente IS NOT NULL THEN
-                  OC_AGENTES_DETALLES_POLIZAS.INSERTA_AGENTE(X.CodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, nCod_Agente);
-               END IF;
-            END IF;
---            OC_POLIZAS.INSERTA_REQUISITOS(X.CodCia, nIdPoliza);     --REQ
-            IF NVL(cIndSinAseg,'N') = 'N' OR NVL(nIdEndoso,0) = 0 THEN
-               OC_POLIZAS.ACTUALIZA_VALORES(X.CodCia, nIdPoliza, 0);
-               OC_DETALLE_POLIZA.ACTUALIZA_VALORES(X.CodCia, nIdPoliza, nIDetPol, 0);
-            ELSIF NVL(nIdEndoso,0) != 0 THEN
-               OC_ENDOSO.ACTUALIZA_VALORES(X.CodCia, X.CodEmpresa, nIdPoliza, nIDetPol, nIdEndoso);
-            END IF;
-         EXCEPTION
-            WHEN OTHERS THEN
+                END;
+                /* Se quita temporalmente la carga de coberturas para agilizar el proceso de EmisiÛn y solo se deja para Endosos*/
+                --IF NVL(nIdEndoso,0) != 0 THEN
+                IF cIndEdadPromedio = 'N' AND cIndCuotaPromedio = 'N' AND cIndPrimaPromedio = 'N' THEN
+                   IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
+                      IF NVL(cIndSinAseg,'N') = 'N' THEN
+                         IF NVL(nIdSolicitud,0) = 0 THEN
+                            --OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, nIdPoliza, nIDetPol, nTasaCambio, nCod_Asegurado);
+                            IF NVL(nIdCotizacion,0) = 0 THEN
+                               FOR z in c_coberturas ( x.CodCia, x.CodEmpresa, x.IdTipoSeg, x.PlanCob, x.NumPolUnico, nIdetPol ) LOOP
+                                   --Regla de Suma Asegurada
+                                   IF NVL(nSumaAsegurada, 0) > 0 THEN
+                                      nSumaAseguradaOk := NVL(nSumaAsegurada, 0);
+                                   ELSE
+                                      nSumaAseguradaOk := NVL(nSalarioMensual, 0) * NVL(nVecesSalario, 0);
+                                   END IF;
+                                   --
+                                   nSalarioMensualOk := NVL(nSalarioMensual, 0);
+                                   nVecesSalarioOk   := NVL(nVecesSalario, 0);
+                                   --
+                                   IF nSumaAseguradaOk <= 0 THEN
+                                      IF NVL(z.SumaAsegManual, 0) > 0 THEN
+                                         nSumaAseguradaOk := NVL(z.SumaAsegManual, 0);
+                                      ELSE
+                                         nSumaAseguradaOk := NVL(z.SalarioMensual, 0) * NVL(z.VecesSalario, 0);
+                                      END IF;
+                                      --
+                                      nSalarioMensualOk := NVL(z.SalarioMensual, 0);
+                                      nVecesSalarioOk   := NVL(z.VecesSalario, 0);
+                                   END IF;
+                                   --
+                                   IF nSumaAseguradaOk <= 0 THEN
+                                      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se pueden Cargar las Coberturas, no tiene suma asegurada la cobertura: ' || z.CodCobert);
+                                      OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
+                                   END IF;
+                                   --
+                                   OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS( x.CodCia         , x.CodEmpresa    , x.IdTipoSeg       , x.PlanCob          , nIdPoliza       ,
+                                                                         nIDetPol         , nTasaCambio     , nCod_Asegurado    , z.CodCobert        , nSumaAseguradaOk,
+                                                                         nSalarioMensualOk, nVecesSalarioOk , z.Edad_Minima     , z.Edad_Maxima      , z.Edad_Exclusion,
+                                                                         z.SumaAsegMinima , z.SumaAsegMaxima, nPorcExtraPrimaDet, nMontoExtraPrimaDet, z.SumaAsegManual );
+                                   --
+                                   IF NVL(z.PrimaPromedio, 0) > 0 THEN
+                                      BEGIN
+                                         SELECT 'S'
+                                         INTO   cExisteCobert
+                                         FROM   COBERT_ACT_ASEG
+                                         WHERE  CodEmpresa    = x.CodEmpresa
+                                           AND  CodCia        = x.CodCia
+                                           AND  idpoliza      = nIdPoliza
+                                           AND  IDetPol       = nIDetPol
+                                           AND  IdTipoSeg     = x.IdTipoSeg
+                                           AND  Cod_Asegurado = nCod_Asegurado
+                                           AND  CodCobert     = z.CodCobert
+                                           AND  PlanCob       = x.PlanCob;
+                                      EXCEPTION
+                                      WHEN NO_DATA_FOUND THEN
+                                           cExisteCobert := 'N';
+                                      WHEN TOO_MANY_ROWS THEN
+                                           cExisteCobert := 'S';
+                                      END;
+                                      --
+                                      IF cExisteCobert = 'S' THEN
+                                         UPDATE COBERT_ACT_ASEG
+                                         SET    Prima_Local  = z.PrimaPromedio
+                                           ,    Prima_Moneda = z.PrimaPromedio
+                                         WHERE  CodEmpresa    = x.CodEmpresa
+                                           AND  CodCia        = x.CodCia
+                                           AND  idpoliza      = nIdPoliza
+                                           AND  IDetPol       = nIDetPol
+                                           AND  IdTipoSeg     = x.IdTipoSeg
+                                           AND  Cod_Asegurado = nCod_Asegurado
+                                           AND  CodCobert     = z.CodCobert
+                                           AND  PlanCob       = x.PlanCob;
+                                      END IF;
+                                   END IF;
+                               END LOOP;
+                               --OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,nIdPoliza,
+                               --                                 nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0);
+                            ELSE
+                               GT_COTIZACIONES_COBERT_MASTER.CREAR_COBERTURAS_POLIZA(X.CodCia, X.CodEmpresa, nIdCotizacion, nIDetCotizacion, nIdPoliza, nIDetPol, nCod_Asegurado, 'S', nSumaAsegurada);
+                            END IF;
+                         ELSE
+                            OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(X.CodCia, X.CodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                            OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(X.CodCia, X.CodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                         END IF;
+                      ELSE
+                         BEGIN
+                            SELECT 'CAMPO' || ORDENCAMPO CAMPO
+                            INTO   cCampo
+                            FROM   CONFIG_PLANTILLAS_CAMPOS
+                            WHERE  CodCia        = X.CodCia
+                              AND  CodEmpresa    = X.CodEmpresa
+                              AND  CodPlantilla  = cCodPlantilla
+                              AND  NomCampo   LIKE '%MONTO%CREDITO%'
+                              AND  IndAseg       = 'S';
+                         EXCEPTION
+                         WHEN NO_DATA_FOUND THEN
+                              RAISE_APPLICATION_ERROR(-20225, 'NO EXISTE CAMPO MONTO CREDITO EN PLANTILLA: ' || cCodPlantilla);
+                         WHEN TOO_MANY_ROWS THEN
+                              RAISE_APPLICATION_ERROR(-20225, 'EXISTE MAS DE UN CAMPO MONTO CREDITO EN PLANTILLA: ' || cCodPlantilla);
+                         END;
+                         nSuma := OC_ASEGURADO_CERTIFICADO.SUMA_ASEGURADO(nCodCia, nIdPoliza, nIdetPol, nCod_Asegurado, cCampo);
+                         OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS_SIN_TARIFA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, nIdPoliza, nIDetPol, nTasaCambio, nCod_Asegurado, nSuma);
+                      END IF;
+                      IF NVL(nIdEndoso,0) != 0 THEN
+                         UPDATE COBERT_ACT_ASEG
+                         SET    IdEndoso = nIdEndoso
+                         WHERE  CodCia        = X.CodCia
+                           AND  IdPoliza      = nIdPoliza
+                           AND  IDetPol       = nIDetPol
+                           AND  Cod_Asegurado = nCod_Asegurado;
+                      END IF;
+                      OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(X.CodCia, X.CodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+                   END IF;
+                ELSIF NVL(nIdCotizacion,0) != 0  AND (cIndEdadPromedio = 'S' OR cIndCuotaPromedio = 'S' OR cIndPrimaPromedio = 'S') THEN
+                   --IF NVL(nIdCotizacion,0) != 0 THEN
+                   GT_TEMP_LISTADO_DECLARACIONES.GENERA_COBERTURAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso, nCod_Asegurado,
+                                                                   nIdCotizacion, nIDetCotizacion, X.PlanCob, X.IdTipoSeg, cCodMoneda,
+                                                                   nSumaAsegurada);
+                   --END IF;
+                END IF;
+             END IF;
+             --
+             IF OC_AGENTES_DETALLES_POLIZAS.EXISTE_AGENTE(X.CodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, nCod_Agente) = 'N' THEN
+                IF nCod_Agente IS NOT NULL THEN
+                   OC_AGENTES_DETALLES_POLIZAS.INSERTA_AGENTE(X.CodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, nCod_Agente);
+                END IF;
+             END IF;
+             --OC_POLIZAS.INSERTA_REQUISITOS(X.CodCia, nIdPoliza);     --REQ
+             IF NVL(cIndSinAseg,'N') = 'N' OR NVL(nIdEndoso,0) = 0 THEN
+                OC_POLIZAS.ACTUALIZA_VALORES(X.CodCia, nIdPoliza, 0);
+                OC_DETALLE_POLIZA.ACTUALIZA_VALORES(X.CodCia, nIdPoliza, nIDetPol, 0);
+             ELSIF NVL(nIdEndoso,0) != 0 THEN
+                OC_ENDOSO.ACTUALIZA_VALORES(X.CodCia, X.CodEmpresa, nIdPoliza, nIDetPol, nIdEndoso);
+             END IF;
+          EXCEPTION
+          WHEN OTHERS THEN
                cMsjError := SQLERRM;
-         END ;
-         IF cMsjError = 'N'   THEN
-           OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'PROCE');
-     /*     IF NVL(X.IndColectiva,'N')= 'N' THEN
-            OC_POLIZAS.EMITIR_POLIZA(X.CodCia, nIdPoliza, X.CodEmpresa);
-          END IF;*/
-         ELSE
-            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la PÛliza o Cargar el Asegurado: '||cMsjError);
-            OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
-         END IF;
-      ELSE
-         OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
-      END IF;
+          END;
+          IF cMsjError = 'N'   THEN
+             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'PROCE');
+             /*IF NVL(X.IndColectiva,'N')= 'N' THEN
+                OC_POLIZAS.EMITIR_POLIZA(X.CodCia, nIdPoliza, X.CodEmpresa);
+             END IF;*/
+          ELSE
+             OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la PÛliza o Cargar el Asegurado: ' || cMsjError);
+             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
+          END IF;
+       ELSE
+          OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
+       END IF;
    END LOOP;
 EXCEPTION
-  WHEN OTHERS THEN
-    OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la PÛliza o Cargar el Asegurado: '||SQLERRM);
-    OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+WHEN OTHERS THEN
+     OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la PÛliza o Cargar el Asegurado: ' || SQLERRM);
+     OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
 END EMISION_COLECTIVA_ASEGURADO;
 
 PROCEDURE ALTA_CERTIFICADO(nIdProcMasivo NUMBER) IS
@@ -11802,5 +11984,221 @@ EXCEPTION
       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
 END COBRANZA_APORTES_ASEG_FONDOS;
 
+   PROCEDURE CARGA_ARCHIVO_ASEGURADOS ( nCodCia             NUMBER
+                                      , cNumPolUnico        VARCHAR2
+                                      , cTipoProceso        VARCHAR2
+                                      , cIndCol             VARCHAR2
+                                      , cCodUsuario         VARCHAR2
+                                      , cIndAsegurado       VARCHAR2
+                                      , cNombreArchivo      VARCHAR2
+                                      , cRegsTotales   OUT  NUMBER
+                                      , cRegsCargados  OUT  NUMBER
+                                      , cRegsErroneos  OUT  NUMBER ) IS
+      nCodEmpresa              POLIZAS.CodEmpresa%TYPE;
+      cIdTipoSeg               DETALLE_POLIZA.IdTipoSeg%TYPE;
+      cPlanCob                 DETALLE_POLIZA.PlanCob%TYPE;
+      cCodPlantilla            CONFIG_PLANTILLAS_PLANCOB.CodPlantilla%TYPE;
+      --cSeparador1         VARCHAR2(10) := 'SICAS';
+      cSeparador               VARCHAR2(1);
+      cRegDatosProc            VARCHAR2(4000);
+      cNumDetUnico             PROCESOS_MASIVOS.NumDetUnico%TYPE;
+      cNumPolUnicoFinal        PROCESOS_MASIVOS.NumPolUnico%TYPE;
+      nIdProcMasivo            NUMBER := 0;
+      cNum_Doc_Identificacion  CARGA_ASEGURADOS_EXT.Num_Doc_Identificacion%TYPE;
+      --
+      CURSOR cRegistros IS
+             SELECT *
+             FROM   CARGA_ASEGURADOS_EXT
+             ORDER BY CodEmpresa, IdTipoSeg, Plancob, Numpolunico, Subgrupo;
+   BEGIN
+      cRegsTotales   := 0;
+      cRegsCargados  := 0;
+      cRegsErroneos  := 0;
+      --
+      FOR x IN cRegistros LOOP
+          cRegsTotales := cRegsTotales + 1;
+          --
+          IF ( nCodEmpresa IS NULL AND cIdTipoSeg IS NULL AND cPlanCob IS NULL ) OR ( nCodEmpresa <> x.CodEmpresa OR cIdTipoSeg <> x.IdTipoSeg OR cPlanCob <> x.PlanCob ) THEN
+             nCodEmpresa   := x.CodEmpresa;
+             cIdTipoSeg    := TRIM(x.IdTipoSeg);
+             cPlanCob      := TRIM(x.Plancob);
+             --
+             cCodPlantilla := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA( nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, cTipoProceso );
+             cSeparador    := OC_PROCESOS_MASIVOS.TIPO_SEPARADOR(cCodPlantilla);
+          END IF;
+          --
+          IF NVL(cIndCol, 'N') = 'S' AND cNumPolUnico IS NOT NULL THEN 
+             cNumPolUnicoFinal := TRIM(cNumPolUnico);
+          ELSE
+             cNumPolUnicoFinal := TRIM(x.Numpolunico);
+          END IF;
+          --
+          cNumDetUnico            := x.Subgrupo;
+          nIdProcMasivo           := OC_PROCESOS_MASIVOS.CREAR(nCodCia, nCodEmpresa);
+          cNum_Doc_Identificacion := REPLACE(UPPER(TRIM(x.Num_Doc_Identificacion)), '—', 'N');
+          --
+          cRegDatosProc := x.CodEmpresa                                     || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.IdTipoSeg)))     || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.PlanCob)))                 || cSeparador ||
+                           cNumPolUnicoFinal                                || cSeparador || x.SubGrupo                                  || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.Tipo_Doc_Identificacion))) || cSeparador ||
+                           UPPER(DEPURA_CADENA(cNum_Doc_Identificacion))    || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.Nombre)))        || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.Apellido_Paterno)))        || cSeparador ||
+                           UPPER(DEPURA_CADENA(TRIM(x.Apellido_Materno)))   || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.Sexo)))          || cSeparador || TO_CHAR(x.FecNacimiento, 'DD/MM/YYYY')                || cSeparador ||
+                           UPPER(DEPURA_CADENA(TRIM(x.Tipo_Id_Tributaria))) || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.Numtributario))) || cSeparador || TO_CHAR(x.FecIngreso, 'DD/MM/YYYY')                   || cSeparador ||
+                           TO_CHAR(x.FecStatus, 'DD/MM/YYYY')               || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.DirecRes)))      || cSeparador || DEPURA_CADENA(TRIM(x.CodigoZip))                      || cSeparador ||
+                           DEPURA_CADENA(TRIM(x.ClienteUnico))              || cSeparador || TO_CHAR(x.FecIniVig, 'DD/MM/YYYY')          || cSeparador || TO_CHAR(x.FecFinVig, 'DD/MM/YYYY')                    || cSeparador ||
+                           TO_CHAR(x.FecIniVig2, 'DD/MM/YYYY')              || cSeparador || TO_CHAR(x.FecFinVig2, 'DD/MM/YYYY')         || cSeparador || x.SumaAsegurada                                       || cSeparador || 
+                           x.Sueldo                                         || cSeparador || x.Nutra                                     || cSeparador || x.VecesSalario                                        || cSeparador || 
+                           x.CampoFlexible1                                 || cSeparador || x.CampoFlexible2                            || cSeparador || x.CampoFlexible3                                      || cSeparador ||
+                           x.CampoFlexible4                                 || cSeparador || x.CampoFlexible5                            || cSeparador || x.CampoFlexible6;
+          --
+          BEGIN
+             INSERT INTO PROCESOS_MASIVOS
+                ( IdProcMasivo, CodCia      , CodEmpresa , IdTipoSeg  , PlanCob     , TipoProceso , StsRegProceso,
+                  FecSts      , RegDatosProc, NumPolUnico, NumDetUnico, IndColectiva, IndAsegurado, CodUsuario   , NomArchivoCarga )
+             VALUES( nIdProcMasivo , nCodCia      , nCodEmpresa      , cIdTipoSeg  , cPlanCob, cTipoProceso , 'XPROC'    ,
+                     TRUNC(SYSDATE), cRegDatosProc, cNumPolUnicoFinal, cNumDetUnico, cIndCol , cIndAsegurado, cCodUsuario, cNombreArchivo );
+             --
+             cRegsCargados := cRegsCargados + 1;
+          EXCEPTION
+	       WHEN OTHERS THEN
+               cRegsErroneos := cRegsErroneos + 1;
+               --PROC_CREA_ARCH_ERRORES(cLinea||'-->'||cMsgArchErr, 'XXX', cCodUser, nLinea);
+          END;
+      END LOOP;
+   END CARGA_ARCHIVO_ASEGURADOS;
+
+   FUNCTION DEPURA_CADENA ( cCadenaEntrada  VARCHAR2 ) RETURN VARCHAR2 IS
+      cCadenaSalida  VARCHAR2(500);
+      cCodigosMal    VARCHAR2(100) := '·‡‚‰„Â¡¿¬ƒ√≈Á«ÈËÍÎ…» ÀÌÏÓÔÕÃŒœ•§ÛÚÙˆı”“‘÷’–öä˙˘˚¸⁄Ÿ€‹˝ˇ›üûé.,:;/*+-()~';
+      cCodigosBien   VARCHAR2(100) := 'aaaaaaAAAAAAcCeeeeEEEEiiiiIIIIÒÒooooooOOOOOOsSuuuuUUUUyyYYzZ';
+   BEGIN
+      cCadenaSalida :=  UPPER(TRANSLATE(LTRIM(cCadenaEntrada), cCodigosMal, cCodigosBien));
+      --
+      RETURN(cCadenaSalida);
+   END DEPURA_CADENA;
+
+   PROCEDURE RECUPERA_LOG_CARGA( cNomArchCarga  VARCHAR2
+                               , cNomArcSalida  VARCHAR2 ) IS
+      cNomDirectorio   VARCHAR2(100);
+      cCtlArchivo1     UTL_FILE.FILE_TYPE;
+      cCtlArchivo2     UTL_FILE.FILE_TYPE;
+      cCtlArchivo3     UTL_FILE.FILE_TYPE;
+      cNomArchivoBad   VARCHAR2(100) := 'carga_asegurados.bad';
+      cNomArchivoLog   VARCHAR2(100) := 'carga_asegurados.log';
+      cNomArchivoRes   VARCHAR2(100) := SUBSTR(cNomArchCarga, 1, INSTR(cNomArchCarga, '.')) || 'log';
+      cLine            VARCHAR2(4000);
+      cYaEsError       VARCHAR2(1) := 'N';
+      nTotReg          NUMBER := 0;
+      cCampoFlexible1  CARGA_ASEGURADOS_LOG.CampoFlexible1%TYPE;
+      cCampoFlexible2  CARGA_ASEGURADOS_LOG.CampoFlexible2%TYPE;
+      cCampoFlexible3  CARGA_ASEGURADOS_LOG.CampoFlexible3%TYPE;
+      nCampo           NUMBER := 2;
+      nNumRegIniErr    NUMBER;
+      cCadena          VARCHAR2(4000);
+      cHayArchivoBad   VARCHAR2(1) := 'S';
+      --
+      CURSOR c_Detalle IS
+             SELECT CampoFlexible1 || ',' || CampoFlexible2 || ',' || CampoFlexible3 Cadena
+             FROM   CARGA_ASEGURADOS_LOG
+             WHERE  NomArchivoCarga = cNomArchCarga
+             ORDER BY IdRegistro;
+   BEGIN
+      DELETE CARGA_ASEGURADOS_LOG
+      WHERE  NomArchivoCarga = cNomArchCarga;
+      --
+      cNomDirectorio := OC_VALORES_DE_LISTAS.BUSCA_LVALOR('SO_PATH', 'REPORT');
+      cCtlArchivo1   := UTL_FILE.FOPEN(cNomDirectorio, cNomArchivoLog, 'R');
+      LOOP
+         BEGIN
+            UTL_FILE.GET_LINE(cCtlArchivo1, cLine);
+            --
+            IF cYaEsError = 'N' AND SUBSTR(cLine, 1, 5) = 'error' THEN
+               cYaEsError    := 'S';
+               nNumRegIniErr := nTotReg + 1;
+            END IF;
+            --
+            IF cYaEsError = 'N' THEN
+               nTotReg         := nTotReg + 1;
+               cCampoFlexible1 := REPLACE(REPLACE(cLine, 'carga_asegurados.csv', cNomArchCarga), 'Terminated by ","', 'Terminated by "coma"');
+               cCampoFlexible2 := NULL;
+               cCampoFlexible3 := NULL;
+               --
+               INSERT INTO CARGA_ASEGURADOS_LOG
+               VALUES ( cNomArchCarga, nTotReg, cCampoFlexible1, cCampoFlexible2, cCampoFlexible3 );
+            ELSE
+               cCampoFlexible1 := NULL;
+               IF nCampo = 2 THEN
+                  cCampoFlexible2 := REPLACE(cLine, 'carga_asegurados.csv', cNomArchCarga);
+                  nCampo          := 3;
+               ELSIF nCampo = 3 THEN
+                  nTotReg         := nTotReg + 1;
+                  cCampoFlexible3 := REPLACE(cLine, 'carga_asegurados.csv', cNomArchCarga);
+                  nCampo          := 2;
+                  --
+                  INSERT INTO CARGA_ASEGURADOS_LOG
+                  VALUES ( cNomArchCarga, nTotReg, cCampoFlexible1, cCampoFlexible2, cCampoFlexible3 );
+                  --
+                  cCampoFlexible1 := NULL;
+                  cCampoFlexible2 := NULL;
+                  cCampoFlexible3 := NULL;
+               END IF;
+            END IF;
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              EXIT;
+         END;
+      END LOOP;
+      UTL_FILE.FCLOSE(cCtlArchivo1);
+      --
+      BEGIN
+         cCtlArchivo2 := UTL_FILE.FOPEN(cNomDirectorio, cNomArchivoBad, 'R');
+      EXCEPTION
+      WHEN OTHERS THEN
+           cHayArchivoBad := 'N';
+      END;
+      --
+      IF cHayArchivoBad = 'S' THEN
+         LOOP
+            BEGIN
+               UTL_FILE.GET_LINE(cCtlArchivo2, cLine);
+               --
+               UPDATE CARGA_ASEGURADOS_LOG
+               SET    CampoFlexible1 = REPLACE(cLine, 'carga_asegurados.csv', cNomArchCarga)
+               WHERE  NomArchivoCarga = cNomArchCarga
+                 AND  IdRegistro   = nNumRegIniErr;
+               --
+               nNumRegIniErr := nNumRegIniErr + 1;
+            EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                 EXIT;
+            END;
+         END LOOP;
+         UTL_FILE.FCLOSE(cCtlArchivo2);
+      END IF;
+      --
+      cCtlArchivo3 := UTL_FILE.FOPEN(cNomDirectorio, cNomArcSalida, 'W', 32767);
+      --
+      OPEN c_Detalle;
+      LOOP
+         FETCH c_Detalle INTO cCadena;
+         EXIT WHEN c_Detalle%NOTFOUND;
+         --
+         UTL_FILE.PUT_LINE(cCtlArchivo3, cCadena);
+         --
+      END LOOP;
+      CLOSE c_Detalle;
+      UTL_FILE.FCLOSE(cCtlArchivo3);
+      UTL_FILE.FCLOSE_ALL;
+   END RECUPERA_LOG_CARGA;
 END OC_PROCESOS_MASIVOS;
+/
+
+--
+-- OC_PROCESOS_MASIVOS  (Synonym) 
+--
+--  Dependencies: 
+--   OC_PROCESOS_MASIVOS (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_PROCESOS_MASIVOS FOR SICAS_OC.OC_PROCESOS_MASIVOS
+/
+
+GRANT EXECUTE ON SICAS_OC.OC_PROCESOS_MASIVOS TO PUBLIC
 /
