@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_FACTURAR IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAR IS
 
 -- CALCULO DE COMISIONES PARA RAMOS PAQUETE                                  2022/01/22  JMMD
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
@@ -55,7 +55,7 @@ CREATE OR REPLACE PACKAGE OC_FACTURAR IS
 
 END OC_FACTURAR;
 /
-CREATE OR REPLACE PACKAGE BODY OC_FACTURAR IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAR IS
 --
 -- MODIFICACIONES
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO      2018/03/09  ICOFINVIG
@@ -4255,7 +4255,8 @@ CURSOR C_AGENTES_D IS
      AND IDetPol                 = nIdetPol
      AND Cod_Agente              = nCod_Agente
      AND Porc_Com_Proporcional   > 0
-     AND Porc_Com_Distribuida    > 0;
+     --AND Porc_Com_Distribuida    > 0  --MLJS 20/05/2022
+     ;
 BEGIN
    FOR I IN C_AGENTES LOOP
       nCod_Agente := I.Cod_Agente;
@@ -4462,7 +4463,8 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
      AND IDetPol                 = nIdetPol
      AND Cod_Agente              = nCod_Agente
      AND Porc_Com_Proporcional   > 0
-     AND Porc_Com_Distribuida    > 0;
+     --AND Porc_Com_Distribuida    > 0       --MLJS 20/05/2022
+     ;
 BEGIN
    SELECT NumPagos, FrecPagos
      INTO nNumPagos, nFrecPagos
@@ -4603,7 +4605,8 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
      AND IDetPol                 = nIdetPol
      AND Cod_Agente              = nCod_Agente
      AND Porc_Com_Proporcional   > 0
-     AND Porc_Com_Distribuida    > 0;
+     --AND Porc_Com_Distribuida    > 0    --MLJS 20/05/2022
+     ;
 BEGIN
    SELECT NumPagos, FrecPagos
      INTO nNumPagos, nFrecPagos
@@ -7881,7 +7884,8 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
      AND IDetPol                 = nIdetPol
      AND Cod_Agente              = nCod_Agente
      AND Porc_Com_Proporcional   > 0
-     AND Porc_Com_Distribuida    > 0;
+    -- AND Porc_Com_Distribuida    > 0      ---MLJS 20/05/2022
+    ;
 
 CURSOR P_COB_RAMOS IS
 SELECT DISTINCT C.IDRAMOREAL
@@ -7965,9 +7969,9 @@ BEGIN
              INTO cCODTIPO
              FROM AGENTES
             WHERE COD_AGENTE = R_Agentes.Cod_Agente;
-            
+
             DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO R_Agentes.Cod_Agente  '||R_Agentes.Cod_Agente||'  nMontoComisiones  '||nMontoComisiones);
-        
+
             IF cCODTIPO IN('HONPF', 'HONPM', 'HONORF', 'HONORM') AND R_Agentes.Cod_Agente != 1019 THEN
                nPorc_com_distribuida_Vida := R_Agentes.Porc_com_distribuida / 1.16;
 --               DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorc_com_distribuida_Vida  '||nPorc_com_distribuida_Vida);
