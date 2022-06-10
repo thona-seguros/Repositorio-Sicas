@@ -6,6 +6,7 @@ CREATE OR REPLACE PACKAGE OC_PROCESOS_MAS_SINI IS
 --  30/04/2019  Disminucion de reserva                                -- JICO AJUSTES
 --  06/09/2021  Procesos masivo en solicitud                          -- JICO MASSOL
 --  16/12/2021  Reingenieria F2                                       -- JICO RF2
+--  01/06/2022  Se ajusto insert-values                               -- JICO BMI
 --
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 --
@@ -79,6 +80,7 @@ CREATE OR REPLACE PACKAGE BODY OC_PROCESOS_MAS_SINI IS
 --  30/04/2019  Disminucion de reserva                                -- JICO AJUSTES
 --  06/09/2021  Procesos masivo en solicitud                          -- JICO MASSOL
 --  06/09/2021  Reingenieria F2                                       -- JICO RF2
+--  01/06/2022  Se ajusto insert-values BMI                              -- JICO BMI
 --
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
@@ -3609,6 +3611,33 @@ nCodError              NUMBER(2) := Null;
 cObservacion           VARCHAR2(100);
 WNIDDETSIN             COBERTURA_SINIESTRO_ASEG.IDDETSIN%TYPE;
 --
+CURSOR APROBA IS
+SELECT *
+  FROM APROBACIONES A
+ WHERE A.IDSINIESTRO    = NIDSINIESTRO
+   AND A.NUM_APROBACION = NNUM_APROBACION
+   AND A.IDDETSIN       = NIDDETSIN
+   AND A.CODCIA         = NCODCIA;
+--
+CURSOR DET_APROBA IS
+SELECT *
+  FROM DETALLE_APROBACION A
+ WHERE A.IDSINIESTRO    = NIDSINIESTRO
+   AND A.NUM_APROBACION = NNUM_APROBACION;
+--
+CURSOR APROBA_A IS
+SELECT *
+  FROM APROBACION_ASEG A
+ WHERE A.IDSINIESTRO    = NIDSINIESTRO
+   AND A.NUM_APROBACION = NNUM_APROBACION
+   AND A.IDDETSIN       = NIDDETSIN
+   AND A.CODCIA         = NCODCIA;
+--
+CURSOR DET_APROBA_A IS
+SELECT *
+  FROM DETALLE_APROBACION_ASEG A
+ WHERE A.IDSINIESTRO    = NIDSINIESTRO
+   AND A.NUM_APROBACION = NNUM_APROBACION;
 --
 BEGIN
   --
@@ -3681,58 +3710,42 @@ BEGIN
      END;
      --
      IF cExisteAPRO = 'S' THEN
-        INSERT INTO APROBACIONES
-          SELECT NNUM_APROBACION_NVO, --NUM_APROBACION
-                 IDSINIESTRO,
-                 IDPOLIZA,
-                 IDDETSIN,
-                 TIPO_APROBACION,
-                 MONTO_LOCAL,
-                 MONTO_MONEDA,
-                 'SOL', --STSAPROBACION,
-                 TIPO_DE_APROBACION,
-                 '',--IDTRANSACCION,
-                 INDDISPERSION,
-                 CTALIQUIDADORA,
-                 IDEFACTEXT,
-                 BENEF,
-                 '',--IDTRANSACCIONANUL
-                 '',--FECHFONDOSINI
-                 USER,--CODUSUARIO
-                 TERMINAL,--TERMINAL
-                 '',--INDFONDOSINI
-                 TRUNC(SYSDATE),--FECPAGO,
-                 NUMPAGREF,
-                 '', --IDAUTORIZACION,
-                 CODCIA,
-                 CODEMPRESA,
-                 COD_MONEDA,
-                 CODCOBERT,
-                 COD_ASEGURADO,
-                 'MASIVO',--CODUSUARIO_ALTA
-                 TRUNC(SYSDATE)--FECREGISTRO;
-            FROM APROBACIONES A
-           WHERE A.IDSINIESTRO    = NIDSINIESTRO
-             AND A.NUM_APROBACION = NNUM_APROBACION
-             AND A.IDDETSIN       = NIDDETSIN
-             AND A.CODCIA         = NCODCIA;
+        FOR X IN APROBA LOOP
+         INSERT INTO APROBACIONES  
+           (NUM_APROBACION,        IDSINIESTRO,      IDPOLIZA,             IDDETSIN,
+            TIPO_APROBACION,       MONTO_LOCAL,      MONTO_MONEDA,         STSAPROBACION,
+            TIPO_DE_APROBACION,    IDTRANSACCION,    INDDISPERSION,        CTALIQUIDADORA,
+            IDEFACTEXT,            BENEF,            IDTRANSACCIONANUL,    FECHFONDOSINI,
+            CODUSUARIO,            TERMINAL,         INDFONDOSINI,         FECPAGO,
+            NUMPAGREF,             IDAUTORIZACION,   CODCIA,               CODEMPRESA,
+            COD_MONEDA,            CODCOBERT,        COD_ASEGURADO,        CODUSUARIO_ALTA,
+            FECREGISTRO)
+         VALUES
+           (NNUM_APROBACION_NVO,    X.IDSINIESTRO,    X.IDPOLIZA,           X.IDDETSIN,
+            X.TIPO_APROBACION,      X.MONTO_LOCAL,    X.MONTO_MONEDA,       'SOL', 
+            X.TIPO_DE_APROBACION,   '',               X.INDDISPERSION,       X.CTALIQUIDADORA,
+            X.IDEFACTEXT,           X.BENEF,          '',                   '',
+            USER,                   X.TERMINAL,       '',                   TRUNC(SYSDATE),
+            X.NUMPAGREF,            '',               X. CODCIA,            X.CODEMPRESA,
+            X.COD_MONEDA,           X.CODCOBERT,      X.COD_ASEGURADO,      'MASIVO',
+            TRUNC(SYSDATE));
+        END LOOP;
         --
-        INSERT INTO DETALLE_APROBACION
-          SELECT NNUM_APROBACION_NVO, --NNUM_APROBACION
-                 IDDETAPROB,
-                 COD_PAGO,
-                 MONTO_LOCAL,
-                 MONTO_MONEDA,
-                 IDSINIESTRO,
-                 CODTRANSAC,
-                 CODCPTOTRANSAC,
-                 CODCIA,
-                 CODEMPRESA,
-                 COD_MONEDA
-            FROM DETALLE_APROBACION A
-           WHERE A.IDSINIESTRO    = NIDSINIESTRO
-             AND A.NUM_APROBACION = NNUM_APROBACION;
-         --
+        --
+        --
+       FOR D IN DET_APROBA LOOP        
+           INSERT INTO DETALLE_APROBACION
+             (NUM_APROBACION,        IDDETAPROB,              COD_PAGO,
+              MONTO_LOCAL,           MONTO_MONEDA,            IDSINIESTRO,
+              CODTRANSAC,            CODCPTOTRANSAC,          CODCIA,
+              CODEMPRESA,            COD_MONEDA)
+           VALUES
+             (NNUM_APROBACION,       D.IDDETAPROB,            D.COD_PAGO,
+              D.MONTO_LOCAL,         D.MONTO_MONEDA,          D.IDSINIESTRO,
+              D.CODTRANSAC,          D.CODCPTOTRANSAC,        D.CODCIA,
+              D.CODEMPRESA,          D.COD_MONEDA);
+        END LOOP;
+        --
      END IF;
      --
   END IF;
@@ -3787,58 +3800,42 @@ BEGIN
      END;
      --
      IF cExisteAPRO = 'S' THEN
-        INSERT INTO APROBACION_ASEG
-          SELECT NNUM_APROBACION_NVO, --NUM_NUM_APROBACION
-                 IDSINIESTRO,
-                 IDPOLIZA,
-                 IDDETSIN,
-                 COD_ASEGURADO,
-                 TIPO_APROBACION,
-                 MONTO_LOCAL,
-                 MONTO_MONEDA,
-                 'SOL', --STSAPROBACION
-                 TIPO_DE_APROBACION,
-                 '', --IDTRANSACCION
-                 INDDISPERSION,
-                 CTALIQUIDADORA,
-                 IDEFACTEXT,
-                 BENEF,
-                 '', --IDTRANSACCIONANUL
-                 '', --IDPOLIZAPAGO
-                 '',--INDFONDOSINI
-                 '',--FECHFONDOSINI
-                 USER,--CODUSUARIO
-                 TERMINAL,--TERMINAL
-                 TRUNC(SYSDATE), --FECPAGO
-                 NUMPAGREF,
-                 '', --IDAUTORIZACION
-                 CODCIA,
-                 CODEMPRESA,
-                 COD_MONEDA,
-                 CODCOBERT,
-                 USER,--CODUSUARIO_ALTA
-                 TRUNC(SYSDATE) --FECREGISTRO
-            FROM APROBACION_ASEG A
-           WHERE A.IDSINIESTRO    = NIDSINIESTRO
-             AND A.NUM_APROBACION = NNUM_APROBACION
-             AND A.CODCIA         = NCODCIA;
+        FOR X IN APROBA_A LOOP
+         INSERT INTO APROBACIONES  
+           (NUM_APROBACION,        IDSINIESTRO,      IDPOLIZA,             IDDETSIN,
+            TIPO_APROBACION,       MONTO_LOCAL,      MONTO_MONEDA,         STSAPROBACION,
+            TIPO_DE_APROBACION,    IDTRANSACCION,    INDDISPERSION,        CTALIQUIDADORA,
+            IDEFACTEXT,            BENEF,            IDTRANSACCIONANUL,    FECHFONDOSINI,
+            CODUSUARIO,            TERMINAL,         INDFONDOSINI,         FECPAGO,
+            NUMPAGREF,             IDAUTORIZACION,   CODCIA,               CODEMPRESA,
+            COD_MONEDA,            CODCOBERT,        COD_ASEGURADO,        CODUSUARIO_ALTA,
+            FECREGISTRO)
+         VALUES
+           (NNUM_APROBACION_NVO,    X.IDSINIESTRO,    X.IDPOLIZA,           X.IDDETSIN,
+            X.TIPO_APROBACION,      X.MONTO_LOCAL,    X.MONTO_MONEDA,       'SOL', 
+            X.TIPO_DE_APROBACION,   '',               X.INDDISPERSION,       X.CTALIQUIDADORA,
+            X.IDEFACTEXT,           X.BENEF,          '',                   '',
+            USER,                   X.TERMINAL,       '',                   TRUNC(SYSDATE),
+            X.NUMPAGREF,            '',               X. CODCIA,            X.CODEMPRESA,
+            X.COD_MONEDA,           X.CODCOBERT,      X.COD_ASEGURADO,      'MASIVO',
+            TRUNC(SYSDATE));
+        END LOOP;
         --
-        INSERT INTO DETALLE_APROBACION_ASEG
-          SELECT NNUM_APROBACION_NVO, --NNUM_APROBACION
-                 IDDETAPROB,
-                 COD_PAGO,
-                 MONTO_LOCAL,
-                 MONTO_MONEDA,
-                 IDSINIESTRO,
-                 CODTRANSAC,
-                 CODCPTOTRANSAC,
-                 CODCIA,
-                 CODEMPRESA,
-                 COD_MONEDA
-            FROM DETALLE_APROBACION_ASEG A
-           WHERE A.IDSINIESTRO    = NIDSINIESTRO
-             AND A.NUM_APROBACION = NNUM_APROBACION;
-         --
+        --
+        --
+       FOR D IN DET_APROBA_A LOOP        
+           INSERT INTO DETALLE_APROBACION_ASEG
+             (NUM_APROBACION,        IDDETAPROB,              COD_PAGO,
+              MONTO_LOCAL,           MONTO_MONEDA,            IDSINIESTRO,
+              CODTRANSAC,            CODCPTOTRANSAC,          CODCIA,
+              CODEMPRESA,            COD_MONEDA)
+           VALUES
+             (NNUM_APROBACION,       D.IDDETAPROB,            D.COD_PAGO,
+              D.MONTO_LOCAL,         D.MONTO_MONEDA,          D.IDSINIESTRO,
+              D.CODTRANSAC,          D.CODCPTOTRANSAC,        D.CODCIA,
+              D.CODEMPRESA,          D.COD_MONEDA);
+        END LOOP;
+        --
      END IF;
      --
   END IF;

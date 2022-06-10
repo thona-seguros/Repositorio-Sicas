@@ -1,7 +1,10 @@
 CREATE OR REPLACE PACKAGE OC_DETALLE_FACTURAS IS
-
--- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
-
+--
+-- CONTROL DE CAMBIOS
+--
+-- HOMOLOGACION VIFLEX                                     JMMD     01/03/2022
+-- ERRROR DE BMI                                           JICO BMI 29/03/2022
+--
 PROCEDURE PAGO_ABONO_DETALLE(nIdFactura NUMBER, nPagoM NUMBER, nPagoL NUMBER,nIdRecibo NUMBER);
 
 PROCEDURE INSERTAR(nIdFactura NUMBER, cCodCpto VARCHAR2, cIndCptoPrima VARCHAR2, nMtoPagoLocal NUMBER, nMtoPagoMoneda NUMBER);
@@ -46,9 +49,12 @@ FUNCTION MONTO_PRIMA_COMPLEMENTARIA(nIdFactura NUMBER, cCodCpto VARCHAR2) RETURN
 END OC_DETALLE_FACTURAS;
 /
 CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
-
--- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
-
+--
+-- CONTROL DE CAMBIOS
+--
+-- HOMOLOGACION VIFLEX                                     JMMD     01/03/2022
+-- ERRROR DE BMI                                           JICO BMI 01/06/2022
+--
     PROCEDURE PAGO_ABONO_DETALLE(nIdFactura NUMBER, nPagoM NUMBER, nPagoL NUMBER,nIdRecibo NUMBER) IS
 
     nPagoMoneda          DETALLE_FACTURAS.Saldo_Det_Local%TYPE;
@@ -118,6 +124,7 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
                        nMtoPagoLocal NUMBER, nMtoPagoMoneda NUMBER) IS
         nCodCia FACTURAS.CodCia%TYPE;
     BEGIN
+
        BEGIN
           INSERT INTO DETALLE_FACTURAS
                  (IdFactura, CodCpto, Monto_Det_Local, Monto_Det_Moneda,
@@ -154,9 +161,13 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
     PROCEDURE ACTUALIZA_DIFERENCIA(nIdFactura NUMBER, nMtoDifLocal NUMBER, nMtoDifMoneda NUMBER) IS
         nTasaIVA            CATALOGO_DE_CONCEPTOS.PorcConcepto %TYPE;
         nMtoIVA             DETALLE_FACTURAS.Monto_Det_Local%TYPE := 0;
+        nMtoIVA_MONEDA      DETALLE_FACTURAS.Monto_Det_Moneda%TYPE := 0; --JICO BMI 29/03/2022
         cExisteIVA          VARCHAR2(1);
         nCodCia             FACTURAS.CodCia%TYPE;
+        NCOD_MONEDA         FACTURAS.COD_MONEDA%TYPE;
+    --    
     BEGIN
+       --
        UPDATE DETALLE_FACTURAS
           SET Monto_Det_Local  = Monto_Det_Local  + NVL(nMtoDifLocal,0),
               Monto_Det_Moneda = Monto_Det_Moneda + NVL(nMtoDifMoneda,0),
@@ -170,8 +181,8 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
 
        ---Actualiza Monto de Impuesto sobre diferencia generada
        BEGIN
-        SELECT 'S',F.CodCia
-          INTO cExisteIVA,nCodCia
+        SELECT 'S',         F.CodCia
+          INTO cExisteIVA,  nCodCia
           FROM DETALLE_FACTURAS DF, FACTURAS F
          WHERE F.IdFactura  = nIdFactura
            AND df.CodCpto   = 'IVASIN'
@@ -180,23 +191,26 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
         WHEN NO_DATA_FOUND THEN
             cExisteIVA := 'N';
        END;
-       IF cExisteIVA = 'S' THEN
-           nTasaIVA := OC_CATALOGO_DE_CONCEPTOS.PORCENTAJE_CONCEPTO(nCodCia, 'IVASIN');
-           SELECT NVL(NVL(SUM(Monto_Det_Local),0) * nTasaIVA / 100,0)
-             INTO nMtoIVA
-             FROM DETALLE_FACTURAS
-            WHERE IdFactura = nIdFactura
-              AND CodCpto  != 'IVASIN';
-
-           UPDATE DETALLE_FACTURAS
-              SET Monto_Det_Local  = nMtoIVA,
-                  Monto_Det_Moneda = nMtoIVA,
-                  MtoOrigDetLocal  = nMtoIVA,
-                  MtoOrigDetMoneda = nMtoIVA,
-                  Saldo_Det_Local  = nMtoIVA,
-                  Saldo_Det_Moneda = nMtoIVA
-            WHERE IdFactura = nIdFactura
-              AND CodCpto   = 'IVASIN';
+       IF cExisteIVA = 'S' THEN 
+             nTasaIVA := OC_CATALOGO_DE_CONCEPTOS.PORCENTAJE_CONCEPTO(nCodCia, 'IVASIN');
+             --
+             SELECT NVL(NVL(SUM(DF.MONTO_DET_LOCAL),0) * nTasaIVA / 100,0),
+                    NVL(NVL(SUM(DF.MONTO_DET_MONEDA),0) * nTasaIVA / 100,0)   --JICO BMI 29/03/2022
+               INTO nMtoIVA,
+                    nMtoIVA_MONEDA
+               FROM DETALLE_FACTURAS DF    --JICO BMI 29/03/2022
+              WHERE IdFactura = nIdFactura
+                AND CodCpto  != 'IVASIN';             
+             --
+             UPDATE DETALLE_FACTURAS
+                SET Monto_Det_Local  = nMtoIVA,
+                    Monto_Det_Moneda = nMtoIVA_MONEDA,   --JICO BMI 29/03/2022
+                    MtoOrigDetLocal  = nMtoIVA,
+                    MtoOrigDetMoneda = nMtoIVA_MONEDA,    --JICO BMI 29/03/2022
+                    Saldo_Det_Local  = nMtoIVA,
+                    Saldo_Det_Moneda = nMtoIVA_MONEDA      --JICO BMI 29/03/2022
+              WHERE IdFactura = nIdFactura
+                AND CodCpto   = 'IVASIN';
        END IF;
     END ACTUALIZA_DIFERENCIA;
 
@@ -288,7 +302,7 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
                 IF X.IndContabRedondeo = 'S' THEN
                    IF nDifMtoLocal < 0 THEN
                       OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, X.CodCptoAcreedor, cIndCptoPrima, nDifMtoLocal, nDifMtoMoneda);
-                   ELSE
+                ELSE
                       OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, X.CodCptoDeudor, cIndCptoPrima, nDifMtoLocal, nDifMtoMoneda);
                    END IF;
                 END IF;
@@ -685,7 +699,7 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
                                                                      WHERE S.CODCIA     = DP.CODCIA
                                                                        AND S.CODCPTO    = DF.CODCPTO
                                                                        AND S.IDTIPOSEG  = DP.IDTIPOSEG
-                                                                       AND S.PLANCOB     = DP.PLANCOB ), 'X')          
+                                                                       AND S.PLANCOB     = DP.PLANCOB ), 'X')
           AND NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')) = NVL(cCodTipoPlan, NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')));
 
        RETURN(nMonto_Det_Moneda);
