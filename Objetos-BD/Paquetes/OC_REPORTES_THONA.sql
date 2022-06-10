@@ -1,20 +1,3 @@
---
--- OC_REPORTES_THONA  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   UTL_FILE (Synonym)
---   DBMS_LOB (Synonym)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   ZIP_UTIL_PKG (Package)
---   OC_VALORES_DE_LISTAS (Package)
---   TEMP_ARCHIVOS_THONA (Table)
---   TEMP_ARCHIVOS_THONA (Table)
---   TEMP_REPORTES_THONA (Table)
---   TEMP_REPORTES_THONA (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_REPORTES_THONA IS
    PROCEDURE GENERA_REPORTE( nCodCia      TEMP_REPORTES_THONA.CODCIA%TYPE
                            , nCodEmpresa  TEMP_REPORTES_THONA.CODEMPRESA%TYPE
@@ -23,11 +6,13 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_REPORTES_THONA IS
                            , cNomArchivo  VARCHAR2 
                            , cNomArchZip  VARCHAR2 );
 
-   PROCEDURE COPIA_ARCHIVO_BLOB( nCodCia      TEMP_ARCHIVOS_THONA.CODCIA%TYPE
-                               , nCodEmpresa  TEMP_ARCHIVOS_THONA.CODEMPRESA%TYPE
-                               , cCodReporte  TEMP_ARCHIVOS_THONA.CODREPORTE%TYPE
-                               , cCodUsuario  TEMP_ARCHIVOS_THONA.CODUSUARIO%TYPE
-                               , cNomArchZip  VARCHAR2 );
+   PROCEDURE COPIA_ARCHIVO_BLOB( nCodCia         TEMP_ARCHIVOS_THONA.CODCIA%TYPE
+                               , nCodEmpresa     TEMP_ARCHIVOS_THONA.CODEMPRESA%TYPE
+                               , cCodReporte     TEMP_ARCHIVOS_THONA.CODREPORTE%TYPE
+                               , cCodUsuario     TEMP_ARCHIVOS_THONA.CODUSUARIO%TYPE
+                               , cNomArchZip     VARCHAR2 
+                               , nId_Envio       NUMBER DEFAULT 0
+                               , pEliminaArchivo VARCHAR2 DEFAULT 'N');
 
    FUNCTION EXISTE_ARCHIVO( cDirectorio  VARCHAR2
                           , cNomArchivo  VARCHAR2 ) RETURN BOOLEAN;
@@ -40,13 +25,6 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_REPORTES_THONA IS
 
 END OC_REPORTES_THONA;
 /
-
---
--- OC_REPORTES_THONA  (Package Body) 
---
---  Dependencies: 
---   OC_REPORTES_THONA (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_REPORTES_THONA IS
    PROCEDURE GENERA_REPORTE( nCodCia      TEMP_REPORTES_THONA.CODCIA%TYPE
                            , nCodEmpresa  TEMP_REPORTES_THONA.CODEMPRESA%TYPE
@@ -85,41 +63,49 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_REPORTES_THONA IS
         RAISE_APPLICATION_ERROR(-20200, SQLCODE || ' Error al generar el archivo: ' || SQLERRM);
    END GENERA_REPORTE;
 
-   PROCEDURE COPIA_ARCHIVO_BLOB( nCodCia      TEMP_ARCHIVOS_THONA.CODCIA%TYPE
-                               , nCodEmpresa  TEMP_ARCHIVOS_THONA.CODEMPRESA%TYPE
-                               , cCodReporte  TEMP_ARCHIVOS_THONA.CODREPORTE%TYPE
-                               , cCodUsuario  TEMP_ARCHIVOS_THONA.CODUSUARIO%TYPE
-                               , cNomArchZip  VARCHAR2 )  IS
+    PROCEDURE COPIA_ARCHIVO_BLOB( nCodCia         TEMP_ARCHIVOS_THONA.CODCIA%TYPE
+                                , nCodEmpresa     TEMP_ARCHIVOS_THONA.CODEMPRESA%TYPE
+                                , cCodReporte     TEMP_ARCHIVOS_THONA.CODREPORTE%TYPE
+                                , cCodUsuario     TEMP_ARCHIVOS_THONA.CODUSUARIO%TYPE
+                                , cNomArchZip     VARCHAR2
+                                , nId_Envio       NUMBER DEFAULT 0
+                                , pEliminaArchivo VARCHAR2 DEFAULT 'N')  IS
       cNomDirectorio  VARCHAR2(100) := OC_VALORES_DE_LISTAS.BUSCA_LVALOR('SO_PATH', 'REPORT');
       l_bfile         BFILE;
       l_blob          BLOB;
-   BEGIN
+    BEGIN
       --Elimino los Archivos de ese CodCia/CodEmpresa/CodReporte/CodUsuario
       --
-      DELETE TEMP_ARCHIVOS_THONA
-      WHERE  CodCia     = nCodCia
-        AND  CodEmpresa = nCodEmpresa
-        AND  CodReporte = cCodReporte
-        AND  CodUsuario = cCodUsuario;
+        DELETE TEMP_ARCHIVOS_THONA
+         WHERE  CodCia       = nCodCia
+           AND  CodEmpresa   = nCodEmpresa
+           AND  CodReporte   = cCodReporte
+           AND  CodUsuario   = cCodUsuario
+           AND  trunc(Fecha)<= trunc(sysdate);
       --
-      COMMIT;
-      --
-      --Inserto los archivos al Blob
-      --
-      INSERT INTO TEMP_ARCHIVOS_THONA ( CODCIA, CODEMPRESA, CODREPORTE, CODUSUARIO, ARCHIVO )
-      VALUES (nCodCia, nCodEmpresa, cCodReporte, cCodUsuario, EMPTY_BLOB()) RETURN Archivo INTO l_blob;
+      INSERT INTO TEMP_ARCHIVOS_THONA ( CODCIA, CODEMPRESA, CODREPORTE, CODUSUARIO, ID_ENVIO, ARCHIVO )
+                               VALUES (nCodCia, nCodEmpresa, cCodReporte, cCodUsuario, nId_Envio, EMPTY_BLOB())
+           RETURN Archivo INTO l_blob;
       --  
       l_bfile := BFILENAME(cNomDirectorio, cNomArchZip);
+      --
       DBMS_LOB.fileopen(l_bfile, Dbms_Lob.File_Readonly);
       DBMS_LOB.loadfromfile(l_blob, l_bfile, DBMS_LOB.getlength(l_bfile));
       DBMS_LOB.fileclose(l_bfile);
-      --
+      --      
       COMMIT;
-   EXCEPTION
-   WHEN OTHERS THEN
-        ROLLBACK;
+      
+      BEGIN
+        IF UPPER(pEliminaArchivo) != 'N' THEN
+           UTL_FILE.FREMOVE(cNomDirectorio, cNomArchZip);
+        END IF;
+      EXCEPTION WHEN OTHERS THEN
+            NULL;            
+      END;
+
+    EXCEPTION WHEN OTHERS THEN
         RAISE_APPLICATION_ERROR(-20200, SQLCODE || ' Error al copiar el archivo BLOB: ' || SQLERRM);
-   END COPIA_ARCHIVO_BLOB;
+    END COPIA_ARCHIVO_BLOB;
 
    FUNCTION EXISTE_ARCHIVO( cDirectorio  VARCHAR2
                           , cNomArchivo  VARCHAR2 ) RETURN BOOLEAN IS   
