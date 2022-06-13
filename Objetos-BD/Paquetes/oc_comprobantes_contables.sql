@@ -1,5 +1,6 @@
 CREATE OR REPLACE PACKAGE oc_comprobantes_contables IS
 ---- Modificaciones para OGAS                       JMMD 20210212
+---- SE MODIFICA PARA QUE CALCULE BIEN EL TIPO DE CAMBIO  JMMD 20220531
    FUNCTION NUM_COMPROBANTE(nCodCia NUMBER) RETURN NUMBER;
 
    FUNCTION CREA_COMPROBANTE(nCodCia NUMBER, cTipoComprob VARCHAR2, nNumTransaccion NUMBER,
@@ -39,11 +40,11 @@ CREATE OR REPLACE PACKAGE oc_comprobantes_contables IS
                                  , cIdTipoSeg      DETALLE_POLIZA.IDTIPOSEG%TYPE
                                  , cTipoPersona    PERSONA_NATURAL_JURIDICA.TIPO_PERSONA%TYPE
                                  , cTipoAgente     AGENTES.TIPO_AGENTE%TYPE ) RETURN NUMBER;
-                                 
+
 -------- JMMD20191015
   FUNCTION COMISION_TIPO_ADICIONALES(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
                                  cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2) RETURN NUMBER;
-                                 
+
   FUNCTION COM_TIPO_ADICIONALES_CANC(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
                                  cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2) RETURN NUMBER;
 
@@ -74,7 +75,7 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
 ---- PERMITE CONTINUAR                                                        25/11/2016   AEVS 
 -- SE QUITO LA PROGRAMACION EL GRABADO DE GRABA_TIEMPO  JICO 21/04/2017
 ---- Modificaciones para OGAS                           JMMD 20200928 
---
+-- SE MODIFICA PARA QUE CALCULE BIEN EL TIPO DE CAMBIO  JMMD 20220531
 
    CURSOR MOV_CONTABLE_Q (nCodCia number, nCodEmpresa number, nIdTransaccion number, cCodMonedaCia varchar2) IS
     SELECT  1 REG, D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda CodMoneda, SUM(DF.Monto_Det_Moneda) MtoMovCuenta,
@@ -461,7 +462,7 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
        AND DT.IdTransaccion     = nIdTransaccion
        AND DT.CodCia            = nCodCia
        AND DT.CodEmpresa        = nCodEmpresa
-       AND DT.Correlativo       = 1
+--       AND DT.Correlativo       = 1 ----- JMMD20220422 SOLO ESTABA TOMANDO UN SOLO CONCEPTO DEL DETALLE DE TRANSACCION
        AND VL.CODVALOR = D.IDTIPOSEG
        AND VL.CODLISTA = 'UENXTIPSEG'
      GROUP BY s.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST             
@@ -974,11 +975,11 @@ BEGIN
 --        FROM COMPROBANTES_CONTABLES
 --       WHERE CodCia = nCodCia;
 --   END;
-   
+
   SELECT SQ_COMPR_CONTA.NEXTVAL      -- JICO  JICO 20151229
     INTO nNumComprob
     FROM DUAL;
-    
+
    RETURN(nNumComprob);
 END NUM_COMPROBANTE;
 
@@ -1160,11 +1161,12 @@ PROCEDURE CONTABILIZAR( nCodCia         TRANSACCION.CODCIA%TYPE
        ORDER BY CodSubProceso;
    --
    --Opt:07082019
- 
+
 BEGIN
    --
    cCodMonedaCia  := OC_EMPRESAS.MONEDA_COMPANIA(nCodCia);
    cContabilizo   := 'N';
+
    FOR Z IN SUBPROC_Q LOOP
       BEGIN
          --
@@ -1184,7 +1186,8 @@ BEGIN
             RAISE_APPLICATION_ERROR (-20100,'No de Transacción '||nIdTransaccion||' Posee Más de un Proceso');
       END;
       -- 
-      IF OC_SUB_PROCESO.GENERA_CONTABILIDAD(nIdProceso, Z.CodSubProceso) = 'S' THEN
+
+     IF OC_SUB_PROCESO.GENERA_CONTABILIDAD(nIdProceso, Z.CodSubProceso) = 'S' THEN
          -- Lee el Tipo de Comprobante a Crear
          IF NVL(nNumComprob,0) = 0 THEN
             cTipoComprob := OC_PROCESOS_CONTABLES.TIPO_COMPROBANTE(nCodCia, cCodProceso, cTipoComp);
@@ -1204,8 +1207,8 @@ BEGIN
          cDescMovGeneral := 'Contabilización de ' || cDescProceso || ' para SubProceso ' || cDescSubProceso ||
                             ' de la Transacción No. ' || TRIM(TO_CHAR(nIdTransaccion)) || ' del ' ||
                             TO_CHAR(dFechaTransaccion,'DD/MM/YYYY');
-   
-         FOR W IN MOV_CONTABLE_Q  (nCodCia, nCodEmpresa, nIdTransaccion, cCodMonedaCia)LOOP
+--        cCodMonedaCia := 'USD';
+        FOR W IN MOV_CONTABLE_Q  (nCodCia, nCodEmpresa, nIdTransaccion, cCodMonedaCia)LOOP
             nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(W.CodMoneda, TRUNC(dFechaTransaccion));
             nCodEmpresa := W.CodEmpresa;
             cIdTipoSeg  := W.IdTipoSeg;            
@@ -1240,19 +1243,21 @@ BEGIN
                IF X.NivelCta1 = '5' AND X.NivelCta2 = '3' AND X.NivelCta3 = '09' THEN
                  X.CodUnidadNegocio := W.UEN;
                END IF;      
-   -----
-               IF X.TipoRegistro = 'MO' THEN
+   -----   
+               IF X.TipoRegistro = 'MO' THEN               
                   IF X.TipoAgente IS NULL THEN
                      nMtoMovCuenta := ABS(W.MtoMovCuenta);
                   ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN
-                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
+-----                     dbms_output.put_line('jmmd EN CONTABILIZAR X.TipoRegistro '||X.TipoRegistro||'  W.mtocomiscuenta  '||W.mtocomiscuenta);                  
+----- jmmd20220531 asi estaba                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
+                     nMtoMovCuenta := ABS(W.MtoComisCuenta);                     
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
                ELSE
                   IF ABS(W.MtoComisCuenta) != 0 THEN
    --------------------- JMMD20191015 IVAHON
-   
+
    /*                      BEGIN
                         SELECT 'S'
                           INTO cConceptoAdicional
@@ -1265,7 +1270,7 @@ BEGIN
                          cConceptoAdicional := 'S';
                        WHEN OTHERS THEN
                          cConceptoAdicional := 'N';
-                      END;   */
+                      END;   */                      
                      IF cConceptoAdicional = 'S' THEN 
                      --                      X.CodUnidadNegocio := W.UEN; ---- JMMD20200817 SE CAMBIA LA UNIDAD DE NEGOCIO DE LA PLANTILLA POR LA UEN DEL TIPO DE SEGURO
                         IF cCodProceso = 100 THEN
@@ -1287,9 +1292,9 @@ BEGIN
                            END IF;      
                         END IF;                                                                                                                                                                                                                           
                      ELSE             ------- JMMD20191015     
-                     
+
                      nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                                                       X.TipoPersona, X.TipoAgente));
+                                                                                       X.TipoPersona, X.TipoAgente));                                                                 
                      END IF;   ---- JMMD20191015                                                                                                                                                                                                                                                                          
                   ELSE
                      nMtoMovCuenta := 0;
@@ -1328,7 +1333,7 @@ BEGIN
                END IF;
             END LOOP;
          END LOOP;
-         
+
          IF cContabilizo = 'S' THEN
             OC_COMPROBANTES_CONTABLES.ACTUALIZA_MONEDA(nCodCia, nNumComprob, NVL(cCodMoneda,cCodMonedaCia));
             OC_COMPROBANTES_DETALLE.ACTUALIZA_FECHA(nCodCia, nNumComprob, TRUNC(dFechaTransaccion));
@@ -1487,7 +1492,8 @@ BEGIN
                   IF X.TipoAgente IS NULL THEN
                      nMtoMovCuenta := ABS(W.MtoMovCuenta);
                   ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN
-                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
+----- jmmd20220531  asi estaba                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
+                     nMtoMovCuenta := ABS(W.MtoComisCuenta);                     
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
@@ -2437,7 +2443,7 @@ BEGIN
             cCanalComis := 'S';
       END;
    END IF;
-   
+
    RETURN(cCanalComis);
 END APLICA_CANAL_VENTA;
 
@@ -2758,3 +2764,4 @@ BEGIN
 END ENVIADO_SISTEMA_CONTABLE;
 
 END OC_COMPROBANTES_CONTABLES;
+/
