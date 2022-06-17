@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_DETALLE_COMISION IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_DETALLE_COMISION IS
 ----- SE INCLUYE TRATAMIENTO DE COMISIONES PARA POLIZAS PAQUETE (MULTIRAMO VIFLEX)      JMMD20220114
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
 
@@ -6,7 +6,7 @@ PROCEDURE INSERTA_DETALLE_COMISION(cCodCia VARCHAR2, nIdPoliza Number, nIdComisi
                                    cOrigen VARCHAR2,cIdTipoSeg VARCHAR2) ;
 END;
 /
-CREATE OR REPLACE PACKAGE BODY OC_DETALLE_COMISION IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DETALLE_COMISION IS
 
 ----- SE INCLUYE TRATAMIENTO DE COMISIONES PARA POLIZAS PAQUETE (MULTIRAMO VIFLEX)      JMMD20220114
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
@@ -331,8 +331,8 @@ BEGIN
                 from dual;
 
              dbms_output.put_line('jmmd en oc_detalle_comision ctiporamo  '||ctiporamo||' nIdComision  '||nIdComision||'  nPrimaMoneda  '||nPrimaMoneda );
-
-             SELECT ODCV.COMISION_LOCAL, ODCV.COMISION_MONEDA
+             BEGIN
+               SELECT ODCV.COMISION_LOCAL, ODCV.COMISION_MONEDA
                 INTO nComision_Local, nComision_Moneda
                 FROM T_OC_DETALLE_COMISION_VIFLEX ODCV
                 WHERE ODCV.COD_AGENTE = I.COD_AGENTE
@@ -342,7 +342,11 @@ BEGIN
                 AND ODCV.COD_MONEDA = I.COD_MONEDA
                 AND ODCV.TIPORAMO = ctiporamo
                 ;
-
+             EXCEPTION
+                WHEN NO_DATA_FOUND THEN
+                   nComision_Local := 0;
+                   nComision_Moneda:= 0;
+             END;
                 nMonto_Mon_Local := nComision_Local; -- * nFactorComision;
                 nMonto_Mon_Extranjera := nComision_Moneda ; --* nFactorComision;
 
