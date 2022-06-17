@@ -4278,7 +4278,8 @@ BEGIN
 
          IF NVL(nMontoComisiones,0) = 0 THEN
             nMontoComiLocal  := nMontoDetLocal * R_Agentes.Porc_Com_Distribuida/100 * (I.Porc_Comision/100);
-            nMontoComiMoneda := nMontoDetLocal  * R_Agentes.Porc_Com_Distribuida/100 * (I.Porc_Comision/100);
+            --nMontoComiMoneda := nMontoDetLocal  * R_Agentes.Porc_Com_Distribuida/100 * (I.Porc_Comision/100); --MLJS 16/06/2022 
+            nMontoComiMoneda := nMontoDetMoneda  * R_Agentes.Porc_Com_Distribuida/100 * (I.Porc_Comision/100);  --MLJS 16/06/2022            
             --nMontoComiLocal  := nMontoDetLocal * (nPorcComisiones/100) * (R_Agentes.Porc_Comision/100) * (I.Porc_Comision/100);
             --nMontoComiMoneda :=nMontoDetLocal  * (nPorcComisiones/100) * (R_Agentes.Porc_Comision/100) * (I.Porc_Comision/100);
          ELSE
