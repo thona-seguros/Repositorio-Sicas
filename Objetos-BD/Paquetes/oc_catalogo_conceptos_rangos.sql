@@ -1,21 +1,10 @@
+CREATE OR REPLACE PACKAGE OC_CATALOGO_CONCEPTOS_RANGOS IS
 --
--- OC_CATALOGO_CONCEPTOS_RANGOS  (Package) 
+-- BITACORA DE CAMBIOS
 --
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_STANDARD (Package)
---   POLIZAS (Table)
---   OC_ENDOSO (Package)
---   OC_DETALLE_POLIZA (Package)
---   CATALOGO_CONCEPTOS_RANGOS (Table)
---   OC_GENERALES (Package)
---   OC_POLIZAS (Package)
---   DETALLE_POLIZA (Table)
---   TIPOS_DE_SEGUROS (Table)
+-- Se adicionara la funcionalidad de productros de largo plazo     JICO 2019/08/22    --LARPLA
+-- ERROR TIPO DE CAMBIO INICIO                                     JIC0 20/06/2022    --TCAMBIO
 --
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_CATALOGO_CONCEPTOS_RANGOS IS
-
 PROCEDURE VALOR_CONCEPTO(nCodCia      NUMBER,
                          nCodEmpresa  NUMBER,
                          cCodConcepto VARCHAR2,
@@ -28,18 +17,12 @@ PROCEDURE VALOR_CONCEPTO(nCodCia      NUMBER,
 
 END OC_CATALOGO_CONCEPTOS_RANGOS;
 /
-
---
--- OC_CATALOGO_CONCEPTOS_RANGOS  (Package Body) 
---
---  Dependencies: 
---   OC_CATALOGO_CONCEPTOS_RANGOS (Package)
---
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_CATALOGO_CONCEPTOS_RANGOS IS
+CREATE OR REPLACE PACKAGE BODY OC_CATALOGO_CONCEPTOS_RANGOS IS
 --
 -- BITACORA DE CAMBIOS
 --
 -- Se adicionara la funcionalidad de productros de largo plazo     JICO 2019/08/22    --LARPLA
+-- ERROR TIPO DE CAMBIO INICIO                                     JIC0 20/06/2022    --TCAMBIO
 --
 PROCEDURE VALOR_CONCEPTO(nCodCia      NUMBER,
                          nCodEmpresa  NUMBER,
@@ -56,6 +39,7 @@ nTasaCambio       DETALLE_POLIZA.Tasa_Cambio%TYPE;
 cCodMoneda        POLIZAS.Cod_Moneda%TYPE;
 N_AÑO_POLIZA       NUMBER;                                       --LARPLA
 C_ID_LARGO_PLAZO   TIPOS_DE_SEGUROS.ID_LARGO_PLAZO%TYPE := 'N';  --LARPLA
+nTASA_CAMBIO       DETALLE_POLIZA.TASA_CAMBIO%TYPE;              --TCAMBIO
 BEGIN
    BEGIN
       SELECT DISTINCT CodTipoRango
@@ -74,12 +58,19 @@ BEGIN
    END;
 
    SELECT P.COD_MONEDA ,
-          TO_NUMBER(TO_CHAR(P.FECRENOVACION,'YYYY')) - TO_NUMBER(TO_CHAR(P.FECINIVIG,'YYYY')) AÑO_POLIZA  --LARPLA
+          TO_NUMBER(TO_CHAR(P.FECRENOVACION,'YYYY')) - TO_NUMBER(TO_CHAR(P.FECINIVIG,'YYYY')) AÑO_POLIZA,  --LARPLA
+          DP.TASA_CAMBIO     --TCAMBIO
      INTO cCodMoneda,
-          N_AÑO_POLIZA      --LARPLA
-     FROM POLIZAS          P
+          N_AÑO_POLIZA,      --LARPLA
+          nTASA_CAMBIO       --TCAMBIO
+     FROM POLIZAS P,
+          DETALLE_POLIZA DP
     WHERE P.CODCIA   = nCodCia
-      AND P.IDPOLIZA = nIdPoliza;
+      AND P.IDPOLIZA = nIdPoliza
+      --
+      AND DP.IDPOLIZA = nIdPoliza
+      AND DP.IDETPOL  = nIDetPol
+      AND DP.CODCIA   = nCodCia;
    -- LARPLA INICIO
    SELECT TS.ID_LARGO_PLAZO
      INTO C_ID_LARGO_PLAZO
@@ -92,7 +83,15 @@ BEGIN
       N_AÑO_POLIZA := 1;
    END IF;
    -- LARPLA FIN
-   nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
+   -- TCAMBIO INICIO
+   IF nIdEndoso = 0 THEN    
+      nTasaCambio := nTASA_CAMBIO;
+   ELSE
+      nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
+   END IF;
+   -- TCAMBIO FIN
+   --nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));  --TCAMBIO
+   --
    -- Rango por Monto de Prima
    IF cCodTipoRango = 'MTOPRI' THEN
       -- Prima a Nivel Póliza
@@ -142,7 +141,7 @@ BEGIN
          AND CodTipoRango  = cCodTipoRango
          AND RangoInicial <= nCantMonto
          AND RangoFinal   >= nCantMonto
-         AND ID_AÑO         = N_AÑO_POLIZA;  --LARPLA
+         AND ID_AÑO        = N_AÑO_POLIZA;  --LARPLA
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          nPorcCpto := 0;
@@ -158,17 +157,4 @@ BEGIN
 END VALOR_CONCEPTO;
 
 END OC_CATALOGO_CONCEPTOS_RANGOS;
-/
-
---
--- OC_CATALOGO_CONCEPTOS_RANGOS  (Synonym) 
---
---  Dependencies: 
---   OC_CATALOGO_CONCEPTOS_RANGOS (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_CATALOGO_CONCEPTOS_RANGOS FOR SICAS_OC.OC_CATALOGO_CONCEPTOS_RANGOS
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_CATALOGO_CONCEPTOS_RANGOS TO PUBLIC
 /
