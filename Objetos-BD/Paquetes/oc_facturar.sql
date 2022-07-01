@@ -1,9 +1,9 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAR IS
+CREATE OR REPLACE PACKAGE OC_FACTURAR IS
 
 -- CALCULO DE COMISIONES PARA RAMOS PAQUETE                                  2022/01/22  JMMD
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
 -- SE MODIFICO PARA CORREGIR INCIDENCIA DE POLIZA PAQUETE COLECTIVOS         2022/03/17  JMMD
-
+-- AJUSTE POR MANEJO DE DOLARES                                              2022/06/30  ICO BMIAJUS
    PROCEDURE PROC_EMITE_FACTURAS (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_POL (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_END (nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER,nTransa NUMBER);
@@ -55,7 +55,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAR IS
 
 END OC_FACTURAR;
 /
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAR IS
+CREATE OR REPLACE PACKAGE BODY OC_FACTURAR IS
 --
 -- MODIFICACIONES
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO      2018/03/09  ICOFINVIG
@@ -66,6 +66,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAR IS
 -- CALCULO DE COMISIONES PARA RAMOS PAQUETE                                  2022/01/22  JMMD
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
 -- SE MODIFICO PARA CORREGIR INCIDENCIA DE POLIZA PAQUETE COLECTIVOS         2022/03/17  JMMD
+-- AJUSTE POR MANEJO DE DOLARES                                              2022/06/30  ICO BMIAJUS
 
 PROCEDURE PROC_EMITE_FACTURAS(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS
 nIdFactura               FACTURAS.IdFactura%TYPE;
@@ -1020,6 +1021,7 @@ nMtoDesc_Moneda          DESCUENTOS.Monto_Moneda%TYPE;
 nPrimaTotalM             DETALLE_POLIZA.Prima_Moneda%TYPE;
 nPrimaTotalL             DETALLE_POLIZA.Prima_Local%TYPE;
 nFactor                  NUMBER (14,8);
+nFactor_MONEDA           NUMBER (14,8);    --BMIAJU
 nRec_Local               RECARGOS.Monto_Local%TYPE ;
 nRec_Moneda              RECARGOS.Monto_Moneda%TYPE;
 nDesc_Local              DESCUENTOS.Monto_Local%TYPE;
@@ -1412,9 +1414,12 @@ BEGIN
                                                nTransa,             cIndFactElectronica);
 
             FOR W IN CPTO_PRIMAS_Q LOOP
-               nFactor := W.Prima_Local / NVL(nPrimaLocal,0);
-               OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
-               OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
+                  nFactor := W.Prima_Local / NVL(nPrimaLocal,0);    
+--                  nFactor_MONEDA := W.Prima_Moneda / NVL(nMtoPagoMoneda,0);  --BMIAJU
+--                  OC_DETALLE_FACTURAS_TEMP.INSERTAR(nIdFactura, W.CodCpto, 'S', round((nMtoPago * nFactor),2), round((nMtoPagoMoneda * nFactor_MONEDA),2)); --BMIAJU
+--                  OC_DETALLE_FACTURAS_TEMP.AJUSTAR(nCodCia, nIdFactura, W.CodCpto, 'S', round((nMtoPago * nFactor),2), round((nMtoPagoMoneda * nFactor_MONEDA),2));  --BMIAJU
+                  OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
+                  OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
             END LOOP;
 
             nTotAsistLocal  := 0;
@@ -1679,15 +1684,18 @@ BEGIN
                                                   nTransa,             cIndFactElectronica);
 
                FOR W IN CPTO_PRIMAS_Q LOOP
-                  nFactor := W.Prima_Local / NVL(nPrimaLocal,0);
+                  nFactor := W.Prima_Local / NVL(nPrimaLocal,0);    --BMIAJU
+--                  nFactor_MONEDA := W.Prima_Moneda / NVL(nMtoPagoMoneda,0);
+--                  OC_DETALLE_FACTURAS_TEMP.INSERTAR(nIdFactura, W.CodCpto, 'S', round((nMtoPago * nFactor),2), round((nMtoPagoMoneda * nFactor_MONEDA),2));
+--                  OC_DETALLE_FACTURAS_TEMP.AJUSTAR(nCodCia, nIdFactura, W.CodCpto, 'S', round((nMtoPago * nFactor),2), round((nMtoPagoMoneda * nFactor_MONEDA),2));
                   OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
                   OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
                END LOOP;
-
                nTotAsistLocal  := 0;
                nTotAsistMoneda := 0;
                FOR K IN CPTO_ASIST_Q LOOP
-                  nAsistRestLocal  := 0;
+     
+             nAsistRestLocal  := 0;
                   nAsistRestMoneda := 0;
                   IF NVL(nPorcInicial,0) <> 0 THEN
                      nMtoAsistLocal  := (NVL(K.MontoAsistLocal,0) * nPorcInicial / 100) * NVL(nFact,0)/100;
