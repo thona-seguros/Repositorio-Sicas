@@ -382,9 +382,21 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
       --
       nId_Año_Poliza := OC_FACTURAS.CALCULA_AÑO_POLIZA(nIdPoliza, dFecPago);
       --
-      dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL(nCodCia,       nCodEmpresa,  nIdPoliza,
-                                                   nIdFactura,    nIdEndoso,    dFecPago,
-                                                   dFecFinVigPol, nNumPago,     cCodPlanPago);
+      IF nIdEndoso > 0 AND nNumPago = 1 THEN
+                 --Query para determinar la fecha de vencimiento del primer recibo en caso de que se trate de un endoso
+                 SELECT FecFinVig
+                 INTO   dFecFinVigFact
+                 FROM   FACTURAS
+                 WHERE  CodCia   = nCodCia
+                   AND  IdPoliza = nIdPoliza
+                   AND  IDetPol  = nIDetPol
+                   AND  IdEndoso = 0
+                   AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig);
+      ELSE
+         dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL(nCodCia,       nCodEmpresa,  nIdPoliza,
+                                                      nIdFactura,    nIdEndoso,    dFecPago,
+                                                      dFecFinVigPol, nNumPago,     cCodPlanPago);
+      END IF;
       --
       INSERT INTO FACTURAS
               (IdFactura,            IdPoliza,           IDetPol,              CodCliente,
