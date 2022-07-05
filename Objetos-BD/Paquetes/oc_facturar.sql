@@ -2112,7 +2112,14 @@ END PROC_EMITE_FACT_POL;
                AND  IdPoliza = nIdPoliza
                AND  IDetPol  = nIDetPol
                AND  IdEndoso = 0
-               AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig);
+               AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
+               AND  IdFactura = ( SELECT MAX(A.IdFactura)
+                                  FROM   FACTURAS A
+                                  WHERE  A.CodCia   = nCodCia
+                                    AND  A.IdPoliza = nIdPoliza
+                                    AND  A.IDetPol  = nIDetPol
+                                    AND  A.IdEndoso = 0
+                                    AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
              --
              IF nNumPagos = 1 THEN
                 nMtoPagoSubs := (NVL(X.PrimaLocal, 0) - NVL(nMto1erRecibo, 0));
@@ -2348,7 +2355,14 @@ END PROC_EMITE_FACT_POL;
                    AND  IdPoliza = nIdPoliza
                    AND  IDetPol  = nIDetPol
                    AND  IdEndoso = 0
-                   AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig);
+                   AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
+                   AND  IdFactura = ( SELECT MAX(A.IdFactura)
+                                      FROM   FACTURAS A
+                                      WHERE  A.CodCia   = nCodCia
+                                        AND  A.IdPoliza = nIdPoliza
+                                        AND  A.IDetPol  = nIDetPol
+                                        AND  A.IdEndoso = 0
+                                        AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
                  --
                  IF nNumPagos = 1 THEN
                     nMtoPagoSubs := (NVL(X.PrimaLocal, 0) - NVL(nMto1erRecibo, 0));

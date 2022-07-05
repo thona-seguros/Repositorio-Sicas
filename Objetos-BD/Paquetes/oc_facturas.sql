@@ -391,7 +391,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                    AND  IdPoliza = nIdPoliza
                    AND  IDetPol  = nIDetPol
                    AND  IdEndoso = 0
-                   AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig);
+                   AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
+                   AND  IdFactura = ( SELECT MAX(A.IdFactura)
+                                      FROM   FACTURAS A
+                                      WHERE  A.CodCia   = nCodCia
+                                        AND  A.IdPoliza = nIdPoliza
+                                        AND  A.IDetPol  = nIDetPol
+                                        AND  A.IdEndoso = 0
+                                        AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
       ELSE
          dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL(nCodCia,       nCodEmpresa,  nIdPoliza,
                                                       nIdFactura,    nIdEndoso,    dFecPago,
