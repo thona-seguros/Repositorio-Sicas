@@ -9,7 +9,7 @@ FUNCTION LISTADO_FACTURA (	nNoRecibo       IN NUMBER,      cReciboEstatus  IN VA
                            	cNoPago         IN VARCHAR2,    cPlanPago       IN VARCHAR2,    nCodCia          IN NUMBER,	dFecStsIni      IN DATE,    dFecStsFin 	IN DATE,
                            	dFechaInicio    IN DATE,        dFechaFin       IN DATE,        nLimInferior     IN NUMBER, nLimSuperior    IN NUMBER, --> 22/12/2020   (JALV)
                             nTotRegs        OUT NUMBER,     nCodAgente      IN NUMBER,      nCodAgenteSesion IN NUMBER, nNivel          IN NUMBER, --> 22/02/2021   (HGF)
-                            nIdetPol        IN NUMBER,      cNumPolUnico    IN VARCHAR2 --> 22/02/2021   (JALV)
+                            nIdetPol        IN NUMBER,      cNumPolUnico    IN VARCHAR2,    cCodAgrupador    IN VARCHAR2 --> 22/02/2021   (JALV)
 							)
 RETURN XMLTYPE;
 
@@ -239,7 +239,7 @@ FUNCTION LISTADO_FACTURA (  nNoRecibo       IN NUMBER,      cReciboEstatus  IN V
                            	cNoPago         IN VARCHAR2,    cPlanPago       IN VARCHAR2,    nCodCia          IN NUMBER,	dFecStsIni      IN DATE,    dFecStsFin 	IN DATE,
                            	dFechaInicio    IN DATE,        dFechaFin       IN DATE,        nLimInferior     IN NUMBER, nLimSuperior    IN NUMBER, --> 22/12/2020   (JALV)
                             nTotRegs        OUT NUMBER,     nCodAgente      IN NUMBER,      nCodAgenteSesion IN NUMBER, nNivel          IN NUMBER, --> 22/02/2021   (HGF)
-                            nIdetPol        IN NUMBER,      cNumPolUnico    IN VARCHAR2 --> 22/02/2021   (JALV)
+                            nIdetPol        IN NUMBER,      cNumPolUnico    IN VARCHAR2,    cCodAgrupador    IN VARCHAR2 --> 22/02/2021   (JALV)
 							)
 	RETURN XMLTYPE IS
 /*   _______________________________________________________________________________________________________________________________	
@@ -284,6 +284,7 @@ FUNCTION LISTADO_FACTURA (  nNoRecibo       IN NUMBER,      cReciboEstatus  IN V
     |           nCodAgente          Codigo del Agente               (Entrada)                                                       |
     |           nCodAgenteSesion    Codigo de Sesion del agente     (Entrada)                                                       |
     |           nNivel              Nivel del Agente                (Entrada)                                                       |
+    |           cCodAgrupador       Codigo del Agrupador            (Entrada)                                                       |
     |_______________________________________________________________________________________________________________________________|
 */
 
@@ -314,7 +315,9 @@ BEGIN
                                                  XMLELEMENT("Prima", R.monto_fact_local),               --> 22/02/2021   (JALV +)
                                                  XMLELEMENT("PrimaMoneda", R.monto_fact_moneda),        --> 22/02/2021   (JALV +)
                                                  XMLELEMENT("Comision", R.comispagada_local),           --> 22/02/2021   (JALV +)
-                                                 XMLELEMENT("CodCia", R.codcia)
+                                                 XMLELEMENT("CodCia", R.codcia),
+                                                 XMLELEMENT("CodAgrupador", R.CodAgrupador),
+                                                 XMLELEMENT("DescAgrupador", R.DescAgrupador)
                                              )
                                   )
                         )
@@ -341,6 +344,8 @@ BEGIN
                             F.monto_fact_moneda,                                --> 22/02/2021   (JALV +)
                             F.comispagada_local,                                --> 22/02/2021   (JALV +)
                             F.codcia, 
+                            P.CodAgrupador,
+                            OC_VALORES_DE_LISTAS.BUSCA_LVALOR('AGRUPA', P.CodAgrupador) DescAgrupador, 
                             ROW_NUMBER() OVER (ORDER BY F.IdFactura) registro
                     FROM    FACTURAS F,
                             POLIZAS  P,
@@ -356,14 +361,15 @@ BEGIN
                                  AND D.Cod_Agente     = P.Cod_Agente
                                  AND C.IdPoliza       = P.IdPoliza
                                  AND P.Ind_Principal  = 'S') D   --> Fin 22/02/2021   (HGF +) 
-                    WHERE   F.IdPoliza    = P.IdPoliza
-                    AND     F.codcia      = P.codcia
+                    WHERE   F.IdPoliza       = P.IdPoliza
+                    AND     F.codcia         = P.codcia
                     AND     P.IdPoliza       = AP.IdPoliza
                     AND     P.codcia         = AP.codcia
+                    AND     P.CodAgrupador   = NVL(cCodAgrupador, P.CodAgrupador)
                     AND     AP.IdPoliza      = F.IdPoliza
                     AND     AP.codcia        = F.codcia
                     AND     AP.Ind_Principal = 'S'        --> Inicia 22/02/2021   (HGF +) 
-                    AND     AP.cod_agente IN (SELECT   A.cod_agente
+                    AND     AP.cod_agente   IN (SELECT   A.cod_agente
                                                 FROM   AGENTES A
                                                 CONNECT BY PRIOR A.cod_agente = A.cod_agente_jefe
                                                 AND     A.est_agente    = 'ACT'
@@ -405,12 +411,13 @@ BEGIN
                  AND D.Cod_Agente     = P.Cod_Agente
                  AND C.IdPoliza       = P.IdPoliza
                  AND P.Ind_Principal  = 'S') D                                              --> Fin 22/02/2021   (HGF +) 
-        WHERE   F.IdPoliza    = P.IdPoliza
-        AND     F.codcia      = P.codcia
-        AND     P.IdPoliza    = AP.IdPoliza
-        AND     P.codcia      = AP.codcia
-        AND     AP.IdPoliza   = F.IdPoliza
-        AND     AP.codcia     = F.codcia 
+        WHERE   F.IdPoliza       = P.IdPoliza
+        AND     F.codcia         = P.codcia
+        AND     P.IdPoliza       = AP.IdPoliza
+        AND     P.codcia         = AP.codcia
+        AND     P.CodAgrupador   = NVL(cCodAgrupador, P.CodAgrupador)
+        AND     AP.IdPoliza      = F.IdPoliza
+        AND     AP.codcia        = F.codcia 
         AND     AP.Ind_Principal = 'S'        --> Inicia 22/02/2021   (HGF +) 
         AND     AP.cod_agente IN (SELECT   A.cod_agente
                                     FROM   AGENTES A
