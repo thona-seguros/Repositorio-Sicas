@@ -356,26 +356,31 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
     dFecFinVigPol   POLIZAS.FecFinVig%TYPE;
     nCodEmpresa     POLIZAS.CodEmpresa%TYPE;
     cCodPlanPago    POLIZAS.CodPlanPago%TYPE;
+    nIDetPolQuery   NUMBER;
+    cIndFacturaPol  POLIZAS.IndFacturaPol%TYPE;
     BEGIN
       --
       BEGIN
-        SELECT P.FecFinVig,   P.CodEmpresa,   P.CodPlanPago
-          INTO dFecFinVigPol, nCodEmpresa,    cCodPlanPago
+        SELECT P.FecFinVig,   P.CodEmpresa,   P.CodPlanPago, P.IndFacturaPol
+          INTO dFecFinVigPol, nCodEmpresa,    cCodPlanPago,  cIndFacturaPol
           FROM POLIZAS P
          WHERE P.IDPOLIZA = nIdPoliza;
       EXCEPTION
         WHEN NO_DATA_FOUND THEN
-             dFecFinVigPol := '';
-             nCodEmpresa   := '';
-             cCodPlanPago  := '';
+             dFecFinVigPol  := '';
+             nCodEmpresa    := '';
+             cCodPlanPago   := '';
+             cIndFacturaPol := '';
         WHEN TOO_MANY_ROWS THEN
-             dFecFinVigPol := '';
-             nCodEmpresa   := '';
-             cCodPlanPago  := '';
+             dFecFinVigPol  := '';
+             nCodEmpresa    := '';
+             cCodPlanPago   := '';
+             cIndFacturaPol := '';
         WHEN OTHERS THEN
-             dFecFinVigPol := '';
-             nCodEmpresa   := '';
-             cCodPlanPago  := '';
+             dFecFinVigPol  := '';
+             nCodEmpresa    := '';
+             cCodPlanPago   := '';
+             cIndFacturaPol := '';
       END;
       --
       nIdFactura     := OC_FACTURAS.F_GET_FACT(P_Msg_Regreso);  -- Cambio a secuencia XDS
@@ -383,22 +388,27 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
       nId_Año_Poliza := OC_FACTURAS.CALCULA_AÑO_POLIZA(nIdPoliza, dFecPago);
       --
       IF nIdEndoso > 0 AND nNumPago = 1 THEN
-                 --Query para determinar la fecha de vencimiento del primer recibo en caso de que se trate de un endoso
-                 SELECT FecFinVig
-                 INTO   dFecFinVigFact
-                 FROM   FACTURAS
-                 WHERE  CodCia   = nCodCia
-                   AND  IdPoliza = nIdPoliza
-                   AND  IDetPol  = nIDetPol
-                   AND  IdEndoso = 0
-                   AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
-                   AND  IdFactura = ( SELECT MAX(A.IdFactura)
-                                      FROM   FACTURAS A
-                                      WHERE  A.CodCia   = nCodCia
-                                        AND  A.IdPoliza = nIdPoliza
-                                        AND  A.IDetPol  = nIDetPol
-                                        AND  A.IdEndoso = 0
-                                        AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
+         IF NVL(cIndFacturaPol, 'N') = 'S' THEN
+            nIDetPolQuery := 1;
+         ELSE
+            nIDetPolQuery := nIDetPol;
+         END IF;
+         --Query para determinar la fecha de vencimiento del primer recibo en caso de que se trate de un endoso
+         SELECT FecFinVig
+         INTO   dFecFinVigFact
+         FROM   FACTURAS
+         WHERE  CodCia   = nCodCia
+           AND  IdPoliza = nIdPoliza
+           AND  IDetPol  = nIDetPolQuery
+           AND  IdEndoso = 0
+           AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
+           AND  IdFactura = ( SELECT MAX(A.IdFactura)
+                              FROM   FACTURAS A
+                              WHERE  A.CodCia   = nCodCia
+                                AND  A.IdPoliza = nIdPoliza
+                                AND  A.IDetPol  = nIDetPolQuery
+                                AND  A.IdEndoso = 0
+                                AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
       ELSE
          dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL(nCodCia,       nCodEmpresa,  nIdPoliza,
                                                       nIdFactura,    nIdEndoso,    dFecPago,

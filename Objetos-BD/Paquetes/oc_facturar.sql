@@ -1856,6 +1856,8 @@ END PROC_EMITE_FACT_POL;
       nMto1erRecibo            NUMBER(18,2);
       cRecibosrestantes        VARCHAR2(1) := 'N';
       nMtoPagoSubs             NUMBER(18,2);
+      nIDetPolQuery            NUMBER;
+      cIndFacturaPol           POLIZAS.IndFacturaPol%TYPE;
       --
       CURSOR ENDOSO_Q IS
              SELECT E.Prima_Neta_Local PrimaLocal, E.Prima_Neta_Moneda PrimaMoneda, E.CodPlanPago, E.PorcComis,
@@ -1978,8 +1980,8 @@ END PROC_EMITE_FACT_POL;
       END;
       --
       BEGIN
-         SELECT CodCliente, Cod_Moneda, CodCia, CodEmpresa, IndFactElectronica
-         INTO   nCodCliente, cCodMoneda, nCodCia, nCodEmpresa, cIndFactElectronica
+         SELECT CodCliente, Cod_Moneda, CodCia, CodEmpresa, IndFactElectronica, IndFacturaPol
+         INTO   nCodCliente, cCodMoneda, nCodCia, nCodEmpresa, cIndFactElectronica, cIndFacturaPol
          FROM   POLIZAS
          WHERE  IdPoliza = nIdPoliza;
       END;
@@ -2104,20 +2106,26 @@ END PROC_EMITE_FACT_POL;
              nPrimaRestMoneda := (NVL(X.PrimaMoneda,0)) - NVL(nMtoPagoMoneda,0);
              nMtoComisiMoneda := nMtoPagoMoneda * X.PorcComis / 100;
              --
+             IF NVL(cIndFacturaPol, 'N') = 'S' THEN
+                nIDetPolQuery := 1;
+             ELSE
+                nIDetPolQuery := nIDetPol;
+             END IF;
+             --
              --Query para determinar la parte a cobrar del primer recibo
              SELECT FecVenc, FecFinVig, x.FactorPorDia * (TRUNC(FecFinVig) - TRUNC(dFecPago))
              INTO   dFecIniVig1erRecibo, dFecFinVig1erRecibo, nMto1erRecibo
              FROM   FACTURAS
              WHERE  CodCia   = nCodCia
                AND  IdPoliza = nIdPoliza
-               AND  IDetPol  = nIDetPol
+               AND  IDetPol  = nIDetPolQuery
                AND  IdEndoso = 0
                AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
                AND  IdFactura = ( SELECT MAX(A.IdFactura)
                                   FROM   FACTURAS A
                                   WHERE  A.CodCia   = nCodCia
                                     AND  A.IdPoliza = nIdPoliza
-                                    AND  A.IDetPol  = nIDetPol
+                                    AND  A.IDetPol  = nIDetPolQuery
                                     AND  A.IdEndoso = 0
                                     AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
              --
@@ -2347,20 +2355,26 @@ END PROC_EMITE_FACT_POL;
                  nMtoComisiMoneda := nMtoPagoMoneda * X.PorcComis / 100;
                  nTotPrimasMoneda := (NVL(nTotPrimasMoneda,0)*  NVL(J.PorcResPago,0)/100) + NVL(nMtoPagoMoneda,0);
                  --
+                 IF NVL(cIndFacturaPol, 'N') = 'S' THEN
+                    nIDetPolQuery := 1;
+                 ELSE
+                    nIDetPolQuery := nIDetPol;
+                 END IF;
+                 --
                  --Query para determinar la parte a cobrar del primer recibo
                  SELECT FecVenc, FecFinVig, x.FactorPorDia * (TRUNC(FecFinVig) - TRUNC(dFecPago))
                  INTO   dFecIniVig1erRecibo, dFecFinVig1erRecibo, nMto1erRecibo
                  FROM   FACTURAS
                  WHERE  CodCia   = nCodCia
                    AND  IdPoliza = nIdPoliza
-                   AND  IDetPol  = nIDetPol
+                   AND  IDetPol  = nIDetPolQuery
                    AND  IdEndoso = 0
                    AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
                    AND  IdFactura = ( SELECT MAX(A.IdFactura)
                                       FROM   FACTURAS A
                                       WHERE  A.CodCia   = nCodCia
                                         AND  A.IdPoliza = nIdPoliza
-                                        AND  A.IDetPol  = nIDetPol
+                                        AND  A.IDetPol  = nIDetPolQuery
                                         AND  A.IdEndoso = 0
                                         AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
                  --
