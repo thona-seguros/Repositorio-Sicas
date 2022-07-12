@@ -567,7 +567,7 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
        --
        CURSOR FACT_Q IS
           SELECT DF.CodCpto
-               , DF.Monto_Det_Local
+               , DF.MONTO_DET_MONEDA
                , CC.Orden_Impresion
                , CC.IndCptoPrimas
                , CC.IndGeneraIVA
@@ -577,15 +577,19 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
             AND  NVL(CC.IndEsImpuesto,'N') != 'S'
             AND  DF.CodCpto                = CC.CodConcepto
           ORDER BY NVL(CC.Orden_Impresion, 0);
+        --          
     BEGIN
         BEGIN
-            SELECT 'S'    , DF.Monto_Det_Local
-              INTO cExiste, nMtoIVAFact
+            SELECT 'S'    , 
+                   DF.MONTO_DET_MONEDA
+              INTO cExiste, 
+                   nMtoIVAFact
               FROM DETALLE_FACTURAS DF,CATALOGO_DE_CONCEPTOS CC
              WHERE DF.IdFactura     = nIdFactura
                AND DF.CodCpto       = cCodCptoImpto
                AND CC.IndEsImpuesto = 'S'
                AND DF.CodCpto       = CC.CodConcepto;
+            --               
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
                 cExiste := 'N';
@@ -616,7 +620,7 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
             nTasaIVA := OC_CATALOGO_DE_CONCEPTOS.PORCENTAJE_CONCEPTO(nCodCia, cCodCptoImpto);
             FOR X IN FACT_Q LOOP
                 IF (cIndMultiRamo = 'S' AND X.IndGeneraIVA = 'S') OR (cIndMultiRamo = 'N') THEN
-                   nMtoIVA  := NVL(NVL(X.Monto_Det_Local,0) * nTasaIVA / 100,0);
+                   nMtoIVA  := NVL(NVL(X.MONTO_DET_MONEDA,0) * nTasaIVA / 100,0);
                    --
                    UPDATE DETALLE_FACTURAS
                    SET    MtoImptoFactElect = nMtoIVA
