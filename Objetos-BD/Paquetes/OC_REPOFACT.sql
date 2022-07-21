@@ -187,7 +187,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
         cSaltoLinea                 VARCHAR2(5)      := '<br>';
         cHTMLHeader                 VARCHAR2(2000)   := '<html>'                                                                     ||cSaltoLinea||
                                                          '<head>'                                                                     ||cSaltoLinea||
-                                                         '<meta http-equiv="Content-Language" content="en/us"/>'                      ||cSaltoLinea||
+                                                         '<meta http-equiv="Content-Language" content="es-mx"/>'                      ||cSaltoLinea||
                                                          '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>'  ||cSaltoLinea||
                                                          '</head><body>'                                                              ||cSaltoLinea;
         cHTMLFooter                VARCHAR2(100)    := '</body></html>';
@@ -239,7 +239,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
         cTextoEnv := cHTMLHeader||cTexto1||cSaltoLinea||cSaltoLinea||cTexto2||cSaltoLinea||cSaltoLinea||
                          cTexto4||cSaltoLinea||cHTMLFooter;
 
-        dbms_output.put_line('se envio correo '||cEmail1||'  directorio  '||cNomDirectorio);
+        dbms_output.put_line('se envio correo: '||cEmail1||'  directorio: '||cNomDirectorio);
         ------------
         OC_MAIL.INIT_PARAM;
         OC_MAIL.cCtaEnvio   := cEmail;
@@ -291,7 +291,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                                                       ) IS
 
             /* PROCEDIMIENTO QUE GENERA DOS SALIDAS, UNO A UNA TABLA Y OTRO GENERA ARCHIVO DE EXCEL*/
-            cCodReporte           VARCHAR2(100) := 'DEUDORXPRIMA';
+            cCodReporte           VARCHAR2(100) := 'DEUDORPORPRIMA';
             --
             cLimitador      VARCHAR2(1) :='|';
             nLinea          NUMBER;
@@ -328,7 +328,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             nUdisPEM        DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
             nTotComisDist   DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
             nDifComis       DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-            cCodPlanPagos   PLAN_DE_PAGOS.CodPlanPago%TYPE;
+            cCodPlanPago   PLAN_DE_PAGOS.CodPlanPago%TYPE;
             cCodGenerador   AGENTE_POLIZA.Cod_Agente%TYPE;
             nTasaIVA        CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
             cDescEstado     PROVINCIA.DescEstado%TYPE;
@@ -366,7 +366,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             cTitulo2              VARCHAR2(200);
             cTitulo4              VARCHAR2(200);
             cEncabez              VARCHAR2(5000);
-            dFecHasta DATE;
+            dFecHasta             DATE;
             nIdTipoSeg            DETALLE_POLIZA.IdTipoSeg%TYPE;
             cPlanCobert           PLAN_COBERTURAS.PlanCob%TYPE;
             nFactorPrimaRamo      NUMBER;
@@ -417,7 +417,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                           MONTOPRIMARETIROLOC,
                           CodRamo,
                           DescRamo,
-                          IndMultiramo
+                          IndMultiramo,
+                          CODPLANPAGO
                        FROM(
                    SELECT /*+RULE*/
                           DISTINCT
@@ -473,7 +474,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             ELSE
                                OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                             END DescRamo,
-                            TS.IndMultiramo
+                            TS.IndMultiramo,
+                            P.CODPLANPAGO
                      FROM
                           TRANSACCION                   T,
                           FACTURAS                      F,
@@ -578,7 +580,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             ELSE
                                OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                             END DescRamo,
-                            TS.IndMultiramo
+                            TS.IndMultiramo,
+                            P.CODPLANPAGO
                      FROM
                           TRANSACCION                   T,
                           FACTURAS                      F,
@@ -677,7 +680,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             ELSE
                                OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                             END DescRamo,
-                            TS.IndMultiramo
+                            TS.IndMultiramo,
+                            P.CODPLANPAGO
                      FROM
                           TRANSACCION                   T,
                           FACTURAS                      F,
@@ -782,7 +786,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             ELSE
                                OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                             END DescRamo,
-                            TS.IndMultiramo
+                            TS.IndMultiramo,
+                            P.CODPLANPAGO
                      FROM
                           TRANSACCION                   T,
                           FACTURAS                      F,
@@ -855,7 +860,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   AND D.IdFactura   = F.IdFactura
                   AND F.IdFactura   = nIdFactura;
             -----
-            CURSOR DET_Q_MR (nCodRamo Varchar2) IS
+            CURSOR DET_Q_MR (nCodCia NUMBER, nCodEmpresa NUMBER, nIdTipoSeg VARCHAR2, cPlanCobert VARCHAR2, nCodRamo Varchar2) IS
                      SELECT D.CodCpto,            D.Monto_Det_Moneda,
                             D.IndCptoPrima,       C.IndCptoServicio,
                             OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(nCodCia, nCodEmpresa, nIdTipoSeg, cPlanCobert, C.CodConcepto) RamoPrimas,
@@ -1021,7 +1026,10 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                W_ID_USER
           FROM DUAL;
         ----
-
+        IF UPPER(cDestino) = 'REGISTRO' then
+            cCodReporte := cCodReporte || '_DWH';
+        END IF;
+        --
         DELETE FROM T_REPORTES_AUTOMATICOS A
          WHERE A.NOMBRE_REPORTE LIKE cCodReporte || '%'
            AND A.FECHA_PROCESO <= TRUNC(ADD_MONTHS(SYSDATE,-8));
@@ -1239,7 +1247,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                         nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                      ELSIF W.CodCpto = 'IVASIN' THEN
                         nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                        nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                        nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                      ELSE
                         nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
                      END IF;
@@ -1248,7 +1256,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
     -----
                   ELSE
     ----------------
-                      FOR W IN DET_Q_MR(X.CodRamo) LOOP
+                      FOR W IN DET_Q_MR(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PLANCOB, X.CodRamo) LOOP
                          IF (W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S')  THEN
                             nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(W.Monto_Det_Moneda,0);
                          ELSIF W.CodCpto IN ('RECVDA','RECACC')  AND W.CodTipoPlan = X.CodRamo THEN
@@ -1257,7 +1265,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                          ELSIF W.CodCpto = 'IVASIN' AND X.CodRamo =  OC_VALORES_DE_LISTAS.BUSCA_LVALOR('RAMOIVA', W.CodCpto) THEN
                             nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                            nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                            nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                          ELSE
                             NULL; --nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
                          END IF;
@@ -1697,7 +1705,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                 nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
              ELSIF W.CodCpto = 'IVASIN' THEN
                 nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
              ELSE
                 nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
              END IF;
@@ -1976,7 +1984,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
         nUdisPEM               DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
         nTotComisDist          DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
         nDifComis              DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-        cCodPlanPagos          PLAN_DE_PAGOS.CodPlanPago%TYPE;
+        cCodPlanPago          PLAN_DE_PAGOS.CodPlanPago%TYPE;
         cCodGenerador          AGENTE_POLIZA.Cod_Agente%TYPE;
         nTasaIVA               CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
         cDescEstado            PROVINCIA.DescEstado%TYPE;
@@ -2011,7 +2019,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
         nOtrasCompPM        DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
         ----
         cNomDirectorio      VARCHAR2(100) ;
-        cNomArchivo         VARCHAR2(100) := 'PRIMA_NETA_'||to_char(trunc(sysdate - 1),'ddmmyyyy')||'.XLSX';
+        cNomArchivo         VARCHAR2(100) := 'PRIMA_NETA_'||to_char(trunc(sysdate - 1),'ddmmyyyy')||'.xlsx';
         cNomArchZip         VARCHAR2(100);
         --
         dPagadoHasta        DATE;
@@ -2095,7 +2103,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   CANALFORMAVENTA,
                   CodRamo,
                   DescRamo,
-                  IndMultiramo
+                  IndMultiramo,
+                  CODPLANPAGO
         from (
            SELECT /*+RULE*/
                   'EMISION'                        PROCESO,
@@ -2143,7 +2152,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     ELSE
                        OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                     END DescRamo,
-                    TS.IndMultiramo
+                    TS.IndMultiramo,
+                    P.CODPLANPAGO
              FROM TRANSACCION         T,
                   DETALLE_TRANSACCION DT,
                   FACTURAS        F,
@@ -2161,7 +2171,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   CATEGORIAS                CGO
             WHERE T.CODCIA                   = NCODCIA
               AND T.CODEMPRESA               = NCODEMPRESA
-              AND TRUNC(T.FECHATRANSACCION) BETWEEN DFECDESDE AND DFECHASTA
+              AND TRUNC(T.FECHATRANSACCION) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               AND T.IDPROCESO               IN (7, 8, 14, 18, 21)
               --
               AND DT.IDTRANSACCION           = T.IDTRANSACCION
@@ -2230,7 +2240,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     P.CODTIPONEGOCIO, P.FUENTERECURSOSPRIMA, P.CODPAQCOMERCIAL, CGO.DESCCATEGO,
                     P.FORMAVENTA, F.MontoPrimaCompMoneda, F.MontoPrimaCompLocal, P.CodEmpresa,
                     OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg,
-                    DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo
+                    DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo,
+                            P.CODPLANPAGO
           UNION
           SELECT /*+RULE*/
                   'EMISION'                        PROCESO,
@@ -2278,7 +2289,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     ELSE
                        OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                     END DescRamo,
-                    TS.IndMultiramo
+                    TS.IndMultiramo,
+                            P.CODPLANPAGO
              FROM TRANSACCION         T,
                   DETALLE_TRANSACCION DT,
                   FACTURAS        F,
@@ -2296,7 +2308,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   CATEGORIAS                CGO
             WHERE T.CODCIA                   = NCODCIA
               AND T.CODEMPRESA               = NCODEMPRESA
-              AND TRUNC(T.FECHATRANSACCION) BETWEEN DFECDESDE AND DFECHASTA
+              AND TRUNC(T.FECHATRANSACCION) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               AND T.IDPROCESO  IN (7, 8, 14, 18, 21)
               AND F.STSFACT                 != 'PRE'    --PREEMI
               AND F.CODCIA                   = DT.CODCIA
@@ -2363,7 +2375,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     P.CODTIPONEGOCIO, P.FUENTERECURSOSPRIMA, P.CODPAQCOMERCIAL, CGO.DESCCATEGO,
                     P.FORMAVENTA, F.MontoPrimaCompMoneda, F.MontoPrimaCompLocal, P.CodEmpresa,
                     OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg,
-                    DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo
+                    DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo,
+                            P.CODPLANPAGO
         UNION ALL
           SELECT  /*+RULE*/
                  'CANCELACION'                     PROCESO,
@@ -2412,7 +2425,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     ELSE
                        OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                     END DescRamo,
-                    TS.IndMultiramo
+                    TS.IndMultiramo,
+                            P.CODPLANPAGO
              FROM TRANSACCION         T,                    -- MLJS SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION 28/05/2020
                   DETALLE_TRANSACCION DT,                   -- MLJS SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION 28/05/2020
                   FACTURAS        F,
@@ -2430,7 +2444,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   CATEGORIAS                CGO
             WHERE T.CODCIA                   = NCODCIA
               AND T.CODEMPRESA               = NCODEMPRESA
-              AND TRUNC(T.FechaTransaccion) BETWEEN DFECDESDE AND DFECHASTA
+              AND TRUNC(T.FechaTransaccion) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               AND T.IdProceso               IN (2,8,11)
               AND DT.IDTRANSACCION           = T.IDTRANSACCION
               AND DT.CODEMPRESA              = T.CODEMPRESA
@@ -2495,7 +2509,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     P.CODTIPONEGOCIO, P.FUENTERECURSOSPRIMA, P.CODPAQCOMERCIAL, CGO.DESCCATEGO,
                     P.FORMAVENTA, F.MontoPrimaCompMoneda, F.MontoPrimaCompLocal, P.CodEmpresa,
                     OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg,
-                    DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo)
+                    DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo,
+                            P.CODPLANPAGO)
             ORDER BY PROCESO DESC, IDFACTURA;
 
 
@@ -2510,7 +2525,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               AND D.IdFactura   = F.IdFactura
               AND F.IdFactura   = nIdFactura;
 
-            CURSOR DET_Q_MR (nCodRamo Varchar2) IS
+            CURSOR DET_Q_MR (nCodCia NUMBER, nCodEmpresa NUMBER, nIdTipoSeg VARCHAR2, cPlanCobert VARCHAR2, nCodRamo Varchar2) IS
                      SELECT D.CodCpto,            D.Monto_Det_Moneda,
                             D.IndCptoPrima,       C.IndCptoServicio,
                             OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(nCodCia, nCodEmpresa, nIdTipoSeg, cPlanCobert, C.CodConcepto) RamoPrimas,
@@ -2628,7 +2643,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               AND P.CodEmpresa               = T.CodEmpresa
               AND T.IdTransaccion            = N.IdTransaccionAnu
               AND T.IdProceso               IN (2, 8)   -- Anulaciones y Endoso
-              AND TRUNC(T.FechaTransaccion) BETWEEN dFecDesde AND dFecHasta
+              AND TRUNC(T.FechaTransaccion) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               --
               AND TXT.CODCIA(+)              = P.CODCIA
               AND TXT.CODEMPRESA(+)          = P.CODEMPRESA
@@ -2694,7 +2709,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               --
               AND T.CODCIA                   = DT.CODCIA
               AND T.CODEMPRESA               = DT.CODEMPRESA
-              AND TRUNC(T.FechaTransaccion) BETWEEN dFecDesde AND dFecHasta
+              AND TRUNC(T.FechaTransaccion) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               AND T.IDPROCESO               IN (2,8,18)
               AND (T.IDTRANSACCION  = N.IDTRANSACCION AND TO_NUMBER(DT.VALOR1)  = N.IDPOLIZA)
               AND  EXISTS (
@@ -2787,7 +2802,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               OR   (DT.OBJETO IN ('NOTAS_DE_CREDITO')  AND  T.IDPROCESO  IN (18) AND DT.CODSUBPROCESO IN ('REHNCR')))
               AND T.CODCIA                   = DT.CODCIA
               AND T.CODEMPRESA               = DT.CODEMPRESA
-              AND TRUNC(T.FechaTransaccion) BETWEEN dFecDesde AND dFecHasta
+              AND TRUNC(T.FechaTransaccion) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               AND T.IDPROCESO               IN (2,8,18)
               AND T.IDTRANSACCION  = N.IDTRANSACCION
               AND  EXISTS (
@@ -2868,7 +2883,10 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                W_ID_USER
           FROM DUAL;
         ----
-
+        IF UPPER(cDestino) = 'REGISTRO' then
+            cCodReporte := cCodReporte || '_DWH';
+        END IF;
+        --
         DELETE FROM T_REPORTES_AUTOMATICOS A
            WHERE A.NOMBRE_REPORTE LIKE cCodReporte || '%'
              AND A.FECHA_PROCESO <= TRUNC(ADD_MONTHS(SYSDATE,-8));
@@ -3080,14 +3098,14 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                    nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                 ELSIF W.CodCpto = 'IVASIN' THEN
                    nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                   nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                   nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                 ELSE
                    nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
                 END IF;
                 nPrimaTotal  := NVL(nPrimaTotal,0) + NVL(W.Monto_Det_Moneda,0);
              END LOOP;
           ELSE
-              FOR W IN DET_Q_MR(X.CodRamo) LOOP
+              FOR W IN DET_Q_MR(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PLANCOB, X.CodRamo) LOOP
                  IF (W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S') THEN
                     nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(W.Monto_Det_Moneda,0);
                  ELSIF W.CodCpto IN ('RECVDA','RECACC')  AND W.CodTipoPlan = X.CodRamo THEN
@@ -3096,7 +3114,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                  ELSIF W.CodCpto = 'IVASIN' AND X.CodRamo = OC_VALORES_DE_LISTAS.BUSCA_LVALOR('RAMOIVA', W.CodCpto) THEN
                     nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                  END IF;
                  nPrimaTotal  := NVL(nPrimaNeta,0) + NVL(nRecargos,0) + NVL(nDerechos,0) + NVL(nImpuesto,0);
               END LOOP;
@@ -3510,7 +3528,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                 nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
              ELSIF W.CodCpto = 'IVASIN' THEN
                 nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
              ELSE
                 nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
              END IF;
@@ -3828,7 +3846,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
         nUdisPEM               DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
         nTotComisDist          DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
         nDifComis              DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-        cCodPlanPagos          PLAN_DE_PAGOS.CodPlanPago%TYPE;
+        cCodPlanPago          PLAN_DE_PAGOS.CodPlanPago%TYPE;
         cCodGenerador          AGENTE_POLIZA.Cod_Agente%TYPE;
         nTasaIVA               CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
         cDescEstado            PROVINCIA.DescEstado%TYPE;
@@ -3863,7 +3881,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
         nOtrasCompPM        DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
         ----
         cNomDirectorio      VARCHAR2(100) ;
-        cNomArchivo         VARCHAR2(100) := 'REC_ANU_'||to_char(trunc(sysdate - 1),'ddmmyyyy')||'.XLSX';
+        cNomArchivo         VARCHAR2(100) := 'REC_ANU_'||to_char(trunc(sysdate - 1),'ddmmyyyy')||'.xlsx';
         cNomArchZip         VARCHAR2(100);
         --
         dPagadoHasta        DATE;
@@ -3957,7 +3975,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     ELSE
                        OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                     END DescRamo,
-                    TS.IndMultiramo
+                    TS.IndMultiramo,
+                            P.CODPLANPAGO
              FROM TRANSACCION         T,
                   DETALLE_TRANSACCION DT,
                   FACTURAS        F,
@@ -3983,7 +4002,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               --
               AND T.CODCIA                   = DT.CODCIA
               AND T.CODEMPRESA               = DT.CODEMPRESA
-              AND TRUNC(T.FechaTransaccion) between dFecDesde and dFecHasta
+              AND TRUNC(T.FechaTransaccion) between to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               AND T.IdProceso               IN (2,8,11)
               AND EXISTS (
                    SELECT
@@ -4032,8 +4051,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     P.PORCENCONTRIBUTORIO, P.PORCENCONTRIBUTORIO, TXT.DESCGIRONEGOCIO,
                     P.CODTIPONEGOCIO, P.FUENTERECURSOSPRIMA, P.CODPAQCOMERCIAL, CGO.DESCCATEGO,
                     P.FORMAVENTA, F.MontoPrimaCompMoneda, F.MontoPrimaCompLocal, P.CodEmpresa,
-                    OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg,
-                    DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo
+                    OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg, DP.PlanCob, C.CodConcepto), 
+                            P.CODPLANPAGO, TS.CODTIPOPLAN, TS.IndMultiramo
             ORDER BY F.IdFactura;
 
         CURSOR DET_Q IS
@@ -4047,7 +4066,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               AND D.IdFactura   = F.IdFactura
               AND F.IdFactura   = nIdFactura;
 
-            CURSOR DET_Q_MR (nCodRamo Varchar2) IS
+            CURSOR DET_Q_MR (nCodCia NUMBER, nCodEmpresa NUMBER, nIdTipoSeg VARCHAR2, cPlanCobert VARCHAR2, nCodRamo Varchar2) IS
                      SELECT D.CodCpto,            D.Monto_Det_Moneda,
                             D.IndCptoPrima,       C.IndCptoServicio,
                             OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(nCodCia, nCodEmpresa, nIdTipoSeg, cPlanCobert, C.CodConcepto) RamoPrimas,
@@ -4153,7 +4172,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   --
                   AND T.CODCIA                   = DT.CODCIA
                   AND T.CODEMPRESA               = DT.CODEMPRESA
-                  AND TRUNC(T.FechaTransaccion) BETWEEN dFecDesde AND dFecHasta
+                  AND TRUNC(T.FechaTransaccion) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
                   AND T.IDPROCESO               IN (2,8,18)
                   AND (T.IDTRANSACCION  = N.IDTRANSACCION AND TO_NUMBER(DT.VALOR4)  = N.IDNCR)
                   AND  EXISTS (SELECT max(1)
@@ -4240,7 +4259,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   AND  TO_NUMBER(DT.VALOR1)  = N.IDPOLIZA
                   AND T.CODCIA                   = DT.CODCIA
                   AND T.CODEMPRESA               = DT.CODEMPRESA
-                  AND TRUNC(T.FechaTransaccion) BETWEEN dFecDesde AND dFecHasta
+                  AND TRUNC(T.FechaTransaccion) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
                   AND T.IDPROCESO               IN (2,8,18)
                   AND T.IDTRANSACCION  = N.IDTRANSACCION
                   AND  EXISTS (SELECT MAX(1)
@@ -4318,7 +4337,10 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                W_ID_USER
           FROM DUAL;
         ----
-
+        IF UPPER(cDestino) = 'REGISTRO' then
+            cCodReporte := cCodReporte || '_DWH';
+        END IF;
+        --
           DELETE FROM T_REPORTES_AUTOMATICOS A
            WHERE A.NOMBRE_REPORTE LIKE cCodReporte || '%'
              AND A.FECHA_PROCESO <= TRUNC(ADD_MONTHS(SYSDATE,-8));
@@ -4586,14 +4608,14 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                          ELSIF W.CodCpto = 'IVASIN' THEN
                             nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                            nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                            nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                          ELSE
                             nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
                          END IF;
                          nPrimaTotal  := NVL(nPrimaTotal,0) + NVL(W.Monto_Det_Moneda,0);
                       END LOOP;
                 ELSE
-                      FOR W IN DET_Q_MR(X.CodRamo) LOOP
+                      FOR W IN DET_Q_MR(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PLANCOB, X.CodRamo) LOOP
                          IF (W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S')   THEN
                             nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(W.Monto_Det_Moneda,0);
                          ELSIF W.CodCpto IN ('RECVDA','RECACC')  AND W.CodTipoPlan = X.CodRamo THEN
@@ -4602,7 +4624,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                          ELSIF W.CodCpto = 'IVASIN' AND X.CodRamo = OC_VALORES_DE_LISTAS.BUSCA_LVALOR('RAMOIVA', W.CodCpto) THEN
                             nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                            nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                            nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                          END IF;
                          nPrimaTotal  := NVL(nPrimaNeta,0) + NVL(nRecargos,0) + NVL(nDerechos,0) + NVL(nImpuesto,0);
                       END LOOP;
@@ -4979,7 +5001,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     nDerechos   := NVL(nDerechos,0) + NVL(nMonto_Det_Moneda,0);
                  ELSIF W.CodCpto = 'IVASIN' THEN
                     nImpuesto   := NVL(nImpuesto,0) + NVL(nMonto_Det_Moneda,0);
-                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                  ELSE
                     nImpuesto   := NVL(nImpuesto,0) + NVL(nMonto_Det_Moneda,0);
                  END IF;
@@ -5275,7 +5297,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             nUdisPEM        DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
             nTotComisDist   DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
             nDifComis       DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-            cCodPlanPagos   PLAN_DE_PAGOS.CodPlanPago%TYPE;
+            cCodPlanPago   PLAN_DE_PAGOS.CodPlanPago%TYPE;
             cCodGenerador   AGENTE_POLIZA.Cod_Agente%TYPE;
             nTasaIVA        CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
             cDescEstado     PROVINCIA.DescEstado%TYPE;
@@ -5321,7 +5343,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             cCtlArchivo     UTL_FILE.FILE_TYPE;
 
             cNomDirectorio  VARCHAR2(100) ;
-            cNomArchivo VARCHAR2(100) := 'REC_EMI_'||to_char(trunc(sysdate - 1),'ddmmyyyy')||'.XLSX';
+            cNomArchivo     VARCHAR2(100) := 'REC_EMI_'||to_char(trunc(sysdate - 1),'ddmmyyyy')||'.xlsx';
             cNomArchZip           VARCHAR2(100);
             cCodReporte           VARCHAR2(100) := 'RECIBOSEMITIDOS';
             cNomCia               VARCHAR2(100);
@@ -5403,7 +5425,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                        MONTOPRIMARETIROLOC,
                        CodRamo,
                        DescRamo,
-                       IndMultiramo
+                       IndMultiramo,
+                            CODPLANPAGO
                 FROM
                 (
                    SELECT /*+RULE*/
@@ -5448,7 +5471,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             ELSE
                                OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                             END DescRamo,
-                            TS.IndMultiramo
+                            TS.IndMultiramo,
+                            P.CODPLANPAGO
                      FROM TRANSACCION         T,
                           DETALLE_TRANSACCION DT,
                           FACTURAS        F,
@@ -5466,7 +5490,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                           CATEGORIAS                CGO
                     WHERE T.CODCIA                   = NCODCIA
                       AND T.CODEMPRESA               = NCODEMPRESA
-                      AND TRUNC(T.FECHATRANSACCION) between DFECDESDE AND DFECHASTA
+                      AND TRUNC(T.FECHATRANSACCION) between to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
                       AND T.IDPROCESO  IN (7, 8, 14, 18, 21)
                       AND DT.CodCia                  = T.CodCia
                       AND DT.CODEMPRESA              = T.CODEMPRESA
@@ -5528,7 +5552,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             P.CODTIPONEGOCIO, P.FUENTERECURSOSPRIMA, P.CODPAQCOMERCIAL, CGO.DESCCATEGO,
                             P.FORMAVENTA, F.MontoPrimaCompMoneda, F.MontoPrimaCompLocal, P.CodEmpresa,
                             OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg,
-                            DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo
+                            DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo,
+                            P.CODPLANPAGO
                 UNION
                    SELECT /*+RULE*/
                           P.IdPoliza,                      P.NUMPOLUNICO,
@@ -5571,7 +5596,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             ELSE
                                OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                             END DescRamo,
-                            TS.IndMultiramo
+                            TS.IndMultiramo,
+                            P.CODPLANPAGO
                      FROM TRANSACCION         T,
                           DETALLE_TRANSACCION DT,
                           FACTURAS        F,
@@ -5589,7 +5615,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                           CATEGORIAS                CGO
                     WHERE T.CODCIA                   = NCODCIA
                       AND T.CODEMPRESA               = NCODEMPRESA
-                      AND TRUNC(T.FECHATRANSACCION) BETWEEN DFECDESDE AND DFECHASTA
+                      AND TRUNC(T.FECHATRANSACCION) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
                       AND T.IDPROCESO  IN (7, 8, 14, 18, 21)
                       AND DT.IDTRANSACCION           = T.IDTRANSACCION
                       AND DT.CODEMPRESA              = T.CODEMPRESA
@@ -5655,7 +5681,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             P.CODTIPONEGOCIO, P.FUENTERECURSOSPRIMA, P.CODPAQCOMERCIAL, CGO.DESCCATEGO,
                             P.FORMAVENTA, F.MontoPrimaCompMoneda, F.MontoPrimaCompLocal, P.CodEmpresa,
                             OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg,
-                            DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo
+                            DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo,
+                            P.CODPLANPAGO
                 )
                 ORDER BY IDFACTURA;
 
@@ -5670,7 +5697,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   AND D.IdFactura   = F.IdFactura
                   AND F.IdFactura   = nIdFactura;
 
-            CURSOR DET_Q_MR (nCodRamo Varchar2) IS
+            CURSOR DET_Q_MR (nCodCia NUMBER, nCodEmpresa NUMBER, nIdTipoSeg VARCHAR2, cPlanCobert VARCHAR2, nCodRamo Varchar2) IS
                      SELECT D.CodCpto,            D.Monto_Det_Moneda,
                             D.IndCptoPrima,       C.IndCptoServicio,
                             OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(nCodCia, nCodEmpresa, nIdTipoSeg, cPlanCobert, C.CodConcepto) RamoPrimas,
@@ -5779,7 +5806,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   AND P.CodEmpresa               = T.CodEmpresa
                   AND T.IdTransaccion            = nvl(N.IdTransaccionAnu, 0)
                   AND T.IdProceso               IN (2, 8)   -- Anulaciones y Endoso
-                  AND TRUNC(T.FechaTransaccion) BETWEEN dFecDesde AND dFecHasta
+                  AND TRUNC(T.FechaTransaccion) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
                   --
                   AND TXT.CODCIA(+)              = P.CODCIA
                   AND TXT.CODEMPRESA(+)          = P.CODEMPRESA
@@ -5829,8 +5856,11 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                W_ID_USER
           FROM DUAL;
         ----
-
-          DELETE FROM T_REPORTES_AUTOMATICOS A
+        IF UPPER(cDestino) = 'REGISTRO' then
+            cCodReporte := cCodReporte || '_DWH';
+        END IF;
+        --
+        DELETE FROM T_REPORTES_AUTOMATICOS A
            WHERE A.NOMBRE_REPORTE LIKE cCodReporte || '%'
              AND A.FECHA_PROCESO <= TRUNC(ADD_MONTHS(SYSDATE,-8));
           --
@@ -6099,14 +6129,14 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                  ELSIF W.CodCpto = 'IVASIN' THEN
                     nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                  ELSE
                     nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
                  END IF;
                  nPrimaTotal  := NVL(nPrimaTotal,0) + NVL(W.Monto_Det_Moneda,0);
               END LOOP;
             ELSE
-              FOR W IN DET_Q_MR(X.CodRamo) LOOP
+              FOR W IN DET_Q_MR(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PLANCOB, X.CodRamo) LOOP
                  IF (W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S') THEN
                     nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(W.Monto_Det_Moneda,0);
                  ELSIF W.CodCpto IN ('RECVDA','RECACC')  AND W.CodTipoPlan = X.CodRamo THEN
@@ -6115,7 +6145,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                  ELSIF W.CodCpto = 'IVASIN' AND X.CodRamo = OC_VALORES_DE_LISTAS.BUSCA_LVALOR('RAMOIVA', W.CodCpto) THEN
                     nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                  END IF;
                  nPrimaTotal  := NVL(nPrimaNeta,0) + NVL(nRecargos,0) + NVL(nDerechos,0) + NVL(nImpuesto,0);
               END LOOP;
@@ -6495,7 +6525,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                 nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
              ELSIF W.CodCpto = 'IVASIN' THEN
                 nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
              ELSE
                 nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
              END IF;
@@ -6785,7 +6815,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             nUdisPEM        DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
             nTotComisDist   DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
             nDifComis       DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-            cCodPlanPagos   PLAN_DE_PAGOS.CodPlanPago%TYPE;
+            cCodPlanPago   PLAN_DE_PAGOS.CodPlanPago%TYPE;
             cCodGenerador   AGENTE_POLIZA.Cod_Agente%TYPE;
             nTasaIVA        CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
             cDescEstado     PROVINCIA.DescEstado%TYPE;
@@ -6796,6 +6826,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             dFecFinVig      ENDOSOS.FecFinVig%TYPE;
             nIdNcr          NOTAS_DE_CREDITO.IdNcr%TYPE;
             ---
+
             nMtoHonoAge     NUMBER(28,2);
             nMtoComiAge     NUMBER(28,2);
             cTipoAge        AGENTES.CodTipo%TYPE;
@@ -6821,7 +6852,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             ----
 
             cNomDirectorio  VARCHAR2(100) ;
-            cNomArchivo VARCHAR2(100) := 'REC_PAG_'||to_char(trunc(sysdate - 1),'ddmmyyyy')||'.XLSX';
+            cNomArchivo VARCHAR2(100) := 'REC_PAG_'||to_char(trunc(sysdate - 1),'ddmmyyyy')||'.xlsx';
             cNomArchZip           VARCHAR2(100);
             cCodReporte           VARCHAR2(100) := 'RECIBOSPAGADOS';
             cNomCia               VARCHAR2(100);
@@ -6906,7 +6937,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     ELSE
                        OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                   END DescRamo,
-                  TS.IndMultiramo
+                  TS.IndMultiramo,
+                            P.CODPLANPAGO
              FROM TRANSACCION          T,
                   DETALLE_TRANSACCION DT,
                   FACTURAS        F,
@@ -6925,7 +6957,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   CATEGORIAS                CGO
             WHERE T.CODCIA                   = DT.CODCIA
               AND T.CODEMPRESA               = DT.CODEMPRESA
-              AND TRUNC(T.FECHATRANSACCION) BETWEEN DFECDESDE AND DFECHASTA
+              AND TRUNC(T.FECHATRANSACCION) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               AND T.IdProceso                IN (12,21)
               AND DT.IDTRANSACCION           = T.IDTRANSACCION
               AND DT.CODEMPRESA              = T.CODEMPRESA
@@ -6977,7 +7009,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                         P.CODTIPONEGOCIO, P.FUENTERECURSOSPRIMA, P.CODPAQCOMERCIAL, CGO.DESCCATEGO,
                         P.FORMAVENTA, F.MontoPrimaCompMoneda, F.MontoPrimaCompLocal, P.CodEmpresa,
                         OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg,
-                        DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo
+                        DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo,
+                            P.CODPLANPAGO
         UNION
            SELECT /*+RULE*/
                   P.IdPoliza,                     P.NumPolUnico,
@@ -7025,7 +7058,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     ELSE
                        OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS',TS.CODTIPOPLAN)
                   END DescRamo,
-                  TS.IndMultiramo
+                  TS.IndMultiramo,
+                            P.CODPLANPAGO
              FROM TRANSACCION          T,
                   DETALLE_TRANSACCION DT,
                   FACTURAS        F,
@@ -7045,7 +7079,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             WHERE T.CODCIA                   = DT.CODCIA
               AND T.CODEMPRESA               = DT.CODEMPRESA
               AND T.IdProceso                IN (12,21)
-              AND TRUNC(T.FECHATRANSACCION) BETWEEN DFECDESDE  AND DFECHASTA
+              AND TRUNC(T.FECHATRANSACCION) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               AND DT.IDTRANSACCION           = T.IDTRANSACCION
               AND DT.CODEMPRESA              = T.CODEMPRESA
               AND DT.CODCIA                  = T.CODCIA
@@ -7094,7 +7128,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     P.CODTIPONEGOCIO, P.FUENTERECURSOSPRIMA, P.CODPAQCOMERCIAL, CGO.DESCCATEGO,
                     P.FORMAVENTA, F.MontoPrimaCompMoneda, F.MontoPrimaCompLocal, P.CodEmpresa,
                     OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg,
-                    DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo
+                    DP.PlanCob, C.CodConcepto), TS.CODTIPOPLAN, TS.IndMultiramo,
+                            P.CODPLANPAGO
              ORDER BY IdRecibo;
 
 
@@ -7109,7 +7144,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               AND D.IdFactura   = F.IdFactura
               AND F.IdFactura   = nIdFactura;
 
-            CURSOR DET_Q_MR (nCodRamo Varchar2) IS
+            CURSOR DET_Q_MR (nCodCia NUMBER, nCodEmpresa NUMBER, nIdTipoSeg VARCHAR2, cPlanCobert VARCHAR2, nCodRamo Varchar2) IS
                      SELECT D.CodCpto,            --D.Monto_Det_Moneda,                                         --MLJS 27/05/2022
                             DECODE(cTipoTran,'PAGO',D.Monto_Det_Moneda,D.Monto_Det_Moneda*-1) Monto_Det_Moneda, --MLJS 27/05/2022
                             D.IndCptoPrima,       C.IndCptoServicio,
@@ -7212,7 +7247,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               AND DT.VALOR1                  = N.IDPOLIZA
               AND T.CODCIA                   = DT.CODCIA
               AND T.CODEMPRESA               = DT.CODEMPRESA
-              AND TRUNC(T.FechaTransaccion) BETWEEN dFecDesde AND dFecHasta
+              AND TRUNC(T.FechaTransaccion) BETWEEN to_date(to_char(dFecDesde, 'dd/mm/yyyy'), 'dd/mm/yyyy') and to_date(to_char(dFecHasta, 'dd/mm/yyyy'), 'dd/mm/yyyy')
               AND T.IdProceso                IN (19,20)
               AND N.IDNCR                    = DT.VALOR4
               AND PC.PlanCob                 = DP.PlanCob
@@ -7279,8 +7314,11 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                W_ID_USER
           FROM DUAL;
         ----;
-
-          DELETE FROM T_REPORTES_AUTOMATICOS A
+        IF UPPER(cDestino) = 'REGISTRO' then
+            cCodReporte := cCodReporte || '_DWH';
+        END IF;
+        --
+        DELETE FROM T_REPORTES_AUTOMATICOS A
            WHERE A.NOMBRE_REPORTE LIKE cCodReporte || '%'
              AND A.FECHA_PROCESO <= TRUNC(ADD_MONTHS(SYSDATE,-8));
           --
@@ -7478,14 +7516,14 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                         nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                      ELSIF W.CodCpto = 'IVASIN' THEN
                         nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                        nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                        nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                      ELSE
                         nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
                      END IF;
                      nPrimaTotal  := NVL(nPrimaTotal,0) + NVL(W.Monto_Det_Moneda,0);
                   END LOOP;
                 ELSE
-                  FOR W IN DET_Q_MR(X.CodRamo) LOOP
+                  FOR W IN DET_Q_MR(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PLANCOB, X.CodRamo) LOOP
                      IF (W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S') THEN
                         nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(W.Monto_Det_Moneda,0);
                      ELSIF W.CodCpto IN ('RECVDA','RECACC')  AND W.CodTipoPlan = X.CodRamo THEN
@@ -7494,7 +7532,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                         nDerechos   := NVL(nDerechos,0) + NVL(W.Monto_Det_Moneda,0);
                      ELSIF W.CodCpto = 'IVASIN' AND X.CodRamo = OC_VALORES_DE_LISTAS.BUSCA_LVALOR('RAMOIVA', W.CodCpto) THEN
                         nImpuesto   := NVL(nImpuesto,0) + NVL(W.Monto_Det_Moneda,0);
-                        nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                        nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                      END IF;
                      nPrimaTotal  := NVL(nPrimaNeta,0) + NVL(nRecargos,0) + NVL(nDerechos,0) + NVL(nImpuesto,0);
                   END LOOP;
@@ -7890,7 +7928,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     nDerechos   := NVL(nDerechos,0) + (NVL(W.Monto_Det_Moneda,0)* W_FACTORDEVOL);
                  ELSIF W.CodCpto = 'IVASIN' THEN
                     nImpuesto   := NVL(nImpuesto,0) + (NVL(W.Monto_Det_Moneda,0)* W_FACTORDEVOL);
-                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, cCodPlanPagos, W.CodCpto);
+                    nTasaIVA    := OC_CONCEPTOS_PLAN_DE_PAGOS.PORCENTAJE_CONCEPTO(X.CodCia, X.CodEmpresa, X.CodPlanPago, W.CodCpto);
                  ELSE
                     nImpuesto   := NVL(nImpuesto,0) + (NVL(W.Monto_Det_Moneda,0)* W_FACTORDEVOL);
                  END IF;
@@ -8204,4 +8242,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
     END DEVUELVE_CORREO_USUARIO;
     --
 END OC_REPOFACT;
+/
+CREATE OR REPLACE PUBLIC SYNONYM OC_REPOFACT FOR OC_REPOFACT;
+/
+GRANT EXECUTE, DEBUG ON OC_REPOFACT TO "PUBLIC";
 /
