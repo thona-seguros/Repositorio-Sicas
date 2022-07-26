@@ -156,6 +156,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                                                                                   AND CS.PLANCOB    = DP.PLANCOB
                      WHERE DF.IdFactura                 = nIdFactura
                        AND NVL(CC.IndEsImpuesto,'N') = 'N'
+                       AND DF.MONTO_DET_MONEDA > 0
                        AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
                                                                                  WHERE S.CODCIA     = DP.CODCIA
                                                                                    AND S.CODCPTO    = DF.CODCPTO
