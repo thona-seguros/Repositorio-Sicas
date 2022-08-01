@@ -1,6 +1,9 @@
-CREATE OR REPLACE PACKAGE oc_comprobantes_contables IS
----- Modificaciones para OGAS                       JMMD 20210212
----- SE MODIFICA PARA QUE CALCULE BIEN EL TIPO DE CAMBIO  JMMD 20220531
+CREATE OR REPLACE PACKAGE OC_COMPROBANTES_CONTABLES IS
+-- BITACORA DE CAMBIOS
+-- Modificaciones para OGAS                                    JMMD 20210212
+-- SE MODIFICA PARA QUE CALCULE BIEN EL TIPO DE CAMBIO         JMMD 20220531
+-- SE AJUSTO EL CAMPO PARA INCIDENCIA DE CALCULO DE COMISIONES JICO 20220726 USD
+--
    FUNCTION NUM_COMPROBANTE(nCodCia NUMBER) RETURN NUMBER;
 
    FUNCTION CREA_COMPROBANTE(nCodCia NUMBER, cTipoComprob VARCHAR2, nNumTransaccion NUMBER,
@@ -68,15 +71,13 @@ CREATE OR REPLACE PACKAGE oc_comprobantes_contables IS
 
 END OC_COMPROBANTES_CONTABLES;
 /
-CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
+CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
 
----- ADICIONO UNA VALIDACION EN LA FUNCION APLICA_CANAL_VENTA
----- SI EL SINIESTRO YA FUE ABIERTO, YA NO VALIDA CERTIFICADO NI ESTATUS
----- PERMITE CONTINUAR                                                        25/11/2016   AEVS 
--- SE QUITO LA PROGRAMACION EL GRABADO DE GRABA_TIEMPO  JICO 21/04/2017
----- Modificaciones para OGAS                           JMMD 20200928 
--- SE MODIFICA PARA QUE CALCULE BIEN EL TIPO DE CAMBIO  JMMD 20220531
-
+-- BITACORA DE CAMBIOS
+-- Modificaciones para OGAS                                    JMMD 20210212
+-- SE MODIFICA PARA QUE CALCULE BIEN EL TIPO DE CAMBIO         JMMD 20220531
+-- SE AJUSTO EL CAMPO PARA INCIDENCIA DE CALCULO DE COMISIONES JICO 20220726 USD
+--
    CURSOR MOV_CONTABLE_Q (nCodCia number, nCodEmpresa number, nIdTransaccion number, cCodMonedaCia varchar2) IS
     SELECT  1 REG, D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda CodMoneda, SUM(DF.Monto_Det_Moneda) MtoMovCuenta,
            SUM(F.MtoComisi_Moneda) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN, NULL NIVELCTA3
@@ -196,8 +197,10 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
        AND VL.CODLISTA = 'UENXTIPSEG'
      GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL  , VL.DESCVALLST           
      UNION ALL
-    SELECT  6 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
+    SELECT  6 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, 
+           SUM(Monto_Det_Moneda) MtoMovCuenta,
+           --SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, 
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
@@ -223,8 +226,10 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
      GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST    
              ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT  7 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta, 
-           SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, 
+    SELECT  7 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, 
+           SUM(Monto_Det_Moneda) MtoMovCuenta, 
+           --SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, 
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, 
            OC_CAT_REGIMEN_FISCAL.FUN_NIVELCTA3(Dc.IdRegFisSAT) NIVELCTA3  
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
@@ -251,8 +256,10 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
      GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST, Dc.IdRegFisSAT  
            ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT  8 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
+    SELECT  8 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, 
+           SUM(Monto_Det_Moneda) MtoMovCuenta,
+           --SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, 
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
@@ -278,8 +285,10 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
      GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST 
               ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT  9 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3  
+    SELECT  9 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, 
+           --SUM(Monto_Det_Moneda) MtoMovCuenta,
+           SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, 
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3  
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
@@ -305,8 +314,10 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
      GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST   
              ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT 10 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_LOCAL) * -1 MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA)* -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
+    SELECT 10 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, 
+           SUM(Monto_Det_Moneda) MtoMovCuenta,
+           --SUM(DC.MONTO_MON_LOCAL) * -1 MtoMovCuenta, 
+           SUM(DC.MONTO_MON_EXTRANJERA)* -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
@@ -335,8 +346,10 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
      GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST   
               ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT 11 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA)* -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
+    SELECT 11 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, 
+           SUM(Monto_Det_Moneda) MtoMovCuenta,
+           --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, 
+           SUM(DC.MONTO_MON_EXTRANJERA)* -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
@@ -365,8 +378,10 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
      GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST  
              ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT 12 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
+    SELECT 12 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, 
+           SUM(Monto_Det_Moneda) MtoMovCuenta,
+           --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, 
+           SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
@@ -395,8 +410,10 @@ CREATE OR REPLACE PACKAGE BODY oc_comprobantes_contables IS
      GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST  
                ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT 13 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, --SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3  
+    SELECT 13 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, 
+           SUM(Monto_Det_Moneda) MtoMovCuenta,
+           --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, 
+           SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3  
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
