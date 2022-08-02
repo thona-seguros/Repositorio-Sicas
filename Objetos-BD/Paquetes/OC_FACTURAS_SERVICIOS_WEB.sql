@@ -303,7 +303,7 @@ create or replace PACKAGE BODY OC_FACTURAS_SERVICIOS_WEB AS
                                                 AND     A.codcia        = nCodCia
                                                 START WITH A.cod_agente = NVL(nCodAgente, 0))
                 ) R
-                WHERE   R.registro BETWEEN nLimInferior AND nLimSuperior;
+                ;
 
        END;
 
