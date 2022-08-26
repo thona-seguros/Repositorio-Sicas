@@ -735,7 +735,8 @@ CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
             WHEN 'PAGSDOCRELVAL07' THEN
                 NULL;
             WHEN 'PAGSDOCRELVAL08' THEN
-                SELECT NVL(TRIM(TO_CHAR(Monto_Fact_Local,'9999999999999999999999990.99')),'0.00')
+                -- capele 20220826
+                SELECT NVL(TRIM(TO_CHAR(Monto_Fact_Moneda,'9999999999999999999999990.99')),'0.00')
                   INTO cValorAtributo
                   FROM FACTURAS
                  WHERE IdFactura = nIdFactura;
