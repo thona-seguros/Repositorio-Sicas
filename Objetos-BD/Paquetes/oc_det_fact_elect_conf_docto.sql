@@ -110,7 +110,8 @@ CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                                C.Tipo_Doc_Identificacion,C.Num_Doc_Identificacion,
                                F.IdPoliza,F.IDetpol,F.IdTransaccion,
                                F.IdTransaccionAnu,IdEndoso,F.FecPago,
-                               ReciboPago, IdProceso, IndDomiciliado    --> JALV(+) 10/01/2022
+                               NVL(OC_GENERALES.VALIDA_FECHA_PAGO(ReciboPago, FECPAGO), F.FECSTS) ReciboPago, 
+                               IdProceso, IndDomiciliado    
                           FROM FACTURAS F,POLIZAS PO,CLIENTES C
                          WHERE F.CodCia             = nCodCia
                            AND F.IdFactura          = nIdFactura
@@ -126,7 +127,8 @@ CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                                P.Tipo_Doc_Identificacion,P.Num_Doc_Identificacion,
                                F.IdPoliza,F.IDetpol,F.IdTransaccion,
                                F.IdTransaccionAnu,IdEndoso,F.FecPago,
-                               ReciboPago, IdProceso, IndDomiciliado    --> JALV(+) 10/01/2022
+                               NVL(OC_GENERALES.VALIDA_FECHA_PAGO(ReciboPago, FECPAGO), F.FECSTS) ReciboPago, 
+                               IdProceso, IndDomiciliado    --> JALV(+) 10/01/2022
                           FROM FACTURAS F, POLIZAS PO, DETALLE_POLIZA D, ASEGURADO A, PERSONA_NATURAL_JURIDICA P
                          WHERE P.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
                            AND P.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
@@ -671,13 +673,17 @@ CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
 
               IF nIdProceso IS NOT NULL OR NVL(cIndDomiciliado,'N') = 'S' THEN
                   --Tomar campo indicado en COBRANZA MASIVA
-                SELECT  FechaCobro  --FecAplica
-                  INTO  dFecha_Pago_CM
-                  FROM  DETALLE_DOMICI_REFERE
-                 WHERE  idFactura = nIdFactura
-                   AND  ESTADO    = 'PAG';   -- 31/03/2022 SE AGREGO ESTA CONDICION 
-                            
-                  cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh:mm:ss');
+                  BEGIN
+                    SELECT  FechaCobro  --FecAplica
+                      INTO  dFecha_Pago_CM
+                      FROM  DETALLE_DOMICI_REFERE
+                     WHERE  idFactura = nIdFactura
+                       AND  ESTADO    = 'PAG';   -- 31/03/2022 SE AGREGO ESTA CONDICION 
+                                    
+                      cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh:mm:ss');
+                    EXCEPTION WHEN NO_DATA_FOUND THEN
+                        RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que resta registado como domiciliado y no esta el registro de la factura: '||nIdFactura||' en el DETALLE_DOMICI_REFERE');
+                    END;                      
               ELSIF NVL(cIndPlataforma,'N') = 'S' THEN
                   --cValorAtributo := TO_CHAR(dFecPago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecPago,'hh:mm:ss');
                   cValorAtributo := TO_CHAR(TO_DATE(dFecPago,'DD/MM/RRRR'),'yyyy-mm-dd')||'T'||TO_CHAR(TO_DATE(dFecPago,'DD/MM/RRRR'),'hh:mm:ss');
