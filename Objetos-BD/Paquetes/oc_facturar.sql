@@ -1688,7 +1688,7 @@ BEGIN
                nTotAsistLocal  := 0;
                nTotAsistMoneda := 0;
                FOR K IN CPTO_ASIST_Q LOOP
-     
+
              nAsistRestLocal  := 0;
                   nAsistRestMoneda := 0;
                   IF NVL(nPorcInicial,0) <> 0 THEN
@@ -2112,22 +2112,35 @@ END PROC_EMITE_FACT_POL;
                 nIDetPolQuery := nIDetPol;
              END IF;
              --
-             --Query para determinar la parte a cobrar del primer recibo
-             SELECT FecVenc, FecFinVig, x.FactorPorDia * (TRUNC(FecFinVig) - TRUNC(dFecPago))
-             INTO   dFecIniVig1erRecibo, dFecFinVig1erRecibo, nMto1erRecibo
-             FROM   FACTURAS
-             WHERE  CodCia   = nCodCia
-               AND  IdPoliza = nIdPoliza
-               AND  IDetPol  = nIDetPolQuery
-               AND  IdEndoso = 0
-               AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
-               AND  IdFactura = ( SELECT MAX(A.IdFactura)
-                                  FROM   FACTURAS A
-                                  WHERE  A.CodCia   = nCodCia
-                                    AND  A.IdPoliza = nIdPoliza
-                                    AND  A.IDetPol  = nIDetPolQuery
-                                    AND  A.IdEndoso = 0
-                                    AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
+             IF x.TipoEndoso = 'CFP' THEN
+                dFecIniVig1erRecibo := x.FecIniVig;
+                dFecFinVig1erRecibo := x.FecIniVig + nFrecPagos;
+                nMto1erRecibo       := nMtoPago;
+             ELSE
+                --Query para determinar la parte a cobrar del primer recibo
+                BEGIN
+                   SELECT FecVenc, FecFinVig, x.FactorPorDia * (TRUNC(FecFinVig) - TRUNC(dFecPago))
+                   INTO   dFecIniVig1erRecibo, dFecFinVig1erRecibo, nMto1erRecibo
+                   FROM   FACTURAS
+                   WHERE  CodCia   = nCodCia
+                     AND  IdPoliza = nIdPoliza
+                     AND  IDetPol  = nIDetPolQuery
+                     AND  IdEndoso = 0
+                     AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
+                     AND  IdFactura = ( SELECT MAX(A.IdFactura)
+                                        FROM   FACTURAS A
+                                        WHERE  A.CodCia   = nCodCia
+                                          AND  A.IdPoliza = nIdPoliza
+                                          AND  A.IDetPol  = nIDetPolQuery
+                                          AND  A.IdEndoso = 0
+                                          AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig) );
+                EXCEPTION
+                WHEN NO_DATA_FOUND THEN
+                     dFecIniVig1erRecibo := x.FecIniVig;
+                     dFecFinVig1erRecibo := x.FecFinVig;
+                     nMto1erRecibo       := x.FactorPorDia * (TRUNC(x.FecFinVig) - TRUNC(dFecPago));
+                END;
+             END IF;
              --
              IF nNumPagos = 1 THEN
                 nMtoPagoSubs := (NVL(X.PrimaLocal, 0) - NVL(nMto1erRecibo, 0));
@@ -2137,7 +2150,7 @@ END PROC_EMITE_FACT_POL;
              --
              FOR NP IN 1..nNumPagos LOOP
                  IF cRecibosRestantes = 'S' THEN
-                    dFecPago := dFecIniVig1erRecibo;
+                    dFecPago          := dFecIniVig1erRecibo;
                     cRecibosRestantes := 'N'; 
                  END IF;
                  --
@@ -2147,9 +2160,9 @@ END PROC_EMITE_FACT_POL;
                     nMtoComisi := nMtoPago * X.PorcComis / 100;
                     -- JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
                     IF nFrecPagos NOT IN (15,14,7) THEN
-                       dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
+                       dFecPago := ADD_MONTHS(dFecPago,nFrecPagos);
                     ELSE
-                       dFecPago         := dFecPago + nFrecPagos;
+                       dFecPago := dFecPago + nFrecPagos;
                     END IF;
                     --
                     nMtoPagoMoneda   := nMtoPagoSubs;
@@ -8174,4 +8187,16 @@ BEGIN
 END PROC_COMISIONPOL_MULTIRAMO;
 
 END OC_FACTURAR;
+/
+
+--
+-- OC_FACTURAR  (Synonym) 
+--
+--  Dependencies: 
+--   OC_FACTURAR (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_FACTURAR FOR SICAS_OC.OC_FACTURAR
+/
+
+GRANT EXECUTE ON SICAS_OC.OC_FACTURAR TO PUBLIC
 /
