@@ -2374,22 +2374,28 @@ END PROC_EMITE_FACT_POL;
                     nIDetPolQuery := nIDetPol;
                  END IF;
                  --
-                 --Query para determinar la parte a cobrar del primer recibo
-                 SELECT FecVenc, FecFinVig, x.FactorPorDia * (TRUNC(FecFinVig) - TRUNC(dFecPago))
-                 INTO   dFecIniVig1erRecibo, dFecFinVig1erRecibo, nMto1erRecibo
-                 FROM   FACTURAS
-                 WHERE  CodCia   = nCodCia
-                   AND  IdPoliza = nIdPoliza
-                   AND  IDetPol  = nIDetPolQuery
-                   AND  IdEndoso = 0
-                   AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
-                   AND  IdFactura = ( SELECT MAX(A.IdFactura)
-                                      FROM   FACTURAS A
-                                      WHERE  A.CodCia   = nCodCia
-                                        AND  A.IdPoliza = nIdPoliza
-                                        AND  A.IDetPol  = nIDetPolQuery
-                                        AND  A.IdEndoso = 0
-                                        AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
+                 IF x.TipoEndoso = 'CFP' THEN
+                    dFecIniVig1erRecibo := x.FecIniVig;
+                    dFecFinVig1erRecibo := x.FecIniVig + nFrecPagos;
+                    nMto1erRecibo       := nMtoPago;
+                 ELSE
+                    --Query para determinar la parte a cobrar del primer recibo
+                    SELECT FecVenc, FecFinVig, x.FactorPorDia * (TRUNC(FecFinVig) - TRUNC(dFecPago))
+                    INTO   dFecIniVig1erRecibo, dFecFinVig1erRecibo, nMto1erRecibo
+                    FROM   FACTURAS
+                    WHERE  CodCia   = nCodCia
+                      AND  IdPoliza = nIdPoliza
+                      AND  IDetPol  = nIDetPolQuery
+                      AND  IdEndoso = 0
+                      AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
+                      AND  IdFactura = ( SELECT MAX(A.IdFactura)
+                                         FROM   FACTURAS A
+                                         WHERE  A.CodCia   = nCodCia
+                                           AND  A.IdPoliza = nIdPoliza
+                                           AND  A.IDetPol  = nIDetPolQuery
+                                           AND  A.IdEndoso = 0
+                                           AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
+                 END IF;
                  --
                  IF nNumPagos = 1 THEN
                     nMtoPagoSubs := (NVL(X.PrimaLocal, 0) - NVL(nMto1erRecibo, 0));
