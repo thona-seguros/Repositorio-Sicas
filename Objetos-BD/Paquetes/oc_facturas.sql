@@ -348,18 +348,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                       cCodTipoDoc   VARCHAR2,  nCodCia         NUMBER,   cCodMoneda          VARCHAR2,
                       nCodResPago   NUMBER,    nIdTransaccion  NUMBER,   cIndFactElectronica VARCHAR2   --INICIO LARPLA
                       ) RETURN NUMBER IS
-    --
-    nIdFactura      FACTURAS.IDFACTURA%TYPE;
-    P_Msg_Regreso   VARCHAR2(50);                 -- XDS
-    nId_Año_Poliza  FACTURAS.Id_Año_Poliza%TYPE;
-    dFecFinVigFact  FACTURAS.FecFinVig%TYPE;
-    dFecFinVigPol   POLIZAS.FecFinVig%TYPE;
-    nCodEmpresa     POLIZAS.CodEmpresa%TYPE;
-    cCodPlanPago    POLIZAS.CodPlanPago%TYPE;
-    nIDetPolQuery   NUMBER;
-    cIndFacturaPol  POLIZAS.IndFacturaPol%TYPE;
+       nIdFactura      FACTURAS.IDFACTURA%TYPE;
+       P_Msg_Regreso   VARCHAR2(50);
+       nId_Año_Poliza  FACTURAS.Id_Año_Poliza%TYPE;
+       dFecFinVigFact  FACTURAS.FecFinVig%TYPE;
+       dFecFinVigPol   POLIZAS.FecFinVig%TYPE;
+       nCodEmpresa     POLIZAS.CodEmpresa%TYPE;
+       cCodPlanPago    POLIZAS.CodPlanPago%TYPE;
+       nIDetPolQuery   NUMBER;
+       cIndFacturaPol  POLIZAS.IndFacturaPol%TYPE;
+       cTipoEndoso     ENDOSOS.TipoEndoso%TYPE;
     BEGIN
-      --
       BEGIN
         SELECT P.FecFinVig,   P.CodEmpresa,   P.CodPlanPago, P.IndFacturaPol
           INTO dFecFinVigPol, nCodEmpresa,    cCodPlanPago,  cIndFacturaPol
@@ -393,26 +392,55 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
          ELSE
             nIDetPolQuery := nIDetPol;
          END IF;
-         --Query para determinar la fecha de vencimiento del primer recibo en caso de que se trate de un endoso
-         SELECT FecFinVig
-         INTO   dFecFinVigFact
-         FROM   FACTURAS
-         WHERE  CodCia   = nCodCia
-           AND  IdPoliza = nIdPoliza
-           AND  IDetPol  = nIDetPolQuery
-           AND  IdEndoso = 0
-           AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
-           AND  IdFactura = ( SELECT MAX(A.IdFactura)
-                              FROM   FACTURAS A
-                              WHERE  A.CodCia   = nCodCia
-                                AND  A.IdPoliza = nIdPoliza
-                                AND  A.IDetPol  = nIDetPolQuery
-                                AND  A.IdEndoso = 0
-                                AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
+         --
+         SELECT TipoEndoso
+         INTO   cTipoEndoso
+         FROM   ENDOSOS
+         WHERE  CodCia     = nCodCia
+           AND  CodEmpresa = nCodEmpresa
+           AND  IdPoliza   = nIdPoliza
+           AND  IdEndoso   = nIdEndoso;
+         --
+         IF cTipoEndoso = 'CFP' THEN
+            dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
+                                                          dFecPago, dFecFinVigPol, nNumPago , cCodPlanPago );
+         ELSE
+            --Query para determinar la fecha de vencimiento del primer recibo en caso de que se trate de un endoso
+            BEGIN
+               SELECT FecFinVig
+               INTO   dFecFinVigFact
+               FROM   FACTURAS
+               WHERE  CodCia   = nCodCia
+                 AND  IdPoliza = nIdPoliza
+                 AND  IDetPol  = nIDetPolQuery
+                 AND  IdEndoso = 0
+                 AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
+                 AND  IdFactura = ( SELECT MAX(A.IdFactura)
+                                    FROM   FACTURAS A
+                                    WHERE  A.CodCia   = nCodCia
+                                      AND  A.IdPoliza = nIdPoliza
+                                      AND  A.IDetPol  = nIDetPolQuery
+                                      AND  A.IdEndoso = 0
+                                      AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
+            EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                 IF NVL(nIdEndoso, 0) <> 0 THEN
+                    SELECT FecFinVig
+                    INTO   dFecFinVigFact
+                    FROM   ENDOSOS
+                    WHERE  CodCia     = nCodCia
+                      AND  CodEmpresa = nCodEmpresa
+                      AND  IdPoliza   = nIdPoliza
+                      AND  IdEndoso   = nIdEndoso;
+                 ELSE
+                    dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
+                                                                  dFecPago, dFecFinVigPol, nNumPago , cCodPlanPago );
+                 END IF;
+            END;
+         END IF;
       ELSE
-         dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL(nCodCia,       nCodEmpresa,  nIdPoliza,
-                                                      nIdFactura,    nIdEndoso,    dFecPago,
-                                                      dFecFinVigPol, nNumPago,     cCodPlanPago);
+         dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
+                                                       dFecPago, dFecFinVigPol, nNumPago , cCodPlanPago );
       END IF;
       --
       INSERT INTO FACTURAS
@@ -3472,7 +3500,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
             cCVE_MOTIVCANCFACT  VARCHAR2(30);
             P_IDFACTURA NUMBER := PIDFACTURA;
             P_IDNCR     NUMBER := PIDNCR;
-                                       
+
             --RESPUESTA
             cCodigoResp         VARCHAR2(100);
             cDescResp           VARCHAR2(1000);
@@ -3496,7 +3524,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
             EXCEPTION WHEN OTHERS THEN
                  RAISE_APPLICATION_ERROR(-20200,'No existe el motivo de cancelación del CFDI o no es válido: '||P_CVE_MOTIVCANCFACT);
             END;
-                    
+
             --
             IF P_CVE_MOTIVCANCFACT = '01' THEN
                     -- EXTRAE LOS RECIBOS ANULADOS Y EMITIDOS QUE HACEN MATCH
@@ -3681,7 +3709,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
             P_IdTimbre := nIdTimbre;
             --
             cCodigoResp := CASE WHEN cCodigoResp IN ('201','2001') THEN '201' ELSE '501' END;
-             
+
             RETURN cCodigoResp;
 
     EXCEPTION WHEN OTHERS THEN
@@ -3734,7 +3762,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
             Relacion := Relacion || ENT.UUID_CANCELAR;                                              
         END LOOP;                      
         RETURN Relacion;
-                                   
+
     EXCEPTION WHEN OTHERS THEN
         RETURN NULL;                           
     END FACTURA_RELACIONADA_UUID_CANC;
@@ -3794,7 +3822,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                                  PIDFACTURA   NUMBER) RETURN NUMBER IS         
         nIDFACTURA NUMBER;
     BEGIN
-          
+
         SELECT DISTINCT CASE WHEN PIDFACTURA = F2.IDFACTURA THEN F3.IDFACTURA ELSE F2.IDFACTURA END 
           INTO NIDFACTURA          
                   FROM polizas p INNER JOIN DETALLE_POLIZA D                ON D.CODCIA         = P.CODCIA
@@ -3832,15 +3860,16 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                        F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE)) AND
                        ROWNUM = 1;
             --                       
-                     
+
         RETURN NIDFACTURA;
-                                   
+
     EXCEPTION WHEN OTHERS THEN
         RETURN NULL;                           
     END FACTURA_RELACIONADA;
     --
 END OC_FACTURAS;
 /
+
 --
 -- OC_FACTURAS  (Synonym) 
 --
@@ -3849,7 +3878,6 @@ END OC_FACTURAS;
 --
 CREATE OR REPLACE PUBLIC SYNONYM OC_FACTURAS FOR SICAS_OC.OC_FACTURAS
 /
-
 
 GRANT EXECUTE ON SICAS_OC.OC_FACTURAS TO PUBLIC
 /
