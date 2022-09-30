@@ -713,7 +713,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
         END IF;
         
 
-        IF cCodRespuesta = OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'026') THEN   -- SE TIMBRO DE MANERA CORRECTA
+        IF cCodRespuesta in(OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'026'),'2001')  THEN   -- SE TIMBRO DE MANERA CORRECTA
             IF cProceso != 'CAN' THEN
                 IF NVL(nIdFactura,0) != 0 and nIdFactura > 0 THEN
                         cLinea := 'Linea 4';
@@ -733,6 +733,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
             ELSIF  cProceso = 'CAN' THEN
                 cUuidCancelado := cDocto;
             END IF;
+            cCodRespuesta := '201';
         END IF;
         --
         cLinea := 'Linea 8.1';
@@ -751,6 +752,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                           sysdate
                                                      );
         cLinea := 'Linea 9';
+        
+        
         --DBMS_OUTPUT.PUT_LINE(cLinea);
             OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(nCodCia,nCodEmpresa,nIdFactura,nIdNcr,cProceso,cCodRespuesta,cDescEror,cDocto);
         --
