@@ -8,8 +8,8 @@ cCodCia             POLIZAS.CodCia%TYPE;
 cIP                 VARCHAR2(20);
 cUsuario            VARCHAR2(30);
 cTexto              VARCHAR2(4000) := 'DATOS MODIFICADOS: ';
-cOsUser             VARCHAR2(20);
-cHost               VARCHAR2(20);
+cOsUser             VARCHAR2(100);
+cHost               VARCHAR2(100);
 cOrigenTransaccion  LOG_TRANSACCION.Origen_Transaccion%type;
 BEGIN
   --
@@ -33,37 +33,37 @@ BEGIN
     INTO cHost
     FROM DUAL;
   --
-  cOrigenTransaccion := cHost||' - '||cOsUser;
-  dbms_output.put_line('STSCOBERTURA '|| :NEW.STSCOBERTURA);
-  IF :NEW.STSCOBERTURA IN ('EMI','REN','ANU','REN','SUS','CEX','EXA') THEN
+  cOrigenTransaccion := substr(cHost||' - '||cOsUser,1,150);
+  --dbms_output.put_line('STSCOBERTURA '|| :NEW.STSCOBERTURA);
+  IF :OLD.STSCOBERTURA IN ('EMI','REN','ANU','REN','SUS','CEX','EXA') THEN
      IF :NEW.CODCOBERT != :OLD.CODCOBERT THEN
-        cTexto := cTexto||' - '|| 'ANTES CODCOBERT: '||:OLD.CODCOBERT||' DESPUES CODCOBERT: '||:NEW.CODCOBERT;
+        cTexto := cTexto||' - '||'CODCOBERT ANTES: '||:OLD.CODCOBERT||' DESPUES: '||:NEW.CODCOBERT;
      END IF;
      IF :NEW.SUMAASEG_LOCAL != :OLD.SUMAASEG_LOCAL THEN
-        cTexto := cTexto||' - '|| 'ANTES SUMAASEG_LOCAL: '||:OLD.SUMAASEG_LOCAL||' DESPUES SUMAASEG_LOCAL: '||:NEW.SUMAASEG_LOCAL;
+        cTexto := cTexto||' - '||'SUMAASEG_LOCAL ANTES: '||:OLD.SUMAASEG_LOCAL||' DESPUES: '||:NEW.SUMAASEG_LOCAL;
      END IF;
      IF :NEW.SUMAASEG_MONEDA != :OLD.SUMAASEG_MONEDA THEN
-        cTexto := cTexto||' - '|| 'ANTES SUMAASEG_MONEDA: '||:OLD.SUMAASEG_MONEDA||' DESPUES SUMAASEG_MONEDA: '||:NEW.SUMAASEG_MONEDA;
+        cTexto := cTexto||' - '||'SUMAASEG_MONEDA ANTES: '||:OLD.SUMAASEG_MONEDA||' DESPUES: '||:NEW.SUMAASEG_MONEDA;
      END IF;
      IF :NEW.PRIMA_MONEDA != :OLD.PRIMA_MONEDA THEN
-        cTexto := cTexto||' - '|| 'ANTES PRIMA_MONEDA: '||:OLD.PRIMA_MONEDA||' DESPUES PRIMA_MONEDA: '||:NEW.PRIMA_MONEDA;
+        cTexto := cTexto||' - '||'PRIMA_MONEDA ANTES: '||:OLD.PRIMA_MONEDA||' DESPUES: '||:NEW.PRIMA_MONEDA;
      END IF;
      IF :NEW.PRIMA_LOCAL != :OLD.PRIMA_LOCAL THEN
-        cTexto := cTexto||' - '|| 'ANTES PRIMA_MONEDA: '||:OLD.PRIMA_LOCAL||' DESPUES PRIMA_MONEDA: '||:NEW.PRIMA_LOCAL;
+        cTexto := cTexto||' - '||'PRIMA_LOCAL ANTES: '||:OLD.PRIMA_LOCAL||' DESPUES: '||:NEW.PRIMA_LOCAL;
      END IF;
      IF :NEW.STSCOBERTURA != :OLD.STSCOBERTURA THEN
-        cTexto := cTexto||' - '|| 'ANTES STSCOBERTURA: '||:OLD.STSCOBERTURA||' DESPUES STSCOBERTURA: '||:NEW.STSCOBERTURA;
+        cTexto := cTexto||' - '||'STSCOBERTURA ANTES: '||:OLD.STSCOBERTURA||' DESPUES: '||:NEW.STSCOBERTURA;
      END IF;
      IF :NEW.IDETPOL != :OLD.IDETPOL THEN
-        cTexto := cTexto||' - '|| 'ANTES IDETPOL: '||:OLD.IDETPOL||' DESPUES IDETPOL: '||:NEW.IDETPOL;
+        cTexto := cTexto||' - '||'ANTES IDETPOL: '||:OLD.IDETPOL||' DESPUES IDETPOL: '||:NEW.IDETPOL;
      END IF;
-
+      --
+     INSERT INTO LOG_TRANSACCION
+           (Id_Transaccion, CodCia, Id_Referencia, Fecha_Transaccion, Direccion_IP,
+            Num_Referencia, Origen_Transaccion, Desc_Movimiento, CodUsuario)
+     VALUES(nMaxtransaccion, 1, 'COBERT_ACT ' || :NEW.IDPOLIZA, SYSDATE, cIP,
+           :NEW.IdPoliza||'-'||:NEW.IDETPOL||'-'||:OLD.COD_ASEGURADO||'-'||:NEW.codcobert, 
+           cOrigenTransaccion, SUBSTR(cTexto,1,1000), cUsuario);
   END IF;
-  --
-  INSERT INTO LOG_TRANSACCION
-        (Id_Transaccion, CodCia, Id_Referencia, Fecha_Transaccion, Direccion_IP,
-         Num_Referencia, Origen_Transaccion, Desc_Movimiento, CodUsuario)
-  VALUES(nMaxtransaccion, 1, 'COBERT_ACT ' || :NEW.IDPOLIZA, SYSDATE, cIP,
-         :NEW.IdPoliza||'-'||:NEW.IDETPOL||'-'||:NEW.codcobert, cOrigenTransaccion, SUBSTR(cTexto,1,1000), cUsuario);
 END;
 /
