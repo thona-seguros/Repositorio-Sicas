@@ -511,7 +511,8 @@ BEGIN
              --CodFilial            = X.CodSubGrupo
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
-         AND IdPoliza   = nIdPoliza;
+         AND IdPoliza   = nIdPoliza
+         AND IDetPol    = nIDetPol;
 
       GT_DETALLE_POLIZA_COTIZ.INSERTA(nCodCia, nCodEmpresa, nIdCotizacion, X.IDetCotizacion,
                                       nIdPoliza, nIDetPol);

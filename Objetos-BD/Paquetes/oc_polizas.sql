@@ -1363,7 +1363,7 @@ CURSOR POL_REN_Q IS
 
 CURSOR DET_POL_RENOVAR_Q IS
    SELECT IDetPol, CodCia, Cod_Asegurado, CodEmpresa, CodPlanPago,
-          Suma_Aseg_Moneda, Prima_Moneda, PorcComis, PlanCob,
+          Suma_Aseg_Moneda, Suma_Aseg_local, Prima_Moneda, Prima_local, PorcComis, PlanCob,
           FecIniVig, FecFinVig, IdTipoSeg, CodPromotor, IndDeclara,
           IndSinAseg, CodFilial, CodCategoria, IndFactElectronica,
           IndAsegModelo, CantAsegModelo, MontoComisH, PorcComisH,
@@ -1725,9 +1725,11 @@ BEGIN
          END LOOP;
          FOR X IN DET_POL_RENOVAR_Q LOOP
             UPDATE DETALLE_POLIZA
-               SET Cod_Asegurado    = X.Cod_Asegurado,
-                   Suma_Aseg_Moneda = X.Suma_Aseg_Moneda,
-                   Prima_Moneda     = X.Prima_Moneda
+                   SET Cod_Asegurado    = X.Cod_Asegurado,
+                       SUMA_ASEG_LOCAL  = X.SUMA_ASEG_LOCAL,
+                       PRIMA_LOCAL      = X.PRIMA_LOCAL,
+                       Suma_Aseg_Moneda = X.Suma_Aseg_Moneda,
+                       Prima_Moneda     = X.Prima_Moneda
              WHERE CodCia     = nCodCia
                AND CodEmpresa = nCodEmpresa
                AND IdPoliza   = nIdPoliza
