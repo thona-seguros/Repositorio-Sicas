@@ -1,16 +1,10 @@
 --
--- TRG_REGISTRA_ACT_RELEVANTES  (Trigger) 
+-- MODIFICACION 
 --
---  Dependencies: 
---   STANDARD (Package)
---   DUAL (Synonym)
---   PERSONA_NATURAL_JURIDICA (Table)
---   ADMON_ACTIVI_RELEVANTES (Table)
---   CLIENTES (Table)
---   FACTURAS (Table)
---
-CREATE OR REPLACE TRIGGER SICAS_OC.TRG_REGISTRA_ACT_RELEVANTES
- AFTER UPDATE OF STSFACT ON SICAS_OC.FACTURAS
+-- 05/12/2022 Se MODIFICAN REGLAS CNSF  JICO        
+
+CREATE OR REPLACE TRIGGER TRG_REGISTRA_ACT_RELEVANTES
+ AFTER UPDATE OF STSFACT ON "FACTURAS"
  REFERENCING OLD AS OLD NEW AS NEW 
  FOR EACH ROW
 DECLARE
@@ -105,7 +99,7 @@ BEGIN
      ------------
        IF :NEW.STSFACT  = 'PAG'  AND 
           :NEW.FORMPAGO = 'EFEC' AND 
-          W_ACUMULADO >= 1000000 THEN
+          W_ACUMULADO >= 150000 THEN
           --            
          INSERT INTO ADMON_ACTIVI_RELEVANTES 
           (CODCIA,                              ID_PROCESO,
@@ -134,7 +128,7 @@ BEGIN
            W_TIPO_PERSONA,                     '',
            0,                                  0,
            0,                                  0,
-           'PEND',                             'CON ESTE PAGO SE REBASA EL LIMITE DE 1 000,000 DE PESOS EN ACUMULADO MENSUAL',
+           'PEND',                             'CON ESTE PAGO SE REBASA EL LIMITE DE 150,000 DE PESOS EN ACUMULADO MENSUAL',
            TRUNC(SYSDATE),                     SYSDATE,
            '',                                 W_USUARIO,
            :NEW.MONTO_FACT_LOCAL,              '',
@@ -152,16 +146,16 @@ BEGIN
   ELSE  -- PARA MONEDA EXTRANJERA
      IF :NEW.STSFACT           = 'PAG'  AND 
         :NEW.FORMPAGO          = 'EFEC' AND 
-        :NEW.MONTO_FACT_MONEDA > 10000 THEN
+        :NEW.MONTO_FACT_MONEDA > 7500 THEN
         --
-        IF (W_TIPO_PERSONA = 'FISICA' AND :NEW.MONTO_FACT_MONEDA >= 10000)
+        IF (W_TIPO_PERSONA = 'FISICA' AND :NEW.MONTO_FACT_MONEDA >= 7500)
             OR
-           (W_TIPO_PERSONA = 'MORAL'  AND :NEW.MONTO_FACT_MONEDA >= 50000) THEN
+           (W_TIPO_PERSONA = 'MORAL'  AND :NEW.MONTO_FACT_MONEDA >= 37500) THEN
            --
            IF W_TIPO_PERSONA = 'FISICA' THEN
-              W_OBSERVACIONES := 'EL PAGO SUPERA EL LÍMITE DE 10,000 DOLARES PARA PERSONAS FISICAS' ;
+              W_OBSERVACIONES := 'EL PAGO SUPERA EL LÍMITE DE 7,500 DOLARES PARA PERSONAS FISICAS' ;
            ELSE 
-             W_OBSERVACIONES := 'EL PAGO SUPERA EL LÍMITE DE 50,000 DOLARES PARA PERSONAS MORALES' ;
+             W_OBSERVACIONES := 'EL PAGO SUPERA EL LÍMITE DE 37,000 DOLARES PARA PERSONAS MORALES' ;
            END IF;           
            INSERT INTO ADMON_ACTIVI_RELEVANTES
             (CODCIA,                              ID_PROCESO,
