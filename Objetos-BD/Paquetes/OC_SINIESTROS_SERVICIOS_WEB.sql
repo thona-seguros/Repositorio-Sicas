@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_SINIESTROS_SERVICIOS_WEB AS
+create or replace PACKAGE          OC_SINIESTROS_SERVICIOS_WEB AS
     FUNCTION EXISTE_POLIZA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, /*nIdPoliza IN NUMBER,*/ cNumPolUnico IN VARCHAR2) RETURN VARCHAR2;    --> JALV (-) 03/02/2022
     FUNCTION EXISTE_AGENTE(nCodCia IN NUMBER, nCodAgente IN NUMBER, /*nIdPoliza IN NUMBER*/ cNumPolUnico IN VARCHAR) RETURN VARCHAR2;       --> JALV (-) 04/02/2022
     FUNCTION POLIZA_SINIESTRO (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, /*cNumPolUnico IN VARCHAR2,*/ nCodAgente IN VARCHAR2) RETURN XMLTYPE;   --> JALV (-) 09/02/2022
@@ -10,7 +10,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_SINIESTROS_SERVICIOS_WEB AS
     FUNCTION OBTIENE_DIAS_GARANTIA(PCODCIA NUMBER, PCODEMPRESA NUMBER, PIDPOLIZA NUMBER, PTIPO_SOL VARCHAR2, PTIPO_TRAMITE VARCHAR2, PAREA VARCHAR2) RETURN XMLTYPE;
 END OC_SINIESTROS_SERVICIOS_WEB;
 /
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SINIESTROS_SERVICIOS_WEB AS
+create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
 
     FUNCTION EXISTE_POLIZA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, /*nIdPoliza IN NUMBER,*/ cNumPolUnico IN VARCHAR2) --> JALV (-) 03/02/2022
     RETURN VARCHAR2 IS
@@ -191,12 +191,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SINIESTROS_SERVICIOS_WEB AS
                         OC_CRITERIOS_VAL_SINI.ROL_SINI(nCodCia, nCodEmpresa, nIdPoliza) Rol_Dictaminador,
                         IndProcFact,
                         AP.Cod_Agente
-                FROM    POLIZAS   P INNER JOIN DETALLE_POLIZA               DP  ON P.CODCIA  = DP.CODCIA  AND P.CODEMPRESA = DP.CODEMPRESA  AND P.IdPoliza       = DP.IdPoliza     AND P.StsPoliza     = 'EMI'
+                FROM    POLIZAS   P INNER JOIN DETALLE_POLIZA               DP  ON P.CODCIA  = DP.CODCIA  AND P.CODEMPRESA = DP.CODEMPRESA  AND P.IdPoliza       = DP.IdPoliza --     AND P.StsPoliza     = 'EMI' solicitud de iván perez 20230103
                                     INNER JOIN AGENTE_POLIZA                AP  ON AP.CodCia =  P.CodCia  AND AP.IdPoliza  = P.IdPoliza     AND AP.Ind_Principal = 'S'
                                     INNER JOIN ASEGURADO                    A   ON A.CodCia  =  P.CodCia  AND A.CodEmpresa = P.CodEmpresa   AND A.Cod_Asegurado  = DP.Cod_Asegurado
                                     INNER JOIN PERSONA_NATURAL_JURIDICA     PNJ ON PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion  AND PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
                                     INNER JOIN FACTURAS                     F   ON F.CodCia  = A.CodCia   AND F.IdPoliza   = DP.IdPoliza   
-                                    LEFT  JOIN DIAS_ATENCION_SINI           D   ON A.CodCia  =  P.CodCia  AND A.CodEmpresa = P.CodEmpresa   AND D.idpoliza       = P.idpoliza
+                                    LEFT  JOIN DIAS_ATENCION_SINI           D   ON D.CodCia  =  P.CodCia  AND D.CodEmpresa = P.CodEmpresa   AND D.idpoliza       = P.idpoliza
                 WHERE P.CodCia        = NCODCIA
                   AND P.CodEmpresa    = NCODEMPRESA
                   AND P.IdPoliza      = nIdPoliza     --> 36091 (INDIVIDUAL)  --> 3808 (COLECTIVA)
