@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
+create or replace PACKAGE          OC_FACT_ELECT_CONF_DOCTO IS
     cLineaCom        VARCHAR2(1000) := NULL;
     cLineaExe        VARCHAR2(1000) := NULL;
     cLineaCRels      VARCHAR2(1000) := NULL;
@@ -18,6 +18,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     cLineaPags       VARCHAR2(1000) := NULL;
     cLineaPagsDocRel VARCHAR2(1000) := NULL;
 
+
     PROCEDURE ASIGNA_LINEA_IDENTIFICADOR (cCodIdLinea  VARCHAR2,cLinea  VARCHAR2);
     PROCEDURE INICIALIZA_LINEA_IDENTIFICADOR;
     FUNCTION  CREA_DOCUMENTO(nIdFactura  NUMBER DEFAULT NULL ,nIdNcr  NUMBER DEFAULT NULL, nCodCia  NUMBER, nCodEmpresa  NUMBER, cProceso  VARCHAR2,cTipoCfdi  VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL) RETURN VARCHAR2;
@@ -30,7 +31,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
 
 END OC_FACT_ELECT_CONF_DOCTO;
 /
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
+create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
 
 -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -322,11 +323,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                AND FE.IdIdentificador  = DFE.IdIdentificador
              ORDER BY OrdenAtrib ASC;
     BEGIN
-    
+
             IF cCodIdLinea = 'CONIT' THEN
                 NULL;
             END IF;
-                
+
         FOR X IN Q_IdLine LOOP
             cValorAtributo := NULL;
             IF cLineaIdent IS NULL THEN
@@ -364,11 +365,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                     cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi,cCodCpto,X.CodRutinaCalc,cIndRelaciona, cCodTipoPlan);
                 END IF;
             END IF;
-            
+
             IF cCodIdLinea = 'CONIT' THEN
                 NULL;
             END IF;
-            
+
             IF cValorAtributo IS NOT NULL THEN
                 cLineaIdent := cLineaIdent||X.CodAtributo||cSeparadorValor||cValorAtributo||cSeparadorCampo;
                 OC_FACT_ELECT_CONF_DOCTO.ASIGNA_LINEA_IDENTIFICADOR(cCodIdLinea,cLineaIdent);
@@ -465,7 +466,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
           RESULTADO VARCHAR2(32727);
           NUMRECORD NUMBER :=0;
         BEGIN
-    
+
                 --SELECT SUBSTR(GT_WEB_SERVICES.ExtraeDatos_XML(XMLTYPE(CADENA), 'timbrefiscal'), 1, 32000)
                 --SELECT SUBSTR(GT_WEB_SERVICES.ExtraeDatos_XML(CADENA, 'timbrefiscal'), 1, 32000)
                 -- INTO ENTRADA FROM DUAL;        
@@ -518,7 +519,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
 
         OC_FACT_ELECT_CONF_DOCTO.INICIALIZA_LINEA_IDENTIFICADOR;
         cDocto := OC_FACT_ELECT_CONF_DOCTO.CREA_DOCUMENTO(nIdFactura, nIdNcr, nCodCia, nCodEmpresa, cProceso, cTipoCfdi, cIndRelaciona);
-        DBMS_OUTPUT.PUT_LINE(cDocto);
+     --   DBMS_OUTPUT.PUT_LINE(cDocto);
         IF cProceso != 'CAN' THEN
             cFolio  := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaCom,'folio');
             cSerie  := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaCom,'serie');
@@ -526,10 +527,24 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
             cCreel  := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaCrel,'UUID');
             --DBMS_OUTPUT.PUT_LINE('rELACIÓN: '||cCreel);
         END IF;
-        UTL_HTTP.set_wallet('file:'||cPathWallet,cPwdWallet);
+        --UTL_HTTP.set_wallet('file:'||cPathWallet,cPwdWallet);
         IF cProceso IN ('EMI','PAG') THEN
             cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia, '023');
-            cSoapRequest :=
+
+           cSoapRequest := 
+           '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+              <soap:Body>
+                <EnviaFacturemosYa xmlns="http://tempuri.org/">
+                  <Usuario>'|| cUser ||'</Usuario>
+                  <Contra>'|| cPwd ||'</Contra>
+                  <Documento>' || cDocto ||'</Documento>
+                  <Consecutivo>0</Consecutivo>
+                </EnviaFacturemosYa>
+              </soap:Body>
+            </soap:Envelope>';
+
+
+        /*    cSoapRequest :=
             '<soapenv:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
                 <soapenv:Body>
                     <RecibirTXT soapenv:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
@@ -545,7 +560,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                         <consecutivo xsi:type="xsd:string">0</consecutivo>
                     </RecibirTXT>
                 </soapenv:Body>
-            </soapenv:Envelope>';
+            </soapenv:Envelope>';*/
         ELSIF  cProceso = 'CAN' THEN
 		--cUuidCancelado := cDocto;
 		IF NVL(nIdFactura,0) != 0 THEN
@@ -613,7 +628,20 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                  </soapenv:Envelope>';
             ELSE
                 cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia, '027');
-                cSoapRequest :=
+               cSoapRequest :=             
+               '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                 <soap:Body>
+                   <CancelarCFDI xmlns="http://tempuri.org/">
+                     <Usuario>'|| cUser ||'</Usuario>
+                     <Contra>'|| cPwd ||'</Contra>
+                     <UUID>'|| cDocto ||'</UUID>
+                     <Motivo>'|| cCve_MotivCancFact ||'</Motivo>
+                     <UUID_Relacionado>'|| cDoctoRel ||'</UUID_Relacionado>
+                   </CancelarCFDI>
+                 </soap:Body>
+               </soap:Envelope>';
+
+                /*cSoapRequest :=
                 '<soapenv:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
                    <soapenv:Header/>
                    <soapenv:Body>
@@ -625,7 +653,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                          <uuid_relacionado xsi:type="xsd:string">'|| cDoctoRel ||'</uuid_relacionado>           --> JALV (+)    21/01/2022
                       </CancelarCFDI>
                    </soapenv:Body>
-                </soapenv:Envelope>';
+                </soapenv:Envelope>';*/
             END IF;
         END IF;
         --- INSERTAMOS DETALLE DE TIMBRE FISCAL (HISTORIA)
@@ -711,7 +739,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
             cCodRespuesta := '501';
             cDescEror := GT_WEB_SERVICES.EXTRAEDATOS_XMLDOM('faultstring');
         END IF;
-        
+
 
         IF cCodRespuesta in(OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'026'),'2001')  THEN   -- SE TIMBRO DE MANERA CORRECTA
             IF cProceso != 'CAN' THEN
@@ -752,8 +780,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
                           sysdate
                                                      );
         cLinea := 'Linea 9';
-        
-        
+
+
         --DBMS_OUTPUT.PUT_LINE(cLinea);
             OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(nCodCia,nCodEmpresa,nIdFactura,nIdNcr,cProceso,cCodRespuesta,cDescEror,cDocto);
         --
@@ -838,7 +866,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     Serie: '||cSerie||''|| '
     ' ||CASE WHEN cUUIDRelacionado IS NOT NULL THEN 'Relacionado: ' || cUUIDRelacionado ELSE '' END ||'
     ' ||CASE WHEN cDescError IS NOT NULL THEN '<' || cDescError || '>' ELSE '' END      ||' 
-    
+
     Los archivos XML y PDF se podrán descargar en "Portal de Agentes".
 
     Nota: Este correo es generado de manera automática, favor de no responder.
@@ -864,9 +892,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
  ||'
 
     Favor de validar el documento de envío y de ejecutar nuevamente el Timbrado.
-    
+
     Nota: Este correo es generado de manera automática, favor de no responder.
- 
+
  '||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia);
         END IF;
         OC_MAIL.INIT_PARAM;
@@ -992,16 +1020,3 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
     END DESTINATARIOS;
 
 END OC_FACT_ELECT_CONF_DOCTO;
-/
---
--- OC_FACT_ELECT_CONF_DOCTO  (Synonym) 
---
---  Dependencies: 
---   OC_FACT_ELECT_CONF_DOCTO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_FACT_ELECT_CONF_DOCTO FOR SICAS_OC.OC_FACT_ELECT_CONF_DOCTO
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_FACT_ELECT_CONF_DOCTO TO PUBLIC
-/
