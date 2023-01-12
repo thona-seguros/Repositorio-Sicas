@@ -1,0 +1,5 @@
+ALTER TABLE DETALLE_POLIZA ADD (
+CodObjetoImp          VARCHAR2(10)
+);
+/
+COMMENT ON COLUMN SICAS_OC.DETALLE_POLIZA.CodObjetoImp IS 'Código Objeto de Impuesto';
