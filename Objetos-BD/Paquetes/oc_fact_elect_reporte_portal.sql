@@ -71,7 +71,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
         cCamposTable    VARCHAR2(30000);
         cWhereDupVal    VARCHAR2(30000);
         CURSOR FACTELECT_Q IS
-            SELECT P.CodCia,P.CodEmpresa,P.IdPoliza Consecutivo,
+ SELECT P.CodCia,P.CodEmpresa,P.IdPoliza Consecutivo,
                    P.NumPolUnico Poliza,P.CodAgrupador Agrupador,
                    OC_VALORES_DE_LISTAS.BUSCA_LVALOR ('SUBRAMOS',OC_PLAN_COBERTURAS.CODIGO_SUBRAMO (P.CodCia,P.CodEmpresa,DP.IdTipoSeg,DP.PlanCob)) Ramo,
                    REPLACE(REPLACE (OC_CLIENTES.NOMBRE_CLIENTE (P.CodCliente), '''', ' '),CHR(09)) Contratante,
@@ -89,10 +89,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
                    REPLACE (OC_CLIENTES.IDENTIFICACION_TRIBUTARIA (F.codcliente),'''',' ') RFC,
                    P.IdPoliza||REPLACE (OC_CLIENTES.IDENTIFICACION_TRIBUTARIA (F.codcliente),'''',' ')||DP.IDetPol||DECODE(A.Cod_Agente,502,85502,505,85505,507,85507,A.Cod_Agente)||OC_AGE_DISTRIBUCION_COMISION.AGENTE_DISTR (P.CodCia,P.IdPoliza,DP.IDetPol,2,A.Cod_Agente)||OC_AGE_DISTRIBUCION_COMISION.AGENTE_DISTR (P.CodCia,P.IdPoliza,DP.IDetPol,1,A.Cod_Agente) Rep_UID
               FROM POLIZAS P,DETALLE_POLIZA DP,AGENTE_POLIZA AP,
-                   AGENTES A,FACTURAS F
+                   AGENTES A,FACTURAS F,
+                   CLIENTES CLI, 
+                   PERSONA_NATURAL_JURIDICA PNJ
              WHERE (    P.StsPoliza = 'EMI'
-                     OR P.StsPoliza = 'ANU'
-                    AND P.MotivAnul IN ('FPA','COT','CAFP'))
+                     OR (P.StsPoliza = 'ANU'
+                    AND P.MotivAnul IN ('FPA','COT','CAFP')))
                AND P.IdPoliza    = DP.IdPoliza
                AND P.IndFacturaPol     = 'S'
                AND AP.CodCia     = P.CodCia
@@ -103,19 +105,27 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
                AND F.IdPoliza    = DP.IdPoliza
                AND F.IDetPol     = DP.IDetPol
                AND F.FecSts      BETWEEN dFecFactIni AND dFecFactFin
+               AND CLI.Tipo_Doc_Identificacion = PNJ.Tipo_Doc_Identificacion
+               AND CLI.Num_Doc_Identificacion  = PNJ.Num_Doc_Identificacion
+               AND CLI.CodCliente              = F.codcliente                       
                AND EXISTS (SELECT 1
-                             FROM FACT_ELECT_DETALLE_TIMBRE
+                             FROM FACT_ELECT_DETALLE_TIMBRE FE
                             WHERE UUID IS NOT NULL
-                              AND CodCia = P.CodCia)
-               AND P.IdPoliza||REPLACE (OC_CLIENTES.IDENTIFICACION_TRIBUTARIA (F.codcliente),'''',' ')||DP.IDetPol NOT IN (SELECT RP.IdPoliza||RP.RFC||RP.IDetPol
-                                                                                                                             FROM FACT_ELECT_REPORTE_PORTAL RP
-                                                                                                                            WHERE RP.CodCia = nCodCia)
-               --AND P.IDPOLIZA IN (22556)
+                              AND CodCia = P.CodCia
+                              AND FE.IDFACTURA = F.IDFACTURA
+                              )                              
+               AND NOT EXISTS (SELECT 1
+                                 FROM FACT_ELECT_REPORTE_PORTAL RP
+                                WHERE RP.CodCia = nCodCia
+                                  AND RP.IDPOLIZA = P.IDPOLIZA
+                                  AND RP.IDETPOL  = DP.IDETPOL 
+                                  and rp.rfc = DECODE(  NVL(LTRIM(RTRIM(pnj.num_tributario)),'N'),'N',pnj.num_doc_identificacion,pnj.num_tributario))
+               --AND F.IDFACTURA = 352389
              GROUP BY P.CodCia,P.CodEmpresa,P.IdPoliza,P.NumPolUnico,P.CodAgrupador,
                    DP.IdTipoSeg,DP.PlanCob,P.CodCliente,P.FecIniVig,P.FecFinVig,
                    P.CodPlanPago,DP.IDetPol,P.StsPoliza,P.MotivAnul,P.FecSts,
-                   A.Cod_Agente,F.codcliente
-             UNION
+                   A.Cod_Agente,F.codcliente                   
+             UNION              
             SELECT P.CodCia,P.CodEmpresa,P.IdPoliza Consecutivo,
                    P.NumPolUnico Poliza,P.CodAgrupador Agrupador,
                    OC_VALORES_DE_LISTAS.BUSCA_LVALOR ('SUBRAMOS',OC_PLAN_COBERTURAS.CODIGO_SUBRAMO (P.CodCia,P.CodEmpresa,DP.IdTipoSeg,DP.PlanCob)) Ramo,
@@ -134,13 +144,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
                    REPLACE(OC_ASEGURADO.IDENTIFICACION_TRIBUTARIA_ASEG (P.CodCia,P.CodEmpresa,ASG.Cod_Asegurado),'''',' ') RFC,
                    P.IdPoliza||REPLACE (OC_ASEGURADO.IDENTIFICACION_TRIBUTARIA_ASEG (P.CodCia,P.CodEmpresa,ASG.Cod_Asegurado),'''',' ')||DP.IDetPol||DECODE(A.Cod_Agente,502,85502,505,85505,507,85507,A.Cod_Agente)||OC_AGE_DISTRIBUCION_COMISION.AGENTE_DISTR (P.CodCia,P.IdPoliza,DP.IDetPol,2,A.Cod_Agente)||OC_AGE_DISTRIBUCION_COMISION.AGENTE_DISTR (P.CodCia,P.IdPoliza,DP.IDetPol,1,A.Cod_Agente) Rep_UID
               FROM POLIZAS P,DETALLE_POLIZA DP,ASEGURADO ASG, PERSONA_NATURAL_JURIDICA PNJ,AGENTE_POLIZA AP,
-                   AGENTES A,FACTURAS F
+                   AGENTES A,FACTURAS F,
+                   ASEGURADO ASE, 
+                   PERSONA_NATURAL_JURIDICA PNJA
              WHERE PNJ.Num_Doc_Identificacion  = ASG.Num_Doc_Identificacion
                AND PNJ.Tipo_Doc_Identificacion = ASG.Tipo_Doc_Identificacion
                AND ASG.Cod_Asegurado      = DP.Cod_Asegurado
                AND (    P.StsPoliza = 'EMI'
-                     OR P.StsPoliza = 'ANU'
-                    AND P.MotivAnul IN ('FPA','COT','CAFP'))
+                     OR (P.StsPoliza = 'ANU'
+                    AND P.MotivAnul IN ('FPA','COT','CAFP')))
                AND P.IdPoliza       = DP.IdPoliza
                AND P.IndFacturaPol  = 'N'
                AND AP.CodCia        = P.CodCia
@@ -150,19 +162,29 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
                AND F.CodCia         = P.CodCia
                AND F.IdPoliza       = DP.IdPoliza
                AND F.IDetPol        = DP.IDetPol
+               AND ASE.Cod_Asegurado           = ASG.Cod_Asegurado
+               AND ASE.CodCia                  = P.CodCia
+               AND ASE.CodEmpresa              = P.CodEmpresa
+               AND PNJA.Num_Doc_Identificacion  = ASE.Num_Doc_Identificacion
+               AND PNJA.Tipo_Doc_Identificacion = ASE.Tipo_Doc_Identificacion
                AND F.FecSts         BETWEEN dFecFactIni AND dFecFactFin
                AND EXISTS (SELECT 1
-                             FROM FACT_ELECT_DETALLE_TIMBRE
+                             FROM FACT_ELECT_DETALLE_TIMBRE FE
                             WHERE UUID IS NOT NULL
-                              AND CodCia = P.CodCia)
-               AND P.IdPoliza||REPLACE(OC_ASEGURADO.IDENTIFICACION_TRIBUTARIA_ASEG (P.CodCia,P.CodEmpresa,ASG.Cod_Asegurado),'''',' ') ||DP.IDetPol NOT IN (SELECT RP.IdPoliza||RP.RFC||RP.IDetPol
-                                                                                                                                                              FROM FACT_ELECT_REPORTE_PORTAL RP
-                                                                                                                                                             WHERE RP.CodCia = nCodCia)
+                              AND CodCia = P.CodCia
+                              AND FE.IDFACTURA = F.IDFACTURA)
+               AND NOT EXISTS (SELECT 1
+                                        FROM FACT_ELECT_REPORTE_PORTAL RP
+                                       WHERE RP.CodCia =   P.CODCIA
+                                         AND RP.IDPOLIZA = P.IDPOLIZA
+                                         AND RP.IDETPOL  = DP.IDETPOL
+                                         AND RP.RFC = DECODE(PNJA.Tipo_Doc_Identificacion,'RFC',PNJA.Num_Doc_Identificacion,PNJA.Num_Tributario))
                --AND P.IDPOLIZA IN (22556)
              GROUP BY P.CodCia,P.CodEmpresa,P.IdPoliza,P.NumPolUnico,P.CodAgrupador,
                    DP.IdTipoSeg,DP.PlanCob,P.CodCliente,P.FecIniVig,P.FecFinVig,
                    P.CodPlanPago,DP.IDetPol,P.StsPoliza,P.MotivAnul,P.FecSts,
                    A.Cod_Agente,F.codcliente, ASG.Cod_Asegurado     ;
+
     BEGIN
         cCamposTable:=            ' (Rep_Uid,Consecutivo,Numero_Poliza,Agrupador,Ramo,'
                        ||CHR(10)||'  Contratante,Fecha_Inicio_Vigencia,Fecha_Fin_Vigencia,Plan_Pago,Num_Subgrupo,'
