@@ -1,35 +1,3 @@
---
--- OC_FACT_ELECT_REPORTE_PORTAL  (Package) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   XMLTYPE (Type)
---   XQSEQUENCE ()
---   UTL_HTTP (Synonym)
---   DBMS_LOB (Synonym)
---   DBMS_OUTPUT (Synonym)
---   XMLTYPE (Synonym)
---   XQSEQUENCE (Synonym)
---   OC_AGENTES (Package)
---   OC_AGE_DISTRIBUCION_COMISION (Package)
---   POLIZAS (Table)
---   OC_VALORES_DE_LISTAS (Package)
---   PARAMETROS_GLOBALES (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   AGENTES (Table)
---   AGENTE_POLIZA (Table)
---   ASEGURADO (Table)
---   OC_GENERALES (Package)
---   OC_PLAN_COBERTURAS (Package)
---   OC_PLAN_DE_PAGOS (Package)
---   OC_ASEGURADO (Package)
---   OC_CLIENTES (Package)
---   DETALLE_POLIZA (Table)
---   FACTURAS (Table)
---   FACT_ELECT_DETALLE_TIMBRE (Table)
---   FACT_ELECT_REPORTE_PORTAL (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
     FUNCTION  NUMERO_ENVIO(nCodCia NUMBER) RETURN NUMBER;
     PROCEDURE GENERAR(nCodCia NUMBER, dFecFactIni DATE, dFecFactFin DATE ) ;
@@ -39,13 +7,6 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
                         cInsertGenerado VARCHAR2, cCodRespuestaWs VARCHAR2);
 END OC_FACT_ELECT_REPORTE_PORTAL;
 /
-
---
--- OC_FACT_ELECT_REPORTE_PORTAL  (Package Body) 
---
---  Dependencies: 
---   OC_FACT_ELECT_REPORTE_PORTAL (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
     FUNCTION  NUMERO_ENVIO(nCodCia NUMBER) RETURN NUMBER IS
         nIdEnvio  FACT_ELECT_REPORTE_PORTAL.IdEnvio%TYPE;
@@ -234,8 +195,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
         cStrTxt         VARCHAR2(30000);
         cRespWS         VARCHAR2(100);
         cWSDLPortal     PARAMETROS_GLOBALES.Descripcion%TYPE;
+        cDoctoEncoded   CLOB;
     BEGIN
         cWSDLPortal := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'033');
+
+        cDoctoEncoded := UTL_RAW.CAST_TO_VARCHAR2(UTL_ENCODE.BASE64_ENCODE(UTL_RAW.CAST_TO_RAW(cInsertWS)));
+
         cSoapRequest :=
         '<?xml version="1.0" encoding="utf-8"?>
          <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
@@ -246,11 +211,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL AS
             </Autenticador>
           </soap12:Header>
           <soap12:Body>
-            <InsertsFromString xmlns="http://tempuri.org/">
-              <txtInserts>'||cInsertWS||'</txtInserts>
+            <InsertsFromBase64 xmlns="http://tempuri.org/">
+              <base64Inserts>'||cDoctoEncoded||'</base64Inserts>
               <deleteBeforeInsert>'||cParamBeforeIns||'</deleteBeforeInsert>
               <workingTable>'||cTableWorking||'</workingTable>
-            </InsertsFromString>
+              <getDecodedStringForTesting></getDecodedStringForTesting>
+            </InsertsFromBase64>
           </soap12:Body>
         </soap12:Envelope>';
 
@@ -319,14 +285,12 @@ END OC_FACT_ELECT_REPORTE_PORTAL;
 /
 
 --
--- OC_FACT_ELECT_REPORTE_PORTAL  (Synonym) 
+-- OC_FACT_ELECT_REPORTE_PORTAL  (Synonym)
 --
---  Dependencies: 
+--  Dependencies:
 --   OC_FACT_ELECT_REPORTE_PORTAL (Package)
 --
 CREATE OR REPLACE PUBLIC SYNONYM OC_FACT_ELECT_REPORTE_PORTAL FOR SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL
 /
-
-
 GRANT EXECUTE ON SICAS_OC.OC_FACT_ELECT_REPORTE_PORTAL TO PUBLIC
 /
