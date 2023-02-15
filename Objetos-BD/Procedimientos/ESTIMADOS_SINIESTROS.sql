@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SICAS_OC.ESTIMADOS_SINIESTROS  IS
+create or replace PROCEDURE          ESTIMADOS_SINIESTROS  IS
 -- variables proceso --
 cLimitador      VARCHAR2(1) :='|';
 nLinea          NUMBER;
@@ -686,17 +686,17 @@ BEGIN
 
       --MLJS 08/10/2020 SE OBTIENE LA PÓLIZA CONTABLE
          BEGIN
-         	 SELECT TIPODIARIO,NUMCOMPROBSC
-         	 INTO   cTIPODIARIO, nNUMCOMPROBSC
+               SELECT TIPODIARIO,NUMCOMPROBSC
+               INTO   cTIPODIARIO, nNUMCOMPROBSC
            FROM   COMPROBANTES_CONTABLES CC
            WHERE  NUMTRANSACCION = X.NUMTRX;
 
            cPolizaCont :=   cTIPODIARIO||'-'||nNUMCOMPROBSC;
          EXCEPTION
-         	  WHEN NO_DATA_FOUND THEN
-         	     cPolizaCont := 'SIN POLIZA CONT';
-         	  WHEN OTHERS THEN
-         	     cPolizaCont := 'SIN POLIZA CONT';
+                WHEN NO_DATA_FOUND THEN
+                   cPolizaCont := 'SIN POLIZA CONT';
+                WHEN OTHERS THEN
+                   cPolizaCont := 'SIN POLIZA CONT';
          END;
 
       cCadena :=  X.IDPOLIZA                               ||cLimitador||
@@ -785,4 +785,3 @@ EXCEPTION
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
    RAISE_APPLICATION_ERROR(-20000, 'Error en ESTIMASINIESTROS ' || SQLERRM);
 END;
-/

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SICAS_OC.APROBACIONES_PAGADAS  IS
+create or replace PROCEDURE          APROBACIONES_PAGADAS  IS
 ------------------------
 -- variables proceso --
 
@@ -1030,7 +1030,7 @@ BEGIN
       END;
 
       cFecCarga := NVL(X.FecCarga,TO_CHAR(dFecCarga,'DD/MM/RRRR'));
-      
+
       --MLJS 08/10/2020 SE OBTIENE LA PÓLIZA CONTABLE
        BEGIN
          SELECT TIPODIARIO,NUMCOMPROBSC
@@ -1198,4 +1198,3 @@ EXCEPTION
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
    RAISE_APPLICATION_ERROR(-20000, 'Error en APROBACIONES PAGADAS DE SINIESTROS' || SQLERRM);
 END;
-/

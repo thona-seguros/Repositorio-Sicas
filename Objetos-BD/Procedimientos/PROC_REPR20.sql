@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE PROC_REPR20  IS
+PROCEDURE PROC_REPR20  IS
     codcia          NUMBER        := 1; 
     codempresa      NUMBER        := 1; 
     PcIdTipoSeg     VARCHAR2(100) := NULL; 
@@ -8,7 +8,7 @@ CREATE OR REPLACE PROCEDURE PROC_REPR20  IS
     dFecDesde       DATE :=  SYSDATE-1; 
     dFecHasta       DATE :=  SYSDATE-1; 
     Formato         VARCHAR2(100) := 'REGISTRO';
-    CORREOS         VARCHAR2(100) := 'i.gomez@darbrain.com;rmartinez@thonaseguros.mx';
+    CORREOS         VARCHAR2(100) := 'i.gomez@darbrain.com;rmartinez@thonaseguros.mx;jcastillo@thonaseguros.mx';
     w_ID_ENVIO      NUMBER;
 BEGIN
     OC_REPOFACT.PRIMA_NETA_COB      (codcia, codempresa, PcIdTipoSeg, PcPlanCob, PcCodMoneda, PcCodAgente, dFecDesde, dFecHasta, Formato, CORREOS, w_ID_ENVIO);

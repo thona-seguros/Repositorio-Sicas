@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SICAS_OC.APROBACIONES_ANULADAS  IS
+create or replace PROCEDURE          APROBACIONES_ANULADAS  IS
 ------------------------
 -- variables proceso --
 
@@ -1048,9 +1048,9 @@ BEGIN
         WHEN OTHERS THEN
               cPolizaCont := 'SIN POLIZA CONT';
       END;
-      
+
       cFecCarga := NVL(X.FecCarga,TO_CHAR(dFecCarga,'DD/MM/RRRR'));
-       
+
       --MLJS 08/10/2020 SE OBTIENE LA PÓLIZA CONTABLE
       ----
       --
@@ -1206,4 +1206,3 @@ EXCEPTION
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
    RAISE_APPLICATION_ERROR(-20000, 'Error en APROBACIONES ANULADAS DE SINIESTROS ' || SQLERRM);
 END;
-/

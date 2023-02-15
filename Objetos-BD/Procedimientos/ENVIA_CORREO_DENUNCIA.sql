@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE ENVIA_CORREO_DENUNCIA(nCodCia           IN NUMBER,
+PROCEDURE ENVIA_CORREO_DENUNCIA(nCodCia           IN NUMBER,
                                                   cFolioDenuncia    IN VARCHAR2,
                                                   cErrorEnvio       OUT VARCHAR2
                                                   ) IS
@@ -36,38 +36,38 @@ CREATE OR REPLACE PROCEDURE ENVIA_CORREO_DENUNCIA(nCodCia           IN NUMBER,
  cCtasEmail  PLD_OPE_PREOCUPANTES.CORREO_ELECTRONICO%TYPE;
  nDummy         VARCHAR2(200);
 -- cEmail    PLD_OPE_PREOCUPANTES.CORREO_ELECTRONICO%TYPE;
- 
+
  CURSOR cCuentas is
    SELECT *
    FROM   VALORES_DE_LISTAS
    WHERE  CODLISTA = 'EMAILOPPRE';
-	
+
 BEGIN
   --
   cEmail       := OC_GENERALES.BUSCA_PARAMETRO(1,'021');
   cPwdEmail    := OC_GENERALES.BUSCA_PARAMETRO(1,'022');
-  
+
   -- se obtienen las cuentas de correo
   BEGIN
 		FOR I IN cCuentas LOOP
 	    cCtasEmail	:= I.DESCVALLST||';';
 	  END LOOP;     
   END; 
-    
+
   cSubject := 'Confirmación recepción de denuncia';
-  
+
   cTexto1  := 'Estimado colaborador. ';
   cTexto2  := 'Hemos recibido tu denuncia la cual se le asignó el folio no. ';
   cTexto3  := '. Se iniciará la investigación por el Oficial de Cumplimiento bajo una estricta confidencialidad.';
   cTexto4  := 'Agradecemos tu compromiso con Thona Seguros.';
   cTexto5  := 'Atentamente.';
   cTexto6  := 'Oficial de Cumplimiento.';
-  
+
   cTextoEnvio := cHTMLHeader||cTexto1||cSaltoLinea||cSaltoLinea||cSaltoLinea||
                  cTexto2||cFolioDenuncia||cTexto3||cSaltoLinea||cSaltoLinea||
                  cTexto4||cSaltoLinea||cSaltoLinea||cTexto5||cSaltoLinea||cSaltoLinea||
                  cTexto6||cSaltoLinea||cSaltoLinea||cHTMLFooter;   
-                 
+
   --
   OC_MAIL.INIT_PARAM;
   OC_MAIL.cCtaEnvio   := cEmail;
@@ -75,7 +75,7 @@ BEGIN
   --
   -- ENVIO DE CORREO
   --
-  
+
   BEGIN 
     cErrorEnvio := 0;
     OC_MAIL.SEND_EMAIL(
@@ -92,16 +92,10 @@ BEGIN
         NULL,        --P_ATTACHMENT4
         cErrorEnvio  --P_ERROR
        );
-       
+
    EXCEPTION WHEN OTHERS THEN
       cErrorEnvio := 'ERROR EN EL ENVÍO DE LA DENUNCIA '||CFOLIODENUNCIA || '  ' ||SQLERRM;
       DBMS_OUTPUT.PUT_LINE('ERROR EN EL ENVÍO DE LA DENUNCIA '||CFOLIODENUNCIA || '  ' ||SQLERRM);              
    END;
    --
 END ENVIA_CORREO_DENUNCIA;
-/
-CREATE OR REPLACE PUBLIC SYNONYM ENVIA_CORREO_DENUNCIA FOR SICAS_OC.ENVIA_CORREO_DENUNCIA
-
-
-GRANT EXECUTE ON SICAS_OC.ENVIA_CORREO_DENUNCIA TO PUBLIC
-/
