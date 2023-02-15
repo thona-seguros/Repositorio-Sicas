@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_FACTOR_PADEC_ESPECIAL IS
+CREATE OR REPLACE PACKAGE          OC_FACTOR_PADEC_ESPECIAL IS
    PROCEDURE INSERTAR( nCodCia      FACTOR_PADEC_ESPECIAL.CodCia%TYPE
                      , nCodEmpresa  FACTOR_PADEC_ESPECIAL.CodEmpresa%TYPE
                      , cIdTipoSeg   FACTOR_PADEC_ESPECIAL.IdTipoSeg%TYPE
@@ -28,8 +28,10 @@ create or replace PACKAGE          OC_FACTOR_PADEC_ESPECIAL IS
                       , xXMLDatosPadEsp XMLTYPE );
 
 END OC_FACTOR_PADEC_ESPECIAL;
+
 /
-create or replace PACKAGE BODY          OC_FACTOR_PADEC_ESPECIAL IS
+
+CREATE OR REPLACE PACKAGE BODY          OC_FACTOR_PADEC_ESPECIAL IS
    PROCEDURE INSERTAR( nCodCia      FACTOR_PADEC_ESPECIAL.CodCia%TYPE
                      , nCodEmpresa  FACTOR_PADEC_ESPECIAL.CodEmpresa%TYPE
                      , cIdTipoSeg   FACTOR_PADEC_ESPECIAL.IdTipoSeg%TYPE

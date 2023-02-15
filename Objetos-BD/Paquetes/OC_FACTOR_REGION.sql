@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_FACTOR_REGION IS
+CREATE OR REPLACE PACKAGE          OC_FACTOR_REGION IS
    PROCEDURE INSERTAR( nCodCia      FACTOR_REGION.CodCia%TYPE
                      , nCodEmpresa  FACTOR_REGION.CodEmpresa%TYPE
                      , cIdTipoSeg   FACTOR_REGION.IdTipoSeg%TYPE
@@ -40,8 +40,10 @@ create or replace PACKAGE          OC_FACTOR_REGION IS
                             , xXMLDatosRegion XMLTYPE );
 
 END OC_FACTOR_REGION;
+
 /
-create or replace PACKAGE BODY          OC_FACTOR_REGION IS
+
+CREATE OR REPLACE PACKAGE BODY          OC_FACTOR_REGION IS
    PROCEDURE INSERTAR( nCodCia      FACTOR_REGION.CodCia%TYPE
                      , nCodEmpresa  FACTOR_REGION.CodEmpresa%TYPE
                      , cIdTipoSeg   FACTOR_REGION.IdTipoSeg%TYPE

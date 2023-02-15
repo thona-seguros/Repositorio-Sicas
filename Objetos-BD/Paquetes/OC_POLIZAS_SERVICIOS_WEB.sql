@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS_SERVICIOS_WEB AS
+CREATE OR REPLACE PACKAGE          OC_POLIZAS_SERVICIOS_WEB AS
    FUNCTION CONSULTA_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN XMLTYPE;
 
    FUNCTION LISTADO_POLIZA(nCodCia         NUMBER,     nCodEmpresa     NUMBER,     nIdPoliza       NUMBER,     nCodAgente      NUMBER,
@@ -27,9 +27,9 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS_SERVICIOS_WEB AS
                            cMotivAnul VARCHAR2, cCod_Moneda VARCHAR2, cRespuesta OUT VARCHAR2, cTipoProceso VARCHAR2 DEFAULT 'POLIZA') RETURN Number;
     --
 END OC_POLIZAS_SERVICIOS_WEB;
-/
 
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS_SERVICIOS_WEB IS
+/
+create or replace PACKAGE BODY          OC_POLIZAS_SERVICIOS_WEB IS
 /*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
@@ -126,7 +126,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS_SERVICIOS_WEB IS
                             nLimInferior    IN NUMBER,     nLimSuperior    IN NUMBER,     nTotRegs        OUT NUMBER  --> 23/12/2020   (JALV)
                             )
     RETURN XMLTYPE IS
-    /*   _______________________________________________________________________________________________________________________________	
+    /*   _______________________________________________________________________________________________________________________________    
         |                                                                                                                               |
         |                                                           HISTORIA                                                            |
         | Elaboro    : ??                                                                                                               |
@@ -137,8 +137,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS_SERVICIOS_WEB IS
         |              Digital y tranforma la salida en formato XML.                                                                    |
         | Modificado : Si                                                                                                               |
         | Ult. modif.: 22/02/2021                                                                                                       |
-        | Modifico	 : J. Alberto Lopez Valle   (JALV)                                                                                  |
-        | Email		 : alopez@thonaseguros.mx                                                                                           |
+        | Modifico   : J. Alberto Lopez Valle   (JALV)                                                                                  |
+        | Email      : alopez@thonaseguros.mx                                                                                           |
         | Obj. Modif.: Se agregan criterios de rangos de fechas dependiendo del Estado (solo para EMI, REN y ANU) de la Poliza:         |
         |                I) Status y  Fecha dados.      Rango de fechas sobre el status indicado.                                       |
         |               II) Sin Status pero con Fechas. Aplica rango de fechas para todos y cada uno de los Status.                     |
@@ -148,12 +148,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS_SERVICIOS_WEB IS
         |   23/12/2020  Se agrega funcionalidad de paginacion a este listado de Polizas.                                                |
         |                                                                                                                               |
         | Parametros:                                                                                                                   |
-        |			nCodCia 			Codigo de la Compañia	        (Entrada)                                                       |
-        |			nCodEmpresa			Codigo de la Empresa	        (Entrada)                                                       |
-        |			nIdPoliza			ID de la Poliza			        (Entrada)                                                       |
-        |			nCodAgente			Codigo del Agente		        (Entrada)                                                       |
-        |			dFecIni             Fecha de Inicio de Vig.	        (Entrada)                                                       |
-        |			dFecFin             Fecha de Fin de Vig.	        (Entrada)                                                       |
+        |           nCodCia             Codigo de la Compañia           (Entrada)                                                       |
+        |           nCodEmpresa         Codigo de la Empresa            (Entrada)                                                       |
+        |           nIdPoliza           ID de la Poliza                 (Entrada)                                                       |
+        |           nCodAgente          Codigo del Agente               (Entrada)                                                       |
+        |           dFecIni             Fecha de Inicio de Vig.         (Entrada)                                                       |
+        |           dFecFin             Fecha de Fin de Vig.            (Entrada)                                                       |
         |           nIdCotizacion       ID de Cotizacion                (Entrada)                                                       |
         |           cStsPoliza          Estado de la Poliza             (Entrada)                                                       |
         |           cApePaternoCli      Apellido Paterno del Cliente    (Entrada)                                                       |
@@ -952,10 +952,3 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS_SERVICIOS_WEB IS
     END ANULAR_POLIZA;
     --
 END OC_POLIZAS_SERVICIOS_WEB;
-/
-
-CREATE OR REPLACE PUBLIC SYNONYM OC_POLIZAS_SERVICIOS_WEB FOR SICAS_OC.OC_POLIZAS_SERVICIOS_WEB
-/
-
-GRANT EXECUTE ON SICAS_OC.OC_POLIZAS_SERVICIOS_WEB TO PUBLIC
-/

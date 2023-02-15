@@ -1,9 +1,3 @@
-DROP PACKAGE OC_FLUJOS_FOLIOS
-/
-
---
--- OC_FLUJOS_FOLIOS  (Package) 
---
 CREATE OR REPLACE PACKAGE OC_FLUJOS_FOLIOS IS
 /*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
@@ -30,23 +24,9 @@ CREATE OR REPLACE PACKAGE OC_FLUJOS_FOLIOS IS
 --   FUNCTION EMPALMA_VIGENCIAS(nCodCia IN NUMBER, nCodempresa IN NUMBER, cCodFlujo IN VARCHAR2, cCodTramite IN VARCHAR2, dFecIniVig IN DATE, dFecFinVig IN DATE) RETURN VARCHAR2; 
 END OC_FLUJOS_FOLIOS;
 
+
 /
 
---
--- OC_FLUJOS_FOLIOS  (Synonym) 
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_FLUJOS_FOLIOS FOR OC_FLUJOS_FOLIOS
-/
-
-
-GRANT EXECUTE ON OC_FLUJOS_FOLIOS TO PUBLIC
-/
-DROP PACKAGE BODY OC_FLUJOS_FOLIOS
-/
-
---
--- OC_FLUJOS_FOLIOS  (Package Body) 
---
 CREATE OR REPLACE PACKAGE BODY OC_FLUJOS_FOLIOS AS
 FUNCTION FOLIO(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdFlujo IN NUMBER, cCodFlujo IN VARCHAR2, nIdTramite IN NUMBER, cCodTramite IN VARCHAR2) RETURN NUMBER IS
 /*   _______________________________________________________________________________________________________________________________
@@ -266,15 +246,3 @@ BEGIN
 END FECHA_FIN_VIGENCIA;
 
 END OC_FLUJOS_FOLIOS;
-
-/
-
---
--- OC_FLUJOS_FOLIOS  (Synonym) 
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_FLUJOS_FOLIOS FOR OC_FLUJOS_FOLIOS
-/
-
-
-GRANT EXECUTE ON OC_FLUJOS_FOLIOS TO PUBLIC
-/

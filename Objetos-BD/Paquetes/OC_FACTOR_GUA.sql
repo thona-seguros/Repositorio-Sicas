@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_FACTOR_GUA IS
+CREATE OR REPLACE PACKAGE          OC_FACTOR_GUA IS
    PROCEDURE INSERTAR( nCodCia     FACTOR_GUA.CodCia%TYPE
                      , nCodEmpresa FACTOR_GUA.CodEmpresa%TYPE
                      , cIdTipoSeg  FACTOR_GUA.IdTipoSeg%TYPE
@@ -29,8 +29,10 @@ create or replace PACKAGE          OC_FACTOR_GUA IS
                       , xXMLDatosGUA  XMLTYPE );
 
 END OC_FACTOR_GUA;
+
 /
-create or replace PACKAGE BODY          OC_FACTOR_GUA IS
+
+CREATE OR REPLACE PACKAGE BODY          OC_FACTOR_GUA IS
    PROCEDURE INSERTAR( nCodCia     FACTOR_GUA.CodCia%TYPE
                      , nCodEmpresa FACTOR_GUA.CodEmpresa%TYPE
                      , cIdTipoSeg  FACTOR_GUA.IdTipoSeg%TYPE

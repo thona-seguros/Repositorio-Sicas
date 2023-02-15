@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_FACTOR_ESCALA_PO IS
+CREATE OR REPLACE PACKAGE          OC_FACTOR_ESCALA_PO IS
    PROCEDURE INSERTAR( nCodCia     FACTOR_ESCALA_PO.CodCia%TYPE
                      , nCodEmpresa FACTOR_ESCALA_PO.CodEmpresa%TYPE
                      , cIdTipoSeg  FACTOR_ESCALA_PO.IdTipoSeg%TYPE
@@ -48,8 +48,10 @@ FUNCTION EXISTE_FACTOR_ESCALA( nCodCia      FACTOR_ESCALA_PO.CodCia%TYPE
                       , xXMLDatosGUA  XMLTYPE );*/
 
 END OC_FACTOR_ESCALA_PO;
+
 /
-create or replace PACKAGE BODY          OC_FACTOR_ESCALA_PO IS
+
+CREATE OR REPLACE PACKAGE BODY          OC_FACTOR_ESCALA_PO IS
    PROCEDURE INSERTAR( nCodCia     FACTOR_ESCALA_PO.CodCia%TYPE
                      , nCodEmpresa FACTOR_ESCALA_PO.CodEmpresa%TYPE
                      , cIdTipoSeg  FACTOR_ESCALA_PO.IdTipoSeg%TYPE

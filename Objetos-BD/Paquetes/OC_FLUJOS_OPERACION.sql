@@ -1,9 +1,3 @@
-DROP PACKAGE OC_FLUJOS_OPERACION
-/
-
---
--- OC_FLUJOS_OPERACION  (Package) 
---
 CREATE OR REPLACE PACKAGE OC_FLUJOS_OPERACION AS
 /*   _______________________________________________________________________________________________________________________________	
     |                                                                                                                               |
@@ -27,23 +21,9 @@ PROCEDURE ACTUALIZA_ESTATUS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFlujo NUMBER,
 
 END OC_FLUJOS_OPERACION;
 
+
 /
 
---
--- OC_FLUJOS_OPERACION  (Synonym) 
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_FLUJOS_OPERACION FOR OC_FLUJOS_OPERACION
-/
-
-
-GRANT EXECUTE ON OC_FLUJOS_OPERACION TO PUBLIC
-/
-DROP PACKAGE BODY OC_FLUJOS_OPERACION
-/
-
---
--- OC_FLUJOS_OPERACION  (Package Body) 
---
 CREATE OR REPLACE PACKAGE BODY OC_FLUJOS_OPERACION AS
 FUNCTION EXISTE_FLUJO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFlujo NUMBER)
 RETURN VARCHAR2 IS
@@ -161,15 +141,3 @@ BEGIN
 END ACTUALIZA_ESTATUS;
 
 END OC_FLUJOS_OPERACION;
-
-/
-
---
--- OC_FLUJOS_OPERACION  (Synonym) 
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_FLUJOS_OPERACION FOR OC_FLUJOS_OPERACION
-/
-
-
-GRANT EXECUTE ON OC_FLUJOS_OPERACION TO PUBLIC
-/
