@@ -12,8 +12,9 @@ FUNCTION CONSULTA_CLIENTE ( nNoContratante  NUMBER, nCodEmpresa NUMBER, nCodCia 
 RETURN XMLTYPE;
 
 END OC_CLIENTES_SERVICIOS_WEB;
+
 /
-CREATE OR REPLACE PACKAGE BODY OC_CLIENTES_SERVICIOS_WEB AS
+create or replace PACKAGE BODY OC_CLIENTES_SERVICIOS_WEB AS
 /*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
@@ -31,35 +32,35 @@ CREATE OR REPLACE PACKAGE BODY OC_CLIENTES_SERVICIOS_WEB AS
     |_______________________________________________________________________________________________________________________________|
 */ 
 
-FUNCTION LISTADO_CLIENTE (	nNoContratante 		    IN NUMBER,		cApePatContratante 	IN VARCHAR2,    cApeMatContratante 	    IN VARCHAR2,		 
-							cNombreContratante 		IN VARCHAR2,    cTipoPersona 		IN VARCHAR2, 	cIdentificadorFiscal    IN VARCHAR2,
+FUNCTION LISTADO_CLIENTE (  nNoContratante          IN NUMBER,      cApePatContratante  IN VARCHAR2,    cApeMatContratante      IN VARCHAR2,         
+                            cNombreContratante      IN VARCHAR2,    cTipoPersona        IN VARCHAR2,    cIdentificadorFiscal    IN VARCHAR2,
                             nCodEmpresa             IN NUMBER,      nCodCia             IN NUMBER,      nCodAgente              IN NUMBER,
                             nLimInferior            IN NUMBER,      nLimSuperior        IN NUMBER,      nTotRegs                OUT NUMBER,
                             nCodAgenteSesion        IN NUMBER,       nNivel             IN NUMBER
-							)
+                            )
 RETURN XMLTYPE IS
-/*   _______________________________________________________________________________________________________________________________	
+/*   _______________________________________________________________________________________________________________________________    
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
     | Elaboro    : J. Alberto Lopez Valle                                                                                           |
     | Para       : THONA Seguros                                                                                                    |
     | Fecha Elab.: 30/12/2020                                                                                                       |
-    | Email		 : alopez@thonaseguros.mx                                                                                           |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
     | Nombre     : LISTADO_CLIENTE                                                                                                  |
     | Objetivo   : Funcion que obtiene un listado general de los Clientes que cumplen con los criterios dados desde la Plataforma   |
     |              Digital, con resultados paginados y tranforma la salida en formato XML.                                          |
     | Modificado : No                                                                                                               |
     | Ult. modif.: N/A                                                                                                              |
-    | Modifico	 : N/A                                                                                                              |
+    | Modifico   : N/A                                                                                                              |
     | Obj. Modif.: N/A                                                                                                              |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
-    |			nNoContratante		    Codigo del Cliente		        (Entrada)                                                   |
-    |			cApePatContratante	    Apellido Paterno del Cliente    (Entrada)                                                   |
-    |			cApePatContratante	    Apellido Paterno del Cliente    (Entrada)                                                   |
-    |			cNombreContratante	    Nombre del Cliente              (Entrada)                                                   |
-    |			cTipoPersona 		    Tipo de Persona Fiscal	        (Entrada)                                                   |
-    |           cIdentificadorFiscal    Numero Tributario   	        (Entrada)                                                   |
+    |           nNoContratante          Codigo del Cliente              (Entrada)                                                   |
+    |           cApePatContratante      Apellido Paterno del Cliente    (Entrada)                                                   |
+    |           cApePatContratante      Apellido Paterno del Cliente    (Entrada)                                                   |
+    |           cNombreContratante      Nombre del Cliente              (Entrada)                                                   |
+    |           cTipoPersona            Tipo de Persona Fiscal          (Entrada)                                                   |
+    |           cIdentificadorFiscal    Numero Tributario               (Entrada)                                                   |
     |           nCodEmpresa             Codigo de Empresa               (Entrada)                                                   |
     |           nCodCia                 Codigo de Compañia              (Entrada)                                                   |
     |           nCodAgente              Codigo de Empresa               (Entrada)                                                   |
@@ -74,7 +75,7 @@ xPrevCtes           XMLTYPE;
 
 BEGIN
    BEGIN
-	    SELECT XMLELEMENT("DATA",
+        SELECT XMLELEMENT("DATA",
                             XMLAGG(XMLELEMENT("CLIENTES",  
                                                 XMLELEMENT("NoContratante",  CTE.cliente),
                                                 XMLELEMENT("CodAgente", CTE.cod_agente),
@@ -103,7 +104,7 @@ BEGIN
                                               )
                                   )
                          )
-        INTO	xPrevCtes                         
+        INTO    xPrevCtes                         
         FROM    (SELECT CCC.codcliente CLIENTE,
                         CCC.cod_agente,
                         CCC.nombre,
@@ -345,24 +346,24 @@ END LISTADO_CLIENTE;
 
 
 FUNCTION CONSULTA_CLIENTE ( nNoContratante  NUMBER,     nCodEmpresa NUMBER,     nCodCia  NUMBER,     nCodAgente  NUMBER )
-	RETURN XMLTYPE IS
-/*   _______________________________________________________________________________________________________________________________	
+    RETURN XMLTYPE IS
+/*   _______________________________________________________________________________________________________________________________    
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
     | Elaboro    : J. Alberto Lopez Valle                                                                                           |
     | Para       : THONA Seguros                                                                                                    |
     | Fecha Elab.: 11/12/2020                                                                                                       |
-    | Email		 : alopez@thonaseguros.mx                                                                                           |
+    | Email      : alopez@thonaseguros.mx                                                                                           |
     | Nombre     : CONSULTA_CLIENTE                                                                                                 |
     | Objetivo   : Funcion que obtiene la informacion detallada del Cliente dado desde la Plataforma Digital y tranforma la salida  |
     |              en formato XML.                                                                                                  |
     | Modificado : No                                                                                                               |
     | Ult. modif.: N/A                                                                                                              |
-    | Modifico	 : N/A                                                                                                              |
+    | Modifico   : N/A                                                                                                              |
     | Obj. Modif.: N/A                                                                                                              |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
-    |			nNoContratante		    Codigo del Cliente		        (Entrada)                                                   |
+    |           nNoContratante          Codigo del Cliente              (Entrada)                                                   |
     |           nCodEmpresa             Codigo de Empresa               (Entrada)                                                   |
     |           nodCia                  Codigo de Compañia              (Entrada)                                                   |
     |           nCodAgente              Codigo de Empresa               (Entrada)                                                   |
@@ -426,8 +427,8 @@ BEGIN
                                               )
                                   )
                          )
-        INTO	xPrevCte
-		FROM    AGENTE_POLIZA               AP,
+        INTO    xPrevCte
+        FROM    AGENTE_POLIZA               AP,
                 POLIZAS                     P,
                 PERSONA_NATURAL_JURIDICA    PNJ,
                 CLIENTES                    C    
@@ -453,17 +454,12 @@ BEGIN
          RAISE_APPLICATION_ERROR(-20200,'El Cliente '||nNoContratante||' no existente en Base de Datos.'); 
    END;
 
-   SELECT 	XMLROOT (xPrevCte, VERSION '1.0" encoding="UTF-8')
-   INTO		xCliente
-   FROM 	DUAL;
+   SELECT   XMLROOT (xPrevCte, VERSION '1.0" encoding="UTF-8')
+   INTO     xCliente
+   FROM     DUAL;
 
    RETURN xCliente;
 
 END CONSULTA_CLIENTE;
 
 END OC_CLIENTES_SERVICIOS_WEB;
-/
-CREATE OR REPLACE PUBLIC SYNONYM OC_CLIENTES_SERVICIOS_WEB FOR SICAS_OC.OC_CLIENTES_SERVICIOS_WEB;
-/
-GRANT EXECUTE ON OC_CLIENTES_SERVICIOS_WEB TO PUBLIC;
-/

@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_BENEFICIARIOS_SERVICIOS_WEB AS
+CREATE OR REPLACE PACKAGE          OC_BENEFICIARIOS_SERVICIOS_WEB AS
 
 FUNCTION LISTADO_BENEFICIARIO(  nCodAsegurado   IN NUMBER,  nIdPoliza       IN NUMBER,  nIdetPol    IN NUMBER,  
                                 nLimInferior    IN NUMBER,  nLimSuperior    IN NUMBER,  nTotRegs    OUT NUMBER  )
@@ -8,8 +8,10 @@ FUNCTION CONSULTA_BENEFICIARIO(  nCodAsegurado  NUMBER,     nIdPoliza  NUMBER,  
 RETURN XMLTYPE;
 
 END OC_BENEFICIARIOS_SERVICIOS_WEB;
+
 /
-create or replace PACKAGE BODY          OC_BENEFICIARIOS_SERVICIOS_WEB AS
+
+CREATE OR REPLACE PACKAGE BODY          OC_BENEFICIARIOS_SERVICIOS_WEB AS
 /*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |

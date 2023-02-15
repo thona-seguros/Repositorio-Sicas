@@ -1,15 +1,16 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
+CREATE OR REPLACE PACKAGE          OC_AGENTES_SEVICIOS_WEB AS
 
     FUNCTION JERARQ_AGENTE( nCodAgente  NUMBER, nCodCia NUMBER, nCodEmpresa NUMBER ) RETURN XMLTYPE;
-                
+
     FUNCTION AGREGAR_USUARIO_WS ( nCodCia NUMBER, nCodEmpresa NUMBER, nCodAgente	NUMBER )  RETURN VARCHAR2;
 
     FUNCTION ACTUALIZAR_USUARIO_WS ( nCodCia NUMBER, nCodEmpresa NUMBER, nCodAgente	NUMBER) RETURN VARCHAR2;
 
 END OC_AGENTES_SEVICIOS_WEB;
+
 /
 
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
+CREATE OR REPLACE PACKAGE BODY          OC_AGENTES_SEVICIOS_WEB AS
     /*   _______________________________________________________________________________________________________________________________
         |                                                                                                                               |
         |                                                           HISTORIA                                                            |
@@ -88,13 +89,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
           WHEN NO_DATA_FOUND THEN
              RAISE_APPLICATION_ERROR(-20200,'El Agente '||TO_CHAR(nCodAgente)||' no existente en Base de Datos.'); 
        END;
-       
+
        SELECT 	XMLROOT (xPrevJerarq, VERSION '1.0" encoding="UTF-8')
        INTO		xJerarquia
        FROM 	DUAL;
-       
+
        RETURN xJerarquia;
-       
+
     END JERARQ_AGENTE;
 
     FUNCTION AGREGAR_USUARIO_WS ( nCodCia NUMBER, nCodEmpresa NUMBER, nCodAgente   NUMBER )
@@ -163,9 +164,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
         AND     A.CodEmpresa  = nCodEmpresa
         AND     A.Cod_Agente  = nCodAgente --> 10003
         AND     A.Est_Agente  = 'ACT';
-            
+
         cWSDLPortal := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'A01');
-        
+
         cSoapRequest := '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:thon="https://thona01.azurewebsites.net/">
                            <soapenv:Header/>
                            <soapenv:Body>
@@ -190,21 +191,21 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
                               </thon:AgregarUsuario>
                            </soapenv:Body>
                         </soapenv:Envelope>';        
-        
+
         UTL_HTTP.set_wallet('file:'||cPathWallet,cPwdWallet);
-        
+
         eHttpReq := UTL_HTTP.BEGIN_REQUEST (cWSDLPortal, 'POST', 'HTTP/1.1');
         --UTL_HTTP.SET_BODY_CHARSET (eHttpReq, 'UTF8'); --> Comentado para que funcione en Produccion JALV(-) 29/06/2021
         UTL_HTTP.SET_HEADER (eHttpReq, 'Content-Type', 'text/xml');
         BreqLength := DBMS_LOB.GETLENGTH(cSoapRequest);        
         UTL_HTTP.SET_HEADER (eHttpReq, 'Content-Length', BreqLength);
         UTL_HTTP.WRITE_TEXT (eHttpReq, cSoapRequest);
-        
+
         eHttpResp := UTL_HTTP.GET_RESPONSE (eHttpReq);
         UTL_HTTP.READ_TEXT(eHttpResp,cStrTxt,32767);
         UTL_HTTP.END_RESPONSE(eHttpResp);
         cClobXml := XMLType.CREATEXML(cStrTxt);
-      
+
         -- Captar el resultado del Response en cRespWS
         BEGIN        
             SELECT NVL(AgregarUsuario, 'SIN VALOR')
@@ -220,7 +221,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
                 RAISE_APPLICATION_ERROR(-20200,'No se obtuvo ningun valor para el Agente '||nClaveAgente||' en el response de Agregar Usuario.'); 
                 cRespWS := 'SIN DATOS';
         END;
-            
+
         -- Actualiza indicador de Alta en plataforma Digital:
         IF cRespWS = 'true' THEN
             UPDATE  AGENTES
@@ -229,12 +230,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
             AND     CodEmpresa  = nCodEmpresa
             AND     Cod_Agente  = nCodAgente --> 10003
             AND     Est_Agente  = 'ACT';
-            
+
             cRespWS := 'Alta exitosa del Agente '||nClaveAgente||' en Plataforma digital';
         ELSE
             cRespWS := 'Se detecto un error en el Agente '||nClaveAgente||' al intentar Agregar Usuario en Plataforma Digital:'|| SQLCODE || '('|| SQLERRM || ')';
         END IF;
-            
+
         RETURN cRespWS;
 
             EXCEPTION
@@ -244,7 +245,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
                 WHEN OTHERS THEN
                   UTL_HTTP.END_RESPONSE(eHttpResp);
                   cRespWS := 'Error al intentar Agregar Usuario en Plataforma Digital: ' || SQLCODE || '('|| SQLERRM || ')'; 
-                  
+
     END AGREGAR_USUARIO_WS;
 
     FUNCTION ACTUALIZAR_USUARIO_WS ( nCodCia NUMBER, nCodEmpresa NUMBER, nCodAgente	NUMBER)
@@ -268,7 +269,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
     cClobXml            XMLType;
     cStrTxt             VARCHAR2(30000);
     cWSDLPortal         PARAMETROS_GLOBALES.Descripcion%TYPE;
-                    
+
     nClaveAgente        AGENTES.Cod_Agente%TYPE;
     cNombre             PERSONA_NATURAL_JURIDICA.nombre%TYPE;
     cApe_Paterno        PERSONA_NATURAL_JURIDICA.apellido_paterno%TYPE;
@@ -314,7 +315,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
         AND     A.CodEmpresa  = nCodEmpresa
         AND     A.Cod_Agente  = nCodAgente --> 10003
         AND     A.Est_Agente  = 'ACT';
-            
+
         cWSDLPortal := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'A01');
 
         cSoapRequest := '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:thon="https://thona01.azurewebsites.net/">
@@ -341,21 +342,21 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
                               </thon:ActualizarUsuario>
                            </soapenv:Body>
                         </soapenv:Envelope>';        
-        
+
         UTL_HTTP.set_wallet('file:'||cPathWallet,cPwdWallet);
-        
+
         eHttpReq := UTL_HTTP.BEGIN_REQUEST (cWSDLPortal, 'POST', 'HTTP/1.1');
         -- UTL_HTTP.SET_BODY_CHARSET (eHttpReq, 'UTF8');    --> Comentado para que funcione en Produccion JALV(-) 29/06/2021
         UTL_HTTP.SET_HEADER (eHttpReq, 'Content-Type', 'text/xml');
         BreqLength := DBMS_LOB.GETLENGTH(cSoapRequest);        
         UTL_HTTP.SET_HEADER (eHttpReq, 'Content-Length', BreqLength);
         UTL_HTTP.WRITE_TEXT (eHttpReq, cSoapRequest);
-        
+
         eHttpResp := UTL_HTTP.GET_RESPONSE (eHttpReq);
         UTL_HTTP.READ_TEXT(eHttpResp,cStrTxt,32767);
         UTL_HTTP.END_RESPONSE(eHttpResp);
         cClobXml := XMLType.CREATEXML(cStrTxt);
-      
+
         -- Captar el resultado del Response en cRespWS
         BEGIN        
             SELECT NVL(ActualizarUsuario, 'SIN VALOR')
@@ -370,15 +371,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
             WHEN NO_DATA_FOUND THEN
                 RAISE_APPLICATION_ERROR(-20200,'No se obtuvo ningun valor para el Agente '||nClaveAgente||' en el response de Actualizar Usuario.'); 
                 cRespWS := 'SIN DATOS';
-            
+
         END;
-            
+
         IF UPPER(cRespWS) != 'TRUE' THEN
             cRespWS := 'Se detecto un error en el Agente '||nClaveAgente||' al intentar Actualizar su Usuario en Plataforma Digital.';
         ELSE
             cRespWS := 'Actualizacion exitosa de datos del Agente '||nClaveAgente||' en Plataforma digital';
         END IF;
-            
+
         RETURN cRespWS;
 
             EXCEPTION
@@ -396,8 +397,3 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_AGENTES_SEVICIOS_WEB AS
     END ACTUALIZAR_USUARIO_WS;
     --
 END OC_AGENTES_SEVICIOS_WEB;
-/
-CREATE OR REPLACE PUBLIC SYNONYM OC_AGENTES_SEVICIOS_WEB FOR SICAS_OC.OC_AGENTES_SEVICIOS_WEB;
-/
-GRANT EXECUTE ON OC_AGENTES_SEVICIOS_WEB TO PUBLIC;
-/

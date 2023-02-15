@@ -38,9 +38,11 @@ FUNCTION CONSULTA_POLIZA_UNAM ( nCodCia         NUMBER,
                                 cCodAgrupador   VARCHAR2,
                                 cPassword       VARCHAR2)
 RETURN XMLTYPE;
+
 END OC_ASEGURADO_SERVICIOS_WEB;
+
 /
-CREATE OR REPLACE PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
+create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
    PROCEDURE CARGA_ASEGURADOS( nCodCia      NUMBER
                              , nCodEmpresa  NUMBER
                              , nIdPoliza    NUMBER
@@ -357,23 +359,23 @@ CREATE OR REPLACE PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
 
 FUNCTION LISTADO_ASEGURADO (nCodCia         IN NUMBER,  nCodEmpresa         IN NUMBER,      nIdPoliza  IN NUMBER,   nCodAgente       IN NUMBER,
                             nLimInferior    IN NUMBER,  nLimSuperior        IN NUMBER,      nTotRegs   OUT NUMBER,  nCodAgenteSesion IN NUMBER,       
-                            nNivel          IN NUMBER,  cNombreContratante  IN VARCHAR2,    cApePatContratante 	IN VARCHAR2,
-                            cApeMatContratante   IN VARCHAR2,  cNumPolUnico IN VARCHAR2							
-							)
-	RETURN XMLTYPE IS
-/*   _______________________________________________________________________________________________________________________________	
+                            nNivel          IN NUMBER,  cNombreContratante  IN VARCHAR2,    cApePatContratante    IN VARCHAR2,
+                            cApeMatContratante   IN VARCHAR2,  cNumPolUnico IN VARCHAR2                     
+                     )
+   RETURN XMLTYPE IS
+/*   _______________________________________________________________________________________________________________________________   
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
     | Elaboro    : J. Alberto Lopez Valle                                                                                           |
     | Para       : THONA Seguros                                                                                                    |
     | Fecha Elab.: 10/01/2021                                                                                                       |
-    | Email		 : alopez@thonaseguros.mx                                                                                           |
+    | Email     : alopez@thonaseguros.mx                                                                                           |
     | Nombre     : LISTADO_ASEGURADO                                                                                                |
     | Objetivo   : Funcion que obtiene un listado general de los Asegurados que cumplen con los criterios dados desde la Plataforma |
     |              Digital, con resultados paginados y tranforma la salida en formato XML.                                          |
     | Modificado : Si                                                                                                               |
     | Ult. modif.: 11/03/2021                                                                                                       |
-    | Modifico	 : J. Alberto Lopez Valle (JALV)                                                                                    |
+    | Modifico  : J. Alberto Lopez Valle (JALV)                                                                                    |
     | Obj. Modif.: Se agregan filtros por Nombre, apellido Paterno y apellido Materno.                                              |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
@@ -396,7 +398,7 @@ xPrevAsegs          XMLTYPE;
 
 BEGIN
    BEGIN
-	    SELECT XMLELEMENT("DATA",
+       SELECT XMLELEMENT("DATA",
                             XMLAGG(XMLELEMENT("ASEGURADOS",
                                                 XMLELEMENT("Asegurado", asegurado),
                                                 XMLELEMENT("EdoAsegurado", EdoAsegurado),
@@ -436,14 +438,14 @@ BEGIN
                                               )
                                   )
                          )
-        INTO	xPrevAsegs                
+        INTO   xPrevAsegs                
         FROM    (SELECT asegurado,
                         --edoaseg EdoAsegurado,
                         OC_VALORES_DE_LISTAS.BUSCA_LVALOR('ESTADOS', edoaseg) EdoAsegurado,
                         agente,
                         principal,
                         idpoliza,
-                        numpolunico,		                                    --> 12/03/2021 (JALV +)
+                        numpolunico,                                          --> 12/03/2021 (JALV +)
                         fecinivig,
                         fecfinvig,
                         nombre,
@@ -478,7 +480,7 @@ BEGIN
                                     AA.agente,
                                     AA.principal,
                                     AA.idpoliza,
-                                    AA.numpolunico,		                                --> 12/03/2021 (JALV +)
+                                    AA.numpolunico,                                      --> 12/03/2021 (JALV +)
                                     AA.fecinivig,
                                     AA.fecfinvig,
                                     AA.nombre,
@@ -514,7 +516,7 @@ BEGIN
                                                 AP.cod_agente                           AGENTE, 
                                                 DECODE(AP.ind_principal,'S','Si','No')  PRINCIPAL, 
                                                 P.idpoliza,
-                                                P.numpolunico,		                                --> 12/03/2021 (JALV +)
+                                                P.numpolunico,                                    --> 12/03/2021 (JALV +)
                                                 DP.fecinivig, 
                                                 DP.fecfinvig, 
                                                 PNJ.nombre, 
@@ -606,7 +608,7 @@ BEGIN
                                                 AP.cod_agente                           AGENTE, 
                                                 DECODE(AP.ind_principal,'S','Si','No')  PRINCIPAL, 
                                                 P.idpoliza,
-                                                P.numpolunico,		                                --> 12/03/2021 (JALV +)
+                                                P.numpolunico,                                    --> 12/03/2021 (JALV +)
                                                 DP.fecinivig, 
                                                 DP.fecfinvig, 
                                                 PNJ.nombre, 
@@ -702,7 +704,7 @@ BEGIN
                            AP.cod_agente                           AGENTE, 
                            DECODE(AP.ind_principal,'S','Si','No')  PRINCIPAL, 
                            P.idpoliza,
-                           P.numpolunico,		                                --> 12/03/2021 (JALV +)
+                           P.numpolunico,                                    --> 12/03/2021 (JALV +)
                            DP.fecinivig, 
                            DP.fecfinvig, 
                            PNJ.nombre, 
@@ -793,7 +795,7 @@ BEGIN
                            AP.cod_agente                           AGENTE, 
                            DECODE(AP.ind_principal,'S','Si','No')  PRINCIPAL, 
                            P.idpoliza,
-                           P.numpolunico,		                                --> 12/03/2021 (JALV +)
+                           P.numpolunico,                                    --> 12/03/2021 (JALV +)
                            DP.fecinivig, 
                            DP.fecfinvig, 
                            PNJ.nombre, 
@@ -888,25 +890,25 @@ END LISTADO_ASEGURADO;
 
 
 FUNCTION CONSULTA_ASEGURADO (nCodCia  NUMBER,  nCodEmpresa NUMBER, nCodAsegurado  NUMBER, nIdPoliza NUMBER DEFAULT NULL, nIDetPol NUMBER DEFAULT NULL)
-	RETURN XMLTYPE IS
-/*   _______________________________________________________________________________________________________________________________	
+   RETURN XMLTYPE IS
+/*   _______________________________________________________________________________________________________________________________   
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
     | Elaboro    : J. Alberto Lopez Valle                                                                                           |
     | Para       : THONA Seguros                                                                                                    |
     | Fecha Elab.: 10/01/2021                                                                                                       |
-    | Email		 : alopez@thonaseguros.mx                                                                                           |
+    | Email     : alopez@thonaseguros.mx                                                                                           |
     | Nombre     : CONSULTA_ASEGURADO                                                                                               |
     | Objetivo   : Funcion que obtiene la informacion detallada del Asegurado dado desde la Plataforma Digital y tranforma la       |
     |              salida en formato XML.                                                                                           |
     | Modificado : No                                                                                                               |
     | Ult. modif.: N/A                                                                                                              |
-    | Modifico	 : N/A                                                                                                              |
+    | Modifico  : N/A                                                                                                              |
     | Obj. Modif.: N/A                                                                                                              |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
     |           nodCia                  Codigo de Compañia              (Entrada)                                                   |    
-    |			nNoContratante		    Codigo del Cliente		        (Entrada)                                                   |
+    |       nNoContratante        Codigo del Cliente             (Entrada)                                                   |
     |           nCodEmpresa             Codigo de Empresa               (Entrada)                                                   |
     |_______________________________________________________________________________________________________________________________|
 */
@@ -962,7 +964,7 @@ BEGIN
                                               )
                                   )
                          )                                                
-        INTO	xPrevAseg
+        INTO   xPrevAseg
         FROM    (SELECT A.cod_asegurado                         ASEGURADO, 
                         AP.cod_agente                           AGENTE, 
                         DECODE(AP.ind_principal,'S','Si','No')  PRINCIPAL, 
@@ -1113,9 +1115,9 @@ BEGIN
          RAISE_APPLICATION_ERROR(-20200,'El Asegurado '||nCodAsegurado||' no existente en Base de Datos.'); 
    END;
 
-   SELECT 	XMLROOT (xPrevAseg, VERSION '1.0" encoding="UTF-8')
-   INTO		xAsegurado
-   FROM 	DUAL;
+   SELECT   XMLROOT (xPrevAseg, VERSION '1.0" encoding="UTF-8')
+   INTO     xAsegurado
+   FROM  DUAL;
 
    RETURN xAsegurado;
 
@@ -1133,18 +1135,18 @@ FUNCTION VALIDA_ASEG_UNAM(  nCodCia         NUMBER,
                             cCodAgrupador VARCHAR2
                             --OUT XML DE POLIZAS 
                              ) RETURN VARCHAR2 IS
-/*   _______________________________________________________________________________________________________________________________	
+/*   _______________________________________________________________________________________________________________________________   
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
     | Elaboro    : ?                                                                                                                |
     | Para       : ?                                                                                                                |
     | Fecha Elab.: ?                                                                                                                |
-    | Email		 : ?                                                                                                                |
+    | Email     : ?                                                                                                                |
     | Nombre     : VALIDA_ASEG_UNAM                                                                                                 |
     | Objetivo   : Funcion que valida la existencia del Asegurado UNAM.                                                             |
     | Modificado : Si                                                                                                               |
     | Ult. modif.: 05/02/2021                                                                                                       |
-    | Modifico	 : J. Alberto Lopez Valle                                                                                           |
+    | Modifico  : J. Alberto Lopez Valle                                                                                           |
     | Obj. Modif.: Se cambio funcionalidad por completo. Verifica que exista una Poliza asociada, Si existe o no su contraseña de   |
     |              Usuario si no es asi la genera,encripta e inserta el usuario. Verifica tambien si el cliente existe en el        |
     |              servicio de impresion de certificados individuales si no es asi lo agrega. Restringe el numero de intentos para  |
@@ -1153,12 +1155,12 @@ FUNCTION VALIDA_ASEG_UNAM(  nCodCia         NUMBER,
     | Parametros:                                                                                                                   |
     |           nodCia                  Codigo de Compañia                  (Entrada)                                               |        
     |           nCodEmpresa             Codigo de Empresa                   (Entrada)                                               |
-    |			cNombre		            Nombre del Asegurado	            (Entrada)                                               |
-    |			cApePaterno		        Apellido Paterno del Asegurado      (Entrada)                                               |
-    |			cApeMaterno		        Apellido Materno del Asegurado      (Entrada)                                               |
-    |			dFecNac		            Fecha de Nacimiento del Asegurado   (Entrada)                                               |
-    |			cEmail		            Correo electronico del Asegurado    (Entrada)                                               |
-    |			cCodAgrupador		    Codigo del Agrupador		        (Entrada)                                               |
+    |       cNombre                 Nombre del Asegurado             (Entrada)                                               |
+    |       cApePaterno            Apellido Paterno del Asegurado      (Entrada)                                               |
+    |       cApeMaterno            Apellido Materno del Asegurado      (Entrada)                                               |
+    |       dFecNac                 Fecha de Nacimiento del Asegurado   (Entrada)                                               |
+    |       cEmail                  Correo electronico del Asegurado    (Entrada)                                               |
+    |       cCodAgrupador         Codigo del Agrupador              (Entrada)                                               |
     |_______________________________________________________________________________________________________________________________|
 */                             
    --cExiste        VARCHAR2(1);                                --> JALV (-) 05/02/2021
@@ -1363,25 +1365,25 @@ END VALIDA_ASEG_UNAM;
    END POLIZAS_ASEGURADO_UNAM;
 
 -- Funcion que valida password y devuelve xml
-FUNCTION CONSULTA_POLIZA_UNAM ( nCodCia         NUMBER,	
+FUNCTION CONSULTA_POLIZA_UNAM ( nCodCia         NUMBER,  
                                 nCodEmpresa     NUMBER,
                                 --nCodAsegurado   NUMBER,
                                 cCodAgrupador   VARCHAR2,
                                 cPassword       VARCHAR2)
 RETURN XMLTYPE IS
-/*   _______________________________________________________________________________________________________________________________	
+/*   _______________________________________________________________________________________________________________________________   
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
     | Elaboro    : J. Alberto Lopez Valle                                                                                           |
     | Para       : THONA Seguros                                                                                                    |
     | Fecha Elab.: 05/02/2021                                                                                                       |
-    | Email		 : alopez@thonaseguros.mx                                                                                           |
+    | Email     : alopez@thonaseguros.mx                                                                                           |
     | Nombre     : CONSULTA_POLIZA_UNAM                                                                                             |
     | Objetivo   : Funcion que verifica el password del Asegurado, si coincide genenera un XML con la Poliza del Asegurado UNAM.    |
     |              Devuelve un XML.                                                                                                 |
     | Modificado : No                                                                                                               |
     | Ult. modif.: N/A                                                                                                              |
-    | Modifico	 : N/A                                                                                                              |
+    | Modifico  : N/A                                                                                                              |
     | Obj. Modif.: N/A                                                                                                              |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
@@ -1406,20 +1408,15 @@ BEGIN
         SELECT XMLELEMENT("DATA",
                             XMLELEMENT("Password NO coimcide",1)
                         )
-        INTO	xPrevArch
-		FROM    DUAL;*/
+        INTO   xPrevArch
+      FROM    DUAL;*/
      END IF;
 
-   SELECT 	XMLROOT(xPrevArch, VERSION '1.0" encoding="UTF-8')
-   INTO		xCertificado
-   FROM 	DUAL;
+   SELECT   XMLROOT(xPrevArch, VERSION '1.0" encoding="UTF-8')
+   INTO     xCertificado
+   FROM  DUAL;
 
    RETURN xCertificado;   
 END CONSULTA_POLIZA_UNAM;
 
 END OC_ASEGURADO_SERVICIOS_WEB;
-/
-CREATE OR REPLACE PUBLIC SYNONYM OC_ASEGURADO_SERVICIOS_WEB FOR SICAS_OC.OC_ASEGURADO_SERVICIOS_WEB;
-/
-GRANT EXECUTE ON OC_ASEGURADO_SERVICIOS_WEB TO PUBLIC;
-/
