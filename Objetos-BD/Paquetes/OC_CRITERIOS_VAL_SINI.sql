@@ -1,6 +1,3 @@
---
--- OC_CRITERIOS_VAL_SINI  (Package) 
---
 CREATE OR REPLACE PACKAGE OC_CRITERIOS_VAL_SINI AS
 /*   _______________________________________________________________________________________________________________________________    
     |                                                                                                                               |
@@ -25,23 +22,9 @@ FUNCTION ROL_SINI(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN N
 
 END OC_CRITERIOS_VAL_SINI;
 
+
 /
 
---
--- OC_CRITERIOS_VAL_SINI  (Synonym) 
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_CRITERIOS_VAL_SINI FOR OC_CRITERIOS_VAL_SINI
-/
-
-
-GRANT EXECUTE ON OC_CRITERIOS_VAL_SINI TO PUBLIC
-/
-DROP PACKAGE BODY OC_CRITERIOS_VAL_SINI
-/
-
---
--- OC_CRITERIOS_VAL_SINI  (Package Body) 
---
 CREATE OR REPLACE PACKAGE BODY OC_CRITERIOS_VAL_SINI AS
 FUNCTION EXISTE_VAL_CRITERIO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdValCriterio NUMBER)
 RETURN VARCHAR2 IS
@@ -316,14 +299,3 @@ END ROL_SINI;
 
 END OC_CRITERIOS_VAL_SINI;
 
-/
-
---
--- OC_CRITERIOS_VAL_SINI  (Synonym) 
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_CRITERIOS_VAL_SINI FOR OC_CRITERIOS_VAL_SINI
-/
-
-
-GRANT EXECUTE ON OC_CRITERIOS_VAL_SINI TO PUBLIC
-/

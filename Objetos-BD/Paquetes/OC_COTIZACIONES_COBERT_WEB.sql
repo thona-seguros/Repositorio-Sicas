@@ -58,15 +58,15 @@ CREATE OR REPLACE PACKAGE OC_COTIZACIONES_COBERT_WEB IS
                        , nCodEmpresa    IN  COTIZACIONES_COBERT_WEB.CodEmpresa%TYPE
                        , xDatos         IN  XMLTYPE  
                        , xPrima         OUT XMLTYPE) RETURN XMLTYPE;
-                          
+
     PROCEDURE ACTUALIZA_DATOS_COBERTURA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, xGenerales XMLTYPE);       
 
     PROCEDURE AGREGA_REGISTROS(nCODCIA NUMBER, nCODEMPRESA NUMBER, cCODCOTIZADOR VARCHAR2, cIDTIPOSEG VARCHAR2, cPLANCOB VARCHAR2, cCODGPOCOBERTWEB VARCHAR2, nIDCOTIZACION NUMBER, nIDETCOTIZACION NUMBER);
 
 END OC_COTIZACIONES_COBERT_WEB;
-/
 
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
+/
+create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
    PROCEDURE INSERTAR( nCodCia              IN  COTIZACIONES_COBERT_WEB.CodCia%TYPE
                      , nCodEmpresa          IN  COTIZACIONES_COBERT_WEB.CodEmpresa%TYPE
                      , nIdCotizacion        IN  COTIZACIONES_COBERT_WEB.IdCotizacion%TYPE
@@ -234,7 +234,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
                               , nIdCotizacionOrig  IN  COTIZACIONES_COBERT_WEB.IdCotizacion%TYPE
                               , nIdCotizacion      IN  COTIZACIONES_COBERT_WEB.IdCotizacion%TYPE) IS
       cCodGpoCobertWebDesc  VARCHAR2(200);
-      
+
       CURSOR COB_WEB_Q IS
          SELECT IDetCotizacion, CodGpoCobertWeb, CodCobertWeb, SumaAsegCobLocal, SumaAsegCobMoneda,
                 Tasa, PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal, DeducibleCobMoneda,
@@ -345,7 +345,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
              AND CodGpoCobertWeb     = nCodGpoCobertWeb_1
              AND A.CodCobertWeb      = NVL( cCodCobertWeb   , A.CodCobertWeb)
            ORDER BY A.IdetCotizacion, A.CodGpoCobertWeb, A.CodCobertWeb;
-           
+
     BEGIN
        SELECT IdTipoSeg, PlanCob, IndAsegModelo
          INTO cIdTipoSeg, cPlanCob, cIndAsegModelo
@@ -355,7 +355,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
           AND IdCotizacion  = nIdCotizacion;
        --
        cResultado := '<?xml version="1.0"?> <DATA><IDCOTIZACION>' || nIdCotizacion || '</IDCOTIZACION>';
-       
+
        FOR x IN Grupos LOOP
           cResultado         := cResultado || '<GPOCOBERT>';
           cResultado         := cResultado || '<CODGPOCOBERTWEB>'  || x.CodGpoCobertWeb     || '</CODGPOCOBERTWEB>';
@@ -467,26 +467,26 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
     cCodCobertWeb        COTIZACIONES_COBERT_WEB.CodCobertWeb%TYPE;
     nSumaAsegCobLocal    COTIZACIONES_COBERT_WEB.SumaAsegCobLocal%TYPE;
     nSumaAsegCobMoneda   COTIZACIONES_COBERT_WEB.SumaAsegCobMoneda%TYPE;
-    nTasa				      COTIZACIONES_COBERT_WEB.Tasa%TYPE;	            
-    nPrimaCobLocal       COTIZACIONES_COBERT_WEB.PrimaCobLocal%TYPE;	    
-    nPrimaCobMoneda      COTIZACIONES_COBERT_WEB.PrimaCobMoneda%TYPE;	
-    nDeducibleCobLocal	COTIZACIONES_COBERT_WEB.DeducibleCobLocal%TYPE;	
+    nTasa                     COTIZACIONES_COBERT_WEB.Tasa%TYPE;                
+    nPrimaCobLocal       COTIZACIONES_COBERT_WEB.PrimaCobLocal%TYPE;        
+    nPrimaCobMoneda      COTIZACIONES_COBERT_WEB.PrimaCobMoneda%TYPE;   
+    nDeducibleCobLocal  COTIZACIONES_COBERT_WEB.DeducibleCobLocal%TYPE; 
     nDeducibleCobMoneda  COTIZACIONES_COBERT_WEB.DeducibleCobMoneda%TYPE;
-    nSalarioMensual	   COTIZACIONES_COBERT_WEB.SalarioMensual%TYPE;	
-    nVecesSalario        COTIZACIONES_COBERT_WEB.VecesSalario %TYPE;	    
-    nSumaAsegCalculada   COTIZACIONES_COBERT_WEB.SumaAsegCalculada%TYPE;	
-    nEdad_Minima         COTIZACIONES_COBERT_WEB.Edad_Minima%TYPE;	    
-    nEdad_Maxima	      COTIZACIONES_COBERT_WEB.Edad_Maxima%TYPE;	    
-    nEdad_Exclusion      COTIZACIONES_COBERT_WEB.Edad_Exclusion%TYPE;	
-    nSumaAseg_Minima	   COTIZACIONES_COBERT_WEB.SumaAseg_Minima%TYPE;	
-    nSumaAseg_Maxima     COTIZACIONES_COBERT_WEB.SumaAseg_Maxima%TYPE;	
-    nPorcExtraprimaDet	COTIZACIONES_COBERT_WEB.PorcExtraprimaDet%TYPE;	
-    nMontoExtraprimaDet	COTIZACIONES_COBERT_WEB.MontoExtraprimaDet%TYPE;          
-    nSumaIngresada       COTIZACIONES_COBERT_WEB.SumaIngresada%TYPE;	    
-    nOrdenImpresion      COTIZACIONES_COBERT_WEB.OrdenImpresion%TYPE;	
+    nSalarioMensual    COTIZACIONES_COBERT_WEB.SalarioMensual%TYPE; 
+    nVecesSalario        COTIZACIONES_COBERT_WEB.VecesSalario %TYPE;        
+    nSumaAsegCalculada   COTIZACIONES_COBERT_WEB.SumaAsegCalculada%TYPE;    
+    nEdad_Minima         COTIZACIONES_COBERT_WEB.Edad_Minima%TYPE;      
+    nEdad_Maxima          COTIZACIONES_COBERT_WEB.Edad_Maxima%TYPE;     
+    nEdad_Exclusion      COTIZACIONES_COBERT_WEB.Edad_Exclusion%TYPE;   
+    nSumaAseg_Minima       COTIZACIONES_COBERT_WEB.SumaAseg_Minima%TYPE;    
+    nSumaAseg_Maxima     COTIZACIONES_COBERT_WEB.SumaAseg_Maxima%TYPE;  
+    nPorcExtraprimaDet  COTIZACIONES_COBERT_WEB.PorcExtraprimaDet%TYPE; 
+    nMontoExtraprimaDet COTIZACIONES_COBERT_WEB.MontoExtraprimaDet%TYPE;          
+    nSumaIngresada       COTIZACIONES_COBERT_WEB.SumaIngresada%TYPE;        
+    nOrdenImpresion      COTIZACIONES_COBERT_WEB.OrdenImpresion%TYPE;   
     nDeducibleIngresado  COTIZACIONES_COBERT_WEB.DeducibleIngresado%TYPE;
-    nCuotaPromedio       COTIZACIONES_COBERT_WEB.CuotaPromedio%TYPE;	    
-    nPrimaPromedio       COTIZACIONES_COBERT_WEB.PrimaPromedio%TYPE;	 
+    nCuotaPromedio       COTIZACIONES_COBERT_WEB.CuotaPromedio%TYPE;        
+    nPrimaPromedio       COTIZACIONES_COBERT_WEB.PrimaPromedio%TYPE;     
 
     cExiste              VARCHAR2(1);
     --
@@ -516,14 +516,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
     --
     CURSOR Cotizacion_Coberturas IS
        SELECT CodCia, CodEmpresa, IdCotizacion, IdetCotizacion, CodGpoCobertWeb, CodCobertWeb, SumaAsegCobLocal, SumaAsegCobMoneda,
-              Tasa, PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal,	DeducibleCobMoneda, SalarioMensual,	VecesSalario, SumaAsegCalculada,
-              Edad_Minima, Edad_Maxima,	Edad_Exclusion, Sumaaseg_Minima,	Sumaaseg_Maxima, PorcExtraprimaDet,	MontoExtraprimaDet,	
+              Tasa, PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal,   DeducibleCobMoneda, SalarioMensual, VecesSalario, SumaAsegCalculada,
+              Edad_Minima, Edad_Maxima, Edad_Exclusion, Sumaaseg_Minima,    Sumaaseg_Maxima, PorcExtraprimaDet, MontoExtraprimaDet, 
               SumaIngresada, OrdenImpresion, DeducibleIngresado, CuotaPromedio, PrimaPromedio
          FROM COTIZACIONES_COBERT_WEB_TEMP
         WHERE CodCia        = nCodCia
           AND CodEmpresa    = nCodEmpresa
           AND IdCotizacion  = nIdCotizacion;
-          
+
     CURSOR COT_ASEG_Q IS
        SELECT CodCia, CodEmpresa, IdCotizacion, IDetCotizacion, IdAsegurado
          FROM COTIZACIONES_ASEG
@@ -531,14 +531,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
           AND CodEmpresa       = nCodEmpresa
           AND IdCotizacion     = nIdCotizacion;
           --AND IDetCotizacion   = nIdetCotizacion;
-          
+
     CURSOR COT_SUBGPO_Q IS
        SELECT CodCia, CodEmpresa, IdCotizacion, IDetCotizacion
          FROM COTIZACIONES_DETALLE
         WHERE CodCia        = nCodCia
           AND CodEmpresa    = nCodEmpresa
           AND IdCotizacion  = nIdCotizacion;
-          
+
     BEGIN
        EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_DATE_FORMAT = ''DD/MM/YYYY''';
        --
@@ -606,17 +606,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
                 ELSIF b = 4 THEN
                    nSumaAsegCobMoneda   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 5 THEN   
-                   nTasa	               := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
+                   nTasa                   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 6 THEN
                    nPrimaCobLocal       := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 7 THEN
                    nPrimaCobMoneda      := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 8 THEN
-                   nDeducibleCobLocal   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));	
+                   nDeducibleCobLocal   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));    
                 ELSIF b = 9 THEN
                    nDeducibleCobMoneda  := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 10 THEN
-                   nSalarioMensual	   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));  
+                   nSalarioMensual     := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));  
                 ELSIF b = 11 THEN
                    nVecesSalario        := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 12 THEN
@@ -624,15 +624,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
                 ELSIF b = 13 THEN
                    nEdad_Minima         := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));    
                 ELSIF b = 14 THEN
-                   nEdad_Maxima	      := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));   
+                   nEdad_Maxima       := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));   
                 ELSIF b = 15 THEN
                    nEdad_Exclusion      := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));  
                 ELSIF b = 16 THEN
-                   nSumaAseg_Minima	   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
+                   nSumaAseg_Minima    := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 17 THEN
                    nSumaAseg_Maxima     := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 18 THEN 
-                   nPorcExtraprimaDet   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));	
+                   nPorcExtraprimaDet   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));    
                 ELSIF b = 19 THEN
                    nMontoExtraprimaDet  := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 20 THEN
@@ -694,7 +694,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
     --                                    AND  B.IdCotizacion   = A.IdCotizacion
     --                                    AND  B.IdetCotizacion = A.IdetCotizacion );
           --
-          
+
           ELSE
              DELETE COTIZACIONES_COBERT_ASEG A
              WHERE  A.CodCia         = x.CodCia
@@ -723,11 +723,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
                     VERSION '1.0" encoding="UTF-8')
                INTO xFactorEscalaPO
                FROM DUAL;
-             
+
              GENERALES_PLATAFORMA_DIGITAL.RECIBE_GENERALES_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, xFactorEscalaPO);
           END IF;
        END LOOP;
-       
+
        IF NVL(cIndAsegModelo,'N') = 'S' THEN
           FOR I IN COT_SUBGPO_Q LOOP
              FOR X IN Cotizacion_Coberturas LOOP
@@ -740,7 +740,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
                                                              NVL(x.SumaAseg_Minima,0), NVL(x.SumaAseg_Maxima,0),
                                                              NVL(x.PorcExtraPrimaDet,0), NVL(x.MontoExtraprimaDet,0), NVL(x.SumaIngresada,0),
                                                              NVL(x.DeducibleIngresado,0), NVL(x.CuotaPromedio,0), 
-                                                             NVL(x.PrimaPromedio,0));		
+                                                             NVL(x.PrimaPromedio,0));       
              END LOOP;                                                
              GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion, I.IDetCotizacion);  
           END LOOP;   
@@ -756,14 +756,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
                                                              NVL(x.SumaAseg_Minima,0), NVL(x.SumaAseg_Maxima,0),
                                                              NVL(x.PorcExtraPrimaDet,0), NVL(x.MontoExtraprimaDet,0), NVL(x.SumaIngresada,0),
                                                              NVL(x.DeducibleIngresado,0), NVL(x.CuotaPromedio,0), 
-                                                             NVL(x.PrimaPromedio,0));			
+                                                             NVL(x.PrimaPromedio,0));           
              END LOOP;                                                
              GT_COTIZACIONES_ASEG.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion,  
                                                      I.IDetCotizacion, I.IdAsegurado);
              GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion, I.IDetCotizacion);  
           END LOOP;   
        END IF;      
-       
+
        FOR x IN Cotizacion_Coberturas LOOP
           GT_COTIZACIONES_COBERT_MASTER.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, cIdTipoSeg,
                                                           cPlanCob, X.IdCotizacion, 
@@ -776,9 +776,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
                                                           NVL(X.DeducibleIngresado,0), NVL(X.CuotaPromedio,0), 
                                                           NVL(X.PrimaPromedio,0));     
        END LOOP;      
-                                                             
+
        GENERALES_PLATAFORMA_DIGITAL.RECALCULAR_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, cIdTipoSeg, cPlanCob, 'N', 'N', 'S');
-                                      
+
        BEGIN
           SELECT PrimaCotLocal, PrimaCotMoneda--, GastosExpedicion
             INTO nPrimaCotLocal, nPrimaCotMoneda--, nGastosExpedicion
@@ -787,7 +787,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
              AND CodEmpresa    = nCodEmpresa
              AND IdCotizacion  = nIdCotizacion;
        END;
-       
+
        BEGIN
           SELECT DECODE(NVL(C.GastosExpedicion,0),0,NVL(CC.MontoConcepto,0),NVL(C.GastosExpedicion,0))
             INTO nGastosExpedicion
@@ -822,7 +822,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
                    AND IdCotizacion  = nIdCotizacion;
              END;
        END;
-       
+
        BEGIN
           SELECT 'S'
             INTO cExiste
@@ -850,7 +850,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
        ELSE
           nMontoIva   := 0;
        END IF;      
-       
+
        SELECT XMLELEMENT("DATA",   
                 XMLELEMENT("PRIMALOCAL",nPrimaCotLocal),
                 XMLELEMENT("PRIMAMONEDAEXT",nPrimaCotMoneda),
@@ -860,16 +860,16 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
          INTO xPrima       
          FROM DUAL ;
        --
-       
+
        SELECT XMLROOT (xPrima, VERSION '1.0" encoding="UTF-8')
          INTO xPrima
          FROM DUAL;
-       
+
        xResultado := COBERTURAS_XML( nCodCia, nCodEmpresa, nIdCotizacion, NULL, NULL, NULL );
        --
       --- COMMIT;
        --
-       
+
        RETURN xResultado;
     EXCEPTION
        WHEN OTHERS THEN
@@ -921,7 +921,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
              nDeducibleCobLocal  := nDeducibleCobMoneda * nTasaCambio;
           END IF;
        END LOOP;
-       
+
        UPDATE COTIZACIONES_COBERT_MASTER
           SET DeducibleCobMoneda  = NVL(nDeducibleCobMoneda,DeducibleCobMoneda),
               DeducibleCobLocal   = NVL(nDeducibleCobLocal,DeducibleCobLocal),
@@ -931,7 +931,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
           AND IdCotizacion     = nIdCotizacion
           AND IDetCotizacion   = nIDetCotizacion
           AND CodCobert        = cCodCobert;
-          
+
        UPDATE COTIZACIONES_COBERTURAS
           SET DeducibleCobMoneda  = NVL(nDeducibleCobMoneda,DeducibleCobMoneda),
               DeducibleCobLocal   = NVL(nDeducibleCobLocal,DeducibleCobLocal),
@@ -957,13 +957,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
             INSERT INTO COTIZACIONES_COBERT_WEB  (CODCIA, CODEMPRESA, IDCOTIZACION, IDETCOTIZACION, CODGPOCOBERTWEB, CODCOBERTWEB, SUMAASEGCOBLOCAL, SUMAASEGCOBMONEDA, TASA, PRIMACOBLOCAL, PRIMACOBMONEDA, DEDUCIBLECOBLOCAL, DEDUCIBLECOBMONEDA, SALARIOMENSUAL, VECESSALARIO, SUMAASEGCALCULADA, EDAD_MINIMA, EDAD_MAXIMA, EDAD_EXCLUSION, SUMAASEG_MINIMA, SUMAASEG_MAXIMA, PORCEXTRAPRIMADET, MONTOEXTRAPRIMADET, SUMAINGRESADA, ORDENIMPRESION, DEDUCIBLEINGRESADO, CUOTAPROMEDIO, PRIMAPROMEDIO,ACTUALIZO_USUARIO, ACTUALIZO_FECHA) VALUES 
                                                  (ENT.CODCIA, ENT.CODEMPRESA, nIDCOTIZACION, nIDETCOTIZACION, ENT.CODGPOCOBERTWEB, ENT.CODCOBERTWEB, ENT.SUMAASEGCOBLOCAL, ENT.SUMAASEGCOBMONEDA, ENT.TASA, ENT.PRIMACOBLOCAL, ENT.PRIMACOBMONEDA, ENT.DEDUCIBLECOBLOCAL, ENT.DEDUCIBLECOBMONEDA, ENT.SALARIOMENSUAL, ENT.VECESSALARIO, ENT.SUMAASEGCALCULADA, ENT.EDAD_MINIMA, ENT.EDAD_MAXIMA, ENT.EDAD_EXCLUSION, ENT.SUMAASEG_MINIMA, ENT.SUMAASEG_MAXIMA, ENT.PORCEXTRAPRIMADET, ENT.MONTOEXTRAPRIMADET, ENT.SUMAINGRESADA, ENT.ORDENIMPRESION, ENT.DEDUCIBLEINGRESADO, ENT.CUOTAPROMEDIO, ENT.PRIMAPROMEDIO, USER, SYSDATE);
         END LOOP;                  
-             
+
     END AGREGA_REGISTROS;
     --    
 END OC_COTIZACIONES_COBERT_WEB;
-/
-
-CREATE OR REPLACE PUBLIC SYNONYM OC_COTIZACIONES_COBERT_WEB FOR OC_COTIZACIONES_COBERT_WEB;
-/
-GRANT EXECUTE ON OC_COTIZACIONES_COBERT_WEB TO PUBLIC;
-/

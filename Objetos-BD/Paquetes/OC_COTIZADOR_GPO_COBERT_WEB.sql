@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_COTIZADOR_GPO_COBERT_WEB IS
+CREATE OR REPLACE PACKAGE          OC_COTIZADOR_GPO_COBERT_WEB IS
    PROCEDURE INSERTAR( nCodCia            IN  COTIZADOR_GPO_COBERT_WEB.CodCia%TYPE
                      , nCodEmpresa        IN  COTIZADOR_GPO_COBERT_WEB.CodEmpresa%TYPE
                      , cCodCotizador      IN  COTIZADOR_GPO_COBERT_WEB.CodCotizador%TYPE
@@ -22,7 +22,8 @@ create or replace PACKAGE          OC_COTIZADOR_GPO_COBERT_WEB IS
 
 END OC_COTIZADOR_GPO_COBERT_WEB;
 /
-create or replace PACKAGE BODY          OC_COTIZADOR_GPO_COBERT_WEB IS
+
+CREATE OR REPLACE PACKAGE BODY          OC_COTIZADOR_GPO_COBERT_WEB IS
    PROCEDURE INSERTAR( nCodCia            IN  COTIZADOR_GPO_COBERT_WEB.CodCia%TYPE
                      , nCodEmpresa        IN  COTIZADOR_GPO_COBERT_WEB.CodEmpresa%TYPE
                      , cCodCotizador      IN  COTIZADOR_GPO_COBERT_WEB.CodCotizador%TYPE
