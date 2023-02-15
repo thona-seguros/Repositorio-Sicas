@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_SINIESTROS_SERVICIOS_WEB AS
+CREATE OR REPLACE PACKAGE          OC_SINIESTROS_SERVICIOS_WEB AS
     FUNCTION EXISTE_POLIZA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, /*nIdPoliza IN NUMBER,*/ cNumPolUnico IN VARCHAR2) RETURN VARCHAR2;    --> JALV (-) 03/02/2022
     FUNCTION EXISTE_AGENTE(nCodCia IN NUMBER, nCodAgente IN NUMBER, /*nIdPoliza IN NUMBER*/ cNumPolUnico IN VARCHAR) RETURN VARCHAR2;       --> JALV (-) 04/02/2022
     FUNCTION POLIZA_SINIESTRO (nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, /*cNumPolUnico IN VARCHAR2,*/ nCodAgente IN VARCHAR2) RETURN XMLTYPE;   --> JALV (-) 09/02/2022
@@ -9,7 +9,9 @@ create or replace PACKAGE          OC_SINIESTROS_SERVICIOS_WEB AS
     FUNCTION OBTIENE_DICTAMEN (nCodCia  IN NUMBER, nIdSiniestro IN NUMBER) RETURN XMLTYPE;    --> JALV (+) 28/03/2022
     FUNCTION OBTIENE_DIAS_GARANTIA(PCODCIA NUMBER, PCODEMPRESA NUMBER, PIDPOLIZA NUMBER, PTIPO_SOL VARCHAR2, PTIPO_TRAMITE VARCHAR2, PAREA VARCHAR2) RETURN XMLTYPE;
 END OC_SINIESTROS_SERVICIOS_WEB;
+
 /
+
 create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
 
     FUNCTION EXISTE_POLIZA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, /*nIdPoliza IN NUMBER,*/ cNumPolUnico IN VARCHAR2) --> JALV (-) 03/02/2022
@@ -18,13 +20,13 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
 
     BEGIN
       BEGIN
-        SELECT	'S'
-        INTO	cExiste
-        FROM	POLIZAS	P
-        WHERE	P.CodCia     = nCodCia
-        AND		P.CodEmpresa = nCodEmpresa
-        AND		P.StsPoliza	 IN ('EMI', 'ANU')
-        --AND     (P.IdPoliza	 = NVL(nIdPoliza, P.IdPoliza) OR  P.NumPolUnico = NVL(cNumPolUnico, P.NumPolUnico));   -- 39904; --> JALV (-) 03/02/2022
+        SELECT  'S'
+        INTO    cExiste
+        FROM    POLIZAS P
+        WHERE   P.CodCia     = nCodCia
+        AND     P.CodEmpresa = nCodEmpresa
+        AND     P.StsPoliza  IN ('EMI', 'ANU')
+        --AND     (P.IdPoliza    = NVL(nIdPoliza, P.IdPoliza) OR  P.NumPolUnico = NVL(cNumPolUnico, P.NumPolUnico));   -- 39904; --> JALV (-) 03/02/2022
         AND     P.NumPolUnico = NVL(cNumPolUnico, P.NumPolUnico);
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
@@ -37,14 +39,14 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
 
     FUNCTION EXISTE_AGENTE (nCodCia IN NUMBER, nCodAgente IN NUMBER, /*nIdPoliza IN NUMBER*/ cNumPolUnico IN VARCHAR)   --> JALV (-) 03/02/2022
     RETURN VARCHAR2 IS
-    /*   _______________________________________________________________________________________________________________________________	
+    /*   _______________________________________________________________________________________________________________________________    
         |                                                                                                                               |
         |                                                           HISTORIA                                                            |
         | Elaboro    : J. Alberto Lopez Valle   [ JALV ]                                                                                |
         | Email      : alopez@thonaseguros.mx / alvalle007@hotmail.com                                                                  |
         | Para       : THONA Seguros                                                                                                    |
         | Fecha Elab.: 18/01/2022                                                                                                       |    
-        | Nombre     : EXISTE_AGENTE	                                                                                                |
+        | Nombre     : EXISTE_AGENTE                                                                                                    |
         | Objetivo   : Funcion que valida que el agente que se recibe corresponda a la póliza solicitada.                               |
         | Modificado : No                                                                                                               |
         | Ult. modif.: N/A                                                                                                              |
@@ -52,9 +54,9 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
         | Obj. Modif.: N/A                                                                                                              |
         |                                                                                                                               |
         | Parametros:                                                                                                                   |
-        |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+        |           nCodCia             Codigo de la Compañia           (Entrada)                                                       |
         |           nCodAgente          Codigo de Agente                (Entrada)                                                       |
-        |			nIdPoliza			ID de la Poliza			        (Entrada)                                                       |
+        |           nIdPoliza           ID de la Poliza                 (Entrada)                                                       |
         |_______________________________________________________________________________________________________________________________|
     */
     cExiste VARCHAR2(1); 
@@ -82,7 +84,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
 
     -- Agregar mas Componentes
     FUNCTION POLIZA_SINIESTRO (nCodCia  IN NUMBER,  nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER, nCodAgente IN VARCHAR2) RETURN XMLTYPE IS
-    
+
         xPolSini        XMLTYPE; 
         xPrevPolSini    XMLTYPE;
         xPrevPolSTR     XMLTYPE;
@@ -131,7 +133,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
                                                                   DETALLE_POLIZA D
                                                             WHERE C.IdPoliza      = nIdPoliza -- 36091
                                                               AND C.CodCia        = nCodCia 
-                                                              AND C.StsCobertura  = 'EMI'
+                                                              --AND C.StsCobertura  = 'EMI'
                                                               AND C.CodCia        = D.CodCia
                                                               AND C.CodEmpresa    = D.CodEmpresa
                                                               AND C.IdPoliza      = D.IdPoliza
@@ -143,7 +145,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
                                                                   DETALLE_POLIZA  D 
                                                             WHERE C.IdPoliza      = nIdPoliza --36091
                                                               AND C.CodCia        = nCodCia 
-                                                              AND C.StsCobertura  = 'EMI'
+                                                              --AND C.StsCobertura  = 'EMI'
                                                               AND C.CodCia        = D.CodCia
                                                               AND C.CodEmpresa    = D.CodEmpresa
                                                               AND C.IdPoliza      = D.IdPoliza
@@ -209,7 +211,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
                     RAISE_APPLICATION_ERROR(-20225,'Error detectado en OC_SINIESTROS_SEVICIOS_WEB.POLIZA_SINIESTRO -> '||SQLERRM); 
        END;
 
-       
+
        SELECT XMLROOT (xPrevPolSini, VERSION '1.0" encoding="UTF-8')
        INTO   xPolSini
        FROM   DUAL;
@@ -220,14 +222,14 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
     --
     FUNCTION LISTA_FLUJOS (nCodCia  IN NUMBER,  nCodEmpresa IN NUMBER)
     RETURN XMLTYPE IS
-     /*  _______________________________________________________________________________________________________________________________	
+     /*  _______________________________________________________________________________________________________________________________    
         |                                                                                                                               |
         |                                                           HISTORIA                                                            |
         | Elaboro    : J. Alberto Lopez Valle   [ JALV ]                                                                                |
         | Email      : alopez@thonaseguros.mx  / alvalle007@hotmail.com / alvalle007@gmail.com                                          |
         | Para       : THONA Seguros                                                                                                    |
         | Fecha Elab.: 17/02/2022                                                                                                       |    
-        | Nombre     : LISTADO_FLUJOS	                                                                                                |
+        | Nombre     : LISTADO_FLUJOS                                                                                                   |
         | Objetivo   : Funcion que muestra el listado de los los diferentes Flujos disponibles en Siniestros para Plataforma Digital.   |
         | Modificado : No                                                                                                               |
         | Ult. modif.: N/A                                                                                                              |
@@ -235,7 +237,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
         | Obj. Modif.: N/A                                                                                                              |
         |                                                                                                                               |
         | Parametros:                                                                                                                   |
-        |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+        |           nCodCia             Codigo de la Compañia           (Entrada)                                                       |
         |           nCodEmpresa         Codigo de Empresa               (Entrada)                                                       | 
         |_______________________________________________________________________________________________________________________________|
     */
@@ -265,9 +267,9 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
                     RAISE_APPLICATION_ERROR(-20225,'Error detectado en OC_FLUJOS_OPERACION_WEB.LISTA_FLUJOS'||SQLERRM); 
        END;
 
-       SELECT 	XMLROOT (xPrevFlujo, VERSION '1.0" encoding="UTF-8')
-       INTO		xFlujo
-       FROM 	DUAL;
+       SELECT   XMLROOT (xPrevFlujo, VERSION '1.0" encoding="UTF-8')
+       INTO     xFlujo
+       FROM     DUAL;
 
        RETURN xFlujo;
 
@@ -275,7 +277,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
 
     FUNCTION LISTA_TRAMITES (nCodCia  IN NUMBER, nCodEmpresa IN NUMBER, nIdFlujo IN NUMBER)
     RETURN XMLTYPE IS
-     /*  _______________________________________________________________________________________________________________________________	
+     /*  _______________________________________________________________________________________________________________________________    
         |                                                                                                                               |
         |                                                           HISTORIA                                                            |
         | Elaboro    : J. Alberto Lopez Valle   [ JALV ]                                                                                |
@@ -290,7 +292,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
         | Obj. Modif.: N/A                                                                                                              |
         |                                                                                                                               |
         | Parametros:                                                                                                                   |
-        |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+        |           nCodCia             Codigo de la Compañia           (Entrada)                                                       |
         |           nCodEmpresa         Codigo de Empresa               (Entrada)                                                       | 
         |_______________________________________________________________________________________________________________________________|
     */
@@ -321,9 +323,9 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
                     RAISE_APPLICATION_ERROR(-20225,'Error detectado en OC_SINIESTROS_SERVICIOS_WEB.LISTA_TRAMITES'||SQLERRM); 
        END;
 
-       SELECT 	XMLROOT (xPrevTipTramite, VERSION '1.0" encoding="UTF-8')
-       INTO		xTipTramite
-       FROM 	DUAL;
+       SELECT   XMLROOT (xPrevTipTramite, VERSION '1.0" encoding="UTF-8')
+       INTO     xTipTramite
+       FROM     DUAL;
 
        RETURN xTipTramite;
 
@@ -346,7 +348,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
         | Obj. Modif.: N/A                                                                                                              |
         |                                                                                                                               |
         | Parametros:                                                                                                                   |
-        |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+        |           nCodCia             Codigo de la Compañia           (Entrada)                                                       |
         |           nCodEmpresa         Codigo de Empresa               (Entrada)                                                       |
         |           nIdFlujo            Identificador del Flujo         (Entrada)                                                       |
         |           nIdTramite         Codigo de Tramite o Ramo         (Entrada)                                                       |
@@ -373,9 +375,9 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
                     RAISE_APPLICATION_ERROR(-20225,'Error detectado en OC_SINIESTROS_SERVICIOS_WEB.OBTIENE_FOLIO -> '||SQLERRM); 
        END;
 
-       SELECT 	XMLROOT (xPrevFolioTramite, VERSION '1.0" encoding="UTF-8')
-       INTO		xFolioTramite
-       FROM 	DUAL;
+       SELECT   XMLROOT (xPrevFolioTramite, VERSION '1.0" encoding="UTF-8')
+       INTO     xFolioTramite
+       FROM     DUAL;
 
        RETURN xFolioTramite;
 
@@ -398,7 +400,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
         | Obj. Modif.: N/A                                                                                                              |
         |                                                                                                                               |
         | Parametros:                                                                                                                   |
-        |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+        |           nCodCia             Codigo de la Compañia           (Entrada)                                                       |
         |           nCodEmpresa         Codigo de Empresa               (Entrada)                                                       |
         |           nIdPoliza           Número de Póliza                (Entrada)                                                       |
         |_______________________________________________________________________________________________________________________________|
@@ -424,9 +426,9 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
                     RAISE_APPLICATION_ERROR(-20225,'Error detectado en OC_SINIESTROS_SERVICIOS_WEB.OBTIENE_ROL -> '||SQLERRM); 
        END;
 
-       SELECT 	XMLROOT (xPrevRolSini, VERSION '1.0" encoding="UTF-8')
-       INTO		xRolSini
-       FROM 	DUAL;
+       SELECT   XMLROOT (xPrevRolSini, VERSION '1.0" encoding="UTF-8')
+       INTO     xRolSini
+       FROM     DUAL;
 
        RETURN xRolSini;
 
@@ -448,7 +450,7 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
         | Obj. Modif.: N/A                                                                                                              |
         |                                                                                                                               |
         | Parametros:                                                                                                                   |
-        |			nCodCia				Codigo de la Compañia	        (Entrada)                                                       |
+        |           nCodCia             Codigo de la Compañia           (Entrada)                                                       |
         |           nCodEmpresa         Codigo de Empresa               (Entrada)                                                       |
         |           nIdPoliza           Número de Póliza                (Entrada)                                                       |
         |_______________________________________________________________________________________________________________________________|
@@ -489,9 +491,9 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
                     RAISE_APPLICATION_ERROR(-20225,'Error detectado en OC_SINIESTROS_SERVICIOS_WEB.OBTIENE_DICTAMEN -> '||SQLERRM); 
        END;
 
-       SELECT 	XMLROOT (xPrevReporte, VERSION '1.0" encoding="UTF-8')
-       INTO		xReporte
-       FROM 	DUAL;
+       SELECT   XMLROOT (xPrevReporte, VERSION '1.0" encoding="UTF-8')
+       INTO     xReporte
+       FROM     DUAL;
 
        RETURN xReporte;
 
@@ -533,8 +535,3 @@ create or replace PACKAGE BODY          OC_SINIESTROS_SERVICIOS_WEB AS
     END OBTIENE_DIAS_GARANTIA;
     --
 END OC_SINIESTROS_SERVICIOS_WEB;
-/
-GRANT EXECUTE, DEBUG ON SICAS_OC.OC_SINIESTROS_SERVICIOS_WEB TO "PUBLIC";
-/
-CREATE OR REPLACE PUBLIC SYNONYM OC_SINIESTROS_SERVICIOS_WEB FOR SICAS_OC.OC_SINIESTROS_SERVICIOS_WEB;
-/

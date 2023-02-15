@@ -1,9 +1,3 @@
-DROP PACKAGE OC_TIPOS_TRAMITE
-/
-
---
--- OC_TIPOS_TRAMITE  (Package) 
---
 CREATE OR REPLACE PACKAGE OC_TIPOS_TRAMITE AS
 /*   _______________________________________________________________________________________________________________________________	
     |                                                                                                                               |
@@ -27,23 +21,9 @@ PROCEDURE ACTUALIZA_ESTATUS(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdFlujo N
 FUNCTION GENERA_FOLIO (nCodCia  IN NUMBER,  nCodEmpresa IN NUMBER, nIdFlujo IN NUMBER, nIdTramite IN NUMBER) RETURN VARCHAR2;
 END OC_TIPOS_TRAMITE;
 
+
 /
 
---
--- OC_TIPOS_TRAMITE  (Synonym) 
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_TIPOS_TRAMITE FOR OC_TIPOS_TRAMITE
-/
-
-
-GRANT EXECUTE ON OC_TIPOS_TRAMITE TO PUBLIC
-/
-DROP PACKAGE BODY OC_TIPOS_TRAMITE
-/
-
---
--- OC_TIPOS_TRAMITE  (Package Body) 
---
 CREATE OR REPLACE PACKAGE BODY OC_TIPOS_TRAMITE AS
 FUNCTION EXISTE_TRAMITE(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdFlujo NUMBER, nIdTramite NUMBER)
 RETURN VARCHAR2 IS
@@ -232,15 +212,3 @@ BEGIN
 END GENERA_FOLIO;
 
 END OC_TIPOS_TRAMITE;
-
-/
-
---
--- OC_TIPOS_TRAMITE  (Synonym) 
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_TIPOS_TRAMITE FOR OC_TIPOS_TRAMITE
-/
-
-
-GRANT EXECUTE ON OC_TIPOS_TRAMITE TO PUBLIC
-/
