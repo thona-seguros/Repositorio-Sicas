@@ -1,9 +1,0 @@
- CREATE OR REPLACE PROCEDURE Mesversario IS
- nCodCia     NUMBER := 1;
- nCodempresa NUMBER := 1;
-
- BEGIN
-    SICAS_OC.GT_FAI_REPORTES_PORTAL_CTRL.CHECA_MESVERSARIO (nCodCia, nCodEmpresa);
- END;
- /
- 
