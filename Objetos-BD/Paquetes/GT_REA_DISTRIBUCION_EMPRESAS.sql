@@ -1,0 +1,71 @@
+CREATE OR REPLACE PACKAGE GT_REA_DISTRIBUCION_EMPRESAS IS
+
+  FUNCTION MONTO_RESERVA(nCodCia NUMBER, nIdDistribRea NUMBER, nNumDistrib NUMBER) RETURN NUMBER;
+
+  FUNCTION MONTO_SINIESTRO(nCodCia NUMBER, nIdDistribRea NUMBER, nNumDistrib NUMBER) RETURN NUMBER;
+
+  FUNCTION POSEE_DISTRIB_EMPRESAS(nCodCia NUMBER, nIdDistribRea NUMBER, nNumDistrib NUMBER) RETURN VARCHAR2;
+
+  FUNCTION PRIMA_DISTRIBUIDA(nCodCia NUMBER, nIdDistribRea NUMBER, nNumDistrib NUMBER) RETURN NUMBER;
+
+END GT_REA_DISTRIBUCION_EMPRESAS;
+/
+
+CREATE OR REPLACE PACKAGE BODY GT_REA_DISTRIBUCION_EMPRESAS IS
+
+FUNCTION MONTO_RESERVA(nCodCia NUMBER, nIdDistribRea NUMBER, nNumDistrib NUMBER) RETURN NUMBER IS
+nMontoReserva       REA_DISTRIBUCION_EMPRESAS.MontoReserva%TYPE;
+BEGIN
+   SELECT NVL(SUM(MontoReserva),0)
+     INTO nMontoReserva
+     FROM REA_DISTRIBUCION_EMPRESAS
+    WHERE CodCia       = nCodCia
+      AND IdDistribRea = nIdDistribRea
+      AND NumDistrib   = nNumDistrib;
+   RETURN(nMontoReserva);
+END MONTO_RESERVA;
+
+FUNCTION MONTO_SINIESTRO(nCodCia NUMBER, nIdDistribRea NUMBER, nNumDistrib NUMBER) RETURN NUMBER IS
+nMtoSiniDistrib       REA_DISTRIBUCION_EMPRESAS.MtoSiniDistrib%TYPE;
+BEGIN
+   SELECT NVL(SUM(MtoSiniDistrib),0)
+     INTO nMtoSiniDistrib
+     FROM REA_DISTRIBUCION_EMPRESAS
+    WHERE CodCia       = nCodCia
+      AND IdDistribRea = nIdDistribRea
+      AND NumDistrib   = nNumDistrib;
+   RETURN(nMtoSiniDistrib);
+END MONTO_SINIESTRO;
+
+FUNCTION POSEE_DISTRIB_EMPRESAS(nCodCia NUMBER, nIdDistribRea NUMBER, nNumDistrib NUMBER) RETURN VARCHAR2 IS
+cExiste    VARCHAR2(1);
+BEGIN
+   BEGIN
+      SELECT 'S'
+        INTO cExiste
+        FROM REA_DISTRIBUCION_EMPRESAS
+       WHERE CodCia       = nCodCia
+         AND IdDistribRea = nIdDistribRea
+         AND NumDistrib   = nNumDistrib;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cExiste  := 'N';
+      WHEN TOO_MANY_ROWS THEN
+         cExiste  := 'S';
+   END;
+   RETURN(cExiste);
+END POSEE_DISTRIB_EMPRESAS;
+
+FUNCTION PRIMA_DISTRIBUIDA(nCodCia NUMBER, nIdDistribRea NUMBER, nNumDistrib NUMBER) RETURN NUMBER IS
+nPrimaDistrib       REA_DISTRIBUCION_EMPRESAS.PrimaDistrib%TYPE;
+BEGIN
+   SELECT NVL(SUM(PrimaDistrib),0)
+     INTO nPrimaDistrib
+     FROM REA_DISTRIBUCION_EMPRESAS
+    WHERE CodCia       = nCodCia
+      AND IdDistribRea = nIdDistribRea
+      AND NumDistrib   = nNumDistrib;
+   RETURN(nPrimaDistrib);
+END PRIMA_DISTRIBUIDA;
+
+END GT_REA_DISTRIBUCION_EMPRESAS;
