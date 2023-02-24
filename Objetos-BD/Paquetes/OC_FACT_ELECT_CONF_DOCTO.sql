@@ -140,42 +140,43 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
              ORDER BY OrdenIdent;
 
         CURSOR Q_DetCpto IS
-            SELECT CodCpto, Monto_Det_Local, Saldo_Det_Moneda,
-                   MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL
-                   --Orden_Impresion
-              FROM (
-                    SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
-                           SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
-                           --CC.Orden_Impresion
-                      FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
-                                               INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
-                                               INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
-                                                                                  AND DP.IDETPOL    = F.IDETPOL
-                                                                                  AND DP.CODCIA     = F.CODCIA
-                                                LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
-                                                                                  AND CS.CODCPTO    = DF.CODCPTO
-                                                                                  AND CS.IDTIPOSEG  = DP.IDTIPOSEG
-                                                                                  AND CS.PLANCOB    = DP.PLANCOB
-                     WHERE DF.IdFactura                 = nIdFactura
-                       AND NVL(CC.IndEsImpuesto,'N') = 'N'
-                       AND DF.MONTO_DET_MONEDA > 0
-                       AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
-                                                                                 WHERE S.CODCIA     = DP.CODCIA
-                                                                                   AND S.CODCPTO    = DF.CODCPTO
-                                                                                   AND S.IDTIPOSEG  = DP.IDTIPOSEG
-                                                                                   AND S.PLANCOB     = DP.PLANCOB ), 'X')
-                     GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL),
-                              CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
-                     UNION ALL
-                    SELECT NULL RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
-                           SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
-                           --CC.Orden_Impresion
-                      FROM DETALLE_NOTAS_DE_CREDITO DN,CATALOGO_DE_CONCEPTOS CC
-                     WHERE IdNcr                     = nIdNcr
-                       AND NVL(CC.IndEsImpuesto,'N') = 'N'
-                       AND DN.CodCpto                = CC.CodConcepto
-                     GROUP BY CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
-                   )
+            SELECT CodCpto, SUM(Monto_Det_Local) Monto_Det_Local, SUM(Saldo_Det_Moneda) Saldo_Det_Moneda, 
+	                       MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
+	                       --Orden_Impresion
+	                  FROM (
+	                        SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
+	                               SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
+	                               --CC.Orden_Impresion
+	                          FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
+	                                                   INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
+	                                                   INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
+	                                                                                      AND DP.IDETPOL    = F.IDETPOL
+	                                                                                      AND DP.CODCIA     = F.CODCIA
+	                                                    LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
+	                                                                                      AND CS.CODCPTO    = DF.CODCPTO
+	                                                                                      AND CS.IDTIPOSEG  = DP.IDTIPOSEG
+	                                                                                      AND CS.PLANCOB    = DP.PLANCOB
+	                         WHERE DF.IdFactura                 = nIdFactura                         
+	                           AND NVL(CC.IndEsImpuesto,'N') = 'N'
+	                           AND DF.MONTO_DET_MONEDA > 0
+	                           AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
+	                                                                                     WHERE S.CODCIA     = DP.CODCIA
+	                                                                                       AND S.CODCPTO    = DF.CODCPTO
+	                                                                                       AND S.IDTIPOSEG  = DP.IDTIPOSEG
+	                                                                                       AND S.PLANCOB     = DP.PLANCOB ), 'X')
+	                         GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL),
+	                                  CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
+	                         UNION ALL
+	                        SELECT NULL RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
+	                               SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
+	                               --CC.Orden_Impresion
+	                          FROM DETALLE_NOTAS_DE_CREDITO DN,CATALOGO_DE_CONCEPTOS CC
+	                         WHERE IdNcr                     = nIdNcr
+	                           AND NVL(CC.IndEsImpuesto,'N') = 'N'
+	                           AND DN.CodCpto                = CC.CodConcepto
+	                         GROUP BY CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
+	                       )
+	                 GROUP BY  CodCpto, MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
              ORDER BY NVL(Monto_Det_Local,0) DESC;
 
        CURSOR Q_Impto IS

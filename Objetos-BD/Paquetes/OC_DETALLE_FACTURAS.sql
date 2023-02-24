@@ -674,7 +674,8 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
                                                                        AND S.CODCPTO    = DF.CODCPTO
                                                                        AND S.IDTIPOSEG  = DP.IDTIPOSEG
                                                                        AND S.PLANCOB     = DP.PLANCOB ), 'X')
-              AND NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')) = NVL(cCodTipoPlan, NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')));
+              AND DECODE(cCodTipoPlan, NULL, NVL(CS.IDRAMOREAL, 'X'),  CC.CODTIPOPLAN) = DECODE(cCodTipoPlan, NULL, NVL(CS.IDRAMOREAL, NVL(CC.CODTIPOPLAN, 'X')), CC.CODTIPOPLAN); --CAPELE                                                                       
+              --AND NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')) = NVL(cCodTipoPlan, NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')));
 
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
@@ -706,7 +707,31 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
                                                                        AND S.CODCPTO    = DF.CODCPTO
                                                                        AND S.IDTIPOSEG  = DP.IDTIPOSEG
                                                                        AND S.PLANCOB     = DP.PLANCOB ), 'X')
-          AND NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')) = NVL(cCodTipoPlan, NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')));
+          AND DECODE(cCodTipoPlan, NULL, NVL(CS.IDRAMOREAL, 'X'),  CC.CODTIPOPLAN) = DECODE(cCodTipoPlan, NULL, NVL(CS.IDRAMOREAL, NVL(CC.CODTIPOPLAN, 'X')), CC.CODTIPOPLAN); --CAPELE
+          --AND NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')) = NVL(cCodTipoPlan, NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')));
+
+        --CAPELE
+        IF nMonto_Det_Moneda = 0 THEN
+          SELECT NVL(SUM(Monto_Det_Moneda),0)
+             INTO nMonto_Det_Moneda
+             FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
+                                      INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
+                                      INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
+                                                                         AND DP.IDETPOL    = F.IDETPOL
+                                                                         AND DP.CODCIA     = F.CODCIA
+                                       LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
+                                                                         AND CS.CODCPTO    = DF.CODCPTO
+                                                                         AND CS.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                         AND CS.PLANCOB    = DP.PLANCOB
+            WHERE F.IdFactura                = nIdFactura
+              AND CC.CodCptoPrimasFactElect  = cCodCpto
+              AND nMonto_Det_Moneda = 0
+              AND CC.CodCptoPrimasFactElect IN (SELECT CodCptoImpto
+                                                  FROM FACT_ELECT_CONF_DOCTO
+                                                 WHERE CodCia            = 1
+                                                   AND IndImpuesto       = 'S');           
+        END IF;
+        --CAPELE
 
        RETURN(nMonto_Det_Moneda);
     END MONTO_CONCEPTO_FACT_ELECT;
