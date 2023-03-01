@@ -4,6 +4,8 @@ CREATE OR REPLACE PACKAGE          OC_FACTURAR IS
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
 -- SE MODIFICO PARA CORREGIR INCIDENCIA DE POLIZA PAQUETE COLECTIVOS         2022/03/17  JMMD
 -- AJUSTE POR MANEJO DE DOLARES                                              2022/06/30  ICO 
+-- SE COMENTA LA LINEA AND Porc_Com_Proporcional   > 0 EN TODOOS LOS         2022/02/24  MLJS
+--PROCEDIMIETOS DONDE SE OBTIENEN LAS COMISIONES 
    PROCEDURE PROC_EMITE_FACTURAS (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_POL (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_END (nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER,nTransa NUMBER);
@@ -4372,7 +4374,7 @@ CURSOR C_AGENTES_D IS
    WHERE IdPoliza                = nIdPoliza
      AND IDetPol                 = nIdetPol
      AND Cod_Agente              = nCod_Agente
-     AND Porc_Com_Proporcional   > 0
+     --AND Porc_Com_Proporcional   > 0  --MLJS 24/02/2023
      --AND Porc_Com_Distribuida    > 0  --MLJS 20/05/2022
      ;
 BEGIN
@@ -4581,7 +4583,7 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
    WHERE IdPoliza                = nIdPoliza
      AND IDetPol                 = nIdetPol
      AND Cod_Agente              = nCod_Agente
-     AND Porc_Com_Proporcional   > 0
+     --AND Porc_Com_Proporcional   > 0       --MLJS 24/02/2023
      --AND Porc_Com_Distribuida    > 0       --MLJS 20/05/2022
      ;
 BEGIN
@@ -4723,7 +4725,7 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
    WHERE IdPoliza                = nIdPoliza
      AND IDetPol                 = nIdetPol
      AND Cod_Agente              = nCod_Agente
-     AND Porc_Com_Proporcional   > 0
+     --AND Porc_Com_Proporcional   > 0
      --AND Porc_Com_Distribuida    > 0    --MLJS 20/05/2022
      ;
 BEGIN
@@ -8002,7 +8004,7 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
    WHERE IdPoliza                = nIdPoliza
      AND IDetPol                 = nIdetPol
      AND Cod_Agente              = nCod_Agente
-     AND Porc_Com_Proporcional   > 0
+    -- AND Porc_Com_Proporcional   > 0      ---MLJS 24/02/2022
     -- AND Porc_Com_Distribuida    > 0      ---MLJS 20/05/2022
     ;
 
