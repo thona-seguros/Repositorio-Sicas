@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_DETALLE_FACTURAS IS
+create or replace PACKAGE OC_DETALLE_FACTURAS IS
 --
 -- CONTROL DE CAMBIOS
 --
@@ -47,14 +47,12 @@ FUNCTION MONTO_CONCEPTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2, cCodTip
 FUNCTION MONTO_PRIMA_COMPLEMENTARIA(nIdFactura NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
 
 END OC_DETALLE_FACTURAS;
-
 /
-
-CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
---
+create or replace PACKAGE BODY          OC_DETALLE_FACTURAS IS
+-- 
 -- CONTROL DE CAMBIOS
 --
--- HOMOLOGACION VIFLEX                                     JMMD     01/03/2022
+-- HOMOLOGACION VIFLEX                                     JMMD     01/03/2022 
 -- ERRROR DE BMI                                           JICO BMI 01/06/2022
 --
     PROCEDURE PAGO_ABONO_DETALLE(nIdFactura NUMBER, nPagoM NUMBER, nPagoL NUMBER,nIdRecibo NUMBER) IS
@@ -126,7 +124,6 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
                        nMtoPagoLocal NUMBER, nMtoPagoMoneda NUMBER) IS
         nCodCia FACTURAS.CodCia%TYPE;
     BEGIN
-
        BEGIN
           INSERT INTO DETALLE_FACTURAS
                  (IdFactura, CodCpto, Monto_Det_Local, Monto_Det_Moneda,
@@ -284,7 +281,7 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
         WHERE CodCia        = nCodCia
           AND CodConcepto   = cCodCpto;
     BEGIN
-       FOR X IN CPTO_Q LOOP
+      FOR X IN CPTO_Q LOOP
           IF X.IndRedondeo = 'S' THEN
              nMtoDetLocal  := ROUND(nMtoPagoLocal,0);
              nMtoDetMoneda := ROUND(nMtoPagoMoneda,0);
@@ -650,6 +647,7 @@ CREATE OR REPLACE PACKAGE BODY OC_DETALLE_FACTURAS IS
             END IF;
         END IF;
     END GENERA_IMPUESTO_FACT_ELECT;
+
 
     FUNCTION MONTO_IMPUESTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2, cCodTipoPlan VARCHAR2 := NULL) RETURN NUMBER IS
         nMtoImptoFactElect DETALLE_FACTURAS.MtoImptoFactElect%TYPE;

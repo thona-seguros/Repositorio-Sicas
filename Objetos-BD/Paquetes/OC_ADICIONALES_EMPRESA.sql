@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_ADICIONALES_EMPRESA IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ADICIONALES_EMPRESA IS
 /*   _______________________________________________________________________________________________________________________________
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
@@ -57,11 +57,19 @@ CREATE OR REPLACE PACKAGE          OC_ADICIONALES_EMPRESA IS
 
   FUNCTION RUTA_FIRMA_CBA(nCodCia NUMBER) RETURN VARCHAR2;
 
+  FUNCTION VERSION_FACTURACION(nCodCia NUMBER) RETURN VARCHAR2;
+
 END OC_ADICIONALES_EMPRESA;
 
 /
 
-CREATE OR REPLACE PACKAGE BODY          OC_ADICIONALES_EMPRESA IS
+--
+-- OC_ADICIONALES_EMPRESA  (Package Body) 
+--
+--  Dependencies: 
+--   OC_ADICIONALES_EMPRESA (Package)
+--
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_ADICIONALES_EMPRESA IS
 --
 -- BITACORA DE CAMBIO
 -- SE AGREGO LA FUNCIONALIDA DE LARGO PLAZO                              JICO 10/04/2019  LARPLA
@@ -376,4 +384,35 @@ BEGIN
    RETURN(cPath_Firma_CBA);
 END RUTA_FIRMA_CBA;
 
+FUNCTION VERSION_FACTURACION(nCodCia NUMBER) RETURN VARCHAR2 IS
+cVersionFact   ADICIONALES_EMPRESA.VersionFact%TYPE;
+BEGIN
+   BEGIN
+      SELECT A.VersionFact
+        INTO cVersionFact
+        FROM ADICIONALES_EMPRESA A
+       WHERE nCodCia       = nCodCia
+         AND Correlativo  IN (SELECT MAX(Correlativo)
+                                FROM ADICIONALES_EMPRESA
+                               WHERE CodCia  = nCodCia);
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20225,'NO Existe la Configuración de Parámetros Adicionales de la Empresa: '|| nCodCia);
+   END;
+   RETURN cVersionFact;
+END VERSION_FACTURACION;
 END OC_ADICIONALES_EMPRESA;
+/
+
+--
+-- OC_ADICIONALES_EMPRESA  (Synonym) 
+--
+--  Dependencies: 
+--   OC_ADICIONALES_EMPRESA (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_ADICIONALES_EMPRESA FOR SICAS_OC.OC_ADICIONALES_EMPRESA
+/
+
+
+GRANT EXECUTE ON SICAS_OC.OC_ADICIONALES_EMPRESA TO PUBLIC
+/

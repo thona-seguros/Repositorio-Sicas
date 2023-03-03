@@ -1,0 +1,5 @@
+ALTER TABLE ADICIONALES_EMPRESA ADD(
+VersionFact    VARCHAR2(10) 
+)
+/
+COMMENT ON COLUMN ADICIONALES_EMPRESA.VersionFact IS 'Versión Facturación Electrónica'

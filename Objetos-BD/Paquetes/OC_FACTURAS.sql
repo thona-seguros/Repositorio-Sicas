@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_FACTURAS IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
 
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                        dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER);
@@ -84,12 +84,13 @@ CREATE OR REPLACE PACKAGE          OC_FACTURAS IS
                                         PIDFACTURA  NUMBER) RETURN VARCHAR2;
     --    
     FUNCTION FACTURA_RELACIONADA(P_CODCIA     NUMBER,                                       
-                                 PIDFACTURA   NUMBER) RETURN NUMBER;         
+                                 PIDFACTURA   NUMBER) RETURN NUMBER;      
     --
+    FUNCTION MONTO_BASE_IMPUESTO( nCodCia     NUMBER
+                                , nIdFactura  NUMBER ) RETURN NUMBER;
 END OC_FACTURAS;
-
 /
-create or replace PACKAGE BODY          OC_FACTURAS IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
     --
     -- MODIFICACIONES
     -- INSERCION DE FECHAS A COMISIONES                                       2018/03/06  ICO COMI
@@ -3868,4 +3869,28 @@ create or replace PACKAGE BODY          OC_FACTURAS IS
         RETURN NULL;                           
     END FACTURA_RELACIONADA;
     --
+
+FUNCTION MONTO_BASE_IMPUESTO(nCodCia NUMBER, nIdFactura  NUMBER) RETURN NUMBER IS
+nMontoBase  NUMBER(28,2);   
+BEGIN
+   SELECT SUM(Monto_Det_Moneda)
+     INTO nMontoBase
+     FROM DETALLE_FACTURAS
+    WHERE IdFactura  = nIdFactura
+      AND OC_CATALOGO_DE_CONCEPTOS.INDICADOR_CONCEPTO(nCodCia, CodCpto, 'IMPUESTO') != 'S';
+   RETURN nMontoBase;
+END MONTO_BASE_IMPUESTO;
 END OC_FACTURAS;
+/
+
+--
+-- OC_FACTURAS  (Synonym) 
+--
+--  Dependencies: 
+--   OC_FACTURAS (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_FACTURAS FOR SICAS_OC.OC_FACTURAS
+/
+
+GRANT EXECUTE ON SICAS_OC.OC_FACTURAS TO PUBLIC
+/

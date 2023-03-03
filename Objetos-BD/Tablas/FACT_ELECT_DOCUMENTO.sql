@@ -1,0 +1,85 @@
+DROP TABLE FACT_ELECT_DOCUMENTO CASCADE CONSTRAINT;
+
+CREATE TABLE FACT_ELECT_DOCUMENTO 
+(CodCia           NUMBER(14)     NOT NULL,
+ IdDocumento      NUMBER(28)     NOT NULL, 
+ NumOrdenDoc      NUMBER(14)     NOT NULL,
+ IdFactura        NUMBER(14),
+ IdNcr            NUMBER(14),
+ Linea            VARCHAR2(4000) NOT NULL,
+ CodIdentificador VARCHAR2(20)   NOT NULL,
+ CodProceso       VARCHAR2(4)    NOT NULL,   
+ IndGenera        VARCHAR2(1)
+)
+TABLESPACE TS_SICASOC
+RESULT_CACHE (MODE DEFAULT)
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+            FLASH_CACHE      DEFAULT
+            CELL_FLASH_CACHE DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING;
+/
+
+COMMENT ON COLUMN SICAS_OC.FACT_ELECT_DOCUMENTO.CodCia IS 'Código De La Compañía';
+
+COMMENT ON COLUMN SICAS_OC.FACT_ELECT_DOCUMENTO.IdDocumento IS 'Id del Documento Generado';
+
+COMMENT ON COLUMN SICAS_OC.FACT_ELECT_DOCUMENTO.NumOrdenDoc IS 'Orden de la línea dentro del documento';
+
+COMMENT ON COLUMN SICAS_OC.FACT_ELECT_DOCUMENTO.IdFactura IS 'Número de Factura que corresponde al documento';
+
+COMMENT ON COLUMN SICAS_OC.FACT_ELECT_DOCUMENTO.IdNcr IS 'Número de Nota de Credito que corresponde al documento';
+
+COMMENT ON COLUMN SICAS_OC.FACT_ELECT_DOCUMENTO.Linea IS 'Linea generada';
+
+COMMENT ON COLUMN SICAS_OC.FACT_ELECT_DOCUMENTO.CodIdentificador IS 'Identificador de Línea';
+
+COMMENT ON COLUMN SICAS_OC.FACT_ELECT_DOCUMENTO.CodProceso IS 'Código del proceso al que corresponde la línea';
+
+COMMENT ON COLUMN SICAS_OC.FACT_ELECT_DOCUMENTO.IndGenera IS 'Indica si la linea debe agregarse al documento';
+
+CREATE UNIQUE INDEX SICAS_OC.P_DOCUMENTO ON SICAS_OC.FACT_ELECT_DOCUMENTO
+(CodCia, IdDocumento, NumOrdenDoc)
+LOGGING
+TABLESPACE IDX_SICASOC
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+            FLASH_CACHE      DEFAULT
+            CELL_FLASH_CACHE DEFAULT
+           )
+NOPARALLEL;
+
+
+ALTER TABLE SICAS_OC.FACT_ELECT_DOCUMENTO ADD (
+  CONSTRAINT P_DOCUMENTO
+  PRIMARY KEY
+  (CodCia, IdDocumento, NumOrdenDoc)
+  USING INDEX SICAS_OC.P_DOCUMENTO
+  ENABLE VALIDATE);
+
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON SICAS_OC.FACT_ELECT_DOCUMENTO TO PUBLIC;
+
+CREATE OR REPLACE PUBLIC SYNONYM FACT_ELECT_DOCUMENTO FOR SICAS_OC.FACT_ELECT_DOCUMENTO;
