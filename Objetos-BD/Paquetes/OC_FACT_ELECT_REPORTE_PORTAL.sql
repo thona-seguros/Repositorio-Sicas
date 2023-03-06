@@ -197,9 +197,15 @@ CREATE OR REPLACE PACKAGE BODY          OC_FACT_ELECT_REPORTE_PORTAL AS
         cStrTxt         VARCHAR2(30000);
         cRespWS         VARCHAR2(100);
         cWSDLPortal     PARAMETROS_GLOBALES.Descripcion%TYPE;
+        cDoctoEncoded   CLOB;
     BEGIN
         cWSDLPortal := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'033');
-        cSoapRequest :=
+        
+        cDoctoEncoded := UTL_RAW.CAST_TO_VARCHAR2(UTL_ENCODE.BASE64_ENCODE(UTL_RAW.CAST_TO_RAW(cInsertWS)));
+        
+        cSoapRequest := 'insert_b64='||cDoctoEncoded;
+        
+        /*  --       JACF        SE COMENTA LA ESTRUCTURA ANTERIOR TEMPORALMENTE EN LO QUE SE SOLUCIONA EL TEMA DEL CERTIFICADO
         '<?xml version="1.0" encoding="utf-8"?>
          <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
           <soap12:Header>
@@ -216,10 +222,12 @@ CREATE OR REPLACE PACKAGE BODY          OC_FACT_ELECT_REPORTE_PORTAL AS
             </InsertsFromString>
           </soap12:Body>
         </soap12:Envelope>';
+        */
 
         eHttpReq := UTL_HTTP.BEGIN_REQUEST (cWSDLPortal, 'POST', 'HTTP/1.1');
-        UTL_HTTP.SET_BODY_CHARSET (eHttpReq, 'UTF8');
-        UTL_HTTP.SET_HEADER (eHttpReq, 'Content-Type', 'text/xml');
+        --UTL_HTTP.SET_BODY_CHARSET (eHttpReq, 'UTF8');  --   JACF     SE COMENTA TEMPORALMENTE EN LO QUE SE SOLUCIONA EL TEMA DEL CERTIFICADO
+        --UTL_HTTP.SET_HEADER (eHttpReq, 'Content-Type', 'text/xml');  -- JACF    SE COMENTA POR EL TEMA DE CERTIFICADO
+        UTL_HTTP.SET_HEADER (eHttpReq, 'Content-Type', 'application/x-www-form-urlencoded');
         BreqLength := DBMS_LOB.GETLENGTH(cSoapRequest);
 
         UTL_HTTP.SET_HEADER (eHttpReq, 'Content-Length', BreqLength);
