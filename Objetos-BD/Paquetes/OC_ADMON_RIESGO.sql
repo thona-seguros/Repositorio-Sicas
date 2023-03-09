@@ -1,5 +1,11 @@
 CREATE OR REPLACE PACKAGE OC_ADMON_RIESGO IS
--- CAMBIO JMMD 20200709 SE QUITA LA VALIDACION DE -SI ES AGENTE-
+--
+-- BITACORA DE CAMBIOS7
+--
+-- CAMBIO SE QUITA LA VALIDACION DE -SI ES AGENTE-         JMMD   20200709
+-- CAMBIO REGISTROS CNSF                                   ICO    20221228
+-- CAMBIO PLD ALERTAS SE COLOCA FUNCION DE ENVIO DE CORREO ICO    07/03/2023 ALERTA
+--
 PROCEDURE VALIDA(P_CODCIA                  NUMBER,
                  P_CODEMPRESA              NUMBER,
                  P_ID_PROCESO              NUMBER,
@@ -41,9 +47,7 @@ PROCEDURE VALIDA_PERSONAS_LARGO_PLAZO(P_IDPOLIZA   NUMBER,
 FUNCTION POLIZA_BLOQUEADA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER) RETURN VARCHAR2;
 
 END OC_ADMON_RIESGO;
-
 /
-
 CREATE OR REPLACE PACKAGE BODY OC_ADMON_RIESGO IS
 --
 -- BITACORA DE CAMBIO
@@ -71,6 +75,11 @@ P_TP_RESOLUCION   ADMON_RIESGO.TP_RESOLUCION%TYPE := '';
 W_MENSAJE         VARCHAR2(300);
 CCODACTIVIDAD     PERSONA_NATURAL_JURIDICA.CODACTIVIDAD%TYPE;
 P_IDTIPOSEG       TIPOS_DE_SEGUROS.IDTIPOSEG%TYPE;
+CCODPAIS          PAIS.CODPAIS%TYPE;
+CNOMPAIS          PAIS.DESCPAIS%TYPE;
+CCODESTADO        DISTRITO.CODESTADO%TYPE;
+CCODCIUDAD        DISTRITO.CODCIUDAD%TYPE;
+CNOMCIUDAD        DISTRITO.DESCCIUDAD%TYPE;
 --
 BEGIN
   --
@@ -83,6 +92,28 @@ BEGIN
      WHERE D.IDPOLIZA = P_IDPOLIZA
        AND D.CODCIA   = P_CODCIA
        AND D.IDETPOL  = 1;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+         NULL;
+    WHEN OTHERS THEN
+         NULL;
+  END;
+  --
+  BEGIN
+    SELECT PNJ.CODPAISRES,
+           OC_PAIS.NOMBRE_PAIS(PNJ.CODPAISRES) NOM_PAIS,
+           PNJ.CODPROVRES,
+           PNJ.CODDISTRES,
+           OC_DISTRITO.NOMBRE_DISTRITO(PNJ.CODPAISRES,PNJ.CODPROVRES,PNJ.CODDISTRES) NOM_CIUDAD
+      INTO CCODPAIS, 
+           CNOMPAIS,
+           CCODESTADO,
+           CCODCIUDAD,
+           CNOMCIUDAD 
+      FROM PERSONA_NATURAL_JURIDICA PNJ,
+           PAIS P
+     WHERE PNJ.TIPO_DOC_IDENTIFICACION = P_TIPO_DOC_IDENTIFICACION
+       AND PNJ.NUM_DOC_IDENTIFICACION  = P_NUM_DOC_IDENTIFICACION;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
          NULL;
@@ -207,6 +238,25 @@ BEGIN
      W_MENSAJE := '!! ALERTA !!   LA PERSONA ESTA EN QUIEN ES QUIEN  - ENVIADO A AUTORIZACION ';
   END IF;
   --
+  -- VALIDA SI ES DE UNA LISTA DE LA CNSF
+  --
+  IF OC_PLD_LISTAS_CNSF.ES_LISTA_CNSF(P_TIPO_DOC_IDENTIFICACION,P_NUM_DOC_IDENTIFICACION) = 'S' THEN
+     OC_ADMON_RIESGO.INSERTA(P_CODCIA,
+                             P_CODEMPRESA,
+                             P_ID_PROCESO,
+                             P_IDPOLIZA,
+                             P_CLIENTE,
+                             P_ASEGURADO,
+                             'LCNSF',
+                             P_ST_RESOLUCION,
+                             P_TIPO_DOC_IDENTIFICACION,
+                             P_NUM_DOC_IDENTIFICACION,
+                             P_TP_RESOLUCION,
+                             P_OBSERVACIONES
+                            );
+     W_MENSAJE := '!! ALERTA !!   LA PERSONA ESTA EN UNA LISTA NEGRA DE LA CNSF - ENVIADO A AUTORIZACION ';
+  END IF;
+  --
   -- VALIDA SI ES TIPO DE SEGURO SE ALTO RIESGO
   --
   IF OC_TIPOS_DE_SEGUROS.ES_PRODUCTO_ALTO(P_IDTIPOSEG) = 'S' THEN
@@ -225,6 +275,62 @@ BEGIN
                             );
      W_MENSAJE := '!! ALERTA !!   EL PRODUCTO ES DE ALTO RIESGO - ENVIADO A AUTORIZACION ';
   END IF;
+   --
+   -- VALIDA SI ES PAIS DE ALTO RIESGO  SOLO REGISTRA
+   --
+   IF OC_PAIS.ES_PAIS_ALTO_RIESGO(CCODPAIS) = 'S' THEN
+              OC_ADMON_ACTIVI.INSERTA(P_CODCIA,       -- P_CODCIA          NUMBER,
+                                P_ID_PROCESO,         -- P_ID_PROCESO      NUMBER,
+                                P_IDPOLIZA,           -- P_IDPOLIZA        NUMBER,
+                                0,                    -- P_IDETPOL         NUMBER,
+                                'PAIS',               -- P_TP_PERSONA      VARCHAR2,
+                                'PAIS',               -- P_ORIGEN          VARCHAR2,
+                                P_CLIENTE,            -- P_CODCLIENTE      NUMBER,
+                                P_ASEGURADO,          -- P_CODASEGURADO    NUMBER,
+                                0,                    -- P_IDFACTURA       NUMBER,
+                                '',                   -- P_IDTIPOSEG       VARCHAR,
+                                '',                   -- P_COD_MONEDA      VARCHAR2,
+                                '',                   -- P_FORMPAGO        VARCHAR2,
+                                '',                   -- P_TIPO_PERSONA    VARCHAR2,
+                                '',                   -- P_CODACTIVIDAD    VARCHAR2,
+                                '',                   -- P_ASEGURADOS_EMI  NUMBER,
+                                '',                   -- P_ASEGURADOS_END  NUMBER,
+                                '',                   -- P_SUMAASEG_EMI    NUMBER,
+                                '',                   -- P_SUMAASEG_END    NUMBER
+                                'EL ASEGURADO O BENEFICIARIO ES DE UN PAIS DE ALTO RIESGO, '||CCODPAIS||' = '||CNOMPAIS,    -- P_OBSERVACIONES   VARCHAR2,
+                                '',                   -- P_IDENDOSO        NUMBER,    
+                                P_TIPO_DOC_IDENTIFICACION, -- P_TIPO_DOC_IDENTIFICACION VARCHAR2,    
+                                P_NUM_DOC_IDENTIFICACION   -- P_NUM_DOC_IDENTIFICACION	VARCHAR2	     
+                               );      
+   END IF;
+   --
+   -- VALIDA SI ES CIUDAD DE ALTO RIESGO  SOLO REGISTRA
+   --  
+   IF OC_DISTRITO.ES_CIUDAD_ALTO_RIESGO(CCODPAIS, CCODESTADO, CCODCIUDAD) = 'S' THEN
+              OC_ADMON_ACTIVI.INSERTA(P_CODCIA,       -- P_CODCIA          NUMBER,
+                                P_ID_PROCESO,         -- P_ID_PROCESO      NUMBER,
+                                P_IDPOLIZA,           -- P_IDPOLIZA        NUMBER,
+                                0,                    -- P_IDETPOL         NUMBER,
+                                'CIUDAD',             -- P_TP_PERSONA      VARCHAR2,
+                                'CIUDAD',             -- P_ORIGEN          VARCHAR2,
+                                P_CLIENTE,            -- P_CODCLIENTE      NUMBER,
+                                P_ASEGURADO,          -- P_CODASEGURADO    NUMBER,
+                                0,                    -- P_IDFACTURA       NUMBER,
+                                '',                   -- P_IDTIPOSEG       VARCHAR,
+                                '',                   -- P_COD_MONEDA      VARCHAR2,
+                                '',                   -- P_FORMPAGO        VARCHAR2,
+                                '',                   -- P_TIPO_PERSONA    VARCHAR2,
+                                '',                   -- P_CODACTIVIDAD    VARCHAR2,
+                                '',                   -- P_ASEGURADOS_EMI  NUMBER,
+                                '',                   -- P_ASEGURADOS_END  NUMBER,
+                                '',                   -- P_SUMAASEG_EMI    NUMBER,
+                                '',                   -- P_SUMAASEG_END    NUMBER
+                                'EL ASEGURADO O BENEFICIARIO ES DE UNA CIUDAD DE ALTO RIESGO, '||CCODCIUDAD||' = '||CNOMCIUDAD,    -- P_OBSERVACIONES   VARCHAR2,
+                                '',                   -- P_IDENDOSO        NUMBER,    
+                                P_TIPO_DOC_IDENTIFICACION, -- P_TIPO_DOC_IDENTIFICACION VARCHAR2,    
+                                P_NUM_DOC_IDENTIFICACION   -- P_NUM_DOC_IDENTIFICACION	VARCHAR2	     
+                               );      
+   END IF;
   --
   -- CAMBIO ST DE POLIZAS
   --
@@ -275,8 +381,9 @@ PROCEDURE INSERTA(P_CODCIA                  NUMBER,
                   P_TP_RESOLUCION           VARCHAR2,
                   P_OBSERVACIONES           VARCHAR2) IS
 --
- W_NOMBRE ADMON_RIESGO.NOMBRE%TYPE;
- W_USUARIO VARCHAR2(15);
+ W_NOMBRE     ADMON_RIESGO.NOMBRE%TYPE;
+ W_USUARIO    VARCHAR2(15);
+ W_ERRORENVIO VARCHAR2(2000);
 --
 BEGIN
   --
@@ -323,6 +430,14 @@ BEGIN
                             P_ST_RESOLUCION,
                             P_TP_RESOLUCION);
 
+  -- ALERTA
+  ENVIA_CORREO_REPORTE_PLD('EMISION', --PORIGEN
+                           0,         --PIDSINIESTRO
+                           P_IDPOLIZA,
+                           P_ASEGURADO,
+                           P_ORIGEN,
+                           0,
+                           W_ERRORENVIO);
   --
 END INSERTA;
 --
@@ -573,3 +688,4 @@ BEGIN
 END POLIZA_BLOQUEADA;
 
 END OC_ADMON_RIESGO;
+/

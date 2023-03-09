@@ -1,6 +1,10 @@
-CREATE OR REPLACE PACKAGE          OC_PROCESOS_MASIVOS IS
------- SE INCLUYEN VALIDACIONES PARA PROVEEDORES SAT Y QEQ (PLD)  JMMD  20200406
-------  24/06/2020  Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPérez)     -- JMMD SAT y PLD 20200624
+CREATE OR REPLACE PACKAGE OC_PROCESOS_MASIVOS IS
+-- MODIFICACION
+-- 01/10/2019 Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)        -- JMMD SAT y PLD 20200406
+-- 24/06/2020 Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPérez) -- JMMD SAT y PLD 20200624
+-- 16/01/2023 SE AGREGA RUTINA PARA EL MANEJO DE LA ACTUALIZACION DE ASEGURADOS                   -- JICO ASEGVAL 20220410
+-- 2023/03/07 SE AGREGO CAMPO DE BENEFICIARIO A INSERT  ALERTA
+-- 
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 PROCEDURE ACTUALIZA_STATUS(nIdProcMasivo NUMBER, cStsRegProceso VARCHAR2);
 PROCEDURE EMISION(nIdProcMasivo NUMBER);
@@ -12,14 +16,13 @@ PROCEDURE INSERT_DINAMICO(cCodPlantilla VARCHAR2, cTabla VARCHAR2, nOrdenProceso
 FUNCTION VALOR_CAMPO(cCadena VARCHAR2, nIndice NUMBER, cDelim VARCHAR2) RETURN VARCHAR2;
 FUNCTION INSERTA_VALOR_CAMPO(cCadena  VARCHAR2, nIndice NUMBER, cDelim VARCHAR2, cValor VARCHAR2) RETURN VARCHAR2;
 FUNCTION VALOR_POSICION (cCodPlantilla VARCHAR2, nCodEmpresa NUMBER, nCodCia NUMBER, cOrdenProceso NUMBER) RETURN NUMBER;
---FUNCTION INSERTA_ASEG_BENEF(nIdSiniestro NUMBER, nIdPoliza NUMBER, nCod_Asegurado NUMBER, nIdProcMasivo NUMBER, cNumSiniRef VARCHAR2) RETURN NUMBER;
 PROCEDURE EMISION_COLECTIVA(nIdProcMasivo NUMBER);
 PROCEDURE CANCELACION(nIdProcMasivo NUMBER);
 PROCEDURE COBRANZA(nIdProcMasivo NUMBER);
 PROCEDURE VENTA_TARJETA(nIdProcMasivo NUMBER);
 PROCEDURE EMISION_TARJETA(nIdProcMasivo NUMBER);
 PROCEDURE INSERTA_PROCESO_MASIVO_PROC(nIdProcMasivo NUMBER);
-   PROCEDURE EMISION_COLECTIVA_ASEGURADO( cNomArchivoCarga  PROCESOS_MASIVOS.NomArchivoCarga%TYPE
+PROCEDURE EMISION_COLECTIVA_ASEGURADO( cNomArchivoCarga  PROCESOS_MASIVOS.NomArchivoCarga%TYPE
                                         , cModificaSexo     VARCHAR2 );
 PROCEDURE ALTA_CERTIFICADO(nIdProcMasivo NUMBER);
 PROCEDURE AUMENTO(nIdProcMasivo NUMBER);
@@ -34,22 +37,16 @@ PROCEDURE COPIA_COBERT_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza N
                                  nIdEndoso NUMBER, cEstado VARCHAR2, nCodAsegurado NUMBER);
 PROCEDURE EMISION_QR(nidprocmasivo number);
 PROCEDURE EMISION_INFONACOT(nIdProcMasivo NUMBER);
-
 PROCEDURE CANCELA_INFONACOT(p_CodCia NUMBER, p_CodEmpresa NUMBER, p_IdPoliza NUMBER,
                             p_IDetPol NUMBER, p_ID_Credito NUMBER, p_Mensaje_Error OUT VARCHAR2);
-
 PROCEDURE SINIESTROS_INFONACOT(nIdProcMasivo NUMBER);
-
 PROCEDURE SINIESTROS_INFONACOT_EST(nIdProcMasivo NUMBER);   --ASEGMAS
-
 PROCEDURE ACT_INFO_SINI(nIdCredito NUMBER,  nIdTrabajador NUMBER, nIdEnvio NUMBER,
                         nIdSiniestro NUMBER, dFec_Ocurrencia DATE, cObservacion VARCHAR2,
                         nCodError NUMBER);
-
 PROCEDURE EMISION_CP(nIdProcMasivo NUMBER);
 PROCEDURE EMITE_ASEGURADO_MASIVO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER);
 PROCEDURE EMITE_ENDOSO_CP (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER);
-
 PROCEDURE INSERTA_BENEFICIARIO_01(cCodPlantilla VARCHAR2, cTabla VARCHAR2, nOrdenProceso NUMBER, cCadena VARCHAR2,
                                nIdPoliza NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER);
 FUNCTION TIPO_SEPARADOR(cCodPlantilla VARCHAR2) RETURN VARCHAR2;
@@ -65,8 +62,7 @@ PROCEDURE ACTUALIZA_AUTORIZACION(nCodCia NUMBER, nCodEmpresa NUMBER,nIdProcMasiv
 PROCEDURE ENDOSO_DECLARACION_MASIVO(nIdProcMasivo NUMBER);
 PROCEDURE ASEGURADOS_CON_FONDOS(nIdProcMasivo NUMBER);
 PROCEDURE COBRANZA_APORTES_ASEG_FONDOS(nIdProcMasivo NUMBER);
-   --
-   PROCEDURE CARGA_ARCHIVO_ASEGURADOS ( nCodCia             NUMBER
+PROCEDURE CARGA_ARCHIVO_ASEGURADOS ( nCodCia             NUMBER
                                       , cNumPolUnico        VARCHAR2
                                       , cTipoProceso        VARCHAR2
                                       , cIndCol             VARCHAR2
@@ -76,40 +72,13 @@ PROCEDURE COBRANZA_APORTES_ASEG_FONDOS(nIdProcMasivo NUMBER);
                                       , cRegsTotales   OUT  NUMBER
                                       , cRegsCargados  OUT  NUMBER
                                       , cRegsErroneos  OUT  NUMBER );
-   --
-   FUNCTION DEPURA_CADENA ( cCadenaEntrada  VARCHAR2 ) RETURN VARCHAR2;
-   --
-   PROCEDURE RECUPERA_LOG_CARGA( cNomArchCarga  VARCHAR2
-                               , cNomArcSalida  VARCHAR2 );
+FUNCTION DEPURA_CADENA ( cCadenaEntrada  VARCHAR2 ) RETURN VARCHAR2;
+PROCEDURE RECUPERA_LOG_CARGA(cNomArchCarga  VARCHAR2
+                             , cNomArcSalida  VARCHAR2 );
 END OC_PROCESOS_MASIVOS;
-
 /
-create or replace PACKAGE BODY          OC_PROCESOS_MASIVOS IS
+CREATE OR REPLACE PACKAGE BODY OC_PROCESOS_MASIVOS IS
 --
---  MODIFICACION
---  17/02/2016  SE ELIMINO LA RUTINA DE REQUESITOS                                               -- JICO REQ
---  06/04/2016  SE PROGRAMO REESTRUCTURA-RENOVACION INFONACOT                                    -- JICO INFORE
---  13/04/2016  SE OPTIMIZO SINIESTROS INFONACOT                                                 -- JICO INFOSINI
---  15/04/2016  SE REPROGRAMO NUMEROS DE PLANTILLA EMIQR                                         -- JICO EMIQR
---  29/04/2016  SE DESPROGRAMO REESTRUCTURA-RENOVACION INFONACOT                                 -- JICO INFORE
---  12/05/2016  SE COLOCO FUNCION PARA QUITAR ACENTOS Y  PONER EN MAYUSCULAS                     -- JICO ACENTO
---  13/05/2016  Se agrega codigo para extraer el tipo de separador en PROCEDURE INSERT_DINAMICO  -- MAGO ExistAsegurado
---  18/05/2016  Se agrega un CASE en el cursor para corregir la posicion del campo a separar
---              y se quita el separador fijo (coma) por la variable                              -- MAGO INSERT_DINAMICO
---  25/05/2016  SE COLOCO EL BLOQUE PARA LA NUMERACION                                           -- JICO BLOQUEO
---  24/05/2016  Se agregan funciones de TIPO_SEPARADOR                                           -- MAGO
---  31/05/2016  Se agrega proceso de EMISION_CP para la emision de UBUNT - CP                    -- MAGO
---  01/06/2016  Se agrega proceso de EMITE_ASEGURADO_MASIVO complementario a  EMITE_ENDOSO_CP    -- MAGO
---  15/07/2016  SE PROGRAMA LA CANCELACION-DEVOLUCION DE INFONACOT                               -- JICO INFODEV
---  27/07/2016  Se agregan dos procesos  (AURVAD,DIRVAD) para Ajuste de Reservas usando
---              LayOut Corto a peticion de  Manuel palacios                                      -- AEVS PORFINSALES
---  03/08/2016  SE PROGRAMA EL GRABADO                                                           -- JICO GRABA
---  16/08/2016  Agrego rutina de actualizacion de la tabla PROCESOS_MASIVOS_SEGUIMIENTO          -- AEVS PROCMACSEG
---  01/09/2016  Agrego Rutina para Aseguramos que el IVA no rebase el 16% del monto a pagar             -- AEVS IVA
---  28/02/2017  Rutina para constituir solo reserva en INFONACOT                                        -- JICO ASEGMAS
---  16/02/2018  Cambio de numeracion por eliminacion de nombre completo                                 -- JICO INFO1
---  01/10/2019  Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)            -- JMMD SAT y PLD 20200406
---  24/06/2020  Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPérez)     -- JMMD SAT y PLD 20200624
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
    IF cTipoProceso = 'EMISIO' THEN
@@ -2098,6 +2067,8 @@ PROCEDURE EMISION_COLECTIVA_ASEGURADO( cNomArchivoCarga  PROCESOS_MASIVOS.NomArc
    nIdProcMasivo       PROCESOS_MASIVOS.IdProcMasivo%TYPE;
    cExisteCobert       VARCHAR2(1) := 'N';
    --
+   cID_ACCION          ACTUALIZA_ASEGURADO.ID_ACCION%TYPE;   --ASEGVAL
+   --
    CURSOR C_CAMPOS (cNomTabla VARCHAR2) IS
           SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.TipoCampo
           FROM   CONFIG_PLANTILLAS_CAMPOS C
@@ -2416,8 +2387,34 @@ BEGIN
                       OC_ASEGURADO_CERTIFICADO.INSERTA(X.CodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndoso);
                    END IF;
                 ELSE
-                   RAISE_APPLICATION_ERROR(-20225, 'Asegurado No. : ' || nCod_Asegurado || ' Duplicado en Certificado No. ' || nIDetPol);
+-- ASEGVAL
+                   IF OC_ACTUALIZA_ASEGURADO.VALIDA_EXISTENCIA(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado) = 'S' THEN
+                      IF OC_ACTUALIZA_ASEGURADO.VALIDA_ST_ANALIZADO(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado) = 'S' THEN
+                         cID_ACCION := OC_ACTUALIZA_ASEGURADO.EXTRAE_ACCION(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
+                         IF cID_ACCION = 'NADA' THEN -- CONTINUA CON LOS MISMOS DATOS
+                            NULL; 
+                            OC_ACTUALIZA_ASEGURADO.COLOCA_ST_PROCESADO(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
+                         ELSIF cID_ACCION = 'ACTUA' THEN -- ACTUALIZA LOS DATOS
+                            OC_ACTUALIZA_ASEGURADO.ACTUALIZA_DATOS(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
+                            OC_ACTUALIZA_ASEGURADO.COLOCA_ST_PROCESADO(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
+                         ELSIF cID_ACCION = 'NUEVO' THEN -- CREA UN NUEVO ASEGURADO
+                            OC_ACTUALIZA_ASEGURADO.COLOCA_ST_PROCESADO(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
+                            nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(X.CodCia, X.CodEmpresa,cTipoDocIdentAseg, cNumDocIdentAseg);
+                         ELSE
+                            RAISE_APPLICATION_ERROR(-20225, 'Asegurado No. : ' || nCod_Asegurado || ' en espera de validacion');
+                         END IF;
+                      ELSE
+                         RAISE_APPLICATION_ERROR(-20225, 'Asegurado No. : ' || nCod_Asegurado || ' en espera de validacion');
+                      END IF;
+                   ELSE
+                      OC_ACTUALIZA_ASEGURADO.INSERTA(nCODCIA,            nCODEMPRESA,       cNOMARCHIVOCARGA, 
+                                                     nIDPOLIZA,          nIDETPOL,          nCOD_ASEGURADO,
+                                                     cTipoDocIdentAseg,  cNumDocIdentAseg,  X.REGDATOSPROC);
+                      RAISE_APPLICATION_ERROR(-20225, 'Asegurado No. : ' || nCod_Asegurado || ' enviado a validacion');
+                   END IF;
+-- ASEGVAL
                 END IF;
+                
                 --
 --aqui modificar UPDATE
                 cUpdate := 'UPDATE ASEGURADO_CERTIFICADO SET ';
@@ -10429,15 +10426,12 @@ BEGIN
                 cNombProv         := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,cSeparador));
                 cRegFiscal        := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,12,cSeparador));
 ------- JMMD20190927 VALIDACION DE REGISTROS EN SAT
-                dbms_output.put_line('jmmd pruebas sat cRFCProv : '||cRFCProv||' COMPAÑIA : '||X.CodCia);
                 IF SICAS_OC.OC_PROVEEDORES_SAT.ES_PROVEEDOR_SAT_DEFINITIVO(X.CodCia, cRFCProv) = 'S' THEN
-                    dbms_output.put_line('jmmd pruebas sat es proveedor sat definitivo : '||cRFCProv);
                     cMsjError := 'Persona encontrada en an el archivo de SAT DEFINITIVOS.';
                     RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de SAT DEFINITIVOS, requiere de autorizacion.');
                 END IF;
 
                 IF SICAS_OC.OC_PROVEEDORES_SAT.ES_PROVEEDOR_SAT_PRESUNTOS(X.CodCia, cRFCProv) = 'S' THEN
-                    dbms_output.put_line('jmmd pruebas sat es proveedor sat presuntos : '||cRFCProv);
                     cMsjError := 'Persona encontrada en an el archivo de SAT PRESUNTOS.';
                     RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de SAT PRESUNTOS, requiere de autorizacion.');
                 END IF;
@@ -10465,7 +10459,6 @@ BEGIN
                 END;
 ----------
                 cFechaNacimiento := CALCULA_FECHA_NACIMIENTO(cRFCProv);
-                dbms_output.put_line('jmmd pruebas PLD cRFCBenef : '||cRFCBenef||' NOMBRE : '||cNombProvBenef);
                 IF OC_CAT_QEQ.ES_QEQ_SINIESTRO('RFC', cRFCBenef, cNombProvBenef, cFechaNacimiento ) = 'S' THEN
 -----------------
                    BEGIN
@@ -10482,7 +10475,6 @@ BEGIN
                    EXCEPTION
                      WHEN NO_DATA_FOUND THEN
 -----------------
-                     dbms_output.put_line('jmmd pruebas PLD cRFCBenef : '||cRFCBenef||' no encontrado en admon riesgo siniestros recientemente : '||cNombProvBenef);
                        OC_ADMON_RIESGO_SINIESTROS.INSERTA(
                               X.CodCia,
                               nCodEmpresa,
@@ -10500,8 +10492,8 @@ BEGIN
                               ''  ,
                               'LA PERSONA ESTA EN PLD'  ,
                               TRUNC(SYSDATE)  ,
-                              USUSARIO );
-                        dbms_output.put_line('jmmd1 pruebas PLD existe en PLD :Persona encontrada en an el Catalogo de quien es quien. ');
+                              USUSARIO,
+                              nBenef );  --PLD_ALERTAS
                         cMsjError := 'Persona encontrada en an el Catalogo de quien es quien.';
                         RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de quien es quien, requiere de autorizacion.');
                      WHEN OTHERS THEN
@@ -10526,7 +10518,6 @@ BEGIN
                     END IF;
 
                    IF cST_RESOLUCIO = 'PEND' THEN
-                        dbms_output.put_line('jmmd2 pruebas PLD existe en PLD : Persona encontrada en an el Catalogo de quien es quien.');
                         cMsjError := 'Persona encontrada en an el Catalogo de quien es quien.';
                         RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de quien es quien, requiere de autorizacion.');
                    END IF;
@@ -12058,7 +12049,7 @@ END COBRANZA_APORTES_ASEG_FONDOS;
              --
              cRegsCargados := cRegsCargados + 1;
           EXCEPTION
-          WHEN OTHERS THEN
+	       WHEN OTHERS THEN
                cRegsErroneos := cRegsErroneos + 1;
                --PROC_CREA_ARCH_ERRORES(cLinea||'-->'||cMsgArchErr, 'XXX', cCodUser, nLinea);
           END;
@@ -12189,3 +12180,4 @@ END COBRANZA_APORTES_ASEG_FONDOS;
       UTL_FILE.FCLOSE_ALL;
    END RECUPERA_LOG_CARGA;
 END OC_PROCESOS_MASIVOS;
+/
