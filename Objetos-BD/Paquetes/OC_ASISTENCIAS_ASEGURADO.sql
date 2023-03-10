@@ -1,5 +1,7 @@
 CREATE OR REPLACE PACKAGE OC_ASISTENCIAS_ASEGURADO IS
-
+--
+-- SU AJUSTA RUTINAS DE EXTRACION PATA QUE CONSIDEREN EL ESTATUS Y EL MAXIMO ENDOSO   20230310  JICO   ESTATUS
+--
   PROCEDURE CARGAR_ASISTENCIAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                                nIdPoliza NUMBER, nIDetPol NUMBER, nTasaCambio NUMBER, nCod_Asegurado NUMBER,
                                cCodMoneda VARCHAR2, dFecIniVig DATE, dFecFinVig DATE);
@@ -25,7 +27,6 @@ END OC_ASISTENCIAS_ASEGURADO;
  
  
 /
-
 CREATE OR REPLACE PACKAGE BODY OC_ASISTENCIAS_ASEGURADO IS
 
 PROCEDURE CARGAR_ASISTENCIAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
@@ -98,25 +99,41 @@ nMontoAsistLocal      ASISTENCIAS_ASEGURADO.MontoAsistLocal%TYPE;
 BEGIN
    SELECT NVL(SUM(MontoAsistLocal),0)
      INTO nMontoAsistLocal
-     FROM ASISTENCIAS_ASEGURADO
+     FROM ASISTENCIAS_ASEGURADO A
     WHERE CodCia         = nCodCia
       AND CodEmpresa     = nCodEmpresa
       AND IdPoliza       = nIdPoliza
       AND IDetPol        = nIDetPol
       AND Cod_Asegurado  = nCod_Asegurado
-      AND StsAsistencia != 'ANULAD';
-
+      AND StsAsistencia != 'ANULAD'
+      AND A.IDENDOSO = (SELECT MAX(B.IDENDOSO)                      -- ESTATUS
+                          FROM ASISTENCIAS_ASEGURADO B
+                         WHERE B.IdPoliza      = A.IdPoliza
+                           AND B.IDetPol       = A.IDetPol
+                           AND B.CodCia        = A.CodCia
+                           AND B.COD_ASEGURADO = A.COD_ASEGURADO
+                           AND B.STSASISTENCIA = A.STSASISTENCIA)   -- ESTATUS
+;
    RETURN(nMontoAsistLocal);
 END TOTAL_ASISTENCIAS;
 
 PROCEDURE RENOVAR(nCodCia NUMBER, nIdPolizaRen NUMBER, nIdPoliza NUMBER) IS
 CURSOR ASIST_Q IS
-   SELECT CodCia, CodEmpresa, IDetPol, Cod_Asegurado, CodAsistencia,
-          CodMoneda, MontoAsistLocal, MontoAsistMoneda, StsAsistencia,
-          FecSts, IdEndoso
-     FROM ASISTENCIAS_ASEGURADO
-    WHERE IdPoliza = nIdPolizaRen
-      AND CodCia   = nCodCia;
+   SELECT CodCia,         CodEmpresa,  IDetPol,          Cod_Asegurado,
+          CodAsistencia,  CodMoneda,   MontoAsistLocal,  MontoAsistMoneda, 
+          StsAsistencia,  FecSts,      0 IdEndoso
+     FROM ASISTENCIAS_ASEGURADO A
+    WHERE IdPoliza   = nIdPoliza
+      AND CodCia     = nCodCia
+      AND A.STSASISTENCIA = 'EMITID'                                -- ESTATUS
+      AND A.IDENDOSO = (SELECT MAX(B.IDENDOSO)
+                          FROM ASISTENCIAS_ASEGURADO B
+                         WHERE B.IdPoliza      = A.IdPoliza
+                           AND B.IDetPol       = A.IDetPol
+                           AND B.CodCia        = A.CodCia
+                           AND B.COD_ASEGURADO = A.COD_ASEGURADO
+                           AND B.STSASISTENCIA = A.STSASISTENCIA)   -- ESTATUS
+;
 BEGIN
    FOR P IN ASIST_Q LOOP
       BEGIN
@@ -144,13 +161,22 @@ END RENOVAR;
 
 PROCEDURE COPIAR(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPolOrig NUMBER, nIdPolizaDest NUMBER, nIDetPolDest NUMBER) IS
 CURSOR ASIST_Q IS
-   SELECT CodCia, CodEmpresa, IDetPol, Cod_Asegurado, CodAsistencia,
-          CodMoneda, MontoAsistLocal, MontoAsistMoneda, StsAsistencia,
-          FecSts, IdEndoso
-     FROM ASISTENCIAS_ASEGURADO
-    WHERE IdPoliza = nIdPoliza
-      AND IDetPol  = nIDetPolOrig
-      AND CodCia   = nCodCia;
+   SELECT CodCia,         CodEmpresa,  IDetPol,          Cod_Asegurado,
+          CodAsistencia,  CodMoneda,   MontoAsistLocal,  MontoAsistMoneda, 
+          StsAsistencia,  FecSts,      0 IdEndoso
+     FROM ASISTENCIAS_ASEGURADO A
+    WHERE IdPoliza   = nIdPoliza
+      AND IDetPol    = nIDetPolOrig
+      AND CodCia     = nCodCia
+      AND A.STSASISTENCIA = 'EMITID'                               -- ESTATUS
+      AND A.IDENDOSO = (SELECT MAX(B.IDENDOSO)
+                          FROM ASISTENCIAS_ASEGURADO B
+                         WHERE B.IdPoliza      = A.IdPoliza
+                           AND B.IDetPol       = A.IDetPol
+                           AND B.CodCia        = A.CodCia
+                           AND B.COD_ASEGURADO = A.COD_ASEGURADO
+                           AND B.STSASISTENCIA = A.STSASISTENCIA)  -- ESTATUS
+ ;
 BEGIN
    FOR P IN ASIST_Q LOOP
       BEGIN
@@ -176,12 +202,22 @@ nIdEndoso    ASEGURADO_CERTIFICADO.IdEndoso%TYPE;
 CURSOR ASIST_Q IS
    SELECT CodAsistencia, CodMoneda, MontoAsistLocal, MontoAsistMoneda,
           StsAsistencia, FecSts, IdEndoso
-     FROM ASISTENCIAS_ASEGURADO
+     FROM ASISTENCIAS_ASEGURADO A
     WHERE CodCia        = nCodCia
       AND CodEmpresa    = nCodEmpresa
       AND IdPoliza      = nIdPoliza
       AND IDetPol       = nIDetPol
-      AND Cod_Asegurado = nCod_Asegurado;
+      AND Cod_Asegurado = nCod_Asegurado
+      AND A.STSASISTENCIA = 'EMITID'                               -- ESTATUS
+      AND A.IDENDOSO = (SELECT MAX(B.IDENDOSO)
+                          FROM ASISTENCIAS_ASEGURADO B
+                         WHERE B.IdPoliza      = A.IdPoliza
+                           AND B.IDetPol       = A.IDetPol
+                           AND B.CodCia        = A.CodCia
+                           AND B.COD_ASEGURADO = A.COD_ASEGURADO
+                           AND B.STSASISTENCIA = A.STSASISTENCIA)  -- ESTATUS
+;
+--
 CURSOR ASEG_Q IS
    SELECT Cod_Asegurado, Estado, IdEndoso
      FROM ASEGURADO_CERTIFICADO
@@ -295,3 +331,4 @@ BEGIN
 END REHABILITAR;
 
 END OC_ASISTENCIAS_ASEGURADO;
+/
