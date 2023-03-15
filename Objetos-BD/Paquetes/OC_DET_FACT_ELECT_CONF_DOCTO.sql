@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_DET_FACT_ELECT_CONF_DOCTO IS
+create or replace PACKAGE OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -10,7 +10,7 @@ FUNCTION  GENERA_VALOR_ATRIBUTO (nIdFactura IN NUMBER,nIdNcr IN NUMBER DEFAULT N
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
 /
-CREATE OR REPLACE PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
+create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -207,7 +207,7 @@ BEGIN
             RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar Datos Generales De Nota De Credito  Para Generacion De Informacion Al SAT Favor De Verificar');
       END;
    END IF;
-  
+
    IF NVL(nIndFactCteRfcGenerico,'N') = 'S' THEN
       BEGIN
          SELECT C.Tipo_Doc_Identificacion, C.Num_Doc_Identificacion
@@ -218,7 +218,7 @@ BEGIN
             AND C.CodCliente              = cCodCliente;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR (-20100,'Error: NO se puede determinar datos de cliente para facturación de venta al publico en general');
+            RAISE_APPLICATION_ERROR (-20100,'Error: NO se puede determinar datos de cliente para facturaciÃ³n de venta al publico en general');
       END;
    END IF;
    ----DATOS GENERALES DE POLIZA
@@ -260,7 +260,7 @@ BEGIN
              );
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
-          RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar Datos Generales De Póliza Para Generacion De Informacion Al SAT Favor De Verificar');
+          RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar Datos Generales De PÃ³liza Para Generacion De Informacion Al SAT Favor De Verificar');
    END;
 
    ---DATOS GENERALES DEL PAGO SI EL PROCESO ES DE PAGO
@@ -355,7 +355,7 @@ BEGIN
    ELSIF cCodIdLinea IN ('CONIT', 'TRA', 'PAGSPDOCIMTRA', 'PAGSPIMTRA')THEN
       cCodImpto := OC_FACT_ELECT_CONF_DOCTO.CONCEPTO_IMPUESTO(nCodCia, cProceso ,cCodIdLinea);
    END IF;
-   
+
    ---RFC
    BEGIN
       SELECT Num_Tributario
@@ -367,7 +367,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20225,'No es posible identificar el RFC de la persona con la identificacion '||TRIM(cTipoDocIdentificacion)||'-'||TRIM(cNumDocIdentificacion));
    END;
-   
+
 
    CASE cCodRutinaCalc
       WHEN 'COMVAL01' THEN
@@ -484,7 +484,7 @@ BEGIN
       WHEN 'CRELSVAL01' THEN
          IF cProceso = 'EMI' AND NVL(nIdFactura,0) != 0 THEN
               -- CAPELEXX
-              -- SE BUSCA SI EXISTE RELACION DE UNA FACTURA QUE SERA REMPLAZADAPOR UNA ANULACIÓN
+              -- SE BUSCA SI EXISTE RELACION DE UNA FACTURA QUE SERA REMPLAZADAPOR UNA ANULACIÃ“N
             IF OC_FACTURAS.FACTURA_RELACIONADA_UUID_CANC(nCodCia, nIdFactura) IS NOT NULL THEN
                cValorAtributo := '04';
             END IF;
@@ -493,7 +493,7 @@ BEGIN
          IF cProceso = 'PAG' AND NVL(nIdFactura,0) != 0 THEN                
             cValorAtributo := OC_FACT_ELECT_DETALLE_TIMBRE.UUID_PROCESO(nCodCia, nCodEmpresa, nIdFactura, nIdNcr, 'EMI'); -- CUANDO SE PAGA SE BUSCA EL UUID DE EMISION
             IF cValorAtributo IS NULL THEN
-               RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que No Existe Un UUID De Emisión De La Factura'||nIdFactura||' Por Favor Emita La Facturación Electrónica Para La Emisión Del Recibo');
+               RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que No Existe Un UUID De EmisiÃ³n De La Factura'||nIdFactura||' Por Favor Emita La FacturaciÃ³n ElectrÃ³nica Para La EmisiÃ³n Del Recibo');
             END IF;
          ELSIF cProceso = 'EMI' AND NVL(nIdFactura,0) != 0 THEN
             cCrel := OC_FACTURAS.FACTURA_RELACIONADA_UUID_CANC(nCodCia, nIdFactura);
@@ -529,25 +529,25 @@ BEGIN
                RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr El Tipo De Persona Con La Identificacion '||TRIM(cTipoDocIdentificacion)||'-'||TRIM(cNumDocIdentificacion));
          END;
          IF cTipoPersona = 'FISICA' AND LENGTH(cValorAtributo) != 13 AND cValorAtributo != 'XAXX010101000' THEN
-            RAISE_APPLICATION_ERROR(-20225,'El RFC '||TRIM(cValorAtributo)||' No Cumpe Con La Longitud Requerida Para Personas Físicas, Por Favor Complemente El Rfc Del Cliente O Genere La Facturación Con El Rfc Generico');
+            RAISE_APPLICATION_ERROR(-20225,'El RFC '||TRIM(cValorAtributo)||' No Cumpe Con La Longitud Requerida Para Personas FÃ­sicas, Por Favor Complemente El Rfc Del Cliente O Genere La FacturaciÃ³n Con El Rfc Generico');
          ELSIF cTipoPersona = 'MORAL' AND LENGTH(cValorAtributo) != 12 AND cValorAtributo != 'XAXX010101000' THEN
-            RAISE_APPLICATION_ERROR(-20225,'El RFC '||TRIM(cValorAtributo)||' No Cumpe Con La Longitud Requerida Para Personas Moral, Por Favor Complemente El Rfc Del Cliente O Genere La Facturación Con El Rfc Generico');
+            RAISE_APPLICATION_ERROR(-20225,'El RFC '||TRIM(cValorAtributo)||' No Cumpe Con La Longitud Requerida Para Personas Moral, Por Favor Complemente El Rfc Del Cliente O Genere La FacturaciÃ³n Con El Rfc Generico');
          END IF;
-         cValorAtributo := REPLACE(cValorAtributo,CHR(38),CHR(38)||'amp;');
+         cValorAtributo := REPLACE(cValorAtributo,CHR(38),CHR(38)||' amp;');
       WHEN 'RECVAL02' THEN
          --DBMS_OUTPUT.PUT_LINE(OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc'));
          IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
             cValorAtributo := 'PUBLICO EN GENERAL';
          ELSE
-            cValorAtributo := REPLACE(CAMBIA_ACENTOS(OC_PERSONA_NATURAL_JURIDICA.RAZON_SOCIAL_FACT(cTipoDocIdentificacion,cNumDocIdentificacion)),CHR(38),CHR(38)||'amp;');
+            cValorAtributo := REPLACE(CAMBIA_ACENTOS(OC_PERSONA_NATURAL_JURIDICA.RAZON_SOCIAL_FACT(cTipoDocIdentificacion,cNumDocIdentificacion)),CHR(38),CHR(38)||' amp;');
          END IF;
           --cValorAtributo := CAMBIA_ACENTOS(OC_PERSONA_NATURAL_JURIDICA.NOMBRE_COMPLETO(cTipoDocIdentificacion,cNumDocIdentificacion));
       WHEN 'RECVAL03' THEN
          NULL;
       WHEN 'RECVAL04' THEN
-         --- SI FACTURA POR POLIZA ENTONCES TOMA EL VALOR DEL USO DE CFDI DE LA POLIZA, SI FACTURA POR SUB GRUPO TOMARÁ EL VALOR DEL USO DEL CFDI
+         --- SI FACTURA POR POLIZA ENTONCES TOMA EL VALOR DEL USO DE CFDI DE LA POLIZA, SI FACTURA POR SUB GRUPO TOMARÃ EL VALOR DEL USO DEL CFDI
          --- DEL SUB GRUPO CORRESPONDIENTE DEL RECIBO Y/O NOTA DE CREDITO
-         
+
          IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
             cCodUsoCFDI := 'S01';
          ELSE
@@ -561,7 +561,7 @@ BEGIN
                      AND IdPoliza   = nIdPoliza;
                EXCEPTION
                   WHEN NO_DATA_FOUND THEN
-                     RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||', Por favor valide la información en la póliza');
+                     RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||', Por favor valide la informaciÃ³n en la pÃ³liza');
                END;
             ELSIF NVL(cIndFacturaPol,'N') = 'N' THEN
                BEGIN
@@ -574,7 +574,7 @@ BEGIN
                      AND IDetPol    = nIdDetPol;
                EXCEPTION
                   WHEN NO_DATA_FOUND THEN
-                     RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la información en la póliza y sub geupo correspondiente');
+                     RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la informaciÃ³n en la pÃ³liza y sub geupo correspondiente');
                END;
             END IF;
          END IF;
@@ -588,7 +588,7 @@ BEGIN
             IF nIdRegFisSat != 0 THEN
                cValorAtributo := TO_CHAR(nIdRegFisSat);
             ELSE
-               RAISE_APPLICATION_ERROR(-20225,'Cliente no tiene asignado el régimen fiscal, por favor complemente la información del cliente y vuelve a generar la factura');
+               RAISE_APPLICATION_ERROR(-20225,'Cliente no tiene asignado el rÃ©gimen fiscal, por favor complemente la informaciÃ³n del cliente y vuelve a generar la factura');
             END IF;
          END IF;
       WHEN 'RECVAL06' THEN
@@ -623,7 +623,9 @@ BEGIN
          cValorAtributo := OC_PAIS.CODIGO_ALTERNATIVO(cCodPaisRes);
       WHEN 'DORVAL09' THEN
          IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
-            cValorAtributo := TO_CHAR(54910); --- hacer dinamico, si se genera factura para venta al publico en general el CP debe ser el del emisor
+            --cValorAtributo := TO_CHAR(54910); --- hacer dinamico, si se genera factura para venta al publico en general el CP debe ser el del emisor
+            cValorAtributo := '03200'; --- hacer dinamico, si se genera factura para venta al publico en general el CP debe ser el del emisor
+         
          ELSE
             cValorAtributo := cCodPosRes;
          END IF;
@@ -719,7 +721,7 @@ BEGIN
       WHEN 'CONVAL10' THEN
           --- OBJETO DE IMPUESTO
           --- SI LA POLIZA FACTURA POR POLIZA, ENTONCES SE TOMA OBJETO DE IMPUESTO DE LA POLIZA
-          --- SI LA POLIZA FACTURA POR SUBGRUPO, ENTONCES SE TOMA EL OBJETO DE IMPUESTO DEL SUBGRUPO CORRESPONDIENTE AL RECIBO QUE SE ESTÁ FACTURANDO
+          --- SI LA POLIZA FACTURA POR SUBGRUPO, ENTONCES SE TOMA EL OBJETO DE IMPUESTO DEL SUBGRUPO CORRESPONDIENTE AL RECIBO QUE SE ESTÃ FACTURANDO
          IF NVL(cIndFacturaPol,'N') = 'S' THEN
             BEGIN
                SELECT NVL(CodObjetoImp,'02')
@@ -730,7 +732,7 @@ BEGIN
                   AND IdPoliza   = nIdPoliza;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
-                  RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||', Por favor valide la información en la póliza');
+                  RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||', Por favor valide la informaciÃ³n en la pÃ³liza');
             END;
          ELSIF NVL(cIndFacturaPol,'N') = 'N' THEN
             BEGIN
@@ -743,7 +745,7 @@ BEGIN
                   AND IDetPol    = nIdDetPol;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
-                  RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la información en la póliza y sub geupo correspondiente');
+                  RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la informaciÃ³n en la pÃ³liza y sub geupo correspondiente');
             END;
          END IF;
          cValorAtributo := cCodObjetoImp; 
@@ -963,7 +965,7 @@ BEGIN
          END;
           --cValorAtributo := TO_CHAR(SYSDATE,'yyyy-mm-dd')||'T'||TO_CHAR(SYSDATE,'hh:mm:ss');    --> JALV (-) 10/01/2022
           --> Inicia: JALV (-) 10/01/2022
-   
+
          IF nIdProceso IS NOT NULL OR NVL(cIndDomiciliado,'N') = 'S' THEN
             --Tomar campo indicado en COBRANZA MASIVA
             SELECT  FechaCobro  --FecAplica
@@ -971,7 +973,7 @@ BEGIN
               FROM  DETALLE_DOMICI_REFERE
              WHERE  idFactura = nIdFactura
                AND  ESTADO    = 'PAG';   -- 31/03/2022 SE AGREGO ESTA CONDICION 
-                      
+
             cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh24:mm:ss');
          ELSIF NVL(cIndPlataforma,'N') = 'S' THEN
             --cValorAtributo := TO_CHAR(dFecPago,'yyyy-mm-dd')||'T'||TO_CHAR(dFecPago,'hh:mm:ss');
@@ -1018,7 +1020,7 @@ BEGIN
       WHEN 'PAGSPDOCVAL01' THEN
          cValorAtributo := OC_FACT_ELECT_DETALLE_TIMBRE.UUID_PROCESO(nCodCia, nCodEmpresa, nIdFactura, nIdNcr, 'EMI'); -- CUANDO SE PAGA SE BUSCA EL UUID DE EMISION
          IF cValorAtributo IS NULL THEN
-            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que No Existe Un UUID De Emisión De La Factura'||nIdFactura||' Por Favor Emita La Facturación Electrónica Para La Emisión Del Recibo');
+            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que No Existe Un UUID De EmisiÃ³n De La Factura'||nIdFactura||' Por Favor Emita La FacturaciÃ³n ElectrÃ³nica Para La EmisiÃ³n Del Recibo');
          END IF;
       WHEN 'PAGSPDOCVAL02' THEN
          cValorAtributo :=  OC_FACT_ELECT_DETALLE_TIMBRE.SERIE(nCodCia, nCodEmpresa, nIdFactura,nIdNcr, OC_FACT_ELECT_DETALLE_TIMBRE.UUID_PROCESO(nCodCia, nCodEmpresa, nIdFactura, nIdNcr, 'EMI'));
@@ -1052,7 +1054,7 @@ BEGIN
                   AND IdPoliza   = nIdPoliza;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
-                  RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||', Por favor valide la información en la póliza');
+                  RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||', Por favor valide la informaciÃ³n en la pÃ³liza');
             END;
          ELSIF NVL(cIndFacturaPol,'N') = 'N' THEN
             BEGIN
@@ -1065,7 +1067,7 @@ BEGIN
                   AND IDetPol    = nIdDetPol;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
-                  RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la información en la póliza y sub geupo correspondiente');
+                  RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la informaciÃ³n en la pÃ³liza y sub geupo correspondiente');
             END;
          END IF;
          cValorAtributo := cCodObjetoImp;
@@ -1160,4 +1162,3 @@ BEGIN
 END GENERA_VALOR_ATRIBUTO;
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
-/

@@ -67,6 +67,8 @@ FUNCTION Genera_Fact_Elect( cGenerar       IN  VARCHAR2
 FUNCTION EXISTE_IMPUESTO(nCodCia IN NUMBER, nIdFactura IN NUMBER DEFAULT NULL,nIdNcr IN NUMBER DEFAULT NULL, cProceso IN VARCHAR2) RETURN VARCHAR2;
 
 END OC_FACT_ELECT_CONF_DOCTO;
+
+
 /
 create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
 
@@ -192,42 +194,42 @@ CURSOR Q_Rec IS
 
         CURSOR Q_DetCpto IS
             SELECT CodCpto, SUM(Monto_Det_Local) Monto_Det_Local, SUM(Saldo_Det_Moneda) Saldo_Det_Moneda, 
-	                       MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
-	                       --Orden_Impresion
-	                  FROM (
-	                        SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
-	                               SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
-	                               --CC.Orden_Impresion
-	                          FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
-	                                                   INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
-	                                                   INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
-	                                                                                      AND DP.IDETPOL    = F.IDETPOL
-	                                                                                      AND DP.CODCIA     = F.CODCIA
-	                                                    LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
-	                                                                                      AND CS.CODCPTO    = DF.CODCPTO
-	                                                                                      AND CS.IDTIPOSEG  = DP.IDTIPOSEG
-	                                                                                      AND CS.PLANCOB    = DP.PLANCOB
-	                         WHERE DF.IdFactura                 = nIdFactura                         
-	                           AND NVL(CC.IndEsImpuesto,'N') = 'N'
-	                           AND DF.MONTO_DET_MONEDA > 0
-	                           AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
-	                                                                                     WHERE S.CODCIA     = DP.CODCIA
-	                                                                                       AND S.CODCPTO    = DF.CODCPTO
-	                                                                                       AND S.IDTIPOSEG  = DP.IDTIPOSEG
-	                                                                                       AND S.PLANCOB     = DP.PLANCOB ), 'X')
-	                         GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL),
-	                                  CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
-	                         UNION ALL
-	                        SELECT NULL RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
-	                               SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
-	                               --CC.Orden_Impresion
-	                          FROM DETALLE_NOTAS_DE_CREDITO DN,CATALOGO_DE_CONCEPTOS CC
-	                         WHERE IdNcr                     = nIdNcr
-	                           AND NVL(CC.IndEsImpuesto,'N') = 'N'
-	                           AND DN.CodCpto                = CC.CodConcepto
-	                         GROUP BY CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
-	                       )
-	                 GROUP BY  CodCpto, MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
+                           MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
+                           --Orden_Impresion
+                      FROM (
+                            SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
+                                   SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
+                                   --CC.Orden_Impresion
+                              FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
+                                                       INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
+                                                       INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
+                                                                                          AND DP.IDETPOL    = F.IDETPOL
+                                                                                          AND DP.CODCIA     = F.CODCIA
+                                                        LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
+                                                                                          AND CS.CODCPTO    = DF.CODCPTO
+                                                                                          AND CS.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                          AND CS.PLANCOB    = DP.PLANCOB
+                             WHERE DF.IdFactura                 = nIdFactura                         
+                               AND NVL(CC.IndEsImpuesto,'N') = 'N'
+                               AND DF.MONTO_DET_MONEDA > 0
+                               AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
+                                                                                         WHERE S.CODCIA     = DP.CODCIA
+                                                                                           AND S.CODCPTO    = DF.CODCPTO
+                                                                                           AND S.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                           AND S.PLANCOB     = DP.PLANCOB ), 'X')
+                             GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL),
+                                      CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
+                             UNION ALL
+                            SELECT NULL RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
+                                   SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
+                                   --CC.Orden_Impresion
+                              FROM DETALLE_NOTAS_DE_CREDITO DN,CATALOGO_DE_CONCEPTOS CC
+                             WHERE IdNcr                     = nIdNcr
+                               AND NVL(CC.IndEsImpuesto,'N') = 'N'
+                               AND DN.CodCpto                = CC.CodConcepto
+                             GROUP BY CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
+                           )
+                     GROUP BY  CodCpto, MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
              ORDER BY NVL(Monto_Det_Local,0) DESC;
 
 CURSOR Q_Impto IS
@@ -292,7 +294,7 @@ BEGIN
                      OPEN Q_Rel;
                      FETCH Q_Rel INTO cCodIdentificador;
                         IF Q_Rel%NOTFOUND THEN
-                           RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su ConfiguraciÛn');
+                           RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su Configuraci√≥n');
                         END IF;
                      CLOSE Q_Rel;
 
@@ -314,7 +316,7 @@ BEGIN
 --                        FETCH Q_Impto INTO cCodIdentificador;
 --                        
 --                           IF Q_Impto%NOTFOUND THEN
---                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su ConfiguraciÛn');
+--                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su Configuraci√≥n');
 --                           END IF;
 --                        
 --                        CLOSE Q_Impto;
@@ -365,7 +367,7 @@ BEGIN
                                  cDocumento := cDocumento||cLinea;
                               END IF;
                            END LOOP;
-                        ELSE ---- SE APLICA LA EXENCI”N DE IMPUESTOS, SE DEBE GENERAR LA LINEA DE IMPUESTOS EXENTOS
+                        ELSE ---- SE APLICA LA EXENCI√ìN DE IMPUESTOS, SE DEBE GENERAR LA LINEA DE IMPUESTOS EXENTOS
                            FOR I IN Q_Impto LOOP ---CONIT O CONIR
                               cCodIdentificador := I.CodIdentificador;
                               cLinea := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura, nIdNcr, nCodCia, nCodEmpresa, cProceso, cCodIdentificador, cTipoCfdi, F.CodCpto, cIndRelaciona, F.RamoReal, 'S');
@@ -380,7 +382,7 @@ BEGIN
             ELSE
                cExiste := OC_FACT_ELECT_CONF_DOCTO.EXISTE_IMPUESTO(nCodCia, nIdFactura, nIdNcr, cProceso);
                IF X.IndImpuesto = 'S' AND NVL(cExiste,'N') = 'N' THEN
-                  --cDocumento := NUll;  -- SE APLICA LA EXENCI”N DE IMPUESTOS CUANDO NO HAY CONCEPTOS DE IMPUESTOS POR LO QUE SE GENERAESTA LINEA CON EXENCION
+                  --cDocumento := NUll;  -- SE APLICA LA EXENCI√ìN DE IMPUESTOS CUANDO NO HAY CONCEPTOS DE IMPUESTOS POR LO QUE SE GENERAESTA LINEA CON EXENCION
                   cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'S');
                ELSIF X.CodIdentificador IN ('CREL','CRELS') THEN
                   cDocumento := NUll;  
@@ -677,7 +679,7 @@ BEGIN
       -- hacer de manera mas dinamica la cancelacion por motivo diferente a 02
       cCve_MotivCancFact := NVL(cCve_MotivCancFact, '02');
       IF  cCve_MotivCancFact = '01' THEN            
-         RAISE_APPLICATION_ERROR(-20200,'El procedimiento de cancelaciÛn, debe ser ejecutado desde otro sitio que no sea en OC_FACT_ELECT_CONF_DOCTO.timbrar por la opciÛn 01 de motivo de cancelaciÛn CFDI (20220101)');
+         RAISE_APPLICATION_ERROR(-20200,'El procedimiento de cancelaci√≥n, debe ser ejecutado desde otro sitio que no sea en OC_FACT_ELECT_CONF_DOCTO.timbrar por la opci√≥n 01 de motivo de cancelaci√≥n CFDI (20220101)');
       END IF;
       IF NVL(IndOtroPac,'N') = 'S' THEN -- CANCELACION OTRO PAC
          cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'038');
@@ -725,7 +727,7 @@ BEGIN
       ELSE
          cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia, '027');
          cSoapRequest :=
-         'Usuario='|| cUser ||'&'||'Contra='|| cPwd ||'&'||'UUID='|| cDocto;
+         'Usuario='|| cUser ||'&'||'Contra='|| cPwd ||'&'||'UUID='|| cDocto ||'&'|| 'Motivo='|| cCve_MotivCancFact ||'&'|| 'UUID_Relacionado='||'';
 
       END IF;
    END IF;
@@ -919,7 +921,7 @@ BEGIN
       IF cProceso = 'EMI' THEN
          cMessageFactNcr := 'El "Aviso de Cobro" '||nIdFactura;
       ELSIF cProceso = 'CAN' THEN
-         cMessageFactNcr := 'La "CancelaciÛn del Aviso de Cobro" '||nIdFactura;
+         cMessageFactNcr := 'La "Cancelaci√≥n del Aviso de Cobro" '||nIdFactura;
       ELSIF cProceso = 'PAG' THEN
          cMessageFactNcr := 'El "Complemento de pago por el Aviso de Cobro" '||nIdFactura;
       END IF;
@@ -932,11 +934,11 @@ BEGIN
           WHERE IdNcr = nIdNcr
             AND F.IdPoliza = P.IdPoliza;
       END;
-      cSubjectFactNcr := 'La "Nota de crÈdito" '||nIdNcr;
+      cSubjectFactNcr := 'La "Nota de cr√©dito" '||nIdNcr;
       IF cProceso = 'EMI' THEN
-         cMessageFactNcr := '"Nota De crÈdito" '||nIdNcr;
+         cMessageFactNcr := '"Nota De cr√©dito" '||nIdNcr;
       ELSIF cProceso = 'CAN' THEN
-         cMessageFactNcr := '"CancelaciÛn de la Nota de crÈdito" '||nIdNcr;
+         cMessageFactNcr := '"Cancelaci√≥n de la Nota de cr√©dito" '||nIdNcr;
       END IF;
    END IF;
      --
@@ -944,17 +946,17 @@ BEGIN
          cSubject := 'Comprobante fiscal digital de: '||cNombreCliente||' ('||cIdentFiscal||')'; ---DEFINIR LISTA DE DISTRIBUCION
          cMessage := 'Estimado Agente:
 
- Se ha generado la facturaciÛn electrÛnica para '||cMessageFactNcr||' de la PÛliza '||cNumPolUnico||' con los siguientes datos:
+ Se ha generado la facturaci√≥n electr√≥nica para '||cMessageFactNcr||' de la P√≥liza '||cNumPolUnico||' con los siguientes datos:
 
  UUID: '||cUUID||'
  Folio Fiscal: '||cFolioFiscal||'
  Serie: '||cSerie||''|| '
  ' ||CASE WHEN cUUIDRelacionado IS NOT NULL THEN 'Relacionado: ' || cUUIDRelacionado ELSE '' END ||'
  ' ||CASE WHEN cDescError IS NOT NULL THEN '<' || cDescError || '>' ELSE '' END      ||' 
- 
- Los archivos XML y PDF se podr·n descargar en "Portal de Agentes".
 
- Nota: Este correo es generado de manera autom·tica, favor de no responder.
+ Los archivos XML y PDF se podr√°n descargar en "Portal de Agentes".
+
+ Nota: Este correo es generado de manera autom√°tica, favor de no responder.
 
  '||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia);
 
@@ -964,11 +966,11 @@ BEGIN
          ---    OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CATERRSAT',cCodRespuesta)||'
          --cEmailDest := OC_USUARIOS.EMAIL(nCodCia,USER);
          cSubject   := INITCAP(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('PROCFACELE', cProceso))|| ' Para '||cSubjectFactNcr||' Realizado de Manera Incorrecta';---DEFINIR LISTA DE DISTRIBUCION
-         cMessage   := cMessageFactNcr|| ' no se timbrÛ de manera correcta por la siguiente razÛn:
+         cMessage   := cMessageFactNcr|| ' no se timbr√≥ de manera correcta por la siguiente raz√≥n:
 
  Error: < '||cCodRespuesta||' : '||cDescError||' >
 
- El documento o UUID para el envÌo al SAT se adjunta a continuaciÛn:
+ El documento o UUID para el env√≠o al SAT se adjunta a continuaci√≥n:
 
 '||
 
@@ -976,9 +978,9 @@ BEGIN
 
 ||'
 
- Favor de validar el documento de envÌo y de ejecutar nuevamente el Timbrado.
- 
- Nota: Este correo es generado de manera autom·tica, favor de no responder.
+ Favor de validar el documento de env√≠o y de ejecutar nuevamente el Timbrado.
+
+ Nota: Este correo es generado de manera autom√°tica, favor de no responder.
 
 '||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia);
      END IF;
@@ -1031,7 +1033,7 @@ BEGIN
                    AND CodCia    = nCodCia;
             EXCEPTION
             WHEN NO_DATA_FOUND THEN
-                RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La PÛliza Para Generacion De Destinatarios Para FacturaciÛn ElectrÛnica');
+                RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La P√≥liza Para Generacion De Destinatarios Para Facturaci√≥n Electr√≥nica');
             END;
         ELSIF NVL(nIdNcr,0) != 0 THEN
             BEGIN
@@ -1042,7 +1044,7 @@ BEGIN
                    AND CodCia    = nCodCia;
             EXCEPTION
                 WHEN NO_DATA_FOUND THEN
-                    RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La PÛliza Para Generacion De Destinatarios Para FacturaciÛn ElectrÛnica');
+                    RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La P√≥liza Para Generacion De Destinatarios Para Facturaci√≥n Electr√≥nica');
             END;
         END IF;
         IF cTipoDest = 'TO' THEN
@@ -1168,7 +1170,7 @@ FUNCTION DecodeBase64_Largo( cClobScr           CLOB
                            , dNombreDirectorio  VARCHAR2
                            , cNombreArchivo     VARCHAR2 ) RETURN VARCHAR2 IS
    fArchivoSalida  UTL_FILE.FILE_TYPE;
-   --Variables para la DecodificaciÛn
+   --Variables para la Decodificaci√≥n
    bClobTrim       CLOB;
    nClobLen        NUMBER;
    nAmount1        NUMBER := 1440; -- must be a whole multiple of 4
@@ -1250,7 +1252,7 @@ BEGIN
         AND  NVL(IdNcr    , 0) = NVL(NVL(nIdNcr    , IdNcr    ), 0);
    EXCEPTION
    WHEN NO_DATA_FOUND THEN
-        cResultado := 'ERROR: No existen documentos asociados a la Factura: ' || nIdFactura || ', Nota de CrÈdito: ' || nIdNcr; 
+        cResultado := 'ERROR: No existen documentos asociados a la Factura: ' || nIdFactura || ', Nota de Cr√©dito: ' || nIdNcr; 
         RETURN cResultado;
    END;
    --Armado de los nombres de archivos
@@ -1373,19 +1375,19 @@ BEGIN
    EXCEPTION
    WHEN OTHERS THEN
         cTraslado    := 'N';
-        cTextoSalida := 'NO esta definido el parametro global de FacturaciÛn ElectrÛnica';
+        cTextoSalida := 'NO esta definido el parametro global de Facturaci√≥n Electr√≥nica';
         RETURN cTraslado;
    END;
    --
    IF cIndFactElec = 'S' AND cGenerar = 'FAC' THEN
-      nLeidos 	   := 0;
+      nLeidos      := 0;
       nCorrectos   := 0;
       nIncorrectos := 0;
       nLinea       := 1;
       cCadena      := 'LOG DE FACTURACION ELECTRONICA ' || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:MI:SS');
       OC_ARCHIVO.ESCRIBIR_LINEA(cCadena, cCodUser, nLinea); 
       FOR w IN c_Fact_Q LOOP
-          nLeidos := nLeidos + 1;	
+          nLeidos := nLeidos + 1;   
           IF w.IndFactCteRFCGenerico = 'S' THEN
              SELECT CodCliente
              INTO   nCodCliAntFact
@@ -1406,9 +1408,9 @@ BEGIN
              --
              UPDATE POLIZAS
              SET    CodCliente = nCodCteGen
-             WHERE  CodCia 	   = w.CodCia
-               AND  IdPoliza   = w.IdPoliza;		
-          END IF;	
+             WHERE  CodCia     = w.CodCia
+               AND  IdPoliza   = w.IdPoliza;        
+          END IF;   
           --
           BEGIN
              OC_FACT_ELECT_CONF_DOCTO.TIMBRAR(w.IdFactura, NULL, w.CodCia, nCodEmpresa, 'EMI', 'A', 'N', cCodRespuesta, 'N');
@@ -1438,22 +1440,22 @@ BEGIN
              nLinea     := nLinea + 1; 
              cCadena    := ' FACTURA - ' || w.IdFactura || ' CODIGO CORRECTO - ' || cCodRespuesta || ' ' || cDescError;
              OC_ARCHIVO.ESCRIBIR_LINEA(cCadena, cCodUser, nLinea); 
-	         --
-	         SELECT MAX(IdTimbre)
-	         INTO   nIdTimbre
-	         FROM   FACT_ELECT_DETALLE_TIMBRE
-	         WHERE  CodCia     = w.CodCia
-	           AND  CodEmpresa = nCodEmpresa
-	           AND  IdFactura  = w.IdFactura
-	           AND  CodProceso = 'EMI';
+             --
+             SELECT MAX(IdTimbre)
+             INTO   nIdTimbre
+             FROM   FACT_ELECT_DETALLE_TIMBRE
+             WHERE  CodCia     = w.CodCia
+               AND  CodEmpresa = nCodEmpresa
+               AND  IdFactura  = w.IdFactura
+               AND  CodProceso = 'EMI';
              --
              UPDATE FACT_ELECT_DOCTOS_TIMBRE
              SET    IdAgrupaEnv = nIdAgrupaEnv
              WHERE  CodCia     = w.CodCia
                AND  CodEmpresa = nCodEmpresa
-	           AND  IdTimbre   = nIdTimbre
+               AND  IdTimbre   = nIdTimbre
                AND  IdFactura  = w.IdFactura
-	           AND  CodProceso = 'EMI';
+               AND  CodProceso = 'EMI';
           ELSE
              nIncorrectos := nIncorrectos + 1;
              cTraslado    := 'S';
@@ -1534,7 +1536,7 @@ BEGIN
    OPEN Q_Impto;
    FETCH Q_Impto INTO cCodIdentificador;
       IF Q_Impto%NOTFOUND THEN
-         RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su ConfiguraciÛn');
+         RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su Configuraci√≥n');
       END IF;
    CLOSE Q_Impto;
 
@@ -1573,14 +1575,3 @@ BEGIN
 END;
 
 END OC_FACT_ELECT_CONF_DOCTO;
-/
---
--- OC_FACT_ELECT_CONF_DOCTO  (Synonym) 
---
---  Dependencies: 
---   OC_FACT_ELECT_CONF_DOCTO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_FACT_ELECT_CONF_DOCTO FOR SICAS_OC.OC_FACT_ELECT_CONF_DOCTO
-/
-GRANT EXECUTE ON SICAS_OC.OC_FACT_ELECT_CONF_DOCTO TO PUBLIC
-/
