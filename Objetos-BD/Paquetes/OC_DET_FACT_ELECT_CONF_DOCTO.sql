@@ -533,13 +533,14 @@ BEGIN
          ELSIF cTipoPersona = 'MORAL' AND LENGTH(cValorAtributo) != 12 AND cValorAtributo != 'XAXX010101000' THEN
             RAISE_APPLICATION_ERROR(-20225,'El RFC '||TRIM(cValorAtributo)||' No Cumpe Con La Longitud Requerida Para Personas Moral, Por Favor Complemente El Rfc Del Cliente O Genere La Facturación Con El Rfc Generico');
          END IF;
-         cValorAtributo := REPLACE(cValorAtributo,CHR(38),CHR(38)||' amp;');
+         cValorAtributo := REPLACE(cValorAtributo,CHR(38),CHR(38)||'amp;');
       WHEN 'RECVAL02' THEN
          --DBMS_OUTPUT.PUT_LINE(OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc'));
          IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
             cValorAtributo := 'PUBLICO EN GENERAL';
          ELSE
-            cValorAtributo := REPLACE(OC_PERSONA_NATURAL_JURIDICA.RAZON_SOCIAL_FACT(cTipoDocIdentificacion,cNumDocIdentificacion),CHR(38),CHR(38)||' amp;');
+            cValorAtributo := REPLACE(OC_PERSONA_NATURAL_JURIDICA.RAZON_SOCIAL_FACT(cTipoDocIdentificacion,cNumDocIdentificacion),CHR(38),CHR(38)||'amp;');
+            --cValorAtributo := OC_PERSONA_NATURAL_JURIDICA.RAZON_SOCIAL_FACT(cTipoDocIdentificacion,cNumDocIdentificacion);
          END IF;
           --cValorAtributo := CAMBIA_ACENTOS(OC_PERSONA_NATURAL_JURIDICA.NOMBRE_COMPLETO(cTipoDocIdentificacion,cNumDocIdentificacion));
       WHEN 'RECVAL03' THEN
