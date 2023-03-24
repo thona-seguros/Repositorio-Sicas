@@ -1,12 +1,5 @@
-CREATE OR REPLACE PACKAGE OC_FACTURAS IS
-    --
-    -- MODIFICACIONES
-    -- INSERCION DE FECHAS A COMISIONES                                       2018/03/06  ICO COMI
-    -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO   2018/03/09  ICO FINVIG
-    -- FORMAS DE PAGO                                                         2018/11/05  ICO FREPAG
-    -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                   2019/03/27  ICO LARPLA
-    -- SE CREA FUNCION IND_RFC_GENERICO                                       2023/03/16  ICO RFC 
-    --
+FACTURA_RELACIONADACREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
+
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                        dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER);
 
@@ -87,7 +80,7 @@ CREATE OR REPLACE PACKAGE OC_FACTURAS IS
     FUNCTION FACTURA_RELACIONADA_UUID_CANC(P_CODCIA     NUMBER,                                       
                                         PIDFACTURA  NUMBER) RETURN VARCHAR2;
     --
-    FUNCTION FACTURA_RELACIONADA_ENDOSO(P_CODCIA    NUMBER,                                       
+    FUNCTION FACTURA_RELACIONADA_ENDOSO(P_CODCIA     NUMBER,                                       
                                         PIDFACTURA  NUMBER) RETURN VARCHAR2;
     --    
     FUNCTION FACTURA_RELACIONADA(P_CODCIA     NUMBER,                                       
@@ -95,13 +88,15 @@ CREATE OR REPLACE PACKAGE OC_FACTURAS IS
     --
     FUNCTION MONTO_BASE_IMPUESTO( nCodCia     NUMBER
                                 , nIdFactura  NUMBER ) RETURN NUMBER;
-    --
-    FUNCTION IND_RFC_GENERICO(nIdFactura  NUMBER, 
-                              nCodCia     NUMBER) RETURN VARCHAR2;
-    
 END OC_FACTURAS;
 /
-CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
+    --
+    -- MODIFICACIONES
+    -- INSERCION DE FECHAS A COMISIONES                                       2018/03/06  ICO COMI
+    -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO   2018/03/09  ICO FINVIG
+    -- FORMAS DE PAGO                                                         2018/11/05  ICO FREPAG
+    -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                   2019/03/27  ICO LARPLA
     --
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                        dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER) IS
@@ -3597,7 +3592,14 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
                                 WHERE F2.CODCIA = P_CODCIA AND   
                                       F2.IDFACTURA = P_IDFACTURA AND
                                       F.FECVENC  = NVL(F2.FECVENC, TRUNC(SYSDATE))   AND
-                                      F.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE))) LOOP
+                                      F.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE)) AND
+                                      F.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION) 
+                                             FROM FACTURAS FX  
+                                            WHERE FX.IDPOLIZA  = F.IDPOLIZA
+                                              AND FX.IDETPOL   = D.IDETPOL 
+                                              AND FX.STSFACT   = 'ANU'
+                                              AND FX.FECVENC   = F.FECVENC
+                                              AND FX.FECFINVIG = F.FECFINVIG)) LOOP
 
                             cLin := GT_WEB_SERVICES.Ejecuta_WS(1,1,4000, -4000, cResultado,':nCodCia='  || 1 || 
                                                                                     ',:Wuuid='   || '¨' || ENT.UUID_CANCELAR     || '¨' ||
@@ -3763,7 +3765,14 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
                        (F2.IDFACTURA = PIDFACTURA OR                                    
                        F3.IDFACTURA = PIDFACTURA ) AND 
                        F3.FECVENC  = NVL(F2.FECVENC, TRUNC(SYSDATE)) AND
-                       F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE))) LOOP
+                       F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE))AND 
+                       F3.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION) 
+                                             FROM FACTURAS FX  
+                                            WHERE FX.IDPOLIZA  = F3.IDPOLIZA
+                                              AND FX.IDETPOL   = D.IDETPOL 
+                                              AND FX.STSFACT   = 'ANU'
+                                              AND FX.FECVENC   = F3.FECVENC
+                                              AND FX.FECFINVIG = F3.FECFINVIG) ) LOOP
             --                       
             IF LENGTH(Relacion) > 0 THEN Relacion := Relacion || CHR(10) || 'CREL|||UUID|'; END IF;                       
             Relacion := Relacion || ENT.UUID_CANCELAR;                                              
@@ -3814,7 +3823,14 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
                        (F2.IDFACTURA = PIDFACTURA OR                                    
                        F3.IDFACTURA = PIDFACTURA ) AND 
                        F3.FECVENC  = NVL(F2.FECVENC, TRUNC(SYSDATE)) AND
-                       F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE));
+                       F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE)) AND
+                       F3.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION) 
+                                             FROM FACTURAS FX  
+                                            WHERE FX.IDPOLIZA  = F3.IDPOLIZA
+                                              AND FX.IDETPOL   = D.IDETPOL 
+                                              AND FX.STSFACT   = 'ANU'
+                                              AND FX.FECVENC   = F3.FECVENC
+                                              AND FX.FECFINVIG = F3.FECFINVIG);
         IF Relacion = 1 THEN
             RESPUESTA :='S';
         ELSE
@@ -3865,7 +3881,14 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
                        F3.IDFACTURA = PIDFACTURA ) AND 
                        F3.FECVENC  = NVL(F2.FECVENC, TRUNC(SYSDATE)) AND
                        F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE)) AND
-                       ROWNUM = 1;
+                       ROWNUM = 1 AND 
+                       F3.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION) 
+                                             FROM FACTURAS FX  
+                                            WHERE FX.IDPOLIZA  = F3.IDPOLIZA
+                                              AND FX.IDETPOL   = D.IDETPOL 
+                                              AND FX.STSFACT   = 'ANU'
+                                              AND FX.FECVENC   = F3.FECVENC
+                                              AND FX.FECFINVIG = F3.FECFINVIG);
             --                       
 
         RETURN NIDFACTURA;
@@ -3885,84 +3908,17 @@ BEGIN
       AND OC_CATALOGO_DE_CONCEPTOS.INDICADOR_CONCEPTO(nCodCia, CodCpto, 'IMPUESTO') != 'S';
    RETURN nMontoBase;
 END MONTO_BASE_IMPUESTO;
+END OC_FACTURAS;
+/
 
 --
-FUNCTION IND_RFC_GENERICO(nIdFactura  NUMBER, 
-                          nCodCia     NUMBER) RETURN VARCHAR2 IS
-cIndFactCteRFCGenerico     FACTURAS.IndFactCteRFCGenerico%TYPE;
-nCodCliente                POLIZAS.CodCliente%TYPE;
-cTipo_Doc_Identificacion   PERSONA_NATURAL_JURIDICA.Tipo_Doc_Identificacion%TYPE;
-cNum_Doc_Identificacion    PERSONA_NATURAL_JURIDICA.Num_Doc_Identificacion%TYPE;
-cNum_Tributario            PERSONA_NATURAL_JURIDICA.Num_Tributario%TYPE;
-cIndVentaPublicoGen        VARCHAR2(1);
-BEGIN
-  BEGIN
-    SELECT CodCliente,  Tipo_Doc_Identificacion,  Num_Doc_Identificacion
-      INTO nCodCliente, cTipo_Doc_Identificacion, cNum_Doc_Identificacion
-      FROM (SELECT DECODE(NVL(F.IndFactCteRfcGenerico,'N'), 'S', F.CodCliRfcGenerico, F.CodCliente) CodCliente,
-                   C.Tipo_Doc_Identificacion,
-                   C.Num_Doc_Identificacion
-              FROM FACTURAS F,
-                   POLIZAS  PO,
-                   CLIENTES C
-             WHERE F.CodCia     = nCodCia
-               AND F.IdFactura  = nIdFactura
-               AND F.CodCliente = C.CodCliente
-               --
-               AND PO.IndFacturaPol = 'S'
-               AND PO.CodCia        = F.CodCia
-               AND PO.IdPoliza      = F.IdPoliza
-            UNION
-            SELECT PO.CodCliente,
-                   P.Tipo_Doc_Identificacion,
-                   P.Num_Doc_Identificacion
-              FROM FACTURAS F, 
-                   POLIZAS PO, 
-                   DETALLE_POLIZA D, 
-                   ASEGURADO A, 
-                   PERSONA_NATURAL_JURIDICA P
-             WHERE P.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
-               AND P.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
-               --
-               AND A.Cod_Asegurado = D.Cod_Asegurado
-               --
-               AND D.CodCia   = F.CodCia
-               AND D.IdPoliza = F.IdPoliza
-               AND D.IDetPol  = F.IDetPol
-               --
-               AND PO.IndFacturaPol = 'N'
-               AND PO.CodCia        = F.CodCia
-               AND PO.IdPoliza      = F.IdPoliza
-               --
-               AND F.CodCia    = nCodCia
-               AND F.IdFactura = nIdFactura);
-  EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20200,' NO Existe el recibo '||nIdFactura);
-  END;
-  -- 
-  BEGIN
-    SELECT NVL(Num_Tributario, 'X')
-      INTO cNum_Tributario
-      FROM PERSONA_NATURAL_JURIDICA
-     WHERE Tipo_Doc_Identificacion = cTipo_Doc_Identificacion
-       AND Num_Doc_Identificacion  = cNum_Doc_Identificacion;
-  EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20200,' NO Existe registro en Persona Natural Juridica del cliente '||OC_CLIENTES.NOMBRE_CLIENTE(nCodCliente));
-  END;
-  --  
-  IF cNum_Tributario = 'X' THEN 
-     RAISE_APPLICATION_ERROR(-20200,'Cliente '||OC_CLIENTES.NOMBRE_CLIENTE(nCodCliente)||' NO posee un RFC para facturación, por favor valide la configuración de la persona');
-  ELSIF cNum_Tributario IN ('XAXX010101000', 'XEXX010101000') THEN 
-     cIndVentaPublicoGen := 'S';
-  ELSE
-     cIndVentaPublicoGen := 'N';
-  END IF;
-  --
-  RETURN cIndVentaPublicoGen;  
-  -- 
-END IND_RFC_GENERICO;
+-- OC_FACTURAS  (Synonym) 
 --
-END OC_FACTURAS;
+--  Dependencies: 
+--   OC_FACTURAS (Package)
+--
+CREATE OR REPLACE PUBLIC SYNONYM OC_FACTURAS FOR SICAS_OC.OC_FACTURAS
+/
+
+GRANT EXECUTE ON SICAS_OC.OC_FACTURAS TO PUBLIC
 /
