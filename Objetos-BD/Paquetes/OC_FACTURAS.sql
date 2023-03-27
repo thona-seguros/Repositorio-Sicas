@@ -1,4 +1,4 @@
-FACTURA_RELACIONADACREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
 
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                        dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER);
@@ -88,6 +88,10 @@ FACTURA_RELACIONADACREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
     --
     FUNCTION MONTO_BASE_IMPUESTO( nCodCia     NUMBER
                                 , nIdFactura  NUMBER ) RETURN NUMBER;
+    --
+    FUNCTION IND_RFC_GENERICO(nIdFactura  NUMBER, 
+                              nCodCia     NUMBER) RETURN VARCHAR2;
+    --                              
 END OC_FACTURAS;
 /
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
@@ -3080,6 +3084,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
     nCodCobrador            FACTURAS.CodCobrador%TYPE;
     cIndPago                VARCHAR2(1);
     dFecHoy                 DATE;
+
     cCodMoneda              FACTURAS.Cod_Moneda%type;
     nTasaCambioMov          TASAS_CAMBIO.Tasa_Cambio%TYPE;
     nCodCliente             FACTURAS.CodCliente%type;
@@ -3897,17 +3902,95 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
         RETURN NULL;                           
     END FACTURA_RELACIONADA;
     --
+    FUNCTION MONTO_BASE_IMPUESTO(nCodCia NUMBER, nIdFactura  NUMBER) RETURN NUMBER IS
+    nMontoBase  NUMBER(28,2);   
+    BEGIN
+       SELECT SUM(Monto_Det_Moneda)
+         INTO nMontoBase
+         FROM DETALLE_FACTURAS
+        WHERE IdFactura  = nIdFactura
+          AND OC_CATALOGO_DE_CONCEPTOS.INDICADOR_CONCEPTO(nCodCia, CodCpto, 'IMPUESTO') != 'S';
+       RETURN nMontoBase;
+    END MONTO_BASE_IMPUESTO;
+    --
+    FUNCTION IND_RFC_GENERICO(nIdFactura  NUMBER, 
+                              nCodCia     NUMBER) RETURN VARCHAR2 IS
+    cIndFactCteRFCGenerico     FACTURAS.IndFactCteRFCGenerico%TYPE;
+    nCodCliente                POLIZAS.CodCliente%TYPE;
+    cTipo_Doc_Identificacion   PERSONA_NATURAL_JURIDICA.Tipo_Doc_Identificacion%TYPE;
+    cNum_Doc_Identificacion    PERSONA_NATURAL_JURIDICA.Num_Doc_Identificacion%TYPE;
+    cNum_Tributario            PERSONA_NATURAL_JURIDICA.Num_Tributario%TYPE;
+    cIndVentaPublicoGen        VARCHAR2(1);
+    BEGIN
+      BEGIN
+        SELECT CodCliente,  Tipo_Doc_Identificacion,  Num_Doc_Identificacion
+          INTO nCodCliente, cTipo_Doc_Identificacion, cNum_Doc_Identificacion
+          FROM (SELECT DECODE(NVL(F.IndFactCteRfcGenerico,'N'), 'S', F.CodCliRfcGenerico, F.CodCliente) CodCliente,
+                       C.Tipo_Doc_Identificacion,
+                       C.Num_Doc_Identificacion
+                  FROM FACTURAS F,
+                       POLIZAS  PO,
+                       CLIENTES C
+                 WHERE F.CodCia     = nCodCia
+                   AND F.IdFactura  = nIdFactura
+                   AND F.CodCliente = C.CodCliente
+                   --
+                   AND PO.IndFacturaPol = 'S'
+                   AND PO.CodCia        = F.CodCia
+                   AND PO.IdPoliza      = F.IdPoliza
+                UNION
+                SELECT PO.CodCliente,
+                       P.Tipo_Doc_Identificacion,
+                       P.Num_Doc_Identificacion
+                  FROM FACTURAS F, 
+                       POLIZAS PO, 
+                       DETALLE_POLIZA D, 
+                       ASEGURADO A, 
+                       PERSONA_NATURAL_JURIDICA P
+                 WHERE P.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+                   AND P.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
+                   --
+                   AND A.Cod_Asegurado = D.Cod_Asegurado
+                   --
+                   AND D.CodCia   = F.CodCia
+                   AND D.IdPoliza = F.IdPoliza
+                   AND D.IDetPol  = F.IDetPol
+                   --
+                   AND PO.IndFacturaPol = 'N'
+                   AND PO.CodCia        = F.CodCia
+                   AND PO.IdPoliza      = F.IdPoliza
+                   --
+                   AND F.CodCia    = nCodCia
+                   AND F.IdFactura = nIdFactura);
+      EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+             RAISE_APPLICATION_ERROR(-20200,' NO Existe el recibo '||nIdFactura);
+      END;
+      -- 
+      BEGIN
+        SELECT NVL(Num_Tributario, 'X')
+          INTO cNum_Tributario
+          FROM PERSONA_NATURAL_JURIDICA
+         WHERE Tipo_Doc_Identificacion = cTipo_Doc_Identificacion
+           AND Num_Doc_Identificacion  = cNum_Doc_Identificacion;
+      EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+             RAISE_APPLICATION_ERROR(-20200,' NO Existe registro en Persona Natural Juridica del cliente '||OC_CLIENTES.NOMBRE_CLIENTE(nCodCliente));
+      END;
+      --  
+      IF cNum_Tributario = 'X' THEN 
+         RAISE_APPLICATION_ERROR(-20200,'Cliente '||OC_CLIENTES.NOMBRE_CLIENTE(nCodCliente)||' NO posee un RFC para facturación, por favor valide la configuración de la persona');
+      ELSIF cNum_Tributario IN ('XAXX010101000', 'XEXX010101000') THEN 
+         cIndVentaPublicoGen := 'S';
+      ELSE
+         cIndVentaPublicoGen := 'N';
+      END IF;
+      --
+      RETURN cIndVentaPublicoGen;  
+      -- 
+    END IND_RFC_GENERICO;
+    --
 
-FUNCTION MONTO_BASE_IMPUESTO(nCodCia NUMBER, nIdFactura  NUMBER) RETURN NUMBER IS
-nMontoBase  NUMBER(28,2);   
-BEGIN
-   SELECT SUM(Monto_Det_Moneda)
-     INTO nMontoBase
-     FROM DETALLE_FACTURAS
-    WHERE IdFactura  = nIdFactura
-      AND OC_CATALOGO_DE_CONCEPTOS.INDICADOR_CONCEPTO(nCodCia, CodCpto, 'IMPUESTO') != 'S';
-   RETURN nMontoBase;
-END MONTO_BASE_IMPUESTO;
 END OC_FACTURAS;
 /
 
