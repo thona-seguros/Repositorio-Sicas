@@ -381,30 +381,32 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
                 ELSE
                    cExiste := OC_FACT_ELECT_CONF_DOCTO.EXISTE_IMPUESTO(nCodCia, nIdFactura, nIdNcr, cProceso);
                    --
-                   FOR J IN Q_Rec LOOP
-                        IF J.IndRelacion  = cIndRelaciona AND J.IndImpuesto = 'N' and (X.CodIdentificador IN ('CREL','CRELS')  AND cCrel IS NOT NULL) THEN
-                            IF cProceso != 'PAG' THEN
-                                cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
-                            END IF;
-                            OPEN Q_Rel;
-                            FETCH Q_Rel INTO cCodIdentificador;
-                            IF Q_Rel%NOTFOUND THEN
-                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su Configuración');
-                            END IF;
-                            CLOSE Q_Rel;
-                            --
-                            FOR I IN Q_Rel LOOP ---CRELS O CREL
-                                cCodIdentificador := I.CodIdentificador;
-                                cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
-                            END LOOP;
-                        END IF;                   
-                   END LOOP;
+                   IF cCrel IS NOT NULL THEN
+                       FOR J IN Q_Rec LOOP
+                            IF J.IndRelacion  = cIndRelaciona AND J.IndImpuesto = 'N' and (X.CodIdentificador IN ('CREL','CRELS')  AND cCrel IS NOT NULL) THEN
+                                IF cProceso != 'PAG' THEN
+                                    cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
+                                END IF;
+                                OPEN Q_Rel;
+                                FETCH Q_Rel INTO cCodIdentificador;
+                                IF Q_Rel%NOTFOUND THEN
+                                   RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su Configuración');
+                                END IF;
+                                CLOSE Q_Rel;
+                                --
+                                FOR I IN Q_Rel LOOP ---CRELS O CREL
+                                    cCodIdentificador := I.CodIdentificador;
+                                    cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
+                                END LOOP;
+                            END IF;                   
+                       END LOOP;
+                   END IF;
                    --
                    IF X.IndImpuesto = 'S' AND NVL(cExiste,'N') = 'N' THEN
                       --cDocumento := NUll;  -- SE APLICA LA EXENCIÓN DE IMPUESTOS CUANDO NO HAY CONCEPTOS DE IMPUESTOS POR LO QUE SE GENERAESTA LINEA CON EXENCION
                       cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'S');
                    ELSIF X.CodIdentificador IN ('CREL','CRELS') THEN
-                      cDocumento := NUll;  -- capele
+                      --cDocumento := NUll;  -- capele
                       null;
                    ELSIF X.CodIdentificador NOT IN ('CREL','CRELS') OR cCrel IS NOT NULL THEN
                       --IF (cIndFactCteRfcGenerico = 'N' AND X.CodIdentificador = 'IGL') THEN
