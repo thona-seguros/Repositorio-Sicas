@@ -293,7 +293,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
                          OPEN Q_Rel;
                          FETCH Q_Rel INTO cCodIdentificador;
                             IF Q_Rel%NOTFOUND THEN
-                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su ConfiguraciÛn');
+                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su Configuraci√≥n');
                             END IF;
                          CLOSE Q_Rel;
 
@@ -315,7 +315,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
     --                        FETCH Q_Impto INTO cCodIdentificador;
     --                        
     --                           IF Q_Impto%NOTFOUND THEN
-    --                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su ConfiguraciÛn');
+    --                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su Configuraci√≥n');
     --                           END IF;
     --                        
     --                        CLOSE Q_Impto;
@@ -366,7 +366,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
                                      cDocumento := cDocumento||cLinea;
                                   END IF;
                                END LOOP;
-                            ELSE ---- SE APLICA LA EXENCI”N DE IMPUESTOS, SE DEBE GENERAR LA LINEA DE IMPUESTOS EXENTOS
+                            ELSE ---- SE APLICA LA EXENCI√ìN DE IMPUESTOS, SE DEBE GENERAR LA LINEA DE IMPUESTOS EXENTOS
                                FOR I IN Q_Impto LOOP ---CONIT O CONIR
                                   cCodIdentificador := I.CodIdentificador;
                                   cLinea := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura, nIdNcr, nCodCia, nCodEmpresa, cProceso, cCodIdentificador, cTipoCfdi, F.CodCpto, cIndRelaciona, F.RamoReal, 'S');
@@ -389,7 +389,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
                             OPEN Q_Rel;
                             FETCH Q_Rel INTO cCodIdentificador;
                             IF Q_Rel%NOTFOUND THEN
-                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su ConfiguraciÛn');
+                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su Configuraci√≥n');
                             END IF;
                             CLOSE Q_Rel;
                             --
@@ -401,7 +401,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
                    END LOOP;
                    --
                    IF X.IndImpuesto = 'S' AND NVL(cExiste,'N') = 'N' THEN
-                      --cDocumento := NUll;  -- SE APLICA LA EXENCI”N DE IMPUESTOS CUANDO NO HAY CONCEPTOS DE IMPUESTOS POR LO QUE SE GENERAESTA LINEA CON EXENCION
+                      --cDocumento := NUll;  -- SE APLICA LA EXENCI√ìN DE IMPUESTOS CUANDO NO HAY CONCEPTOS DE IMPUESTOS POR LO QUE SE GENERAESTA LINEA CON EXENCION
                       cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'S');
                    ELSIF X.CodIdentificador IN ('CREL','CRELS') THEN
                       cDocumento := NUll;  -- capele
@@ -699,7 +699,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
           -- hacer de manera mas dinamica la cancelacion por motivo diferente a 02
           cCve_MotivCancFact := NVL(cCve_MotivCancFact, '02');
           IF  cCve_MotivCancFact = '01' THEN            
-             RAISE_APPLICATION_ERROR(-20200,'El procedimiento de cancelaciÛn, debe ser ejecutado desde otro sitio que no sea en OC_FACT_ELECT_CONF_DOCTO.timbrar por la opciÛn 01 de motivo de cancelaciÛn CFDI (20220101)');
+             RAISE_APPLICATION_ERROR(-20200,'El procedimiento de cancelaci√≥n, debe ser ejecutado desde otro sitio que no sea en OC_FACT_ELECT_CONF_DOCTO.timbrar por la opci√≥n 01 de motivo de cancelaci√≥n CFDI (20220101)');
           END IF;
           IF NVL(IndOtroPac,'N') = 'S' THEN -- CANCELACION OTRO PAC
              cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'038');
@@ -941,7 +941,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
           IF cProceso = 'EMI' THEN
              cMessageFactNcr := 'El "Aviso de Cobro" '||nIdFactura;
           ELSIF cProceso = 'CAN' THEN
-             cMessageFactNcr := 'La "CancelaciÛn del Aviso de Cobro" '||nIdFactura;
+             cMessageFactNcr := 'La "Cancelaci√≥n del Aviso de Cobro" '||nIdFactura;
           ELSIF cProceso = 'PAG' THEN
              cMessageFactNcr := 'El "Complemento de pago por el Aviso de Cobro" '||nIdFactura;
           END IF;
@@ -954,11 +954,11 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
               WHERE IdNcr = nIdNcr
                 AND F.IdPoliza = P.IdPoliza;
           END;
-          cSubjectFactNcr := 'La "Nota de crÈdito" '||nIdNcr;
+          cSubjectFactNcr := 'La "Nota de cr√©dito" '||nIdNcr;
           IF cProceso = 'EMI' THEN
-             cMessageFactNcr := '"Nota De crÈdito" '||nIdNcr;
+             cMessageFactNcr := '"Nota De cr√©dito" '||nIdNcr;
           ELSIF cProceso = 'CAN' THEN
-             cMessageFactNcr := '"CancelaciÛn de la Nota de crÈdito" '||nIdNcr;
+             cMessageFactNcr := '"Cancelaci√≥n de la Nota de cr√©dito" '||nIdNcr;
           END IF;
        END IF;
          --
@@ -966,7 +966,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
              cSubject := 'Comprobante fiscal digital de: '||cNombreCliente||' ('||cIdentFiscal||')'; ---DEFINIR LISTA DE DISTRIBUCION
              cMessage := 'Estimado Agente:
 
-     Se ha generado la facturaciÛn electrÛnica para '||cMessageFactNcr||' de la PÛliza '||cNumPolUnico||' con los siguientes datos:
+     Se ha generado la facturaci√≥n electr√≥nica para '||cMessageFactNcr||' de la P√≥liza '||cNumPolUnico||' con los siguientes datos:
 
      UUID: '||cUUID||'
      Folio Fiscal: '||cFolioFiscal||'
@@ -974,9 +974,9 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
      ' ||CASE WHEN cUUIDRelacionado IS NOT NULL THEN 'Relacionado: ' || cUUIDRelacionado ELSE '' END ||'
      ' ||CASE WHEN cDescError IS NOT NULL THEN '<' || cDescError || '>' ELSE '' END      ||' 
 
-     Los archivos XML y PDF se podr·n descargar en "Portal de Agentes".
+     Los archivos XML y PDF se podr√°n descargar en "Portal de Agentes".
 
-     Nota: Este correo es generado de manera autom·tica, favor de no responder.
+     Nota: Este correo es generado de manera autom√°tica, favor de no responder.
 
      '||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia);
 
@@ -986,11 +986,11 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
              ---    OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CATERRSAT',cCodRespuesta)||'
              --cEmailDest := OC_USUARIOS.EMAIL(nCodCia,USER);
              cSubject   := INITCAP(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('PROCFACELE', cProceso))|| ' Para '||cSubjectFactNcr||' Realizado de Manera Incorrecta';---DEFINIR LISTA DE DISTRIBUCION
-             cMessage   := cMessageFactNcr|| ' no se timbrÛ de manera correcta por la siguiente razÛn:
+             cMessage   := cMessageFactNcr|| ' no se timbr√≥ de manera correcta por la siguiente raz√≥n:
 
      Error: < '||cCodRespuesta||' : '||cDescError||' >
 
-     El documento o UUID para el envÌo al SAT se adjunta a continuaciÛn:
+     El documento o UUID para el env√≠o al SAT se adjunta a continuaci√≥n:
 
     '||
 
@@ -998,9 +998,9 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
 
     ||'
 
-     Favor de validar el documento de envÌo y de ejecutar nuevamente el Timbrado.
+     Favor de validar el documento de env√≠o y de ejecutar nuevamente el Timbrado.
 
-     Nota: Este correo es generado de manera autom·tica, favor de no responder.
+     Nota: Este correo es generado de manera autom√°tica, favor de no responder.
 
     '||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia);
          END IF;
@@ -1053,7 +1053,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
                        AND CodCia    = nCodCia;
                 EXCEPTION
                 WHEN NO_DATA_FOUND THEN
-                    RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La PÛliza Para Generacion De Destinatarios Para FacturaciÛn ElectrÛnica');
+                    RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La P√≥liza Para Generacion De Destinatarios Para Facturaci√≥n Electr√≥nica');
                 END;
             ELSIF NVL(nIdNcr,0) != 0 THEN
                 BEGIN
@@ -1064,7 +1064,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
                        AND CodCia    = nCodCia;
                 EXCEPTION
                     WHEN NO_DATA_FOUND THEN
-                        RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La PÛliza Para Generacion De Destinatarios Para FacturaciÛn ElectrÛnica');
+                        RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La P√≥liza Para Generacion De Destinatarios Para Facturaci√≥n Electr√≥nica');
                 END;
             END IF;
             IF cTipoDest = 'TO' THEN
@@ -1190,7 +1190,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
                                , dNombreDirectorio  VARCHAR2
                                , cNombreArchivo     VARCHAR2 ) RETURN VARCHAR2 IS
        fArchivoSalida  UTL_FILE.FILE_TYPE;
-       --Variables para la DecodificaciÛn
+       --Variables para la Decodificaci√≥n
        bClobTrim       CLOB;
        nClobLen        NUMBER;
        nAmount1        NUMBER := 1440; -- must be a whole multiple of 4
@@ -1272,7 +1272,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
             AND  NVL(IdNcr    , 0) = NVL(NVL(nIdNcr    , IdNcr    ), 0);
        EXCEPTION
        WHEN NO_DATA_FOUND THEN
-            cResultado := 'ERROR: No existen documentos asociados a la Factura: ' || nIdFactura || ', Nota de CrÈdito: ' || nIdNcr; 
+            cResultado := 'ERROR: No existen documentos asociados a la Factura: ' || nIdFactura || ', Nota de Cr√©dito: ' || nIdNcr; 
             RETURN cResultado;
        END;
        --Armado de los nombres de archivos
@@ -1395,7 +1395,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
        EXCEPTION
        WHEN OTHERS THEN
             cTraslado    := 'N';
-            cTextoSalida := 'NO esta definido el parametro global de FacturaciÛn ElectrÛnica';
+            cTextoSalida := 'NO esta definido el parametro global de Facturaci√≥n Electr√≥nica';
             RETURN cTraslado;
        END;
        --
@@ -1556,7 +1556,7 @@ create or replace PACKAGE BODY          OC_FACT_ELECT_CONF_DOCTO IS
        OPEN Q_Impto;
        FETCH Q_Impto INTO cCodIdentificador;
           IF Q_Impto%NOTFOUND THEN
-             RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su ConfiguraciÛn');
+             RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su Configuraci√≥n');
           END IF;
        CLOSE Q_Impto;
 
