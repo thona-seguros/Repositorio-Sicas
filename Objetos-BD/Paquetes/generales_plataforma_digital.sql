@@ -2006,8 +2006,10 @@ BEGIN
             AND IdFactura = FC.IdFactura;
 
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(1, nIdTransac, 'C');
-
-         cCodCFDI := OC_FACTURAS.FACTURA_ELECTRONICA(FC.IdFactura, 1, 1, 'A', 'S');
+         
+         IF OC_FACTURAS.IND_RFC_GENERICO(FC.IdFactura, nCodCia) = 'N' THEN
+            cCodCFDI := OC_FACTURAS.FACTURA_ELECTRONICA(FC.IdFactura, 1, 1, 'A', 'S');
+         END IF;
           --               
          IF OC_GENERALES.BUSCA_PARAMETRO(R_Facturas.CodCia, '026') = cCodCFDI THEN --201
             NULL;
