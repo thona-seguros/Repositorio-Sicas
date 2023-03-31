@@ -892,10 +892,10 @@ BEGIN
          NULL;
       WHEN 'TRAVAL01' THEN
          IF NVL(nIdFactura,0) != 0 THEN
-            cValorAtributo := TO_CHAR(OC_FACTURAS.MONTO_BASE_IMPUESTO(nCodCia, nIdFactura));
+            cValorAtributo := TRIM(TO_CHAR(OC_FACTURAS.MONTO_BASE_IMPUESTO(nCodCia, nIdFactura),'9999999999999999999999990.99'));
          ELSE
-            cValorAtributo := TO_CHAR(OC_NOTAS_DE_CREDITO.MONTO_BASE_IMPUESTO(nCodCia, nIdNcr));
-            DBMS_OUTPUT.PUT_LINE(cValorAtributo);
+            cValorAtributo := TRIM(TO_CHAR(OC_NOTAS_DE_CREDITO.MONTO_BASE_IMPUESTO(nCodCia, nIdNcr), '9999999999999999999999990.99'));
+            --DBMS_OUTPUT.PUT_LINE(cValorAtributo);
          END IF;
       WHEN 'TRAVAL02' THEN
           -- AGREGAR CODIGO DE FACTURACION ELECTRONICA A CATALOGO DE CONCEPTOS AL IMPUESTO IVASIN
