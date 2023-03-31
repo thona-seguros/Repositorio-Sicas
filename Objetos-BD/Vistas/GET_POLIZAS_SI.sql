@@ -1,5 +1,5 @@
 CREATE OR REPLACE VIEW GET_POLIZAS_SI (CODCIA,	IDPOLIZA,	IDSINIESTRO,	NOMBRE_BENEFICIARIO,	NOMBRE_CONTRATANTE,	AseguradoSiniestradoSiniestro,
-                            FolioSiniestroPortal, NumPoliza, Fec_Ocurrencia, EstadoOcurrencia, CausaSiniestro, CobertPolizaDesc
+                            FolioSiniestroPortal, NumPoliza, Fec_Ocurrencia, EstadoOcurrencia, CausaSiniestro, CobertPolizaDesc, Fec_Notificacion
                             ) AS 
    SELECT SI.CODCIA
          ,SI.IDPOLIZA
