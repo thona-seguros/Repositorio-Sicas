@@ -24,7 +24,8 @@ CREATE OR REPLACE PACKAGE BODY          OC_FACT_ELECT_REPORTE_PORTAL AS
         END;
         RETURN nIdEnvio;
     END NUMERO_ENVIO;
-    PROCEDURE GENERAR(nCodCia NUMBER, dFecFactIni DATE,dFecFactFin DATE ) IS
+    --
+    PROCEDURE GENERAR(nCodCia NUMBER, dFecFactIni DATE, dFecFactFin DATE ) IS
         cInsertWS       VARCHAR2(32000);
         cSeparaCampo    VARCHAR2(1)     := ',';
         cSeparaReg      VARCHAR2(1)     := '|';
@@ -34,7 +35,7 @@ CREATE OR REPLACE PACKAGE BODY          OC_FACT_ELECT_REPORTE_PORTAL AS
         cCamposTable    VARCHAR2(30000);
         cWhereDupVal    VARCHAR2(30000);
         CURSOR FACTELECT_Q IS
- SELECT P.CodCia,P.CodEmpresa,P.IdPoliza Consecutivo,
+            SELECT F.FecSts, F.IDFACTURA, P.CodCia,P.CodEmpresa,P.IdPoliza Consecutivo,
                    P.NumPolUnico Poliza,P.CodAgrupador Agrupador,
                    OC_VALORES_DE_LISTAS.BUSCA_LVALOR ('SUBRAMOS',OC_PLAN_COBERTURAS.CODIGO_SUBRAMO (P.CodCia,P.CodEmpresa,DP.IdTipoSeg,DP.PlanCob)) Ramo,
                    REPLACE(REPLACE (OC_CLIENTES.NOMBRE_CLIENTE (P.CodCliente), '''', ' '),CHR(09)) Contratante,
@@ -67,7 +68,7 @@ CREATE OR REPLACE PACKAGE BODY          OC_FACT_ELECT_REPORTE_PORTAL AS
                AND F.CodCia      = P.CodCia
                AND F.IdPoliza    = DP.IdPoliza
                AND F.IDetPol     = DP.IDetPol
-               AND F.FecSts      BETWEEN dFecFactIni AND dFecFactFin
+               AND to_char(F.FecSts, 'YYYY') > 2021 --     BETWEEN :dFecFactIni AND :dFecFactFin
                AND CLI.Tipo_Doc_Identificacion = PNJ.Tipo_Doc_Identificacion
                AND CLI.Num_Doc_Identificacion  = PNJ.Num_Doc_Identificacion
                AND CLI.CodCliente              = F.codcliente                       
@@ -76,20 +77,21 @@ CREATE OR REPLACE PACKAGE BODY          OC_FACT_ELECT_REPORTE_PORTAL AS
                             WHERE UUID IS NOT NULL
                               AND CodCia = P.CodCia
                               AND FE.IDFACTURA = F.IDFACTURA
+                              AND FE.CODRESPUESTASAT in ('201', '2001')
                               )                              
                AND NOT EXISTS (SELECT 1
                                  FROM FACT_ELECT_REPORTE_PORTAL RP
-                                WHERE RP.CodCia = nCodCia
+                                WHERE RP.CodCia = 1
                                   AND RP.IDPOLIZA = P.IDPOLIZA
                                   AND RP.IDETPOL  = DP.IDETPOL 
                                   and rp.rfc = DECODE(  NVL(LTRIM(RTRIM(pnj.num_tributario)),'N'),'N',pnj.num_doc_identificacion,pnj.num_tributario))
-               --AND F.IDFACTURA = 352389
-             GROUP BY P.CodCia,P.CodEmpresa,P.IdPoliza,P.NumPolUnico,P.CodAgrupador,
+               --AND F.IDFACTURA = 368594
+             GROUP BY F.FecSts, F.IDFACTURA, P.CodCia,P.CodEmpresa,P.IdPoliza,P.NumPolUnico,P.CodAgrupador,
                    DP.IdTipoSeg,DP.PlanCob,P.CodCliente,P.FecIniVig,P.FecFinVig,
                    P.CodPlanPago,DP.IDetPol,P.StsPoliza,P.MotivAnul,P.FecSts,
-                   A.Cod_Agente,F.codcliente                   
+                   A.Cod_Agente,F.codcliente                                      
              UNION              
-            SELECT P.CodCia,P.CodEmpresa,P.IdPoliza Consecutivo,
+            SELECT F.FecSts, F.IDFACTURA, P.CodCia,P.CodEmpresa,P.IdPoliza Consecutivo,
                    P.NumPolUnico Poliza,P.CodAgrupador Agrupador,
                    OC_VALORES_DE_LISTAS.BUSCA_LVALOR ('SUBRAMOS',OC_PLAN_COBERTURAS.CODIGO_SUBRAMO (P.CodCia,P.CodEmpresa,DP.IdTipoSeg,DP.PlanCob)) Ramo,
                    REPLACE(REPLACE (OC_CLIENTES.NOMBRE_CLIENTE (P.CodCliente), '''', ' '),CHR(09)) Contratante,
@@ -130,23 +132,26 @@ CREATE OR REPLACE PACKAGE BODY          OC_FACT_ELECT_REPORTE_PORTAL AS
                AND ASE.CodEmpresa              = P.CodEmpresa
                AND PNJA.Num_Doc_Identificacion  = ASE.Num_Doc_Identificacion
                AND PNJA.Tipo_Doc_Identificacion = ASE.Tipo_Doc_Identificacion
-               AND F.FecSts         BETWEEN dFecFactIni AND dFecFactFin
+               --AND F.FecSts         BETWEEN :dFecFactIni AND :dFecFactFin
+               AND to_char(F.FecSts, 'YYYY') > 2021 --     BETWEEN :dFecFactIni AND :dFecFactFin
                AND EXISTS (SELECT 1
                              FROM FACT_ELECT_DETALLE_TIMBRE FE
                             WHERE UUID IS NOT NULL
                               AND CodCia = P.CodCia
-                              AND FE.IDFACTURA = F.IDFACTURA)
+                              AND FE.IDFACTURA = F.IDFACTURA
+                              AND FE.CODRESPUESTASAT in ('201', '2001'))
                AND NOT EXISTS (SELECT 1
                                         FROM FACT_ELECT_REPORTE_PORTAL RP
                                        WHERE RP.CodCia =   P.CODCIA
                                          AND RP.IDPOLIZA = P.IDPOLIZA
                                          AND RP.IDETPOL  = DP.IDETPOL
                                          AND RP.RFC = DECODE(PNJA.Tipo_Doc_Identificacion,'RFC',PNJA.Num_Doc_Identificacion,PNJA.Num_Tributario))
+                --and idfactura = 368594                                         
                --AND P.IDPOLIZA IN (22556)
-             GROUP BY P.CodCia,P.CodEmpresa,P.IdPoliza,P.NumPolUnico,P.CodAgrupador,
+             GROUP BY F.FecSts, F.IDFACTURA, P.CodCia,P.CodEmpresa,P.IdPoliza,P.NumPolUnico,P.CodAgrupador,
                    DP.IdTipoSeg,DP.PlanCob,P.CodCliente,P.FecIniVig,P.FecFinVig,
                    P.CodPlanPago,DP.IDetPol,P.StsPoliza,P.MotivAnul,P.FecSts,
-                   A.Cod_Agente,F.codcliente, ASG.Cod_Asegurado     ;
+                   A.Cod_Agente,F.codcliente, ASG.Cod_Asegurado;
 
     BEGIN
         cCamposTable:=            ' (Rep_Uid,Consecutivo,Numero_Poliza,Agrupador,Ramo,'
@@ -184,6 +189,7 @@ CREATE OR REPLACE PACKAGE BODY          OC_FACT_ELECT_REPORTE_PORTAL AS
             OC_FACT_ELECT_REPORTE_PORTAL.INSERTA(nCodCia,W.RFC,W.Consecutivo,W.Num_Subgrupo,W.Codigo_Agente,W.Codigo_Promotor,W.Codigo_Direccion,cInsertWS,cRespWS);
         END LOOP;
     END GENERAR;
+    ---
     FUNCTION  ACTUALIZA_WS (nCodCia NUMBER,cInsertWS VARCHAR2) RETURN VARCHAR2 IS
         cSoapRequest    VARCHAR2(30000);
         cUserSoap       VARCHAR2(100)   := OC_GENERALES.BUSCA_PARAMETRO(nCodCia, '034');
