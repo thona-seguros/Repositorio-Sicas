@@ -22,7 +22,8 @@ CREATE OR REPLACE VIEW GET_POLIZAS_SI (CODCIA,	IDPOLIZA,	IDSINIESTRO,	NOMBRE_BEN
       WHERE 1 = 1
            --**AND SI.IDSINIESTRO      = 56521--371235
            --**AND SI.IDPOLIZA = 9746--48946
-      AND DP.IDPOLIZA		    = SI.idpoliza
+      AND SI.Sts_Siniestro   != 'SOL'
+      AND DP.IDPOLIZA		   = SI.idpoliza
       AND DP.CODCIA  			= SI.CODCIA
       AND DP.CODEMPRESA       = SI.CODEMPRESA
       AND DP.IDetPol          = SI.IDetPol
