@@ -3,7 +3,7 @@
 
 ) AS
  
- SELECT /*+ PARALLEL */
+SELECT /*+ PARALLEL */
        A.CODCIA
        ,A.CODEMPRESA
        ,A.IDPOLIZA
@@ -15,16 +15,17 @@
        ,A.STSAPROBACION
        ,TO_CHAR(T.FECHATRANSACCION,'DD/MM/YYYY') FECHA_TRANSACCION
        ,T.USUARIOGENERO USUARIO_GENERO
-       --,SUM(A.MONTO_MONEDA) MONTO_PAGO
-       ,SUM(DA.MONTO_LOCAL) MONTO_PAGO
+    ,SUM(DECODE(CTS.SIGNO,'-',( (DA.MONTO_MONEDA)*-1),DA.MONTO_MONEDA)) MONTO_PAGO
        ,DA.Cod_Pago
        ,DA.CodCptoTransac
   FROM TRANSACCION T
        ,APROBACIONES A
        ,DETALLE_APROBACION DA
        ,Config_Transac_Siniestros TS
-       ,Cptos_Transac_Siniestros CTS
+       ,config_transac_siniestros  CTS
  WHERE T.IDPROCESO			= 6
+   AND   CTS.CODTRANSAC = DA.CODTRANSAC
+   AND CTS.CODCIA =DA.CODCIA
    AND A.CODCIA            = T.CODCIA
    AND A.CODEMPRESA        = T.CODEMPRESA
    AND A.IDTRANSACCION     = T.IDTRANSACCION
@@ -35,9 +36,8 @@
    AND A.NUM_APROBACION    = DA.NUM_APROBACION
    AND DA.CodCia           = TS.CodCia
    AND DA.CodTransac       = TS.CodTransac
-   AND DA.CodCia           = CTS.CodCia
-   AND DA.CodTransac       = CTS.CodTransac
-   AND DA.CodCptoTransac   = CTS.CodCptoTransac
+        AND   CTS.CODTRANSAC = DA.CODTRANSAC
+   AND CTS.CODCIA =DA.CODCIA
    --AND CTS. IndDisminRva   = 'S'
    AND TS.StsTransac       = 'ACTIVA'
    AND TS.CodCia           = CTS.CodCia
@@ -56,5 +56,5 @@
        ,T.USUARIOGENERO
        ,DA.Cod_Pago
        ,DA.CodCptoTransac
- --ORDER BY 3,4,8
+ ORDER BY 3,4,8
  ;
