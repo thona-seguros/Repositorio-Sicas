@@ -1,5 +1,5 @@
 CREATE OR REPLACE VIEW POLIZAS_RESERVAS_ASEG(Ramo,Fec_Notificacion,Num_Siniestro,NumPoliza,FecchaOcurrenciaSiniestro,EstadoOcurrenciaSiniestro,FolioSiniestroPortal,Nombre_Contratant,
-Asegurado_Siniestrado,CausaSiniestro,CobertPolizaDesc,DireccionAsegurado,SumaAsegurada,DescripConceptoReserva, Monto_Reserva, Cobertura_Reserva)
+Asegurado_Siniestrado,CausaSiniestro,CobertPolizaDesc,DireccionAsegurado,SumaAsegurada,DescripConceptoReserva, Monto_Reserva, Cobertura_Reserva) AS
 SELECT
         TS.CodTipoPlan                              Ramo
         ,PPSI.Fec_Notificacion                      Fec_Notificacion
@@ -30,3 +30,10 @@ SELECT
    AND CSA.IdPoliza        = DS.IdPoliza
    AND CSA.IdSiniestro     = DS.IdSiniestro
    AND CSA.IdDetSin        = DS.IdDetSin
+
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM POLIZAS_RESERVAS_ASEG FOR SICAS_OC.POLIZAS_RESERVAS_ASEG
+
+/
+GRANT SELECT ON SICAS_OC.POLIZAS_RESERVAS_ASEG TO PUBLIC

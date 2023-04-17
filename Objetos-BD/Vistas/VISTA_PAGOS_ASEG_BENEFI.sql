@@ -1,6 +1,5 @@
 CREATE OR REPLACE VIEW PAGOS_ASEG_BENEFI(FechaTransaccion,Monto_Pago,Num_Aprobacion,IdSiniestro,IdPoliza,IdDetSin,Codigo_Cobertura,Nombre_Beneficiario,Tipo_Pago,Banco,Cuenta_Clabe,Cuenta_Bancaria,Telefono,Tipo_Identificacion,
-Num_Identificacion,Cod_Convenio,EmailBeneficiario,Num_Doc_Tributario)
-
+Num_Identificacion,Cod_Convenio,EmailBeneficiario,Num_Doc_Tributario) AS
 SELECT 
    
    
@@ -28,3 +27,12 @@ SELECT
    WHERE     TA.IdPoliza         = BES.IdPoliza 
   AND TA.IdSiniestro      = BES.IdSiniestro
    AND TA.Benef            = BES.Benef
+
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM PAGOS_ASEG_BENEFI FOR SICAS_OC.PAGOS_ASEG_BENEFI
+
+/
+GRANT SELECT ON SICAS_OC.PAGOS_ASEG_BENEFI TO PUBLIC
+
+   
