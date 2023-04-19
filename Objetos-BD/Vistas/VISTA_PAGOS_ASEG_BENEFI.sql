@@ -1,8 +1,6 @@
-CREATE OR REPLACE VIEW PAGOS_ASEG_BENEFI(FechaTransaccion,Monto_Pago,Num_Aprobacion,IdSiniestro,IdPoliza,IdDetSin,Codigo_Cobertura,Nombre_Beneficiario,Tipo_Pago,Banco,Cuenta_Clabe,Cuenta_Bancaria,Telefono,Tipo_Identificacion,
+CREATE OR REPLACE VIEW PAGOS_ASEG_BENEFI(FechaTransaccion,Monto_Pago,Num_Aprobacion,IdSiniestro,IdPoliza,IdDetSin,Codigo_Cobertura,USUARIO_GENERO,Nombre_Beneficiario,Tipo_Pago,Banco,Cuenta_Clabe,Cuenta_Bancaria,Telefono,Tipo_Identificacion,
 Num_Identificacion,Cod_Convenio,EmailBeneficiario,Num_Doc_Tributario) AS
 SELECT 
-   
-   
         TA.Fecha_Transaccion                       FechaTransaccion
         ,TA.Monto_Pago                              Monto_Pago
         ,TA.Num_Aprobacion                          Num_Aprobacion
@@ -10,6 +8,7 @@ SELECT
        ,TA.IdPoliza                                IdPoliza
        ,TA.IdDetSin                                IdDetSin
        ,TA.Cod_Pago                                Codigo_Cobertura
+       ,TA.USUARIO_GENERO                           USUARIO_GENERO
         ,BES.Nombre_Beneficiario                    Nombre_Beneficiario
        ,BES.Tipo_Pago                              Tipo_Pago
        ,BES.Banco                                  Banco
@@ -24,9 +23,10 @@ SELECT
    FROM 
    GET_MONTO_PAGO_ASEG TA
     , GET_BENEF_SIN BES
-   WHERE     TA.IdPoliza         = BES.IdPoliza 
-  AND TA.IdSiniestro      = BES.IdSiniestro
-   AND TA.Benef            = BES.Benef
+   WHERE     
+        TA.IdPoliza             = BES.IdPoliza 
+        AND TA.IdSiniestro      = BES.IdSiniestro
+        AND TA.Benef            = BES.Benef
 
 /
 
