@@ -15,7 +15,16 @@ SELECT /*+ PARALLEL */
        ,A.STSAPROBACION
        ,TO_CHAR(T.FECHATRANSACCION,'DD/MM/YYYY') FECHA_TRANSACCION
        ,T.USUARIOGENERO USUARIO_GENERO
-    ,SUM(DECODE(CTS.SIGNO,'-',( (DA.MONTO_MONEDA)*-1),DA.MONTO_MONEDA)) MONTO_PAGO
+    ,--SUM(DECODE(CTS.SIGNO,'-',( (DA.MONTO_MONEDA)*-1),DA.MONTO_MONEDA)) MONTO_PAGO
+    CASE 
+       
+         WHEN CTS.SIGNO = '-' THEN 
+            SUM(DA.MONTO_MONEDA) * -1 
+        WHEN A.STSAPROBACION  = 'ANU' THEN 
+            SUM(DA.MONTO_MONEDA) * -1 
+         ELSE 
+            SUM(DA.MONTO_MONEDA) 
+      END MONTO_RESERVA
        ,DA.Cod_Pago
        ,DA.CodCptoTransac
   FROM TRANSACCION T
@@ -23,13 +32,13 @@ SELECT /*+ PARALLEL */
        ,DETALLE_APROBACION DA
        ,Config_Transac_Siniestros TS
        ,config_transac_siniestros  CTS
- WHERE T.IDPROCESO			= 6
+ WHERE T.IDPROCESO			= 6 
    AND   CTS.CODTRANSAC = DA.CODTRANSAC
    AND CTS.CODCIA =DA.CODCIA
    AND A.CODCIA            = T.CODCIA
    AND A.CODEMPRESA        = T.CODEMPRESA
    AND A.IDTRANSACCION     = T.IDTRANSACCION
-   AND A.STSAPROBACION     = 'PAG'
+   AND A.STSAPROBACION    in( 'PAG','ANU')
    AND A.CODCIA   			= DA.CODCIA
    AND A.CODEMPRESA        = DA.CODEMPRESA
    AND A.IDSINIESTRO       = DA.IDSINIESTRO
@@ -38,11 +47,11 @@ SELECT /*+ PARALLEL */
    AND DA.CodTransac       = TS.CodTransac
         AND   CTS.CODTRANSAC = DA.CODTRANSAC
    AND CTS.CODCIA =DA.CODCIA
-   --AND CTS. IndDisminRva   = 'S'
+ 
    AND TS.StsTransac       = 'ACTIVA'
    AND TS.CodCia           = CTS.CodCia
    AND TS.CodTransac       = CTS.CodTransac
-   --AND A.IDSINIESTRO       = 365085
+ 
  GROUP BY A.CODCIA
        ,A.CODEMPRESA
        ,A.IDTRANSACCION
@@ -56,5 +65,6 @@ SELECT /*+ PARALLEL */
        ,T.USUARIOGENERO
        ,DA.Cod_Pago
        ,DA.CodCptoTransac
+       ,CTS.SIGNO
  ORDER BY 3,4,8
  ;
