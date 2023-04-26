@@ -1,6 +1,7 @@
-CREATE OR REPLACE VIEW PAGOS_BENEFI(FechaTransaccion,Monto_Pago,Num_Aprobacion,IdSiniestro,IdPoliza,IdDetSin,Codigo_Cobertura,USUARIO_GENERO,Nombre_Beneficiario,Tipo_Pago,Banco,Cuenta_Clabe,Cuenta_Bancaria,Telefono,Tipo_Identificacion,
+CREATE OR REPLACE VIEW PAGOS_BENEFI(STSAPROBACION,FechaTransaccion,Monto_Pago,Num_Aprobacion,IdSiniestro,IdPoliza,IdDetSin,Codigo_Cobertura,USUARIO_GENERO,Nombre_Beneficiario,Tipo_Pago,Banco,Cuenta_Clabe,Cuenta_Bancaria,Telefono,Tipo_Identificacion,
 Num_Identificacion,Cod_Convenio,EmailBeneficiario,Num_Doc_Tributario) AS
 SELECT 
+        TA.STSAPROBACION                           STSAPROBACION,
         TA.Fecha_Transaccion                       FechaTransaccion
         ,TA.Monto_Pago                             Monto_Pago
         ,TA.Num_Aprobacion                         Num_Aprobacion
