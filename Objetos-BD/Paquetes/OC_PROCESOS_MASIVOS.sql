@@ -1,10 +1,10 @@
-CREATE OR REPLACE PACKAGE OC_PROCESOS_MASIVOS IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOS_MASIVOS IS
 -- MODIFICACION
 -- 01/10/2019 Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)        -- JMMD SAT y PLD 20200406
 -- 24/06/2020 Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPérez) -- JMMD SAT y PLD 20200624
 -- 16/01/2023 SE AGREGA RUTINA PARA EL MANEJO DE LA ACTUALIZACION DE ASEGURADOS                   -- JICO ASEGVAL 20220410
 -- 2023/03/07 SE AGREGO CAMPO DE BENEFICIARIO A INSERT  ALERTA
--- 
+--
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 PROCEDURE ACTUALIZA_STATUS(nIdProcMasivo NUMBER, cStsRegProceso VARCHAR2);
 PROCEDURE EMISION(nIdProcMasivo NUMBER);
@@ -2392,7 +2392,7 @@ BEGIN
                       IF OC_ACTUALIZA_ASEGURADO.VALIDA_ST_ANALIZADO(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado) = 'S' THEN
                          cID_ACCION := OC_ACTUALIZA_ASEGURADO.EXTRAE_ACCION(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
                          IF cID_ACCION = 'NADA' THEN -- CONTINUA CON LOS MISMOS DATOS
-                            NULL; 
+                            NULL;
                             OC_ACTUALIZA_ASEGURADO.COLOCA_ST_PROCESADO(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
                          ELSIF cID_ACCION = 'ACTUA' THEN -- ACTUALIZA LOS DATOS
                             OC_ACTUALIZA_ASEGURADO.ACTUALIZA_DATOS(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
@@ -2407,14 +2407,14 @@ BEGIN
                          RAISE_APPLICATION_ERROR(-20225, 'Asegurado No. : ' || nCod_Asegurado || ' en espera de validacion');
                       END IF;
                    ELSE
-                      OC_ACTUALIZA_ASEGURADO.INSERTA(nCODCIA,            nCODEMPRESA,       cNOMARCHIVOCARGA, 
+                      OC_ACTUALIZA_ASEGURADO.INSERTA(nCODCIA,            nCODEMPRESA,       cNOMARCHIVOCARGA,
                                                      nIDPOLIZA,          nIDETPOL,          nCOD_ASEGURADO,
                                                      cTipoDocIdentAseg,  cNumDocIdentAseg,  X.REGDATOSPROC);
                       RAISE_APPLICATION_ERROR(-20225, 'Asegurado No. : ' || nCod_Asegurado || ' enviado a validacion');
                    END IF;
 -- ASEGVAL
                 END IF;
-                
+
                 --
 --aqui modificar UPDATE
                 cUpdate := 'UPDATE ASEGURADO_CERTIFICADO SET ';
@@ -10471,7 +10471,7 @@ BEGIN
                         AND TRUNC(FE_ESTATUS) >= TRUNC(SYSDATE - nDiasautpld)
 ----------
                         AND NUMSINIESTRO = nIdSiniestro ;
-----------                        
+----------
                    EXCEPTION
                      WHEN NO_DATA_FOUND THEN
 -----------------
@@ -10509,7 +10509,7 @@ BEGIN
                        AND  ST_RESOLUCION != 'APRO'
 ---------- JMMD24062020
                        AND NUMSINIESTRO = nIdSiniestro ;
----------- JMMD24062020                              
+---------- JMMD24062020
 
                     IF ncuantos > 0 THEN
                        cST_RESOLUCIO := 'PEND';
@@ -12018,7 +12018,7 @@ END COBRANZA_APORTES_ASEG_FONDOS;
              cSeparador    := OC_PROCESOS_MASIVOS.TIPO_SEPARADOR(cCodPlantilla);
           END IF;
           --
-          IF NVL(cIndCol, 'N') = 'S' AND cNumPolUnico IS NOT NULL THEN 
+          IF NVL(cIndCol, 'N') = 'S' AND cNumPolUnico IS NOT NULL THEN
              cNumPolUnicoFinal := TRIM(cNumPolUnico);
           ELSE
              cNumPolUnicoFinal := TRIM(x.Numpolunico);
@@ -12035,8 +12035,8 @@ END COBRANZA_APORTES_ASEG_FONDOS;
                            UPPER(DEPURA_CADENA(TRIM(x.Tipo_Id_Tributaria))) || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.Numtributario))) || cSeparador || TO_CHAR(x.FecIngreso, 'DD/MM/YYYY')                   || cSeparador ||
                            TO_CHAR(x.FecStatus, 'DD/MM/YYYY')               || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.DirecRes)))      || cSeparador || DEPURA_CADENA(TRIM(x.CodigoZip))                      || cSeparador ||
                            DEPURA_CADENA(TRIM(x.ClienteUnico))              || cSeparador || TO_CHAR(x.FecIniVig, 'DD/MM/YYYY')          || cSeparador || TO_CHAR(x.FecFinVig, 'DD/MM/YYYY')                    || cSeparador ||
-                           TO_CHAR(x.FecIniVig2, 'DD/MM/YYYY')              || cSeparador || TO_CHAR(x.FecFinVig2, 'DD/MM/YYYY')         || cSeparador || x.SumaAsegurada                                       || cSeparador || 
-                           x.Sueldo                                         || cSeparador || x.Nutra                                     || cSeparador || x.VecesSalario                                        || cSeparador || 
+                           TO_CHAR(x.FecIniVig2, 'DD/MM/YYYY')              || cSeparador || TO_CHAR(x.FecFinVig2, 'DD/MM/YYYY')         || cSeparador || x.SumaAsegurada                                       || cSeparador ||
+                           x.Sueldo                                         || cSeparador || x.Nutra                                     || cSeparador || x.VecesSalario                                        || cSeparador ||
                            x.CampoFlexible1                                 || cSeparador || x.CampoFlexible2                            || cSeparador || x.CampoFlexible3                                      || cSeparador ||
                            x.CampoFlexible4                                 || cSeparador || x.CampoFlexible5                            || cSeparador || x.CampoFlexible6;
           --
@@ -12049,7 +12049,7 @@ END COBRANZA_APORTES_ASEG_FONDOS;
              --
              cRegsCargados := cRegsCargados + 1;
           EXCEPTION
-	       WHEN OTHERS THEN
+         WHEN OTHERS THEN
                cRegsErroneos := cRegsErroneos + 1;
                --PROC_CREA_ARCH_ERRORES(cLinea||'-->'||cMsgArchErr, 'XXX', cCodUser, nLinea);
           END;
@@ -12095,7 +12095,8 @@ END COBRANZA_APORTES_ASEG_FONDOS;
       DELETE CARGA_ASEGURADOS_LOG
       WHERE  NomArchivoCarga = cNomArchCarga;
       --
-      cNomDirectorio := OC_VALORES_DE_LISTAS.BUSCA_LVALOR('SO_PATH', 'REPORT');
+      --cNomDirectorio := OC_VALORES_DE_LISTAS.BUSCA_LVALOR('SO_PATH', 'REPORT');  -- MLJS 28/24/2023
+      cNomDirectorio := OC_VALORES_DE_LISTAS.BUSCA_LVALOR('SO_PATH', 'REPLOG');    -- MLJS 28/24/2023
       cCtlArchivo1   := UTL_FILE.FOPEN(cNomDirectorio, cNomArchivoLog, 'R');
       LOOP
          BEGIN
