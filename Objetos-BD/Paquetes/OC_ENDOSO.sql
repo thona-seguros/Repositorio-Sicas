@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_ENDOSO IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
   --
   -- BITACORA DE CAMBIO
   -- SE AGREGO LA FUNCIONALIDAD DE LAVADO DE DINERO  JICO 20180626 LAVDIN
@@ -41,7 +41,10 @@ CREATE OR REPLACE PACKAGE OC_ENDOSO IS
    PROCEDURE ENDOSO_ANULACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFecAnulacion DATE, cMotivAnul VARCHAR2);
    PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
    FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN VARCHAR2;
-
+   
+	--JIBARRA_09-11-2022 <SE CREA PROCESO PARA EFECTURA LA ACTUALIZACION DE LAS FECHAS DE VIGENCIA DE ENDOSO, CERTIFICADO, POLIZA, FACTRUAS O NOTAS DE CREDITO
+	--						SEGUN COMO CORRESPONDE A LA NECESIDAD DEL USURAIO>
+	PROCEDURE ACTUALIZA_FECHAS_VIG(nCodCia IN NUMBER, nIdPoliza IN NUMBER, nIDetPol IN NUMBER, nIdEndoso IN NUMBER, nNumError OUT NUMBER, cMsjError OUT VARCHAR2);
 END OC_ENDOSO;
 
 /
@@ -415,6 +418,7 @@ CURSOR FOND_Q IS
        AND GT_FAI_TIPOS_DE_FONDOS.INDICADORES(CodCia, CodEmpresa, TipoFondo, 'EPP') = 'N'
      ORDER BY IdFondo;         
 
+	nControl NUMBER;
 BEGIN
    SELECT Cod_Asegurado
      INTO nCodAsegurado
@@ -446,8 +450,9 @@ BEGIN
       AND IdPoliza = nIdPoliza
       AND IDetPol  = nIDetPol
       AND IdEndoso = nIdEndoso;
-
-   IF cTipoEndoso NOT IN ('EXC','DIS','CFP') THEN
+	  
+	--JIBARRA_28-11-2022 <SSE EXCLUYE AL TIPO DE ENDOSO CORRESPONDIENTES A LA ACTUALIZACION DE LAS FECHAS COMO FUE SOLICITADA.>
+	IF cTipoEndoso NOT IN ('EXC','DIS','CFP','CFV') THEN
       IF OC_ASEGURADO_CERTIFICADO.TIENE_ASEGURADOS(nCodCia, nIdPoliza, nIDetPol, nIdEndoso) = 'N' THEN
           OC_COBERT_ACT.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso);
           OC_ASISTENCIAS_DETALLE_POLIZA.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso);
@@ -463,7 +468,7 @@ BEGIN
              OC_DETALLE_POLIZA.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, Z.IDetPol);
           END LOOP;
       END IF;
-   END IF;
+	END IF;
 
    cNaturalidad := OC_ENDOSO.NATURALIDAD(cTipoEndoso);
 
@@ -496,8 +501,9 @@ BEGIN
        WHERE CodCia   = nCodCia
     AND IdPoliza = nIdPoliza;
    END IF;
-
-   IF cTipoEndoso NOT IN ('ESV','ESVTL','CLA','EAAF') THEN
+   
+	--JIBARRA_28-11-2022 <SE EXCLUYE AL TIPO DE ENDOSO CORRESPONDIENTES A LA ACTUALIZACION DE LAS FECHAS COMO FUE SOLICITADA.>
+	IF cTipoEndoso NOT IN ('ESV','ESVTL','CLA','EAAF','CFV') THEN
 
       /*FOR X IN COBERT_Q LOOP
     SELECT NVL(COUNT(*),0)
@@ -559,14 +565,43 @@ BEGIN
             AND IdFondo       = X.IdFondo;
       END LOOP;
    ELSE
-      nIdTrn := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, cTipoEndoso);
-      OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, cTipoEndoso, 'ENDOSOS',
-              nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
+		nControl := 15;
+		--JIBARRA_28-11-2022 <SE LLAMA EL PROCESO CORRESPONDIENTE AL TIPO DE ENDOSO CORRESPONDIENTES A LA ACTUALIZACION DE LAS FECHAS COMO FUE SOLICITADA.>
+		IF(cTipoEndoso = 'CFV')THEN
+			nControl := 15.1;
+			DECLARE
+				nNumError	NUMBER;
+				cMsjError	VARCHAR2(4000);
+			BEGIN
+				nControl := 15.2;
+				ACTUALIZA_FECHAS_VIG(nCodCia,nIdPoliza, nIDetPol, nIdEndoso, nNumError, cMsjError);
+				IF(nNumError != 0)THEN
+					nControl := 15.3;
+					RAISE_APPLICATION_ERROR(-20225,'ERROR ACTUALIZA_FECHAS_VIG. [' || nNumError || ']' || cMsjError);
+				END IF;
+			END;
+		END IF;
+		
+		--JIBARRA_28-11-2022 <NO GENERA TRANSACCION, SOLO SE ACTUALIZAN FECHAS CON EL ENDOSO [CFV].>
+		IF(cTipoEndoso != 'CFV')THEN
+			nControl := 16;
+			nIdTrn := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, cTipoEndoso);
+			nControl := 17;
+			OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, cTipoEndoso, 'ENDOSOS',
+				  nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
+		END IF;
+		
    END IF;
-
-   OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, nIdEndoso);
-   OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIdEndoso);
-
+	
+	--JIBARRA_28-11-2022 <SOLO SE ACTUALIZAN FECHAS CON EL ENDOSO DIFERENTE [CFV].>
+	IF(cTipoEndoso != 'CFV')THEN
+		nControl := 18;
+		OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, nIdEndoso);
+		nControl := 19;
+		OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIdEndoso);
+	END IF;
+	
+	nControl := 20;
    UPDATE ENDOSOS
       SET StsEndoso = 'EMI',
      FecSts    = TRUNC(SYSDATE)
@@ -574,11 +609,12 @@ BEGIN
       AND IdPoliza  = nIdPoliza
       AND IDetPol   = nIDetPol
       AND IdEndoso  = nIdEndoso;
-
-   GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza, nIdTrn, TRUNC(SYSDATE), 'ENDOSOS');
+	
+	nControl := 21;
+	GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza, nIdTrn, TRUNC(SYSDATE), 'ENDOSOS');
 EXCEPTION
     WHEN OTHERS THEN
-      RAISE_APPLICATION_ERROR(-20225,'ERROR GENERAL Endoso.EMITIR  '||sqlerrm);
+	  RAISE_APPLICATION_ERROR(-20225,'ERROR GENERAL Endoso.EMITIR [' || nControl || ']' || sqlerrm);
 END EMITIR;
 
 	PROCEDURE EMITIR_AUMENTO(nCodcia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetPol NUMBER,
@@ -964,7 +1000,8 @@ END EMITIR;
 		 END IF;
 	      END IF;
 	   ELSE
-	      IF cTipoEndoso NOT IN ('ESV', 'ESVTL', 'EXA', 'RSS', 'NSS', 'EAD','CFP','EAAF') THEN
+	    --JIBARRA_07-11-2022 <SE AGREGA LA EXCLUSION DE [CFV], NO TIENE AFECATCION CONTABLE, SOLO ES AJUSTE DE FECHAS>
+		  IF cTipoEndoso NOT IN ('ESV', 'ESVTL', 'EXA', 'RSS', 'NSS', 'EAD','CFP','EAAF','CFV') THEN
 		 SELECT SUM(Suma_Aseg_Moneda)
 		   INTO nSumaAseg
 		   FROM ENDOSOS
@@ -2423,5 +2460,166 @@ END EMITIR;
 	    AND     E.CodEmpresa   = nCodEmpresa;
 	   RETURN(nCodMoneda);
 	END MONEDA;
-
+	
+	--JIBARRA_09-11-2022 <SE CREA PROCESO PARA EFECTURA LA ACTUALIZACION DE LAS FECHAS DE VIGENCIA DE ENDOSO, CERTIFICADO, POLIZA, FACTRUAS O NOTAS DE CREDITO
+	--						SEGUN COMO CORRESPONDE A LA NECESIDAD DEL USURAIO>
+    PROCEDURE ACTUALIZA_FECHAS_VIG(nCodCia IN NUMBER, nIdPoliza IN NUMBER, nIDetPol IN NUMBER, nIdEndoso IN NUMBER, nNumError OUT NUMBER, cMsjError OUT VARCHAR2) AS
+		cMotivo_EndosoA	SICAS_OC.ENDOSOS.MOTIVO_ENDOSO%TYPE := '027';  --VARIABLE PARA VALIDAR MOTIVO DE ENDOSO DE CAMBIO DE FECHA
+		cMotivo_EndosoB	SICAS_OC.ENDOSOS.MOTIVO_ENDOSO%TYPE := '029';  --VARIABLE PARA VALIDAR MOTIVO DE ENDOSO DE CAMBIO DE FECHA
+		cMotivo_EndosoC	SICAS_OC.ENDOSOS.MOTIVO_ENDOSO%TYPE := '031';  --VARIABLE PARA VALIDAR MOTIVO DE ENDOSO DE CAMBIO DE FECHA
+		cTipoDocNcr		SICAS_OC.ENDOSO_SERVICIOS_WEB.TIPO_DOC_UPD%TYPE := 'NCR';
+		cTipoDocRecibo	SICAS_OC.ENDOSO_SERVICIOS_WEB.TIPO_DOC_UPD%TYPE := 'RECIBO';
+		nParametros     VARCHAR2(2000) := 'Parametros:: ' || TRUNC(SYSDATE) || '[' || nCodCia || '|' || nIdPoliza || '|' || nIDetPol || '|' || nIdEndoso || '] ';
+		
+		nControl        NUMBER;
+		vCadenaControl	VARCHAR2(4000);
+		nIdEndosoUpd	SICAS_OC.ENDOSO_SERVICIOS_WEB.IDENDOSOUPD%TYPE := 0;
+		cTipoDoc		SICAS_OC.ENDOSO_SERVICIOS_WEB.TIPO_DOC_UPD%TYPE := NULL;
+		nIdTipoDoc		SICAS_OC.ENDOSO_SERVICIOS_WEB.ID_DOC_UPD%TYPE := 0;
+		cMotivo_Endoso	SICAS_OC.ENDOSOS.MOTIVO_ENDOSO%TYPE := NULL;
+		dNewFechaIni	SICAS_OC.ENDOSO_SERVICIOS_WEB.NEWFECHAINI%TYPE;
+		dNewFechaFin	SICAS_OC.ENDOSO_SERVICIOS_WEB.NEWFECHAFIN%TYPE;
+		dNewFechaIniD	SICAS_OC.ENDOSO_SERVICIOS_WEB.NEWFECHAINIDOC%TYPE;
+		dNewFechaFinD	SICAS_OC.ENDOSO_SERVICIOS_WEB.NEWFECHAFINDOC%TYPE;
+	BEGIN
+		nNumError := 0;
+		cMsjError := NULL;
+		nControl := 1;
+		BEGIN
+			nControl := 2;
+			SELECT ESW.IDENDOSOUPD,ESW.TIPO_DOC_UPD, ESW.ID_DOC_UPD, E.MOTIVO_ENDOSO,ESW.NEWFECHAINI,ESW.NEWFECHAFIN,ESW.NEWFECHAINIDOC,ESW.NEWFECHAFINDOC
+			INTO nIdEndosoUpd,cTipoDoc, nIdTipoDoc,cMotivo_Endoso,dNewFechaIni,dNewFechaFin,dNewFechaIniD,dNewFechaFinD
+			FROM SICAS_OC.ENDOSO_SERVICIOS_WEB ESW
+				,SICAS_OC.ENDOSOS E
+			WHERE ESW.CODCIA = nCodCia
+			AND ESW.IDPOLIZA = nIdPoliza
+			AND ESW.IDETPOL = nIDetPol
+			AND ESW.IDENDOSO = nIdEndoso
+			AND ESW.ENDOSO_EMITIDO = 'N'
+			AND ESW.UPD_SERVICIOS_WEB IS NULL
+			AND E.IDPOLIZA = ESW.IDPOLIZA
+			AND E.IDENDOSO = ESW.IDENDOSO
+			;
+		EXCEPTION
+			WHEN OTHERS THEN
+				nNumError := SQLCODE;
+				cMsjError := SQLERRM;
+				cMsjError := '[' || nControl || ']' || cMsjError;
+		END;
+		
+		nControl := 3;
+		IF(nNumError = 0 /*AND nIdEndosoUpd != 0 AND cTipoDoc IS NOT NULL AND nIdTipoDoc != 0*/ AND nIdPoliza IS NOT NULL AND nIDetPol IS NOT NULL 
+			AND nIdEndoso IS NOT NULL AND cMotivo_Endoso IS NOT NULL /*AND dNewFechaIni IS NOT NULL AND dNewFechaFin IS NOT NULL*/)THEN
+			nControl := 4;
+			IF(cMotivo_Endoso = cMotivo_EndosoA)THEN
+				nControl := 5;
+				UPDATE SICAS_OC.POLIZAS
+				SET    FECINIVIG = NVL(dNewFechaIni,FECINIVIG)
+					   ,FECFINVIG = NVL(dNewFechaFin,FECFINVIG)
+				WHERE  IDPOLIZA = nIdPoliza
+				;
+				
+				nControl := 6;
+				UPDATE SICAS_OC.DETALLE_POLIZA
+				SET    FECINIVIG = NVL(dNewFechaIni,FECINIVIG)
+					   ,FECFINVIG = NVL(dNewFechaFin,FECFINVIG)
+				WHERE  IDPOLIZA = nIdPoliza
+				AND    IDETPOL  = nIDetPol
+				;
+			ELSIF(cMotivo_Endoso = cMotivo_EndosoB)THEN
+				nControl := 7;
+				UPDATE SICAS_OC.DETALLE_POLIZA
+				SET FECINIVIG = NVL(dNewFechaIni,FECINIVIG)
+					,FECFINVIG = NVL(dNewFechaFin,FECFINVIG)
+				WHERE  IDPOLIZA = nIdPoliza
+				AND    IDETPOL  = nIDetPol
+				;
+			ELSIF(cMotivo_Endoso = cMotivo_EndosoC)THEN
+				nControl := 8;
+				IF(cTipoDoc = cTipoDocNcr)THEN
+					BEGIN
+						nControl := 9;
+						UPDATE SICAS_OC.NOTAS_DE_CREDITO
+						SET FECDEVOL = NVL(dNewFechaIniD,FECDEVOL)
+							,FECFINVIG = NVL(dNewFechaFinD,FECFINVIG)
+						WHERE IDPOLIZA  = nIdPoliza
+						AND IDETPOL = nIDetPol
+						AND IDENDOSO = nIdEndosoUpd
+						AND IDNCR = nIdTipoDoc
+						;
+					EXCEPTION
+						WHEN OTHERS THEN
+							nNumError := SQLCODE;
+							cMsjError := SQLERRM;
+							cMsjError := '[' || nControl || ']' || cMsjError;
+					END;
+				ELSIF(cTipoDoc = cTipoDocRecibo)THEN
+					BEGIN
+						nControl := 10;
+						UPDATE SICAS_OC.FACTURAS
+						SET FECVENC = NVL(dNewFechaIniD,FECVENC)
+							,FECFINVIG = NVL(dNewFechaFinD,FECFINVIG)
+						WHERE IDPOLIZA  = nIdPoliza
+						AND IDETPOL = nIDetPol
+						AND IDENDOSO = nIdEndosoUpd
+						AND IDFACTURA = nIdTipoDoc
+						;
+					EXCEPTION
+						WHEN OTHERS THEN
+							nNumError := SQLCODE;
+							cMsjError := SQLERRM;
+							cMsjError := '[' || nControl || ']' || cMsjError;
+					END;
+				/*ELSE
+					nControl := 11;
+					nNumError := nControl;
+					cMsjError := '[' || nControl || '] NO SE PUEDE IDENTIFICAR EL TIPO DE DOCUMENTO ' || cTipoDoc;
+				*/END IF;
+				
+				IF(nNumError = 0 AND nIdEndosoUpd != 0)THEN
+					BEGIN
+						nControl := 12;
+						UPDATE SICAS_OC.ENDOSOS
+						SET FECINIVIG = NVL(dNewFechaIni,FECINIVIG)
+							,FECFINVIG = NVL(dNewFechaFin,FECFINVIG)
+						WHERE IDPOLIZA  = nIdPoliza
+						AND IDENDOSO  = nIdEndosoUpd
+						AND IDETPOL = nIDetPol
+						;
+					EXCEPTION
+						WHEN OTHERS THEN
+							nNumError := SQLCODE;
+							cMsjError := SQLERRM;
+							cMsjError := '[' || nControl || ']' || cMsjError;
+					END;
+				END IF;
+				
+			ELSE
+				nNumError := nControl;
+				cMsjError := 'MOTIVO DE ENDOSO [' || cMotivo_Endoso || '] NO VALIDO. EL VALOR DE FECHAS QUE DESEA MODIFCIAR NO ES VALIDO. ' || dNewFechaIni || ' - ' || dNewFechaFin;
+			END IF;
+		ELSE
+			nNumError := nControl;
+			cMsjError := '[' || nNumError || '] VERIFICAR LOS DATOS INGRESADOS PARA LA ACTUALIZACION SOLICITADA.';
+		END IF;
+		
+		IF(nNumError = 0)THEN
+			SICAS_OC.OC_ENDOSO_SERVICIOS_WEB.ACTUALIZA_ENDOSO_EMITIDO_SW(nCodCia, nIdPoliza, nIDetPol, nIdEndoso, 'S'
+									,USER,TRUNC(SYSDATE),nNumError , cMsjError);
+			IF(nNumError = 0)THEN
+				COMMIT;
+				nNumError := 0;
+				cMsjError := 'ACTUALIZACION DE FECHAS CORRECTAS.';
+			END IF;
+		ELSE
+			ROLLBACK;
+		END IF;
+	EXCEPTION
+		WHEN OTHERS THEN
+			ROLLBACK;
+			nNumError := SQLCODE;
+			cMsjError := SQLERRM;
+			cMsjError := 'ERROR_GENERAL SICAS_OC.OC_ENDOSO.ACTUALIZA_FECHAS_VIG [' || nControl || '] <' || cMsjError || '>';
+	END ACTUALIZA_FECHAS_VIG;
+	
 END OC_ENDOSO;
