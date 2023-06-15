@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_ENDOSO_SERVICIOS_WEB AS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO_SERVICIOS_WEB AS
 	/** ----------------------------------------------------------------------------------	***
 	***   Nombre:: SICAS_OC.OC_ENDOSO_SERVICIOS_WEB                                      	***
 	***   Tipo:: PACKAGE Specification														***
@@ -10,14 +10,14 @@ create or replace PACKAGE          OC_ENDOSO_SERVICIOS_WEB AS
 	***   ------------------------------------------------------------------------------	***
 	***   | Jose de Jesus Ibarra Benitez	/	jibarra		| 1.0		| 23-11-2022	|  	***
 	*** ----------------------------------------------------------------------------------	**/
-
+	
 	--JIBARRA_23-11-2022 <SE CREA FUNCION PARA CONSULTAR LA INFORMACION DE LOS ELEMENTOS INSERTADOS Y QUE NO HAN SIDO ACTUALIZADOS POR SERVICIOS WEB PARA DWH.>
 	FUNCTION CONSULTA_ENDOSO_SERVICIOS_WEB(cMotivo_Endoso IN VARCHAR2) RETURN XMLTYPE;
-
+	
 	--JIBARRA_13-12-2022 <SE CREA FUNCION PARA CONSULTAR LAS FECHAS DE VIGENCIA DE DOCUMENTOS. LOS DOCUEMNTOS PERMITIDOS HASTA EL MOMENTO SON:: POLIZA,[01] CERITIFCADO DE POLIZA[02]
 	--						ENDOSO[03], FACTURAS(RECIBO)[03] Y NOTA DE CREDITO(NCR)[05].>
 	FUNCTION CONSULTA_FECHAS_VIGENCIA_DOCS(nIdDocumento IN NUMBER, nIdSubDocumento IN NUMBER, cTipoDoc IN VARCHAR2) RETURN SICAS_OC.fechasDeVigencia;
-
+	
 	--JIBARRA_23-11-2022 <SE CREA PROCESO PARA INSERTAR EN LA TABLA [SICAS_OC.ENDOSO_SERVICIOS_WEB] LA INFORMACION DE SEGUIMIENTO PARA LOS ENDOSOS CREADOS
 	--						PARA LA ACTUALIZACION DE ELEMENTOS EN POLIZAS, CERTIFICADOS, ENDOSOS Y/O FACTURAS/NOTAS DE CREDITO.>
 	PROCEDURE INSERTA_ENDOSO_SERVICIOS_WEB(nCodCia IN NUMBER,nIdPoliza IN NUMBER,nIDetPol IN NUMBER,nIdEndoso IN NUMBER,cMotivo_Endoso IN VARCHAR2
@@ -25,7 +25,7 @@ create or replace PACKAGE          OC_ENDOSO_SERVICIOS_WEB AS
 									,cEmitido IN VARCHAR2,cUser IN VARCHAR2,dFecContol IN DATE
 									,nNumError OUT NUMBER,cMsjError OUT VARCHAR2 --PARAMETROS DE SALIDA PARA CONTROL Y VALIDACION DE EXCEPCIONES
 									);
-
+	
 	--JIBARRA_23-11-2022 <PROCESO PARA ACTUALIZAR [ENDOSO_EMITIDO] CUANDO SE APLICARON LAS ACTUALZIACIONES DEL AJUSTE SOLICITADO.>
 	PROCEDURE ACTUALIZA_ENDOSO_EMITIDO_SW(nCodCia IN NUMBER,nIdPoliza IN NUMBER,nIDetPol IN NUMBER,nIdEndoso IN NUMBER, cEstatusEmitido IN VARCHAR2
 									,cUser IN VARCHAR2,dFecContol IN DATE
@@ -36,11 +36,12 @@ create or replace PACKAGE          OC_ENDOSO_SERVICIOS_WEB AS
 	PROCEDURE ACTUALIZA_ENDOSO_UPD_SW(xmlUpdEndososDWH IN XMLTYPE
 									,nNumError OUT NUMBER, cMsjError OUT VARCHAR2 --PARAMETROS DE SALIDA PARA CONTROL Y VALIDACION DE EXCEPCIONES
 									);
-
+	
 END OC_ENDOSO_SERVICIOS_WEB;
 
 /
-create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
+
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_ENDOSO_SERVICIOS_WEB AS
 	/** ----------------------------------------------------------------------------------	***
 	***   Nombre:: SICAS_OC.OC_ENDOSO_SERVICIOS_WEB                                      	***
 	***   Tipo:: PACKAGE Body																***
@@ -52,13 +53,13 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 	***   ------------------------------------------------------------------------------	***
 	***   | Jose de Jesus Ibarra Benitez	/	jibarra		| 1.0		| 23-11-2022	|  	***
 	*** ----------------------------------------------------------------------------------	**/
-
-	--JIBARRA_23-11-2022 <SE CREA FUNCION PARA CONSULTAR LA INFORMACION DE LOS ELEMENTOS INSERTADOS YQ UE NO HAN SIDO ACTUALIZADOS POR SERVICIOS WEB PARA DWH.>
+	
+	--JIBARRA_23-11-2022 <SE CREA FUNCION PARA CONSULTAR LA INFORMACION DE LOS ELEMENTOS INSERTADOS Y QUE NO HAN SIDO ACTUALIZADOS POR SERVICIOS WEB PARA DWH.>
 	FUNCTION CONSULTA_ENDOSO_SERVICIOS_WEB(cMotivo_Endoso IN VARCHAR2) RETURN XMLTYPE
 	AS
 		xmlHeader   XMLTYPE := NULL;
 		xmlBody     XMLTYPE := NULL;
-
+		
 		cParametros	VARCHAR2(200) := 'Parametros:: ' || TRUNC(SYSDATE) || '[' || cMotivo_Endoso ||']';
         nVarCero    NUMBER := 0;
 		nControl	NUMBER;
@@ -164,22 +165,22 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 		AND E.MOTIVO_ENDOSO = NVL(cMotivo_Endoso,E.MOTIVO_ENDOSO)
 		ORDER BY ESW.IDPOLIZA,ESW.IDENDOSO ASC
 		;
-
+		
 		--DBMS_OUTPUT.PUT_LINE('XXX');
 		--DBMS_OUTPUT.PUT_LINE('TAMANIO::' || LENGTH(xmlBody.getstringval()));
-
+		
 		nControl := 2;
 		SELECT XMLROOT(xmlBody, VERSION '1.0" encoding="UTF-8')
 		INTO xmlHeader
 		FROM DUAL;
-
+		
 		RETURN xmlHeader;
 	EXCEPTION
 		WHEN OTHERS THEN
 			nNumError := SQLCODE;
 			cMsjError := SQLERRM;
 			cMsjError := 'ERROR_GENERAL SICAS_OC.OC_ENDOSO_SERVICIOS_WEB.CONSULTA_ENDOSO_SERVICIOS_WEB [' || nControl || '] <' || cMsjError || '>' || cParametros;
-
+			
 			SELECT XMLELEMENT("DATA",
                         XMLAGG(XMLELEMENT("ERROR",XMLELEMENT("NumError",nNumError),XMLELEMENT("MsjError",cMsjError))
 							)
@@ -187,16 +188,16 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 			INTO xmlBody
 			FROM DUAL
 			;
-
+			
 			SELECT XMLROOT(xmlBody, VERSION '1.0" encoding="UTF-8')
 			INTO xmlHeader
 			FROM DUAL;
-
+			
 			RETURN xmlHeader;
-
+			
 			RAISE_APPLICATION_ERROR(-20225,'Error en OC_ENDOSO_SERVICIOS_WEB.CONSULTA_ENDOSO_SERVICIOS_WEB:'||cMsjError);
 	END CONSULTA_ENDOSO_SERVICIOS_WEB;
-
+	
 	--JIBARRA_13-12-2022 <SE CREA FUNCION PARA CONSULTAR LAS FECHAS DE VIGENCIA DE DOCUMENTOS. LOS DOCUEMNTOS PERMITIDOS HASTA EL MOMENTO SON:: POLIZA,[01] CERITIFCADO DE POLIZA[02]
 	--						ENDOSO[03], FACTURAS(RECIBO)[04] Y NOTA DE CREDITO(NCR)[05].>
 	--					<EL RESULTADO SE DEBE CONSIDERAR COMO [tipo VARCHAR2(1000), fechaIniVig DATE, fechaFinVig DATE]>
@@ -205,13 +206,13 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 		cTipoDocReturn		VARCHAR2(1000);
 		dFechaIniVigReturn	DATE 			:= NULL;
 		dFechaFinVigReturn	DATE 			:= NULL;
-
+		
 		--VARABLES PARA DECOTIFICAR EL PARAMETRO [cTipoDoc]
 		cTipoDoc01			VARCHAR2(1000) := 'POLIZA';
 		cTipoDoc02			VARCHAR2(1000) := 'CERTIFICADO_DE_POLIZA';
 		cTipoDoc03			VARCHAR2(1000) := 'ENDOSO_DE_POLIZA';
 		cTipoDoc04			VARCHAR2(1000) := 'RECIBO_NCR';
-
+		
 		cParametros			VARCHAR2(1000) := 'Parametros:: ' || TRUNC(SYSDATE) || '[' || nIdDocumento || '|' || nIdSubDocumento || '|' || nIdSubDocumento ||']';
 		nControl        	NUMBER;
 		nNumError			NUMBER;
@@ -235,7 +236,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 			INTO cTipoDocReturn
 			FROM DUAL
 			;
-
+			
 			nControl := 3;
 			IF(cTipoDocReturn != 'NO_ESPECIFICADO')THEN
 				nControl := 4;
@@ -282,7 +283,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 							cMsjError := '[' || nControl || ']' || cMsjError;
 							cTipoDocReturn := cMsjError;
 					END;
-
+					
 					IF(cTipoDocReturn IS NULL)THEN
 						nControl := 9;
 						BEGIN
@@ -311,19 +312,19 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 		ELSE
 			cTipoDocReturn := nControl || '_VALIDAR LOS VALORES INGRESADOS PARA LA FUNCION <SICAS_OC.OC_ENDOSO_SERVICIOS_WEB.CONSULTA_FECHAS_VIGENCIA_DOCS>';
 		END IF;
-
+		
 		RETURN SICAS_OC.fechasDeVigencia(cTipoDocReturn, TO_CHAR(dFechaIniVigReturn,'DD/MM/RRRR'), TO_CHAR(dFechaFinVigReturn,'DD/MM/RRRR'));
 	EXCEPTION
 		WHEN OTHERS THEN
 			nNumError := SQLCODE;
 			cMsjError := SQLERRM;
 			cMsjError := '[' || nControl || ']' || cMsjError;
-
+			
 			cTipoDocReturn := cMsjError;
-
+			
 			RETURN SICAS_OC.fechasDeVigencia(cTipoDocReturn, dFechaIniVigReturn, dFechaFinVigReturn);
 	END CONSULTA_FECHAS_VIGENCIA_DOCS;
-
+	
 	--JIBARRA_23-11-2022 <SE CREA PROCESO PARA INSERTAR EN LA TABLA [SICAS_OC.ENDOSO_SERVICIOS_WEB] LA INFORMACION DE SEGUIMIENTO PARA LOS ENDOSOS CREADOS
 	--						PARA LA ACTUALIZACION DE ELEMENTOS EN POLIZAS, CERTIFICADOS, ENDOSOS Y/O FACTURAS/NOTAS DE CREDITO.>
 	PROCEDURE INSERTA_ENDOSO_SERVICIOS_WEB(nCodCia IN NUMBER,nIdPoliza IN NUMBER,nIDetPol IN NUMBER,nIdEndoso IN NUMBER,cMotivo_Endoso IN VARCHAR2
@@ -335,11 +336,11 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 		cParametros     VARCHAR2(2000) := 'Parametros:: ' || TRUNC(SYSDATE) || '[' || nCodCia || '|' || nIdPoliza || '|' || nIDetPol || '|' || nIdEndoso || '|' || cMotivo_Endoso
 										|| '|' || nIdEndosoUpd || '|' || nIdDocUpd || '|' || dNewFecIni || '|' || dNewFecFin || '|' || dNewFecIniD || '|' || dNewFecFinD
 										|| '|' || cEmitido || '|' || cUser || '|' || dFecContol ||']';
-
+		
 		cMotivo_EndosoA  SICAS_OC.ENDOSOS.MOTIVO_ENDOSO%TYPE := '027';  --VARIABLE PARA VALIDAR MOTIVO DE ENDOSO DE CAMBIO DE FECHA
 		cMotivo_EndosoB  SICAS_OC.ENDOSOS.MOTIVO_ENDOSO%TYPE := '029';  --VARIABLE PARA VALIDAR MOTIVO DE ENDOSO DE CAMBIO DE FECHA
 		cMotivo_EndosoC  SICAS_OC.ENDOSOS.MOTIVO_ENDOSO%TYPE := '031';  --VARIABLE PARA VALIDAR MOTIVO DE ENDOSO DE CAMBIO DE FECHA
-
+		
 		dFechaVigIniP   SICAS_OC.ENDOSO_SERVICIOS_WEB.FECINIVIGP%TYPE;
 		dFechaVigFinP   SICAS_OC.ENDOSO_SERVICIOS_WEB.FECFINVIGP%TYPE;
 		dFechaVigIniD   SICAS_OC.ENDOSO_SERVICIOS_WEB.FECINIVIGD%TYPE;
@@ -352,13 +353,13 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 		dFechaVigFinV   SICAS_OC.ENDOSO_SERVICIOS_WEB.NEWFECHAFIN%TYPE;
 		nIdDocUpdCtrl	SICAS_OC.ENDOSO_SERVICIOS_WEB.ID_DOC_UPD%TYPE := 0;
 		cTipoDoc		SICAS_OC.ENDOSO_SERVICIOS_WEB.TIPO_DOC_UPD%TYPE;
-
+		
 		nControl        NUMBER;
 	BEGIN
 		nControl := 0.5;
 		nNumError := 0;
 		cMsjError := NULL;
-
+		
 		nControl := 1;
 		IF(nCodCia IS NOT NULL AND nIdPoliza IS NOT NULL AND nIDetPol IS NOT NULL AND nIdEndoso IS NOT NULL AND cMotivo_Endoso IS NOT NULL 
 			/*AND dNewFecIni IS NOT NULL AND dNewFecFin IS NOT NULL*/ AND cEmitido IS NOT NULL AND cUser IS NOT NULL AND dFecContol IS NOT NULL)THEN
@@ -370,7 +371,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 				FROM SICAS_OC.POLIZAS P
 				WHERE P.IDPOLIZA = nIdPoliza
 				;
-
+				
 				nControl := 4;
 				SELECT MIN(DP.FECINIVIG),MAX(DP.FECFINVIG)
 				INTO dFechaVigIniD, dFechaVigFinD
@@ -378,14 +379,14 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 				WHERE DP.IDPOLIZA = nIdPoliza
 				AND DP.IDETPOL  = nIDetPol
 				;
-
+				
 				nControl := 5;
 				IF(dFechaVigIniD IS NULL OR dFechaVigIniP >= dFechaVigIniD)THEN
 					dFechaVigIniV := dFechaVigIniP;
 				ELSE
 					dFechaVigIniV := dFechaVigIniD;
 				END IF;
-
+				
 				nControl := 5.5;
 				IF(dFechaVigFinD IS NULL OR dFechaVigFinP >= dFechaVigFinD)THEN
 					dFechaVigFinV := dFechaVigFinP;
@@ -413,7 +414,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 							AND IDENDOSO = nIdEndosoUpd
 							AND IDNCR = nIdDocUpd
 							;
-
+							
 							cTipoDoc := 'NCR';	--NOTAS DE CREDITO
 						EXCEPTION
 							WHEN NO_DATA_FOUND THEN
@@ -423,7 +424,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 								nNumError := SQLCODE;
 								cMsjError := SQLERRM;
 						END;
-
+						
 						IF(nIdDocUpdCtrl = 0 AND nNumError = -1)THEN
 							nNumError := 0;
 							cMsjError := NULL;
@@ -437,7 +438,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 								AND IDENDOSO = nIdEndosoUpd
 								AND IDFACTURA = nIdDocUpd
 								;
-
+								
 								cTipoDoc := 'RECIBO';		--FACTURA/RECIBO
 							EXCEPTION
 								WHEN NO_DATA_FOUND THEN
@@ -449,7 +450,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 							END;
 						END IF;
 					END IF;
-
+					
 					IF(nNumError = 0 AND nIdEndosoUpd != 0)THEN
 						BEGIN
 							nControl := 9;
@@ -467,7 +468,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 							WHEN OTHERS THEN
 								nNumError := SQLCODE;
 								cMsjError := SQLERRM;
-
+								
 						END;
 					END IF;
 				ELSE
@@ -477,19 +478,19 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 					dFechaIniDoc := NULL;
 					dFechaFinDoc := NULL;
 				END IF;
-
-
+				
+				
 			EXCEPTION
 				WHEN OTHERS THEN
 					nNumError := nControl;
 					cMsjError := 'VALIDADION DE FECHAS ERRONEA.';
 			END;
-
+			
 		ELSE
 			nNumError := nControl;
 			cMsjError := 'VALIDAR LOS VALORES DE LOS PARAMETROS OBLIGATORIOS.';
 		END IF;
-
+		
 		IF(nNumError = 0)THEN
 			nControl := 10;
 			INSERT INTO SICAS_OC.ENDOSO_SERVICIOS_WEB (CODCIA,IDPOLIZA,IDETPOL,IDENDOSO,FECINIVIGP,FECFINVIGP,FECINIVIGD,FECFINVIGD
@@ -498,7 +499,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 								VALUES(nCodCia,nIdPoliza,nIDetPol,nIdEndoso,dFechaVigIniP,dFechaVigFinP,dFechaVigIniD,dFechaVigFinD
 									,nIdEndosoUpd,dFechaVigIniE,dFechaVigFinE,cTipoDoc,nIdDocUpd,dFechaIniDoc,dFechaFinDoc,dNewFecIni,dNewFecFin,dNewFecIniD,dNewFecFinD
 									,cEmitido,cUser,dFecContol,cUser,dFecContol);
-
+			
 			COMMIT;
 			nNumError := 0;
 			cMsjError := 'INSERT CORRECTO PARA SICAS_OC.ENDOSO_SERVICIOS_WEB.';
@@ -514,7 +515,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 			cMsjError := 'ERROR_GENERAL SICAS_OC.OC_ENDOSO_SERVICIOS_WEB.INSERTA_ENDOSO_SERVICIOS_WEB [' || nControl || '] <' || cMsjError || '>' || cParametros;
 			RAISE_APPLICATION_ERROR(-20225,'Error en OC_ENDOSO_SERVICIOS_WEB.INSERTA_ENDOSO_SERVICIOS_WEB:'||cMsjError);
 	END INSERTA_ENDOSO_SERVICIOS_WEB;
-
+	
 	--JIBARRA_23-11-2022 <PROCESO PARA ACTUALIZAR [ENDOSO_EMITIDO] CUANDO SE APLICARON LAS ACTUALZIACIONES DEL AJUSTE SOLICITADO.>
 	PROCEDURE ACTUALIZA_ENDOSO_EMITIDO_SW(nCodCia IN NUMBER,nIdPoliza IN NUMBER,nIDetPol IN NUMBER,nIdEndoso IN NUMBER, cEstatusEmitido IN VARCHAR2
 									,cUser IN VARCHAR2,dFecContol IN DATE
@@ -526,7 +527,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 	BEGIN
 		nNumError := 0;
 		cMsjError := NULL;
-
+		
 		nControl := 1;
 		IF(nCodCia IS NULL OR nIdPoliza IS NULL OR nIDetPol IS NULL OR nIdEndoso IS NULL OR cEstatusEmitido IS NULL)THEN
 			nControl := 2;
@@ -543,7 +544,7 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 			AND IDETPOL = nIDetPol
 			AND IDENDOSO = nIdEndoso
 			;
-
+			
 			COMMIT;
 			nNumError := 0;
 			cMsjError := 'ACTUALIZACION CORRECTA.';
@@ -575,20 +576,16 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 		nControlLoop	NUMBER := 0;
 		nControlNoUpd	NUMBER := 0;
 		nControlUpd		NUMBER := 0;
-        vControl        NUMBER;
 	BEGIN
-        vControl := 1;
 		FOR n IN INFO_UPD LOOP
-            vControl := 2;
+			
 			IF(nControlLoop = 0)THEN
-                vControl := 2.1;
 				nControlLoop := 1;
 			END IF;
-            vControl := 3;
+            
 			IF(n.cFlagUpdate IS NOT NULL)THEN
-                vControl := 3.1;
 				nControlUpd := nControlUpd + 1;
-                vControl := 3.2;
+				
 				UPDATE SICAS_OC.ENDOSO_SERVICIOS_WEB
 				SET UPD_SERVICIOS_WEB = NVL(n.cFlagUpdate,UPD_SERVICIOS_WEB)
 					,NOTA_SERVICIOS_WEB = NVL(n.cNota,NOTA_SERVICIOS_WEB)
@@ -599,29 +596,34 @@ create or replace PACKAGE BODY          OC_ENDOSO_SERVICIOS_WEB AS
 				AND IDETPOL = n.nIDetPol
 				AND IDENDOSO = n.nIdEndoso
 				;
-                vControl := 3.3;
+				
 				COMMIT;
 			ELSE
-                vControl := 3.5;
 				nControlNoUpd := nControlNoUpd + 1;
 			END IF;
-            vControl := 4;
+			
 		END LOOP;
-        vControl := 5;
+		
 		IF(nControlLoop = 0)THEN
-            vControl := 5.1;
 			nNumError := 9999;
 			cMsjError := 'LA ESTRUCTURA DEL PARAMETRO DE ENTRADA NO CONTIENE LOS ELEMENTOS CORRESPONDIENTES PARA PROCESAR LA INFORMACION.';
 		ELSE
-            vControl := 5.2;
 			nNumError := 0;
-			cMsjError := 'PROCESAMIENTO DE DATOS. TOTAL DE REGISTROS: ' || (nControlUpd + nControlNoUpd) || '. ACTUALIZACIONES: ' || nControlUpd || '. NO ACTUALIZACIONES: ' || nControlNoUpd || '.';
+			cMsjError := 'PROCESAMIENTO DE DATOS. TOTAL DE REGISTROS: ' || (nControlUpd + nControlNoUpd) || '. ACTUALIZACIONES: .' || nControlUpd || '. NO ACTUALIZACIONES: ' || nControlNoUpd || '.';
 		END IF;
 	EXCEPTION
 		WHEN OTHERS THEN
 			nNumError := SQLCODE;
 			cMsjError := SQLERRM;
-			cMsjError := '[' || vControl || ']ERROR GENERAL EN OC_ENDOSO_SERVICIOS_WEB.ACTUALIZA_ENDOSO_UPD_SW' || cMsjError;
+			cMsjError := 'ERROR GENERAL EN OC_ENDOSO_SERVICIOS_WEB.ACTUALIZA_ENDOSO_UPD_SW' || cMsjError;
 	END ACTUALIZA_ENDOSO_UPD_SW;
-
+									
 END OC_ENDOSO_SERVICIOS_WEB;
+
+/
+
+GRANT EXECUTE ON SICAS_OC.OC_ENDOSO_SERVICIOS_WEB TO PUBLIC;
+
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM OC_ENDOSO_SERVICIOS_WEB FOR SICAS_OC.OC_ENDOSO_SERVICIOS_WEB;

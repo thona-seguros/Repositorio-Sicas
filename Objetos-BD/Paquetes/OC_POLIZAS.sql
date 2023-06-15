@@ -1,6 +1,8 @@
 CREATE OR REPLACE PACKAGE OC_POLIZAS IS
-   -- HOMOLOGACION VIFLEX                                                   JMMD 01/03/2022
-
+--
+-- HOMOLOGACION VIFLEX                             JMMD 01/03/2022
+-- INCIDENCIA AGENTE                               INCIAGE  JICO 14/06/2023
+--
     FUNCTION F_GET_NUMPOL ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
 
     FUNCTION INSERTAR_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, cDescPoliza VARCHAR2,
@@ -92,9 +94,8 @@ CREATE OR REPLACE PACKAGE OC_POLIZAS IS
     fUNCTION ALTURA_CERO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
 
 END OC_POLIZAS;
-
 /
-create or replace PACKAGE BODY OC_POLIZAS IS
+CREATE OR REPLACE PACKAGE BODY OC_POLIZAS IS
    --
    -- BITACORA DE CAMBIO
    -- SE AGREGO LA FUNCIONALIDAD DE LAVADO DE DINERO                        JICO 18/05/2017  LAVDIN
@@ -319,6 +320,7 @@ create or replace PACKAGE BODY OC_POLIZAS IS
    nDiaCobroAutomatico         POLIZAS.DiaCobroAutomatico%TYPE;
    cIndManejaFondos            POLIZAS.IndManejaFondos%TYPE;
    nIdFormaCobro               POLIZAS.IdFormaCobro%TYPE;
+   NUNPRICIPAL                 VARCHAR2(2);      --INCIAGE
 
    CURSOR CPTO_PRIMAS_Q IS
       SELECT CS.CodCpto
@@ -427,16 +429,31 @@ create or replace PACKAGE BODY OC_POLIZAS IS
       --INICIA LAVDIN
       IF NVL(nCodCliente,0) != 0 THEN
          IF cPldstaprobada = 'N'  THEN
-       OC_ADMON_RIESGO.VALIDA_PERSONAS_POLIZA(nIdPoliza,cMensaje);
-       IF cMensaje IS NOT NULL THEN
-          RAISE_APPLICATION_ERROR(-20200,cMensaje);
-       END IF;
+            OC_ADMON_RIESGO.VALIDA_PERSONAS_POLIZA(nIdPoliza,cMensaje);
+            IF cMensaje IS NOT NULL THEN
+               RAISE_APPLICATION_ERROR(-20200,cMensaje);
+            END IF;
          END IF;
       ELSE
          RAISE_APPLICATION_ERROR(-20200,'Póliza No. ' || nIdPoliza ||
-                  ' NO tiene Código de Cliente o Contratante - NO Puede Emitir la Póliza');
+         'NO tiene Código de Cliente o Contratante - NO Puede Emitir la Póliza');
       END IF;
       --FIN LAVDIN
+      --
+      --INICIA INCIAGE
+      NUNPRICIPAL := 0;
+      --
+      SELECT COUNT(*)
+        INTO NUNPRICIPAL
+        FROM AGENTE_POLIZA
+       WHERE CodCia        = nCodCia
+         AND IdPoliza      = nIdPoliza
+         AND IND_PRINCIPAL = 'S';
+      --
+      IF NVL(NUNPRICIPAL,0) > 1 THEN
+         RAISE_APPLICATION_ERROR(-20200,'No puede haber mas de un agente marcado como principal en la poliza');
+      END IF;
+      --FIN INCIAGE
 
       IF cNumPolUnico IS NOT NULL THEN
          SELECT COUNT(*)
@@ -4758,3 +4775,4 @@ BEGIN
 END ALTURA_CERO;  
 
 END OC_POLIZAS;
+/
