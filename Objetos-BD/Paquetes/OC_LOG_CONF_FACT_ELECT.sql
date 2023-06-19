@@ -1,49 +1,67 @@
-CREATE OR REPLACE PACKAGE OC_LOG_CONF_FACT_ELECT IS
-  PROCEDURE INSERTA(nCodCia LOG_CONF_FACT_ELECT.CODCIA%TYPE, 
-                    cNombTabla LOG_CONF_FACT_ELECT.NOMBRETABLA%TYPE,  
-					cNombCampo LOG_CONF_FACT_ELECT.NOMBRECAMPO%TYPE, 
-					cValorOld LOG_CONF_FACT_ELECT.VALORCAMPOANT%TYPE, 
-					cValorNew LOG_CONF_FACT_ELECT.VALORCAMPOUPD%TYPE, 
-					cTipoAccion LOG_CONF_FACT_ELECT.ACCION%TYPE);
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_LOG_CONF_FACT_ELECT IS
+/*	Fecha Modif: 14/06/2023
+	Modificó: Luis Argenis Reynoso Alvarez
+	modificación: Se agrega parametro de IndexUnique o PK al SP de inserción,
+		con la finalidad de registrar el ID unico del evento desde el disparador,
+		se coloca un DEFAULT NULLL, para no afectar los disparadores que ya están funcionando
+*/
+  PROCEDURE INSERTA(
+                    nCodCia       IN  LOG_CONF_FACT_ELECT.CODCIA%TYPE,
+                    cNombTabla    IN  LOG_CONF_FACT_ELECT.NOMBRETABLA%TYPE,
+                    cNombCampo    IN  LOG_CONF_FACT_ELECT.NOMBRECAMPO%TYPE,
+                    cValorOld     IN  LOG_CONF_FACT_ELECT.VALORCAMPOANT%TYPE,
+                    cValorNew     IN  LOG_CONF_FACT_ELECT.VALORCAMPOUPD%TYPE,
+                    cTipoAccion   IN  LOG_CONF_FACT_ELECT.ACCION%TYPE,
+                    cIndexUnique  IN  LOG_CONF_FACT_ELECT.FCVALORUNIQ%TYPE DEFAULT NULL
+                    );
 END;
 /
 
-CREATE OR REPLACE PACKAGE BODY OC_LOG_CONF_FACT_ELECT IS
-PROCEDURE INSERTA(nCodCia LOG_CONF_FACT_ELECT.CODCIA%TYPE, 
-                  cNombTabla LOG_CONF_FACT_ELECT.NOMBRETABLA%TYPE,  
-					cNombCampo LOG_CONF_FACT_ELECT.NOMBRECAMPO%TYPE, 
-					cValorOld LOG_CONF_FACT_ELECT.VALORCAMPOANT%TYPE, 
-					cValorNew LOG_CONF_FACT_ELECT.VALORCAMPOUPD%TYPE, 
-					cTipoAccion LOG_CONF_FACT_ELECT.ACCION%TYPE) IS
-nMaxTransaccion     LOG_CONF_FACT_ELECT.IDCTRLOG%TYPE;
-cUsuario            LOG_CONF_FACT_ELECT.USUARIOMOD%TYPE;
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_LOG_CONF_FACT_ELECT IS
 
+  PROCEDURE INSERTA(
+                    nCodCia       IN  LOG_CONF_FACT_ELECT.CODCIA%TYPE,
+                    cNombTabla    IN  LOG_CONF_FACT_ELECT.NOMBRETABLA%TYPE,
+                    cNombCampo    IN  LOG_CONF_FACT_ELECT.NOMBRECAMPO%TYPE,
+                    cValorOld     IN  LOG_CONF_FACT_ELECT.VALORCAMPOANT%TYPE,
+                    cValorNew     IN  LOG_CONF_FACT_ELECT.VALORCAMPOUPD%TYPE,
+                    cTipoAccion   IN  LOG_CONF_FACT_ELECT.ACCION%TYPE,
+                    cIndexUnique  IN  LOG_CONF_FACT_ELECT.FCVALORUNIQ%TYPE DEFAULT NULL
+                    ) IS
 
   BEGIN
+    
+    INSERT INTO LOG_CONF_FACT_ELECT(
+                                      IDCTRLOG, 
+                                      CodCia, 
+                                      NOMBRETABLA, 
+                                      NOMBRECAMPO, 
+                                      VALORCAMPOANT, 
+                                      VALORCAMPOUPD, 
+                                      ACCION, 
+                                      USUARIOMOD, 
+                                      FECMODIFICACION,
+                                      FCVALORUNIQ)
+                            VALUES(
+                                      SICAS_OC.SQ_LOGCONFFACT.NEXTVAL, 
+                                      nCodCia, 
+                                      cNombTabla, 
+                                      cNombCampo, 
+                                      cValorOld, 
+                                      cValorNew, 
+                                      cTipoAccion, 
+                                      USER, 
+                                      SYSDATE,
+                                      cIndexUnique);
 
-		SELECT SQ_LOGCONFFACT.NEXTVAL
-		   INTO nMaxTransaccion
-		   FROM DUAL;
-		   
-		SELECT USER
-		   INTO cUsuario
-		   FROM DUAL;
-		     
-		   
-		  
-		    INSERT INTO LOG_CONF_FACT_ELECT
-            (IDCTRLOG, CodCia, NOMBRETABLA, NOMBRECAMPO, VALORCAMPOANT, VALORCAMPOUPD, ACCION, USUARIOMOD, FECMODIFICACION)
-            VALUES(nMaxtransaccion, nCodCia, cNombTabla, cNombCampo, cValorOld, cValorNew, cTipoAccion, cUsuario, SYSDATE);
-		   
-		   
-
+  EXCEPTION 
+    WHEN OTHERS THEN
+      raise_application_error( -20000,SQLERRM);
   END INSERTA;
-
-END OC_LOG_CONF_FACT_ELECT
+END OC_LOG_CONF_FACT_ELECT;
 /
 
-CREATE OR REPLACE PUBLIC SYNONYM OC_LOG_CONF_FACT_ELECT FOR SICAS_OC.OC_LOG_CONF_FACT_ELECT
-/
+CREATE OR REPLACE PUBLIC SYNONYM OC_LOG_CONF_FACT_ELECT FOR SICAS_OC.OC_LOG_CONF_FACT_ELECT;
 
-GRANT EXECUTE ON SICAS_OC.OC_LOG_CONF_FACT_ELECT TO PUBLIC
+GRANT EXECUTE ON SICAS_OC.OC_LOG_CONF_FACT_ELECT TO PUBLIC;
 /
