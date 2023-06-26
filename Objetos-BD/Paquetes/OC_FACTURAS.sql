@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
+CREATE OR REPLACE PACKAGE OC_FACTURAS IS
 
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                        dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER);
@@ -71,30 +71,30 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAS IS
     FUNCTION PAGAR_ALTURA_CERO(nIdFactura NUMBER, cNumReciboPago VARCHAR2, dFecPago DATE, nMontoPago NUMBER,
                                cFormPago VARCHAR2, cEntPago VARCHAR2, nIdTransaccion NUMBER,
                                nMontoPrimaCompMoneda NUMBER, nMontoAporteFondo NUMBER) RETURN NUMBER;
-    --                               
-    FUNCTION FACTURA_ELECTRONICA_SAT40(P_CODCIA     NUMBER,                                       
+    --
+    FUNCTION FACTURA_ELECTRONICA_SAT40(P_CODCIA     NUMBER,
                                        PIDFACTURA  NUMBER,
                                        PIDNCR      NUMBER,
                                        P_CVE_MOTIVCANCFACT VARCHAR2,
-                                       P_IdTimbre OUT NUMBER) RETURN VARCHAR2;    
-    FUNCTION FACTURA_RELACIONADA_UUID_CANC(P_CODCIA     NUMBER,                                       
+                                       P_IdTimbre OUT NUMBER) RETURN VARCHAR2;
+    FUNCTION FACTURA_RELACIONADA_UUID_CANC(P_CODCIA     NUMBER,
                                         PIDFACTURA  NUMBER) RETURN VARCHAR2;
     --
-    FUNCTION FACTURA_RELACIONADA_ENDOSO(P_CODCIA     NUMBER,                                       
+    FUNCTION FACTURA_RELACIONADA_ENDOSO(P_CODCIA     NUMBER,
                                         PIDFACTURA  NUMBER) RETURN VARCHAR2;
-    --    
-    FUNCTION FACTURA_RELACIONADA(P_CODCIA     NUMBER,                                       
-                                 PIDFACTURA   NUMBER) RETURN NUMBER;      
+    --
+    FUNCTION FACTURA_RELACIONADA(P_CODCIA     NUMBER,
+                                 PIDFACTURA   NUMBER) RETURN NUMBER;
     --
     FUNCTION MONTO_BASE_IMPUESTO( nCodCia     NUMBER
                                 , nIdFactura  NUMBER ) RETURN NUMBER;
     --
-    FUNCTION IND_RFC_GENERICO(nIdFactura  NUMBER, 
+    FUNCTION IND_RFC_GENERICO(nIdFactura  NUMBER,
                               nCodCia     NUMBER) RETURN VARCHAR2;
-    --                              
+    --
 END OC_FACTURAS;
 /
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
+CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
     --
     -- MODIFICACIONES
     -- INSERCION DE FECHAS A COMISIONES                                       2018/03/06  ICO COMI
@@ -2408,8 +2408,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
           AND CodCia         = nCodCia
           AND IdTransaccion  = nIdTransacEmis
           AND StsFact        = 'EMI'
-          AND (IDetPol, NumCuota) IN (SELECT F.IDetPol, F.NumCuota
-                                        FROM FACTURAS F, PAGOS P
+          AND (IDetPol, IdEndoso, NumCuota) IN (SELECT F.IDetPol, IdEndoso, F.NumCuota  -- MLJS 26/06/2023 se agrega el IdEndoso
+                                        FROM FACTURAS F, PAGOS P                        -- para que tome los recibos correctos
                                        WHERE P.IdTransaccionAnu = nIdTransacPagos
                                          AND P.IdFactura        = F.IdFactura
                                          AND F.IdPoliza         = nIdPoliza
@@ -3495,13 +3495,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                                        PIDFACTURA  NUMBER,
                                        PIDNCR      NUMBER,
                                        P_CVE_MOTIVCANCFACT VARCHAR2,
-                                       P_IdTimbre  OUT NUMBER) RETURN VARCHAR2 IS    
+                                       P_IdTimbre  OUT NUMBER) RETURN VARCHAR2 IS
             --
             --P_CODCIA     NUMBER := 1;
             --P_IDFACTURA  NUMBER := 318981;
             --P_IDNCR      NUMBER := 0;
             --P_CVE_MOTIVCANCFACT VARCHAR2(10) := '01';
-            --    
+            --
             cLin                VARCHAR2(32767);
             cResultado          VARCHAR2(32767);
             cCVE_MOTIVCANCFACT  VARCHAR2(30);
@@ -3512,18 +3512,18 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
             cCodigoResp         VARCHAR2(100);
             cDescResp           VARCHAR2(1000);
             cFechaResp          DATE;
-            nIdTimbre           NUMBER;            
+            nIdTimbre           NUMBER;
             --
         BEGIN
-            -- VALIDACION    
+            -- VALIDACION
             IF NVL(P_IDFACTURA, 0) = 0           THEN P_IDFACTURA := NULL; END IF;
             IF NVL(P_IDNCR, 0) = 0               THEN P_IDNCR     := NULL; END IF;
-            IF P_IDNCR IS NULL AND P_IDFACTURA IS NULL THEN 
+            IF P_IDNCR IS NULL AND P_IDFACTURA IS NULL THEN
                 RAISE_APPLICATION_ERROR(-20200,'El numero de IDFACTURA o de IDNCR no es válido: '||P_IDNCR ||P_IDFACTURA);
             END IF;
 
-            BEGIN        
-                SELECT CVEMOTIVCANCFACT 
+            BEGIN
+                SELECT CVEMOTIVCANCFACT
                   INTO cCVE_MOTIVCANCFACT
                   FROM FACT_ELECT_MOTIVO_CANCELA M
                  WHERE M.CODCIA = P_CODCIA
@@ -3543,87 +3543,87 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                                                                                            AND E1.CODEMPRESA = P.CODEMPRESA
                                                                                            AND E1.IDPOLIZA   = P.IDPOLIZA
                                                                                            AND E1.IDETPOL    = D.IDETPOL
-                                                                                           AND TRUNC(E1.FECEMISION) = TRUNC(F2.FECSTS)                                            
+                                                                                           AND TRUNC(E1.FECEMISION) = TRUNC(F2.FECSTS)
                                                                                            AND E1.STSENDOSO  = 'EMI'), F2.IDENDOSO) IDENDOSO,
-                                       F2.IDENDOSO    IDENDOSO_EMI,             
+                                       F2.IDENDOSO    IDENDOSO_EMI,
                                        F.IDENDOSO     IDENDOSO_ANU,
                                        F2.FECVENC     INICIO_ANU,
-                                       F2.FECFINVIG   FINAL_ANU,     
+                                       F2.FECFINVIG   FINAL_ANU,
                                        F2.IDFACTURA   IDFACTURA_EMITIDA,
                                        F2.STSFACT     STSEMI,
                                        TEMI.UUID      UUID_SUSTITUYE,
-                                       TEMI.CODPROCESO,   
+                                       TEMI.CODPROCESO,
                                        F.IDFACTURA    IDFACTURA_ANULAR,
                                        F.STSFACT      STSANU,
                                        NVL(P_CVE_MOTIVCANCFACT, NVL(F.CVE_MOTIVCANCFACT, E.CVE_MOTIVCANCFACT)) CVE_MOTIVCANCFACT,
                                        TANU.UUID      UUID_CANCELAR,
-                                       NULL           IdNcr_ANULAR         
+                                       NULL           IdNcr_ANULAR
                                   FROM polizas p INNER JOIN DETALLE_POLIZA D                ON D.CODCIA         = P.CODCIA
-                                                                                           AND D.CODEMPRESA     = P.CODEMPRESA 
+                                                                                           AND D.CODEMPRESA     = P.CODEMPRESA
                                                                                            AND D.IDPOLIZA       = P.IDPOLIZA
                                                  INNER JOIN ENDOSOS        E                ON E.CODCIA     = P.CODCIA
                                                                                            AND E.CODEMPRESA = P.CODEMPRESA
                                                                                            AND E.IDPOLIZA   = P.IDPOLIZA
-                                                                                           AND E.IDETPOL    = D.IDETPOL                                            
+                                                                                           AND E.IDETPOL    = D.IDETPOL
                                                                                            AND E.STSENDOSO  = 'EMI'
-                                                 -- FACTURAS EMITIDA QUE REMPLAZAA LA ANULADA Y ESTA YA TIMBRADA                                                           
-                                                 INNER JOIN FACTURAS      F2                ON P.CODCIA     = F2.CODCIA 
-                                                                                           AND P.IDPOLIZA   = F2.IDPOLIZA 
+                                                 -- FACTURAS EMITIDA QUE REMPLAZAA LA ANULADA Y ESTA YA TIMBRADA
+                                                 INNER JOIN FACTURAS      F2                ON P.CODCIA     = F2.CODCIA
+                                                                                           AND P.IDPOLIZA   = F2.IDPOLIZA
                                                                                            AND D.IDETPOL    = F2.IDETPOL
-                                                                                           AND F2.IDENDOSO  IN (E.IDENDOSO, 0)  
-                                                                                           AND F2.STSFACT IN ('EMI') 
-                                                                                           AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F2.IDFACTURA,'', F2.STSFACT) = 'S'                                                           
+                                                                                           AND F2.IDENDOSO  IN (E.IDENDOSO, 0)
+                                                                                           AND F2.STSFACT IN ('EMI')
+                                                                                           AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F2.IDFACTURA,'', F2.STSFACT) = 'S'
                                                  INNER JOIN FACT_ELECT_DETALLE_TIMBRE TEMI  ON TEMI.CODCIA     = P.CODCIA
                                                                                            AND TEMI.CODEMPRESA = P.CODEMPRESA
-                                                                                           AND TEMI.IDFACTURA  = F2.IDFACTURA 
+                                                                                           AND TEMI.IDFACTURA  = F2.IDFACTURA
                                                                                            AND TEMI.IDNCR      = 0
-                                                                                           AND TEMI.UUID IS NOT NULL     
-                                                                                           AND TEMI.CODPROCESO = F2.STSFACT  
-                                                                                           AND TEMI.UUIDCANCELADO IS  NULL                                                 
-                                                 -- FACTURAS QUE NO HAN SIDO TIMBRADAS (PERO YA ESTAN ANULADAS)                                                           
-                                                 INNER JOIN FACTURAS       F                ON F.CODCIA         = P.CODCIA 
-                                                                                           AND F.IDPOLIZA       = P.IDPOLIZA 
-                                                                                           AND F.IDETPOL        = D.IDETPOL 
+                                                                                           AND TEMI.UUID IS NOT NULL
+                                                                                           AND TEMI.CODPROCESO = F2.STSFACT
+                                                                                           AND TEMI.UUIDCANCELADO IS  NULL
+                                                 -- FACTURAS QUE NO HAN SIDO TIMBRADAS (PERO YA ESTAN ANULADAS)
+                                                 INNER JOIN FACTURAS       F                ON F.CODCIA         = P.CODCIA
+                                                                                           AND F.IDPOLIZA       = P.IDPOLIZA
+                                                                                           AND F.IDETPOL        = D.IDETPOL
                                                                                            AND F.STSFACT        = 'ANU'
                                                                                            AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F.IDFACTURA,'', 'CAN') = 'N'
                                                  INNER JOIN FACT_ELECT_DETALLE_TIMBRE TANU  ON TANU.CODCIA     = P.CODCIA
                                                                                            AND TANU.CODEMPRESA = P.CODEMPRESA
-                                                                                           AND TANU.IDFACTURA  = F.IDFACTURA 
+                                                                                           AND TANU.IDFACTURA  = F.IDFACTURA
                                                                                            AND TANU.IDNCR      = 0
-                                                                                           AND TANU.UUID IS NOT NULL     
-                                                                                           AND TANU.CODPROCESO = 'EMI'  
+                                                                                           AND TANU.UUID IS NOT NULL
+                                                                                           AND TANU.CODPROCESO = 'EMI'
                                                                                            AND TANU.CODRESPUESTASAT = '201'
-                                                                                           AND TANU.UUIDCANCELADO IS NULL                                                 
-                                WHERE F2.CODCIA = P_CODCIA AND   
+                                                                                           AND TANU.UUIDCANCELADO IS NULL
+                                WHERE F2.CODCIA = P_CODCIA AND
                                       F2.IDFACTURA = P_IDFACTURA AND
                                       F.FECVENC  = NVL(F2.FECVENC, TRUNC(SYSDATE))   AND
                                       F.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE)) AND
-                                      F.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION) 
-                                             FROM FACTURAS FX  
+                                      F.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION)
+                                             FROM FACTURAS FX
                                             WHERE FX.IDPOLIZA  = F.IDPOLIZA
-                                              AND FX.IDETPOL   = D.IDETPOL 
+                                              AND FX.IDETPOL   = D.IDETPOL
                                               AND FX.STSFACT   = 'ANU'
                                               AND FX.FECVENC   = F.FECVENC
                                               AND FX.FECFINVIG = F.FECFINVIG)) LOOP
 
-                            cLin := GT_WEB_SERVICES.Ejecuta_WS(1,1,4000, -4000, cResultado,':nCodCia='  || 1 || 
+                            cLin := GT_WEB_SERVICES.Ejecuta_WS(1,1,4000, -4000, cResultado,':nCodCia='  || 1 ||
                                                                                     ',:Wuuid='   || '¨' || ENT.UUID_CANCELAR     || '¨' ||
                                                                                     ',:Wmotivo=' || '¨' || ENT.CVE_MOTIVCANCFACT || '¨' ||
-                                                                                    ',:WuuNuevo='|| '¨' || ENT.UUID_SUSTITUYE    || '¨' 
-                                                                      ).getClobVal;     
-                            --                                        
+                                                                                    ',:WuuNuevo='|| '¨' || ENT.UUID_SUSTITUYE    || '¨'
+                                                                      ).getClobVal;
+                            --
                             --dbms_output.put_line('Respuesta-->Codigo: ' || GT_WEB_SERVICES.ExtraStr ('codigo xsi:type="xsd:string"', cLin) || '-' ||
-                            --                         'Descripcion: ' || GT_WEB_SERVICES.ExtraStr('descripcion xsi:type="xsd:string"', cLin)    || '-' ||                                                                
+                            --                         'Descripcion: ' || GT_WEB_SERVICES.ExtraStr('descripcion xsi:type="xsd:string"', cLin)    || '-' ||
                             --                         'Fecha: ' || GT_WEB_SERVICES.ExtraStr('fecha xsi:type="xsd:string"', cLin));
                             --
                             cCodigoResp:= GT_WEB_SERVICES.ExtraStr('codigo xsi:type="xsd:string"',      cLin);
                             cDescResp  := GT_WEB_SERVICES.ExtraStr('descripcion xsi:type="xsd:string"', cLin);
                             cFechaResp := to_date(GT_WEB_SERVICES.ExtraStr('fecha xsi:type="xsd:string"',       cLin), 'YYYY-MM-DD HH24:MI:SS');
                             --
-                            UPDATE FACTURAS S SET S.CVE_MOTIVCANCFACT = NVL(S.CVE_MOTIVCANCFACT, P_CVE_MOTIVCANCFACT)                                                                                                    
+                            UPDATE FACTURAS S SET S.CVE_MOTIVCANCFACT = NVL(S.CVE_MOTIVCANCFACT, P_CVE_MOTIVCANCFACT)
                             WHERE S.CODCIA    = ENT.CODCIA
                               AND S.IDFACTURA = ENT.IDFACTURA_ANULAR;
-                            -- 
+                            --
                             UPDATE FACTURAS S SET S.IDENDOSO = ENT.IDENDOSO
                             WHERE S.CODCIA    = ENT.CODCIA
                               AND S.IDFACTURA = ENT.IDFACTURA_EMITIDA
@@ -3635,25 +3635,25 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                             WHERE T.UUID = ENT.UUID_SUSTITUYE;
                             --
                             -- INSERTA EL CFDI ANULADO
-                            OC_FACT_ELECT_DETALLE_TIMBRE.INSERTA_DETALLE(ENT.CODCIA, 
-                                                                         ENT.CODEMPRESA, 
+                            OC_FACT_ELECT_DETALLE_TIMBRE.INSERTA_DETALLE(ENT.CODCIA,
+                                                                         ENT.CODEMPRESA,
                                                                          ENT.IDFACTURA_ANULAR,
-                                                                         ENT.IdNcr_ANULAR, 
-                                                                         'CAN', 
+                                                                         ENT.IdNcr_ANULAR,
+                                                                         'CAN',
                                                                          null,
-                                                                         TRUNC(SYSDATE), 
+                                                                         TRUNC(SYSDATE),
                                                                          null,
                                                                          null,
                                                                          CASE WHEN cCodigoResp IN ('201','2001') THEN '201' ELSE '501' END,
                                                                          ENT.UUID_CANCELAR,
-                                                                         NULL, --cCve_MotivCancFact,                                                                 
+                                                                         NULL, --cCve_MotivCancFact,
                                                                          nIdTimbre,
                                                                          ENT.UUID_SUSTITUYE, --ENT.UUID_SUSTITUYE,
                                                                          cCodigoResp,
                                                                          cDescResp,
                                                                          nvl(cFechaResp, sysdate)
                                                                          );
-                            --                       
+                            --
                             OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(ENT.CodCia, ENT.CodEmpresa,ENT.IDFACTURA_ANULAR,PIDNCR,'CAN',cCodigoResp,cDescResp,ENT.UUID_CANCELAR);
                             --
                        END LOOP;
@@ -3667,43 +3667,43 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                                        NVL(P_CVE_MOTIVCANCFACT, F.CVE_MOTIVCANCFACT) CVE_MOTIVCANCFACT
                                   FROM FACTURAS F INNER JOIN FACT_ELECT_DETALLE_TIMBRE T ON T.CODCIA = F.CODCIA
                                                                                         AND T.CODEMPRESA = 1
-                                                                                        AND T.IDFACTURA = P_IDFACTURA 
+                                                                                        AND T.IDFACTURA = P_IDFACTURA
                                                                                         AND T.CODPROCESO IN ('EMI','PAG')
                                                                                         AND T.CODRESPUESTASAT = '201'
                                  WHERE F.CODCIA    = P_CODCIA
                                    AND F.IDFACTURA = P_IDFACTURA
-                                ) LOOP               
-                        --                                
-                        cLin := GT_WEB_SERVICES.Ejecuta_WS(1,1,4000, -4000, cResultado,':nCodCia='  || 1 || 
+                                ) LOOP
+                        --
+                        cLin := GT_WEB_SERVICES.Ejecuta_WS(1,1,4000, -4000, cResultado,':nCodCia='  || 1 ||
                                                                 ',:Wuuid='   || '¨' || ENT.UUID_CANCELAR     || '¨' ||
                                                                 ',:Wmotivo=' || '¨' || ENT.CVE_MOTIVCANCFACT || '¨' ||
-                                                                ',:WuuNuevo='|| '¨' || NULL    || '¨' 
-                                                  ).getClobVal;           
-                        --                                          
+                                                                ',:WuuNuevo='|| '¨' || NULL    || '¨'
+                                                  ).getClobVal;
+                        --
                         --dbms_output.put_line('Respuesta-->Codigo: ' || GT_WEB_SERVICES.ExtraStr ('codigo xsi:type="xsd:string"', cLin) || '-' ||
-                        --                         'Descripcion: ' || GT_WEB_SERVICES.ExtraStr('descripcion xsi:type="xsd:string"', cLin)    || '-' ||                                                                
+                        --                         'Descripcion: ' || GT_WEB_SERVICES.ExtraStr('descripcion xsi:type="xsd:string"', cLin)    || '-' ||
                         --                         'Fecha: ' || GT_WEB_SERVICES.ExtraStr('fecha xsi:type="xsd:string"', cLin));
                         --
                         cCodigoResp:= GT_WEB_SERVICES.ExtraStr('codigo xsi:type="xsd:string"',      cLin);
                         cDescResp  := GT_WEB_SERVICES.ExtraStr('descripcion xsi:type="xsd:string"', cLin);
-                        cFechaResp := to_date(GT_WEB_SERVICES.ExtraStr('fecha xsi:type="xsd:string"',       cLin), 'YYYY-MM-DD HH24:MI:SS');                
-                        --                
+                        cFechaResp := to_date(GT_WEB_SERVICES.ExtraStr('fecha xsi:type="xsd:string"',       cLin), 'YYYY-MM-DD HH24:MI:SS');
+                        --
                         UPDATE FACTURAS S SET S.CVE_MOTIVCANCFACT = cCve_MotivCancFact
                         WHERE S.CODCIA    = ENT.CODCIA
                           AND S.IDFACTURA = ENT.IDFACTURA_ANULAR;
                         --
-                        OC_FACT_ELECT_DETALLE_TIMBRE.INSERTA_DETALLE(ENT.CODCIA, 
-                                                                     ENT.CODEMPRESA, 
+                        OC_FACT_ELECT_DETALLE_TIMBRE.INSERTA_DETALLE(ENT.CODCIA,
+                                                                     ENT.CODEMPRESA,
                                                                      ENT.IDFACTURA_ANULAR,
-                                                                     ENT.IdNcr_ANULAR, 
-                                                                     'CAN', 
+                                                                     ENT.IdNcr_ANULAR,
+                                                                     'CAN',
                                                                      null,
-                                                                     TRUNC(SYSDATE), 
+                                                                     TRUNC(SYSDATE),
                                                                      null,
                                                                      null,
                                                                      CASE WHEN cCodigoResp IN ('201','2001') THEN '201' ELSE '501' END,
                                                                      ENT.UUID_CANCELAR,
-                                                                     ENT.CVE_MOTIVCANCFACT,                                                                 
+                                                                     ENT.CVE_MOTIVCANCFACT,
                                                                      nIdTimbre,
                                                                      NULL,
                                                                      cCodigoResp,
@@ -3711,15 +3711,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                                                                      nvl(cFechaResp, sysdate)
                                                                      );
 
-                            --                       
+                            --
                             OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(ENT.CodCia, ENT.CodEmpresa, ENT.IDFACTURA_ANULAR, PIDNCR,'CAN', cCodigoResp, cDescResp, ENT.UUID_CANCELAR);
                             --
 
                     END LOOP;
-                    --                          
+                    --
                END IF;
             --
-            dbms_output.put_line('nIdTimbre: ' || nIdTimbre );        
+            dbms_output.put_line('nIdTimbre: ' || nIdTimbre );
             P_IdTimbre := nIdTimbre;
             --
             cCodigoResp := CASE WHEN cCodigoResp IN ('201','2001') THEN '201' ELSE '501' END;
@@ -3728,111 +3728,111 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
 
     EXCEPTION WHEN OTHERS THEN
                 OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(1, 1, P_IDNCR || P_IDFACTURA, PIDNCR,'CAN', '501', '<<Error en la cancelacion del CFDI del Recibo o NCR No.: '|| P_IDNCR || P_IDFACTURA || ', motivo cancelación: ' || P_CVE_MOTIVCANCFACT || '>>' || chr(10), sqlerrm);
-               RETURN '<<Error en la cancelacion del CFDI del Recibo o NCR No.: '|| P_IDNCR || P_IDFACTURA || ', motivo cancelación: ' || P_CVE_MOTIVCANCFACT || '>>' || chr(10) || sqlerrm;    
+               RETURN '<<Error en la cancelacion del CFDI del Recibo o NCR No.: '|| P_IDNCR || P_IDFACTURA || ', motivo cancelación: ' || P_CVE_MOTIVCANCFACT || '>>' || chr(10) || sqlerrm;
     END FACTURA_ELECTRONICA_SAT40;
     --
-    FUNCTION FACTURA_RELACIONADA_UUID_CANC(P_CODCIA     NUMBER,                                       
-                                        PIDFACTURA   NUMBER) RETURN VARCHAR2 IS 
+    FUNCTION FACTURA_RELACIONADA_UUID_CANC(P_CODCIA     NUMBER,
+                                        PIDFACTURA   NUMBER) RETURN VARCHAR2 IS
         Relacion VARCHAR2(32700);
     BEGIN
-        FOR ENT IN (  
-        SELECT DISTINCT TANU.UUID      UUID_CANCELAR          
+        FOR ENT IN (
+        SELECT DISTINCT TANU.UUID      UUID_CANCELAR
                   FROM polizas p INNER JOIN DETALLE_POLIZA D                ON D.CODCIA         = P.CODCIA
-                                                                           AND D.CODEMPRESA     = P.CODEMPRESA 
+                                                                           AND D.CODEMPRESA     = P.CODEMPRESA
                                                                            AND D.IDPOLIZA       = P.IDPOLIZA
                                  INNER JOIN ENDOSOS        E                ON E.CODCIA     = P.CODCIA
                                                                            AND E.CODEMPRESA = P.CODEMPRESA
                                                                            AND E.IDPOLIZA   = P.IDPOLIZA
-                                                                           AND E.IDETPOL    = D.IDETPOL                                            
+                                                                           AND E.IDETPOL    = D.IDETPOL
                                                                            AND E.STSENDOSO  = 'EMI'
-                                 -- FACTURAS EMITIDA QUE REMPLAZAA LA ANULADA Y ESTA YA TIMBRADA                                                           
-                                 INNER JOIN FACTURAS      F2                ON P.CODCIA     = F2.CODCIA 
-                                                                           AND P.IDPOLIZA   = F2.IDPOLIZA 
+                                 -- FACTURAS EMITIDA QUE REMPLAZAA LA ANULADA Y ESTA YA TIMBRADA
+                                 INNER JOIN FACTURAS      F2                ON P.CODCIA     = F2.CODCIA
+                                                                           AND P.IDPOLIZA   = F2.IDPOLIZA
                                                                            AND D.IDETPOL    = F2.IDETPOL
-                                                                           AND F2.IDENDOSO  IN(E.IDENDOSO, 0)  
-                                                                           AND F2.STSFACT IN ('EMI') 
-                                                                           AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F2.IDFACTURA,'', F2.STSFACT) = 'N'                                                           
-                                 -- FACTURAS QUE NO HAN SIDO TIMBRADAS (PERO YA ESTAN ANULADAS)                                                           
-                                 INNER JOIN FACTURAS       F3                ON F3.CODCIA         = P.CODCIA 
-                                                                           AND F3.IDPOLIZA       = P.IDPOLIZA 
-                                                                           AND F3.IDETPOL        = D.IDETPOL 
+                                                                           AND F2.IDENDOSO  IN(E.IDENDOSO, 0)
+                                                                           AND F2.STSFACT IN ('EMI')
+                                                                           AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F2.IDFACTURA,'', F2.STSFACT) = 'N'
+                                 -- FACTURAS QUE NO HAN SIDO TIMBRADAS (PERO YA ESTAN ANULADAS)
+                                 INNER JOIN FACTURAS       F3                ON F3.CODCIA         = P.CODCIA
+                                                                           AND F3.IDPOLIZA       = P.IDPOLIZA
+                                                                           AND F3.IDETPOL        = D.IDETPOL
                                                                            AND F3.STSFACT        = 'ANU'
                                                                            AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F3.IDFACTURA,'', 'CAN') = 'N'
                                  INNER JOIN FACT_ELECT_DETALLE_TIMBRE TANU  ON TANU.CODCIA     = P.CODCIA
                                                                            AND TANU.CODEMPRESA = P.CODEMPRESA
-                                                                           AND TANU.IDFACTURA  = F3.IDFACTURA 
+                                                                           AND TANU.IDFACTURA  = F3.IDFACTURA
                                                                            AND TANU.IDNCR      = 0
-                                                                           AND TANU.UUID IS NOT NULL     
-                                                                           AND TANU.CODPROCESO = 'EMI'  
+                                                                           AND TANU.UUID IS NOT NULL
+                                                                           AND TANU.CODPROCESO = 'EMI'
                                                                            AND TANU.CODRESPUESTASAT = '201'
-                                                                           AND TANU.UUIDCANCELADO IS NULL                                                 
-                 WHERE F2.CODCIA = P_CODCIA AND                                          
-                       (F2.IDFACTURA = PIDFACTURA OR                                    
-                       F3.IDFACTURA = PIDFACTURA ) AND 
+                                                                           AND TANU.UUIDCANCELADO IS NULL
+                 WHERE F2.CODCIA = P_CODCIA AND
+                       (F2.IDFACTURA = PIDFACTURA OR
+                       F3.IDFACTURA = PIDFACTURA ) AND
                        F3.FECVENC  = NVL(F2.FECVENC, TRUNC(SYSDATE)) AND
-                       F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE))AND 
-                       F3.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION) 
-                                             FROM FACTURAS FX  
+                       F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE))AND
+                       F3.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION)
+                                             FROM FACTURAS FX
                                             WHERE FX.IDPOLIZA  = F3.IDPOLIZA
-                                              AND FX.IDETPOL   = D.IDETPOL 
+                                              AND FX.IDETPOL   = D.IDETPOL
                                               AND FX.STSFACT   = 'ANU'
                                               AND FX.FECVENC   = F3.FECVENC
                                               AND FX.FECFINVIG = F3.FECFINVIG) ) LOOP
-            --                       
-            IF LENGTH(Relacion) > 0 THEN Relacion := Relacion || CHR(10) || 'CREL|||UUID|'; END IF;                       
-            Relacion := Relacion || ENT.UUID_CANCELAR;                                              
-        END LOOP;                      
+            --
+            IF LENGTH(Relacion) > 0 THEN Relacion := Relacion || CHR(10) || 'CREL|||UUID|'; END IF;
+            Relacion := Relacion || ENT.UUID_CANCELAR;
+        END LOOP;
         RETURN Relacion;
 
     EXCEPTION WHEN OTHERS THEN
-        RETURN NULL;                           
+        RETURN NULL;
     END FACTURA_RELACIONADA_UUID_CANC;
     --
-    FUNCTION FACTURA_RELACIONADA_ENDOSO(P_CODCIA     NUMBER,                                       
-                                        PIDFACTURA   NUMBER) RETURN VARCHAR2 IS 
+    FUNCTION FACTURA_RELACIONADA_ENDOSO(P_CODCIA     NUMBER,
+                                        PIDFACTURA   NUMBER) RETURN VARCHAR2 IS
         Relacion VARCHAR2(10);
         Respuesta VARCHAR2(1);
     BEGIN
         SELECT NVL(MAX(1), 0)
-          INTO Relacion         
+          INTO Relacion
                   FROM polizas p INNER JOIN DETALLE_POLIZA D                ON D.CODCIA         = P.CODCIA
-                                                                           AND D.CODEMPRESA     = P.CODEMPRESA 
+                                                                           AND D.CODEMPRESA     = P.CODEMPRESA
                                                                            AND D.IDPOLIZA       = P.IDPOLIZA
                                  INNER JOIN ENDOSOS        E                ON E.CODCIA     = P.CODCIA
                                                                            AND E.CODEMPRESA = P.CODEMPRESA
                                                                            AND E.IDPOLIZA   = P.IDPOLIZA
-                                                                           AND E.IDETPOL    = D.IDETPOL                                            
+                                                                           AND E.IDETPOL    = D.IDETPOL
                                                                            AND E.STSENDOSO  = 'EMI'
-                                 -- FACTURAS EMITIDA QUE REMPLAZAA LA ANULADA Y ESTA YA TIMBRADA                                                           
-                                 INNER JOIN FACTURAS      F2                ON P.CODCIA     = F2.CODCIA 
-                                                                           AND P.IDPOLIZA   = F2.IDPOLIZA 
+                                 -- FACTURAS EMITIDA QUE REMPLAZAA LA ANULADA Y ESTA YA TIMBRADA
+                                 INNER JOIN FACTURAS      F2                ON P.CODCIA     = F2.CODCIA
+                                                                           AND P.IDPOLIZA   = F2.IDPOLIZA
                                                                            AND D.IDETPOL    = F2.IDETPOL
-                                                                           AND F2.IDENDOSO  IN(E.IDENDOSO, 0)  
-                                                                           AND F2.STSFACT IN ('EMI') 
-                                                                           AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F2.IDFACTURA,'', F2.STSFACT) = 'N'                                                           
-                                 -- FACTURAS QUE NO HAN SIDO TIMBRADAS (PERO YA ESTAN ANULADAS)                                                           
-                                 INNER JOIN FACTURAS       F3                ON F3.CODCIA         = P.CODCIA 
-                                                                           AND F3.IDPOLIZA       = P.IDPOLIZA 
-                                                                           AND F3.IDETPOL        = D.IDETPOL 
+                                                                           AND F2.IDENDOSO  IN(E.IDENDOSO, 0)
+                                                                           AND F2.STSFACT IN ('EMI')
+                                                                           AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F2.IDFACTURA,'', F2.STSFACT) = 'N'
+                                 -- FACTURAS QUE NO HAN SIDO TIMBRADAS (PERO YA ESTAN ANULADAS)
+                                 INNER JOIN FACTURAS       F3                ON F3.CODCIA         = P.CODCIA
+                                                                           AND F3.IDPOLIZA       = P.IDPOLIZA
+                                                                           AND F3.IDETPOL        = D.IDETPOL
                                                                            AND F3.STSFACT        = 'ANU'
                                                                            AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F3.IDFACTURA,'', 'CAN') = 'N'
                                  INNER JOIN FACT_ELECT_DETALLE_TIMBRE TANU  ON TANU.CODCIA     = P.CODCIA
                                                                            AND TANU.CODEMPRESA = P.CODEMPRESA
-                                                                           AND TANU.IDFACTURA  = F3.IDFACTURA 
+                                                                           AND TANU.IDFACTURA  = F3.IDFACTURA
                                                                            AND TANU.IDNCR      = 0
-                                                                           AND TANU.UUID IS NOT NULL     
-                                                                           AND TANU.CODPROCESO = 'EMI'  
+                                                                           AND TANU.UUID IS NOT NULL
+                                                                           AND TANU.CODPROCESO = 'EMI'
                                                                            AND TANU.CODRESPUESTASAT = '201'
-                                                                           AND TANU.UUIDCANCELADO IS NULL                                                 
-                 WHERE F2.CODCIA = P_CODCIA AND                                          
-                       (F2.IDFACTURA = PIDFACTURA OR                                    
-                       F3.IDFACTURA = PIDFACTURA ) AND 
+                                                                           AND TANU.UUIDCANCELADO IS NULL
+                 WHERE F2.CODCIA = P_CODCIA AND
+                       (F2.IDFACTURA = PIDFACTURA OR
+                       F3.IDFACTURA = PIDFACTURA ) AND
                        F3.FECVENC  = NVL(F2.FECVENC, TRUNC(SYSDATE)) AND
                        F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE)) AND
-                       F3.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION) 
-                                             FROM FACTURAS FX  
+                       F3.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION)
+                                             FROM FACTURAS FX
                                             WHERE FX.IDPOLIZA  = F3.IDPOLIZA
-                                              AND FX.IDETPOL   = D.IDETPOL 
+                                              AND FX.IDETPOL   = D.IDETPOL
                                               AND FX.STSFACT   = 'ANU'
                                               AND FX.FECVENC   = F3.FECVENC
                                               AND FX.FECFINVIG = F3.FECFINVIG);
@@ -3841,69 +3841,69 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
         ELSE
             RESPUESTA :='N';
         END IF;
-            RETURN RESPUESTA;                           
+            RETURN RESPUESTA;
     EXCEPTION WHEN OTHERS THEN
-        RETURN 'N';                           
-    END FACTURA_RELACIONADA_ENDOSO;    
-    --        
-    FUNCTION FACTURA_RELACIONADA(P_CODCIA     NUMBER,                                       
-                                 PIDFACTURA   NUMBER) RETURN NUMBER IS         
+        RETURN 'N';
+    END FACTURA_RELACIONADA_ENDOSO;
+    --
+    FUNCTION FACTURA_RELACIONADA(P_CODCIA     NUMBER,
+                                 PIDFACTURA   NUMBER) RETURN NUMBER IS
         nIDFACTURA NUMBER;
     BEGIN
 
-        SELECT DISTINCT CASE WHEN PIDFACTURA = F2.IDFACTURA THEN F3.IDFACTURA ELSE F2.IDFACTURA END 
-          INTO NIDFACTURA          
+        SELECT DISTINCT CASE WHEN PIDFACTURA = F2.IDFACTURA THEN F3.IDFACTURA ELSE F2.IDFACTURA END
+          INTO NIDFACTURA
                   FROM polizas p INNER JOIN DETALLE_POLIZA D                ON D.CODCIA         = P.CODCIA
-                                                                           AND D.CODEMPRESA     = P.CODEMPRESA 
+                                                                           AND D.CODEMPRESA     = P.CODEMPRESA
                                                                            AND D.IDPOLIZA       = P.IDPOLIZA
                                  INNER JOIN ENDOSOS        E                ON E.CODCIA     = P.CODCIA
                                                                            AND E.CODEMPRESA = P.CODEMPRESA
                                                                            AND E.IDPOLIZA   = P.IDPOLIZA
-                                                                           AND E.IDETPOL    = D.IDETPOL                                            
+                                                                           AND E.IDETPOL    = D.IDETPOL
                                                                            AND E.STSENDOSO  = 'EMI'
-                                 -- FACTURAS EMITIDA QUE REMPLAZAA LA ANULADA                                                            
-                                 INNER JOIN FACTURAS      F2                ON P.CODCIA     = F2.CODCIA 
-                                                                           AND P.IDPOLIZA   = F2.IDPOLIZA 
+                                 -- FACTURAS EMITIDA QUE REMPLAZAA LA ANULADA
+                                 INNER JOIN FACTURAS      F2                ON P.CODCIA     = F2.CODCIA
+                                                                           AND P.IDPOLIZA   = F2.IDPOLIZA
                                                                            AND D.IDETPOL    = F2.IDETPOL
-                                                                           AND F2.IDENDOSO  IN(E.IDENDOSO, 0)  
-                                                                           AND F2.STSFACT IN ('EMI')                                                                                                                                       
-                                 -- FACTURAS QUE NO HAN SIDO TIMBRADAS (PERO YA ESTAN ANULADAS)                                                           
-                                 INNER JOIN FACTURAS       F3                ON F3.CODCIA         = P.CODCIA 
-                                                                           AND F3.IDPOLIZA       = P.IDPOLIZA 
-                                                                           AND F3.IDETPOL        = D.IDETPOL 
+                                                                           AND F2.IDENDOSO  IN(E.IDENDOSO, 0)
+                                                                           AND F2.STSFACT IN ('EMI')
+                                 -- FACTURAS QUE NO HAN SIDO TIMBRADAS (PERO YA ESTAN ANULADAS)
+                                 INNER JOIN FACTURAS       F3                ON F3.CODCIA         = P.CODCIA
+                                                                           AND F3.IDPOLIZA       = P.IDPOLIZA
+                                                                           AND F3.IDETPOL        = D.IDETPOL
                                                                            AND F3.STSFACT        = 'ANU'
                                                                            --AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(P.CODCIA ,P.CODEMPRESA, F3.IDFACTURA,'', 'CAN') = 'N'
                                  INNER JOIN FACT_ELECT_DETALLE_TIMBRE TANU  ON TANU.CODCIA     = P.CODCIA
                                                                            AND TANU.CODEMPRESA = P.CODEMPRESA
-                                                                           AND TANU.IDFACTURA  = F3.IDFACTURA 
+                                                                           AND TANU.IDFACTURA  = F3.IDFACTURA
                                                                            AND TANU.IDNCR      = 0
-                                                                           AND TANU.UUID IS NOT NULL     
-                                                                           AND TANU.CODPROCESO = 'EMI'  
+                                                                           AND TANU.UUID IS NOT NULL
+                                                                           AND TANU.CODPROCESO = 'EMI'
                                                                            AND TANU.CODRESPUESTASAT = '201'
-                                                                           AND TANU.UUIDCANCELADO IS NULL                                                 
-                 WHERE F2.CODCIA = P_CODCIA AND                                          
-                       (F2.IDFACTURA = PIDFACTURA OR                                    
-                       F3.IDFACTURA = PIDFACTURA ) AND 
+                                                                           AND TANU.UUIDCANCELADO IS NULL
+                 WHERE F2.CODCIA = P_CODCIA AND
+                       (F2.IDFACTURA = PIDFACTURA OR
+                       F3.IDFACTURA = PIDFACTURA ) AND
                        F3.FECVENC  = NVL(F2.FECVENC, TRUNC(SYSDATE)) AND
                        F3.FECFINVIG= NVL(F2.FECFINVIG, TRUNC(SYSDATE)) AND
-                       ROWNUM = 1 AND 
-                       F3.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION) 
-                                             FROM FACTURAS FX  
+                       ROWNUM = 1 AND
+                       F3.IDTRANSACCION = (SELECT MAX(FX.IDTRANSACCION)
+                                             FROM FACTURAS FX
                                             WHERE FX.IDPOLIZA  = F3.IDPOLIZA
-                                              AND FX.IDETPOL   = D.IDETPOL 
+                                              AND FX.IDETPOL   = D.IDETPOL
                                               AND FX.STSFACT   = 'ANU'
                                               AND FX.FECVENC   = F3.FECVENC
                                               AND FX.FECFINVIG = F3.FECFINVIG);
-            --                       
+            --
 
         RETURN NIDFACTURA;
 
     EXCEPTION WHEN OTHERS THEN
-        RETURN NULL;                           
+        RETURN NULL;
     END FACTURA_RELACIONADA;
     --
     FUNCTION MONTO_BASE_IMPUESTO(nCodCia NUMBER, nIdFactura  NUMBER) RETURN NUMBER IS
-    nMontoBase  NUMBER(28,2);   
+    nMontoBase  NUMBER(28,2);
     BEGIN
        SELECT SUM(Monto_Det_Moneda)
          INTO nMontoBase
@@ -3913,7 +3913,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
        RETURN nMontoBase;
     END MONTO_BASE_IMPUESTO;
     --
-    FUNCTION IND_RFC_GENERICO(nIdFactura  NUMBER, 
+    FUNCTION IND_RFC_GENERICO(nIdFactura  NUMBER,
                               nCodCia     NUMBER) RETURN VARCHAR2 IS
     cIndFactCteRFCGenerico     FACTURAS.IndFactCteRFCGenerico%TYPE;
     nCodCliente                POLIZAS.CodCliente%TYPE;
@@ -3942,10 +3942,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                 SELECT PO.CodCliente,
                        P.Tipo_Doc_Identificacion,
                        P.Num_Doc_Identificacion
-                  FROM FACTURAS F, 
-                       POLIZAS PO, 
-                       DETALLE_POLIZA D, 
-                       ASEGURADO A, 
+                  FROM FACTURAS F,
+                       POLIZAS PO,
+                       DETALLE_POLIZA D,
+                       ASEGURADO A,
                        PERSONA_NATURAL_JURIDICA P
                  WHERE P.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
                    AND P.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
@@ -3966,7 +3966,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
         WHEN NO_DATA_FOUND THEN
              RAISE_APPLICATION_ERROR(-20200,' NO Existe el recibo '||nIdFactura);
       END;
-      -- 
+      --
       BEGIN
         SELECT NVL(Num_Tributario, 'X')
           INTO cNum_Tributario
@@ -3977,31 +3977,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAS IS
         WHEN NO_DATA_FOUND THEN
              RAISE_APPLICATION_ERROR(-20200,' NO Existe registro en Persona Natural Juridica del cliente '||OC_CLIENTES.NOMBRE_CLIENTE(nCodCliente));
       END;
-      --  
-      IF cNum_Tributario = 'X' THEN 
+      --
+      IF cNum_Tributario = 'X' THEN
          RAISE_APPLICATION_ERROR(-20200,'Cliente '||OC_CLIENTES.NOMBRE_CLIENTE(nCodCliente)||' NO posee un RFC para facturación, por favor valide la configuración de la persona');
-      ELSIF cNum_Tributario IN ('XAXX010101000', 'XEXX010101000') THEN 
+      ELSIF cNum_Tributario IN ('XAXX010101000', 'XEXX010101000') THEN
          cIndVentaPublicoGen := 'S';
       ELSE
          cIndVentaPublicoGen := 'N';
       END IF;
       --
-      RETURN cIndVentaPublicoGen;  
-      -- 
+      RETURN cIndVentaPublicoGen;
+      --
     END IND_RFC_GENERICO;
     --
 
 END OC_FACTURAS;
-/
-
---
--- OC_FACTURAS  (Synonym) 
---
---  Dependencies: 
---   OC_FACTURAS (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_FACTURAS FOR SICAS_OC.OC_FACTURAS
-/
-
-GRANT EXECUTE ON SICAS_OC.OC_FACTURAS TO PUBLIC
 /
