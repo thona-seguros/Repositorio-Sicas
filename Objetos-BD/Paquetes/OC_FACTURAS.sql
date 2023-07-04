@@ -737,7 +737,8 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
            AND IDetPol       = nIDetPol
            AND CodAsegurado  = nCodAsegurado
            AND IdFondo       = nIdFondo
-           AND StsMovimiento = 'SOLICI'
+          -- AND StsMovimiento = 'SOLICI'             --MLJS 04/07/2023
+           AND StsMovimiento IN ('SOLICI', 'ACTIVO')  --MLJS 04/07/2023  SE AGREGO EL ESTADO ACTIVO
            AND GT_FAI_MOVIMIENTOS_FONDOS.TIPO_MOVIMIENTO(CodCia, CodEmpresa, cTipoFondo, CodCptoMov) IN ('AA','AP');
     BEGIN
        IF NVL(nMontoPago,0) <> 0 AND NVL(nPrimaNivelada,0) <> 0 THEN
