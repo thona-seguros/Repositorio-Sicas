@@ -25,7 +25,7 @@ CREATE OR REPLACE PACKAGE OC_COMPROBANTES_CONTABLES IS
 
    PROCEDURE TRASLADO(nCodCia NUMBER, dFecDesde DATE, dFecHasta DATE, nNumComprobSC NUMBER,
                       dFecRegistro DATE, cCodUser VARCHAR2, cConcepto VARCHAR2, nDiario NUMBER,
-                      cTipoComprob VARCHAR2, cTipoDiario VARCHAR2, cCodMoneda VARCHAR2, 
+                      cTipoComprob VARCHAR2, cTipoDiario VARCHAR2, cCodMoneda VARCHAR2,
                       cTipoTraslado VARCHAR2, nLinea IN OUT NUMBER);
 
    PROCEDURE RECONTABILIZAR(nCodCia NUMBER, nIdTransaccion NUMBER, cTipoComp VARCHAR2 DEFAULT 'C', nNumComprob NUMBER);
@@ -70,9 +70,8 @@ CREATE OR REPLACE PACKAGE OC_COMPROBANTES_CONTABLES IS
    FUNCTION ENVIADO_SISTEMA_CONTABLE(nCodCia NUMBER, nIdTransaccion NUMBER) RETURN VARCHAR2;
 
 END OC_COMPROBANTES_CONTABLES;
-
 /
-create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
+CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
 
 -- BITACORA DE CAMBIOS
 -- Modificaciones para OGAS                                    JMMD 20210212
@@ -112,8 +111,8 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo       = 1
        AND VL.CODVALOR = DP.IDTIPOSEG
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST 
-     UNION ALL 
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST
+     UNION ALL
     SELECT  2 REG, D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
            SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,NULL TipoAgente
@@ -121,7 +120,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , DETALLE_TRANSACCION       D
          , NOTAS_DE_CREDITO          N
          , DETALLE_POLIZA           DP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE DP.IdPoliza          = N.IdPoliza
        AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
        AND DP.CodCia            = D.CodCia
@@ -133,7 +132,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo        = 1
        AND VL.CODVALOR = DP.IDTIPOSEG
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL,  VL.DESCVALLST  
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL,  VL.DESCVALLST
      UNION ALL
     SELECT  3 REG, D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
            SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -142,7 +141,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , DETALLE_TRANSACCION       D
          , NOTAS_DE_CREDITO          N
          , DETALLE_POLIZA           DP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE DP.IdPoliza          = N.IdPoliza
        AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
        AND DP.CodCia            = D.CodCia
@@ -154,7 +153,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo        = 1
        AND VL.CODVALOR = DP.IDTIPOSEG
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST 
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST
      UNION ALL
     SELECT  4 REG, D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
            SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -163,7 +162,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , DETALLE_TRANSACCION       D
          , NOTAS_DE_CREDITO          N
          , DETALLE_POLIZA           DP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE DP.IdPoliza          = N.IdPoliza
        AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
        AND DP.CodCia            = D.CodCia
@@ -175,7 +174,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo        = 1
        AND VL.CODVALOR = DP.IDTIPOSEG
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST  
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST
      UNION ALL
     SELECT  5 REG, D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
            SUM(N.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -184,7 +183,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , DETALLE_TRANSACCION       D
          , NOTAS_DE_CREDITO          N
          , DETALLE_POLIZA           DP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE DP.IdPoliza          = N.IdPoliza
        AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
        AND DP.CodCia            = D.CodCia
@@ -196,20 +195,20 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo        = 1
        AND VL.CODVALOR = DP.IDTIPOSEG
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL  , VL.DESCVALLST           
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DN.CodCpto, N.CodMoneda, NULL  , VL.DESCVALLST
      UNION ALL
-    SELECT  6 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, 
+    SELECT  6 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda,
            SUM(Monto_Det_Moneda) MtoMovCuenta,
-           --SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, 
+           --SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta,
            SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N 
+         , NOTAS_DE_CREDITO          N
          , COMISIONES                C
          , DETALLE_COMISION          DC
          , DETALLE_POLIZA            DP
-         , VALORES_DE_LISTAS         VL           
+         , VALORES_DE_LISTAS         VL
      WHERE DN.IdNcr         = N.IdNcr
        AND N.IdPoliza      IS NULL
        AND N.IdTransaccion  = D.IdTransaccion
@@ -223,23 +222,23 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND DP.IDPOLIZA = C.IDPOLIZA
        AND DP.IDETPOL = C.IDETPOL
        AND VL.CODVALOR = DP.IDTIPOSEG
-       AND VL.CODLISTA = 'UENXTIPSEG'         
-     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST    
+       AND VL.CODLISTA = 'UENXTIPSEG'
+     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST
              ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT  7 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, 
-           SUM(Monto_Det_Moneda) MtoMovCuenta, 
-           --SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, 
-           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, 
-           OC_CAT_REGIMEN_FISCAL.FUN_NIVELCTA3(Dc.IdRegFisSAT) NIVELCTA3  
+    SELECT  7 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda,
+           SUM(Monto_Det_Moneda) MtoMovCuenta,
+           --SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta,
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN,
+           OC_CAT_REGIMEN_FISCAL.FUN_NIVELCTA3(Dc.IdRegFisSAT) NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N 
+         , NOTAS_DE_CREDITO          N
          , COMISIONES                C
          , DETALLE_COMISION          DC
          , DETALLE_POLIZA            DP
-         , VALORES_DE_LISTAS         VL             
+         , VALORES_DE_LISTAS         VL
      WHERE DN.IdNcr           = N.IdNcr
        AND N.IdPoliza        IS NULL
        AND N.IdTransaccionAnu = D.IdTransaccion
@@ -249,26 +248,26 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo      = 1
        AND C.IDNOMINA       = N.IDNOMINA
        AND DC.IDCOMISION    = C.IDCOMISION
-       AND DC.CODCONCEPTO   = DN.CODCPTO         
+       AND DC.CODCONCEPTO   = DN.CODCPTO
        AND DP.IDPOLIZA = C.IDPOLIZA
        AND DP.IDETPOL = C.IDETPOL
        AND VL.CODVALOR = DP.IDTIPOSEG
-       AND VL.CODLISTA = 'UENXTIPSEG'            
-     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST, Dc.IdRegFisSAT  
+       AND VL.CODLISTA = 'UENXTIPSEG'
+     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST, Dc.IdRegFisSAT
            ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT  8 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, 
+    SELECT  8 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda,
            SUM(Monto_Det_Moneda) MtoMovCuenta,
-           --SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, 
+           --SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta,
            SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N 
+         , NOTAS_DE_CREDITO          N
          , COMISIONES                C
          , DETALLE_COMISION          DC
          , DETALLE_POLIZA            DP
-         , VALORES_DE_LISTAS         VL               
+         , VALORES_DE_LISTAS         VL
      WHERE DN.IdNcr         = N.IdNcr
        AND N.IdPoliza      IS NULL
        AND N.IdTransacAplic = D.IdTransaccion
@@ -278,26 +277,26 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo    = 1
        AND C.IDNOMINA       = N.IDNOMINA
        AND DC.IDCOMISION    = C.IDCOMISION
-       AND DC.CODCONCEPTO   = DN.CODCPTO         
+       AND DC.CODCONCEPTO   = DN.CODCPTO
        AND DP.IDPOLIZA = C.IDPOLIZA
        AND DP.IDETPOL = C.IDETPOL
        AND VL.CODVALOR = DP.IDTIPOSEG
-       AND VL.CODLISTA = 'UENXTIPSEG'           
-     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST 
+       AND VL.CODLISTA = 'UENXTIPSEG'
+     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST
               ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT  9 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda, 
+    SELECT  9 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda,
            --SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta, 
-           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3  
+           SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta,
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N 
+         , NOTAS_DE_CREDITO          N
          , COMISIONES                C
          , DETALLE_COMISION          DC
          , DETALLE_POLIZA            DP
-         , VALORES_DE_LISTAS         VL               
+         , VALORES_DE_LISTAS         VL
      WHERE DN.IdNcr            = N.IdNcr
        AND N.IdPoliza         IS NULL
        AND N.IdTransacRevAplic = D.IdTransaccion
@@ -307,26 +306,26 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo       = 1
        AND C.IDNOMINA       = N.IDNOMINA
        AND DC.IDCOMISION    = C.IDCOMISION
-       AND DC.CODCONCEPTO   = DN.CODCPTO         
+       AND DC.CODCONCEPTO   = DN.CODCPTO
        AND DP.IDPOLIZA = C.IDPOLIZA
        AND DP.IDETPOL = C.IDETPOL
        AND VL.CODVALOR = DP.IDTIPOSEG
-       AND VL.CODLISTA = 'UENXTIPSEG'           
-     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST   
+       AND VL.CODLISTA = 'UENXTIPSEG'
+     GROUP BY D.CodEmpresa, 'GENERA', DN.CodCpto, N.CodMoneda, NULL, VL.DESCVALLST
              ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT 10 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, 
+    SELECT 10 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda,
            SUM(Monto_Det_Moneda) MtoMovCuenta,
-           --SUM(DC.MONTO_MON_LOCAL) * -1 MtoMovCuenta, 
+           --SUM(DC.MONTO_MON_LOCAL) * -1 MtoMovCuenta,
            SUM(DC.MONTO_MON_EXTRANJERA)* -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N 
+         , NOTAS_DE_CREDITO          N
          , COMISIONES                C
          , DETALLE_COMISION          DC
          , DETALLE_POLIZA            DP
-         , VALORES_DE_LISTAS         VL           
+         , VALORES_DE_LISTAS         VL
      WHERE DN.IdNcr         = N.IdNcr
        AND N.IdPoliza      IS NULL
        AND N.IdTransaccion  = D.IdTransaccion
@@ -343,103 +342,103 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND DP.IDPOLIZA = C.IDPOLIZA
        AND DP.IDETPOL = C.IDETPOL
        AND VL.CODVALOR = DP.IDTIPOSEG
-       AND VL.CODLISTA = 'UENXTIPSEG'         
-     GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST   
+       AND VL.CODLISTA = 'UENXTIPSEG'
+     GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST
               ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT 11 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, 
+    SELECT 11 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda,
            SUM(Monto_Det_Moneda) MtoMovCuenta,
-           --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, 
+           --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta,
            SUM(DC.MONTO_MON_EXTRANJERA)* -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N 
+         , NOTAS_DE_CREDITO          N
          , COMISIONES                C
          , DETALLE_COMISION          DC
          , DETALLE_POLIZA            DP
-         , VALORES_DE_LISTAS         VL             
+         , VALORES_DE_LISTAS         VL
      WHERE DN.IdNcr           = N.IdNcr
        AND N.IdPoliza        IS NULL
        AND N.IdTransaccionAnu = D.IdTransaccion
        AND D.IdTransaccion    = nIdTransaccion
-       AND DN.CODCPTO       = 'TRIVHO'         
+       AND DN.CODCPTO       = 'TRIVHO'
        AND D.CodCia           = nCodCia
        AND D.CodEmpresa       = nCodEmpresa
        AND D.Correlativo      = 1
-       AND C.IDNOMINA       = N.IDNOMINA         
+       AND C.IDNOMINA       = N.IDNOMINA
        AND DC.IDCOMISION    = C.IDCOMISION
-       --AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO         
+       --AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO
        AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(C.CodCia, C.CODEMPRESA, DP.IDTIPOSEG) = 'N' AND DC.CODCONCEPTO      = 'IVAHON'
         OR OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(C.CodCia, C.CODEMPRESA, DP.IDTIPOSEG) = 'S' AND DC.CODCONCEPTO      != 'IVASIN')
        AND DP.IDPOLIZA = C.IDPOLIZA
        AND DP.IDETPOL = C.IDETPOL
        AND VL.CODVALOR = DP.IDTIPOSEG
-       AND VL.CODLISTA = 'UENXTIPSEG'            
-     GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST  
+       AND VL.CODLISTA = 'UENXTIPSEG'
+     GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST
              ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT 12 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, 
+    SELECT 12 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda,
            SUM(Monto_Det_Moneda) MtoMovCuenta,
-           --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, 
+           --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta,
            SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N 
+         , NOTAS_DE_CREDITO          N
          , COMISIONES                C
          , DETALLE_COMISION          DC
          , DETALLE_POLIZA            DP
-         , VALORES_DE_LISTAS         VL               
+         , VALORES_DE_LISTAS         VL
      WHERE DN.IdNcr         = N.IdNcr
        AND N.IdPoliza      IS NULL
        AND N.IdTransacAplic = D.IdTransaccion
        AND D.IdTransaccion  = nIdTransaccion
-       AND DN.CODCPTO       = 'TRIVHO'         
+       AND DN.CODCPTO       = 'TRIVHO'
        AND D.CodCia         = nCodCia
        AND D.CodEmpresa     = nCodEmpresa
        AND D.Correlativo    = 1
-       AND C.IDNOMINA       = N.IDNOMINA         
+       AND C.IDNOMINA       = N.IDNOMINA
        AND DC.IDCOMISION    = C.IDCOMISION
-       --AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO         
+       --AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO
        AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(C.CodCia, C.CODEMPRESA, DP.IDTIPOSEG) = 'N' AND DC.CODCONCEPTO      = 'IVAHON'
         OR OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(C.CodCia, C.CODEMPRESA, DP.IDTIPOSEG) = 'S' AND DC.CODCONCEPTO      != 'IVASIN')
        AND DP.IDPOLIZA = C.IDPOLIZA
        AND DP.IDETPOL = C.IDETPOL
        AND VL.CODVALOR = DP.IDTIPOSEG
-       AND VL.CODLISTA = 'UENXTIPSEG'           
-     GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST  
+       AND VL.CODLISTA = 'UENXTIPSEG'
+     GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST
                ,D.CodCia, C.Cod_Agente
      UNION ALL
-    SELECT 13 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda, 
+    SELECT 13 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda,
            SUM(Monto_Det_Moneda) MtoMovCuenta,
-           --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta, 
-           SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3  
+           --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta,
+           SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N 
+         , NOTAS_DE_CREDITO          N
          , COMISIONES                C
          , DETALLE_COMISION          DC
          , DETALLE_POLIZA            DP
-         , VALORES_DE_LISTAS         VL               
+         , VALORES_DE_LISTAS         VL
      WHERE DN.IdNcr            = N.IdNcr
        AND N.IdPoliza         IS NULL
        AND N.IdTransacRevAplic = D.IdTransaccion
        AND D.IdTransaccion     = nIdTransaccion
-       AND DN.CODCPTO       = 'TRIVHO'         
+       AND DN.CODCPTO       = 'TRIVHO'
        AND D.CodCia            = nCodCia
        AND D.CodEmpresa        = nCodEmpresa
        AND D.Correlativo       = 1
-       AND C.IDNOMINA       = N.IDNOMINA         
+       AND C.IDNOMINA       = N.IDNOMINA
        AND DC.IDCOMISION    = C.IDCOMISION
-       --AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO         
+       --AND DC.CODCONCEPTO   = 'IVAHON' --DN.CODCPTO
        AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(C.CodCia, C.CODEMPRESA, DP.IDTIPOSEG) = 'N' AND DC.CODCONCEPTO      = 'IVAHON'
         OR OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(C.CodCia, C.CODEMPRESA, DP.IDTIPOSEG) = 'S' AND DC.CODCONCEPTO      != 'IVASIN')
        AND DP.IDPOLIZA = C.IDPOLIZA
        AND DP.IDETPOL = C.IDETPOL
        AND VL.CODVALOR = DP.IDTIPOSEG
-       AND VL.CODLISTA = 'UENXTIPSEG'           
+       AND VL.CODLISTA = 'UENXTIPSEG'
      GROUP BY D.CodEmpresa, 'GENERA', 'TRIVHO', N.CodMoneda, NULL, VL.DESCVALLST
             ,D.CodCia, C.Cod_Agente
      UNION ALL
@@ -450,7 +449,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , RESERVAS_TECNICAS         RT
          , CONFIG_RESERVAS           CF
          , CONFIG_RESERVAS_TIPOSEG  CFT
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE CFT.CodCia       = CF.CodCia
        AND CFT.CodReserva   = CF.CodReserva
        AND CF.CodCia        = RT.CodCia
@@ -459,7 +458,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND RT.IdTransaccion = nIdTransaccion
        AND VL.CODVALOR = CFT.IDTIPOSEG
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY CFT.CodEmpresa, CFT.IdTipoSeg, RTC.CodCptoRva, CCODMONEDACIA, RTC.DescCptoRva, VL.DESCVALLST  
+     GROUP BY CFT.CodEmpresa, CFT.IdTipoSeg, RTC.CodCptoRva, CCODMONEDACIA, RTC.DescCptoRva, VL.DESCVALLST
      UNION ALL
     SELECT 15 REG, S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
            SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -468,7 +467,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , COBERTURA_SINIESTRO  C
          , SINIESTRO            S
          , DETALLE_SINIESTRO    D
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE S.IdSiniestro        = C.IdSiniestro
        AND S.IdSiniestro        = D.IdSiniestro
        AND S.CodCia             = nCodCia
@@ -483,16 +482,16 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
 --       AND DT.Correlativo       = 1 ----- JMMD20220422 SOLO ESTABA TOMANDO UN SOLO CONCEPTO DEL DETALLE DE TRANSACCION
        AND VL.CODVALOR = D.IDTIPOSEG
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY s.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST             
+     GROUP BY s.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST
      UNION ALL
     SELECT 16 REG, S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
            SUM(DA.Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN,
-           OC_CAT_REGIMEN_FISCAL.FUN_NIVELCTA3((select B.IDREGFISSAT 
+           OC_CAT_REGIMEN_FISCAL.FUN_NIVELCTA3((select B.IDREGFISSAT
                              from BENEF_SIN b
-                             where  DA.CodCptoTransac IN ('RETISR','ISRSIN') 
-                               AND S.CodCia = B.CodCia 
+                             where  DA.CodCptoTransac IN ('RETISR','ISRSIN')
+                               AND S.CodCia = B.CodCia
                                AND S.CODEMPRESA = B.CODEMPRESA
-                               AND S.IdSiniestro = B.IDSINIESTRO  
+                               AND S.IdSiniestro = B.IDSINIESTRO
                                AND B.BENEF = A.BENEF   )) NIVELCTA3
            ,NULL TipoAgente
       FROM DETALLE_TRANSACCION DT
@@ -500,7 +499,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , APROBACIONES         A
          , SINIESTRO            S
          , DETALLE_SINIESTRO    D
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE S.IdSiniestro        = A.IdSiniestro
        AND S.IdSiniestro        = D.IdSiniestro
        AND A.IdSiniestro        = DA.IdSiniestro
@@ -516,7 +515,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND DT.Correlativo       = 1
        AND VL.CODVALOR = D.IDTIPOSEG
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY S.CodCia , S.IdSiniestro, S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST,  A.BENEF                              
+     GROUP BY S.CodCia , S.IdSiniestro, S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST,  A.BENEF
      UNION ALL
     SELECT 17 REG, D.CodEmpresa, TP.IdTipoSeg, 'PRIMDE' CodCpto, P.Cod_Moneda CodMoneda,
            SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -524,7 +523,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
       FROM DETALLE_TRANSACCION D
          , PRIMAS_DEPOSITO     P
          , TARJETAS_PREPAGO   TP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE TP.IdPrimaDeposito = P.IdPrimaDeposito
        AND P.IDPRIMADEPOSITO  = D.VALOR1
        AND ( P.IdTransacEmit  = D.IdTransaccion
@@ -537,7 +536,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.CodEmpresa       = nCodEmpresa
        AND VL.CODVALOR = TP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, TP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL, VL.DESCVALLST  
+     GROUP BY D.CodEmpresa, TP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL, VL.DESCVALLST
      UNION ALL
     SELECT 18 REG, D.CodEmpresa, DP.IdTipoSeg, 'PRIMDE' CodCpto, P.Cod_Moneda CodMoneda,
            SUM(Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -545,11 +544,11 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
       FROM DETALLE_TRANSACCION D
          , PRIMAS_DEPOSITO     P
          , DETALLE_POLIZA     DP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE DP.IDetPol         = P.IDetPol
        AND DP.IdPoliza        = P.IdPoliza
        AND DP.CodCia          = nCodCia
-       AND P.IDPRIMADEPOSITO  = D.VALOR1      
+       AND P.IDPRIMADEPOSITO  = D.VALOR1
        AND ( P.IdTransacEmit  = D.IdTransaccion
              OR
              P.IdTransacAplic = D.IdTransaccion
@@ -560,7 +559,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.CodEmpresa       = nCodEmpresa
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL, VL.DESCVALLST  
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, 'PRIMDE', P.Cod_Moneda, NULL, VL.DESCVALLST
      UNION ALL
     SELECT 19 REG, DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda CodMoneda,
            SUM(PD.Monto) MtoMovCuenta, SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -570,7 +569,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , PAGOS               P
          , PAGO_DETALLE       PD
          , DETALLE_POLIZA     DP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE F.IdFactura      = P.IdFactura
        AND PD.IdRecibo      = P.IdRecibo
        AND P.IdTransaccion  = D.IdTransaccion
@@ -582,7 +581,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo    = 1
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL, VL.DESCVALLST  
+     GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL, VL.DESCVALLST
      UNION ALL
     SELECT 20 REG, DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda CodMoneda,
            SUM(PD.Monto) MtoMovCuenta, SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -592,7 +591,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , PAGOS               P
          , PAGO_DETALLE       PD
          , DETALLE_POLIZA     DP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE F.IdFactura        = P.IdFactura
        AND PD.IdRecibo        = P.IdRecibo
        AND P.IdTransaccionAnu = D.IdTransaccion
@@ -604,7 +603,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo      = 1
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL, VL.DESCVALLST  
+     GROUP BY DP.CodEmpresa, DP.IdTipoSeg, PD.CodCpto, P.Moneda, NULL, VL.DESCVALLST
      UNION ALL
     SELECT 21 REG, PD.CodEmpresa, PD.IdTipoSeg, DECODE(P.FormPago,'NCR','PAGNCR','PAGREC') CodCpto, P.Moneda CodMoneda,
            SUM(P.Monto) MtoMovCuenta, 1 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -613,7 +612,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , FACTURAS            F
          , PAGOS               P
          , DETALLE_POLIZA     PD
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE F.IdFactura      = P.IdFactura
        AND ( P.IdTransaccion = D.IdTransaccion
              OR
@@ -626,7 +625,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo    = 1
        AND VL.CODVALOR = PD.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY PD.CodEmpresa, PD.IdTipoSeg, DECODE(P.FormPago,'NCR','PAGNCR','PAGREC'), P.Moneda, NULL, VL.DESCVALLST  
+     GROUP BY PD.CodEmpresa, PD.IdTipoSeg, DECODE(P.FormPago,'NCR','PAGNCR','PAGREC'), P.Moneda, NULL, VL.DESCVALLST
     UNION ALL
     SELECT 22 REG, S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
            SUM(C.Monto_Reservado_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
@@ -635,7 +634,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , COBERTURA_SINIESTRO_ASEG  C
          , SINIESTRO                 S
          , DETALLE_SINIESTRO_ASEG    D
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE S.IdSiniestro    = C.IdSiniestro
        AND S.IdSiniestro    = D.IdSiniestro
        AND S.CodCia         = nCodCia
@@ -649,16 +648,16 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND DT.Correlativo   = 1
        AND VL.CODVALOR = D.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST             
+     GROUP BY S.CodEmpresa, D.IdTipoSeg, C.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST
      UNION ALL
     SELECT 23 REG, S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac CodCpto, S.Cod_Moneda CodMoneda,
-           SUM(DA.Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, 
-           OC_CAT_REGIMEN_FISCAL.FUN_NIVELCTA3((select B.IDREGFISSAT 
+           SUM(DA.Monto_Moneda) MtoMovCuenta, 0 MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN,
+           OC_CAT_REGIMEN_FISCAL.FUN_NIVELCTA3((select B.IDREGFISSAT
                              from BENEF_SIN b
-                             where  DA.CodCptoTransac IN ('RETISR','ISRSIN') 
-                               AND S.CodCia = B.CodCia 
+                             where  DA.CodCptoTransac IN ('RETISR','ISRSIN')
+                               AND S.CodCia = B.CodCia
                                AND S.CODEMPRESA = B.CODEMPRESA
-                               AND S.IdSiniestro = B.IDSINIESTRO  
+                               AND S.IdSiniestro = B.IDSINIESTRO
                                AND B.BENEF = A.BENEF  )) NIVELCTA3
            ,NULL TipoAgente
       FROM DETALLE_TRANSACCION     DT
@@ -666,7 +665,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , APROBACION_ASEG          A
          , SINIESTRO                S
          , DETALLE_SINIESTRO_ASEG   D
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE S.IdSiniestro        = A.IdSiniestro
        AND S.IdSiniestro        = D.IdSiniestro
        AND A.IdSiniestro        = DA.IdSiniestro
@@ -681,8 +680,8 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND DT.CodEmpresa        = nCodEmpresa
        AND DT.Correlativo       = 1
        AND VL.CODVALOR = D.IdTipoSeg
-       AND VL.CODLISTA = 'UENXTIPSEG'           
-     GROUP BY S.CodCia , S.IdSiniestro, S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  ,  A.BENEF         
+       AND VL.CODLISTA = 'UENXTIPSEG'
+     GROUP BY S.CodCia , S.IdSiniestro, S.CodEmpresa, D.IdTipoSeg, DA.CodCptoTransac, S.Cod_Moneda, NULL, VL.DESCVALLST  ,  A.BENEF
      UNION ALL
     SELECT 24 REG, D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda CodMoneda, SUM(DF.Monto_Det_Moneda) MtoMovCuenta,
            SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST  UEN, NULL NIVELCTA3
@@ -691,7 +690,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , DETALLE_FACTURAS   DF
          , FACTURAS            F
          , FZ_DETALLE_FIANZAS DP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE DP.IdPoliza      = F.IdPoliza
        AND DP.Correlativo   = NVL(F.IDetPol,DP.Correlativo)
        AND DP.CodCia        = D.CodCia
@@ -705,7 +704,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo    = 1
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, NULL, VL.DESCVALLST  
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DF.CodCpto, F.Cod_Moneda, NULL, VL.DESCVALLST
      UNION ALL
     SELECT 25 REG, CF.CodEmpresa, DP.IdTipoSeg, CF.CodCptoMov CodCpto, CF.CodMonedaPago CodMoneda, SUM(CF.MontoMovMoneda) MtoMovCuenta,
            SUM(F.MtoComisi_Moneda) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST  UEN, NULL NIVELCTA3
@@ -714,7 +713,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , FAI_CONCENTRADORA_FONDO CF
          , FACTURAS                 F
          , DETALLE_POLIZA          DP
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
      WHERE DP.IdPoliza         = CF.IdPoliza
        AND DP.IDetPol          = CF.IDetPol
        AND DP.CodCia           = CF.CodCia
@@ -723,13 +722,13 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND CF.IDetPol          > 0
        AND CF.IdPoliza         > 0
        AND CF.IdFactura        = F.IdFactura(+)
-       AND ( CF.IdTransaccion = D.IdTransaccion 
+       AND ( CF.IdTransaccion = D.IdTransaccion
              OR
              CF.IdTransaccionAnu = D.IdTransaccion )
        AND CF.CodEmpresa       = D.CodEmpresa
        AND CF.CodCia           = D.CodCia
-       AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES( CF.CodCia, CF.CodEmpresa, 
-                                                  GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo), 
+       AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES( CF.CodCia, CF.CodEmpresa,
+                                                  GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo),
                                                   CF.CodCptoMov, 'GC') = 'S'
        AND D.IdTransaccion     = nIdTransaccion
        AND D.CodCia            = nCodCia
@@ -737,17 +736,17 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        AND D.Correlativo       = 1
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY CF.CodEmpresa, DP.IdTipoSeg, CF.CodCptoMov, CF.CodMonedaPago, NULL, VL.DESCVALLST  
+     GROUP BY CF.CodEmpresa, DP.IdTipoSeg, CF.CodCptoMov, CF.CodMonedaPago, NULL, VL.DESCVALLST
    UNION ALL
    SELECT 26 REG, T.CodEmpresa, DP.IdTipoSeg, DC.CodConcepto CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) MtoMovCuenta,
         SUM(DC.Monto_Mon_Extranjera) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN, NULL NIVELCTA3
         ,OC_AGENTES.TIPO_AGENTE(P.CodCia, C.Cod_Agente) TipoAgente
    FROM POLIZAS P, DETALLE_POLIZA DP, FACTURAS F, TRANSACCION T, COMISIONES C, DETALLE_COMISION DC
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
    WHERE T.IDTRANSACCION     = nIdTransaccion
     AND T.CodCia            = nCodCia
     AND (F.IDTRANSACCION     = T.IDTRANSACCION
-     OR F.IDTRANSACCIONANU   = T.IDTRANSACCION)      
+     OR F.IDTRANSACCIONANU   = T.IDTRANSACCION)
     AND P.IDPOLIZA          = F.IDPOLIZA
     AND P.CodCia            = nCodCia
     AND DP.IDPOLIZA         = P.IDPOLIZA
@@ -755,7 +754,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
     AND DP.IDETPOL          = NVL(C.IDetPol,DP.IDetPol)
     AND ((TRUNC(F.FecVenc) <= TRUNC(FechaTransaccion)
     AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
-     OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+     OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')
     AND C.CodCia            = nCodCia
     AND C.IDPOLIZA          = P.IDPOLIZA
     AND C.COD_MONEDA        = P.COD_MONEDA
@@ -768,160 +767,160 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
     AND C.IDCOMISION        = DC.IDCOMISION
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-   GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST  
-            ,C.Cod_Agente, P.CodCia 
+   GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST
+            ,C.Cod_Agente, P.CodCia
     UNION ALL
     SELECT 27 REG, D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
            SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(P.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N        
+         , NOTAS_DE_CREDITO          N
          , DETALLE_NOTAS_DE_CREDITO DN
-         , POLIZAS P           
+         , POLIZAS P
          , DETALLE_POLIZA           DP
-         , COMISIONES C , DETALLE_COMISION DC    
-         , VALORES_DE_LISTAS         VL  
+         , COMISIONES C , DETALLE_COMISION DC
+         , VALORES_DE_LISTAS         VL
      WHERE D.IdTransaccion      = nIdTransaccion
        AND D.CodCia             = nCodCia
        AND D.CodEmpresa         = nCodEmpresa
        AND D.Correlativo        = 1
-       AND N.IdTransaccion      = D.IdTransaccion         
-       AND DN.IdNcr             = N.IdNcr 
+       AND N.IdTransaccion      = D.IdTransaccion
+       AND DN.IdNcr             = N.IdNcr
        AND P.CodCia             = N.CodCia
        AND P.IDPOLIZA           = N.IDPOLIZA
-       AND DP.IdPoliza          = N.IdPoliza         
+       AND DP.IdPoliza          = N.IdPoliza
        AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
-       AND DP.CodCia            = D.CodCia          
+       AND DP.CodCia            = D.CodCia
        AND C.CodCia             = nCodCia
        AND C.IDPOLIZA           = P.IDPOLIZA
        AND C.COD_MONEDA         = P.COD_MONEDA
-       AND C.IDNCR              = N.IDNCR 
+       AND C.IDNCR              = N.IDNCR
        AND DC.CodCia            = C.CodCia
        AND DC.IDCOMISION        = C.IDCOMISION
        --AND DC.CODCONCEPTO       = 'IVAHON'
        AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(P.CodCia, P.CODEMPRESA, DP.IDTIPOSEG) = 'N' AND DC.CODCONCEPTO      = 'IVAHON'
         OR OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(P.CodCia, P.CODEMPRESA, DP.IDTIPOSEG) = 'S' AND DC.CODCONCEPTO      != 'IVASIN')
-       AND C.IDCOMISION         = DC.IDCOMISION   
+       AND C.IDCOMISION         = DC.IDCOMISION
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
      GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST
                ,P.CodCia, C.Cod_Agente
-     UNION ALL  
+     UNION ALL
     SELECT 28 REG, D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3  
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(P.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N        
+         , NOTAS_DE_CREDITO          N
          , DETALLE_NOTAS_DE_CREDITO DN
-         , POLIZAS P           
+         , POLIZAS P
          , DETALLE_POLIZA           DP
-         , COMISIONES C , DETALLE_COMISION DC  
-         , VALORES_DE_LISTAS         VL  
+         , COMISIONES C , DETALLE_COMISION DC
+         , VALORES_DE_LISTAS         VL
      WHERE D.IdTransaccion      = nIdTransaccion
        AND D.CodCia             = nCodCia
        AND D.CodEmpresa         = nCodEmpresa
-       AND D.Correlativo        = 1       
-       AND N.IdTransaccionAnu   = D.IdTransaccion    
-       AND DN.IdNcr             = N.IdNcr    
+       AND D.Correlativo        = 1
+       AND N.IdTransaccionAnu   = D.IdTransaccion
+       AND DN.IdNcr             = N.IdNcr
        AND P.CodCia             = N.CodCia
-       AND P.IDPOLIZA           = N.IDPOLIZA                    
+       AND P.IDPOLIZA           = N.IDPOLIZA
        and DP.IdPoliza          = N.IdPoliza
        AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
        AND DP.CodCia            = D.CodCia
        AND C.CodCia             = nCodCia
        AND C.IDPOLIZA           = P.IDPOLIZA
        AND C.COD_MONEDA         = P.COD_MONEDA
-       AND C.IDNCR              = N.IDNCR 
+       AND C.IDNCR              = N.IDNCR
        AND DC.CodCia            = C.CodCia
        AND DC.IDCOMISION        = C.IDCOMISION
        --AND DC.CODCONCEPTO       = 'IVAHON'
        AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(P.CodCia, P.CODEMPRESA, DP.IDTIPOSEG) = 'N' AND DC.CODCONCEPTO      = 'IVAHON'
         OR OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(P.CodCia, P.CODEMPRESA, DP.IDTIPOSEG) = 'S' AND DC.CODCONCEPTO      != 'IVASIN')
-       AND C.IDCOMISION         = DC.IDCOMISION  
+       AND C.IDCOMISION         = DC.IDCOMISION
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST   
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST
                ,P.CodCia, C.Cod_Agente
-     UNION ALL  
+     UNION ALL
     SELECT 29 REG, D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3  
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(P.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_TRANSACCION       D
-         , NOTAS_DE_CREDITO          N        
+         , NOTAS_DE_CREDITO          N
          , DETALLE_NOTAS_DE_CREDITO DN
          , POLIZAS                  P
          , DETALLE_POLIZA           DP
-         , COMISIONES C , DETALLE_COMISION DC   
-         , VALORES_DE_LISTAS         VL  
+         , COMISIONES C , DETALLE_COMISION DC
+         , VALORES_DE_LISTAS         VL
      WHERE D.IdTransaccion      = nIdTransaccion
        AND D.CodCia             = nCodCia
        AND D.CodEmpresa         = nCodEmpresa
        AND D.Correlativo        = 1
-       AND N.IdTransacAplic     = D.IdTransaccion  
-       AND DN.IdNcr             = N.IdNcr      
+       AND N.IdTransacAplic     = D.IdTransaccion
+       AND DN.IdNcr             = N.IdNcr
        AND P.CodCia             = N.CodCia
-       AND P.IDPOLIZA           = N.IDPOLIZA                   
+       AND P.IDPOLIZA           = N.IDPOLIZA
        AND DP.IdPoliza          = N.IdPoliza
        AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
        AND DP.CodCia            = D.CodCia
        AND C.CodCia             = nCodCia
        AND C.IDPOLIZA           = P.IDPOLIZA
        AND C.COD_MONEDA         = P.COD_MONEDA
-       AND C.IDNCR              = N.IDNCR 
+       AND C.IDNCR              = N.IDNCR
        AND DC.CodCia            = C.CodCia
        AND DC.IDCOMISION        = C.IDCOMISION
        --AND DC.CODCONCEPTO       = 'IVAHON'
        AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(P.CodCia, P.CODEMPRESA, DP.IDTIPOSEG) = 'N' AND DC.CODCONCEPTO      = 'IVAHON'
         OR OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(P.CodCia, P.CODEMPRESA, DP.IDTIPOSEG) = 'S' AND DC.CODCONCEPTO      != 'IVASIN')
-       AND C.IDCOMISION         = DC.IDCOMISION    
+       AND C.IDCOMISION         = DC.IDCOMISION
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST   
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL, VL.DESCVALLST
                ,P.CodCia, C.Cod_Agente
-     UNION ALL  
+     UNION ALL
     SELECT 30 REG, D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3 
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(P.CodCia, C.Cod_Agente) TipoAgente
       FROM DETALLE_TRANSACCION       D
          , NOTAS_DE_CREDITO          N
-         , DETALLE_NOTAS_DE_CREDITO DN  
+         , DETALLE_NOTAS_DE_CREDITO DN
          , POLIZAS                  P
          , DETALLE_POLIZA           DP
-         , COMISIONES C , DETALLE_COMISION DC   
-         , VALORES_DE_LISTAS         VL  
+         , COMISIONES C , DETALLE_COMISION DC
+         , VALORES_DE_LISTAS         VL
      WHERE D.IdTransaccion      = nIdTransaccion
        AND D.CodCia             = nCodCia
        AND D.CodEmpresa         = nCodEmpresa
        AND D.Correlativo        = 1
-       AND N.IdTransacRevAplic  = D.IdTransaccion         
+       AND N.IdTransacRevAplic  = D.IdTransaccion
        AND DN.IdNcr             = N.IdNcr
        AND P.CodCia             = N.CodCia
-       AND P.IDPOLIZA           = N.IDPOLIZA         
+       AND P.IDPOLIZA           = N.IDPOLIZA
        AND DP.IdPoliza          = N.IdPoliza
        AND DP.IDetPol           = NVL(N.IDetPol, DP.IDetPol)
-       AND DP.CodCia            = D.CodCia        
+       AND DP.CodCia            = D.CodCia
        AND C.CodCia             = nCodCia
        AND C.IDPOLIZA           = P.IDPOLIZA
        AND C.COD_MONEDA         = P.COD_MONEDA
-       AND C.IDNCR              = N.IDNCR 
+       AND C.IDNCR              = N.IDNCR
        AND DC.CodCia            = C.CodCia
        AND DC.IDCOMISION        = C.IDCOMISION
        --AND DC.CODCONCEPTO       = 'IVAHON'
        AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(P.CodCia, P.CODEMPRESA, DP.IDTIPOSEG) = 'N' AND DC.CODCONCEPTO      = 'IVAHON'
         OR OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(P.CodCia, P.CODEMPRESA, DP.IDTIPOSEG) = 'S' AND DC.CODCONCEPTO      != 'IVASIN')
-       AND C.IDCOMISION         = DC.IDCOMISION    
+       AND C.IDCOMISION         = DC.IDCOMISION
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL , VL.DESCVALLST     
+     GROUP BY D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO, N.CodMoneda, NULL , VL.DESCVALLST
                ,P.CodCia, C.Cod_Agente
    UNION ALL
    SELECT 31 REG, T.CodEmpresa, DP.IdTipoSeg, DC.CodConcepto CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) MtoMovCuenta,
                 SUM(DC.Monto_Mon_Extranjera) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN, NULL NIVELCTA3
                 ,OC_AGENTES.TIPO_AGENTE(P.CodCia, C.Cod_Agente) TipoAgente
-   FROM POLIZAS P, DETALLE_POLIZA DP, 
+   FROM POLIZAS P, DETALLE_POLIZA DP,
          PAGOS PA, FACTURAS F,
          TRANSACCION T , COMISIONES C, DETALLE_COMISION DC
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
    WHERE T.IDTRANSACCION     = nIdTransaccion
     AND T.CodCia            = nCodCia
     AND PA.IDTRANSACCION     = T.IDTRANSACCION
@@ -933,7 +932,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
     AND DP.IDETPOL          = NVL(C.IDetPol,DP.IDetPol)
     AND ((TRUNC(F.FecVenc) <= TRUNC(FechaTransaccion)
     AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
-     OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+     OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')
     AND C.CodCia            = nCodCia
     AND C.IDPOLIZA          = P.IDPOLIZA
     AND C.COD_MONEDA        = P.COD_MONEDA
@@ -946,16 +945,16 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
     AND C.IDCOMISION        = DC.IDCOMISION
      AND VL.CODVALOR = DP.IdTipoSeg
      AND VL.CODLISTA = 'UENXTIPSEG'
-   GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS' , VL.DESCVALLST      
+   GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS' , VL.DESCVALLST
             ,P.CodCia, C.Cod_Agente
    UNION ALL
    SELECT 32 REG, T.CodEmpresa, DP.IdTipoSeg, 'TRIVHO' CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) * -1 MtoMovCuenta,
           SUM(DC.Monto_Mon_Extranjera) * -1 MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN, NULL NIVELCTA3
           ,OC_AGENTES.TIPO_AGENTE(P.CodCia, C.Cod_Agente) TipoAgente
-   FROM POLIZAS P, DETALLE_POLIZA DP, 
+   FROM POLIZAS P, DETALLE_POLIZA DP,
          PAGOS PA, FACTURAS F,
          TRANSACCION T , COMISIONES C, DETALLE_COMISION DC
-         , VALORES_DE_LISTAS         VL  
+         , VALORES_DE_LISTAS         VL
    WHERE T.IDTRANSACCION     = nIdTransaccion
     AND T.CodCia            = nCodCia
     AND PA.IDTRANSACCION     = T.IDTRANSACCION
@@ -967,7 +966,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
     AND DP.IDETPOL          = NVL(C.IDetPol,DP.IDetPol)
     AND ((TRUNC(F.FecVenc) <= TRUNC(FechaTransaccion)
     AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
-     OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+     OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(nCodCia, T.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')
     AND C.CodCia            = nCodCia
     AND C.IDPOLIZA          = P.IDPOLIZA
     AND C.COD_MONEDA        = P.COD_MONEDA
@@ -980,7 +979,7 @@ create or replace PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
     AND C.IDCOMISION        = DC.IDCOMISION
        AND VL.CODVALOR = DP.IdTipoSeg
        AND VL.CODLISTA = 'UENXTIPSEG'
-   GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST  
+   GROUP BY T.CodEmpresa, DP.IdTipoSeg, DC.CodCONCEpto, p.Cod_Moneda, 'FACTURAS CONTABILIZADAS', VL.DESCVALLST
             ,P.CodCia, C.Cod_Agente
      ;
 
@@ -1203,7 +1202,7 @@ BEGIN
          WHEN TOO_MANY_ROWS THEN
             RAISE_APPLICATION_ERROR (-20100,'No de Transacción '||nIdTransaccion||' Posee Más de un Proceso');
       END;
-      -- 
+      --
 
      IF OC_SUB_PROCESO.GENERA_CONTABILIDAD(nIdProceso, Z.CodSubProceso) = 'S' THEN
          -- Lee el Tipo de Comprobante a Crear
@@ -1229,7 +1228,7 @@ BEGIN
         FOR W IN MOV_CONTABLE_Q  (nCodCia, nCodEmpresa, nIdTransaccion, cCodMonedaCia)LOOP
             nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(W.CodMoneda, TRUNC(dFechaTransaccion));
             nCodEmpresa := W.CodEmpresa;
-            cIdTipoSeg  := W.IdTipoSeg;            
+            cIdTipoSeg  := W.IdTipoSeg;
             cCodCpto    := W.CodCpto;
             cTipoAgente := W.TipoAgente;
             IF W.CodMoneda IS NOT NULL AND cCodMoneda IS NULL THEN
@@ -1245,30 +1244,30 @@ BEGIN
                  INTO cConceptoAdicional
                  FROM CONCEPTOS_ADICIONALES
                 WHERE CodConcepto   = W.CodCpto;
-            EXCEPTION 
+            EXCEPTION
                WHEN NO_DATA_FOUND THEN
                   cConceptoAdicional := 'N';
                WHEN TOO_MANY_ROWS THEN
                   cConceptoAdicional := 'S';
                WHEN OTHERS THEN
                   cConceptoAdicional := 'N';
-            END;   
+            END;
    -----
             FOR X IN PLANT_Q LOOP
-   /*              IF cConceptoAdicional = 'S' THEN                       
+   /*              IF cConceptoAdicional = 'S' THEN
                  X.CodUnidadNegocio := W.UEN; ---- JMMD20200817 SE CAMBIA LA UNIDAD DE NEGOCIO DE LA PLANTILLA POR LA UEN DEL TIPO DE SEGURO
               END IF;   */
                IF X.NivelCta1 = '5' AND X.NivelCta2 = '3' AND X.NivelCta3 = '09' THEN
                  X.CodUnidadNegocio := W.UEN;
-               END IF;      
-   -----   
-               IF X.TipoRegistro = 'MO' THEN               
+               END IF;
+   -----
+               IF X.TipoRegistro = 'MO' THEN
                   IF X.TipoAgente IS NULL THEN
                      nMtoMovCuenta := ABS(W.MtoMovCuenta);
                   ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN
------                     dbms_output.put_line('jmmd EN CONTABILIZAR X.TipoRegistro '||X.TipoRegistro||'  W.mtocomiscuenta  '||W.mtocomiscuenta);                  
+-----                     dbms_output.put_line('jmmd EN CONTABILIZAR X.TipoRegistro '||X.TipoRegistro||'  W.mtocomiscuenta  '||W.mtocomiscuenta);
 ----- jmmd20220531 asi estaba                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
-                     nMtoMovCuenta := ABS(W.MtoComisCuenta);                     
+                     nMtoMovCuenta := ABS(W.MtoComisCuenta);
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
@@ -1281,39 +1280,39 @@ BEGIN
                           INTO cConceptoAdicional
                           FROM CONCEPTOS_ADICIONALES
                          WHERE CODCONCEPTO   = W.CODCPTO;
-                      EXCEPTION 
+                      EXCEPTION
                        WHEN NO_DATA_FOUND THEN
                          cConceptoAdicional := 'N';
                        WHEN TOO_MANY_ROWS THEN
                          cConceptoAdicional := 'S';
                        WHEN OTHERS THEN
                          cConceptoAdicional := 'N';
-                      END;   */                      
-                     IF cConceptoAdicional = 'S' THEN 
+                      END;   */
+                     IF cConceptoAdicional = 'S' THEN
                      --                      X.CodUnidadNegocio := W.UEN; ---- JMMD20200817 SE CAMBIA LA UNIDAD DE NEGOCIO DE LA PLANTILLA POR LA UEN DEL TIPO DE SEGURO
                         IF cCodProceso = 100 THEN
                          nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                                                      X.TipoPersona, X.TipoAgente, W.CodCpto));                                              
+                                                                                      X.TipoPersona, X.TipoAgente, W.CodCpto));
                         ELSE
                            IF cCodProceso = 200 THEN
                               nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                                                           X.TipoPersona, X.TipoAgente, W.CodCpto));                                                                    
+                                                                                           X.TipoPersona, X.TipoAgente, W.CodCpto));
                            ELSE
                              IF cCodProceso IN( 300,310,320,330) THEN
                                 nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_PAGOS(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                                                             X.TipoPersona, X.TipoAgente, W.CodCpto)); 
+                                                                                             X.TipoPersona, X.TipoAgente, W.CodCpto));
                              ELSE
                                  IF cCodProceso IN( 700,900) THEN
-                                   nMtoMovCuenta := W.MtoComisCuenta;  
-                                 END IF;                                                                                                                                                                                           
-                             END IF;  
-                           END IF;      
-                        END IF;                                                                                                                                                                                                                           
-                     ELSE             ------- JMMD20191015     
+                                   nMtoMovCuenta := W.MtoComisCuenta;
+                                 END IF;
+                             END IF;
+                           END IF;
+                        END IF;
+                     ELSE             ------- JMMD20191015
 
                      nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                                                       X.TipoPersona, X.TipoAgente));                                                                 
-                     END IF;   ---- JMMD20191015                                                                                                                                                                                                                                                                          
+                                                                                       X.TipoPersona, X.TipoAgente));
+                     END IF;   ---- JMMD20191015
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
@@ -1388,20 +1387,26 @@ cCodMonedaCia      EMPRESAS.Cod_Moneda%TYPE;
 nTasaCambio        TASAS_CAMBIO.Tasa_Cambio%TYPE;
 cConceptoAdicional VARCHAR2(1);
 
-CURSOR PLANT_Q IS
-   SELECT NivelCta1, NivelCta2, NivelCta3, NivelCta4, NivelCta5,
-          NivelCta6, NivelCta7, NivelAux, RegDebCred, TipoRegistro,
-          CodCentroCosto, CodUnidadNegocio, TipoPersona, CanalComisVenta,
-          DescCptoGeneral, TipoAgente
-     FROM PLANTILLAS_CONTABLES
-    WHERE CodMoneda  = cCodMoneda
-      AND CodCpto    = cCodCpto
-      AND IdTipoSeg  = cIdTipoSeg
-      AND CodEmpresa = nCodEmpresa
-      AND CodProceso = cCodProceso
-      AND CodCia     = nCodCia
-    ORDER BY IdRegPlantilla;
+cTipoAgente        AGENTES.Tipo_Agente%TYPE;  -- MLJS 13/07/2023
 
+CURSOR PLANT_Q IS
+-- MLJS 13/07/2023 SE HOMOLOGA DE ACUERDO A PROC CONTABILIZAR 
+   SELECT NivelCta1, NivelCta2, NivelCta3, NivelCta4, NivelCta5,
+             NivelCta6, NivelCta7, NivelAux, RegDebCred, TipoRegistro,
+             CodCentroCosto, CodUnidadNegocio, TipoPersona, CanalComisVenta,
+             DescCptoGeneral, TipoAgente
+        FROM PLANTILLAS_CONTABLES
+       WHERE CodCia              = nCodCia
+         AND CodProceso          = cCodProceso
+         AND CodMoneda           = cCodMoneda
+         AND CodCpto             = cCodCpto
+         AND IdTipoSeg           = cIdTipoSeg
+         AND CodEmpresa          = nCodEmpresa
+         AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(CodCia, CODEMPRESA, cIdTipoSeg) = 'S' AND NVL(TipoAgente,'X') = NVL(cTipoAgente,'X')
+          OR  OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(CodCia, CODEMPRESA, cIdTipoSeg) = 'N' )
+       ORDER BY IdRegPlantilla;
+    
+    
 CURSOR SUBPROC_Q IS
    SELECT DISTINCT CodSubProceso
      INTO cCodSubProceso
@@ -1427,8 +1432,8 @@ BEGIN
 
    FOR Z IN SUBPROC_Q LOOP
       BEGIN
-         SELECT DISTINCT T.IdProceso, T.FechaTransaccion, S.CodProcesoCont
-           INTO nIdProceso, dFechaTransaccion, cCodProceso
+         SELECT DISTINCT T.IdProceso, T.FechaTransaccion, S.CodProcesoCont, T.CodEmpresa  -- MLJS 13/07/2023 SE AGREGA LA EMPRESA 
+           INTO nIdProceso, dFechaTransaccion, cCodProceso, nCodEmpresa                   -- MLJS 13/07/2023
            FROM TRANSACCION T, SUB_PROCESO S
           WHERE S.CodSubProceso = Z.CodSubProceso
             AND S.IdProceso     = T.IdProceso
@@ -1465,13 +1470,14 @@ BEGIN
          cDescMovGeneral := 'Contabilización de ' || cDescProceso || ' para SubProceso ' || cDescSubProceso ||
                             ' de la Transacción No. ' || TRIM(TO_CHAR(nIdTransaccion)) || ' del ' ||
                             TO_CHAR(dFechaTransaccion,'DD/MM/YYYY');
-
+         
          FOR W IN MOV_CONTABLE_Q (nCodCia, nCodEmpresa, nIdTransaccion, cCodMonedaCia)  LOOP
             nTasaCambio    := OC_GENERALES.TASA_DE_CAMBIO(W.CodMoneda, TRUNC(dFechaTransaccion));
             nCodEmpresa    := W.CodEmpresa;
             cIdTipoSeg     := W.IdTipoSeg;
             cCodCpto       := W.CodCpto;
-            DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional||'  W.CodCpto  '||W.CodCpto|| ' cCodProceso --> '||cCodProceso );            
+            cTipoAgente    := W.TipoAgente;  --MLJS 13/07/2023
+            DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional||'  W.CodCpto  '||W.CodCpto|| ' cCodProceso --> '||cCodProceso );
             IF W.CodMoneda IS NOT NULL AND cCodMoneda IS NULL THEN
                cCodMoneda     := W.CodMoneda;
             END IF;
@@ -1486,63 +1492,63 @@ BEGIN
                 INTO cConceptoAdicional
                 FROM CONCEPTOS_ADICIONALES
                WHERE CODCONCEPTO   = W.CODCPTO;
-            EXCEPTION 
+            EXCEPTION
              WHEN NO_DATA_FOUND THEN
                cConceptoAdicional := 'N';
              WHEN TOO_MANY_ROWS THEN
                cConceptoAdicional := 'S';
              WHEN OTHERS THEN
                cConceptoAdicional := 'N';
-            END;   
+            END;
 
-            DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso );            
+            DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso );
 -----
             FOR X IN PLANT_Q LOOP
-/*              IF cConceptoAdicional = 'S' THEN                       
+/*              IF cConceptoAdicional = 'S' THEN
                  X.CodUnidadNegocio := W.UEN; ---- JMMD20200817 SE CAMBIA LA UNIDAD DE NEGOCIO DE LA PLANTILLA POR LA UEN DEL TIPO DE SEGURO
-                 DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso||' W.CODCPTO -> '||W.CODCPTO||' X.CodUnidadNegocio '||X.CodUnidadNegocio );                         
+                 DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso||' W.CODCPTO -> '||W.CODCPTO||' X.CodUnidadNegocio '||X.CodUnidadNegocio );
               END IF; */
               IF X.NIVELCTA1 = '5' AND X.NIVELCTA2 = '3' AND X.NIVELCTA3 = '09' THEN
                  X.CodUnidadNegocio := W.UEN;
-              END IF;  
-              DBMS_OUTPUT.PUT_LINE('X.TipoRegistro -> '||X.TipoRegistro|| ' cCodProceso --> '||cCodProceso );                                             
+              END IF;
+              DBMS_OUTPUT.PUT_LINE('X.TipoRegistro -> '||X.TipoRegistro|| ' cCodProceso --> '||cCodProceso );
                IF X.TipoRegistro = 'MO' THEN
                   IF X.TipoAgente IS NULL THEN
                      nMtoMovCuenta := ABS(W.MtoMovCuenta);
                   ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN
 ----- jmmd20220531  asi estaba                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
-                     nMtoMovCuenta := ABS(W.MtoComisCuenta);                     
+                     nMtoMovCuenta := ABS(W.MtoComisCuenta);
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
                ELSE
                   IF ABS(W.MtoComisCuenta) != 0 THEN
 --------------------- JMMD20191015 IVAHON
-                      IF cConceptoAdicional = 'S' THEN 
+                      IF cConceptoAdicional = 'S' THEN
                          IF cCodProceso = 100 THEN
                             nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                                                         X.TipoPersona, X.TipoAgente, W.CodCpto));                                              
+                                                                                         X.TipoPersona, X.TipoAgente, W.CodCpto));
                          ELSE
                            IF cCodProceso = 200 THEN
                               nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                                                           X.TipoPersona, X.TipoAgente, W.CodCpto));                                                                    
+                                                                                           X.TipoPersona, X.TipoAgente, W.CodCpto));
                            ELSE
                              IF cCodProceso IN( 300,310,320,330) THEN
-                                DBMS_OUTPUT.PUT_LINE('cCodProceso 300,310,320,330 -> '||cCodProceso||' W.UEN --> '||W.UEN );                             
+                                DBMS_OUTPUT.PUT_LINE('cCodProceso 300,310,320,330 -> '||cCodProceso||' W.UEN --> '||W.UEN );
                                 nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_PAGOS(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                                                             X.TipoPersona, X.TipoAgente, W.CodCpto)); 
+                                                                                             X.TipoPersona, X.TipoAgente, W.CodCpto));
                              ELSE
                               IF cCodProceso IN( 700,900) THEN
-                                DBMS_OUTPUT.PUT_LINE('cCodProceso 700,900 -> '||cCodProceso||' W.UEN --> '||W.UEN );                           
-                                nMtoMovCuenta := W.MtoComisCuenta;  
-                              END IF;                                                                                                                                                                                           
-                             END IF;  
-                           END IF;      
-                         END IF;                                                                                                                                                                                                                           
-                      ELSE             ------- JMMD20191015     
+                                DBMS_OUTPUT.PUT_LINE('cCodProceso 700,900 -> '||cCodProceso||' W.UEN --> '||W.UEN );
+                                nMtoMovCuenta := W.MtoComisCuenta;
+                              END IF;
+                             END IF;
+                           END IF;
+                         END IF;
+                      ELSE             ------- JMMD20191015
                         nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                                                           X.TipoPersona, X.TipoAgente));
-                      END IF;                                                                                           
+                      END IF;
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
@@ -1874,7 +1880,7 @@ FUNCTION COMISION_TIPO_PERSONA( nCodCia         TRANSACCION.CODCIA%TYPE
    --
    nCodEmpresa TRANSACCION.CODEMPRESA%TYPE;
    nIdPoliza   DETALLE_TRANSACCION.VALOR1%TYPE;
-   nIDetPol    DETALLE_TRANSACCION.VALOR2%TYPE;   
+   nIDetPol    DETALLE_TRANSACCION.VALOR2%TYPE;
    --
 BEGIN
    SELECT A.CODEMPRESA
@@ -1882,7 +1888,7 @@ BEGIN
    FROM   TRANSACCION A
    WHERE  A.IdTransaccion = nIdTransaccion
      AND  A.CodCia        = nCodCia;
-   --   
+   --
    --Opt:07082019
    SELECT NVL(SUM(Comision_Moneda),0)
      INTO nComision_Moneda
@@ -1922,7 +1928,7 @@ BEGIN
       AND D.CodEmpresa                = nCodEmpresa
       AND D.CodCia                    = nCodCia;
 
-   --   
+   --
    --Opt:07082019
    SELECT NVL(nComision_Moneda,0) + NVL(SUM(C.Comision_Moneda),0)
      INTO nComision_Moneda
@@ -1955,7 +1961,7 @@ BEGIN
       AND D.CodEmpresa                = nCodEmpresa
       AND D.Correlativo               = 1;
 
-   --   
+   --
    --Opt:07082019
    SELECT NVL(nComision_Moneda,0) + NVL(SUM(N.MtoComisi_Moneda),0)
      INTO nComision_Moneda
@@ -1976,7 +1982,7 @@ BEGIN
       AND D.CodEmpresa                = nCodEmpresa
       AND D.Correlativo               = 1;
 
-   --   
+   --
    --Opt:07082019
    SELECT NVL(nComision_Moneda,0) + NVL(SUM(Comision_Moneda),0)
      INTO nComision_Moneda
@@ -2007,7 +2013,7 @@ BEGIN
       AND D.CodEmpresa                = nCodEmpresa
       AND D.Correlativo               = 1;
 
-   --   
+   --
    --Opt:07082019
    BEGIN
       SELECT Valor1, Valor2
@@ -2049,23 +2055,23 @@ BEGIN
       AND CF.IDetPol                  > 0
       AND CF.IdPoliza                 > 0
       AND CF.IdFactura                = F.IdFactura
-      AND (CF.IdTransaccion           = D.IdTransaccion 
+      AND (CF.IdTransaccion           = D.IdTransaccion
        OR CF.IdTransaccionAnu         = D.IdTransaccion)
       AND CF.CodEmpresa               = D.CodEmpresa
       AND CF.CodCia                   = D.CodCia
-      AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES(CF.CodCia, CF.CodEmpresa, 
-                                                GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo), 
+      AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES(CF.CodCia, CF.CodEmpresa,
+                                                GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo),
                                                 CF.CodCptoMov, 'GC') = 'S'
-      AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES(CF.CodCia, CF.CodEmpresa, 
-                                                GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo), 
-                                                CF.CodCptoMov, 'CO') = 'S'                                                
+      AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES(CF.CodCia, CF.CodEmpresa,
+                                                GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo),
+                                                CF.CodCptoMov, 'CO') = 'S'
       AND D.IdTransaccion             = nIdTransaccion
       AND D.CodCia                    = nCodCia
       AND D.CodEmpresa                = NVL(nCodEmpresa, D.CODEMPRESA)
       AND D.Correlativo               = 1
       AND DP.IdPoliza                 = NVL(nIdPoliza  , DP.IdPoliza)
       AND DP.IDetPol                  = NVL(nIDetPol   , DP.IDetPol)
-      AND DP.CodCia                   = NVL(nCodCia    , DP.CodCia); 
+      AND DP.CodCia                   = NVL(nCodCia    , DP.CodCia);
 
    RETURN(nComision_Moneda);
 END COMISION_TIPO_PERSONA;
@@ -2088,7 +2094,7 @@ BEGIN
       AND C.IdFactura                 = F.IdFactura
       AND DC.CODCIA                   = C.CODCIA
       AND DC.IDCOMISION               = C.IDCOMISION
-      AND DC.CODCONCEPTO              = 'IVAHON'      
+      AND DC.CODCONCEPTO              = 'IVAHON'
       AND DP.IdTipoSeg                = cIdTipoSeg
       AND DP.IdPoliza                 = F.IdPoliza
       AND DP.IDetPol                  = NVL(F.IDetPol, DP.IDetPol)
@@ -2116,39 +2122,39 @@ nComision_Moneda      COMISIONES.Comision_Moneda%TYPE;
 BEGIN
    SELECT NVL(SUM(DC.MONTO_MON_EXTRANJERA),0)
      INTO nComision_Moneda
-    FROM  TRANSACCION T --, 
+    FROM  TRANSACCION T --,
            ,DETALLE_TRANSACCION D
            ,NOTAS_DE_CREDITO NC
-           , COMISIONES C   
-           , DETALLE_COMISION DC        
-           , DETALLE_POLIZA DP 
-           , AGENTES A 
-           , PERSONA_NATURAL_JURIDICA PNJ 
+           , COMISIONES C
+           , DETALLE_COMISION DC
+           , DETALLE_POLIZA DP
+           , AGENTES A
+           , PERSONA_NATURAL_JURIDICA PNJ
     WHERE T.IdTransaccion             = nIdTransaccion
       AND D.IdTransaccion             = T.IdTransaccion
-      AND D.CodCia                    = nCodCia 
-      AND D.Correlativo               = 1     
+      AND D.CodCia                    = nCodCia
+      AND D.Correlativo               = 1
       AND (NC.IdTransaccion           = D.IdTransaccion
        OR NC.IdTransaccionAnu         = D.IdTransaccion
        OR  NC.IdTransacaPLIC          = D.IdTransaccion)
-      AND C.IdNCR                     = NC.IDNCR   
-      AND C.IDPOLIZA                  = NC.IDPOLIZA   
+      AND C.IdNCR                     = NC.IDNCR
+      AND C.IDPOLIZA                  = NC.IDPOLIZA
       AND DC.CODCIA                   = C.CODCIA
       AND DC.IDCOMISION               = C.IDCOMISION
-      AND DC.CODCONCEPTO              = 'IVAHON' 
+      AND DC.CODCONCEPTO              = 'IVAHON'
       AND DP.IdTipoSeg                = cIdTipoSeg
       AND DP.IdPoliza                 = NC.IdPoliza
       AND DP.IDetPol                  = NVL(NC.IDetPol, DP.IDetPol)
-      AND DP.CodCia                   = D.CodCia    
+      AND DP.CodCia                   = D.CodCia
       AND A.CodTipo                   = cTipoAgente
       AND A.Cod_Agente                = C.Cod_Agente
-      AND A.CodCia                    = C.CodCia                     
+      AND A.CodCia                    = C.CodCia
       AND PNJ.Tipo_Persona            = cTipoPersona
       AND PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
-      AND PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion   
+      AND PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
       AND ((TRUNC(NC.FecdEVOL)         <= TRUNC(T.FechaTransaccion)
       AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
-       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')  
+       OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')
 ;
 
    DBMS_OUTPUT.PUT_LINE('En com_tipo_adicionales_canc ->  nComision_Moneda --> '||nComision_Moneda );
@@ -2162,27 +2168,27 @@ nComision_Moneda      COMISIONES.Comision_Moneda%TYPE;
 BEGIN
       SELECT NVL(SUM(DC.MONTO_MON_EXTRANJERA),0)
      INTO nComision_Moneda
-     FROM COMISIONES C, 
-     FACTURAS F, 
+     FROM COMISIONES C,
+     FACTURAS F,
      DETALLE_TRANSACCION D,
-          TRANSACCION T, DETALLE_POLIZA DP , AGENTES A, 
+          TRANSACCION T, DETALLE_POLIZA DP , AGENTES A,
           PAGOS PA ,
-          PERSONA_NATURAL_JURIDICA PNJ, 
+          PERSONA_NATURAL_JURIDICA PNJ,
             DETALLE_COMISION DC
     WHERE PNJ.Tipo_Persona            = cTipoPersona
       AND PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
-      AND PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion  
+      AND PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
       AND A.CodTipo                   = cTipoAgente
-      AND A.Cod_Agente                = C.Cod_Agente  
-      AND A.CodCia                    = C.CodCia  
+      AND A.Cod_Agente                = C.Cod_Agente
+      AND A.CodCia                    = C.CodCia
       AND C.IdFactura                 = F.IdFactura
       AND DC.CODCIA                   = C.CODCIA
       AND DC.IDCOMISION               = C.IDCOMISION
-      AND DC.CODCONCEPTO              = 'IVAHON'    
+      AND DC.CODCONCEPTO              = 'IVAHON'
       AND DP.IdTipoSeg                = cIdTipoSeg
       AND DP.IdPoliza                 = F.IdPoliza
       AND DP.IDetPol                  = NVL(F.IDetPol, DP.IDetPol)
-      AND DP.CodCia                   = D.CodCia 
+      AND DP.CodCia                   = D.CodCia
       AND (PA.IdTransaccion            = D.IdTransaccion
         OR  PA.IdTransaccionAnu         = D.IdTransaccion)
       AND  F.IDFACTURA                 = PA.IDFACTURA
@@ -2192,7 +2198,7 @@ BEGIN
        OR OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'ANTICI')
       AND D.Correlativo               = nCodCia
       AND D.IdTransaccion             = nIdTransaccion
-      AND D.CodCia                    = nCodCia  
+      AND D.CodCia                    = nCodCia
 ;
 
 
@@ -2427,7 +2433,7 @@ BEGIN
       BEGIN
          SELECT 'S'
            INTO cCanalComis
-           FROM AGENTES_DISTRIBUCION_COMISION AG, AGENTES A, DETALLE_TRANSACCION D, 
+           FROM AGENTES_DISTRIBUCION_COMISION AG, AGENTES A, DETALLE_TRANSACCION D,
                 FAI_CONCENTRADORA_FONDO CF, FACTURAS F, DETALLE_POLIZA  DP
           WHERE A.CanalComisVenta   = cCanalComisVenta
             AND A.Cod_Agente        = AG.Cod_Agente_Distr
@@ -2444,12 +2450,12 @@ BEGIN
             AND CF.IDetPol          > 0
             AND CF.IdPoliza         > 0
             AND CF.IdFactura        = F.IdFactura
-            AND (CF.IdTransaccion   = D.IdTransaccion 
+            AND (CF.IdTransaccion   = D.IdTransaccion
              OR CF.IdTransaccionAnu = D.IdTransaccion)
             AND CF.CodEmpresa       = D.CodEmpresa
             AND CF.CodCia           = D.CodCia
-            AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES(CF.CodCia, CF.CodEmpresa, 
-                                                      GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo), 
+            AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES(CF.CodCia, CF.CodEmpresa,
+                                                      GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo),
                                                       CF.CodCptoMov, 'GC') = 'S'
             AND D.Correlativo       = 1
             AND D.IdTransaccion     = nIdTransaccion
@@ -2680,7 +2686,7 @@ BEGIN
       BEGIN
          SELECT 'S'
            INTO cAplicaTipoAgen
-           FROM AGENTES_DISTRIBUCION_COMISION AG, AGENTES A, DETALLE_TRANSACCION D, 
+           FROM AGENTES_DISTRIBUCION_COMISION AG, AGENTES A, DETALLE_TRANSACCION D,
                 FAI_CONCENTRADORA_FONDO CF, FACTURAS F, DETALLE_POLIZA  DP
           WHERE A.CodTipo           = cTipoAgente
             AND A.Cod_Agente        = AG.Cod_Agente_Distr
@@ -2697,12 +2703,12 @@ BEGIN
             AND CF.IDetPol          > 0
             AND CF.IdPoliza         > 0
             AND CF.IdFactura        = F.IdFactura
-            AND (CF.IdTransaccion   = D.IdTransaccion 
+            AND (CF.IdTransaccion   = D.IdTransaccion
              OR CF.IdTransaccionAnu = D.IdTransaccion)
             AND CF.CodEmpresa       = D.CodEmpresa
             AND CF.CodCia           = D.CodCia
-            AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES(CF.CodCia, CF.CodEmpresa, 
-                                                      GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo), 
+            AND GT_FAI_MOVIMIENTOS_FONDOS.INDICADORES(CF.CodCia, CF.CodEmpresa,
+                                                      GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(CF.IdFondo),
                                                       CF.CodCptoMov, 'GC') = 'S'
             AND D.Correlativo       = 1
             AND D.IdTransaccion     = nIdTransaccion
@@ -2776,9 +2782,10 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          cEnviado := 'N';
       WHEN TOO_MANY_ROWS THEN
-         cEnviado := 'S';         
+         cEnviado := 'S';
    END;
    RETURN(cEnviado);
 END ENVIADO_SISTEMA_CONTABLE;
 
 END OC_COMPROBANTES_CONTABLES;
+/
