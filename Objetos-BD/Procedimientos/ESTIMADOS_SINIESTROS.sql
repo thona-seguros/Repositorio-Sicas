@@ -494,7 +494,7 @@ BEGIN
 
        INSERT INTO T_REPORTES_AUTOMATICOS (CODCIA, CODEMPRESA, NOMBRE_REPORTE, FECHA_PROCESO, NUMERO_REGISTRO, CODPLANTILLA,
        NOMBRE_ARCHIVO_EXCEL,CAMPO)
-       VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSIN',cNomArchivo,trim(cCadena)||trim(cCadenaAux)||trim(cCadenaAux1));
+       VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSIN',cNomArchivo,trim(LPAD(cCadena,4000,NULL))|| TO_CLOB(trim(LPAD(cCadenaAux,4000,NULL)))||trim(LPAD(cCadenaAux1,4000,NULL))); -- MLJS 14/08/2023 se modifica porque marcar error al cargar al ser un campo CLOB
        nLineaimp := nLineaimp +1;
 
        commit;
