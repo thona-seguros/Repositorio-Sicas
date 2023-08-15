@@ -1,4 +1,4 @@
-create or replace PROCEDURE          ESTIMADOS_SINIESTROS  IS
+CREATE OR REPLACE PROCEDURE ESTIMADOS_SINIESTROS  IS
 -- variables proceso --
 cLimitador      VARCHAR2(1) :='|';
 nLinea          NUMBER;
@@ -494,7 +494,7 @@ BEGIN
 
        INSERT INTO T_REPORTES_AUTOMATICOS (CODCIA, CODEMPRESA, NOMBRE_REPORTE, FECHA_PROCESO, NUMERO_REGISTRO, CODPLANTILLA,
        NOMBRE_ARCHIVO_EXCEL,CAMPO)
-       VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSIN',cNomArchivo,trim(LPAD(cCadena,4000,NULL))|| TO_CLOB(trim(LPAD(cCadenaAux,4000,NULL)))||trim(LPAD(cCadenaAux1,4000,NULL))); -- MLJS 14/08/2023 se modifica porque marcar error al cargar al ser un campo CLOB
+        VALUES(1,1,cCodReporte,trunc(sysdate),nLineaimp,'REPAUTESTSIN',cNomArchivo, REPLACE(TRIM(cCadena)||TO_CLOB(trim(RPAD(cCadenaAux,4000,'@'))),'@',NULL)|| TRIM(cCadenaAux1)); -- MLJS 14/08/2023 Y 15/08/2023 se modifica porque marcar error al cargar al ser un campo CLOB
        nLineaimp := nLineaimp +1;
 
        commit;
@@ -785,3 +785,4 @@ EXCEPTION
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
    RAISE_APPLICATION_ERROR(-20000, 'Error en ESTIMASINIESTROS ' || SQLERRM);
 END;
+/
