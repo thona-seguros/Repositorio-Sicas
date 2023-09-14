@@ -138,14 +138,28 @@ BEGIN
    OC_MAIL.cPwdCtaEnvio:= cPwdEmail;
    
    IF cIdTipoSeg = 'VICAP' THEN
+		BEGIN
+		  SELECT B.COD_AGENTE
+		  INTO vl_CodAgente
+		  FROM AGENTES B,AGENTE_POLIZA A
+		  WHERE B.COD_AGENTE = A.COD_AGENTE
+			AND A.IDPOLIZA = nIdPoliza
+			AND B.EST_AGENTE = 'ACT'
+			AND A.IND_PRINCIPAL = 'S'
+			AND ROWNUM <= 1;
+		EXCEPTION	
+			WHEN OTHERS THEN
+				SELECT B.COD_AGENTE
+				INTO vl_CodAgente
+				FROM AGENTES B,PERSONA_NATURAL_JURIDICA J
+				WHERE  J.NUM_DOC_IDENTIFICACION = B.NUM_DOC_IDENTIFICACION
+					AND J.TIPO_DOC_IDENTIFICACION = B.TIPO_DOC_IDENTIFICACION
+					AND B.EST_AGENTE = 'ACT'
+					and J.email='atencionaclientes.comercial@thonaseguros.mx'
+					AND ROWNUM <= 1;
 
-      SELECT B.COD_AGENTE
-      INTO vl_CodAgente
-      FROM AGENTES B,AGENTE_POLIZA A
-      WHERE B.COD_AGENTE = A.COD_AGENTE
-        AND A.IDPOLIZA = nIdPoliza
-        AND B.EST_AGENTE = 'ACT';
-
+		END;
+		
       FOR CON IN cur_Salida LOOP
         IF vl_Mails IS NULL THEN
           vl_Mails := CON.EMAIL||',';

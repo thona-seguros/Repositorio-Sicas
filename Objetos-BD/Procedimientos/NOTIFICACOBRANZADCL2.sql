@@ -131,12 +131,27 @@ BEGIN
     
     IF cIdTipoSeg = 'VICAP' THEN
 
-      SELECT B.COD_AGENTE
-      INTO vl_CodAgente
-      FROM AGENTES B,AGENTE_POLIZA A
-      WHERE B.COD_AGENTE = A.COD_AGENTE
-        AND A.IDPOLIZA = nIdPoliza
-        AND B.EST_AGENTE = 'ACT';
+		BEGIN
+		  SELECT B.COD_AGENTE
+		  INTO vl_CodAgente
+		  FROM AGENTES B,AGENTE_POLIZA A
+		  WHERE B.COD_AGENTE = A.COD_AGENTE
+			AND A.IDPOLIZA = nIdPoliza
+			AND B.EST_AGENTE = 'ACT'
+			AND A.IND_PRINCIPAL = 'S'
+			AND ROWNUM <= 1;
+		EXCEPTION	
+			WHEN OTHERS THEN
+				SELECT B.COD_AGENTE
+				INTO vl_CodAgente
+				FROM AGENTES B,PERSONA_NATURAL_JURIDICA J
+				WHERE  J.NUM_DOC_IDENTIFICACION = B.NUM_DOC_IDENTIFICACION
+					AND J.TIPO_DOC_IDENTIFICACION = B.TIPO_DOC_IDENTIFICACION
+					AND B.EST_AGENTE = 'ACT'
+					and J.email='atencionaclientes.comercial@thonaseguros.mx'
+					AND ROWNUM <= 1;
+
+		END;
 
       FOR CON IN cur_Salida LOOP
         IF vl_Mails IS NULL THEN
@@ -150,7 +165,7 @@ BEGIN
       VL_LONG := length(vl_Mails);
       vl_Mails  := SUBSTR(vl_Mails,0,VL_LONG-1);
       
-      vl_Mails := 'lreynoso@thonaseguros.mx,argenyz_revolutionz@hotmail.com';
+      --vl_Mails := 'lreynoso@thonaseguros.mx';
       
       OC_MAIL.SEND_EMAIL(NULL,cEmailEnvio,cEmailCliente,vl_Mails,NULL,cSubject,cMessage,NULL,NULL,NULL,NULL,cError);
       
