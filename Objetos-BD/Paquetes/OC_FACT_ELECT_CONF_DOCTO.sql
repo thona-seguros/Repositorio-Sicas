@@ -1,11 +1,10 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
-
-/*
-Desarrollador: Luis Argenis Reynoso Alvarez
-Fecha: 13/09/2023
-Descripción: Se implementa regla a ViCapital para obtener los correos de los Agentes y copiarlos en el correo enviado al cliente.
-*/
-
+create or replace PACKAGE OC_FACT_ELECT_CONF_DOCTO IS
+    -- FACTELECT VIFLEX                     20230426 CAPELE
+    /*
+    Desarrollador: Luis Argenis Reynoso Alvarez
+    Fecha: 13/09/2023
+    Descripci�n: Se implementa regla a ViCapital para obtener los correos de los Agentes y copiarlos en el correo enviado al cliente.
+    */
     --
     cLineaCom            VARCHAR2(1000)  := NULL;
     cLineaExe            VARCHAR2(1000)  := NULL;
@@ -72,19 +71,11 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                               , cTextoSalida  OUT  VARCHAR2
                               , nIdAgrupaEnv  OUT  FACT_ELECT_DOCTOS_TIMBRE.IDAGRUPAENV%TYPE ) RETURN VARCHAR2;
 
-    FUNCTION EXISTE_IMPUESTO(nCodCia IN NUMBER, nIdFactura IN NUMBER DEFAULT NULL,nIdNcr IN NUMBER DEFAULT NULL, cProceso IN VARCHAR2) RETURN VARCHAR2;
+    FUNCTION EXISTE_IMPUESTO(nCodCia IN NUMBER, nIdFactura IN NUMBER DEFAULT NULL,nIdNcr IN NUMBER DEFAULT NULL, cProceso IN VARCHAR2, cCodTipoPlan VARCHAR2) RETURN VARCHAR2;
     --
 END OC_FACT_ELECT_CONF_DOCTO;
-
 /
-
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACT_ELECT_CONF_DOCTO IS
-
-/*
-Desarrollador: Luis Argenis Reynoso Alvarez
-Fecha: 13/09/2023
-Descripción: Se implementa regla a ViCapital para obtener los correos de los Agentes y copiarlos en el correo enviado al cliente.
-*/
+CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
 
     -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -206,45 +197,45 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                   AND IndRecursivo = 'S')
         ORDER BY OrdenIdent;
 
-            CURSOR Q_DetCpto IS
-                SELECT CodCpto, SUM(Monto_Det_Local) Monto_Det_Local, SUM(Saldo_Det_Moneda) Saldo_Det_Moneda, 
-                               MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
-                               --Orden_Impresion
-                          FROM (
-                                SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
-                                       SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
-                                       --CC.Orden_Impresion
-                                  FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
-                                                           INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
-                                                           INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
-                                                                                              AND DP.IDETPOL    = F.IDETPOL
-                                                                                              AND DP.CODCIA     = F.CODCIA
-                                                            LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
-                                                                                              AND CS.CODCPTO    = DF.CODCPTO
-                                                                                              AND CS.IDTIPOSEG  = DP.IDTIPOSEG
-                                                                                              AND CS.PLANCOB    = DP.PLANCOB
-                                 WHERE DF.IdFactura                 = nIdFactura                         
-                                   AND NVL(CC.IndEsImpuesto,'N') = 'N'
-                                   AND DF.MONTO_DET_MONEDA > 0
-                                   AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
-                                                                                             WHERE S.CODCIA     = DP.CODCIA
-                                                                                               AND S.CODCPTO    = DF.CODCPTO
-                                                                                               AND S.IDTIPOSEG  = DP.IDTIPOSEG
-                                                                                               AND S.PLANCOB     = DP.PLANCOB ), 'X')
-                                 GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL),
-                                          CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
-                                 UNION ALL
-                                SELECT NULL RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
-                                       SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
-                                       --CC.Orden_Impresion
-                                  FROM DETALLE_NOTAS_DE_CREDITO DN,CATALOGO_DE_CONCEPTOS CC
-                                 WHERE IdNcr                     = nIdNcr
-                                   AND NVL(CC.IndEsImpuesto,'N') = 'N'
-                                   AND DN.CodCpto                = CC.CodConcepto
-                                 GROUP BY CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
-                               )
-                         GROUP BY  CodCpto, MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
-                 ORDER BY NVL(Monto_Det_Local,0) DESC;
+CURSOR Q_DetCpto IS
+    SELECT CodCpto, SUM(Monto_Det_Local) Monto_Det_Local, SUM(Saldo_Det_Moneda) Saldo_Det_Moneda, 
+                   MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
+                   --Orden_Impresion
+              FROM (
+                    SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
+                           SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
+                           --CC.Orden_Impresion
+                      FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
+                                               INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
+                                               INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
+                                                                                  AND DP.IDETPOL    = F.IDETPOL
+                                                                                  AND DP.CODCIA     = F.CODCIA
+                                                LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
+                                                                                  AND CS.CODCPTO    = DF.CODCPTO
+                                                                                  AND CS.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                  AND CS.PLANCOB    = DP.PLANCOB
+                     WHERE DF.IdFactura                 = nIdFactura                         
+                       AND NVL(CC.IndEsImpuesto,'N') = 'N'
+                       AND DF.MONTO_DET_MONEDA > 0
+                       AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
+                                                                                 WHERE S.CODCIA     = DP.CODCIA
+                                                                                   AND S.CODCPTO    = DF.CODCPTO
+                                                                                   AND S.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                   AND S.PLANCOB     = DP.PLANCOB ), 'X')
+                     GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL),
+                              CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
+                     UNION ALL
+                    SELECT NULL RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
+                           SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
+                           --CC.Orden_Impresion
+                      FROM DETALLE_NOTAS_DE_CREDITO DN,CATALOGO_DE_CONCEPTOS CC
+                     WHERE IdNcr                     = nIdNcr
+                       AND NVL(CC.IndEsImpuesto,'N') = 'N'
+                       AND DN.CodCpto                = CC.CodConcepto
+                     GROUP BY CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
+                   )
+             GROUP BY  CodCpto, MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
+     ORDER BY NVL(Monto_Det_Local,0) DESC;
 
     CURSOR Q_Impto IS
        SELECT CodIdentificador ---CONIT O CONIR
@@ -308,7 +299,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                          OPEN Q_Rel;
                          FETCH Q_Rel INTO cCodIdentificador;
                             IF Q_Rel%NOTFOUND THEN
-                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su Configuración');
+                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su Configuraci�n');
                             END IF;
                          CLOSE Q_Rel;
 
@@ -325,12 +316,12 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                             cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona,F.RamoReal);
                             nNumOrdenDoc := nNumOrdenDoc + 1;
                             OC_FACT_ELECT_DOCUMENTO.INSERTAR (nCodCia, nIdDocumento, nNumOrdenDoc, nIdFactura, nIdNcr, cDocumento, X.CodIdentificador, cProceso, 'S');
-                            cExiste := OC_FACT_ELECT_CONF_DOCTO.EXISTE_IMPUESTO(nCodCia, nIdFactura, nIdNcr, cProceso);
+                            cExiste := OC_FACT_ELECT_CONF_DOCTO.EXISTE_IMPUESTO(nCodCia, nIdFactura, nIdNcr, cProceso, F.RamoReal);
     --                        OPEN Q_Impto;
     --                        FETCH Q_Impto INTO cCodIdentificador;
     --                        
     --                           IF Q_Impto%NOTFOUND THEN
-    --                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su Configuración');
+    --                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su Configuraci�n');
     --                           END IF;
     --                        
     --                        CLOSE Q_Impto;
@@ -381,7 +372,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                                      cDocumento := cDocumento||cLinea;
                                   END IF;
                                END LOOP;
-                            ELSE ---- SE APLICA LA EXENCIÓN DE IMPUESTOS, SE DEBE GENERAR LA LINEA DE IMPUESTOS EXENTOS
+                            ELSE ---- SE APLICA LA EXENCI�N DE IMPUESTOS, SE DEBE GENERAR LA LINEA DE IMPUESTOS EXENTOS
                                FOR I IN Q_Impto LOOP ---CONIT O CONIR
                                   cCodIdentificador := I.CodIdentificador;
                                   cLinea := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura, nIdNcr, nCodCia, nCodEmpresa, cProceso, cCodIdentificador, cTipoCfdi, F.CodCpto, cIndRelaciona, F.RamoReal, 'S');
@@ -394,7 +385,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                    END LOOP;
                    CONTINUE;
                 ELSE
-                   cExiste := OC_FACT_ELECT_CONF_DOCTO.EXISTE_IMPUESTO(nCodCia, nIdFactura, nIdNcr, cProceso);
+                   cExiste := OC_FACT_ELECT_CONF_DOCTO.EXISTE_IMPUESTO(nCodCia, nIdFactura, nIdNcr, cProceso, NULL);
                    --
                    FOR J IN Q_Rec LOOP
                         IF (J.IndRelacion  = cIndRelaciona AND J.IndImpuesto = 'N') OR (J.CodIdentificador = 'CREL' AND X.CodIdentificador IN ('CRELS') AND cCrel IS NOT NULL) THEN
@@ -408,7 +399,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                             OPEN Q_Rel;
                             FETCH Q_Rel INTO cCodIdentificador;
                             IF Q_Rel%NOTFOUND THEN
-                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su Configuración');
+                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A La Relacion De Timbre Fiscales, Por Favor Valide Su Configuraci�n');
                             END IF;
                             CLOSE Q_Rel;
                             --
@@ -424,18 +415,34 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                    END LOOP;
                    --
                    IF X.IndImpuesto = 'S' AND NVL(cExiste,'N') = 'N' THEN
-                      --cDocumento := NUll;  -- SE APLICA LA EXENCIÓN DE IMPUESTOS CUANDO NO HAY CONCEPTOS DE IMPUESTOS POR LO QUE SE GENERAESTA LINEA CON EXENCION
+                      --cDocumento := NUll;  -- SE APLICA LA EXENCI�N DE IMPUESTOS CUANDO NO HAY CONCEPTOS DE IMPUESTOS POR LO QUE SE GENERAESTA LINEA CON EXENCION
                       cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'S');
                    ELSIF X.CodIdentificador IN ('CREL','CRELS') THEN
                       cDocumento := NUll;  -- capele
                       null;
                    ELSIF X.CodIdentificador NOT IN ('CREL','CRELS') OR cCrel IS NOT NULL THEN
-                      --IF (cIndFactCteRfcGenerico = 'N' AND X.CodIdentificador = 'IGL') THEN
-                      --   cDocumento := NUll; 
-                      --ELSE  
-                         --cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
-                         cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
-                      --END IF;
+                      IF  X.CodIdentificador = 'TRA' THEN
+                            cDocumento := null;
+                            FOR ENT IN (SELECT OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto) cCodTipoPlan,
+                                                DECODE(SUM(MTOIMPTOFACTELECT), 0, 'S', 'N') Exento
+                                         FROM DETALLE_FACTURAS
+                                        WHERE IdFactura  = nIdFactura
+                                          AND OC_CATALOGO_DE_CONCEPTOS.INDICADOR_CONCEPTO(nCodCia, CodCpto, 'IMPUESTO') != 'S'
+                                          AND OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto) != 'NA'
+                                        GROUP BY OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto)
+                                        ORDER BY DECODE(SUM(MTOIMPTOFACTELECT), 0, 'S', 'N')) LOOP
+                                --DBMS_OUTPUT.PUT_LINE(X.CodIdentificador || '-' || X.IndImpuesto ||'-' || NVL(cExiste,'N') || '-cCrel:' || cCrel || '-RAMO: ' || ENT.cCodTipoPlan);             
+                                cDocumento := cDocumento || CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi, NULL, cIndRelaciona, ENT.cCodTipoPlan, ENT.Exento);                                
+                            END LOOP;
+                      ELSE
+                        IF X.CodIdentificador in ('PAGSPDOCIMTRA', 'PAGSPIMTRA') THEN
+                            dbms_output.put_line('Aqui entre: ' || X.CodIdentificador); 
+                            cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'S');
+                            cDocumento := cDocumento || CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'N');
+                        ELSE
+                            cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
+                        END IF;
+                      END IF;
                    END IF;
                 END IF;
              --END IF;
@@ -499,8 +506,8 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
           IF X.CondicionAtributo = 'R' THEN
              IF X.TipoValorAtributo = 'F' THEN
                 cValorAtributo := X.ValorAtributo;
-             ELSIF (X.TipoValorAtributo = 'D' AND X.Consulta IS NOT NULL) OR
-                   (X.TipoValorAtributo = 'L' AND X.Consulta IS NOT NULL) THEN
+             ELSIF LENGTH(X.Consulta) > 0 AND ( (X.TipoValorAtributo = 'D' AND X.Consulta IS NOT NULL) OR
+                   (X.TipoValorAtributo = 'L' AND X.Consulta IS NOT NULL)) THEN
                 cSqlDinAtrib := X.Consulta;
                 cValorAtributo := OC_DDL_OBJETOS.EJECUTAR_QUERY(cSqlDinAtrib);
              ELSIF X.TipoValorAtributo = 'D' AND X.Consulta IS NULL THEN
@@ -509,8 +516,8 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
           ELSIF X.CondicionAtributo = 'O' AND X.IndEnviaCia = 'S' THEN
              IF X.TipoValorAtributo = 'F' THEN
                 cValorAtributo := X.ValorAtributo;
-             ELSIF (X.TipoValorAtributo = 'D' AND X.Consulta IS NOT NULL) OR
-                   (X.TipoValorAtributo = 'L' AND X.Consulta IS NOT NULL) THEN
+             ELSIF LENGTH(X.Consulta) > 0 AND ( (X.TipoValorAtributo = 'D' AND X.Consulta IS NOT NULL) OR
+                   (X.TipoValorAtributo = 'L' AND X.Consulta IS NOT NULL)) THEN
                 cSqlDinAtrib := X.Consulta;
                 cValorAtributo := OC_DDL_OBJETOS.EJECUTAR_QUERY(cSqlDinAtrib);
              ELSIF X.TipoValorAtributo = 'D' AND X.Consulta IS NULL THEN
@@ -520,8 +527,8 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
              --cValorAtributo := OC_DET_FACT_ELECT_CONF_DOCTO.GENERA_VALOR_ATRIBUTO(nIdFactura,nIdNcr,nCodCia,cProceso,cCodIdLinea,X.CodAtributo,cTipoCfdi);
              IF X.TipoValorAtributo = 'F' THEN
                 cValorAtributo := X.ValorAtributo;
-             ELSIF (X.TipoValorAtributo = 'D' AND X.Consulta IS NOT NULL) OR
-                   (X.TipoValorAtributo = 'L' AND X.Consulta IS NOT NULL) THEN
+             ELSIF LENGTH(X.Consulta) > 0 AND ( (X.TipoValorAtributo = 'D' AND X.Consulta IS NOT NULL) OR
+                   (X.TipoValorAtributo = 'L' AND X.Consulta IS NOT NULL))  THEN
                 cSqlDinAtrib := X.Consulta;
                 cValorAtributo := OC_DDL_OBJETOS.EJECUTAR_QUERY(cSqlDinAtrib);
              ELSIF X.TipoValorAtributo = 'D' AND X.Consulta IS NULL THEN
@@ -634,7 +641,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
     Resultado   VARCHAR2(32727);
     NumRecord   NUMBER :=0;
     BEGIN
-
+   
        --SELECT SUBSTR(GT_WEB_SERVICES.ExtraeDatos_XML(XMLTYPE(Cadena), 'timbrefiscal'), 1, 32000)
        --SELECT SUBSTR(GT_WEB_SERVICES.ExtraeDatos_XML(Cadena, 'timbrefiscal'), 1, 32000)
        -- INTO Entrada FROM DUAL;        
@@ -651,6 +658,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
     END EXTRAE_TIMBREFISCAL;
     --
     BEGIN
+       --EXECUTE IMMEDIATE 'ALTER SESSION SET events=''31156 trace name context forever, level 0x2'''; Cesar y Jose solo pruebas en QA
        nIdFactura :=  nvl(PnIdFactura, 0);
        nIdNcr :=  nvl(PnIdNcr, 0);
 
@@ -722,7 +730,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
           -- hacer de manera mas dinamica la cancelacion por motivo diferente a 02
           cCve_MotivCancFact := NVL(cCve_MotivCancFact, '02');
           IF  cCve_MotivCancFact = '01' THEN            
-             RAISE_APPLICATION_ERROR(-20200,'El procedimiento de cancelación, debe ser ejecutado desde otro sitio que no sea en OC_FACT_ELECT_CONF_DOCTO.timbrar por la opción 01 de motivo de cancelación CFDI (20220101)');
+             RAISE_APPLICATION_ERROR(-20200,'El procedimiento de cancelaci�n, debe ser ejecutado desde otro sitio que no sea en OC_FACT_ELECT_CONF_DOCTO.timbrar por la opci�n 01 de motivo de cancelaci�n CFDI (20220101)');
           END IF;
           IF NVL(IndOtroPac,'N') = 'S' THEN -- CANCELACION OTRO PAC
              cTimbrarFact := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'038');
@@ -923,6 +931,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
        END IF;
 
     EXCEPTION WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('Se fue por el error de TIMBRAR: ' || SQLERRM);
        OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(nCodCia,nCodEmpresa,nIdFactura,nIdNcr,cProceso,cCodRespuesta,cDescError || CHR(10) ||SQLERRM || '-' || cLinea, cDocto );
        RAISE_APPLICATION_ERROR(-20200,sqlerrm);
     END TIMBRAR;
@@ -947,24 +956,24 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
     nIdPoliza          POLIZAS.IdPoliza%TYPE;
     cNumPolUnico       POLIZAS.NumPolUnico%TYPE;
 	
-	cTipoCobro         VARCHAR2(20);   
-	cError             VARCHAR2(200);
-	cIdTipoSeg         DETALLE_POLIZA.IdTipoSeg%TYPE;
-	nCod               NUMBER;
-	vl_CodAgente       NUMBER;
-	vl_Mails           VARCHAR2(4000) := NULL;
-	cError2            VARCHAR2(200);
-	VL_LONG            NUMBER;
+    cTipoCobro         VARCHAR2(20);   
+    cError             VARCHAR2(200);
+    cIdTipoSeg         DETALLE_POLIZA.IdTipoSeg%TYPE;
+    nCod               NUMBER;
+    vl_CodAgente       NUMBER;
+    vl_Mails           VARCHAR2(4000) := NULL;
+    cError2            VARCHAR2(200);
+    VL_LONG            NUMBER;
 	
     CURSOR cur_Salida IS
-		SELECT DISTINCT(J.EMAIL) --B.COD_AGENTE,B.COD_AGENTE_JEFE,J.EMAIL,LEVEL
-		FROM AGENTES B,PERSONA_NATURAL_JURIDICA J
-		WHERE  J.NUM_DOC_IDENTIFICACION = B.NUM_DOC_IDENTIFICACION
-			AND J.TIPO_DOC_IDENTIFICACION = B.TIPO_DOC_IDENTIFICACION
-			AND B.EST_AGENTE = 'ACT'
-		START WITH  B.COD_AGENTE = vl_CodAgente  
-		CONNECT BY PRIOR B.COD_AGENTE_JEFE = B.COD_AGENTE;
-	  
+	SELECT DISTINCT(J.EMAIL) --B.COD_AGENTE,B.COD_AGENTE_JEFE,J.EMAIL,LEVEL
+	  FROM AGENTES B,PERSONA_NATURAL_JURIDICA J
+	 WHERE  J.NUM_DOC_IDENTIFICACION = B.NUM_DOC_IDENTIFICACION
+	   AND J.TIPO_DOC_IDENTIFICACION = B.TIPO_DOC_IDENTIFICACION
+	   AND B.EST_AGENTE = 'ACT'
+	   START WITH  B.COD_AGENTE = vl_CodAgente  
+	   CONNECT BY PRIOR B.COD_AGENTE_JEFE = B.COD_AGENTE;
+		
     BEGIN
        cUUID             := OC_FACT_ELECT_DETALLE_TIMBRE.UUID_PROCESO(nCodCia, nCodEmpresa, nIdFactura,nIdNcr, cProceso);
        cFolioFiscal      := OC_FACT_ELECT_DETALLE_TIMBRE.FOLIO_FISCAL(nCodCia, nCodEmpresa, nIdFactura,nIdNcr, cUUID);
@@ -985,10 +994,10 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
              cTipoCobro := 'AVISODECOBROEMI';
              cMessageFactNcr := 'El "Aviso de Cobro" '||nIdFactura;
           ELSIF cProceso = 'CAN' THEN
-            cTipoCobro := 'AVISODECOBROCAN';
-             cMessageFactNcr := 'La "Cancelación del Aviso de Cobro" '||nIdFactura;
+             cTipoCobro := 'AVISODECOBROCAN';
+             cMessageFactNcr := 'La "Cancelaci�n del Aviso de Cobro" '||nIdFactura;
           ELSIF cProceso = 'PAG' THEN
-            cTipoCobro := 'AVISODECOBROPAG';
+             cTipoCobro := 'AVISODECOBROPAG';
              cMessageFactNcr := 'El "Complemento de pago por el Aviso de Cobro" '||nIdFactura;
           END IF;
        ELSIF NVL(nIdNcr,0) != 0 THEN
@@ -1000,13 +1009,13 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
               WHERE IdNcr = nIdNcr
                 AND F.IdPoliza = P.IdPoliza;
           END;
-          cSubjectFactNcr := 'La "Nota de crédito" '||nIdNcr;
+          cSubjectFactNcr := 'La "Nota de cr�dito" '||nIdNcr;
           IF cProceso = 'EMI' THEN
-             cMessageFactNcr := '"Nota De crédito" '||nIdNcr;
-			 cTipoCobro := 'NOTADECREDITOEMI';
+             cMessageFactNcr := '"Nota De cr�dito" '||nIdNcr;
+             cTipoCobro := 'NOTADECREDITOEMI';
           ELSIF cProceso = 'CAN' THEN
-			cTipoCobro := 'NOTADECREDITOCAN';
-             cMessageFactNcr := '"Cancelación de la Nota de crédito" '||nIdNcr;
+             cTipoCobro := 'NOTADECREDITOCAN';
+             cMessageFactNcr := '"Cancelaci�n de la Nota de cr�dito" '||nIdNcr;
           END IF;
        END IF;
          --
@@ -1014,7 +1023,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
              cSubject := 'Comprobante fiscal digital de: '||cNombreCliente||' ('||cIdentFiscal||')'; ---DEFINIR LISTA DE DISTRIBUCION
              cMessage := 'Estimado Agente:
 
-     Se ha generado la facturación electrónica para '||cMessageFactNcr||' de la Póliza '||cNumPolUnico||' con los siguientes datos:
+     Se ha generado la facturaci�n electr�nica para '||cMessageFactNcr||' de la P�liza '||cNumPolUnico||' con los siguientes datos:
 
      UUID: '||cUUID||'
      Folio Fiscal: '||cFolioFiscal||'
@@ -1022,9 +1031,9 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
      ' ||CASE WHEN cUUIDRelacionado IS NOT NULL THEN 'Relacionado: ' || cUUIDRelacionado ELSE '' END ||'
      ' ||CASE WHEN cDescError IS NOT NULL THEN '<' || cDescError || '>' ELSE '' END      ||' 
 
-     Los archivos XML y PDF se podrán descargar en "Portal de Agentes".
+     Los archivos XML y PDF se podr�n descargar en "Portal de Agentes".
 
-     Nota: Este correo es generado de manera automática, favor de no responder.
+     Nota: Este correo es generado de manera autom�tica, favor de no responder.
 
      '||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia);
 
@@ -1034,11 +1043,11 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
              ---    OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CATERRSAT',cCodRespuesta)||'
              --cEmailDest := OC_USUARIOS.EMAIL(nCodCia,USER);
              cSubject   := INITCAP(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('PROCFACELE', cProceso))|| ' Para '||cSubjectFactNcr||' Realizado de Manera Incorrecta';---DEFINIR LISTA DE DISTRIBUCION
-             cMessage   := cMessageFactNcr|| ' no se timbró de manera correcta por la siguiente razón:
+             cMessage   := cMessageFactNcr|| ' no se timbr� de manera correcta por la siguiente raz�n:
 
      Error: < '||cCodRespuesta||' : '||cDescError||' >
 
-     El documento o UUID para el envío al SAT se adjunta a continuación:
+     El documento o UUID para el env�o al SAT se adjunta a continuaci�n:
 
     '||
 
@@ -1046,18 +1055,16 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
 
     ||'
 
-     Favor de validar el documento de envío y de ejecutar nuevamente el Timbrado.
+     Favor de validar el documento de env�o y de ejecutar nuevamente el Timbrado.
 
-     Nota: Este correo es generado de manera automática, favor de no responder.
+     Nota: Este correo es generado de manera autom�tica, favor de no responder.
 
     '||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia);
          END IF;
          OC_MAIL.INIT_PARAM;
          OC_MAIL.cCtaEnvio    := cEmailOrig;
          OC_MAIL.cPwdCtaEnvio := cPwdEmail;
-		 
-		 
-		BEGIN 
+	 BEGIN 
 			SELECT D.IDTIPOSEG
 			INTO cIdTipoSeg
 			FROM SICAS_OC.FACTURAS F
@@ -1065,12 +1072,11 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
 				ON F.IDPOLIZA = D.IDPOLIZA
 			WHERE F.IDPOLIZA = nIdFactura
 				AND ROWNUM <= 1;
-        EXCEPTION
-			WHEN OTHERS THEN
-				BEGIN
-					SELECT D.IDTIPOSEG
-					INTO cIdTipoSeg
-					FROM SICAS_OC.NOTAS_DE_CREDITO F
+        EXCEPTION WHEN OTHERS THEN
+		BEGIN
+		SELECT D.IDTIPOSEG
+		  INTO cIdTipoSeg
+	          FROM SICAS_OC.NOTAS_DE_CREDITO F
 					INNER JOIN SICAS_OC.DETALLE_POLIZA D
 						ON F.IDPOLIZA = D.IDPOLIZA
 					WHERE F.IDNCR = nIdNCR
@@ -1081,8 +1087,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
 				END;
         END;
 		 
-		 
-		IF cIdTipoSeg = 'VICAP' THEN
+        IF cIdTipoSeg = 'VICAP' THEN
 
 			BEGIN
 				SELECT B.COD_AGENTE
@@ -1143,9 +1148,8 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
 		 
 		END IF;
      END ENVIA_CORREO;
-	 
 
-        FUNCTION  DESTINATARIOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura  NUMBER DEFAULT NULL,nIdNcr  NUMBER DEFAULT NULL, cTipoDest VARCHAR2) RETURN VARCHAR2 IS
+     FUNCTION  DESTINATARIOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFactura  NUMBER DEFAULT NULL,nIdNcr  NUMBER DEFAULT NULL, cTipoDest VARCHAR2) RETURN VARCHAR2 IS
             nIdPoliza                   NUMBER;
             cDestCC                     VARCHAR2(1000) := NULL;
             cDest                       VARCHAR2(1000) := NULL;
@@ -1188,7 +1192,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                        AND CodCia    = nCodCia;
                 EXCEPTION
                 WHEN NO_DATA_FOUND THEN
-                    RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La Póliza Para Generacion De Destinatarios Para Facturación Electrónica');
+                    RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La P�liza Para Generacion De Destinatarios Para Facturaci�n Electr�nica');
                 END;
             ELSIF NVL(nIdNcr,0) != 0 THEN
                 BEGIN
@@ -1199,7 +1203,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                        AND CodCia    = nCodCia;
                 EXCEPTION
                     WHEN NO_DATA_FOUND THEN
-                        RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La Póliza Para Generacion De Destinatarios Para Facturación Electrónica');
+                        RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar La P�liza Para Generacion De Destinatarios Para Facturaci�n Electr�nica');
                 END;
             END IF;
             IF cTipoDest = 'TO' THEN
@@ -1325,7 +1329,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
                                , dNombreDirectorio  VARCHAR2
                                , cNombreArchivo     VARCHAR2 ) RETURN VARCHAR2 IS
        fArchivoSalida  UTL_FILE.FILE_TYPE;
-       --Variables para la Decodificación
+       --Variables para la Decodificaci�n
        bClobTrim       CLOB;
        nClobLen        NUMBER;
        nAmount1        NUMBER := 1440; -- must be a whole multiple of 4
@@ -1407,7 +1411,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
             AND  NVL(IdNcr    , 0) = NVL(NVL(nIdNcr    , IdNcr    ), 0);
        EXCEPTION
        WHEN NO_DATA_FOUND THEN
-            cResultado := 'ERROR: No existen documentos asociados a la Factura: ' || nIdFactura || ', Nota de Crédito: ' || nIdNcr; 
+            cResultado := 'ERROR: No existen documentos asociados a la Factura: ' || nIdFactura || ', Nota de Cr�dito: ' || nIdNcr; 
             RETURN cResultado;
        END;
        --Armado de los nombres de archivos
@@ -1530,7 +1534,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
        EXCEPTION
        WHEN OTHERS THEN
             cTraslado    := 'N';
-            cTextoSalida := 'NO esta definido el parametro global de Facturación Electrónica';
+            cTextoSalida := 'NO esta definido el parametro global de Facturaci�n Electr�nica';
             RETURN cTraslado;
        END;
        --
@@ -1669,7 +1673,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
        RETURN cTraslado;
     END Genera_Fact_Elect;
 
-    FUNCTION EXISTE_IMPUESTO(nCodCia IN NUMBER, nIdFactura IN NUMBER DEFAULT NULL,nIdNcr IN NUMBER DEFAULT NULL, cProceso IN VARCHAR2) RETURN VARCHAR2 IS
+    FUNCTION EXISTE_IMPUESTO(nCodCia IN NUMBER, nIdFactura IN NUMBER DEFAULT NULL,nIdNcr IN NUMBER DEFAULT NULL, cProceso IN VARCHAR2, cCodTipoPlan VARCHAR2) RETURN VARCHAR2 IS
     cExiste           VARCHAR2(1);   
     cCodIdentificador FACT_ELECT_CONF_DOCTO.CodIdentificador%TYPE;
 
@@ -1691,7 +1695,7 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
        OPEN Q_Impto;
        FETCH Q_Impto INTO cCodIdentificador;
           IF Q_Impto%NOTFOUND THEN
-             RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su Configuración');
+             RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su Configuraci�n');
           END IF;
        CLOSE Q_Impto;
 
@@ -1703,7 +1707,8 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
               WHERE IdFactura  = nIdFactura
                 AND CodCpto   IN (SELECT CodConcepto
                                     FROM CATALOGO_DE_CONCEPTOS
-                                   WHERE IndEsImpuesto = 'S');
+                                   WHERE IndEsImpuesto   = 'S'
+                                     AND CodTipoPlan     = NVL(cCodTipoPlan, CodTipoPlan));
           EXCEPTION
              WHEN NO_DATA_FOUND THEN
                 cExiste := 'N';
@@ -1718,7 +1723,8 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
               WHERE IdNcr      = nIdNcr
                 AND CodCpto   IN (SELECT CodConcepto
                                     FROM CATALOGO_DE_CONCEPTOS
-                                   WHERE IndEsImpuesto = 'S');
+                                   WHERE IndEsImpuesto   = 'S'
+                                     AND CodTipoPlan     = NVL(cCodTipoPlan, CodTipoPlan));
           EXCEPTION
              WHEN NO_DATA_FOUND THEN
                 cExiste := 'N';
@@ -1727,7 +1733,6 @@ Descripción: Se implementa regla a ViCapital para obtener los correos de los Ag
           END;
        END IF;
        RETURN cExiste;
-    END;
+    END EXISTE_IMPUESTO;
     --
 END OC_FACT_ELECT_CONF_DOCTO;
-/

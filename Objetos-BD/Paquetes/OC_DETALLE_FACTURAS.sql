@@ -1,50 +1,51 @@
 create or replace PACKAGE OC_DETALLE_FACTURAS IS
---
--- CONTROL DE CAMBIOS
---
--- HOMOLOGACION VIFLEX                                     JMMD     01/03/2022
--- ERRROR DE BMI                                           JICO BMI 29/03/2022
---
-PROCEDURE PAGO_ABONO_DETALLE(nIdFactura NUMBER, nPagoM NUMBER, nPagoL NUMBER,nIdRecibo NUMBER);
+    --
+    -- CONTROL DE CAMBIOS
+    --
+    -- HOMOLOGACION VIFLEX                                     JMMD     01/03/2022
+    -- ERRROR DE BMI                                           JICO BMI 29/03/2022
+    -- FACTELECT VIFLEX                     20230426 CAPELE
+    --
+    PROCEDURE PAGO_ABONO_DETALLE(nIdFactura NUMBER, nPagoM NUMBER, nPagoL NUMBER,nIdRecibo NUMBER);
 
-PROCEDURE INSERTAR(nIdFactura NUMBER, cCodCpto VARCHAR2, cIndCptoPrima VARCHAR2, nMtoPagoLocal NUMBER, nMtoPagoMoneda NUMBER);
+    PROCEDURE INSERTAR(nIdFactura NUMBER, cCodCpto VARCHAR2, cIndCptoPrima VARCHAR2, nMtoPagoLocal NUMBER, nMtoPagoMoneda NUMBER);
 
-PROCEDURE ACTUALIZA_DIFERENCIA(nIdFactura NUMBER, nMtoDifLocal NUMBER, nMtoDifMoneda NUMBER);
+    PROCEDURE ACTUALIZA_DIFERENCIA(nIdFactura NUMBER, nMtoDifLocal NUMBER, nMtoDifMoneda NUMBER);
 
-FUNCTION MONTO_PRIMAS(nIdTransaccion NUMBER) RETURN NUMBER;
+    FUNCTION MONTO_PRIMAS(nIdTransaccion NUMBER) RETURN NUMBER;
 
-FUNCTION MONTO_CONCEPTO(nIdTransaccion NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
+    FUNCTION MONTO_CONCEPTO(nIdTransaccion NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
 
-FUNCTION MONTO_PRIMAS_MOROSA(nIdTransaccion NUMBER, dFecMorosidad DATE,
-                             nRangoIni NUMBER, nRangoFin NUMBER) RETURN NUMBER;
+    FUNCTION MONTO_PRIMAS_MOROSA(nIdTransaccion NUMBER, dFecMorosidad DATE,
+                                 nRangoIni NUMBER, nRangoFin NUMBER) RETURN NUMBER;
 
-FUNCTION MONTO_CONCEPTO_MOROSO(nIdTransaccion NUMBER, cCodCpto VARCHAR2, dFecMorosidad DATE,
-                               nRangoIni NUMBER, nRangoFin NUMBER) RETURN NUMBER;
+    FUNCTION MONTO_CONCEPTO_MOROSO(nIdTransaccion NUMBER, cCodCpto VARCHAR2, dFecMorosidad DATE,
+                                   nRangoIni NUMBER, nRangoFin NUMBER) RETURN NUMBER;
 
-PROCEDURE AJUSTAR(nCodCia NUMBER, nIdFactura NUMBER, cCodCpto VARCHAR2,
-                  cIndCptoPrima VARCHAR2, nMtoPagoLocal NUMBER, nMtoPagoMoneda NUMBER);
+    PROCEDURE AJUSTAR(nCodCia NUMBER, nIdFactura NUMBER, cCodCpto VARCHAR2,
+                      cIndCptoPrima VARCHAR2, nMtoPagoLocal NUMBER, nMtoPagoMoneda NUMBER);
 
-PROCEDURE INSERTAR_DETALLE_PAGO(nIdRecibo NUMBER,nIdFactura NUMBER, cCodCpto VARCHAR2, nMtoPagoMoneda NUMBER);
+    PROCEDURE INSERTAR_DETALLE_PAGO(nIdRecibo NUMBER,nIdFactura NUMBER, cCodCpto VARCHAR2, nMtoPagoMoneda NUMBER);
 
-PROCEDURE PAGAR_SERVICIOS(nCodCia NUMBER, cCodCpto VARCHAR2, dFecDesde DATE, dFecHasta DATE,
-                          dFecPago DATE, nCodProveedor NUMBER);
-FUNCTION MONTO_SERVICIOS(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER) RETURN NUMBER;
+    PROCEDURE PAGAR_SERVICIOS(nCodCia NUMBER, cCodCpto VARCHAR2, dFecDesde DATE, dFecHasta DATE,
+                              dFecPago DATE, nCodProveedor NUMBER);
+    FUNCTION MONTO_SERVICIOS(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER) RETURN NUMBER;
 
-FUNCTION EXISTE_CONCEPTO(nCodCia NUMBER, nIdPoliza NUMBER, nIdTransaccion NUMBER, cCodCpto VARCHAR2) RETURN VARCHAR2;
+    FUNCTION EXISTE_CONCEPTO(nCodCia NUMBER, nIdPoliza NUMBER, nIdTransaccion NUMBER, cCodCpto VARCHAR2) RETURN VARCHAR2;
 
-PROCEDURE REVERTIR_PAGO(nIdRecibo NUMBER, nIdFactura NUMBER);
+    PROCEDURE REVERTIR_PAGO(nIdRecibo NUMBER, nIdFactura NUMBER);
 
-FUNCTION MONTO_NETO_CONCEPTO(nCodCia NUMBER, nIdPoliza NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
+    FUNCTION MONTO_NETO_CONCEPTO(nCodCia NUMBER, nIdPoliza NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
 
-FUNCTION MONTO_PAGADO_CONCEPTO(nCodCia NUMBER, nIdPoliza NUMBER, cCodCpto VARCHAR2 DEFAULT NULL) RETURN NUMBER;
+    FUNCTION MONTO_PAGADO_CONCEPTO(nCodCia NUMBER, nIdPoliza NUMBER, cCodCpto VARCHAR2 DEFAULT NULL) RETURN NUMBER;
 
-PROCEDURE GENERA_IMPUESTO_FACT_ELECT(nCodCia NUMBER, nIdFactura NUMBER, cCodCptoImpto VARCHAR2);
+    PROCEDURE GENERA_IMPUESTO_FACT_ELECT(nCodCia NUMBER, nIdFactura NUMBER, cCodCptoImpto VARCHAR2);
 
-FUNCTION MONTO_IMPUESTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2, cCodTipoPlan VARCHAR2 := NULL) RETURN NUMBER;
+    FUNCTION MONTO_IMPUESTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2, cCodTipoPlan VARCHAR2 := NULL) RETURN NUMBER;
 
-FUNCTION MONTO_CONCEPTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2, cCodTipoPlan VARCHAR2 := NULL) RETURN NUMBER;
+    FUNCTION MONTO_CONCEPTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2, cCodTipoPlan VARCHAR2 := NULL) RETURN NUMBER;
 
-FUNCTION MONTO_PRIMA_COMPLEMENTARIA(nIdFactura NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
+    FUNCTION MONTO_PRIMA_COMPLEMENTARIA(nIdFactura NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
 
 END OC_DETALLE_FACTURAS;
 /
@@ -682,7 +683,7 @@ create or replace PACKAGE BODY          OC_DETALLE_FACTURAS IS
 
         RETURN nMtoImptoFactElect;
     END MONTO_IMPUESTO_FACT_ELECT;
-
+    --
     FUNCTION MONTO_CONCEPTO_FACT_ELECT(nIdFactura NUMBER, cCodCpto VARCHAR2, cCodTipoPlan VARCHAR2 := NULL) RETURN NUMBER IS
     nMonto_Det_Moneda    DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
     BEGIN
@@ -700,13 +701,13 @@ create or replace PACKAGE BODY          OC_DETALLE_FACTURAS IS
                                                                      AND CS.PLANCOB    = DP.PLANCOB
         WHERE F.IdFactura                = nIdFactura
           AND CC.CodCptoPrimasFactElect  = cCodCpto
-           AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
+          AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
                                                                      WHERE S.CODCIA     = DP.CODCIA
                                                                        AND S.CODCPTO    = DF.CODCPTO
                                                                        AND S.IDTIPOSEG  = DP.IDTIPOSEG
                                                                        AND S.PLANCOB     = DP.PLANCOB ), 'X')
-          AND DECODE(cCodTipoPlan, NULL, NVL(CS.IDRAMOREAL, 'X'),  CC.CODTIPOPLAN) = DECODE(cCodTipoPlan, NULL, NVL(CS.IDRAMOREAL, NVL(CC.CODTIPOPLAN, 'X')), CC.CODTIPOPLAN); --CAPELE
-          --AND NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')) = NVL(cCodTipoPlan, NVL(CC.CODTIPOPLAN, NVL(CS.IDRAMOREAL, 'X')));
+          --AND NVL(CS.IDRAMOREAL, CC.CODTIPOPLAN)   = cCodTipoPlan;
+          AND NVL(NVL(CS.IDRAMOREAL, CC.CODTIPOPLAN), 'X')  = NVL(cCodTipoPlan, 'X');
 
         --CAPELE
         IF nMonto_Det_Moneda = 0 THEN
@@ -746,5 +747,5 @@ create or replace PACKAGE BODY          OC_DETALLE_FACTURAS IS
        END;
        RETURN nMontoPrimaCompMoneda;
     END MONTO_PRIMA_COMPLEMENTARIA;
-
+    --
 END OC_DETALLE_FACTURAS;
