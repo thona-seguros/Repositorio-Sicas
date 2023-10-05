@@ -28,6 +28,7 @@ create or replace PACKAGE OC_FACT_ELECT_CONF_DOCTO IS
     cLineaPagsT          VARCHAR2(1000)  := NULL;
     cLineaPagsP          VARCHAR2(1000)  := NULL;
     cLineaPagsPDoc       VARCHAR2(1000)  := NULL;
+    cLineaPagsDocRel     varchar2(1000)  := NULL;
     cLineaPagsPDocImtra  VARCHAR2(1000)  := NULL;
     cLineaPagsPImtra     VARCHAR2(1000)  := NULL;
 
@@ -148,7 +149,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
        OC_FACT_ELECT_CONF_DOCTO.cLineaAdd           := NULL;
        OC_FACT_ELECT_CONF_DOCTO.cLineaAdi           := NULL;
        --OC_FACT_ELECT_CONF_DOCTO.cLineaPags       := NULL;
-       --OC_FACT_ELECT_CONF_DOCTO.cLineaPagsDocRel := NULL;
+       OC_FACT_ELECT_CONF_DOCTO.cLineaPagsDocRel := NULL;
        OC_FACT_ELECT_CONF_DOCTO.cLineaPagsP         := NULL;
        OC_FACT_ELECT_CONF_DOCTO.cLineaPagsPDoc      := NULL;
        OC_FACT_ELECT_CONF_DOCTO.cLineaPagsPDocImTra := NULL;
@@ -157,123 +158,132 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
         --    
     FUNCTION CREA_DOCUMENTO(nIdFactura IN NUMBER DEFAULT NULL,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,nCodEmpresa IN NUMBER,
                               cProceso IN VARCHAR2,cTipoCfdi IN VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL) RETURN VARCHAR2 IS
-    cDocumento              VARCHAR2(10000) := NULL;
-    cLinea                  VARCHAR2(10000) := NULL;
-    cCodIdentificador       FACT_ELECT_CONF_DOCTO.CodIdentificador%TYPE;
-    cExiste                 VARCHAR2(1);
-    cExisteImp              VARCHAR2(1);
-    cCrel                   VARCHAR2(5000);
-    nIdDocumento            FACT_ELECT_DOCUMENTO.IdDocumento%TYPE;
-    nNumOrdenDoc            FACT_ELECT_DOCUMENTO.NumOrdenDoc%TYPE := 0; 
-      --
-    CURSOR Q_Dcto IS
-       SELECT CodIdentificador, OrdenIdent, IndRecursivo,
-              IndImpuesto, ImptoTraRet, CodCptoImpto,
-              IndRelacion
-         FROM FACT_ELECT_CONF_DOCTO
-        WHERE CodCia                   = nCodCia
-          AND Proceso                  = cProceso
-          AND (NVL(IndRecursivo,'N')   = 'N' OR (    (NVL(IndRecursivo,'N') = 'S' AND  NVL(IndImpuesto,'N') = 'N')
-                                                 AND (NVL(IndRecursivo,'N') = 'S' AND  NVL(IndRelacion,'N') = 'N')
-                                                )
-              )
-        ORDER BY OrdenIdent ASC;
+        cDocumento              VARCHAR2(10000) := NULL;
+        cLinea                  VARCHAR2(10000) := NULL;
+        cCodIdentificador       FACT_ELECT_CONF_DOCTO.CodIdentificador%TYPE;
+        cExiste                 VARCHAR2(1);
+        cExisteImp              VARCHAR2(1);
+        cCrel                   VARCHAR2(5000);
+        nIdDocumento            FACT_ELECT_DOCUMENTO.IdDocumento%TYPE;
+        nNumOrdenDoc            FACT_ELECT_DOCUMENTO.NumOrdenDoc%TYPE := 0; 
+          --
+        CURSOR Q_Dcto IS
+           SELECT CodIdentificador, OrdenIdent, IndRecursivo,
+                  IndImpuesto, ImptoTraRet, CodCptoImpto,
+                  IndRelacion
+             FROM FACT_ELECT_CONF_DOCTO
+            WHERE CodCia                   = nCodCia
+              AND Proceso                  = cProceso
+              AND (NVL(IndRecursivo,'N')   = 'N' OR (    (NVL(IndRecursivo,'N') = 'S' AND  NVL(IndImpuesto,'N') = 'N')
+                                                     AND (NVL(IndRecursivo,'N') = 'S' AND  NVL(IndRelacion,'N') = 'N')
+                                                    )
+                  )
+            ORDER BY OrdenIdent ASC;
 
-    CURSOR Q_Rec IS
-       SELECT CodIdentificador, IndImpuesto, IndRelacion, OrdenIdent
-         FROM (
-               SELECT CodIdentificador, NVL(IndImpuesto,'N') IndImpuesto, 'N' IndRelacion, OrdenIdent  ---CONIT O CONIR
-                 FROM FACT_ELECT_CONF_DOCTO
-                WHERE CodCia       = nCodCia
-                  AND Proceso      = cProceso
-                  AND IndImpuesto  = 'S'
-                  AND IndRecursivo = 'S'
-               UNION
-               SELECT CodIdentificador, 'N' IndImpuesto, NVL(IndRelacion,'N') IndRelacion, OrdenIdent ---CREL
-                 FROM FACT_ELECT_CONF_DOCTO
-                WHERE CodCia       = nCodCia
-                  AND Proceso      = cProceso
-                  AND IndRelacion  = 'S'
-                  AND IndRecursivo = 'S')
-        ORDER BY OrdenIdent;
+        CURSOR Q_Rec IS
+           SELECT CodIdentificador, IndImpuesto, IndRelacion, OrdenIdent
+             FROM (
+                   SELECT CodIdentificador, NVL(IndImpuesto,'N') IndImpuesto, 'N' IndRelacion, OrdenIdent  ---CONIT O CONIR
+                     FROM FACT_ELECT_CONF_DOCTO
+                    WHERE CodCia       = nCodCia
+                      AND Proceso      = cProceso
+                      AND IndImpuesto  = 'S'
+                      AND IndRecursivo = 'S'
+                   UNION
+                   SELECT CodIdentificador, 'N' IndImpuesto, NVL(IndRelacion,'N') IndRelacion, OrdenIdent ---CREL
+                     FROM FACT_ELECT_CONF_DOCTO
+                    WHERE CodCia       = nCodCia
+                      AND Proceso      = cProceso
+                      AND IndRelacion  = 'S'
+                      AND IndRecursivo = 'S')
+            ORDER BY OrdenIdent;
 
-CURSOR Q_DetCpto IS
-    SELECT CodCpto, SUM(Monto_Det_Local) Monto_Det_Local, SUM(Saldo_Det_Moneda) Saldo_Det_Moneda, 
-                   MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
-                   --Orden_Impresion
-              FROM (
-                    SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
-                           SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
-                           --CC.Orden_Impresion
-                      FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
-                                               INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
-                                               INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
-                                                                                  AND DP.IDETPOL    = F.IDETPOL
-                                                                                  AND DP.CODCIA     = F.CODCIA
-                                                LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
-                                                                                  AND CS.CODCPTO    = DF.CODCPTO
-                                                                                  AND CS.IDTIPOSEG  = DP.IDTIPOSEG
-                                                                                  AND CS.PLANCOB    = DP.PLANCOB
-                     WHERE DF.IdFactura                 = nIdFactura                         
-                       AND NVL(CC.IndEsImpuesto,'N') = 'N'
-                       AND DF.MONTO_DET_MONEDA > 0
-                       AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
-                                                                                 WHERE S.CODCIA     = DP.CODCIA
-                                                                                   AND S.CODCPTO    = DF.CODCPTO
-                                                                                   AND S.IDTIPOSEG  = DP.IDTIPOSEG
-                                                                                   AND S.PLANCOB     = DP.PLANCOB ), 'X')
-                     GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL),
-                              CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
-                     UNION ALL
-                    SELECT NULL RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
-                           SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
-                           --CC.Orden_Impresion
-                      FROM DETALLE_NOTAS_DE_CREDITO DN,CATALOGO_DE_CONCEPTOS CC
-                     WHERE IdNcr                     = nIdNcr
-                       AND NVL(CC.IndEsImpuesto,'N') = 'N'
-                       AND DN.CodCpto                = CC.CodConcepto
-                     GROUP BY CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
-                   )
-             GROUP BY  CodCpto, MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
-     ORDER BY NVL(Monto_Det_Local,0) DESC;
+        CURSOR Q_DetCpto IS
+            SELECT CodCpto, SUM(Monto_Det_Local) Monto_Det_Local, SUM(Saldo_Det_Moneda) Saldo_Det_Moneda, 
+                       MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
+                       --Orden_Impresion
+                  FROM (
+                        SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, CC.CodCptoPrimasFactElect CodCpto,SUM(DF.Monto_Det_Local) Monto_Det_Local,SUM(DF.Saldo_Det_Moneda) Saldo_Det_Moneda,
+                               SUM(DF.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
+                               --CC.Orden_Impresion
+                          FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
+                                                   INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
+                                                   INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
+                                                                                      AND DP.IDETPOL    = F.IDETPOL
+                                                                                      AND DP.CODCIA     = F.CODCIA
+                                                    LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
+                                                                                      AND CS.CODCPTO    = DF.CODCPTO
+                                                                                      AND CS.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                      AND CS.PLANCOB    = DP.PLANCOB
+                         WHERE DF.IdFactura                 = nIdFactura                         
+                           AND NVL(CC.IndEsImpuesto,'N') = 'N'
+                           AND DF.MONTO_DET_MONEDA > 0
+                           AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
+                                                                                     WHERE S.CODCIA     = DP.CODCIA
+                                                                                       AND S.CODCPTO    = DF.CODCPTO
+                                                                                       AND S.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                       AND S.PLANCOB     = DP.PLANCOB ), 'X')
+                         GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL),
+                                  CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion
+                         UNION ALL
+                        SELECT NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL) RAMOREAL, 
+                               CC.CodCptoPrimasFactElect CodCpto,SUM(DN.Monto_Det_Local) Monto_Det_Local, SUM(0) Saldo_Det_Moneda,
+                               SUM(DN.MtoImptoFactElect) MtoImptoFactElect, CC.IndTipoConcepto, CC.Porcconcepto
+                               --CC.Orden_Impresion
+                          FROM DETALLE_NOTAS_DE_CREDITO DN INNER JOIN NOTAS_DE_CREDITO NC ON NC.IDNCR = DN.IDNCR AND NC.CODCIA = nCodCia
+                                                           INNER JOIN CATALOGO_DE_CONCEPTOS CC ON NVL(CC.IndEsImpuesto,'N') = 'N'
+                                                                                              AND DN.CodCpto    = CC.CodConcepto
+                                                           INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = NC.IDPOLIZA
+                                                                                      AND DP.IDETPOL    = NC.IDETPOL
+                                                                                      AND DP.CODCIA     = CC.CODCIA
+                                                            LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
+                                                                                              AND CS.CODCPTO    = CC.CodCptoPrimasFactElect
+                                                                                              AND CS.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                              AND CS.PLANCOB    = DP.PLANCOB
+                         WHERE DN.IdNcr                     = nIdNcr
+                           AND DN.MONTO_DET_MONEDA > 0
+                         GROUP BY NVL(CC.CODTIPOPLAN,CS.IDRAMOREAL), CC.CodCptoPrimasFactElect, CC.IndTipoConcepto, CC.Porcconcepto--,CC.Orden_Impresion 
+                       )
+                 GROUP BY  CodCpto, MtoImptoFactElect,IndTipoConcepto,Porcconcepto, RAMOREAL 
+         ORDER BY NVL(Monto_Det_Local,0) DESC;
+             
+        CURSOR Q_Impto IS
+           SELECT CodIdentificador ---CONIT O CONIR
+             FROM FACT_ELECT_CONF_DOCTO
+            WHERE CodCia       = nCodCia
+              AND Proceso      = cProceso
+              AND IndImpuesto  = 'S'
+              AND IndRecursivo = 'S';
 
-    CURSOR Q_Impto IS
-       SELECT CodIdentificador ---CONIT O CONIR
-         FROM FACT_ELECT_CONF_DOCTO
-        WHERE CodCia       = nCodCia
-          AND Proceso      = cProceso
-          AND IndImpuesto  = 'S'
-          AND IndRecursivo = 'S';
+        CURSOR Q_Rel IS
+           SELECT CodIdentificador ---CREL
+             FROM FACT_ELECT_CONF_DOCTO
+            WHERE CodCia       = nCodCia
+              AND Proceso      = cProceso
+              AND IndRelacion  = 'S'
+              AND IndRecursivo = 'S';
 
-    CURSOR Q_Rel IS
-       SELECT CodIdentificador ---CREL
-         FROM FACT_ELECT_CONF_DOCTO
-        WHERE CodCia       = nCodCia
-          AND Proceso      = cProceso
-          AND IndRelacion  = 'S'
-          AND IndRecursivo = 'S';
-
-    CURSOR Q_Documento IS
-       SELECT IdDocumento, NumOrdenDoc, IdFactura, IdNcr, Linea, 
-              CodProceso, IndGenera, CodIdentificador
-         FROM FACT_ELECT_DOCUMENTO
-        WHERE CodCia           = nCodCia
-          AND CodProceso       = cProceso
-          AND NVL(IdFactura,0) = nIdFactura
-          AND NVL(IdNcr,0)     = 0
-          AND IdDocumento      = nIdDocumento
-          AND IndGenera        = 'S'
-        UNION ALL 
-       SELECT IdDocumento, NumOrdenDoc, IdFactura, IdNcr, Linea, 
-              CodProceso, IndGenera, CodIdentificador
-         FROM FACT_ELECT_DOCUMENTO
-        WHERE CodCia           = nCodCia
-          AND CodProceso       = cProceso
-          AND NVL(IdNcr,0)     = nIdNcr
-          AND NVL(IdFactura,0) = 0
-          AND IdDocumento      = nIdDocumento
-          AND IndGenera        = 'S'
-        ORDER BY NumOrdenDoc ;
+        CURSOR Q_Documento IS
+           SELECT IdDocumento, NumOrdenDoc, IdFactura, IdNcr, Linea, 
+                  CodProceso, IndGenera, CodIdentificador
+             FROM FACT_ELECT_DOCUMENTO
+            WHERE CodCia           = nCodCia
+              AND CodProceso       = cProceso
+              AND NVL(IdFactura,0) = nIdFactura
+              AND NVL(IdNcr,0)     = 0
+              AND IdDocumento      = nIdDocumento
+              AND IndGenera        = 'S'
+            UNION ALL 
+           SELECT IdDocumento, NumOrdenDoc, IdFactura, IdNcr, Linea, 
+                  CodProceso, IndGenera, CodIdentificador
+             FROM FACT_ELECT_DOCUMENTO
+            WHERE CodCia           = nCodCia
+              AND CodProceso       = cProceso
+              AND NVL(IdNcr,0)     = nIdNcr
+              AND NVL(IdFactura,0) = 0
+              AND IdDocumento      = nIdDocumento
+              AND IndGenera        = 'S'
+            ORDER BY NumOrdenDoc ;
 
     BEGIN
        nIdDocumento := OC_FACT_ELECT_DOCUMENTO.ID_DOCUMENTO(nCodCia);
@@ -423,15 +433,22 @@ CURSOR Q_DetCpto IS
                    ELSIF X.CodIdentificador NOT IN ('CREL','CRELS') OR cCrel IS NOT NULL THEN
                       IF  X.CodIdentificador = 'TRA' THEN
                             cDocumento := null;
+                            --CAPELE 2023105
                             FOR ENT IN (SELECT OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto) cCodTipoPlan,
-                                                DECODE(SUM(MTOIMPTOFACTELECT), 0, 'S', 'N') Exento
+                                              DECODE(SUM(MTOIMPTOFACTELECT), 0, 'S', 'N') Exento
                                          FROM DETALLE_FACTURAS
-                                        WHERE IdFactura  = nIdFactura
+                                        WHERE IdFactura  = NVL(DECODE(nIdFactura, 0, NULL, nIdFactura) , -1)
                                           AND OC_CATALOGO_DE_CONCEPTOS.INDICADOR_CONCEPTO(nCodCia, CodCpto, 'IMPUESTO') != 'S'
                                           AND OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto) != 'NA'
                                         GROUP BY OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto)
-                                        ORDER BY DECODE(SUM(MTOIMPTOFACTELECT), 0, 'S', 'N')) LOOP
-                                --DBMS_OUTPUT.PUT_LINE(X.CodIdentificador || '-' || X.IndImpuesto ||'-' || NVL(cExiste,'N') || '-cCrel:' || cCrel || '-RAMO: ' || ENT.cCodTipoPlan);             
+                                UNION ALL
+                                       SELECT OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto) cCodTipoPlan,
+                                              DECODE(SUM(MTOIMPTOFACTELECT), 0, 'S', 'N') Exento
+                                         FROM DETALLE_NOTAS_DE_CREDITO
+                                        WHERE IDNCR  = NVL(DECODE(nIdNCR, 0, NULL, nIdNCR) , -1)
+                                          AND OC_CATALOGO_DE_CONCEPTOS.INDICADOR_CONCEPTO(nCodCia, CodCpto, 'IMPUESTO') != 'S'
+                                          AND OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto) != 'NA'
+                                        GROUP BY OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto)) LOOP
                                 cDocumento := cDocumento || CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi, NULL, cIndRelaciona, ENT.cCodTipoPlan, ENT.Exento);                                
                             END LOOP;
                       ELSE
