@@ -409,9 +409,11 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                             cLinea  := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(cDocumento,'BaseP');   
                             IF cLinea = '0.00' then cDocumento := null; end if;
                             cDocumento := cDocumento || OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'N');
+                            IF InStr(cDocumento, 'PAGSPDOCIMTRA|||ImpuestoDR|002||TipoFactorDR|Exento') > 0 THEN cDocumento :=  replace(cDocumento, 'PAGSPDOCIMTRA|||ImpuestoDR|002||TipoFactorDR|Exento' || chr(10), ''); END IF; 
+                            IF InStr(cDocumento, 'PAGSPIMTRA|||ImpuestoP|002||TipoFactorP|Exento') > 0 THEN cDocumento :=  replace(cDocumento, 'PAGSPIMTRA|||ImpuestoP|002||TipoFactorP|Exento' || chr(10), ''); END IF; 
                         ELSE
                             cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
-                            IF InStr(cDocumento, 'TotalTrasladosBaseIVAExento|0.00||') > 0 THEN cDocumento := replace(cDocumento, 'TotalTrasladosBaseIVAExento|0.00||', ''); END IF; 
+                            IF InStr(cDocumento, 'TotalTrasladosBaseIVAExento|0.00||') > 0 THEN cDocumento := replace(cDocumento, 'TotalTrasladosBaseIVAExento|0.00||', ''); END IF;                             
                         END IF;
                             --CAPELE 20231006 
                       END IF;
