@@ -291,19 +291,13 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
        IF cProceso IN ('EMI','PAG') THEN
           cCrel := OC_FACTURAS.FACTURA_RELACIONADA_UUID_CANC(nCodCia, nIdFactura);
           FOR X IN Q_Dcto LOOP
-             --nNumOrdenDoc := nNumOrdenDoc + 1;
-             /*IF cDocumento IS NULL THEN
-                cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
-             ELSE*/
                 IF X.IndRecursivo = 'S' THEN
                    IF cProceso = 'PAG' THEN
-                      --cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                       cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                    END IF;
                    FOR J IN Q_Rec LOOP
                       IF J.IndRelacion  = cIndRelaciona AND J.IndImpuesto = 'N' and (X.CodIdentificador IN ('CREL','CRELS')  AND cCrel IS NOT NULL) THEN                            
                          IF cProceso != 'PAG' THEN
-                            --cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                             cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                          END IF;
                          OPEN Q_Rel;
@@ -315,62 +309,18 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
 
                          FOR I IN Q_Rel LOOP ---CRELS O CREL
                             cCodIdentificador := I.CodIdentificador;
-                            --cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                             cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                          END LOOP;
                       ELSIF J.IndRelacion  = 'N' AND J.IndImpuesto  = 'S' AND (X.CodIdentificador NOT IN ('CREL', 'CRELS') OR cCrel IS NOT NULL ) THEN
                          cExisteImp := 'N';
                          FOR F IN Q_DetCpto LOOP
                             cExiste := 'N';
-                            --cDocumento := cDocumento||OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona,F.RAMOREAL);
                             cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona,F.RamoReal);
                             nNumOrdenDoc := nNumOrdenDoc + 1;
                             OC_FACT_ELECT_DOCUMENTO.INSERTAR (nCodCia, nIdDocumento, nNumOrdenDoc, nIdFactura, nIdNcr, cDocumento, X.CodIdentificador, cProceso, 'S');
                             cExiste := OC_FACT_ELECT_CONF_DOCTO.EXISTE_IMPUESTO(nCodCia, nIdFactura, nIdNcr, cProceso, F.RamoReal);
-    --                        OPEN Q_Impto;
-    --                        FETCH Q_Impto INTO cCodIdentificador;
-    --                        
-    --                           IF Q_Impto%NOTFOUND THEN
-    --                               RAISE_APPLICATION_ERROR(-20225,'No Se Ha Configurado El Registro Correspondiente A Los Impuestos Por Concepto, Por Favor Valide Su Configuración');
-    --                           END IF;
-    --                        
-    --                        CLOSE Q_Impto;
-    --                        
-    --                        IF NVL(nIdFactura,0) != 0 THEN
-    --                           BEGIN
-    --                              SELECT 'S'
-    --                                INTO cExiste
-    --                                FROM DETALLE_FACTURAS
-    --                               WHERE IdFactura  = nIdFactura
-    --                                 AND CodCpto   IN (SELECT CodConcepto
-    --                                                     FROM CATALOGO_DE_CONCEPTOS
-    --                                                    WHERE IndEsImpuesto = 'S');
-    --                           EXCEPTION
-    --                              WHEN NO_DATA_FOUND THEN
-    --                                 cExiste := 'N';
-    --                              WHEN TOO_MANY_ROWS THEN
-    --                                 cExiste := 'S';
-    --                           END;
-    --                        ELSIF NVL(nIdNcr,0) != 0 THEN
-    --                           BEGIN
-    --                              SELECT 'S'
-    --                                INTO cExiste
-    --                                FROM DETALLE_NOTAS_DE_CREDITO
-    --                               WHERE IdNcr      = nIdNcr
-    --                                 AND CodCpto   IN (SELECT CodConcepto
-    --                                                     FROM CATALOGO_DE_CONCEPTOS
-    --                                                    WHERE IndEsImpuesto = 'S');
-    --                           EXCEPTION
-    --                              WHEN NO_DATA_FOUND THEN
-    --                                 cExiste := 'N';
-    --                              WHEN TOO_MANY_ROWS THEN
-    --                                 cExiste := 'S';
-    --                           END;
-    --                        END IF;
-
                             IF cExiste = 'S' THEN
-                               cExisteImp := cExiste;
-                               --cExiste := 'N';
+                               cExisteImp := cExiste;                               
                                FOR I IN Q_Impto LOOP ---CONIT O CONIR
                                   cCodIdentificador := I.CodIdentificador;
                                   cLinea := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,F.CodCpto,cIndRelaciona, F.RamoReal);
@@ -400,7 +350,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                    FOR J IN Q_Rec LOOP
                         IF (J.IndRelacion  = cIndRelaciona AND J.IndImpuesto = 'N') OR (J.CodIdentificador = 'CREL' AND X.CodIdentificador IN ('CRELS') AND cCrel IS NOT NULL) THEN
                             IF cProceso != 'PAG' THEN
-                               cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
+                               cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                                IF cDocumento IS NOT NULL THEN
                                   nNumOrdenDoc := nNumOrdenDoc + 1;
                                   OC_FACT_ELECT_DOCUMENTO.INSERTAR (nCodCia, nIdDocumento, nNumOrdenDoc, nIdFactura, nIdNcr, cDocumento, X.CodIdentificador, cProceso, 'S');
@@ -415,7 +365,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                             --
                            FOR I IN Q_Rel LOOP ---CRELS O CREL
                               cCodIdentificador := I.CodIdentificador;
-                              cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
+                              cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,cCodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
                               IF cDocumento IS NOT NULL THEN
                                  nNumOrdenDoc := nNumOrdenDoc + 1;
                                  OC_FACT_ELECT_DOCUMENTO.INSERTAR (nCodCia, nIdDocumento, nNumOrdenDoc, nIdFactura, nIdNcr, cDocumento, cCodIdentificador, cProceso, 'S');
@@ -425,11 +375,9 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                    END LOOP;
                    --
                    IF X.IndImpuesto = 'S' AND NVL(cExiste,'N') = 'N' THEN
-                      --cDocumento := NUll;  -- SE APLICA LA EXENCIÓN DE IMPUESTOS CUANDO NO HAY CONCEPTOS DE IMPUESTOS POR LO QUE SE GENERAESTA LINEA CON EXENCION
                       cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'S');
                    ELSIF X.CodIdentificador IN ('CREL','CRELS') THEN
                       cDocumento := NUll;  -- capele
-                      null;
                    ELSIF X.CodIdentificador NOT IN ('CREL','CRELS') OR cCrel IS NOT NULL THEN
                       IF  X.CodIdentificador = 'TRA' THEN
                             cDocumento := null;
@@ -449,16 +397,23 @@ CREATE OR REPLACE PACKAGE BODY OC_FACT_ELECT_CONF_DOCTO IS
                                           AND OC_CATALOGO_DE_CONCEPTOS.INDICADOR_CONCEPTO(nCodCia, CodCpto, 'IMPUESTO') != 'S'
                                           AND OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto) != 'NA'
                                         GROUP BY OC_CATALOGO_DE_CONCEPTOS.RAMO_REAL(nCodCia, CodCpto)) LOOP
-                                cDocumento := cDocumento || CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi, NULL, cIndRelaciona, ENT.cCodTipoPlan, ENT.Exento);                                
+                                cDocumento := cDocumento || OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi, NULL, cIndRelaciona, ENT.cCodTipoPlan, ENT.Exento);                                
                             END LOOP;
                       ELSE
                         IF X.CodIdentificador in ('PAGSPDOCIMTRA', 'PAGSPIMTRA') THEN
-                            dbms_output.put_line('Aqui entre: ' || X.CodIdentificador); 
-                            cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'S');
-                            cDocumento := cDocumento || CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'N');
+                            --CAPELE 20231006 
+                            --dbms_output.put_line('Aqui entre: ' || X.CodIdentificador); 
+                            cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'S');
+                            cLinea  := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(cDocumento,'BaseDR');   
+                            IF cLinea = '0.00' then cDocumento := null; end if;
+                            cLinea  := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(cDocumento,'BaseP');   
+                            IF cLinea = '0.00' then cDocumento := null; end if;
+                            cDocumento := cDocumento || OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona, NULL, 'N');
                         ELSE
-                            cDocumento := CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
+                            cDocumento := OC_FACT_ELECT_CONF_DOCTO.CREA_IDENTIFICADOR(nIdFactura,nIdNcr,nCodCia,nCodEmpresa,cProceso,X.CodIdentificador,cTipoCfdi,NULL,cIndRelaciona);
+                            IF InStr(cDocumento, 'TotalTrasladosBaseIVAExento|0.00||') > 0 THEN cDocumento := replace(cDocumento, 'TotalTrasladosBaseIVAExento|0.00||', ''); END IF; 
                         END IF;
+                            --CAPELE 20231006 
                       END IF;
                    END IF;
                 END IF;
