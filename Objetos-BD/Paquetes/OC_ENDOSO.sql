@@ -1,4 +1,5 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
+CREATE OR REPLACE PACKAGE OC_ENDOSO IS
+-- SE AGREGO EL CERIFICADO EN EL PROCEDIMIENTO CAMBIO_POR_LISTADO MLJS 23/10/2023
 
    FUNCTION CREAR (nIdPoliza NUMBER ) RETURN NUMBER;
    FUNCTION NATURALIDAD(cTipoEndoso VARCHAR2) RETURN VARCHAR2;
@@ -28,23 +29,21 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENDOSO IS
    PROCEDURE EXCLUIR_ASEGURADOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndosoExclu NUMBER);
    FUNCTION TOTAL_PRIMA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN NUMBER;
    FUNCTION TOTAL_ASEGURADOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN NUMBER;
-   FUNCTION CAMBIO_POR_LISTADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
+   FUNCTION CAMBIO_POR_LISTADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nCertidicado NUMBER) RETURN VARCHAR2;
    FUNCTION VALIDA_CAMBIO_FORMA_DE_PAGO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER,
                                         cCodPlanPagoEndo VARCHAR2, nPrimaPendiente IN OUT NUMBER, cIndCalcDerechoEmis IN OUT VARCHAR2) RETURN VARCHAR2;
    PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdEndoso NUMBER);
    PROCEDURE ENDOSO_ANULACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFecAnulacion DATE, cMotivAnul VARCHAR2);
    PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
    FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN VARCHAR2;
-	
+
 	--JIBARRA_09-11-2022 <SE CREA PROCESO PARA LA ACTUALIZACION DE LAS FECHAS DE VIGENCIA DE ENDOSO, CERTIFICADO, POLIZA, FACTRUAS O NOTAS DE CREDITO
 	--						SEGUN COMO CORRESPONDE A LA NECESIDAD DEL USURAIO>
 	PROCEDURE ACTUALIZA_FECHAS_VIG(nCodCia IN NUMBER, nIdPoliza IN NUMBER, nIDetPol IN NUMBER, nIdEndoso IN NUMBER, nNumError OUT NUMBER, cMsjError OUT VARCHAR2);
-	
+
 END OC_ENDOSO;
-
 /
-
-create or replace PACKAGE BODY SICAS_OC.OC_ENDOSO IS
+CREATE OR REPLACE PACKAGE BODY OC_ENDOSO IS
   FUNCTION CREAR (nIdPoliza NUMBER )RETURN NUMBER IS
   nIdEndoso ENDOSOS.IdEndoso%TYPE;
   BEGIN
@@ -89,7 +88,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_ENDOSO IS
      AND IdPoliza   = nIdPoliza;
      EXCEPTION
         WHEN NO_DATA_FOUND THEN
-     RAISE_APPLICATION_ERROR(-20225,'NO Existe P√≥lliza No.  :' || nIdPoliza);
+     RAISE_APPLICATION_ERROR(-20225,'NO Existe PÛlliza No.  :' || nIdPoliza);
         WHEN OTHERS THEN
      RAISE_APPLICATION_ERROR(-20225,SQLERRM);
      END;
@@ -125,7 +124,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_ENDOSO IS
      AND IdPoliza   = nIdPoliza;
      EXCEPTION
         WHEN NO_DATA_FOUND THEN
-     RAISE_APPLICATION_ERROR(-20225,'NO Existe P√≥lliza No.  :' || nIdPoliza);
+     RAISE_APPLICATION_ERROR(-20225,'NO Existe PÛlliza No.  :' || nIdPoliza);
         WHEN OTHERS THEN
      RAISE_APPLICATION_ERROR(-20225,SQLERRM);
      END;
@@ -407,10 +406,10 @@ PROCEDURE EMITIR(nCodcia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetPol 
 		AND CodAsegurado  = nCodAsegurado
 		AND GT_FAI_TIPOS_DE_FONDOS.INDICADORES(CodCia, CodEmpresa, TipoFondo, 'EPP') = 'N'
 		ORDER BY IdFondo;
-	
+
 	nControl NUMBER;
 BEGIN
-	
+
 	BEGIN
 		nControl := 1;
 		SELECT Cod_Asegurado
@@ -449,7 +448,7 @@ BEGIN
 		AND IDetPol  = nIDetPol
 		AND IdEndoso = nIdEndoso;
     EXCEPTION WHEN OTHERS THEN
-        nSuma_Aseg_Moneda := 0; 
+        nSuma_Aseg_Moneda := 0;
         nPrima_Moneda := 0;
         dFecIniVig := NULL;
         cCodPlanPago := NULL;
@@ -462,7 +461,7 @@ BEGIN
 	AND IdPoliza = nIdPoliza
 	AND IDetPol  = nIDetPol
 	AND IdEndoso = nIdEndoso;
-	
+
 	--JIBARRA_28-11-2022 <SSE EXCLUYE AL TIPO DE ENDOSO CORRESPONDIENTES A LA ACTUALIZACION DE LAS FECHAS COMO FUE SOLICITADA.>
 	IF cTipoEndoso NOT IN ('EXC','DIS','CFP','CFV') THEN
 		nControl := 5;
@@ -510,7 +509,7 @@ BEGIN
 			OC_DETALLE_TRANSACCION.CREA (nIdTransacAnul, nCodCia,  nCodEmpresa, 8, 'ANUFAC', 'FACTURAS'
 										,nIdPoliza, X.IDetPol, X.IdEndoso, X.IdFactura, NVL(X.Monto_Fact_Moneda,0));
 		END LOOP;
-		
+
 		OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacAnul, 'C');
 
 		UPDATE POLIZAS
@@ -523,7 +522,7 @@ BEGIN
 		WHERE CodCia   = nCodCia
 		AND IdPoliza = nIdPoliza;
 	END IF;
-	
+
 	--JIBARRA_28-11-2022 <SE EXCLUYE AL TIPO DE ENDOSO CORRESPONDIENTES A LA ACTUALIZACION DE LAS FECHAS COMO FUE SOLICITADA.>
 	IF cTipoEndoso NOT IN ('ESV','ESVTL','CLA','EAAF','CFV') THEN
 		nControl := 13;
@@ -576,7 +575,7 @@ BEGIN
 		FOR X IN FOND_Q LOOP
 			 nMtoAporteIniMoneda  := nMontoAporteFondo * (X.PorcFondo / 100);
 			 nMtoAporteIniLocal   := nMtoAporteIniMoneda * OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(dFecIniVig));
-			
+
 			UPDATE FAI_FONDOS_DETALLE_POLIZA
 			SET MtoAporteIniLocal   = nMtoAporteIniLocal,
 				MtoAporteIniMoneda  = nMtoAporteIniMoneda
@@ -604,7 +603,7 @@ BEGIN
 				END IF;
 			END;
 		END IF;
-		
+
 		--JIBARRA_28-11-2022 <NO GENERA TRANSACCION, SOLO SE ACTUALIZAN FECHAS CON EL ENDOSO [CFV].>
 		IF(cTipoEndoso != 'CFV')THEN
 			nControl := 16;
@@ -613,7 +612,7 @@ BEGIN
 			OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, cTipoEndoso, 'ENDOSOS',
 				  nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
 		END IF;
-		
+
 	END IF;
 	--JIBARRA_28-11-2022 <SOLO SE ACTUALIZAN FECHAS CON EL ENDOSO [CFV].>
 	IF(cTipoEndoso != 'CFV')THEN
@@ -622,7 +621,7 @@ BEGIN
 		nControl := 19;
 		OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIdEndoso);
 	END IF;
-	
+
 	nControl := 20;
 	UPDATE ENDOSOS
 	SET StsEndoso = 'EMI',
@@ -631,7 +630,7 @@ BEGIN
 	AND IdPoliza  = nIdPoliza
 	AND IDetPol   = nIDetPol
 	AND IdEndoso  = nIdEndoso;
-	
+
 	nControl := 21;
 	GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza, nIdTrn, TRUNC(SYSDATE), 'ENDOSOS');
 EXCEPTION WHEN OTHERS THEN
@@ -874,7 +873,7 @@ END EMITIR;
 
      IF OC_PLAN_COBERTURAS.VALIDA_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecIniVig) = 'N' THEN
         IF OC_PROCESO_AUTORIZA_USUARIO.PROCESO_AUTORIZADO(nCodCia, '9145', USER, 'NOAPLI',1) = 'N' THEN
-            RAISE_APPLICATION_ERROR(-20225,'La Configuraci√≥n del Producto S√≥lo Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' D√≠as de Retroactividad Por Favor Valide su Endoso '||TRIM(TO_CHAR(nIdEndoso)));
+            RAISE_APPLICATION_ERROR(-20225,'La ConfiguraciÛn del Producto SÛlo Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' DÌas de Retroactividad Por Favor Valide su Endoso '||TRIM(TO_CHAR(nIdEndoso)));
         END IF;
      END IF;
 
@@ -935,7 +934,7 @@ END EMITIR;
         END;
 
         IF NVL(nComprobantes,0) != 0 THEN
-            RAISE_APPLICATION_ERROR(-20225,'NO puede Revertir la Emisi√≥n del Endoso No. ' || TRIM(TO_CHAR(nIdEndoso)) ||
+            RAISE_APPLICATION_ERROR(-20225,'NO puede Revertir la EmisiÛn del Endoso No. ' || TRIM(TO_CHAR(nIdEndoso)) ||
                                     ' porque sus Datos Contables ya fueron Enviados a Otros Sistemas');
         END IF;
 
@@ -974,9 +973,9 @@ END EMITIR;
                     END;
 
                     IF NVL(nFacturas,0) != 0 THEN
-                        RAISE_APPLICATION_ERROR(-20225,'NO puede Revertir la Emisi√≥n porque el Endoso No. ' || nIdEndoso ||
-                                                    ' de la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
-                                                    ' sus Datos ya fueron Enviados a Facturaci√≥n Electr√≥nica');
+                        RAISE_APPLICATION_ERROR(-20225,'NO puede Revertir la EmisiÛn porque el Endoso No. ' || nIdEndoso ||
+                                                    ' de la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+                                                    ' sus Datos ya fueron Enviados a FacturaciÛn ElectrÛnica');
                     ELSE
                         cEmite  := 'S';
                     END IF;
@@ -992,7 +991,7 @@ END EMITIR;
             AND StsNcr     != 'EMI';
 
             IF NVL(nExiste,0) != 0 THEN
-                RAISE_APPLICATION_ERROR(-20225,'Notas de Cr√©dito del Endoso ya fueron Pagadas o Anuladas y NO Puede Revertirlo');
+                RAISE_APPLICATION_ERROR(-20225,'Notas de CrÈdito del Endoso ya fueron Pagadas o Anuladas y NO Puede Revertirlo');
             ELSE
                 SELECT MIN(N.IdTransaccion), MIN(TRUNC(T.FechaTransaccion))
                 INTO nIdTransaccion, dFechaTransaccion
@@ -1015,9 +1014,9 @@ END EMITIR;
                     END;
 
                     IF NVL(nNotasCred,0) != 0 THEN
-                        RAISE_APPLICATION_ERROR(-20225,'NO puede Revertir la Emisi√≥n porque el Endoso No. ' || nIdEndoso ||
-                                                ' de la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
-                                                ' sus Datos ya fueron Enviados a Facturaci√≥n Electr√≥nica');
+                        RAISE_APPLICATION_ERROR(-20225,'NO puede Revertir la EmisiÛn porque el Endoso No. ' || nIdEndoso ||
+                                                ' de la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+                                                ' sus Datos ya fueron Enviados a FacturaciÛn ElectrÛnica');
                     ELSE
                         cEmite  := 'S';
                     END IF;
@@ -1080,8 +1079,8 @@ END EMITIR;
                     IF OC_PERSONA_NATURAL_JURIDICA.EN_LISTA_DE_REFERENCIA(W.Tipo_Doc_Identificacion, W.Num_Doc_Identificacion) = 'S' THEN
                     cCodListaRef  := OC_PERSONA_NATURAL_JURIDICA.CODIGO_LISTA_REFERENCIA(W.Tipo_Doc_Identificacion, W.Num_Doc_Identificacion);
                     cDescListaRef := OC_VALORES_DE_LISTAS.BUSCA_LVALOR('LISTAREF', cCodListaRef);
-                    RAISE_APPLICATION_ERROR(-20200,'C√≥digo de Asegurado ' || W.Cod_Asegurado ||
-                    ' Est√° en Lista de Referencia por: ' || cCodListaRef || '-' ||
+                    RAISE_APPLICATION_ERROR(-20200,'CÛdigo de Asegurado ' || W.Cod_Asegurado ||
+                    ' Est· en Lista de Referencia por: ' || cCodListaRef || '-' ||
                     cDescListaRef || ' - NO Puede Emitirle Endoso');
                     END IF;
                     */
@@ -1104,7 +1103,7 @@ END EMITIR;
 
                     IF nRegis != 0 THEN
                         RAISE_APPLICATION_ERROR(-20200,'El Asegurado No. ' || W.Cod_Asegurado || ' del Certificado No. ' || W.IDetPol ||
-                                                ' en el Endoso ' || nIdEndoso || ' Posee Coberturas fuera el Rango de Aceptaci√≥n para la Edad ' || nEdad);
+                                                ' en el Endoso ' || nIdEndoso || ' Posee Coberturas fuera el Rango de AceptaciÛn para la Edad ' || nEdad);
                     END IF;
 
                     SELECT NVL(SUM(SumaAseg_Moneda),0)--, NVL(SUM(Prima_Moneda),0)
@@ -1124,7 +1123,7 @@ END EMITIR;
 
                     IF NVL(nSumaAsegAseg,0) = 0 THEN --AND NVL(nPrimaMoneda,0) = 0 THEN
                         RAISE_APPLICATION_ERROR(-20200,'El Asegurado No. ' || W.Cod_Asegurado || ' del Certificado No. ' || W.IDetPol ||
-                                                ' en el Endoso ' || nIdEndoso || ' NO tiene Suma Asegurada en Cobertura B√°sica');
+                                                ' en el Endoso ' || nIdEndoso || ' NO tiene Suma Asegurada en Cobertura B·sica');
                     END IF;
                 END LOOP;
             END IF;
@@ -1313,8 +1312,8 @@ END EMITIR;
             AND Estado     = 'EMI');
 
         IF NVL(nExisteSini,0) > 0 THEN
-     RAISE_APPLICATION_ERROR(-20225,'No se Puede Anular el Endoso de Inclusi√≥n de Asegurados No. ' || nIdEndoso ||
-           ' Porque alg√∫n asegurado de este Endoso Tiene Siniestro');
+     RAISE_APPLICATION_ERROR(-20225,'No se Puede Anular el Endoso de InclusiÛn de Asegurados No. ' || nIdEndoso ||
+           ' Porque alg˙n asegurado de este Endoso Tiene Siniestro');
         ELSE
      SELECT COUNT(*)
        INTO nAsegNoEmitidos
@@ -1325,8 +1324,8 @@ END EMITIR;
         AND Estado     != 'EMI';
 
      IF NVL(nAsegNoEmitidos,0) != 0 THEN
-        RAISE_APPLICATION_ERROR(-20225,'No se Puede Anular el Endoso de Inclusi√≥n de Asegurados No. ' || nIdEndoso ||
-              ' Porque alg√∫n Asegurado ya fue Excluido o Cambiado con Otro Endoso');
+        RAISE_APPLICATION_ERROR(-20225,'No se Puede Anular el Endoso de InclusiÛn de Asegurados No. ' || nIdEndoso ||
+              ' Porque alg˙n Asegurado ya fue Excluido o Cambiado con Otro Endoso');
      ELSE
         -- Deja Emitidas las Coberturas, Asistencias y Asegurados
         -- BORRAR ESTE PARRAFO CUENDO LO DE ENDOSO DE INCLUSION ESTE YA MADURO
@@ -1538,14 +1537,14 @@ END EMITIR;
 			WHERE IdPoliza = nIdPoliza
 			AND IDetPol  = nIDetPol
 			AND IdEndoso = nIdEndoso;
-			
+
 		CURSOR NCR_Q IS
 			SELECT IdNcr
 			FROM NOTAS_DE_CREDITO
 			WHERE IdPoliza = nIdPoliza
 			AND IDetPol  = nIDetPol
 			AND IdEndoso = nIdEndoso;
-			
+
 		CURSOR ASEG_Q IS
 			SELECT Cod_Asegurado
 			FROM ASEGURADO_CERTIFICADO
@@ -1674,7 +1673,7 @@ END EMITIR;
 				END LOOP;
 			END IF;
 
-			-- Elimina Comprobantes y Transacci√≥n
+			-- Elimina Comprobantes y TransacciÛn
 			DELETE COMPROBANTES_DETALLE
 			WHERE NumComprob IN (SELECT NumComprob
 								FROM COMPROBANTES_CONTABLES
@@ -1746,7 +1745,7 @@ END EMITIR;
      AND IdPoliza = nIdPoliza;
      EXCEPTION
         WHEN NO_DATA_FOUND THEN
-     RAISE_APPLICATION_ERROR(-20225,'NO Existe P√≥liza NO. '||nIdPoliza);
+     RAISE_APPLICATION_ERROR(-20225,'NO Existe PÛliza NO. '||nIdPoliza);
      END;
 
      FOR W IN ASEG_Q LOOP
@@ -1833,7 +1832,7 @@ END EMITIR;
         AND CodCia     = nCodCia;
   EXCEPTION
      WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20225,'Error en Proceso para Calcular Exclusi√≥n de Asegurado '||SQLERRM);
+        RAISE_APPLICATION_ERROR(-20225,'Error en Proceso para Calcular ExclusiÛn de Asegurado '||SQLERRM);
   END CALCULA_EXCLUSION_ASEG;
 
   PROCEDURE EXCLUIR_ASEGURADOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndosoExclu NUMBER) IS
@@ -1953,7 +1952,8 @@ END EMITIR;
      RETURN(nTotalAseg);
   END TOTAL_ASEGURADOS;
 
-  FUNCTION CAMBIO_POR_LISTADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS
+  FUNCTION CAMBIO_POR_LISTADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nCertidicado NUMBER) RETURN VARCHAR2 IS
+  -- MLJS 23/10/2023 se agrega el certificado
   nEndoCLA      NUMBER(10);
   BEGIN
      SELECT COUNT(*)
@@ -1962,6 +1962,7 @@ END EMITIR;
       WHERE CodCia     = nCodCia
         AND CodEmpresa = nCodEmpresa
         AND IdPoliza   = nIdPoliza
+        AND IdetPol    = nCertidicado
         AND TipoEndoso = 'CLA'
         AND StsEndoso  = 'EMI';
 
@@ -2068,7 +2069,7 @@ END EMITIR;
      END IF;
         END IF;
      ELSE
-        RAISE_APPLICATION_ERROR(-20225,'Para el Cambio de Forma de Pago debe Seleccionar un Plan de Pago Diferente al de la P√≥liza');
+        RAISE_APPLICATION_ERROR(-20225,'Para el Cambio de Forma de Pago debe Seleccionar un Plan de Pago Diferente al de la PÛliza');
      END IF;
 
      nPrimaPendiente := 0;
@@ -2139,12 +2140,12 @@ END EMITIR;
      AND IdPoliza = nIdPoliza;
      EXCEPTION
         WHEN NO_DATA_FOUND THEN
-     RAISE_APPLICATION_ERROR(-20225, 'NO existe la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+     RAISE_APPLICATION_ERROR(-20225, 'NO existe la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
           ' del Endoso que desea Rehabilitar');
      END;
      IF cStsPoliza = 'ANU' THEN
-        RAISE_APPLICATION_ERROR(-20225, 'Debe Rehabilitar la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
-              ' que est√° ANULADA y se Rehabilitar√°n sus Endosos.');
+        RAISE_APPLICATION_ERROR(-20225, 'Debe Rehabilitar la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+              ' que est· ANULADA y se Rehabilitar·n sus Endosos.');
      END IF;
 
      BEGIN
@@ -2159,10 +2160,10 @@ END EMITIR;
      EXCEPTION
         WHEN NO_DATA_FOUND THEN
      RAISE_APPLICATION_ERROR(-20225, 'No Existe el Endoso No. ' || TRIM(TO_CHAR(nIdEndoso)) ||
-           ' de la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' para Rehabilitar.');
+           ' de la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' para Rehabilitar.');
         WHEN OTHERS THEN
      RAISE_APPLICATION_ERROR(-20225, 'Problemas para Recuperar el Endoso No. ' || TRIM(TO_CHAR(nIdEndoso)) ||
-           ' de la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' ' || SQLERRM);
+           ' de la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' ' || SQLERRM);
      END;
 
      BEGIN
@@ -2174,17 +2175,17 @@ END EMITIR;
      AND IDetPol  = nIDetPol;
      EXCEPTION
         WHEN NO_DATA_FOUND THEN
-     RAISE_APPLICATION_ERROR(-20225, 'NO existe Certificado/SubGrupo No. ' || nIDetPol || ' en la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+     RAISE_APPLICATION_ERROR(-20225, 'NO existe Certificado/SubGrupo No. ' || nIDetPol || ' en la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
           ' del Endoso que desea Rehabilitar');
      END;
      IF cStsDetalle = 'ANU' THEN
-        RAISE_APPLICATION_ERROR(-20225, 'Debe Rehabilitar el Certificado/SubGrupo No. ' || nIDetPol || ' en la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
-              ' que est√° ANULADO y se Rehabilitar√°n sus Endosos.');
+        RAISE_APPLICATION_ERROR(-20225, 'Debe Rehabilitar el Certificado/SubGrupo No. ' || nIDetPol || ' en la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+              ' que est· ANULADO y se Rehabilitar·n sus Endosos.');
      END IF;
 
      IF cStsEndoso = 'ANU' THEN
         IF cTipoEndoso IN ('EXA', 'EXC') THEN
-     RAISE_APPLICATION_ERROR(-20225, 'NO se puede Rehabilitar el Tipo de Endoso ' || cTipoEndoso || '. Debe volver a Realizar el Endoso en la P√≥liza');
+     RAISE_APPLICATION_ERROR(-20225, 'NO se puede Rehabilitar el Tipo de Endoso ' || cTipoEndoso || '. Debe volver a Realizar el Endoso en la PÛliza');
         ELSE
      UPDATE ENDOSOS
         SET StsEndoso  = 'EMI',
@@ -2195,8 +2196,8 @@ END EMITIR;
         AND IdEndoso = nIdEndoso;
         END IF;
      ELSE
-        RAISE_APPLICATION_ERROR(-20225, ' El Endoso No. ' || nIdEndoso || ' de la P√≥liza No. ' ||
-              TRIM(TO_CHAR(nIdPoliza)) || ' NO est√° Anulado para Rehabilitarse');
+        RAISE_APPLICATION_ERROR(-20225, ' El Endoso No. ' || nIdEndoso || ' de la PÛliza No. ' ||
+              TRIM(TO_CHAR(nIdPoliza)) || ' NO est· Anulado para Rehabilitarse');
      END IF;
 
      cNaturalidad := OC_ENDOSO.NATURALIDAD(cTipoEndoso);
@@ -2234,7 +2235,7 @@ END EMITIR;
      OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccion, 'C');
         END IF;
      ELSE
-        -- Rehabilita Notas de Cr√©dito Anuladas
+        -- Rehabilita Notas de CrÈdito Anuladas
         SELECT MAX(T.IdTransaccion)
     INTO nIdTransaccionAnuNc
     FROM TRANSACCION T, DETALLE_TRANSACCION D
@@ -2345,25 +2346,25 @@ END EMITIR;
           /*
     IF cMotivAnul = 'CAFP' THEN
        UPDATE ENDOSOS E
-    SET E.DESCENDOSO = 'P√≥liza cancelada de forma autom√°tica por falta de pago a partir del '||TO_CHAR(dFecAnulacion,'DD')||
+    SET E.DESCENDOSO = 'PÛliza cancelada de forma autom·tica por falta de pago a partir del '||TO_CHAR(dFecAnulacion,'DD')||
            ' de '||TO_CHAR(dFecAnulacion,'MONTH')||
            ' de '||TO_CHAR(dFecAnulacion,'YYYY')
         WHERE E.IDPOLIZA = nIdPoliza
     AND E.IDENDOSO = nIdendoso;
        --
-       CLINEA_T := 'Por medio del presente endoso, se hace constar que la presente p√≥liza queda cancelada de forma autom√°tica por falta de pago a partir del '||TO_CHAR(dFecAnulacion,'DD')||
+       CLINEA_T := 'Por medio del presente endoso, se hace constar que la presente pÛliza queda cancelada de forma autom·tica por falta de pago a partir del '||TO_CHAR(dFecAnulacion,'DD')||
        ' de '||TO_CHAR(dFecAnulacion,'MONTH')||
        ' de '||TO_CHAR(dFecAnulacion,'YYYY');
        --
     ELSE
        UPDATE ENDOSOS E
-    SET E.DESCENDOSO = 'P√≥liza cancelada de a partir del '||TO_CHAR(dFecAnulacion,'DD')||
+    SET E.DESCENDOSO = 'PÛliza cancelada de a partir del '||TO_CHAR(dFecAnulacion,'DD')||
            ' de '||TO_CHAR(dFecAnulacion,'MONTH')||
            ' de '||TO_CHAR(dFecAnulacion,'YYYY')
         WHERE E.IDPOLIZA = nIdPoliza
     AND E.IDENDOSO = nIdendoso;
        --
-       CLINEA_T := 'Por medio del presente endoso, se hace constar que la presente p√≥liza queda cancelada a partir del '||TO_CHAR(dFecAnulacion,'DD')||
+       CLINEA_T := 'Por medio del presente endoso, se hace constar que la presente pÛliza queda cancelada a partir del '||TO_CHAR(dFecAnulacion,'DD')||
        ' de '||TO_CHAR(dFecAnulacion,'MONTH')||
        ' de '||TO_CHAR(dFecAnulacion,'YYYY')||CHR(10)||CHR(10)||CHR(10)||
        'Usuario : '||cUsuario||'     Terminal : '||cTerminal||'     Fecha : '||to_char(sysdate,'dd/mm/yyyy hh24:mi:ss');
@@ -2435,13 +2436,13 @@ END EMITIR;
          nIDetPol,            nIdendoso,               cTipoEndoso);
     --
     UPDATE ENDOSOS E
-       SET E.DESCENDOSO = 'P√≥liza rehabilitada a partir del '||TO_CHAR(dFecIniVig,'DD')||
+       SET E.DESCENDOSO = 'PÛliza rehabilitada a partir del '||TO_CHAR(dFecIniVig,'DD')||
         ' de '||TO_CHAR(dFecIniVig,'MONTH')||
         ' de '||TO_CHAR(dFecIniVig,'YYYY')
      WHERE E.IDPOLIZA = nIdPoliza
        AND E.IDENDOSO = nIdendoso;
     --
-    CLINEA_T := 'Por medio del presente endoso, se hace constar que la presente p√≥liza se rehabilita para la aplicaci√≥n del pago pendiente de primas a partir del '||TO_CHAR(dFecIniVig,'DD')||
+    CLINEA_T := 'Por medio del presente endoso, se hace constar que la presente pÛliza se rehabilita para la aplicaciÛn del pago pendiente de primas a partir del '||TO_CHAR(dFecIniVig,'DD')||
           ' de '||TO_CHAR(dFecIniVig,'MONTH')||
           ' de '||TO_CHAR(dFecIniVig,'YYYY')||CHR(10)||CHR(10)||CHR(10)||
        'Usuario : '||cUsuario||'     Terminal : '||cTerminal||'     Fecha : '||to_char(sysdate,'dd/mm/yyyy hh24:mi:ss');
@@ -2465,7 +2466,7 @@ END EMITIR;
       | Modifico   : N/A                                                                                                              |
       | Obj. Modif.: N/A                                                                                                              |
       | Parametros:                                                                                                                   |
-      |           nCodCia             Codigo de Compa√±ia                                          (Entrada)                           |
+      |           nCodCia             Codigo de CompaÒia                                          (Entrada)                           |
       |           nCodEmpresa         Codigo de Empresa                                           (Entrada)                           |
       |           nIdPoliza           Numero de la Poliza a revisar                               (Entrada)                           |
       |           nIDetPol            IdetPol de la Poliza                                        (Entrada)                           |
@@ -2489,7 +2490,7 @@ END EMITIR;
       AND     E.CodEmpresa   = nCodEmpresa;
      RETURN(nCodMoneda);
   END MONEDA;
-	
+
 	--JIBARRA_09-11-2022 <SE CREA PROCESO PARA LA ACTUALIZACION DE LAS FECHAS DE VIGENCIA DE ENDOSO, CERTIFICADO, POLIZA, FACTRUAS O NOTAS DE CREDITO
 	--						SEGUN COMO CORRESPONDE A LA NECESIDAD DEL USURAIO>
     PROCEDURE ACTUALIZA_FECHAS_VIG(nCodCia IN NUMBER, nIdPoliza IN NUMBER, nIDetPol IN NUMBER, nIdEndoso IN NUMBER, nNumError OUT NUMBER, cMsjError OUT VARCHAR2) AS
@@ -2499,7 +2500,7 @@ END EMITIR;
 		cTipoDocNcr		SICAS_OC.ENDOSO_SERVICIOS_WEB.TIPO_DOC_UPD%TYPE := 'NCR';
 		cTipoDocRecibo	SICAS_OC.ENDOSO_SERVICIOS_WEB.TIPO_DOC_UPD%TYPE := 'RECIBO';
 		nParametros     VARCHAR2(2000) := 'Parametros:: ' || TRUNC(SYSDATE) || '[' || nCodCia || '|' || nIdPoliza || '|' || nIDetPol || '|' || nIdEndoso || '] ';
-		
+
 		nControl        NUMBER;
 		vCadenaControl	VARCHAR2(4000);
 		nIdEndosoUpd	SICAS_OC.ENDOSO_SERVICIOS_WEB.IDENDOSOUPD%TYPE := 0;
@@ -2535,9 +2536,9 @@ END EMITIR;
 				cMsjError := SQLERRM;
 				cMsjError := '[' || nControl || ']' || cMsjError;
 		END;
-		
+
 		nControl := 3;
-		IF(nNumError = 0 /*AND nIdEndosoUpd != 0 AND cTipoDoc IS NOT NULL AND nIdTipoDoc != 0*/ AND nIdPoliza IS NOT NULL AND nIDetPol IS NOT NULL 
+		IF(nNumError = 0 /*AND nIdEndosoUpd != 0 AND cTipoDoc IS NOT NULL AND nIdTipoDoc != 0*/ AND nIdPoliza IS NOT NULL AND nIDetPol IS NOT NULL
 			AND nIdEndoso IS NOT NULL AND cMotivo_Endoso IS NOT NULL /*AND dNewFechaIni IS NOT NULL AND dNewFechaFin IS NOT NULL*/)THEN
 			nControl := 4;
 			IF(cMotivo_Endoso = cMotivo_EndosoA)THEN
@@ -2547,7 +2548,7 @@ END EMITIR;
 					   ,FECFINVIG = NVL(dNewFechaFin,FECFINVIG)
 				WHERE  IDPOLIZA = nIdPoliza
 				;
-				
+
 				nControl := 6;
 				UPDATE SICAS_OC.DETALLE_POLIZA
 				SET    FECINIVIG = NVL(dNewFechaIni,FECINIVIG)
@@ -2604,7 +2605,7 @@ END EMITIR;
 					nNumError := nControl;
 					cMsjError := '[' || nControl || '] NO SE PUEDE IDENTIFICAR EL TIPO DE DOCUMENTO ' || cTipoDoc;
 				*/END IF;
-				
+
 				IF(nNumError = 0 AND nIdEndosoUpd != 0)THEN
 					BEGIN
 						nControl := 12;
@@ -2622,7 +2623,7 @@ END EMITIR;
 							cMsjError := '[' || nControl || ']' || cMsjError;
 					END;
 				END IF;
-				
+
 			ELSE
 				nNumError := nControl;
 				cMsjError := 'MOTIVO DE ENDOSO [' || cMotivo_Endoso || '] NO VALIDO. EL VALOR DE FECHAS QUE DESEA MODIFCIAR NO ES VALIDO. ' || dNewFechaIni || ' - ' || dNewFechaFin;
@@ -2631,7 +2632,7 @@ END EMITIR;
 			nNumError := nControl;
 			cMsjError := '[' || nNumError || '] VERIFICAR LOS DATOS INGRESADOS PARA LA ACTUALIZACION SOLICITADA.';
 		END IF;
-		
+
 		IF(nNumError = 0)THEN
 			SICAS_OC.OC_ENDOSO_SERVICIOS_WEB.ACTUALIZA_ENDOSO_EMITIDO_SW(nCodCia, nIdPoliza, nIDetPol, nIdEndoso, 'S'
 									,USER,TRUNC(SYSDATE),nNumError , cMsjError);
@@ -2650,8 +2651,6 @@ END EMITIR;
 			cMsjError := SQLERRM;
 			cMsjError := 'ERROR_GENERAL SICAS_OC.OC_ENDOSO.ACTUALIZA_FECHAS_VIG [' || nControl || '] <' || cMsjError || '>';
 	END ACTUALIZA_FECHAS_VIG;
-	
+
 END OC_ENDOSO;
-
 /
-

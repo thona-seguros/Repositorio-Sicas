@@ -1,21 +1,15 @@
 CREATE OR REPLACE PACKAGE OC_TEMP_LISTADO_ASEGURADOS IS
 --
 -- SE PROGRAMO LA VALIDACION DE LA MARCA CONCENTRADA PARA POLIZAS A DECLARACION   DECLA 20210604
---
+-- SE AGREGO EL CERTIFICADO EN LOS PROCEDIMIENTOS DE VALIDAR_DATOS Y PROCESA_CAMBIO  MLJS 19/10/2023
   FUNCTION CORRELATIVO_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
   FUNCTION EXISTEN_ASEGURADOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
-  PROCEDURE VALIDAR_DATOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
-  PROCEDURE PROCESA_CAMBIO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
+  PROCEDURE VALIDAR_DATOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetPol NUMBER);
+  PROCEDURE PROCESA_CAMBIO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetalle NUMBER);
   PROCEDURE ELIMINAR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
 
 END OC_TEMP_LISTADO_ASEGURADOS;
-
-
-
-
-
 /
-
 CREATE OR REPLACE PACKAGE BODY OC_TEMP_LISTADO_ASEGURADOS IS
 
 FUNCTION CORRELATIVO_ASEGURADO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS
@@ -49,7 +43,7 @@ BEGIN
    RETURN(cExistenAseg);
 END EXISTEN_ASEGURADOS;
 
-PROCEDURE VALIDAR_DATOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS
+PROCEDURE VALIDAR_DATOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER,nIdetPol NUMBER) IS
 nExiste         NUMBER(10);
 cExiste         VARCHAR2(1);
 CURSOR ASEG_Q IS
@@ -64,14 +58,15 @@ CURSOR DET_Q IS
     WHERE CodCia      = nCodCia
       AND CodEmpresa  = nCodEmpresa
       AND IdPoliza    = nIdPoliza
+      AND IdetPol     = nIdetPol      -- MLJS 19/10/2023 se agrega el certificado
       AND StsDetalle  = 'EMI';
 CURSOR DUP_Q IS
-   SELECT NumDocIdentificacion, COUNT(*) 
-     FROM TEMP_LISTADO_ASEGURADOS 
+   SELECT NumDocIdentificacion, COUNT(*)
+     FROM TEMP_LISTADO_ASEGURADOS
     WHERE IdPoliza   = nIdPoliza
       AND CodCia     = nCodCia
       AND CodEmpresa = nCodEmpresa
-   GROUP BY NumDocIdentificacion 
+   GROUP BY NumDocIdentificacion
     HAVING COUNT(*) > 1;
 BEGIN
    BEGIN
@@ -102,19 +97,19 @@ BEGIN
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
             RAISE_APPLICATION_ERROR(-20225,'NO Existe Emitido el Detalle/Subgrupo No. '|| W.IDetPol ||
-                                    ' de la Póliza No. '|| nIdPoliza || 
+                                    ' de la Póliza No. '|| nIdPoliza ||
                                     ' Debe Eliminar los Asegurados del Subgrupo o Emitir el Subgrupo en la Póliza');
       END;
    END LOOP;
 
    FOR Z IN DUP_Q LOOP
       RAISE_APPLICATION_ERROR(-20225,'Asegurados Duplicados con RFC No.  ' || Z.NumDocIdentificacion);
-   END LOOP;   
+   END LOOP;
 
    FOR W IN DET_Q LOOP
       IF OC_POLIZAS_RESUMEN_ENDOSO_CLA.EXISTE_LISTADO(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol) = 0 THEN
          RAISE_APPLICATION_ERROR(-20225,'NO Existe Listado de Asegurados para el Detalle/Subgrupo No. '|| W.IDetPol ||
-                                 ' de la Póliza No. '|| nIdPoliza || 
+                                 ' de la Póliza No. '|| nIdPoliza ||
                                  ' Debe Comunicarse con Operaciones o Actualizar el Listado para realizar el proceso');
       END IF;
    END LOOP;
@@ -133,13 +128,13 @@ BEGIN
                               ' Por Favor actualizar los Datos para Realizar el Cambio');
    END IF;
 
-   IF OC_ENDOSO.CAMBIO_POR_LISTADO(nCodCia, nCodEmpresa, nIdPoliza) = 'S' THEN
+   IF OC_ENDOSO.CAMBIO_POR_LISTADO(nCodCia, nCodEmpresa, nIdPoliza, nIdetPol) = 'S' THEN
       RAISE_APPLICATION_ERROR(-20225,'YA se realizó el Cambio de Asegurado Modelo por Listado en la Póliza No. ' || nIdPoliza);
    END IF;
 
 END VALIDAR_DATOS;
 
-PROCEDURE PROCESA_CAMBIO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS
+PROCEDURE PROCESA_CAMBIO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetalle NUMBER) IS
 nIDetPol            TEMP_LISTADO_ASEGURADOS.IDetPol%TYPE;
 nIDetPolCLA         TEMP_LISTADO_ASEGURADOS.IDetPol%TYPE;
 nIDetPolINA         TEMP_LISTADO_ASEGURADOS.IDetPol%TYPE;
@@ -157,7 +152,7 @@ cTipoEndosoCLA      ENDOSOS.TipoEndoso%TYPE := 'CLA';
 cTipoEndosoProc     ENDOSOS.TipoEndoso%TYPE;
 cMotivoEndosoINA    ENDOSOS.Motivo_Endoso%TYPE := '010';
 cMotivoEndosoNSS    ENDOSOS.Motivo_Endoso%TYPE := '990';
-cCodPaisRes         PERSONA_NATURAL_JURIDICA.CodPaisRes%TYPE; 
+cCodPaisRes         PERSONA_NATURAL_JURIDICA.CodPaisRes%TYPE;
 cCodProvRes         PERSONA_NATURAL_JURIDICA.CodProvRes%TYPE;
 cCodDistRes         PERSONA_NATURAL_JURIDICA.CodDistRes%TYPE;
 cCodCorrRes         PERSONA_NATURAL_JURIDICA.CodCorrRes%TYPE;
@@ -193,6 +188,7 @@ CURSOR DET_Q IS
       AND T.CodCia        = nCodCia
       AND T.CodEmpresa    = nCodEmpresa
       AND T.IdPoliza      = nIdPoliza
+      AND T.IdetPol       = nIdetalle
     ORDER BY T.IDetPol;
 CURSOR LISTA_Q IS
    SELECT *
@@ -233,7 +229,7 @@ CURSOR ASIST_Q IS
       AND IDetPol       = nIDetPol
       AND Cod_Asegurado = nCod_AsegModelo;
 BEGIN
-   OC_TEMP_LISTADO_ASEGURADOS.VALIDAR_DATOS(nCodCia, nCodEmpresa, nIdPoliza);
+   OC_TEMP_LISTADO_ASEGURADOS.VALIDAR_DATOS(nCodCia, nCodEmpresa, nIdPoliza,nIdetalle); -- MLJS 19/10/2023 SE AGREGA EL CERTIFICADO EN EL PROCESO
 
    BEGIN
       SELECT FecIniVig,  FecFinVig,   CodPlanPago,
@@ -335,7 +331,7 @@ BEGIN
                                  ' por Cambio del Asegurado Modelo a Listado de Asegurados con Cobro de Prima');
       END IF;
 
-      IF cTipoEndosoProc = 'NSS' THEN 
+      IF cTipoEndosoProc = 'NSS' THEN
          IF nIdEndosoNSS = 0 THEN
              nIdEndosoNSS  := OC_ENDOSO.CREAR(nIdPoliza);
              nIDetPolNSS   := nIDetPol;
@@ -355,7 +351,7 @@ BEGIN
 
          OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdEndosoNSS, 'Endoso de ' || INITCAP(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('TIPENDOS', cTipoEndosoNSS)) ||
                                  ' por Cambio del Asegurado Modelo a Listado de Asegurados con Devolución de Prima por ' ||
-                                 TRIM(TO_CHAR(NVL(nPrimaNetaEndoso,0),'999,999,999,990.00')) || ' de ' || 
+                                 TRIM(TO_CHAR(NVL(nPrimaNetaEndoso,0),'999,999,999,990.00')) || ' de ' ||
                                  TRIM(TO_CHAR(nTotAsegEndosoExc,'999,999,990')) || ' Asegurados Excluidos sin Datos de Registro en Listado Original');
       END IF;
 
@@ -384,7 +380,7 @@ BEGIN
          END IF;
 
          -- Valida que el Asegurado esté en el Rango de Aceptación de Coberturas
-         IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(W.TipoDocIdentificacion, W.NumDocIdentificacion, nCodCia, 
+         IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(W.TipoDocIdentificacion, W.NumDocIdentificacion, nCodCia,
                                                          nCodEmpresa, cIdTipoSeg, cPlanCob)= 'N' THEN
             RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptación de Coberturas');
          END IF;
@@ -412,7 +408,7 @@ BEGIN
             nIdEndosoMov := nIdEndosoNSS;
          END IF;
          IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
-            OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndosoMov);
+            OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndosoMov, 0);
          ELSE
             -- Conteo de Asegurados Ya Cargados por Siniestro para Cambiarlos a Endoso Sin Cobro
             IF nIdEndosoMov = nIdEndosoINA THEN
@@ -483,8 +479,8 @@ BEGIN
                        CodMoneda, MontoAsistLocal, MontoAsistMoneda, StsAsistencia,
                        FecSts, IdEndoso)
                VALUES (nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, W.Cod_Asegurado, Z.CodAsistencia,
-                       Z.CodMoneda, Z.MontoAsistLocal / NVL(X.CantAsegModelo,0), 
-                       Z.MontoAsistMoneda / NVL(X.CantAsegModelo,0), 
+                       Z.CodMoneda, Z.MontoAsistLocal / NVL(X.CantAsegModelo,0),
+                       Z.MontoAsistMoneda / NVL(X.CantAsegModelo,0),
                        DECODE(W.Estado,'SOL','SOLICI','XRENOV'), TRUNC(SYSDATE), W.IdEndoso);
             EXCEPTION
                WHEN DUP_VAL_ON_INDEX THEN
@@ -521,14 +517,14 @@ BEGIN
          AND CodEmpresa = nCodEmpresa
          AND IdPoliza   = nIdPoliza
          AND NVL(IndAsegModelo,'N') = 'S';
-      -- SI NO HAY MAS SUBGRUPOS CON ASEGURADO MODELO SE QUITA LA MARCA CONCETRADA  DECLA 
-      IF NDETALLE_MODELO = 0 THEN 
+      -- SI NO HAY MAS SUBGRUPOS CON ASEGURADO MODELO SE QUITA LA MARCA CONCETRADA  DECLA
+      IF NDETALLE_MODELO = 0 THEN
          UPDATE POLIZAS P
             SET P.INDCONCENTRADA = 'N'
           WHERE CodCia     = nCodCia
             AND CodEmpresa = nCodEmpresa
             AND IdPoliza   = nIdPoliza;
-      END IF;   
+      END IF;
    END LOOP;
 
    -- Actualiza y Emite Endoso de Cambio de Asegurado Modelo por Listado de Asegurados
@@ -567,3 +563,4 @@ BEGIN
 END;
 
 END OC_TEMP_LISTADO_ASEGURADOS;
+/
