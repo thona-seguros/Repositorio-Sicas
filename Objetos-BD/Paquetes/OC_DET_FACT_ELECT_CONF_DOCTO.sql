@@ -1,6 +1,7 @@
 create or replace PACKAGE OC_DET_FACT_ELECT_CONF_DOCTO IS
     -- HOMOLOGACION VIFLEX                  20220301 JMMD
     -- FACTELECT VIFLEX                     20230426 CAPELE
+	--- SE AGREGO cDescLeyEsp               ARH 17102023
     FUNCTION  EXTRAE_VALOR_ATRIBUTO(cLinea IN VARCHAR2,cCodAtributo IN VARCHAR2) RETURN VARCHAR2;
     FUNCTION  GENERA_VALOR_ATRIBUTO (nIdFactura IN NUMBER,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,nCodEmpresa IN NUMBER,
                                       cProceso IN VARCHAR2,cCodIdLinea IN VARCHAR2,cCodAtributo IN VARCHAR2,
@@ -86,6 +87,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
     cNum_Tributario         PERSONA_NATURAL_JURIDICA.Num_Tributario%TYPE;
     cUuid                   FACT_ELECT_DETALLE_TIMBRE.Uuid%TYPE;
     cCodTipoPlansOP         VARCHAR2(500);
+	cDescLeyEsp             FACTURAS.DESC_LEYENDAESP%TYPE;
     BEGIN
        IF NVL(nIdFactura,0) != 0 AND cProceso IN ('EMI','PAG') THEN
           IF cProceso = 'PAG' THEN
@@ -596,6 +598,17 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 cValorAtributo := cCodCpto;
              END IF;
           WHEN 'CONVAL06' THEN
+             BEGIN
+               SELECT DESC_LEYENDAESP  ------ARH 17/10/2023
+               INTO cDescLeyEsp
+               FROM FACTURAS F
+               WHERE F.Codcia    = nCodCia
+               AND F.IdFactura = nIdFactura;
+             EXCEPTION
+             WHEN NO_DATA_FOUND THEN
+                  cDescLeyEsp := NULL;
+             END;
+
              IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
                 cValorAtributo := 'Venta';
              ELSE
@@ -616,9 +629,9 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                       cDescripcion := ' '||cLeyendaEsp;
                    END IF;
                    IF cProceso = 'PAG' THEN
-                      cValorAtributo := 'Pago'||cDescripcion;
+                      cValorAtributo := 'Pago'||cDescripcion||' '||cDescLeyEsp;
                    ELSE
-                      cValorAtributo := CAMBIA_ACENTOS(OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia,cCodCpto)||cDescripcion);
+                      cValorAtributo := CAMBIA_ACENTOS(OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia,cCodCpto)||cDescripcion||' '||cDescLeyEsp); ---ARH 17/10/2023
                    END IF;
                 ELSIF NVL(nIdNcr,0) != 0 THEN
                    IF cProceso = 'EMI' THEN

@@ -1,0 +1,6 @@
+ALTER TABLE SICAS_OC.FACTURAS  
+ADD (DESC_LEYENDAESP        VARCHAR2(4000))
+/
+COMMENT ON COLUMN FACTURAS.DESC_LEYENDAESP IS 'Descripción de una leyenda Especial para la factura'
+
+/

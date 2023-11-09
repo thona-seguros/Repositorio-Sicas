@@ -1,5 +1,6 @@
 CREATE OR REPLACE PACKAGE OC_FACTURAS IS
     -- FACTELECT VIFLEX                     20230426 CAPELE
+	-- SE AGREGO LAS FUNCIONES GENERA_VALOR_CONCEPTO ARH 17/10/2023
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                        dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER);
 
@@ -93,6 +94,11 @@ CREATE OR REPLACE PACKAGE OC_FACTURAS IS
     --
     FUNCTION MONTO_BASE(nIdFactura NUMBER,  cIndExentoImp VARCHAR2 := NULL) RETURN NUMBER;
     --
+	FUNCTION  GENERA_VALOR_CONCEPTO (nIdFactura IN NUMBER,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,
+                                     nIdTransaccion IN NUMBER,cNumPolUnico IN VARCHAR2,cProceso IN VARCHAR2,
+                                     dFecPago IN DATE ) RETURN VARCHAR2;
+									 
+	--
 END OC_FACTURAS;
 /
 CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
@@ -102,6 +108,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
     -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO   2018/03/09  ICO FINVIG
     -- FORMAS DE PAGO                                                         2018/11/05  ICO FREPAG
     -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                   2019/03/27  ICO LARPLA
+    -- SE AGREGO LAS FUNCIONES GENERA_VALOR_CONCEPTO                      17/10/2023  ARH
     --
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
                                        dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER) IS
@@ -4007,5 +4014,108 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
         RETURN nMonto_Det_Moneda;
     END MONTO_BASE;
     --
+    FUNCTION  GENERA_VALOR_CONCEPTO (nIdFactura IN NUMBER,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,
+                                     nIdTransaccion IN NUMBER,cNumPolUnico IN VARCHAR2,cProceso IN VARCHAR2,
+                                     dFecPago IN DATE ) RETURN VARCHAR2 IS
+
+     cValorAtributo          DETALLE_FACT_ELECT_CONF_DOCTO.ValorAtributo%TYPE := NULL;
+     dFecTransaccion         DATE;
+     cLeyendaEsp             VARCHAR2(1000) :=  NULL;
+     cDescripcion            VARCHAR2(1000);
+     cValor1                 VARCHAR2(1000);
+     cValor2                 VARCHAR2(1000);
+     cValor3                 VARCHAR2(1000);
+     cValor4                 VARCHAR2(1000);
+     cValorDescrCpto         VARCHAR2(4000);
+
+      CURSOR Q_DescCpto IS
+             SELECT CodCpto
+             FROM (
+                   SELECT CC.CodCptoPrimasFactElect CodCpto
+                   FROM DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON DF.CodCpto    = CC.CodConcepto
+                                            INNER JOIN FACTURAS              F  ON  F.IDFACTURA   = DF.IDFACTURA
+                                            INNER JOIN DETALLE_POLIZA        DP ON DP.IDPOLIZA   = F.IDPOLIZA
+                                                                                AND DP.IDETPOL    = F.IDETPOL
+                                                                                AND DP.CODCIA     = F.CODCIA
+                                             LEFT JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCIA     = DP.CODCIA
+                                                                                AND CS.CODCPTO    = DF.CODCPTO
+                                                                                AND CS.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                AND CS.PLANCOB    = DP.PLANCOB
+                   WHERE DF.IdFactura            = nIdFactura                         
+                   AND NVL(CC.IndEsImpuesto,'N') = 'N'
+                   AND DF.MONTO_DET_MONEDA > 0
+                   AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
+                                                                                                  WHERE S.CODCIA     = DP.CODCIA
+                                                                                                  AND S.CODCPTO    = DF.CODCPTO
+                                                                                                  AND S.IDTIPOSEG  = DP.IDTIPOSEG
+                                                                                                  AND S.PLANCOB     = DP.PLANCOB ), 'X')
+                   GROUP BY CC.CodCptoPrimasFactElect
+                   UNION ALL
+                   SELECT CC.CodCptoPrimasFactElect CodCpto
+                   FROM DETALLE_NOTAS_DE_CREDITO DN,CATALOGO_DE_CONCEPTOS CC
+                   WHERE IdNcr   = nIdNcr
+                   AND NVL(CC.IndEsImpuesto,'N') = 'N'
+                   AND DN.CodCpto                = CC.CodConcepto
+                   GROUP BY CC.CodCptoPrimasFactElect
+                     )
+                 GROUP BY  CodCpto;
+
+
+    BEGIN
+      FOR F IN Q_DescCpto LOOP
+        IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
+            cValorAtributo := 'Venta';
+         ELSE
+            dFecTransaccion := OC_TRANSACCION.FECHATRANSACCION(nIdTransaccion);
+            IF NVL(nIdFactura,0) != 0 THEN
+               IF cProceso = 'PAG' THEN
+                  IF TO_CHAR(dFecPago,'YYYY') = '2017' THEN
+                     cLeyendaEsp := ' PRIMAS DE SEGUROS RECIBIDAS EN EL PERIODO FISCAL 2017';
+                  END IF;
+               ELSIF cProceso = 'EMI' THEN
+                  IF TO_CHAR(dFecTransaccion,'YYYY') = '2017' THEN
+                     cLeyendaEsp := ' QUE FUE EMITIDO EN EL PERIODO FISCAL 2017';
+                  END IF;
+               END IF;
+               IF F.CodCpto = 'PRISEG' THEN
+                  cDescripcion := ' '||cNumPolUnico||' RECIBO '||nIdFactura||OC_FACTURAS.DESC_COMPLEMENTARIA_FACT_ELECT(nIdFactura,nCodCia)||cLeyendaEsp;
+               ELSE
+                  cDescripcion := ' '||cLeyendaEsp;
+               END IF;
+               IF cProceso = 'PAG' THEN
+                  cValorAtributo := 'Pago'||cDescripcion;
+               ELSE
+                  cValorAtributo := CAMBIA_ACENTOS(OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia,F.CodCpto)||cDescripcion);
+               END IF;
+            ELSIF NVL(nIdNcr,0) != 0 THEN
+               IF cProceso = 'EMI' THEN
+                  IF TO_CHAR(dFecTransaccion,'YYYY') = '2017' THEN
+                     cLeyendaEsp := ' QUE FUE EMITIDO EN EL PERIODO FISCAL 2017';
+                  END IF;
+               END IF;
+               IF F.CodCpto = 'PRISEG' THEN
+                  cDescripcion := ' '||cNumPolUnico||' NOTA DE CREDITO '||nIdNcr||cLeyendaEsp;
+               ELSE
+                  cDescripcion := ' '||cLeyendaEsp;
+               END IF;
+               cValorAtributo := CAMBIA_ACENTOS(OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia,F.CodCpto)||cDescripcion);
+            END IF;
+         END IF;
+         IF F.CodCpto = 'PRISEG' THEN
+            cValor1 := cValorAtributo;
+         ELSIF F.CodCpto = 'DEREMI' THEN
+            cValor2 := cValorAtributo;
+         ELSIF F.CodCpto = 'RECFIN' THEN
+            cValor3 := cValorAtributo;
+         END IF;
+      END LOOP;	  
+      
+      cValorDescrCpto := ' '||cValor1||' '||cValor2||' '||cValor3;
+    
+     RETURN RTRIM(LTRIM(TO_CHAR(cValorDescrCpto)));
+
+    END GENERA_VALOR_CONCEPTO;
+    --
+
 END OC_FACTURAS;
 /

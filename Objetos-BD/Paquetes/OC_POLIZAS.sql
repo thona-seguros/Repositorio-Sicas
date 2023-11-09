@@ -1,7 +1,8 @@
 CREATE OR REPLACE PACKAGE OC_POLIZAS IS
 --
--- HOMOLOGACION VIFLEX                             JMMD 01/03/2022
--- INCIDENCIA AGENTE                               INCIAGE  JICO 14/06/2023
+-- HOMOLOGACION VIFLEX            JMMD 01/03/2022
+-- INCIDENCIA AGENTE              INCIAGE  JICO 14/06/2023
+-- Se solicitó no heredar datos   MASP 29/09/2023   012-0323-Reingeniería Cálculos    
 --
     FUNCTION F_GET_NUMPOL ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
 
@@ -2956,33 +2957,35 @@ END RENOVAR;
          FecIniVig, FecFinVig, FecSolicitud, FecEmision, FecRenovacion,
          StsPoliza, FecSts, FecAnul, MotivAnul, SumaAseg_Local, SumaAseg_Moneda,
          PrimaNeta_Local, PrimaNeta_Moneda, DescPoliza, PorcComis, NumRenov,
-         IndExaInsp, Cod_Moneda, Num_Cotizacion, CodCliente, Cod_Agente,
+         IndExaInsp, Cod_Moneda, CodCliente, Cod_Agente,
          CodPlanPago, Medio_Pago, NumPolUnico, IndPolCol, IndProcFact,
          Caracteristica, IndFactPeriodo, FormaVenta, TipoRiesgo,
          IndConcentrada, TipoDividendo, CodGrupoEc, IndAplicoSami,
          SamiPoliza, TipoAdministracion, HoraVigIni, HoraVigFin, CodAgrupador,
          IndFacturaPol, IndFactElectronica, IndCalcDerechoEmis, CodDirecRegional,
-         PorcDescuento, PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste, MontoDeducible,
-         FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
-         IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
-         FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos,
-         TipoProrrata, IndConvenciones, CodTipoNegocio, CodPaqComercial,
+         --PorcDescuento, PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste, MontoDeducible,  -- 012-0323-Reingeniería Cálculos
+         --FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
+         --IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
+         --FuenteRecursosPrima, IndConvenciones, Num_Cotizacion, 
+         IdFormaCobro, DiaCobroAutomatico, IndManejaFondos,
+         TipoProrrata, CodTipoNegocio, CodPaqComercial,
          CodOficina, CodCatego)
        VALUES(nIdPoliza, X.CodEmpresa, nCodCia, X.TipoPol, X.NumPolRef,
          dFecHoy, ADD_MONTHS(dFecHoy,12), dFecHoy, dFecHoy, ADD_MONTHS(dFecHoy,12),
          'SOL', dFecHoy, NULL, NULL, X.SumaAseg_Local, X.SumaAseg_Moneda,
          X.PrimaNeta_Local, X.PrimaNeta_Moneda, X.DescPoliza, X.PorcComis, X.NumRenov,
-         X.IndExaInsp, X.Cod_Moneda, X.Num_Cotizacion, X.CodCliente, X.Cod_Agente,
+         X.IndExaInsp, X.Cod_Moneda, X.CodCliente, X.Cod_Agente,
          X.CodPlanPago, X.Medio_Pago, cNumPolUnico, X.IndPolCol, X.IndProcFact,
          X.Caracteristica, X.IndFactPeriodo, X.FormaVenta, X.TipoRiesgo,
          X.IndConcentrada, X.TipoDividendo, X.CodGrupoEc, 'N',
          0, X.TipoAdministracion, X.HoraVigIni, X.HoraVigFin, X.CodAgrupador,
          X.IndFacturaPol, X.IndFactElectronica, X.IndCalcDerechoEmis, X.CodDirecRegional,
-         X.PorcDescuento, X.PorcGtoAdmin, X.PorcGtoAdqui, X.PorcUtilidad, X.FactorAjuste, X.MontoDeducible,
-         X.FactFormulaDeduc, X.CodRiesgoRea, X.CodTipoBono, X.HorasVig, X.DiasVig,
-         X.IndExtraPrima, X.AsegAdheridosPor, X.PorcenContributorio,
-         X.FuenteRecursosPrima, X.IdFormaCobro, X.DiaCobroAutomatico, X.IndManejaFondos,
-         X.TipoProrrata, X.IndConvenciones, X.CodTipoNegocio, X.CodPaqComercial,
+         --X.PorcDescuento, X.PorcGtoAdmin, X.PorcGtoAdqui, X.PorcUtilidad, X.FactorAjuste, X.MontoDeducible,  -- 012-0323-Reingeniería Cálculos
+         --X.FactFormulaDeduc, X.CodRiesgoRea, X.CodTipoBono, X.HorasVig, X.DiasVig,
+         --X.IndExtraPrima, X.AsegAdheridosPor, X.PorcenContributorio,
+         --X.FuenteRecursosPrima, X.IndConvenciones, X.Num_Cotizacion, 
+         X.IdFormaCobro, X.DiaCobroAutomatico, X.IndManejaFondos,
+         X.TipoProrrata, X.CodTipoNegocio, X.CodPaqComercial,
          X.CodOficina, X.CodCatego);
          EXCEPTION
        WHEN OTHERS THEN
