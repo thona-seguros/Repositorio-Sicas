@@ -177,7 +177,7 @@ CINDCONCENTRADA     POLIZAS.INDCONCENTRADA%TYPE;  --DECLA
 NDETALLE_MODELO     NUMBER;                       --DECLA
 
 CURSOR DET_Q IS
-   SELECT DISTINCT T.IDetPol, D.CantAsegModelo + 1 CantAsegModelo, D.IdTipoSeg, D.PlanCob
+   SELECT DISTINCT T.IDetPol, D.CantAsegModelo CantAsegModelo, D.IdTipoSeg, D.PlanCob
      FROM TEMP_LISTADO_ASEGURADOS T, DETALLE_POLIZA D
     WHERE D.StsDetalle    = 'EMI'
       AND D.IndAsegModelo = 'S'
@@ -408,7 +408,7 @@ BEGIN
             nIdEndosoMov := nIdEndosoNSS;
          END IF;
          IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
-            OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndosoMov, 0);
+            OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndosoMov);
          ELSE
             -- Conteo de Asegurados Ya Cargados por Siniestro para Cambiarlos a Endoso Sin Cobro
             IF nIdEndosoMov = nIdEndosoINA THEN
