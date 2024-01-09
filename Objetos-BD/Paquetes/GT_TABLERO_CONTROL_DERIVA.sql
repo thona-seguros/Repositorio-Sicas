@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          GT_TABLERO_CONTROL_DERIVA AS
+create or replace PACKAGE          GT_TABLERO_CONTROL_DERIVA AS
     FUNCTION  NUMERO_PROCESO    (nCodCia IN NUMBER) RETURN NUMBER;
     PROCEDURE INSERTAR          (nCodCia IN NUMBER, nIdProc IN NUMBER, dFechProc IN DATE, cFacturado IN VARCHAR2, cCodUsuarioFac IN VARCHAR2, cDiferencia IN VARCHAR2, cCodUsuarioDer IN VARCHAR2, nCantidad IN NUMBER, cDerivado IN VARCHAR2, dFechEnvio IN DATE, dFechResp IN DATE, nMontoDeriva IN NUMBER, cIdReferencia IN VARCHAR2);
     PROCEDURE MARCAR_PROCESADO  (nCodCia IN NUMBER, nIdProc IN NUMBER);
@@ -8,10 +8,10 @@ CREATE OR REPLACE PACKAGE          GT_TABLERO_CONTROL_DERIVA AS
     PROCEDURE EJECUTA_PROCESO_WS_DERIVA(nCodCia NUMBER := 1, pNEsManual NUMBER := 1, pCTipoComprob VARCHAR2 := NULL, pDFecha DATE:= TRUNC(SYSDATE-1));
     PROCEDURE RECIBE_RESULTADO_MIZAR(cMessage IN OUT VARCHAR2);
     PROCEDURE ENVIA_PROCESO_MIZAR;
+    PROCEDURE REPROC_INCOM_DERIVA;
 END GT_TABLERO_CONTROL_DERIVA;
 /
-
-CREATE OR REPLACE PACKAGE BODY          GT_TABLERO_CONTROL_DERIVA AS
+create or replace PACKAGE BODY          GT_TABLERO_CONTROL_DERIVA AS
     FUNCTION NUMERO_PROCESO(nCodCia IN NUMBER) RETURN NUMBER IS
         nIdProc TABLERO_CONTROL_DERIVA.IdProc%TYPE;
     BEGIN
@@ -230,7 +230,7 @@ CREATE OR REPLACE PACKAGE BODY          GT_TABLERO_CONTROL_DERIVA AS
                 EXCEPTION WHEN OTHERS THEN
                     CASE SQLCODE 
                         WHEN -31011 THEN
-                            cError := 'El servidor del servicio solicitado, no estan activo o se traslado a otra direcciÛn.';
+                            cError := 'El servidor del servicio solicitado, no estan activo o se traslado a otra direcci√≥n.';
                         WHEN -29273 THEN
                             cError := 'El servidor local, no tiene los permisos necesarios para conectarse al servidor de servicios solicitado. Contacte a su administrador de sistemas.';
                         ELSE
@@ -261,7 +261,7 @@ CREATE OR REPLACE PACKAGE BODY          GT_TABLERO_CONTROL_DERIVA AS
             END LOOP;
             --       
             IF nCont = 0 THEN                                
-                DBMS_OUTPUT.PUT_LINE('No existen registros en la selecciÛn.');
+                DBMS_OUTPUT.PUT_LINE('No existen registros en la selecci√≥n.');
             END IF;                         
         END EJECUTA_NORMAL;    
         --
@@ -271,11 +271,11 @@ CREATE OR REPLACE PACKAGE BODY          GT_TABLERO_CONTROL_DERIVA AS
           INTO cGlobal_Name  
          FROM Global_Name;     
         IF pNEsManual = 1 then  --AUTOMATICO
-           cSubject := 'Proceso automatizado del WS de la derivaciÛn contable:';
-           cMessage := 'Se ha ejecutado el proceso autom·tico de la derivaciÛn para el proceso de Servicio Web';
+           cSubject := 'Proceso automatizado del WS de la derivaci√≥n contable:';
+           cMessage := 'Se ha ejecutado el proceso autom√°tico de la derivaci√≥n para el proceso de Servicio Web';
         ELSE                    --MANUAL
-           cSubject := 'Proceso manual del WS de la derivaciÛn contable ('|| user ||')';
-           cMessage := 'Se ha ejecutado el proceso MANUAL de la derivaciÛn para el proceso del Servicio Web';
+           cSubject := 'Proceso manual del WS de la derivaci√≥n contable ('|| user ||')';
+           cMessage := 'Se ha ejecutado el proceso MANUAL de la derivaci√≥n para el proceso del Servicio Web';
         END IF;
         EJECUTA_NORMAL(pNEsManual, pCTipoComprob, pDFecha);
         --    
@@ -322,7 +322,7 @@ CREATE OR REPLACE PACKAGE BODY          GT_TABLERO_CONTROL_DERIVA AS
             END;
             cLinea := cLinea || trunc(ENT.FECHPROC) || chr(10);                        
         END LOOP;        
-        cMessage := cMessage || ' -- La derivaciÛn se efectuÛ con la fecha deL: ' || NVL(cLinea, ' No hay comprobantes contables con la fecha solicitada');        
+        cMessage := cMessage || ' -- La derivaci√≥n se efectu√≥ con la fecha deL: ' || NVL(cLinea, ' No hay comprobantes contables con la fecha solicitada');        
     END RECIBE_RESULTADO_MIZAR;
     --
     PROCEDURE CANCELAR (nCodCia IN NUMBER, nIdProc IN NUMBER) IS
@@ -335,4 +335,109 @@ CREATE OR REPLACE PACKAGE BODY          GT_TABLERO_CONTROL_DERIVA AS
            AND IdProc   = nIdProc;
     END;                
     --
+        /* PROCEDIMIENTO PARA ACTUALIZAR LOTES QUE TERMINARON CON ERROR EN UNOS REGISTROS*/
+     PROCEDURE REPROC_INCOM_DERIVA IS
+        --        
+        MONTO       NUMBER;
+        MONEDA      VARCHAR2(10);
+        NUMREG      NUMBER;
+        NIDMIZAR    NUMBER;
+        NVAL        NUMBER := 0;
+        --
+    BEGIN
+    
+        FOR REG IN (SELECT CODCIA, IDPROC 
+                      FROM TABLERO_CONTROL_DERIVA
+                        WHERE stsproceso = 'ERRDER'
+                          AND UPPER(ERROR) LIKE '%COMPLETO EL LOTE A MIZAR%'
+                          AND TRUNC(FECHENVIO) = TRUNC(SYSDATE)) LOOP
+        
+    
+            SELECT SUM(DT.MTOMOVCUENTAMONEDA), DT.CODMONEDA, COUNT(1), MAX(IDMIZAR)
+              INTO MONTO, MONEDA, NUMREG, NIDMIZAR
+              FROM DETALLE_TABLERO_CONTROL_DER DT
+            WHERE DT.IDPROC = REG.IDPROC 
+            GROUP BY DT.CODMONEDA;
+    
+    --        DBMS_OUTPUT.PUT_LINE('1.- ' || MONTO);
+    --        DBMS_OUTPUT.PUT_LINE('2.- ' || MONEDA);
+    --        DBMS_OUTPUT.PUT_LINE('3.- ' || NUMREG);
+    --        DBMS_OUTPUT.PUT_LINE('4.- ' || NIDMIZAR);
+    
+            --IF MONEDA <> 'PS' THEN
+        --       DBMS_OUTPUT.PUT_LINE('NO SE PORCESA POR EL TIPO DE MONEDA');
+        --       RETURN;
+        --    END IF;        
+            
+            FOR ENT IN (select  D.CODCIA,
+                                REG.IDPROC   IDPROC,
+                                DT.IDPROCDET,   
+                                NUMCOMPROB,        
+                                D.NIVELCTA1||D.NIVELCTA2||D.NIVELCTA3||'.'||D.NIVELCTA4||'.'||D.NIVELCTA5 CUENTA,
+                                D.NIVELAUX NIVAUX,
+                                DT.CODUSUARIO,
+                                MAX((SELECT CC.FECSTS  FROM comprobantes_contables CC WHERE CC.NUMCOMPROB = D.NUMCOMPROB ))        FECULTMODIF     
+                                --D.MOVDEBCRED,
+                                --D.CODCENTROCOSTO,
+                                --D.CODUNIDADNEGOCIO
+                        from  COMPROBANTES_DETALLE D INNER JOIN DETALLE_TABLERO_CONTROL_DER DT ON DT.CUENTA = D.NIVELCTA1||D.NIVELCTA2||D.NIVELCTA3||'.'||D.NIVELCTA4||'.'||D.NIVELCTA5
+                                                                                             AND D.NIVELAUX  = DT.NIVELAUX
+                                                                                             AND D.CODCENTROCOSTO = DT.CODCENTROCOSTO
+                                                                                             AND D.CODUNIDADNEGOCIO = DT.CODUNIDADNEGOCIO
+                                                                                             AND IDPROC = REG.IDPROC
+                        where D.codcia = 1
+                          AND D.NUMCOMPROB IN (select C.NUMCOMPROB
+                                                 from comprobantes_contables c
+                                               where codcia = 1
+                                                and C.NUMCOMPROB in (select distinct D.NUMCOMPROB from detalle_tablero_comprob d where d.codcia= 1 and D.IDPROC in ( REG.IDPROC)))
+                          AND NOT EXISTS (SELECT 1 FROM DETALLE_TABLERO_COMPROB DTC
+                                             WHERE DTC.IDPROC = REG.IDPROC 
+                                            AND  DTC.IDPROCDET = DT.IDPROCDET)                                                                            
+                        GROUP BY D.CODCIA,  
+                                 DT.IDPROCDET,
+                                 NUMCOMPROB,    
+                                 D.NIVELCTA1||D.NIVELCTA2||D.NIVELCTA3||'.'||D.NIVELCTA4||'.'||D.NIVELCTA5,
+                                 D.NIVELAUX,
+                                 DT.CODUSUARIO
+                                 --D.MOVDEBCRED,
+                                 --D.CODCENTROCOSTO,
+                                 --D.CODUNIDADNEGOCIO           
+                        ORDER BY DT.IDPROCDET) LOOP
+                --                
+                begin
+                INSERT INTO  DETALLE_TABLERO_COMPROB(CODCIA, IDPROC, NUMCOMPROB, IDPROCDET, CUENTA, NIVAUX, CODUSUARIO, FECULTMODIF) VALUES
+                                                    (ENT.CODCIA, REG.IDPROC, ENT.NUMCOMPROB, ENT.IDPROCDET, ENT.CUENTA, ENT.NIVAUX, ENT.CODUSUARIO, ENT.FECULTMODIF);       
+                --
+                exception when others then
+                        null;
+                end;
+                --
+                UPDATE DETALLE_TABLERO_CONTROL_DER DT SET   DT.ERROR    = NULL,
+                                                            DT.IDMIZAR  = NIDMIZAR,
+                                                            DT.STSGRUPO = 'DERIVA'      
+                 WHERE DT.IDPROC = REG.IDPROC
+                   AND DT.IDPROCDET = ENT.IDPROCDET;
+                   
+                   
+                UPDATE TABLERO_CONTROL_DERIVA D SET D.CANTIDAD = NUMREG,
+                                                    D.MONTODERIVALOCAL = MONTO,
+                                                    D.MONTODERIVAMONEDA = MONTO,
+                                                    D.STSPROCESO = 'DERIVA',
+                                                    D.ERROR = NULL    
+                 WHERE D.IDPROC = REG.IDPROC;                                                       
+                
+            END LOOP;    
+            
+            SELECT 1  
+              INTO NVAL 
+              FROM DETALLE_TABLERO_CONTROL_DER DT
+            WHERE DT.IDPROC = REG.IDPROC 
+            HAVING  COUNT(1) = NUMREG 
+               AND SUM(DT.MTOMOVCUENTAMONEDA) = MONTO
+               AND MAX(IDMIZAR) = NIDMIZAR;
+            COMMIT;    
+        END LOOP;        
+        
+    END REPROC_INCOM_DERIVA;
+    
 END GT_TABLERO_CONTROL_DERIVA;
