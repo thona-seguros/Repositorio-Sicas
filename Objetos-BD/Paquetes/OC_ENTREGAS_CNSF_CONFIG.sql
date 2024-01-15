@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_ENTREGAS_CNSF_CONFIG IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ENTREGAS_CNSF_CONFIG IS
    PROCEDURE ACTIVAR(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2);
    PROCEDURE SUSPENDER(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2);
    PROCEDURE ENTREGAR(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2);
@@ -12,22 +12,22 @@ CREATE OR REPLACE PACKAGE          OC_ENTREGAS_CNSF_CONFIG IS
    FUNCTION SEPARADOR(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) RETURN VARCHAR2;
    FUNCTION NOMBRE_ENTREGA(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) RETURN VARCHAR2;
    --
-   FUNCTION NOMBRE_ARCHIVO( nCodCia      NUMBER
-                          , nCodEmpresa  NUMBER
-                          , cCodEntrega  VARCHAR2 ) RETURN VARCHAR2;
+   FUNCTION NOMBRE_ARCHIVO( nCodCia NUMBER, nCodEmpresa  NUMBER, cCodEntrega  VARCHAR2 ) RETURN VARCHAR2;
+   --
+   FUNCTION NOMBRE_PROCESO( nCodCia NUMBER, nCodEmpresa  NUMBER, cCodEntrega  VARCHAR2 ) RETURN VARCHAR2;
 
 END OC_ENTREGAS_CNSF_CONFIG;
 /
 
-CREATE OR REPLACE PACKAGE BODY          OC_ENTREGAS_CNSF_CONFIG IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_ENTREGAS_CNSF_CONFIG IS
 
 PROCEDURE ACTIVAR (nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) IS
-cStsEntrega    ENTREGAS_CNSF_CONFIG.StsEntrega%TYPE;
+cStsEntrega    SICAS_OC.ENTREGAS_CNSF_CONFIG.StsEntrega%TYPE;
 BEGIN
    BEGIN
       SELECT StsEntrega
         INTO cStsEntrega
-        FROM ENTREGAS_CNSF_CONFIG
+        FROM SICAS_OC.ENTREGAS_CNSF_CONFIG
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
          AND CodEntrega = cCodEntrega;
@@ -37,25 +37,29 @@ BEGIN
    END;
 
    IF cStsEntrega IN ('CONFIG','SUSPEN') THEN
-      UPDATE ENTREGAS_CNSF_CONFIG
+      UPDATE SICAS_OC.ENTREGAS_CNSF_CONFIG
          SET StsEntrega  = 'ACTIVA',
-             FecSts      = SYSDATE
+             FecSts      = SYSDATE,
+			  CodUsuario   = USER,
+			  FecUltCambio = SYSDATE
        WHERE CodCia      = nCodCia
          AND CodEmpresa  = nCodEmpresa
          AND CodEntrega  = cCodEntrega;
+
+		COMMIT;
    ELSE
       RAISE_APPLICATION_ERROR(-20220,'NO Puede Activar Entregas en Status '||cStsEntrega);
    END IF;
-   OC_ENTREGAS_CNSF_CONFIG.ACTUALIZA_USUARIO(nCodCia, nCodEmpresa, cCodEntrega);
+
 END ACTIVAR;
 
 PROCEDURE SUSPENDER (nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) IS
-cStsEntrega    ENTREGAS_CNSF_CONFIG.StsEntrega%TYPE;
+cStsEntrega    SICAS_OC.ENTREGAS_CNSF_CONFIG.StsEntrega%TYPE;
 BEGIN
    BEGIN
       SELECT StsEntrega
         INTO cStsEntrega
-        FROM ENTREGAS_CNSF_CONFIG
+        FROM SICAS_OC.ENTREGAS_CNSF_CONFIG
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
          AND CodEntrega = cCodEntrega
@@ -64,42 +68,51 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20220,'NO Existe Entrega ACTIVA.  No Puede Suspenderla.');
    END;
-   UPDATE ENTREGAS_CNSF_CONFIG
+   UPDATE SICAS_OC.ENTREGAS_CNSF_CONFIG
       SET StsEntrega  = 'SUSPEN',
-          FecSts      = SYSDATE
+          FecSts      = SYSDATE,
+		  CodUsuario   = USER,
+          FecUltCambio = SYSDATE
     WHERE CodCia      = nCodCia
       AND CodEmpresa  = nCodEmpresa
       AND CodEntrega  = cCodEntrega;
-   OC_ENTREGAS_CNSF_CONFIG.ACTUALIZA_USUARIO(nCodCia, nCodEmpresa, cCodEntrega);
+
+	COMMIT;
 END SUSPENDER;
 
 PROCEDURE ENTREGAR(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) IS
-cStsEntrega    ENTREGAS_CNSF_CONFIG.StsEntrega%TYPE;
+cStsEntrega    SICAS_OC.ENTREGAS_CNSF_CONFIG.StsEntrega%TYPE;
 BEGIN
-   UPDATE ENTREGAS_CNSF_CONFIG
+   UPDATE SICAS_OC.ENTREGAS_CNSF_CONFIG
       SET StsEntrega  = 'ENTREG',
-          FecSts      = SYSDATE
+          FecSts      = SYSDATE,
+		  CodUsuario   = USER,
+          FecUltCambio = SYSDATE
     WHERE CodCia      = nCodCia
       AND CodEmpresa  = nCodEmpresa
       AND CodEntrega  = cCodEntrega;
-   OC_ENTREGAS_CNSF_CONFIG.ACTUALIZA_USUARIO(nCodCia, nCodEmpresa, cCodEntrega);
+
+	COMMIT;
 END ENTREGAR;
 
 PROCEDURE PRORROGAR(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) IS
-cStsEntrega    ENTREGAS_CNSF_CONFIG.StsEntrega%TYPE;
+cStsEntrega    SICAS_OC.ENTREGAS_CNSF_CONFIG.StsEntrega%TYPE;
 BEGIN
-   UPDATE ENTREGAS_CNSF_CONFIG
+   UPDATE SICAS_OC.ENTREGAS_CNSF_CONFIG
       SET StsEntrega  = 'PRORRO',
-          FecSts      = SYSDATE
+          FecSts      = SYSDATE,
+		  CodUsuario   = USER,
+          FecUltCambio = SYSDATE
     WHERE CodCia      = nCodCia
       AND CodEmpresa  = nCodEmpresa
       AND CodEntrega  = cCodEntrega;
-   OC_ENTREGAS_CNSF_CONFIG.ACTUALIZA_USUARIO(nCodCia, nCodEmpresa, cCodEntrega);
+
+	 COMMIT;
 END PRORROGAR;
 
 PROCEDURE ACTUALIZA_USUARIO(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) IS
 BEGIN
-   UPDATE ENTREGAS_CNSF_CONFIG
+   UPDATE SICAS_OC.ENTREGAS_CNSF_CONFIG
       SET CodUsuario   = USER,
           FecUltCambio = SYSDATE
     WHERE CodCia       = nCodCia
@@ -108,11 +121,11 @@ BEGIN
 END ACTUALIZA_USUARIO;
 
 PROCEDURE RECALENDARIZAR(nCodCia NUMBER, nCodEmpresa NUMBER) IS
-dFecLimite   ENTREGAS_CNSF_CONFIG.FecLimEntrega%TYPE;
+dFecLimite   SICAS_OC.ENTREGAS_CNSF_CONFIG.FecLimEntrega%TYPE;
 nCantMeses   NUMBER(5);
 CURSOR ENT_Q IS
    SELECT CodEntrega, TotDiasEntrega, FrecEntrega, StsEntrega
-     FROM ENTREGAS_CNSF_CONFIG
+     FROM SICAS_OC.ENTREGAS_CNSF_CONFIG
     WHERE CodCia      = nCodCia
       AND CodEmpresa  = nCodEmpresa
       AND StsEntrega <> 'SUSPEN';
@@ -137,16 +150,17 @@ BEGIN
       END IF;
 
       BEGIN
-         UPDATE ENTREGAS_CNSF_CONFIG
+         UPDATE SICAS_OC.ENTREGAS_CNSF_CONFIG
             SET FecLimEntrega = dFecLimite,
                 FecProrroga   = NULL,
                 StsEntrega    = DECODE(X.StsEntrega,'CONFIG','CONFIG','ACTIVA'),
-                FecSts        = SYSDATE
+                FecSts        = SYSDATE,
+				CodUsuario   = USER,
+				FecUltCambio = SYSDATE
           WHERE CodCia     = nCodCia
             AND CodEmpresa = nCodEmpresa
             AND CodEntrega = X.CodEntrega;
       END;
-      OC_ENTREGAS_CNSF_CONFIG.ACTUALIZA_USUARIO(nCodCia, nCodEmpresa, X.CodEntrega);
    END LOOP;
 END RECALENDARIZAR;
 
@@ -156,14 +170,15 @@ CURSOR ENT_Q IS
           FecProrroga, TotDiasEntrega, FormaEntrega, StsEntrega,
           FecSts, DescEntrega, TipoObjeto, NomRepProc, NomArchivo, 
           CodPlantilla, CodLista, Separador
-     FROM ENTREGAS_CNSF_CONFIG
+     FROM SICAS_OC.ENTREGAS_CNSF_CONFIG
     WHERE CodCia     = nCodCia
       AND CodEmpresa = nCodEmpresa
       AND CodEntrega = cCodEntregaOrig;
 BEGIN
+
    FOR X IN ENT_Q LOOP
       BEGIN
-         INSERT INTO ENTREGAS_CNSF_CONFIG
+         INSERT INTO SICAS_OC.ENTREGAS_CNSF_CONFIG
                (CodCia, CodEmpresa, CodEntrega, NomEntrega, TipoEntrega, AreaEntrega, 
                 FrecEntrega, FecLimEntrega, FecProrroga, TotDiasEntrega, FormaEntrega, 
                 StsEntrega,FecSts, DescEntrega, TipoObjeto, NomRepProc, NomArchivo, 
@@ -172,6 +187,7 @@ BEGIN
                 X.FrecEntrega, X.FecLimEntrega, X.FecProrroga, X.TotDiasEntrega, X.FormaEntrega,
                 'CONFIG', SYSDATE, X.DescEntrega, X.TipoObjeto, X.NomRepProc, X.NomArchivo, 
                 X.CodPlantilla, X.CodLista, X.Separador, USER, SYSDATE);
+
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20100,'Error al Insertar Copia en ENTREGAS_CNSF_CONFIG CodEntrega ' ||
@@ -179,15 +195,16 @@ BEGIN
       END;
       OC_ENTREGAS_CNSF_PLANTILLA.COPIAR(nCodCia, nCodEmpresa, cCodEntregaOrig, cCodEntregaDest);            
    END LOOP; 
+   COMMIT;
 END COPIAR;
 
 FUNCTION PLANTILLA(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) RETURN VARCHAR2 IS
-cCodPlantilla   ENTREGAS_CNSF_CONFIG.CodPlantilla%TYPE;
+cCodPlantilla   SICAS_OC.ENTREGAS_CNSF_CONFIG.CodPlantilla%TYPE;
 BEGIN
    BEGIN
       SELECT CodPlantilla
         INTO cCodPlantilla
-        FROM ENTREGAS_CNSF_CONFIG
+        FROM SICAS_OC.ENTREGAS_CNSF_CONFIG
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
          AND CodEntrega = cCodEntrega;
@@ -199,12 +216,12 @@ BEGIN
 END PLANTILLA;
 
 FUNCTION TIPO_CATALOGO(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) RETURN VARCHAR2 IS
-cCodLista   ENTREGAS_CNSF_CONFIG.CodLista%TYPE;
+cCodLista   SICAS_OC.ENTREGAS_CNSF_CONFIG.CodLista%TYPE;
 BEGIN
    BEGIN
       SELECT CodLista
         INTO cCodLista
-        FROM ENTREGAS_CNSF_CONFIG
+        FROM SICAS_OC.ENTREGAS_CNSF_CONFIG
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
          AND CodEntrega = cCodEntrega;
@@ -216,12 +233,12 @@ BEGIN
 END TIPO_CATALOGO;
 
 FUNCTION TIPO_OBJETO(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) RETURN VARCHAR2 IS
-cTipoObjeto   ENTREGAS_CNSF_CONFIG.TipoObjeto%TYPE;
+cTipoObjeto   SICAS_OC.ENTREGAS_CNSF_CONFIG.TipoObjeto%TYPE;
 BEGIN
    BEGIN
       SELECT TipoObjeto
         INTO cTipoObjeto
-        FROM ENTREGAS_CNSF_CONFIG
+        FROM SICAS_OC.ENTREGAS_CNSF_CONFIG
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
          AND CodEntrega = cCodEntrega;
@@ -233,12 +250,12 @@ BEGIN
 END TIPO_OBJETO;
 
 FUNCTION SEPARADOR(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) RETURN VARCHAR2 IS
-cSeparador   ENTREGAS_CNSF_CONFIG.Separador%TYPE;
+cSeparador   SICAS_OC.ENTREGAS_CNSF_CONFIG.Separador%TYPE;
 BEGIN
    BEGIN
       SELECT Separador
         INTO cSeparador
-        FROM ENTREGAS_CNSF_CONFIG
+        FROM SICAS_OC.ENTREGAS_CNSF_CONFIG
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
          AND CodEntrega = cCodEntrega;
@@ -250,12 +267,12 @@ BEGIN
 END SEPARADOR;
 
 FUNCTION NOMBRE_ENTREGA(nCodCia NUMBER, nCodEmpresa NUMBER, cCodEntrega VARCHAR2) RETURN VARCHAR2 IS
-cNomEntrega   ENTREGAS_CNSF_CONFIG.NomEntrega%TYPE;
+cNomEntrega   SICAS_OC.ENTREGAS_CNSF_CONFIG.NomEntrega%TYPE;
 BEGIN
    BEGIN
       SELECT NomEntrega
         INTO cNomEntrega
-        FROM ENTREGAS_CNSF_CONFIG
+        FROM SICAS_OC.ENTREGAS_CNSF_CONFIG
        WHERE CodCia     = nCodCia
          AND CodEmpresa = nCodEmpresa
          AND CodEntrega = cCodEntrega;
@@ -269,11 +286,11 @@ END NOMBRE_ENTREGA;
    FUNCTION NOMBRE_ARCHIVO( nCodCia      NUMBER
                           , nCodEmpresa  NUMBER
                           , cCodEntrega  VARCHAR2 ) RETURN VARCHAR2 IS
-      cNomArchivo   ENTREGAS_CNSF_CONFIG.NomArchivo%TYPE;
+      cNomArchivo   SICAS_OC.ENTREGAS_CNSF_CONFIG.NomArchivo%TYPE;
    BEGIN
       SELECT NomArchivo
       INTO   cNomArchivo
-      FROM   ENTREGAS_CNSF_CONFIG 
+      FROM   SICAS_OC.ENTREGAS_CNSF_CONFIG 
       WHERE  CodCia     = nCodCia
         AND  CodEmpresa = nCodEmpresa
         AND  CodEntrega = cCodEntrega;
@@ -284,4 +301,29 @@ END NOMBRE_ENTREGA;
         RAISE_APPLICATION_ERROR(-20100,'NO Existe Entrega ' ||cCodEntrega || ' para Saber su Nombre o Descripción');
    END NOMBRE_ARCHIVO;
 
+   FUNCTION NOMBRE_PROCESO( nCodCia      NUMBER
+                          , nCodEmpresa  NUMBER
+                          , cCodEntrega  VARCHAR2 ) RETURN VARCHAR2 IS
+      cNomRepProc   SICAS_OC.ENTREGAS_CNSF_CONFIG.NOMREPPROC%TYPE;
+   BEGIN
+      SELECT NOMREPPROC
+      INTO   cNomRepProc
+      FROM   SICAS_OC.ENTREGAS_CNSF_CONFIG 
+      WHERE  CodCia     = nCodCia
+        AND  CodEmpresa = nCodEmpresa
+        AND  CodEntrega = cCodEntrega;
+      --
+      RETURN cNomRepProc;
+   EXCEPTION
+   WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20100,'NO Existe Proceso ' || cCodEntrega || ' para ese código de entrada');
+   END NOMBRE_PROCESO;
 END OC_ENTREGAS_CNSF_CONFIG;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM OC_ENTREGAS_CNSF_CONFIG FOR SICAS_OC.OC_ENTREGAS_CNSF_CONFIG
+/
+
+GRANT EXECUTE ON SICAS_OC.OC_ENTREGAS_CNSF_CONFIG TO PUBLIC
+/
+
