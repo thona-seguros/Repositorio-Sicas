@@ -2199,7 +2199,7 @@ vl_Contado := vl_Contado +1;
 
                                             ELSE
                                                 BEGIN
-                                                    nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, obj_sesasdatgen3(w).IdTipoSeg, obj_sesasdatgen3(w).PlanCob, obj_sesasdatgen3(w).CodCobert,nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                    nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, obj_sesasdatgen3(w).IdTipoSeg, obj_sesasdatgen3(w).PlanCob, obj_sesasdatgen3(w).CodCobert,nEdad, cSexo, cRiesgo, nIdTarifa,NULL);
 
                                                 EXCEPTION
                                                     WHEN OTHERS THEN
@@ -2371,7 +2371,7 @@ vl_Contado := vl_Contado +1;
                                                 
                                             ELSE
                                                 BEGIN
-                                                    nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, obj_sesasdatgen3(r).IdTipoSeg, obj_sesasdatgen3(r).PlanCob, obj_sesasdatgen3(r).CodCobert,nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                    nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, obj_sesasdatgen3(r).IdTipoSeg, obj_sesasdatgen3(r).PlanCob, obj_sesasdatgen3(r).CodCobert,nEdad, cSexo, cRiesgo, nIdTarifa,NULL);
 
                                                 EXCEPTION
                                                     WHEN OTHERS THEN
@@ -3515,15 +3515,15 @@ vl_Contado := vl_Contado+1;
       --
       CURSOR c_Llenado IS
        SELECT CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA,IDETPOL,COUNT(1) TOTAL
-    FROM SICAS_OC.SESAS_DATGEN
-    WHERE CODCIA = nCodCia
-        AND CODEMPRESA = nCodEmpresa
-        AND CODREPORTE = cCodReporteProces
-        AND CODUSUARIO = cCodUsuario
-        AND NUMPOLIZA >= '0'
-        AND NUMCERTIFICADO >= '0'
-        GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA,IDETPOL;
-    
+        FROM SICAS_OC.SESAS_DATGEN
+        WHERE CODCIA = nCodCia
+            AND CODEMPRESA = nCodEmpresa
+            AND CODREPORTE = cCodReporteProces
+            AND CODUSUARIO = cCodUsuario
+            AND NUMPOLIZA >= '0'
+            AND NUMCERTIFICADO >= '0'
+            GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA,IDETPOL;
+        
     
     TYPE rec_sesaslleno IS RECORD (
         CODCIA          NUMBER,
@@ -3625,7 +3625,7 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(XX.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            NVL(D.CantAsegModelo, 0)                                                                                              CantAsegModelo,
+            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END                                                CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
@@ -3783,7 +3783,7 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(AC.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            NVL(D.CantAsegModelo, 0)                                                                                              CantAsegModelo,
+            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END                  CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
@@ -3917,7 +3917,7 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(XX.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            NVL(D.CantAsegModelo, 0)                                                                                              CantAsegModelo,
+            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END              CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
@@ -4066,7 +4066,7 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(AC.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            NVL(D.CantAsegModelo, 0)                                                                                              CantAsegModelo,
+            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END                      CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
@@ -4204,7 +4204,7 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(AC.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            NVL(D.CantAsegModelo, 0)                                                                                              CantAsegModelo,
+            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END                             CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
@@ -5521,7 +5521,7 @@ vl_Contado := vl_Contado +1;
 
         COMMIT;
 
-        SICAS_OC.OC_SESASCOLECTIVO.DATGEN_AP(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario,'SESADATAPC', 'SESADATAPC'/*cCodReporteProces*/, cFiltrarPolizas);
+      --  SICAS_OC.OC_SESASCOLECTIVO.DATGEN_AP(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario,'SESADATAPC', 'SESADATAPC'/*cCodReporteProces*/, cFiltrarPolizas);
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')|| ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
@@ -5763,7 +5763,7 @@ vl_Contado := vl_Contado +1;
 
                                             ELSE
                                                 BEGIN
-                                                    nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, obj_sesasdatgen3(w).IdTipoSeg, obj_sesasdatgen3(w).PlanCob, obj_sesasdatgen3(w).CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                    nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, obj_sesasdatgen3(w).IdTipoSeg, obj_sesasdatgen3(w).PlanCob, obj_sesasdatgen3(w).CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,NULL);
 
                                                 EXCEPTION
                                                     WHEN OTHERS THEN
@@ -5941,7 +5941,7 @@ vl_Contado := vl_Contado +1;
                                                 END;
                                             ELSE
                                                 BEGIN
-                                                    nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, obj_sesasdatgen3( r).IdTipoSeg, obj_sesasdatgen3(r).PlanCob, obj_sesasdatgen3(r).CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
+                                                    nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, obj_sesasdatgen3( r).IdTipoSeg, obj_sesasdatgen3(r).PlanCob, obj_sesasdatgen3(r).CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa,NULL);
                                                 EXCEPTION
                                                     WHEN OTHERS THEN
                                                         BEGIN
@@ -7953,12 +7953,7 @@ vl_Contado := vl_Contado +1;
 
 
 
-
-
-
-
-
-       OPEN cPolizas_DatGen;
+      OPEN cPolizas_DatGen;
         LOOP
             FETCH cPolizas_DatGen
             BULK COLLECT INTO o_SesasDatGen;
@@ -8016,39 +8011,43 @@ vl_Contado := vl_Contado +1;
                     
 
                 ELSE  --ES ASEGURADO MODELO
-
+            BEGIN
                     SELECT SUM(PRIMANETA) /vl_AsegModel
                     INTO nPmaEmiCob
                     FROM SICAS_OC.ASEGURADO_CERTIFICADO
                     WHERE CODCIA = nCodCia
                         AND IDPOLIZA = o_SesasDatGen(x).IdPoliza
                         AND IDETPOL = o_SesasDatGen(x).IDetPol;
-
-                    IF nComisionDirecta2 IS NULL THEN 
-
+        EXCEPTION
+            WHEN OTHERS THEN
+                nPmaEmiCob := NULL;
+        END;
+                    IF nPmaEmiCob IS NULL THEN 
+        BEGIN
                         SELECT SUM(PRIMA_MONEDA)/vl_AsegModel
                         INTO nPmaEmiCob
                         FROM SICAS_OC.DETALLE_POLIZA 
                         WHERE CODCIA = nCodCia
                             AND IDPOLIZA = o_SesasDatGen(x).IdPoliza
                             AND IDETPOL = o_SesasDatGen(x).IDetPol;
-
+EXCEPTION
+WHEN OTHERS THEN
+    nPmaEmiCob := 0;
+END;
                    END IF;
 
-                   IF nComisionDirecta2 IS NULL THEN               
-                        nComisionDirecta2 := nPmaEmiCob;
-                   END IF;
+                 
 
                     UPDATE SICAS_OC.SESAS_EMISION E
                     SET PrimaEmitida = nPmaEmiCob,
                         PrimaDevengada = SICAS_OC.OC_PROCESOSSESAS.GETPRIMADEVENGADA(o_SesasDatGen(x).IdPoliza, nPmaEmiCob , dvarFecHasta, o_SesasDatGen(x).FecIniVig,o_SesasDatGen(x).FecFinVig),
-                                            fechainsert = sysdate
+                        fechainsert = sysdate
                     WHERE CodCia = nCodCia
-            AND CodEmpresa = nCodEmpresa
-            AND CodReporte = cCodReporteProces
-            AND CodUsuario = cCodUsuario
-            AND NUMCERTIFICADO = TRIM(LPAD(o_SesasDatGen(x).IdPoliza, 8, '0')) ||TRIM(LPAD(o_SesasDatGen(x).IDetPol, 2, '0')) ||TRIM(LPAD(o_SesasDatGen(x).CodAsegurado, 10, '0'))
-            AND COBERTURA = COBERTURA;
+                        AND CodEmpresa = nCodEmpresa
+                        AND CodReporte = cCodReporteProces
+                        AND CodUsuario = cCodUsuario
+                        AND SUBSTR(NUMCERTIFICADO,0,10) = TRIM(LPAD(o_SesasDatGen(x).IdPoliza, 8, '0')) ||TRIM(LPAD(o_SesasDatGen(x).IDetPol, 2, '0')) 
+                        AND COBERTURA = COBERTURA;
 
                 END IF;
 
@@ -8058,7 +8057,6 @@ vl_Contado := vl_Contado +1;
 
         CLOSE cPolizas_DatGen;
         COMMIT;     
-
     END EMISION_GM;
 
     PROCEDURE SINIESTROS_GM (
@@ -8106,7 +8104,7 @@ vl_Contado := vl_Contado +1;
             ,DECODE(PN.Sexo, 'F', 'F', 'M')                                                                                          Sexo,
             PN.FecNacimiento                                                                                                        FecNacim,
             NVL(P.MONTODEDUCIBLE, 0)                                                                                                MontoDeducible  --Por definir y revisar porque este va a nivel cobertura y el reporte no va a ese nivel, va a nivel siniestro
-            ,SICAS_OC.OC_PROCESOSSESAS.GETCOASEGURO(D.CodCia, D.IdPoliza, 'GMM')                                                     MontoCoaseguro  --Default 0   
+            ,SICAS_OC.OC_PROCESOSSESAS.GETCOASEGURO(D.CodCia, D.IdPoliza, NULL)                                                     MontoCoaseguro  --Default 0   
             ,0                                                                                                                       MontoRecRea     --Default 0
             ,CASE WHEN R.TIPO_MOVIMIENTO IN ( 'ESTINI', 'AJUMAS', 'AJUMEN' ) THEN R.IMPTE_MOVIMIENTO * ( CASE WHEN R.SIGNO = '-' THEN -1 ELSE 1 END ) ELSE 0 END  MontoReclamado,
             SICAS_OC.OC_PROCESOSSESAS.GETTIPOMOVRECLAMO()                                                                           TipMovRec       --Por definir y revisar porque este va a nivel cobertura y el reporte no va a ese nivel, va a nivel siniestro
