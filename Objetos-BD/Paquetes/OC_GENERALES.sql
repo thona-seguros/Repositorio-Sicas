@@ -53,6 +53,9 @@ CREATE OR REPLACE PACKAGE          oc_generales IS
 
     FUNCTION VALIDA_FECHA_PAGO(pReciboPago varchar2, FecPago DATE) RETURN DATE;
 
+   --Funcion para convertir texto a base64 con codificaciÃ³n UTF8
+    FUNCTION CONVERSION_B64_UTF8(TEXTO IN VARCHAR2) RETURN VARCHAR2;
+
 END OC_GENERALES;
 
 /
@@ -446,7 +449,7 @@ BEGIN
         WHEN NO_DATA_FOUND THEN 
             RAISE_APPLICATION_ERROR (-20100,'No Existe Usuario: '||p_CodUsuario );
         WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR (-20100,'Error Al Obtener El Codigo De La Compañia Para El Usuario: '||p_CodUsuario);
+            RAISE_APPLICATION_ERROR (-20100,'Error Al Obtener El Codigo De La Compaï¿½ia Para El Usuario: '||p_CodUsuario);
     END;
     RETURN nCodCia;
 END CODCIA_USUARIO;
@@ -519,5 +522,10 @@ END CODCIA_USUARIO;
         END IF;         
         --       
     END VALIDA_FECHA_PAGO;
+
+   FUNCTION CONVERSION_B64_UTF8(TEXTO IN VARCHAR2) RETURN VARCHAR2 IS
+   BEGIN
+   RETURN UTL_ENCODE.TEXT_ENCODE(TEXTO,'AL32UTF8',UTL_ENCODE.BASE64);
+   END CONVERSION_B64_UTF8;
     --     
 END OC_GENERALES;
