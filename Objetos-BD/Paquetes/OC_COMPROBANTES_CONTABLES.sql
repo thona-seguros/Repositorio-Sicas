@@ -4,7 +4,12 @@ CREATE OR REPLACE PACKAGE OC_COMPROBANTES_CONTABLES IS
     -- SE MODIFICA PARA QUE CALCULE BIEN EL TIPO DE CAMBIO         JMMD 20220531
     -- SE AJUSTO EL CAMPO PARA INCIDENCIA DE CALCULO DE COMISIONES JICO 20220726 USD
     -- SE AGREGA LA SEPARACION PARA RESICO                         CMPL 20221027  20231012     -- RESICO
-    --
+    -- SE HOMOLOGA PROCEDIMIENTO DE RECONTABILIZAR                 MLJS 13/07/2023
+    -- SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS 
+    -- DE CREDITO PARA CONTABILIZA IVAHON EN PROCESO 100,200 Y 300 MLJS 05/09/2023 
+    -- SE CORRIGE DUPLICIDAD DE IMPUESTOS HONORARIOS EN COMISIONES MLJS 12/12/2023
+    -- SE CORRIGE CONSULTA DE CURSOR PARA OBTENER IVAHON EN
+    -- DESPAGOS                                                    MLJS 27/12/2023, 27/12/2023
     FUNCTION NUM_COMPROBANTE(nCodCia NUMBER) RETURN NUMBER;
 
     FUNCTION CREA_COMPROBANTE(nCodCia NUMBER, cTipoComprob VARCHAR2, nNumTransaccion NUMBER,
@@ -26,7 +31,7 @@ CREATE OR REPLACE PACKAGE OC_COMPROBANTES_CONTABLES IS
 
     PROCEDURE TRASLADO(nCodCia NUMBER, dFecDesde DATE, dFecHasta DATE, nNumComprobSC NUMBER,
                dFecRegistro DATE, cCodUser VARCHAR2, cConcepto VARCHAR2, nDiario NUMBER,
-               cTipoComprob VARCHAR2, cTipoDiario VARCHAR2, cCodMoneda VARCHAR2, 
+               cTipoComprob VARCHAR2, cTipoDiario VARCHAR2, cCodMoneda VARCHAR2,
                cTipoTraslado VARCHAR2, nLinea IN OUT NUMBER);
 
     PROCEDURE RECONTABILIZAR(nCodCia NUMBER, nIdTransaccion NUMBER, cTipoComp VARCHAR2 DEFAULT 'C', nNumComprob NUMBER);
@@ -285,7 +290,7 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
         SELECT  9 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, DN.CodCpto, N.CodMoneda,
            --SUM(Monto_Det_Moneda) MtoMovCuenta,
            SUM(DC.MONTO_MON_LOCAL) MtoMovCuenta,
-           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3 
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente, C.COD_AGENTE     -- RESICO
           FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
@@ -410,7 +415,7 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
         SELECT 13 REG, D.CodEmpresa, 'GENERA' IdTipoSeg, 'TRIVHO', N.CodMoneda,
            SUM(Monto_Det_Moneda) MtoMovCuenta,
            --SUM(DC.MONTO_MON_LOCAL)* -1 MtoMovCuenta,
-           SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3 
+           SUM(DC.MONTO_MON_EXTRANJERA) * -1 MtoComisCuenta,NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(D.CodCia, C.Cod_Agente) TipoAgente, C.COD_AGENTE     -- RESICO
           FROM DETALLE_NOTAS_DE_CREDITO DN
          , DETALLE_TRANSACCION       D
@@ -569,6 +574,7 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , VALORES_DE_LISTAS         VL
          WHERE F.IdFactura      = P.IdFactura
            AND PD.IdRecibo      = P.IdRecibo
+           AND PD.IdFactura     = P.IdFactura   --MLJS 26/12/2023
            AND P.IdTransaccion  = D.IdTransaccion
            AND F.IDetPol        = DP.IDetPol
            AND F.IdPoliza       = DP.IdPoliza
@@ -591,6 +597,7 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , VALORES_DE_LISTAS         VL
          WHERE F.IdFactura        = P.IdFactura
            AND PD.IdRecibo        = P.IdRecibo
+           AND PD.IdFactura       = P.IdFactura   --MLJS 26/12/2023
            AND P.IdTransaccionAnu = D.IdTransaccion
            AND F.IDetPol          = DP.IDetPol
            AND F.IdPoliza         = DP.IdPoliza
@@ -811,7 +818,7 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
                ,P.CodCia, C.Cod_Agente
          UNION ALL
         SELECT 28 REG, D.CodEmpresa, DP.IdTipoSeg, DC.CODCONCEPTO CodCpto, N.CodMoneda, SUM(Monto_Det_Moneda) MtoMovCuenta,
-           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3 
+           SUM(DC.MONTO_MON_EXTRANJERA) MtoComisCuenta, NULL DescripMov, VL.DESCVALLST UEN, NULL NIVELCTA3
            ,OC_AGENTES.TIPO_AGENTE(P.CodCia, C.Cod_Agente) TipoAgente, C.COD_AGENTE     -- RESICO
           FROM DETALLE_TRANSACCION       D
          , NOTAS_DE_CREDITO          N
@@ -925,13 +932,14 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
        SELECT 31 REG, T.CodEmpresa, DP.IdTipoSeg, DC.CodConcepto CodCpto, P.Cod_Moneda CodMoneda, SUM(DC.Monto_Mon_Extranjera) MtoMovCuenta,
             SUM(DC.Monto_Mon_Extranjera) MtoComisCuenta, 'FACTURAS CONTABILIZADAS' DescripMov, VL.DESCVALLST  UEN, NULL NIVELCTA3
             ,OC_AGENTES.TIPO_AGENTE(P.CodCia, C.Cod_Agente) TipoAgente, C.COD_AGENTE     -- RESICO
-       FROM POLIZAS P, DETALLE_POLIZA DP, 
+       FROM POLIZAS P, DETALLE_POLIZA DP,
          PAGOS PA, FACTURAS F,
          TRANSACCION T , COMISIONES C, DETALLE_COMISION DC
          , VALORES_DE_LISTAS         VL
        WHERE T.IDTRANSACCION     = nIdTransaccion
         AND T.CodCia            = nCodCia
-        AND PA.IDTRANSACCION     = T.IDTRANSACCION
+        AND (PA.IDTRANSACCION     = T.IDTRANSACCION
+        OR   PA.IdTransaccionAnu = T.IdTransaccion )  --MLJS 27/12/2023 SE AGREGA LA CANCELACION DEL PAGO
         AND F.IDFACTURA          = PA.IDFACTURA
         AND P.IDPOLIZA          = F.IDPOLIZA
         AND P.CodCia            = nCodCia
@@ -972,7 +980,8 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          , VALORES_DE_LISTAS         VL
        WHERE T.IDTRANSACCION     = nIdTransaccion
         AND T.CodCia            = nCodCia
-        AND PA.IDTRANSACCION     = T.IDTRANSACCION
+        AND (PA.IDTRANSACCION     = T.IDTRANSACCION
+        OR   PA.IdTransaccionAnu = T.IdTransaccion )  --MLJS 27/12/2023 SE AGREGA LA CANCELACION DEL PAGO
         AND F.IDFACTURA          = PA.IDFACTURA
         AND P.IDPOLIZA          = F.IDPOLIZA
         AND P.CodCia            = nCodCia
@@ -1186,14 +1195,14 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(CodCia, CODEMPRESA, cIdTipoSeg) = 'S' AND NVL(TipoAgente,'X') = NVL(cTipoAgente,'X')
           OR  OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(CodCia, CODEMPRESA, cIdTipoSeg) = 'N' )
         -- AND NVL(IdRegFisSAT, -1) = nvl(:nIdRegFisSAT, -1)     -- RESICO I
-         AND (IDREGFISSAT = nIdRegFisSAT 
-          OR (IDREGFISSAT IS NULL AND IDREGPLANTILLA NOT IN (SELECT IDREGPLANTILLA_SUST 
-                                      FROM PLANTILLAS_CONTABLES P 
+         AND (IDREGFISSAT = nIdRegFisSAT
+          OR (IDREGFISSAT IS NULL AND IDREGPLANTILLA NOT IN (SELECT IDREGPLANTILLA_SUST
+                                      FROM PLANTILLAS_CONTABLES P
                                       WHERE P.CodCia              = CodCia
                                         AND P.CodProceso          = CodProceso
                                         AND P.CodMoneda           = CodMoneda
                                         AND P.CodCpto             = CodCpto
-                                        AND P.IdTipoSeg           = IdTipoSeg  
+                                        AND P.IdTipoSeg           = IdTipoSeg
                                         AND P.TIPOAGENTE          = TIPOAGENTE
                                         AND P.IDREGFISSAT         = nIdRegFisSAT)
                ))     -- RESICO F
@@ -1296,13 +1305,13 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
                   IF X.TipoAgente IS NULL THEN
                      nMtoMovCuenta := ABS(W.MtoMovCuenta);
                   ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN
-                     nMtoMovCuenta := ABS(W.MtoComisCuenta);                     
+                     nMtoMovCuenta := ABS(W.MtoComisCuenta);
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
                ELSE
                   IF ABS(W.MtoComisCuenta) != 0 THEN
-                     IF cConceptoAdicional = 'S' THEN 
+                     IF cConceptoAdicional = 'S' THEN
                          --                      X.CodUnidadNegocio := W.UEN; ---- JMMD20200817 SE CAMBIA LA UNIDAD DE NEGOCIO DE LA PLANTILLA POR LA UEN DEL TIPO DE SEGURO
                         IF cCodProceso = 100 THEN
                            IF    W.REG = 26 THEN -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
@@ -1429,14 +1438,14 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
          AND (OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(CodCia, CODEMPRESA, cIdTipoSeg) = 'S' AND NVL(TipoAgente,'X') = NVL(cTipoAgente,'X')
           OR  OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(CodCia, CODEMPRESA, cIdTipoSeg) = 'N' )
         -- AND NVL(IdRegFisSAT, -1) = nvl(:nIdRegFisSAT, -1)     -- RESICO I
-         AND (IDREGFISSAT = nIdRegFisSAT 
-          OR (IDREGFISSAT IS NULL AND IDREGPLANTILLA NOT IN (SELECT IDREGPLANTILLA_SUST 
-                                      FROM PLANTILLAS_CONTABLES P 
+         AND (IDREGFISSAT = nIdRegFisSAT
+          OR (IDREGFISSAT IS NULL AND IDREGPLANTILLA NOT IN (SELECT IDREGPLANTILLA_SUST
+                                      FROM PLANTILLAS_CONTABLES P
                                       WHERE P.CodCia              = CodCia
                                         AND P.CodProceso          = CodProceso
                                         AND P.CodMoneda           = CodMoneda
                                         AND P.CodCpto             = CodCpto
-                                        AND P.IdTipoSeg           = IdTipoSeg  
+                                        AND P.IdTipoSeg           = IdTipoSeg
                                         AND P.TIPOAGENTE          = TIPOAGENTE
                                         AND P.IDREGFISSAT         = nIdRegFisSAT)
                ))     -- RESICO F
@@ -1515,7 +1524,7 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
             cTipoAgente    := W.TipoAgente;  --MLJS 13/07/2023
             nIdRegFisSAT   := OC_CAT_REGIMEN_FISCAL.FUN_AGENTE_IDREGFISSAT(nCodCia, nCodEmpresa, W.COD_AGENTE);     -- RESICO
             --
-            DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional||'  W.CodCpto  '||W.CodCpto|| ' cCodProceso --> '||cCodProceso );            
+            DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional||'  W.CodCpto  '||W.CodCpto|| ' cCodProceso --> '||cCodProceso );
             IF W.CodMoneda IS NOT NULL AND cCodMoneda IS NULL THEN
                cCodMoneda     := W.CodMoneda;
             END IF;
@@ -1553,7 +1562,7 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
                IF X.TipoRegistro = 'MO' THEN
               IF X.TipoAgente IS NULL THEN
                  nMtoMovCuenta := ABS(W.MtoMovCuenta);
-              ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN  -- 
+              ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN  --
     ----- jmmd20220531  asi estaba                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
                  nMtoMovCuenta := ABS(W.MtoComisCuenta);
               ELSE
@@ -1921,7 +1930,7 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
                       , nIdTransaccion  TRANSACCION.IDTRANSACCION%TYPE
                       , cIdTipoSeg      DETALLE_POLIZA.IDTIPOSEG%TYPE
                       , cTipoPersona    PERSONA_NATURAL_JURIDICA.TIPO_PERSONA%TYPE
-                      , cTipoAgente     AGENTES.TIPO_AGENTE%TYPE ) RETURN NUMBER IS 
+                      , cTipoAgente     AGENTES.TIPO_AGENTE%TYPE ) RETURN NUMBER IS
        nComision_Moneda  COMISIONES.Comision_Moneda%TYPE;
        --
        --Opt:07082019  Optimizacion
@@ -2127,7 +2136,7 @@ CREATE OR REPLACE PACKAGE BODY OC_COMPROBANTES_CONTABLES IS
     END COMISION_TIPO_PERSONA;
     ------------------
     FUNCTION COMISION_TIPO_ADICIONALES(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
-                       cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2, 
+                       cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2,
                        nCodAgente NUMBER DEFAULT NULL) RETURN NUMBER IS -- MLJS 11/12/2023 SE AGREGA EL AGENTE
     nComision_Moneda      COMISIONES.Comision_Moneda%TYPE;
     BEGIN
