@@ -10,7 +10,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_LOGERRORES_SESAS AS
                                 PA_CODERROR            IN      SICAS_OC.LOGERRORES_SESAS.CODERR%TYPE,
                                 PA_DESCERROR           IN      SICAS_OC.LOGERRORES_SESAS.DESCER%TYPE
                                 );
-                                
+
     FUNCTION SPDELETELOGSESAS (
                                 PA_CODCIA              IN      SICAS_OC.LOGERRORES_SESAS.CODCIA%TYPE,
                                 PA_CODEMPRESA          IN      SICAS_OC.LOGERRORES_SESAS.CODEMPRESA%TYPE,
@@ -18,10 +18,10 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_LOGERRORES_SESAS AS
                                 PA_CODREPORTE          IN      SICAS_OC.LOGERRORES_SESAS.CODREPORTE%TYPE
                                 )
                                 RETURN NUMBER;
-    
+
     csg_0       CONSTANT    NUMBER  :=  0;
     csg_1       CONSTANT    NUMBER  :=  1;
-    
+
 END;
 /
 
@@ -37,8 +37,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_LOGERRORES_SESAS AS
                                 PA_CODERROR            IN      SICAS_OC.LOGERRORES_SESAS.CODERR%TYPE,
                                 PA_DESCERROR           IN      SICAS_OC.LOGERRORES_SESAS.DESCER%TYPE
                                 ) AS
+                                vl_CodError     NUMBER;
     BEGIN
-    
+
         INSERT INTO SICAS_OC.LOGERRORES_SESAS (
                                                 CODCIA,
                                                 CODEMPRESA,
@@ -64,16 +65,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_LOGERRORES_SESAS AS
                                                 SYSDATE,
                                                 PA_CODUSUARIO
                                               );
-                                              
+
         COMMIT;
 
-        
+
     EXCEPTION
         WHEN OTHERS THEN
-            ROLLBACK;
-            RAISE_APPLICATION_ERROR(-20220,'No se pudo realizar la inserción de información.');
+            vl_CodError := SQLCODE;
     END;
-                                
+
     FUNCTION SPDELETELOGSESAS (
                                 PA_CODCIA              IN      SICAS_OC.LOGERRORES_SESAS.CODCIA%TYPE,
                                 PA_CODEMPRESA          IN      SICAS_OC.LOGERRORES_SESAS.CODEMPRESA%TYPE,
@@ -81,13 +81,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_LOGERRORES_SESAS AS
                                 PA_CODREPORTE          IN      SICAS_OC.LOGERRORES_SESAS.CODREPORTE%TYPE
                                 ) RETURN NUMBER IS
     BEGIN
-        
+
         DELETE FROM SICAS_OC.LOGERRORES_SESAS
         WHERE CODCIA = PA_CODCIA
             AND CODEMPRESA = PA_CODEMPRESA
             AND CODUSUARIO = PA_CODUSUARIO
             AND CODREPORTE = PA_CODREPORTE;
-            
+
         COMMIT;
         RETURN csg_1;
     EXCEPTION
@@ -96,7 +96,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_LOGERRORES_SESAS AS
             RETURN csg_0;
             RAISE_APPLICATION_ERROR(-20220,'No se pudo realizar el vaciado de información.');
     END;
-                                
+
 END;
 /
 

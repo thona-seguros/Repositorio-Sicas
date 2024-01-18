@@ -1,4 +1,5 @@
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
+
     PROCEDURE CONTROLPRINCIPAL (
         nCodCia           SICAS_OC.ENTREGAS_CNSF_CONFIG.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE,
@@ -19,7 +20,14 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
     FUNCTION GETANIOPOLIZA (
         nNumPolUnico   VARCHAR 
     ) RETURN NUMBER;
-
+    
+    FUNCTION GETCANTASEGAPC (
+        nCodCia         NUMBER,
+        nCodEmpresa     NUMBER,
+        nCodAsegurado   VARCHAR,
+        nCantAsegurado NUMBER
+    ) RETURN NUMBER;
+    
     FUNCTION GETOCUPACIONAP (
         cCodActividad   VARCHAR,
         cTipoSeg        VARCHAR --IND O COL PARA SABER A QUE CATALOGO IR
@@ -393,12 +401,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
 
         END IF;
 
-        /*
-        DBMS_OUTPUT.PUT_LINE('cCodEntregaDatGen: ' || cCodEntregaDatGen);
-        DBMS_OUTPUT.PUT_LINE('cCodEntregaProces: ' || cCodEntregaProces);
-        */
 
-        IF cCodEntregaDatGen IS NOT NULL THEN
+      /*  IF cCodEntregaDatGen IS NOT NULL THEN  SE COMENTO ESTE COMO MEJORA
          --SESAS de Datos Generales
 
             cSeparador := SICAS_OC.OC_ENTREGAS_CNSF_CONFIG.SEPARADOR(nCodCia, nCodEmpresa, cCodEntregaDatGen);
@@ -409,17 +413,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
             cNomProcDatGen := SICAS_OC.OC_ENTREGAS_CNSF_CONFIG.NOMBRE_PROCESO(nCodCia, nCodEmpresa, cCodEntregaDatGen);
             cEncabDatGen := GeneraEncabezado(nCodCia, nCodEmpresa, cCodPlantilla, cSeparador);
             cEncabDatGenError := GeneraEncabezado(nCodCia, nCodEmpresa, cCodPlantillaError, cSeparador);
-            cDetalleDatGen := GeneraDetalle(nCodCia, nCodEmpresa, cCodPlantilla, cSeparador, cCodUsuario,
-                                           NULL);
-            cDetalleDatGenError := GeneraDetalleError(nCodCia, nCodEmpresa, cCodPlantilla, cSeparador, cCodUsuario,
-                                                     'ERROR');
+            cDetalleDatGen := GeneraDetalle(nCodCia, nCodEmpresa, cCodPlantilla, cSeparador, cCodUsuario,NULL);
+            cDetalleDatGenError := GeneraDetalleError(nCodCia, nCodEmpresa, cCodPlantilla, cSeparador, cCodUsuario,'ERROR');
 
-         /*
-      DBMS_OUTPUT.PUT_LINE('cNomProcDatGen: ' || cNomProcDatGen);
-      DBMS_OUTPUT.PUT_LINE('cNomArchDatGen: ' || cNomArchDatGen);
-      DBMS_OUTPUT.PUT_LINE('cEncabDatGen: ' || cEncabDatGen);
-      DBMS_OUTPUT.PUT_LINE('cDetalleDatGen: ' || cDetalleDatGen);
-         --*/
+
          --Ejecuta el Proceso de Datos Generales
             cBlockPlSql := 'BEGIN '
                            || cNomProcDatGen
@@ -427,7 +424,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
             EXECUTE IMMEDIATE cBlockPlSql
                 USING nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario, cCodEntregaDatGen, cCodEntregaProces, cFiltrarPolizas;
 
-        END IF;
+        END IF;*/
 
       --SESAS del Proceso a Generar Emision/Siniestros
 
@@ -437,6 +434,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         cNomArchProces := SICAS_OC.OC_ENTREGAS_CNSF_CONFIG.NOMBRE_ARCHIVO(nCodCia, nCodEmpresa, cCodEntregaProces);
         cNomArchProcesError := SICAS_OC.OC_ENTREGAS_CNSF_CONFIG.NOMBRE_ARCHIVO(nCodCia, nCodEmpresa, 'SESAERROR');
         cNomProcProces := SICAS_OC.OC_ENTREGAS_CNSF_CONFIG.NOMBRE_PROCESO(nCodCia, nCodEmpresa, cCodEntregaProces);
+        
+        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(1, 1, cCodEntregaDatGen, 'PRUEBA', 0, cNomProcProces, SQLCODE, 'El registro ya existe en la SESA, favor de validarlo.');
         cEncabProces := GeneraEncabezado(nCodCia, nCodEmpresa, cCodPlantilla, cSeparador);
         cEncabProcesError := GeneraEncabezado(nCodCia, nCodEmpresa, cCodPlantillaError, cSeparador);
 
@@ -465,6 +464,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
             AND CODREPORTE = cCodEntregaProces;
 
         GeneraReportes(nCodCia, nCodEmpresa, REPLACE(cNomArchZipError, '.zip', '.TXT'), cEncabDatGen, cDetalleDatGen, cNomArchProces,cEncabProces,cEncabProcesError, cDetalleProces, cDetalleDatGenError, cNomArchZip, nEjecutaLog);
+
 
         SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB(nCodCia, nCodEmpresa, cCodEntregaProces, cCodUsuario, cNomArchZip);
 
@@ -2639,7 +2639,38 @@ FUNCTION GETMONTOCOMISIONAP (
         WHEN OTHERS THEN
             nAnioRenova := 1;
     END GETANIOPOLIZA;
-
+    
+    FUNCTION GETCANTASEGAPC (
+        nCodCia         NUMBER,
+        nCodEmpresa     NUMBER,
+        nCodAsegurado   VARCHAR,
+        nCantAsegurado  NUMBER
+        
+    ) RETURN NUMBER IS
+    vl_CantAseg     NUMBER := 0;
+    BEGIN
+        
+        SELECT COUNT(1)
+        INTO vl_CantAseg
+        FROM SICAS_OC.SESA_ASEGMODELO
+        WHERE CODCIA = nCodCia
+            AND CODEMPRESA = nCodEmpresa
+            AND COD_ASEGURADO = nCodAsegurado;
+            
+        IF vl_CantAseg >= 1 THEN
+            vl_CantAseg := nCantAsegurado;
+        ELSE
+            vl_CantAseg := 1;
+        END IF;
+        
+        RETURN vl_CantAseg;
+        
+    EXCEPTION
+        WHEN OTHERS THEN
+            vl_CantAseg := 1;
+            RETURN vl_CantAseg;
+    END;
+    
 END OC_PROCESOSSESAS;
 /
 

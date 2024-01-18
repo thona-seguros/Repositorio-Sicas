@@ -1,4 +1,5 @@
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
+
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.SESAS_DATGEN.CODEMPRESA%TYPE,
@@ -101,7 +102,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
     dvarFecDesde        DATE;
     dvarFecHasta        DATE;
     nEjecucion          NUMBER;
-    nComisionDirecta2   NUMBER(18, 10);
+    nComisionDirecta2   NUMBER;
     nMontoReclamo       NUMBER := NULL;
     vl_StatusSin        VARCHAR2(15);
     vl_Total1           NUMBER;
@@ -130,19 +131,18 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         nComisionDirecta  SICAS_OC.SESAS_DATGEN.COMISIONDIRECTA%TYPE;
         nCantCertificados SICAS_OC.SESAS_DATGEN.CANTCERTIFICADOS%TYPE;
         cFormaVta         SICAS_OC.SESAS_DATGEN.FORMAVTA%TYPE;
-        
+
         CURSOR c_Llenado IS
-       SELECT CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA, IDETPOL,COUNT(1) TOTAL
-    FROM SICAS_OC.SESAS_DATGEN
-    WHERE CODCIA = nCodCia
-        AND CODEMPRESA = nCodEmpresa
-        AND CODREPORTE = cCodReporteProces
-        AND CODUSUARIO = cCodUsuario
-        AND NUMPOLIZA >= '0'
-        AND NUMCERTIFICADO >= '0'
+        SELECT CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA, IDETPOL,COUNT(1) TOTAL
+        FROM SICAS_OC.SESAS_DATGEN
+        WHERE CODCIA = nCodCia
+            AND CODEMPRESA = nCodEmpresa
+            AND CODREPORTE = cCodReporteProces
+            AND CODUSUARIO = cCodUsuario
+            AND NUMPOLIZA >= '0'
+            AND NUMCERTIFICADO >= '0'
         GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA,IDETPOL;
-    
-    
+
     TYPE rec_sesaslleno IS RECORD (
         CODCIA          NUMBER,
         CODEMPRESA      NUMBER,
@@ -151,11 +151,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         IDPOLIZA        NUMBER,
         IDETPOL         NUMBER,
         TOTAL           NUMBER);
-    
-    TYPE type_sesaslleno IS TABLE OF rec_sesaslleno;
+
+        TYPE type_sesaslleno IS TABLE OF rec_sesaslleno;
         obj_sesaslleno   type_sesaslleno;
-        
-        
+
         CURSOR C_POL_IND_Q IS
         SELECT
             nCodCia                                                                                                               CodCia,
@@ -950,6 +949,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND IDSECUENCIA>=0;
 
         COMMIT;
+        
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
 
@@ -976,8 +976,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
-                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,
-                    obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
+                    --nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).
                     CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo, obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen( x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
@@ -1072,11 +1071,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         obj_sesasdatgen(x).TipoDetalle
                     );
 
-vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
+
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
@@ -1149,11 +1144,9 @@ vl_Contado := vl_Contado +1;
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
-                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,
-                    obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
+                    --nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
-                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).
-                    CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
+                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
                                                                                       obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(
                                                                                       x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
 
@@ -1245,11 +1238,7 @@ vl_Contado := vl_Contado +1;
                         obj_sesasdatgen(x).Cod_Asegurado,
                         obj_sesasdatgen(x).TipoDetalle
                     );
-vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
+
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
@@ -1319,13 +1308,10 @@ vl_Contado := vl_Contado +1;
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
-                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,
-                    obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
+                    --nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
-                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).
-                    CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
-                                                                                      obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(
-                                                                                      x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
+                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
+                                                                                      obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
 
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
@@ -1417,11 +1403,6 @@ vl_Contado := vl_Contado +1;
                         obj_sesasdatgen(x).TipoDetalle
                     );
 
-vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
@@ -1494,7 +1475,7 @@ vl_Contado := vl_Contado +1;
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
-                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
+                    --nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
 
@@ -1587,11 +1568,6 @@ vl_Contado := vl_Contado +1;
                         obj_sesasdatgen(x).TipoDetalle
                     );
 
-vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
@@ -1648,9 +1624,9 @@ vl_Contado := vl_Contado +1;
             FETCH c_Llenado
             BULK COLLECT INTO obj_sesaslleno;
             forall x IN 1..obj_sesaslleno.COUNT 
-               
+
                 UPDATE SICAS_OC.SESAS_DATGEN
-                SET COMISIONDIRECTA = ROUND(COMISIONDIRECTA / obj_sesaslleno(x).TOTAL,2),
+                SET COMISIONDIRECTA = ROUND(SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta) / obj_sesaslleno(x).TOTAL,2),
                     FECHAINSERT = SYSDATE
                 WHERE CODCIA = obj_sesaslleno(x).CodCia
                     AND CODEMPRESA = obj_sesaslleno(x).CodEmpresa
@@ -1658,14 +1634,7 @@ vl_Contado := vl_Contado +1;
                     AND CODUSUARIO = obj_sesaslleno(x).CodUsuario
                     AND IDPOLIZA = obj_sesaslleno(x).IDPOLIZA
                     AND IDETPOL = obj_sesaslleno(x).IDETPOL;
-                
-                vl_Contado := vl_Contado +1;
-                
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
-    
+
            -- END LOOP;
 
             EXIT WHEN obj_sesaslleno.COUNT = 0;
@@ -1673,7 +1642,7 @@ vl_Contado := vl_Contado +1;
 
         CLOSE c_Llenado;
         COMMIT;
-        
+
     END DATGEN_VI;
 
     PROCEDURE EMISION_VI (
@@ -2056,7 +2025,7 @@ vl_Contado := vl_Contado +1;
                     nPrimaMonedaTotPol := 0;
                  --
                  -- Verifica si Todas Están Anuladas
-                    
+
                     cTodasAnuladas := 'N';
                     FOR z IN POL_Q LOOP
                         IF z.StsPoliza != 'ANU' THEN
@@ -2066,7 +2035,7 @@ vl_Contado := vl_Contado +1;
                             cTodasAnuladas := 'S';
                         END IF;
                     END LOOP;
-                    
+
                  --
                     OPEN POL_Q;
                     LOOP
@@ -2162,9 +2131,9 @@ vl_Contado := vl_Contado +1;
                     --FOR z IN POL_Q LOOP
                                 nIdPolizaCalc := obj_sesasdatgen2(z).IdPoliza;
 
-                                
+
                                     nIdTarifa := SICAS_OC.GT_TARIFA_CONTROL_VIGENCIAS.TARIFA_VIGENTE(nCodCia, nCodEmpresa, obj_sesasdatgen2( z).IdTipoSeg, obj_sesasdatgen2(z).PlanCob, obj_sesasdatgen2(z).FecIniVig);
-                                
+
                         --
                                 nCodAseguradoAfina := NULL;
                                 OPEN CALC_Q;
@@ -2192,10 +2161,10 @@ vl_Contado := vl_Contado +1;
                                             END IF;
                                --
                                             IF nEdad = 0 THEN
-                                                
+
                                                     nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMASESAS(nCodCia, nCodEmpresa,obj_sesasdatgen3(w).IdTipoSeg, obj_sesasdatgen3(w).PlanCob, obj_sesasdatgen3(w).CodCobert,nEdad, cSexo, cRiesgo,nIdTarifa);
 
-                                          
+
 
                                             ELSE
                                                 BEGIN
@@ -2203,10 +2172,10 @@ vl_Contado := vl_Contado +1;
 
                                                 EXCEPTION
                                                     WHEN OTHERS THEN
-                                                        
+
                                                             nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMASESAS(nCodCia, nCodEmpresa,obj_sesasdatgen3(w).IdTipoSeg, obj_sesasdatgen3(w).PlanCob, obj_sesasdatgen3(w).CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
 
-                                                       
+
                                                 END;
                                             END IF;
                                --
@@ -2226,12 +2195,12 @@ vl_Contado := vl_Contado +1;
                         END LOOP;
 
                         CLOSE POL_Q;
-                    
+
                     EXCEPTION
                         WHEN OTHERS THEN
                             SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, nIdPolizaCalc, 'ER1-GT_TARIFA_CONTROL_VIGENCIAS: ' || nCod_Asegurado, SQLCODE, SQLERRM);
                     END;
-                                
+
                     --END LOOP;
                     END IF;
                  --
@@ -2366,9 +2335,9 @@ vl_Contado := vl_Contado +1;
                                --
                                 BEGIN
                                             IF nEdad = 0 THEN
-                                               
+
                                                     nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA_EDAD_MINIMASESAS(nCodCia, nCodEmpresa, obj_sesasdatgen3(r).IdTipoSeg, obj_sesasdatgen3(r).PlanCob, obj_sesasdatgen3(r).CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa);
-                                                
+
                                             ELSE
                                                 BEGIN
                                                     nTasa := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, obj_sesasdatgen3(r).IdTipoSeg, obj_sesasdatgen3(r).PlanCob, obj_sesasdatgen3(r).CodCobert,nEdad, cSexo, cRiesgo, nIdTarifa,NULL);
@@ -2451,11 +2420,7 @@ vl_Contado := vl_Contado +1;
                                 nPrimaDevengada,
                                 obj_sesasdatgen4(w).OrdenSESAS
                             );
-vl_Contado := vl_Contado+1;
-            IF vl_Contado =100000 THEN
-                COMMIT;
-                vl_Contado := 1;
-            END IF;
+
                         EXCEPTION
                             WHEN DUP_VAL_ON_INDEX THEN
                                 UPDATE SICAS_OC.SESAS_EMISION
@@ -2472,7 +2437,7 @@ vl_Contado := vl_Contado+1;
                                     AND NumCertificado = obj_sesasdatgen(x).NumCertificado
                                     AND Cobertura = LPAD(obj_sesasdatgen4(w).ClaveSESAS, 2, '0');
                           --AND  OrdenSesas     = nOrdenSesas;
-                                COMMIT;
+                              
                             WHEN OTHERS THEN
                                 SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, obj_sesasdatgen(x).NumPoliza,obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                         END;
@@ -2484,8 +2449,8 @@ vl_Contado := vl_Contado+1;
 
                 CLOSE COBERT_Q;
             END LOOP;
-            
-            
+
+
 
             EXIT WHEN obj_sesasdatgen.COUNT = 0;
         END LOOP;
@@ -3454,7 +3419,7 @@ vl_Contado := vl_Contado+1;
 
                             AND Cobertura = y.ClaveSesas;
 
-                        COMMIT;
+                    
                     WHEN OTHERS THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, x.NumPoliza,x.NumCertificado, SQLCODE, SQLERRM);
                 END;
@@ -3523,8 +3488,8 @@ vl_Contado := vl_Contado+1;
             AND NUMPOLIZA >= '0'
             AND NUMCERTIFICADO >= '0'
             GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA,IDETPOL;
-        
-    
+
+
     TYPE rec_sesaslleno IS RECORD (
         CODCIA          NUMBER,
         CODEMPRESA      NUMBER,
@@ -3533,10 +3498,10 @@ vl_Contado := vl_Contado+1;
         IDPOLIZA        NUMBER,
         IDETPOL         NUMBER,
         TOTAL           NUMBER);
-    
+
     TYPE type_sesaslleno IS TABLE OF rec_sesaslleno;
         obj_sesaslleno   type_sesaslleno;
-    
+
         TYPE rec_sesasdatgen IS RECORD (
             CODCIA           NUMBER,
             CODEMPRESA       NUMBER,
@@ -3579,7 +3544,7 @@ vl_Contado := vl_Contado+1;
         );
         TYPE type_sesasdatgen IS TABLE OF rec_sesasdatgen;
         obj_sesasdatgen   type_sesasdatgen;
-        
+
         CURSOR C_POL_IND_Q IS
         SELECT
             nCodCia                                                                                                               CodCia,
@@ -3604,8 +3569,7 @@ vl_Contado := vl_Contado+1;
             DECODE(PN.Sexo, 'F', 'F', 'M')                                                                                        Sexo
            --, SICAS_OC.OC_PROCESOSSESAS.GETSTATUSCERT( D.CodCia, D.IdPoliza,D.IDETPOL,  D.FecAnul, dFecHasta, D.StsDetalle,D.FecIniVig , D.FecFinVig,NVL(XX.Cod_Asegurado,D.Cod_Asegurado)  )          StatusCert
             ,
-            SICAS_OC.OC_PROCESOSSESAS.GETSTATUSCERTAP(D.CodCia, D.IdPoliza, D.IDETPOL, XX.FecAnulExclu, dFecHasta,
-                                                    XX.ESTADO, D.FecIniVig, D.FecFinVig, NVL(XX.Cod_Asegurado, D.Cod_Asegurado))                StatusCert,
+            SICAS_OC.OC_PROCESOSSESAS.GETSTATUSCERTAP(D.CodCia, D.IdPoliza, D.IDETPOL, XX.FecAnulExclu, dFecHasta, XX.ESTADO, D.FecIniVig, D.FecFinVig, NVL(XX.Cod_Asegurado, D.Cod_Asegurado))                StatusCert,
             NVL(CS.SubTipoSeg, '1')                                                                                               SubTipoSeg,
             SUBSTR(NVL(P.TipoDividendo, '003'), - 1)                                                                              TipoDividendo,
             /*(
@@ -3625,20 +3589,18 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(XX.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END                                                CantAsegModelo,
+            D.CantAsegModelo CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
             NVL(PC.PLANPOLIZA, '01') /*OC_PLAN_COBERTURAS.PLAN_POLIZA(D.CodCia, D.CodEmpresa, D.IdTipoSeg, D.PlanCob) */                                                                                             PlanPoliza,
             NVL(CS.MODALPOLIZA, '1')                                                                                              ModalidadPoliza,
-            (
-                CASE
+            (  CASE
                     WHEN CEIL(MONTHS_BETWEEN(D.FecFinVig, D.FecIniVig) / 12) < 1 THEN
                         1
                     ELSE
                         CEIL(MONTHS_BETWEEN(D.FecFinVig, D.FecIniVig) / 12)
-                END
-            )                                                                                                                     PlazoPagoPrima,
+                END  )                                                                                                                     PlazoPagoPrima,
             SICAS_OC.OC_PROCESOSSESAS.GETCOASEGURO(D.CodCia, D.IdPoliza, NULL)                                                    Coaseguro,
             DECODE(P.NumRenov, 0, 0, 1)                                                                                           Emision,
             SICAS_OC.OC_PROCESOSSESAS.GETSDOFONINV(D.CodCia, D.IdPoliza)                                                          SdoFonInv,
@@ -3655,13 +3617,7 @@ vl_Contado := vl_Contado+1;
             INNER JOIN SICAS_OC.CONFIG_SESAS_TIPO_SEGURO CS ON CS.CodCia = PC.CodCia
                                                                AND CS.CodEmpresa = PC.CodEmpresa
                                                                AND CS.IdTipoSeg = PC.IdTipoSeg
-        /*INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CAS
-			ON CAS.CODCIA 					= D.CodCia
-			AND CAS.CodEmpresa 				= D.CodEmpresa
-			AND CAS.IDTIPOSEG 				= D.IdTipoSeg
-			AND CAS.PLANCOB 			= D.PLANCOB*/
-            
-         
+
             INNER JOIN SICAS_OC.ASEGURADO_CERTIFICADO    XX ON XX.CodCia = D.CodCia
                                                             AND XX.IdPoliza = D.IdPoliza
                                                             AND XX.IdetPol = D.IDetPol
@@ -3783,7 +3739,7 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(AC.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END                  CantAsegModelo,
+            D.CantAsegModelo CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
@@ -3917,7 +3873,7 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(XX.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END              CantAsegModelo,
+            D.CantAsegModelo  CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
@@ -4066,7 +4022,7 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(AC.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END                      CantAsegModelo,
+            D.CantAsegModelo CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
@@ -4083,7 +4039,7 @@ vl_Contado := vl_Contado+1;
             ON D.IdPoliza = P.IdPoliza
             AND D.IDETPOL >= (SELECT MIN(IDETPOL) FROM SICAS_OC.DETALLE_POLIZA WHERE IDPOLIZA = P.IDPOLIZA AND CODCIA = P.CODCIA)
             AND D.CodCia = P.CodCia
-                                                    
+
             INNER JOIN SICAS_OC.ASEGURADO_CERTIFICADO    AC ON AC.CodCia = D.CodCia
                                                             AND AC.IDetPol = D.IDetPol
                                                             AND AC.IdPoliza = D.IdPoliza
@@ -4204,7 +4160,7 @@ vl_Contado := vl_Contado+1;
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(AC.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
-            CASE WHEN NVL(D.INDASEGMODELO, 'N') = 'S' THEN D.CantAsegModelo ELSE  1 END                             CantAsegModelo,
+            D.CantAsegModelo        CantAsegModelo,
             DECODE(NVL(P.IndConcentrada, 'N'), 'N', 0, 1)                                                                         PolConcentrada,
             D.IndAsegModelo                                                                                                       IndAsegModelo,
             0                                                                                                                     IdEndoso,
@@ -4229,7 +4185,7 @@ vl_Contado := vl_Contado+1;
             ON A.Cod_Asegurado = AC.Cod_Asegurado
         INNER JOIN SICAS_OC.PERSONA_NATURAL_JURIDICA PN 
             ON PN.Num_Doc_Identificacion = A.Num_Doc_Identificacion
-                                                               AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
+            AND PN.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
         INNER JOIN SICAS_OC.PLAN_COBERTURAS          PC 
             ON PC.IdTipoSeg = D.IdTipoSeg
             AND PC.CodEmpresa = D.CodEmpresa
@@ -4318,7 +4274,7 @@ vl_Contado := vl_Contado+1;
             AND IDSECUENCIA>=0;
 
         COMMIT;
-        
+
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
 
@@ -4342,8 +4298,9 @@ vl_Contado := vl_Contado+1;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
                     nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
-                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x). CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo, obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
-
+                    --nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x). CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo, obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
+                    nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC(nCodCia2,nCodEmpresa2,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
+                    
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
                 END IF;
@@ -4468,11 +4425,7 @@ vl_Contado := vl_Contado+1;
                         obj_sesasdatgen(x).SdoFonInv,
                         obj_sesasdatgen(x).SdoFonAdm
                     );
-vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
+
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen( x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
@@ -4528,8 +4481,7 @@ vl_Contado := vl_Contado +1;
             FETCH C_POL_COL_Q
             BULK COLLECT INTO obj_sesasdatgen;
             FOR x IN 1..obj_sesasdatgen.COUNT LOOP
-                IF nCodCia2 <> obj_sesasdatgen(x).CodCia OR nCodEmpresa2 <> obj_sesasdatgen(x).CodEmpresa OR nIdPoliza <> obj_sesasdatgen(
-                x).IdPoliza OR nIDetPol <> obj_sesasdatgen(x).IDetPol THEN
+                IF nCodCia2 <> obj_sesasdatgen(x).CodCia OR nCodEmpresa2 <> obj_sesasdatgen(x).CodEmpresa OR nIdPoliza <> obj_sesasdatgen(x).IdPoliza OR nIDetPol <> obj_sesasdatgen(x).IDetPol THEN
                     nCodCia2 := obj_sesasdatgen(x).CodCia;
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
@@ -4537,11 +4489,8 @@ vl_Contado := vl_Contado +1;
                     nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,
                     obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
-                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).
-                    CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
-                                                                                        obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(
-                                                                                        x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
-
+                    --nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
+                    nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC(nCodCia2,nCodEmpresa2,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
                 END IF;
@@ -4667,19 +4616,12 @@ vl_Contado := vl_Contado +1;
                         obj_sesasdatgen(x).SdoFonAdm
                     );
 
-vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
-                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(
-                        x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
+                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
                                                                      obj_sesasdatgen(x).NumCertificado, SQLCODE, 'El registro ya existe en la SESA, favor de validarlo.');
                     WHEN OTHERS THEN
-                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(
-                        x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
+                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
                                                                      obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                 END;
 
@@ -4738,11 +4680,8 @@ vl_Contado := vl_Contado +1;
                     nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,
                     obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
-                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).
-                    CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
-                                                                                        obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(
-                                                                                        x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
-
+                    --nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
+                nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC(nCodCia2,nCodEmpresa2,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
                 END IF;
@@ -4868,19 +4807,12 @@ vl_Contado := vl_Contado +1;
                         obj_sesasdatgen(x).SdoFonAdm
                     );
 
-vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
-                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(
-                        x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
+                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
                                                                      obj_sesasdatgen(x).NumCertificado, SQLCODE, 'El registro ya existe en la SESA, favor de validarlo.');
                     WHEN OTHERS THEN
-                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(
-                        x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
+                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
                                                                      obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                 END;
 
@@ -4939,9 +4871,10 @@ vl_Contado := vl_Contado +1;
                     nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,
                     obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
-                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
+                    /*nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
                                                                                         obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
-
+*/
+                    nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC(nCodCia2,nCodEmpresa2,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
                 END IF;
@@ -5026,11 +4959,6 @@ vl_Contado := vl_Contado +1;
                         obj_sesasdatgen(x).SdoFonAdm
                     );
 
-vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
@@ -5074,13 +5002,13 @@ vl_Contado := vl_Contado +1;
       END LOOP;
 */
 
-   
+
      OPEN c_Llenado;
         LOOP
             FETCH c_Llenado
             BULK COLLECT INTO obj_sesaslleno;
             forall x IN 1..obj_sesaslleno.COUNT 
-               
+
                 UPDATE SICAS_OC.SESAS_DATGEN
                 SET COMISIONDIRECTA = ROUND(COMISIONDIRECTA / obj_sesaslleno(x).TOTAL,2),
                     FECHAINSERT = SYSDATE
@@ -5090,13 +5018,7 @@ vl_Contado := vl_Contado +1;
                     AND CODUSUARIO = obj_sesaslleno(x).CodUsuario
                     AND IDPOLIZA = obj_sesaslleno(x).IDPOLIZA
                     AND IDETPOL = obj_sesaslleno(x).IDETPOL;
-                
-                vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
-    
+
            -- END LOOP;
 
             EXIT WHEN obj_sesaslleno.COUNT = 0;
@@ -5104,7 +5026,7 @@ vl_Contado := vl_Contado +1;
 
         CLOSE c_Llenado;
         COMMIT;
-        
+
     END DATGEN_AP;
 
     PROCEDURE EMISION_AP (
@@ -5788,8 +5710,8 @@ vl_Contado := vl_Contado +1;
                                 CLOSE CALC_Q;
                     --END LOOP;
                       --  COMMIT;
-                        
-                        
+
+
                             END LOOP;
 
                             EXIT WHEN obj_sesasdatgen2.COUNT = 0;
@@ -6030,21 +5952,15 @@ vl_Contado := vl_Contado +1;
                                 cTipoExtraPrima,
                                 obj_sesasdatgen4(w).OrdenSESAS
                             );
-    vl_Contado := vl_Contado +1;
-    IF vl_Contado=500000 THEN
-        COMMIT;
-        vl_Contado :=1;
-    END IF;
+
                         EXCEPTION
                             WHEN DUP_VAL_ON_INDEX THEN
                                 UPDATE SICAS_OC.SESAS_EMISION
-                                SET
-                                    PrimaEmitida = NVL(PrimaEmitida, 0) + NVL(nPmaEmiCob, 0),
+                                SET PrimaEmitida = NVL(PrimaEmitida, 0) + NVL(nPmaEmiCob, 0),
                                     SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(NVL(obj_sesasdatgen4(w).Suma_Moneda, 0), 0),
                                     primadevengada = primadevengada + nPrimaDevengada,
                                             fechainsert = sysdate
-                                WHERE
-                                        CodCia = nCodCia
+                                WHERE CodCia = nCodCia
                                     AND CodEmpresa = nCodEmpresa
                                     AND CodReporte = cCodReporteProces
                                     AND CodUsuario = cCodUsuario
@@ -6052,7 +5968,7 @@ vl_Contado := vl_Contado +1;
                                     AND NumCertificado = obj_sesasdatgen(x).NumCertificado
                                     AND Cobertura = LPAD(obj_sesasdatgen4(w).ClaveSESAS, 2, '0');
                       --AND  OrdenSesas     = nOrdenSesas;
-                               
+
                             WHEN OTHERS THEN
                                 SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, obj_sesasdatgen(x).NumPoliza,obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                         END;
@@ -6384,11 +6300,8 @@ vl_Contado := vl_Contado +1;
         UNION
         SELECT
             P.NumPolUnico                                                                                                           NumPoliza,
-            NVL(TRIM(LPAD(S.IdPoliza, 8, '0'))
-                || TRIM(LPAD(S.IDetPol, 2, '0'))
-                || TRIM(LPAD(S.Cod_Asegurado, 10, '0')), TRIM(LPAD(D.IdPoliza, 8, '0'))
-                                                         || TRIM(LPAD(D.IDetPol, 2, '0'))
-                                                         || TRIM(LPAD(D.Cod_Asegurado, 10, '0')))                                                                                NumCertificado,
+            NVL(TRIM(LPAD(S.IdPoliza, 8, '0')) || TRIM(LPAD(S.IDetPol, 2, '0'))
+                || TRIM(LPAD(S.Cod_Asegurado, 10, '0')), TRIM(LPAD(D.IdPoliza, 8, '0'))  || TRIM(LPAD(D.IDetPol, 2, '0')) || TRIM(LPAD(D.Cod_Asegurado, 10, '0'))) NumCertificado,
             S.IdSiniestro                                                                                                           NumSiniestro,
             S.Fec_Ocurrencia                                                                                                        FecOcuSin,
             S.Fec_Notificacion                                                                                                      FecRepSin,
@@ -6642,7 +6555,7 @@ vl_Contado := vl_Contado +1;
             INNER JOIN SICAS_OC.DETALLE_POLIZA        D ON  D.IdPoliza = S.IdPoliza
                                                     AND D.IDetPol = S.IDetPol
                                                     AND D.CODCIA = S.CODCIA
-                                                    
+
             INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS ON CS.IdTipoSeg = D.IdTipoSeg
                                                             AND CS.PlanCob = D.PlanCob
                                                             AND CS.CodEmpresa = D.CodEmpresa
@@ -6906,7 +6819,6 @@ vl_Contado := vl_Contado +1;
                             AND NumSiniestro = x.NumSiniestro
                             AND Cobertura = y.ClaveSesas;
 
-                        COMMIT;
                     WHEN OTHERS THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, x.NumPoliza,
                                                                      x.NumCertificado, SQLCODE, SQLERRM);
@@ -7608,8 +7520,6 @@ vl_Contado := vl_Contado +1;
                 END IF;
              --Inserto los registros
 
-
-
             END LOOP;
 
             EXIT WHEN o_DatGen.COUNT = 0;
@@ -7674,12 +7584,11 @@ vl_Contado := vl_Contado +1;
             NumPoliza      VARCHAR2(30),
             NumCertificado VARCHAR2(30)
         );
-      --
-        TYPE t_SesasDatGen IS
-            TABLE OF r_SesasDatGen;
-      --
+
+        TYPE t_SesasDatGen IS TABLE OF r_SesasDatGen;
+
         o_SesasDatGen   t_SesasDatGen;
-      --
+
         CURSOR COBERT_Q IS
         SELECT  C.CodCobert,
                 NVL(OrdenSESAS, 0)       OrdenSESAS,
@@ -7724,9 +7633,9 @@ vl_Contado := vl_Contado +1;
             Suma_Moneda  NUMBER,
             Prima_Moneda NUMBER
         );
-      --
+
         TYPE t_SesasEmision IS TABLE OF r_SesasEmision;
-      --
+
         o_SesasEmision  t_SesasEmision;
 
         vl_Contador2    NUMBER;
@@ -7747,15 +7656,15 @@ vl_Contado := vl_Contado +1;
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-      
+
         COMMIT;
       --
       SICAS_OC.OC_SESASCOLECTIVO.DATGEN_GM(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario,'SESADATGMC', 'SESADATGMC', cFiltrarPolizas);
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')|| ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
-        
-            
+
+
         OPEN cPolizas_DatGen;
         LOOP
             FETCH cPolizas_DatGen
@@ -7792,7 +7701,7 @@ vl_Contado := vl_Contado +1;
                         WHERE IDPOLIZA = nIdPoliza
                             AND IDETPOL = nIdetpol
                             AND CODCIA = nCodCia;
-                        
+
                         IF vl_AsegModel <= 1 THEN
 
                             BEGIN
@@ -7841,13 +7750,13 @@ vl_Contado := vl_Contado +1;
                                         AND NumCertificado = o_SesasDatGen(x).NumCertificado
                                         AND Cobertura = LPAD(o_SesasEmision(w).ClaveSESAS, 2, '0');
                               --AND  OrdenSesas     = nOrdenSesas;
-                                    COMMIT;
+                                  
                                 WHEN OTHERS THEN
                                     SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, SQLERRM);
                             END;
 
                        ELSE --SI TIENE ASEGURADO MODELO
-                        
+
                             BEGIN
                                 SELECT COUNT(1)
                                 INTO vl_CodValido
@@ -7858,7 +7767,7 @@ vl_Contado := vl_Contado +1;
 
                                 IF ( vl_CodValido = 1 ) THEN --Si el asegurado modelo corresponde al catalogo, se recorre la inserción, si no, solo se inserta en el log de errores
                                 vl_Contador2 :=  1;
-                            
+
                                     WHILE vl_Contador2 <= ( vl_AsegModel - 1 ) LOOP
                                         vl_Asegurado2 := TO_CHAR(o_SesasDatGen(x).NumCertificado + vl_Contador2);
 
@@ -7908,7 +7817,7 @@ vl_Contado := vl_Contado +1;
                                                     AND NumCertificado = o_SesasDatGen(x).NumCertificado
                                                     AND Cobertura = LPAD(o_SesasEmision(w).ClaveSESAS, 2, '0');
                                           --AND  OrdenSesas     = nOrdenSesas;
-                                                COMMIT;
+                                              
                                             WHEN OTHERS THEN
                                                 SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, SQLERRM);
                                         END;
@@ -7917,7 +7826,7 @@ vl_Contado := vl_Contado +1;
                                         vl_Contador2 := vl_Contador2 + 1;
                                     END LOOP;
                             COMMIT;
-                              
+
                                 ELSIF (vl_CodValido > 1) THEN
                                     SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces,cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, 'La póliza '
                                                                                                                       || o_SesasDatGen(x).IdPoliza|| ' tiene '|| vl_CodValido|| ' certificados de Asegurado Modelo validos en el catálogo.');
@@ -8008,7 +7917,7 @@ vl_Contado := vl_Contado +1;
             AND CodUsuario = cCodUsuario
             AND NUMCERTIFICADO = TRIM(LPAD(o_SesasDatGen(x).IdPoliza, 8, '0')) ||TRIM(LPAD(o_SesasDatGen(x).IDetPol, 2, '0')) ||TRIM(LPAD(o_SesasDatGen(x).CodAsegurado, 10, '0'))
             AND COBERTURA = COBERTURA;
-                    
+
 
                 ELSE  --ES ASEGURADO MODELO
             BEGIN
@@ -8036,7 +7945,7 @@ WHEN OTHERS THEN
 END;
                    END IF;
 
-                 
+
 
                     UPDATE SICAS_OC.SESAS_EMISION E
                     SET PrimaEmitida = nPmaEmiCob,

@@ -997,6 +997,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
+        
+        
         SICAS_OC.OC_SESASINDIVIDUAL.DATGEN_VI(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario, 'SESADATVII', 'SESADATVII', cFiltrarPolizas);
 
         --CURSOR cPolizas_DatGen IS
@@ -1138,9 +1140,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
 
 
                         CLOSE POL_Q;
-                        
+
                         --COMMIT;
-                        
+
                         IF NVL(nPrimaMonedaTotPol, 0) = 0 THEN
                             OPEN POL_Q;
                             LOOP
@@ -1226,7 +1228,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
                             END LOOP;
 
                             CLOSE POL_Q;
-                            
+
                             COMMIT;
 
                     --END LOOP;
@@ -1361,7 +1363,7 @@ cStatus2 :='A';
                                             AND NumCertificado = obj_sesasdatgen(x).NumCertificado
                                             AND Cobertura = LPAD(obj_sesasdatgen4(w).ClaveSESAS, 2, '0');
                       --AND  OrdenSesas     = nOrdenSesas;
-                                        --COMMIT;
+                                       
                                     WHEN OTHERS THEN
                                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario,obj_sesasdatgen(x).IdPoliza,obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                                 END;
@@ -1605,7 +1607,7 @@ cStatus2 :='A';
                                 ON B.NumTransaccion = A.IdTransaccion
                             WHERE A.IdSiniestro = S.IdSiniestro
                                 AND A.IdTransaccion = R.TRANSACCION
-                                           
+
                                 AND B.FecComprob BETWEEN dvarFecDesde AND dvarFecHasta
                         )
                   OR EXISTS (   SELECT 'S'
@@ -1855,7 +1857,7 @@ cStatus2 :='A';
                             AND NumSiniestro = x.NumSiniestro
                             AND Cobertura = y.ClaveSesas;
 
-                        COMMIT;
+                      
                     WHEN OTHERS THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, x.NumPoliza,x.NumCertificado, SQLCODE, SQLERRM);
                 END;
@@ -2474,12 +2476,10 @@ cStatus2 :='A';
 
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
-                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(
-                        x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
+                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
                                                                      obj_sesasdatgen(x).NumCertificado, SQLCODE, 'El registro ya existe en la SESA, favor de validarlo.');
                     WHEN OTHERS THEN
-                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(
-                        x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
+                        SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).CodReporte, obj_sesasdatgen(x).CodUsuario, obj_sesasdatgen(x).NumPoliza,
                                                                      obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                 END;
 
@@ -2785,7 +2785,7 @@ cStatus2 :='A';
         COMMIT;
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')  || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')  || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
-        
+
         SICAS_OC.OC_SESASINDIVIDUAL.DATGEN_AP(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario, 'SESADATAPI', 'SESADATAPI'/*cCodReporteProces*/, cFiltrarPolizas);
 
         FOR x IN cPolizas_DatGen LOOP
@@ -3094,7 +3094,7 @@ cStatus2 :='A';
                             AND NumCertificado = x.NumCertificado
                             AND Cobertura = LPAD(w.ClaveSESAS, 2, '0');
                       --AND  OrdenSesas     = nOrdenSesas;
-                        COMMIT;
+
                     WHEN OTHERS THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, x.NumPoliza, x.NumCertificado, SQLCODE, SQLERRM);
                 END;
@@ -3728,7 +3728,6 @@ cStatus2 :='A';
                             AND NumSiniestro = x.NumSiniestro
                             AND Cobertura = y.ClaveSesas;
 
-                        COMMIT;
                     WHEN OTHERS THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, x.NumPoliza,
                                                                      x.NumCertificado, SQLCODE, SQLERRM);
@@ -4455,7 +4454,7 @@ cStatus2 :='A';
         nPrimaDevengada SICAS_OC.SESAS_EMISION.PrimaDevengada%TYPE;
         cTipoExtraPrima SICAS_OC.SESAS_EMISION.TIPOEXTRAPRIMA%TYPE;
         nNumDiasRenta   SICAS_OC.SESAS_EMISION.NumDiasRenta%TYPE;
-        
+
         CURSOR cPolizas_DatGen IS
         SELECT
             IdPoliza,
@@ -4619,16 +4618,16 @@ cStatus2 :='A';
                             nPrimaDevengada := nPmaEmiCob;
                         END IF;
                         nPrimaDevengada := SICAS_OC.OC_PROCESOSSESAS.GETPRIMADEVENGADA(nidPoliza, nPmaEmiCob, dvarFecHasta, dFecIniVig, dFecFinVig);
-                        
+
                         SELECT NVL(CANTASEGMODELO,0)
                         INTO vl_AsegModel
                         FROM SICAS_OC.DETALLE_POLIZA
                         WHERE IDPOLIZA = nIdPoliza
                             AND IDETPOL = nIdetpol
                             AND CODCIA = nCodCia;
-                        
+
                         IF vl_AsegModel <= 1 THEN
-                        
+
                     --Inserto Emisión/Coberturas
                         BEGIN
                             INSERT INTO SICAS_OC.SESAS_EMISION (
@@ -4684,9 +4683,9 @@ cStatus2 :='A';
                                 x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, SQLERRM);
                         END;
 
-                        
+
                          ELSE --SI TIENE ASEGURADO MODELO
-                        
+
                             BEGIN
                                 SELECT COUNT(1)
                                 INTO vl_CodValido
@@ -4697,7 +4696,7 @@ cStatus2 :='A';
 
                                 IF ( vl_CodValido = 1 ) THEN --Si el asegurado modelo corresponde al catalogo, se recorre la inserción, si no, solo se inserta en el log de errores
                                 vl_Contador2 :=  1;
-                            
+
                                     WHILE vl_Contador2 <= ( vl_AsegModel - 1 ) LOOP
                                         vl_Asegurado2 := TO_CHAR(o_SesasDatGen(x).NumCertificado + vl_Contador2);
 
@@ -4747,7 +4746,7 @@ cStatus2 :='A';
                                                     AND NumCertificado = o_SesasDatGen(x).NumCertificado
                                                     AND Cobertura = LPAD(o_SesasEmision(w).ClaveSESAS, 2, '0');
                                           --AND  OrdenSesas     = nOrdenSesas;
-                                                COMMIT;
+                                          
                                             WHEN OTHERS THEN
                                                 SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, SQLERRM);
                                         END;
@@ -4756,7 +4755,7 @@ cStatus2 :='A';
                                         vl_Contador2 := vl_Contador2 + 1;
                                     END LOOP;
                             COMMIT;
-                              
+
                                 ELSIF (vl_CodValido > 1) THEN
                                     SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces,cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, 'La póliza '
                                                                                                                       || o_SesasDatGen(x).IdPoliza|| ' tiene '|| vl_CodValido|| ' certificados de Asegurado Modelo validos en el catálogo.');
@@ -4774,7 +4773,7 @@ cStatus2 :='A';
 
 
                         END IF;
-                        
+
                     END LOOP;
 
                     EXIT WHEN o_SesasEmision.COUNT = 0;
@@ -4845,7 +4844,7 @@ cStatus2 :='A';
             AND CodUsuario = cCodUsuario
             AND NUMCERTIFICADO = TRIM(LPAD(o_SesasDatGen(x).IdPoliza, 8, '0')) ||TRIM(LPAD(o_SesasDatGen(x).IDetPol, 2, '0')) ||TRIM(LPAD(o_SesasDatGen(x).CodAsegurado, 10, '0'))
             AND COBERTURA = COBERTURA;
-                    
+
 
                 ELSE  --ES ASEGURADO MODELO
             BEGIN
@@ -4873,7 +4872,7 @@ WHEN OTHERS THEN
 END;
                    END IF;
 
-                 
+
 
                     UPDATE SICAS_OC.SESAS_EMISION E
                     SET PrimaEmitida = nPmaEmiCob,
@@ -5245,7 +5244,6 @@ END;
 
 END OC_SESASINDIVIDUAL;
 /
-
 
 CREATE OR REPLACE PUBLIC SYNONYM OC_SESASINDIVIDUAL FOR SICAS_OC.OC_SESASINDIVIDUAL
 /
