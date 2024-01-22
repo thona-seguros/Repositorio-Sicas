@@ -5465,7 +5465,7 @@ EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_EMISION');
 */
         
 
-      --  SICAS_OC.OC_SESASCOLECTIVO.DATGEN_AP(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario,'SESADATAPC', 'SESADATAPC'/*cCodReporteProces*/, cFiltrarPolizas);
+        SICAS_OC.OC_SESASCOLECTIVO.DATGEN_AP(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario,'SESADATAPC', 'SESADATAPC'/*cCodReporteProces*/, cFiltrarPolizas);
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')|| ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
