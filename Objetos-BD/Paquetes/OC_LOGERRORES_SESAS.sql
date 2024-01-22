@@ -37,7 +37,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_LOGERRORES_SESAS AS
                                 PA_CODERROR            IN      SICAS_OC.LOGERRORES_SESAS.CODERR%TYPE,
                                 PA_DESCERROR           IN      SICAS_OC.LOGERRORES_SESAS.DESCER%TYPE
                                 ) AS
-                                vl_CodError     NUMBER;
+                                
+    vl_CodError     NUMBER;
+    
     BEGIN
 
         INSERT INTO SICAS_OC.LOGERRORES_SESAS (
@@ -65,9 +67,6 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_LOGERRORES_SESAS AS
                                                 SYSDATE,
                                                 PA_CODUSUARIO
                                               );
-
-        COMMIT;
-
 
     EXCEPTION
         WHEN OTHERS THEN

@@ -1,5 +1,4 @@
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
-
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.SESAS_DATGEN.CODEMPRESA%TYPE,
@@ -133,7 +132,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         cFormaVta         SICAS_OC.SESAS_DATGEN.FORMAVTA%TYPE;
 
         CURSOR c_Llenado IS
-        SELECT CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA, IDETPOL,COUNT(1) TOTAL
+        SELECT CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,NUMPOLIZA,IDPOLIZA,COUNT(1) TOTAL
         FROM SICAS_OC.SESAS_DATGEN
         WHERE CODCIA = nCodCia
             AND CODEMPRESA = nCodEmpresa
@@ -141,18 +140,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CODUSUARIO = cCodUsuario
             AND NUMPOLIZA >= '0'
             AND NUMCERTIFICADO >= '0'
-        GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA,IDETPOL;
+        GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,NUMPOLIZA,IDPOLIZA;
 
     TYPE rec_sesaslleno IS RECORD (
         CODCIA          NUMBER,
         CODEMPRESA      NUMBER,
         CODREPORTE      VARCHAR2(40),
         CODUSUARIO      VARCHAR2(40),
+        NUMPOLIZA       VARCHAR2(30),
         IDPOLIZA        NUMBER,
-        IDETPOL         NUMBER,
         TOTAL           NUMBER);
 
-        TYPE type_sesaslleno IS TABLE OF rec_sesaslleno;
+        TYPE type_sesaslleno IS TABLE OF rec_sesaslleno  INDEX BY PLS_INTEGER ;
+        
         obj_sesaslleno   type_sesaslleno;
 
         CURSOR C_POL_IND_Q IS
@@ -894,27 +894,27 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             CODEMPRESA       NUMBER,
             CODREPORTE       VARCHAR2(30),
             CODUSUARIO       VARCHAR2(30),
-            NUMPOLIZA        VARCHAR2(30),
+            NUMPOLIZA        VARCHAR2(40),
             NUMCERTIFICADO   VARCHAR2(30),
-            TIPOSEGURO       VARCHAR2(5),
-            MONEDA           VARCHAR2(5),
-            ENTIDADASEGURADO VARCHAR2(5),
+            TIPOSEGURO       VARCHAR2(10),
+            MONEDA           VARCHAR2(10),
+            ENTIDADASEGURADO VARCHAR2(10),
             FECINIVIG        DATE,
             FECFINVIG        DATE,
             FECALTCERT       DATE,
             FECBAJCERT       DATE,
             FECNACIM         DATE,
             FECEMISION       DATE,
-            SEXO             VARCHAR2(5),
-            STATUSCERT       VARCHAR2(5),
+            SEXO             VARCHAR2(10),
+            STATUSCERT       VARCHAR2(10),
         --FORMAVTA	VARCHAR2(2 ),
-            TIPODIVIDENDO    VARCHAR2(5),
-            PLANPOLIZA       VARCHAR2(5),
-            MODALIDADPOLIZA  VARCHAR2(5),
-            FORMAPAGO        VARCHAR2(5),
+            TIPODIVIDENDO    VARCHAR2(10),
+            PLANPOLIZA       VARCHAR2(10),
+            MODALIDADPOLIZA  VARCHAR2(10),
+            FORMAPAGO        VARCHAR2(10),
             PLAZOPAGOPRIMA   NUMBER,
-            COASEGURO        VARCHAR2(5),
-            EMISION          VARCHAR2(5),
+            COASEGURO        VARCHAR2(10),
+            EMISION          VARCHAR2(10),
             PRIMACEDIDA      NUMBER,
             SDOFONINV        NUMBER,
             SDOFONADM        NUMBER,
@@ -923,16 +923,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             IDPOLIZA         NUMBER,
             IDETPOL          NUMBER,
             Cod_Asegurado    NUMBER,
-            TIPODETALLE      VARCHAR2(5),
+            TIPODETALLE      VARCHAR2(10),
             CantAsegModelo   NUMBER,
-            PolConcentrada   VARCHAR2(70),
-            IndAsegModelo    VARCHAR2(5),
+            PolConcentrada   VARCHAR2(200),
+            IndAsegModelo    VARCHAR2(10),
             IdEndoso         NUMBER
         );
         TYPE type_sesasdatgen IS TABLE OF rec_sesasdatgen;
         obj_sesasdatgen   type_sesasdatgen;
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_DATGEN');
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+/*
         DELETE SICAS_OC.SESAS_DATGEN
         WHERE CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -947,8 +950,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuariO
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
         
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
@@ -976,10 +979,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
-                    --nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
+                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
-                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).
-                    CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo, obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen( x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
+                    nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo, obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen( x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
 
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
@@ -1034,7 +1036,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         obj_sesasdatgen(x).NumCertificado,
                         obj_sesasdatgen(x).TipoSeguro,
                         obj_sesasdatgen(x).Moneda,
-                        obj_sesasdatgen(x).EntidadAsegurado,
+                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                         obj_sesasdatgen(x).FecIniVig,
                         obj_sesasdatgen(x).FecFinVig,
                         obj_sesasdatgen(x).FecAltCert,
@@ -1087,7 +1089,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE C_POL_IND_Q;
-        COMMIT;
+        
 
     /*
       FOR x IN C_POL_IND_Q LOOP
@@ -1114,7 +1116,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                        x.FecIniVig     , x.FecFinVig , x.FecAltCert     , x.FecBajCert    , x.FecNacim      , x.FecEmision    , x.Sexo      , x.StatusCert     , cFormaVta         ,
                        x.TipoDividendo , x.PlanPoliza, x.ModalidadPoliza, x.FormaPago     , x.PlazoPagoPrima, x.Coaseguro     , x.Emision   , nCantCertificados, x.PrimaCedida     ,
                        nComisionDirecta, x.SdoFonInv , x.SdoFonAdm      , x.MontoDividendo, x.MontoRescate  , x.IdPoliza      , x.IDetPol   , x.Cod_Asegurado  , x.TipoDetalle );
-            COMMIT;
+            
         EXCEPTION
             WHEN OTHERS THEN
                 SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(x.CodCia,x.CodEmpresa,x.CodUsuario,x.CodReporte, x.NumPoliza,x.NumCertificado,SQLCODE,SQLERRM);
@@ -1144,7 +1146,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
-                    --nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
+                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
                                                                                       obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(
@@ -1202,7 +1204,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         obj_sesasdatgen(x).NumCertificado,
                         obj_sesasdatgen(x).TipoSeguro,
                         obj_sesasdatgen(x).Moneda,
-                        obj_sesasdatgen(x).EntidadAsegurado,
+                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                         obj_sesasdatgen(x).FecIniVig,
                         obj_sesasdatgen(x).FecFinVig,
                         obj_sesasdatgen(x).FecAltCert,
@@ -1254,7 +1256,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE C_POL_COL_Q;
-        COMMIT;
+        
 
     /*
       FOR x IN C_POL_COL_Q LOOP
@@ -1308,7 +1310,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
-                    --nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
+                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
                                                                                       obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
@@ -1366,7 +1368,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         obj_sesasdatgen(x).NumCertificado,
                         obj_sesasdatgen(x).TipoSeguro,
                         obj_sesasdatgen(x).Moneda,
-                        obj_sesasdatgen(x).EntidadAsegurado,
+                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                         obj_sesasdatgen(x).FecIniVig,
                         obj_sesasdatgen(x).FecFinVig,
                         obj_sesasdatgen(x).FecAltCert,
@@ -1418,7 +1420,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE C_POL_IND_MOV_Q;
-        COMMIT;
+        
         /*
       FOR x IN C_POL_IND_MOV_Q LOOP
           --Afinación
@@ -1443,7 +1445,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                        x.FecIniVig     , x.FecFinVig , x.FecAltCert     , x.FecBajCert    , x.FecNacim      , x.FecEmision    , x.Sexo      , x.StatusCert     , cFormaVta         ,
                        x.TipoDividendo , x.PlanPoliza, x.ModalidadPoliza, x.FormaPago     , x.PlazoPagoPrima, x.Coaseguro     , x.Emision   , nCantCertificados, x.PrimaCedida     ,
                        nComisionDirecta, x.SdoFonInv , x.SdoFonAdm      , x.MontoDividendo, x.MontoRescate  , x.IdPoliza      , x.IDetPol   , x.Cod_Asegurado  , x.TipoDetalle );
-                COMMIT;
+                
         EXCEPTION
             WHEN OTHERS THEN
                 SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(x.CodCia,x.CodEmpresa,x.CodUsuario,x.CodReporte, x.NumPoliza,x.NumCertificado,SQLCODE,SQLERRM);
@@ -1475,7 +1477,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
-                    --nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
+                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
 
@@ -1531,7 +1533,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         obj_sesasdatgen(x).NumCertificado,
                         obj_sesasdatgen(x).TipoSeguro,
                         obj_sesasdatgen(x).Moneda,
-                        obj_sesasdatgen(x).EntidadAsegurado,
+                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                         obj_sesasdatgen(x).FecIniVig,
                         obj_sesasdatgen(x).FecFinVig,
                         obj_sesasdatgen(x).FecAltCert,
@@ -1583,7 +1585,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE C_POL_COL_MOV_Q;
-        COMMIT;
+        
 
          /*
       FOR x IN C_POL_COL_MOV_Q LOOP
@@ -1610,7 +1612,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                        x.TipoDividendo , x.PlanPoliza, x.ModalidadPoliza, x.FormaPago     , x.PlazoPagoPrima, x.Coaseguro     , x.Emision   , nCantCertificados, x.PrimaCedida     ,
                        nComisionDirecta, x.SdoFonInv , x.SdoFonAdm      , x.MontoDividendo, x.MontoRescate  , x.IdPoliza      , x.IDetPol   , x.Cod_Asegurado  , x.TipoDetalle );
 
-            COMMIT;
+            
             EXCEPTION
                 WHEN OTHERS THEN
                     SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(x.CodCia,x.CodEmpresa,x.CodUsuario,x.CodReporte,x.NumPoliza,x.NumCertificado,SQLCODE,SQLERRM); 
@@ -1618,30 +1620,33 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
       END LOOP;
       --
       */
-
+BEGIN
      OPEN c_Llenado;
         LOOP
             FETCH c_Llenado
             BULK COLLECT INTO obj_sesaslleno;
-            forall x IN 1..obj_sesaslleno.COUNT 
+            FORALL x IN 1..obj_sesaslleno.COUNT --LOOP
 
                 UPDATE SICAS_OC.SESAS_DATGEN
-                SET COMISIONDIRECTA = ROUND(SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta) / obj_sesaslleno(x).TOTAL,2),
+                SET COMISIONDIRECTA = ROUND( COMISIONDIRECTA / obj_sesaslleno(x).TOTAL,2),
                     FECHAINSERT = SYSDATE
                 WHERE CODCIA = obj_sesaslleno(x).CodCia
                     AND CODEMPRESA = obj_sesaslleno(x).CodEmpresa
                     AND CODREPORTE = obj_sesaslleno(x).CodReporte
                     AND CODUSUARIO = obj_sesaslleno(x).CodUsuario
-                    AND IDPOLIZA = obj_sesaslleno(x).IDPOLIZA
-                    AND IDETPOL = obj_sesaslleno(x).IDETPOL;
+                    AND NUMPOLIZA = obj_sesaslleno(x).NUMPOLIZA
+                    AND IDPOLIZA = obj_sesaslleno(x).IDPOLIZA;
 
-           -- END LOOP;
+            --END LOOP;
 
             EXIT WHEN obj_sesaslleno.COUNT = 0;
         END LOOP;
 
         CLOSE c_Llenado;
-        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            COMMIT;
+    END;
 
     END DATGEN_VI;
 
@@ -1983,6 +1988,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         nPrimaDevengada    NUMBER;
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_EMISION');
+/*
         DELETE SICAS_OC.SESAS_EMISION
         WHERE  CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -1996,8 +2003,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
 
         /*Ejecuta datos generales ya que emision depende de el*/
         SICAS_OC.OC_SESASCOLECTIVO.DATGEN_VI(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario, 'SESADATVIG', 'SESADATVIG'/*cCodReporteProces*/, cFiltrarPolizas);
@@ -2456,7 +2463,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE cPolizas_DatGen;
-        COMMIT;
+        
 
 
         OPEN cPolizas_DatGen;
@@ -2533,7 +2540,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE cPolizas_DatGen;
-        COMMIT;     
+             
     /*
     FOR x IN cPolizas_DatGen LOOP
         nIdPoliza      := x.IdPoliza;
@@ -3244,6 +3251,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         */
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+/*
         DELETE SICAS_OC.SESAS_SINIESTROS
         WHERE
                 CodCia = nCodCia
@@ -3258,8 +3268,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')|| ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
         FOR x IN cSiniestros LOOP
@@ -3456,7 +3466,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                 NUMPOLIZA = NumPoliza
             AND NUMSINIESTRO = NumSiniestro;--OrdeSesas
 
-        COMMIT;
+        
     END SINIESTROS_VI;
 
     PROCEDURE DATGEN_AP (
@@ -3479,7 +3489,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         cFormaVta         SICAS_OC.SESAS_DATGEN.FORMAVTA%TYPE;
       --
       CURSOR c_Llenado IS
-       SELECT CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA,IDETPOL,COUNT(1) TOTAL
+       SELECT CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,NUMPOLIZA NUMPOLIZA,IDPOLIZA,COUNT(1) TOTAL
         FROM SICAS_OC.SESAS_DATGEN
         WHERE CODCIA = nCodCia
             AND CODEMPRESA = nCodEmpresa
@@ -3487,7 +3497,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CODUSUARIO = cCodUsuario
             AND NUMPOLIZA >= '0'
             AND NUMCERTIFICADO >= '0'
-            GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,IDPOLIZA,IDETPOL;
+            GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,NUMPOLIZA;
 
 
     TYPE rec_sesaslleno IS RECORD (
@@ -3495,11 +3505,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         CODEMPRESA      NUMBER,
         CODREPORTE      VARCHAR2(40),
         CODUSUARIO      VARCHAR2(40),
+        NUMPOLIZA       VARCHAR2(30),
         IDPOLIZA        NUMBER,
-        IDETPOL         NUMBER,
         TOTAL           NUMBER);
 
-    TYPE type_sesaslleno IS TABLE OF rec_sesaslleno;
+    TYPE type_sesaslleno IS TABLE OF rec_sesaslleno  INDEX BY PLS_INTEGER ;
         obj_sesaslleno   type_sesaslleno;
 
         TYPE rec_sesasdatgen IS RECORD (
@@ -4255,8 +4265,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             ) ) );
 
     BEGIN
-
-
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_DATGEN');
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+/*
         DELETE SICAS_OC.SESAS_DATGEN
         WHERE CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -4273,7 +4284,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
 
-        COMMIT;
+        */
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
@@ -4291,6 +4302,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             FETCH C_POL_IND_Q
             BULK COLLECT INTO obj_sesasdatgen;
             FOR x IN 1..obj_sesasdatgen.COUNT LOOP
+            
+            nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC( obj_sesasdatgen(x).CodCia,obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
+            
                 IF nCodCia2 <> obj_sesasdatgen(x).CodCia OR nCodEmpresa2 <> obj_sesasdatgen(x).CodEmpresa OR nIdPoliza <> obj_sesasdatgen(x).IdPoliza OR nIDetPol <> obj_sesasdatgen(x).IDetPol THEN
                     nCodCia2 := obj_sesasdatgen(x).CodCia;
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
@@ -4299,8 +4313,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     --nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x). CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo, obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
-                    nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC(nCodCia2,nCodEmpresa2,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
-                    
+
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
                 END IF;
@@ -4395,7 +4408,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         obj_sesasdatgen(x).NumCertificado,
                         obj_sesasdatgen(x).TipoSeguro,
                         obj_sesasdatgen(x).Moneda,
-                        obj_sesasdatgen(x).EntidadAsegurado,
+                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                         obj_sesasdatgen(x).FecIniVig,
                         obj_sesasdatgen(x).FecFinVig,
                         obj_sesasdatgen(x).FecAltCert,
@@ -4441,7 +4454,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE C_POL_IND_Q;
-        COMMIT;
+        
       /*
       FOR x IN C_POL_IND_Q LOOP
           --Afinación
@@ -4481,6 +4494,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             FETCH C_POL_COL_Q
             BULK COLLECT INTO obj_sesasdatgen;
             FOR x IN 1..obj_sesasdatgen.COUNT LOOP
+                
+                nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC( obj_sesasdatgen(x).CodCia,obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
+                
                 IF nCodCia2 <> obj_sesasdatgen(x).CodCia OR nCodEmpresa2 <> obj_sesasdatgen(x).CodEmpresa OR nIdPoliza <> obj_sesasdatgen(x).IdPoliza OR nIDetPol <> obj_sesasdatgen(x).IDetPol THEN
                     nCodCia2 := obj_sesasdatgen(x).CodCia;
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
@@ -4490,7 +4506,6 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     --nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
-                    nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC(nCodCia2,nCodEmpresa2,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
                 END IF;
@@ -4585,7 +4600,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         obj_sesasdatgen(x).NumCertificado,
                         obj_sesasdatgen(x).TipoSeguro,
                         obj_sesasdatgen(x).Moneda,
-                        obj_sesasdatgen(x).EntidadAsegurado,
+                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                         obj_sesasdatgen(x).FecIniVig,
                         obj_sesasdatgen(x).FecFinVig,
                         obj_sesasdatgen(x).FecAltCert,
@@ -4631,7 +4646,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE C_POL_COL_Q;
-        COMMIT;
+        
       /*
       FOR x IN C_POL_COL_Q LOOP
           --Afinación
@@ -4671,8 +4686,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             FETCH C_POL_IND_MOV_Q
             BULK COLLECT INTO obj_sesasdatgen;
             FOR x IN 1..obj_sesasdatgen.COUNT LOOP
-                IF nCodCia2 <> obj_sesasdatgen(x).CodCia OR nCodEmpresa2 <> obj_sesasdatgen(x).CodEmpresa OR nIdPoliza <> obj_sesasdatgen(
-                x).IdPoliza OR nIDetPol <> obj_sesasdatgen(x).IDetPol THEN
+            
+                nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC( obj_sesasdatgen(x).CodCia,obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
+                
+                IF nCodCia2 <> obj_sesasdatgen(x).CodCia OR nCodEmpresa2 <> obj_sesasdatgen(x).CodEmpresa OR nIdPoliza <> obj_sesasdatgen(x).IdPoliza OR nIDetPol <> obj_sesasdatgen(x).IDetPol THEN
                     nCodCia2 := obj_sesasdatgen(x).CodCia;
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
@@ -4681,7 +4698,6 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     --nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
-                nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC(nCodCia2,nCodEmpresa2,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
                 END IF;
@@ -4776,7 +4792,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         obj_sesasdatgen(x).NumCertificado,
                         obj_sesasdatgen(x).TipoSeguro,
                         obj_sesasdatgen(x).Moneda,
-                        obj_sesasdatgen(x).EntidadAsegurado,
+                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                         obj_sesasdatgen(x).FecIniVig,
                         obj_sesasdatgen(x).FecFinVig,
                         obj_sesasdatgen(x).FecAltCert,
@@ -4822,7 +4838,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE C_POL_IND_MOV_Q;
-        COMMIT;
+        
 
       /*
       FOR x IN C_POL_IND_MOV_Q LOOP
@@ -4863,18 +4879,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             FETCH C_POL_COL_MOV_Q
             BULK COLLECT INTO obj_sesasdatgen;
             FOR x IN 1..obj_sesasdatgen.COUNT LOOP
+                
+                nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC( obj_sesasdatgen(x).CodCia,obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
+                
                 IF nCodCia2 <> obj_sesasdatgen(x).CodCia OR nCodEmpresa2 <> obj_sesasdatgen(x).CodEmpresa OR nIdPoliza <> obj_sesasdatgen(x).IdPoliza OR nIDetPol <> obj_sesasdatgen(x).IDetPol THEN
                     nCodCia2 := obj_sesasdatgen(x).CodCia;
                     nCodEmpresa2 := obj_sesasdatgen(x).CodEmpresa;
                     nIdPoliza := obj_sesasdatgen(x).IdPoliza;
                     nIDetPol := obj_sesasdatgen(x).IDetPol;
-                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,
-                    obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
+                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa,obj_sesasdatgen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     /*nCantCertificados := SICAS_OC.OC_PROCESOSSESAS.GETCANTCERTIFICADOS_2(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).CodEmpresa, obj_sesasdatgen(x).IdPoliza, obj_sesasdatgen(x).IDetPol, obj_sesasdatgen(x).IndAsegModelo,
                                                                                         obj_sesasdatgen(x).CantAsegModelo, obj_sesasdatgen(x).PolConcentrada, obj_sesasdatgen(x).IdEndoso);
 */
-                    nCantCertificados := CASE WHEN NVL(obj_sesasdatgen(x).IndAsegModelo, 'N') = 'S' THEN SICAS_OC.OC_PROCESOSSESAS.GETCANTASEGAPC(nCodCia2,nCodEmpresa2,obj_sesasdatgen(x).Cod_Asegurado,obj_sesasdatgen(x).CantAsegModelo) ELSE  1 END;
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(obj_sesasdatgen(x).CodCia, obj_sesasdatgen(x).IdPoliza);
 
                 END IF;
@@ -4928,7 +4945,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         obj_sesasdatgen(x).NumCertificado,
                         obj_sesasdatgen(x).TipoSeguro,
                         obj_sesasdatgen(x).Moneda,
-                        obj_sesasdatgen(x).EntidadAsegurado,
+                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                         obj_sesasdatgen(x).FecIniVig,
                         obj_sesasdatgen(x).FecFinVig,
                         obj_sesasdatgen(x).FecAltCert,
@@ -4974,7 +4991,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE C_POL_COL_MOV_Q;
-        COMMIT;
+        
 
       /*
       FOR x IN C_POL_COL_MOV_Q LOOP
@@ -5002,12 +5019,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
       END LOOP;
 */
 
-
+BEGIN
      OPEN c_Llenado;
         LOOP
             FETCH c_Llenado
             BULK COLLECT INTO obj_sesaslleno;
-            forall x IN 1..obj_sesaslleno.COUNT 
+            FOR x IN 1..obj_sesaslleno.COUNT LOOP
 
                 UPDATE SICAS_OC.SESAS_DATGEN
                 SET COMISIONDIRECTA = ROUND(COMISIONDIRECTA / obj_sesaslleno(x).TOTAL,2),
@@ -5016,17 +5033,20 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     AND CODEMPRESA = obj_sesaslleno(x).CodEmpresa
                     AND CODREPORTE = obj_sesaslleno(x).CodReporte
                     AND CODUSUARIO = obj_sesaslleno(x).CodUsuario
-                    AND IDPOLIZA = obj_sesaslleno(x).IDPOLIZA
-                    AND IDETPOL = obj_sesaslleno(x).IDETPOL;
+                    AND NUMPOLIZA = obj_sesaslleno(x).NUMPOLIZA
+                    AND IDPOLIZA = obj_sesaslleno(x).IDPOLIZA;
 
-           -- END LOOP;
+            END LOOP;
 
             EXIT WHEN obj_sesaslleno.COUNT = 0;
         END LOOP;
 
         CLOSE c_Llenado;
-        COMMIT;
-
+        
+EXCEPTION
+        WHEN OTHERS THEN
+            COMMIT;
+    END;
     END DATGEN_AP;
 
     PROCEDURE EMISION_AP (
@@ -5426,6 +5446,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         nDiasRenta         NUMBER;
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_EMISION');
+/*
        DELETE SICAS_OC.SESAS_EMISION
         WHERE
                 CodCia = nCodCia
@@ -5440,8 +5462,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
 
       --  SICAS_OC.OC_SESASCOLECTIVO.DATGEN_AP(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario,'SESADATAPC', 'SESADATAPC'/*cCodReporteProces*/, cFiltrarPolizas);
 
@@ -5623,7 +5645,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     END LOOP;
 
                     CLOSE POL_Q;
-                   -- COMMIT;
+                   -- 
             --END LOOP; 
 
 --             nPrimaContable := (NVL(nPrimaContable,0) - NVL(nPrimaContableAnu,0)) - (NVL(nMtoCptoNcrMoneda,0) - NVL(nMtoCptoNcrMonedaAnu,0));
@@ -5709,7 +5731,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
                                 CLOSE CALC_Q;
                     --END LOOP;
-                      --  COMMIT;
+                      --  
 
 
                             END LOOP;
@@ -5718,7 +5740,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         END LOOP;
 
                         CLOSE POL_Q;
-                       -- COMMIT;
+                       -- 
                 --END LOOP;
                     END IF;
              --
@@ -5778,7 +5800,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                 END LOOP;
 
                 CLOSE POL_Q;
-               -- COMMIT;
+               -- 
           --END LOOP;
           --
                 IF obj_sesasdatgen(x).TipoDetalle = 'IND' THEN
@@ -5885,7 +5907,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                 END LOOP;
 
                                 CLOSE COB_CALC_Q;
-                              --  COMMIT;
+                              --  
                     --END LOOP;
                             END IF;
                         END IF;
@@ -5980,7 +6002,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
                 CLOSE COBERT_Q;
           --END LOOP;
---COMMIT;
+--
 
             END LOOP;
 
@@ -5988,7 +6010,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE cPolizas_DatGen;
-        COMMIT;
+        
 
         OPEN cPolizas_DatGen;
         LOOP
@@ -6065,7 +6087,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         END LOOP;
 
         CLOSE cPolizas_DatGen;
-        COMMIT;   
+           
 
     END EMISION_AP;
 
@@ -6625,6 +6647,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
           GROUP BY NVL(CS.ClaveSesasnew, '1'), NVL(CS.OrdenSesas, 0), C.CodCobert, C.NumMod,((Monto_Reservado_Moneda * (CASE WHEN CTS.SIGNO = '-' THEN -1 ELSE 1 END )));*/
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+/*
         DELETE SICAS_OC.SESAS_SINIESTROS
         WHERE
                 CodCia = nCodCia
@@ -6639,8 +6664,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')
                                 || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')
@@ -6872,7 +6897,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                 NUMPOLIZA = NumPoliza
             AND NUMSINIESTRO = NumSiniestro;--OrdeSesas
 
-        COMMIT;
+        
     END SINIESTROS_AP;
 
     PROCEDURE DATGEN_GM (
@@ -7228,6 +7253,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         vl_Asegurado2     NUMBER;
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_DATGEN');
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+/*
         DELETE SICAS_OC.SESAS_DATGEN
         WHERE
                 CodCia = nCodCia
@@ -7245,12 +7273,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
       --
-        COMMIT;
+        */
       --
-        dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')
-                                || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
-        dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')
-                                || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
+        dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
+        dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')|| ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
       --
       --Inicializo variables de Afinación
         nCodCia2 := 0;
@@ -7375,7 +7401,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                             o_DatGen(x).NumCertificado,
                             o_DatGen(x).TipoSeguro,
                             o_DatGen(x).Moneda,
-                            o_DatGen(x).EntidadAsegurado,
+                            NVL(o_DatGen(x).EntidadAsegurado,'09'),
                             o_DatGen(x).FecIniVig,
                             o_DatGen(x).FecFinVig,
                             o_DatGen(x).FecAltCert,
@@ -7466,7 +7492,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                     LPAD(vl_Asegurado2, 20, '0'),
                                     o_DatGen(x).TipoSeguro,
                                     o_DatGen(x).Moneda,
-                                    o_DatGen(x).EntidadAsegurado,
+                                    NVL(o_DatGen(x).EntidadAsegurado,'09'),
                                     o_DatGen(x).FecIniVig,
                                     o_DatGen(x).FecFinVig,
                                     o_DatGen(x).FecAltCert,
@@ -7493,7 +7519,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                 vl_Contador2 := vl_Contador2 + 1;
                             END LOOP;
 
-                            COMMIT;
+                            
                         ELSIF vl_CodValido > 1 THEN
                             SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(o_DatGen(x).CodCia, o_DatGen(x).CodEmpresa, o_DatGen(x).CodReporte,
                             o_DatGen(x).CodUsuario, o_DatGen(x).NumPoliza, o_DatGen(x).NumCertificado, SQLCODE, 'La póliza '
@@ -7527,7 +7553,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
         CLOSE C_POL_IND_Q;
       --
-        COMMIT;
+        
     END DATGEN_GM;
 
     PROCEDURE EMISION_GM (
@@ -7644,6 +7670,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         vl_Asegurado2   VARCHAR2(25);
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_EMISION');
+/*
         DELETE SICAS_OC.SESAS_EMISION
         WHERE  CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -7656,8 +7684,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
       --
       SICAS_OC.OC_SESASCOLECTIVO.DATGEN_GM(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario,'SESADATGMC', 'SESADATGMC', cFiltrarPolizas);
 
@@ -7825,7 +7853,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
                                         vl_Contador2 := vl_Contador2 + 1;
                                     END LOOP;
-                            COMMIT;
+                            
 
                                 ELSIF (vl_CodValido > 1) THEN
                                     SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces,cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, 'La póliza '
@@ -7851,14 +7879,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                 END LOOP;
 
                 CLOSE COBERT_Q;
-                --COMMIT;
+                --
             END LOOP;
 
             EXIT WHEN o_SesasDatGen.COUNT = 0;
         END LOOP;
 
         CLOSE cPolizas_DatGen;
-        COMMIT;
+        
 
 
 
@@ -7965,7 +7993,7 @@ END;
         END LOOP;
 
         CLOSE cPolizas_DatGen;
-        COMMIT;     
+             
     END EMISION_GM;
 
     PROCEDURE SINIESTROS_GM (
@@ -8113,6 +8141,9 @@ END;
         nMontoPagado     NUMBER;
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+/*
         DELETE SICAS_OC.SESAS_SINIESTROS
         WHERE CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -8125,8 +8156,8 @@ END;
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
 
@@ -8208,7 +8239,7 @@ END;
         WHERE NUMPOLIZA = NumPoliza
             AND NUMSINIESTRO = NumSiniestro;--OrdeSesas
 
-        COMMIT;
+        
     END SINIESTROS_GM;
 
 END OC_SESASCOLECTIVO;

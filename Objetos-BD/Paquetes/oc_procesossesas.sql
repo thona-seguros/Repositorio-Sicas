@@ -1,5 +1,4 @@
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
-
     PROCEDURE CONTROLPRINCIPAL (
         nCodCia           SICAS_OC.ENTREGAS_CNSF_CONFIG.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE,
@@ -350,6 +349,10 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
 
     FUNCTION GETNUMRECLAMOSINI RETURN NUMBER;
 
+vl_Ejecucion    VARCHAR2(1) := '0';
+vl_Intento      NUMBER      :=  0;
+vl_Intento2     NUMBER      := 0;
+
 END OC_PROCESOSSESAS;
 /
 
@@ -391,13 +394,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         nEjecutaLog         NUMBER := 0;
     BEGIN
         IF SUBSTR(cCodEntregaProces, 5, 3) IN ( 'DAT', 'EMI' ) THEN
-            SELECT
-                TRIM(SUBSTR(cCodEntregaProces, 1, 4)
-                     || 'DAT'
-                     || SUBSTR(cCodEntregaProces, 8))
+            SELECT TRIM(SUBSTR(cCodEntregaProces, 1, 4)|| 'DAT'|| SUBSTR(cCodEntregaProces, 8))
             INTO cCodEntregaDatGen
-            FROM
-                DUAL;
+            FROM DUAL;
 
         END IF;
 
@@ -445,29 +444,79 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
 
       --
       --Ejecuta el Proceso de Correspondiente: Emisión o Siniestros, se corre con cCodEntregaDatGen para que tome como base el resultado de este
+        
+        BEGIN
+            SELECT CODVALOR,TO_NUMBER(NVL(CVE_CNSF,'0'))
+            INTO vl_Ejecucion, vl_Intento
+            FROM SICAS_OC.VALORES_DE_LISTAS
+            WHERE CODLISTA ='ONSESAS' 
+                AND ROWNUM <= 1;
+        EXCEPTION
+            WHEN OTHERS THEN
+                vl_Ejecucion := '0';
+        END;
+        
+        IF vl_Ejecucion = '0' OR vl_Intento > 2 THEN
+        
+            UPDATE SICAS_OC.VALORES_DE_LISTAS
+            SET CODVALOR = '1',
+                CVE_CNSF = '0'
+            WHERE CODLISTA ='ONSESAS' 
+            AND ROWNUM <= 1;
 
-        cBlockPlSql := 'BEGIN '|| cNomProcProces|| '( :nCodCia, :nCodEmpresa, :dFecDesde, :dFecHasta, :cCodUsuario, :cCodEntregaDatGen, :cCodEntregaProces, :cFiltrarPolizas ); END;';
-        EXECUTE IMMEDIATE cBlockPlSql USING nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario, cCodEntregaDatGen, cCodEntregaProces, cFiltrarPolizas;
-
-        cNomArchZip := SUBSTR(cNomArchProces, 1, INSTR(cNomArchProces, '.') - 1)|| '.zip';
-
-        cNomArchZipError := SUBSTR(cNomArchProcesError, 1, INSTR(cNomArchProcesError, '.') - 1) || '.zip';
-
-      --Ejecuta el Armado de los Layouts y Genera los Reportes
-
-        SELECT COUNT(1)
-        INTO nEjecutaLog
-        FROM SICAS_OC.LOGERRORES_SESAS
-        WHERE  CODCIA = nCodCia
-            AND CODEMPRESA = nCodEmpresa
-            AND CODUSUARIO = cCodUsuario
-            AND CODREPORTE = cCodEntregaProces;
-
-        GeneraReportes(nCodCia, nCodEmpresa, REPLACE(cNomArchZipError, '.zip', '.TXT'), cEncabDatGen, cDetalleDatGen, cNomArchProces,cEncabProces,cEncabProcesError, cDetalleProces, cDetalleDatGenError, cNomArchZip, nEjecutaLog);
-
-
-        SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB(nCodCia, nCodEmpresa, cCodEntregaProces, cCodUsuario, cNomArchZip);
-
+            
+            cBlockPlSql := 'BEGIN '|| cNomProcProces|| '( :nCodCia, :nCodEmpresa, :dFecDesde, :dFecHasta, :cCodUsuario, :cCodEntregaDatGen, :cCodEntregaProces, :cFiltrarPolizas ); END;';
+            EXECUTE IMMEDIATE cBlockPlSql USING nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario, cCodEntregaDatGen, cCodEntregaProces, cFiltrarPolizas;
+            
+            COMMIT;
+            
+            cNomArchZip := SUBSTR(cNomArchProces, 1, INSTR(cNomArchProces, '.') - 1)|| '.zip';
+    
+            cNomArchZipError := SUBSTR(cNomArchProcesError, 1, INSTR(cNomArchProcesError, '.') - 1) || '.zip';
+    
+          --Ejecuta el Armado de los Layouts y Genera los Reportes
+    
+            SELECT COUNT(1)
+            INTO nEjecutaLog
+            FROM SICAS_OC.LOGERRORES_SESAS
+            WHERE  CODCIA = nCodCia
+                AND CODEMPRESA = nCodEmpresa
+                AND CODUSUARIO = cCodUsuario
+                AND CODREPORTE = cCodEntregaProces;
+    
+            GeneraReportes(nCodCia, nCodEmpresa, REPLACE(cNomArchZipError, '.zip', '.TXT'), cEncabDatGen, cDetalleDatGen, cNomArchProces,cEncabProces,cEncabProcesError, cDetalleProces, cDetalleDatGenError, cNomArchZip, nEjecutaLog);
+    
+    
+            SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB(nCodCia, nCodEmpresa, cCodEntregaProces, cCodUsuario, cNomArchZip);
+            
+            UPDATE SICAS_OC.VALORES_DE_LISTAS
+            SET CODVALOR = '0',
+                CVE_CNSF = '0'
+            WHERE CODLISTA ='ONSESAS' 
+            AND ROWNUM <= 1;
+            
+            COMMIT;
+            
+        ELSE
+            
+            vl_Intento2 := vl_Intento +1;
+            
+            UPDATE SICAS_OC.VALORES_DE_LISTAS
+            SET CVE_CNSF = TO_CHAR(vl_Intento2)
+            WHERE CODLISTA ='ONSESAS' ;
+            
+            COMMIT;
+            
+            IF vl_Intento2 = 1 THEN
+            
+                RAISE_APPLICATION_ERROR(-20220,'  ***   Ya hay un proceso de SESA´s en ejecución.   ***   ');
+            ELSIF vl_Intento2 = 2 THEN
+                RAISE_APPLICATION_ERROR(-20220,'  ***   Ya hay un proceso de SESA´s en ejecución. Si detienes el otro proceso terminará incompleto. Favor de validarlo.   ***   ');
+            ELSE
+                RAISE_APPLICATION_ERROR(-20220,'  ***   El proceso de SESA´s que esta en ejecución terminará incompleto!!!!.   ***   ');
+            END IF;
+            
+        END IF;
       --SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, 'SESAERROR', cCodUsuario, cNomArchZipError );
       /*
       DBMS_OUTPUT.PUT_LINE('-----------');
@@ -605,6 +654,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         nTotal      NUMBER := 0;
     BEGIN
       -- Status del Certificado
+      
         SELECT COUNT(1)
         INTO nTotal
         FROM SICAS_OC.SINIESTRO S
@@ -661,6 +711,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
       END IF;*/
       --
         RETURN cStatusCert;
+    
     END GETSTATUSCERTAP;
 
     FUNCTION GETSTATUSCERT (
@@ -741,16 +792,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         IF NVL(cIndConcentrada, 'N') = 'S' THEN
             IF cIndAsegModelo = 'S' THEN
                 IF nIdEndoso = 0 THEN
-                    SELECT
-                        SICAS_OC.OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol) - ( COUNT(*) - 1 )
-                    INTO nCantCertificados
-                    FROM
-                        SICAS_OC.ASEGURADO_CERTIFICADO
-                    WHERE
-                            CodCia = nCodCia
-                        AND IdPoliza = nIdPoliza
-                        AND IDetPol = nIDetPol
-                        AND Estado IN ( 'SOL', 'XRE', 'EMI' );
+                    BEGIN
+                        SELECT SICAS_OC.OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol) - ( COUNT(*) - 1 )
+                        INTO nCantCertificados
+                        FROM SICAS_OC.ASEGURADO_CERTIFICADO
+                        WHERE
+                                CodCia = nCodCia
+                            AND IdPoliza = nIdPoliza
+                            AND IDetPol = nIDetPol
+                            AND Estado IN ( 'SOL', 'XRE', 'EMI' );
+                    EXCEPTION
+                        WHEN OTHERS THEN
+                            nCantCertificados := -1;
+                    END;
 
                 ELSE
                     nCantCertificados := 1;
@@ -846,8 +900,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
             OrdenCampo;
 
     BEGIN
-        SELECT
-            NomTabla
+        SELECT  NomTabla
         INTO cNomTabla
         FROM
             SICAS_OC.CONFIG_PLANTILLAS_TABLAS

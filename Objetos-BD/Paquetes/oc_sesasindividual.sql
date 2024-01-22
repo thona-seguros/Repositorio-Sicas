@@ -562,7 +562,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
         obj_sesasdatgen type_sesasdatgen;
 
     BEGIN
-
+    
+  EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_DATGEN');
+  
+  EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+  
+/*
         DELETE SICAS_OC.SESAS_DATGEN
         WHERE CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -577,8 +582,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
 
@@ -676,7 +681,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
                                                         obj_sesasdatgen(x).NumCertificado,
                                                         obj_sesasdatgen(x).TipoSeguro,
                                                         obj_sesasdatgen(x).Moneda,
-                                                        obj_sesasdatgen(x).EntidadAsegurado,
+                                                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                                                         obj_sesasdatgen(x).FecIniVig,
                                                         obj_sesasdatgen(x).FecFinVig,
                                                         obj_sesasdatgen(x).FecAltCert,
@@ -720,7 +725,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
             EXIT WHEN obj_sesasdatgen.COUNT = 0;
         END LOOP;
         CLOSE CUR_PRINCIPAL;
-        COMMIT;
+        
     END DATGEN_VI;
 
     PROCEDURE EMISION_VI (
@@ -978,6 +983,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
 
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_EMISION');
+  
+  /*
         DELETE SICAS_OC.SESAS_EMISION
         WHERE CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -993,7 +1001,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
 
-        COMMIT;
+        */
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
@@ -1141,7 +1149,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
 
                         CLOSE POL_Q;
 
-                        --COMMIT;
+                        --
 
                         IF NVL(nPrimaMonedaTotPol, 0) = 0 THEN
                             OPEN POL_Q;
@@ -1221,7 +1229,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
                                     END LOOP;
 
                                     CLOSE CALC_Q;
-                                    --COMMIT;
+                                    --
                                 END LOOP;
 
                                 EXIT WHEN obj_sesasdatgen2.COUNT = 0;
@@ -1229,7 +1237,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
 
                             CLOSE POL_Q;
 
-                            COMMIT;
+                            
 
                     --END LOOP;
                         END IF;
@@ -1269,7 +1277,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
                     END LOOP;
 
                     CLOSE POL_Q;
-                    --COMMIT;
+                    --
 
                     SELECT NVL(SUM(MontoAsistLocal), 0)
                     INTO nMtoAsistLocal
@@ -1380,7 +1388,7 @@ cStatus2 :='A';
                             SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, obj_sesasdatgen(x).IdPoliza,obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                     END;
 
-                  --  COMMIT;
+                  --  
 
         --END LOOP; cierre obj_sesasdatgen
                 END LOOP;
@@ -1393,7 +1401,7 @@ cStatus2 :='A';
                 SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, nIdPoliza,nCod_Asegurado, SQLCODE, SQLERRM);
         END;
 
-        COMMIT;
+        
 
 
 
@@ -1467,7 +1475,7 @@ cStatus2 :='A';
         END LOOP;
 
         CLOSE cPolizas_DatGen;
-        COMMIT;
+        
 
     END EMISION_VI;
 
@@ -1728,6 +1736,10 @@ cStatus2 :='A';
         nMontoReclamo  NUMBER := NULL;
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
+  
+  EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+  /*
         DELETE SICAS_OC.SESAS_SINIESTROS
         WHERE CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -1742,8 +1754,8 @@ cStatus2 :='A';
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
         FOR x IN cSiniestros LOOP
@@ -1894,7 +1906,7 @@ cStatus2 :='A';
         WHERE NUMPOLIZA = NumPoliza
             AND NUMSINIESTRO = NumSiniestro;--OrdeSesas
 
-        COMMIT;
+        
     END SINIESTROS_VI;
 
     PROCEDURE DATGEN_AP (
@@ -2335,6 +2347,10 @@ cStatus2 :='A';
 
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_DATGEN');
+  
+  EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+  /*
         DELETE SICAS_OC.SESAS_DATGEN
         WHERE CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -2351,7 +2367,7 @@ cStatus2 :='A';
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
 
-        COMMIT;
+        */
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')  || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
 
@@ -2447,7 +2463,7 @@ cStatus2 :='A';
                         obj_sesasdatgen(x).NumCertificado,
                         obj_sesasdatgen(x).TipoSeguro,
                         obj_sesasdatgen(x).Moneda,
-                        obj_sesasdatgen(x).EntidadAsegurado,
+                        NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
                         obj_sesasdatgen(x).FecIniVig,
                         obj_sesasdatgen(x).FecFinVig,
                         obj_sesasdatgen(x).FecAltCert,
@@ -2489,7 +2505,7 @@ cStatus2 :='A';
         END LOOP;
 
         CLOSE CUR_PRINCIPAL;
-        COMMIT;
+        
     END DATGEN_AP;
 
     PROCEDURE EMISION_AP (
@@ -2766,6 +2782,9 @@ cStatus2 :='A';
         nDiasRenta         NUMBER;
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_EMISION');
+  
+  /*
         DELETE SICAS_OC.SESAS_EMISION
         WHERE CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -2781,8 +2800,8 @@ cStatus2 :='A';
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')  || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')  || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
 
@@ -3103,7 +3122,7 @@ cStatus2 :='A';
             END LOOP;
 
         END LOOP;
-        COMMIT;
+        
 
        FOR x IN cPolizas_DatGen LOOP      
 
@@ -3165,7 +3184,7 @@ cStatus2 :='A';
             END IF;
         END LOOP;
 
-        COMMIT;
+        
 
     END EMISION_AP;
 
@@ -3523,6 +3542,11 @@ cStatus2 :='A';
         nMontoReclamo     NUMBER NULL;
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
+  
+  EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+  
+  /*
         DELETE SICAS_OC.SESAS_SINIESTROS
         WHERE
                 CodCia = nCodCia
@@ -3540,7 +3564,7 @@ cStatus2 :='A';
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
 
-        COMMIT;
+        */
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')
                                 || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')
@@ -3771,7 +3795,7 @@ cStatus2 :='A';
         WHERE NUMPOLIZA = NumPoliza
             AND NUMSINIESTRO = NumSiniestro;--OrdeSesas
 
-        COMMIT;
+        
     END SINIESTROS_AP;
 
     PROCEDURE DATGEN_GM (
@@ -4125,6 +4149,10 @@ cStatus2 :='A';
         vl_Asegurado2     NUMBER;
     BEGIN
 
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_DATGEN');
+  
+  EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+  /*
         DELETE SICAS_OC.SESAS_DATGEN
         WHERE
                 CodCia = nCodCia
@@ -4143,7 +4171,7 @@ cStatus2 :='A';
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
       --
-        COMMIT;
+        */
       --
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
@@ -4168,8 +4196,7 @@ cStatus2 :='A';
                     nCodEmpresa2 := o_DatGen(x).CodEmpresa;
                     nIdPoliza := o_DatGen(x).IdPoliza;
                     nIDetPol := o_DatGen(x).IDetPol;
-                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(o_DatGen(x).CodCia, o_DatGen(x).CodEmpresa, o_DatGen(
-                    x).IdPoliza, dFecDesde, dFecHasta);
+                    nComisionDirecta := SICAS_OC.OC_PROCESOSSESAS.GETMONTOCOMISIONAP(o_DatGen(x).CodCia, o_DatGen(x).CodEmpresa, o_DatGen(x).IdPoliza, dFecDesde, dFecHasta);
 
                     cFormaVta := SICAS_OC.OC_PROCESOSSESAS.GETFORMAVENTA(o_DatGen(x).CodCia, o_DatGen(x).IdPoliza);
 
@@ -4284,7 +4311,7 @@ cStatus2 :='A';
                             o_DatGen(x).NumCertificado,
                             o_DatGen(x).TipoSeguro,
                             o_DatGen(x).Moneda,
-                            o_DatGen(x).EntidadAsegurado,
+                            NVL(o_DatGen(x).EntidadAsegurado,'09'),
                             o_DatGen(x).FecIniVig,
                             o_DatGen(x).FecFinVig,
                             o_DatGen(x).FecAltCert,
@@ -4369,7 +4396,7 @@ cStatus2 :='A';
                                     LPAD(vl_Asegurado2, 20, '0'),
                                     o_DatGen(x).TipoSeguro,
                                     o_DatGen(x).Moneda,
-                                    o_DatGen(x).EntidadAsegurado,
+                                    NVL(o_DatGen(x).EntidadAsegurado,'09'),
                                     o_DatGen(x).FecIniVig,
                                     o_DatGen(x).FecFinVig,
                                     o_DatGen(x).FecAltCert,
@@ -4393,7 +4420,7 @@ cStatus2 :='A';
                                 vl_Contador2 := vl_Contador2 + 1;
                             END LOOP;
 
-                            COMMIT;
+                            
                         ELSIF vl_CodValido > 1 THEN
                             SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(o_DatGen(x).CodCia, o_DatGen(x).CodEmpresa, o_DatGen(x).CodReporte,
                             o_DatGen(x).CodUsuario, o_DatGen(x).NumPoliza,
@@ -4430,7 +4457,7 @@ cStatus2 :='A';
 
         CLOSE C_POL_IND_Q;
       --
-        COMMIT;
+        
     END DATGEN_GM;
 
     PROCEDURE EMISION_GM (
@@ -4566,6 +4593,10 @@ cStatus2 :='A';
         vl_CodValido    NUMBER;
     BEGIN
 
+
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_EMISION');
+
+  /*
         DELETE SICAS_OC.SESAS_EMISION
         WHERE
                 CodCia = nCodCia
@@ -4583,7 +4614,7 @@ cStatus2 :='A';
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
       --
-        COMMIT;
+        */
       --
 
         SICAS_OC.OC_SESASINDIVIDUAL.DATGEN_GM(nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario,'SESADATGMI', 'SESADATGMI', cFiltrarPolizas);
@@ -4754,7 +4785,7 @@ cStatus2 :='A';
 
                                         vl_Contador2 := vl_Contador2 + 1;
                                     END LOOP;
-                            COMMIT;
+                            
 
                                 ELSIF (vl_CodValido > 1) THEN
                                     SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces,cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, 'La póliza '
@@ -4780,14 +4811,14 @@ cStatus2 :='A';
                 END LOOP;
 
                 CLOSE COBERT_Q;
-                COMMIT;
+                
 
             END LOOP;
             EXIT WHEN o_SesasDatGen.COUNT = 0;
         END LOOP;
 
         CLOSE cPolizas_DatGen;
-        COMMIT;
+        
 
          OPEN cPolizas_DatGen;
         LOOP
@@ -4892,7 +4923,7 @@ END;
         END LOOP;
 
         CLOSE cPolizas_DatGen;
-        COMMIT;     
+             
     END EMISION_GM;
 
     PROCEDURE SINIESTROS_GM (
@@ -5138,6 +5169,11 @@ END;
         nMontoPagado     NUMBER;
     BEGIN
 
+
+EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
+  
+  EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+  /*
         DELETE SICAS_OC.SESAS_SINIESTROS
         WHERE CodCia = nCodCia
             AND CodEmpresa = nCodEmpresa
@@ -5152,8 +5188,8 @@ END;
             AND CodReporte = cCodReporteProces
             AND CodUsuario = cCodUsuario
             AND IDSECUENCIA>=0;
-
-        COMMIT;
+*/
+        
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
         OPEN cSiniestros;
@@ -5239,7 +5275,7 @@ END;
         WHERE  NUMPOLIZA = NumPoliza
             AND NUMSINIESTRO = NumSiniestro;--OrdeSesas
 
-        COMMIT;
+        
     END SINIESTROS_GM;
 
 END OC_SESASINDIVIDUAL;
