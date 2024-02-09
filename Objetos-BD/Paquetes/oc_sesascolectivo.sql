@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_SESASCOLECTIVO IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.SESAS_DATGEN.CODEMPRESA%TYPE,
@@ -124,7 +124,7 @@ create or replace PACKAGE          OC_SESASCOLECTIVO IS
 END OC_SESASCOLECTIVO;
 /
 
-create or replace PACKAGE BODY          OC_SESASCOLECTIVO IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
@@ -1816,7 +1816,7 @@ dbms_output.put_line('INSERTE');
 
                                 --exit;
                             ELSIF cTodasAnuladas = 'S' AND nIdPolizaProcCalc = obj_sesasdatgen2(z).IdPoliza  THEN
-                                SELECT  NVL(SUM(Prima_Moneda), 0) + NVL(nPrimaMonedaTotPol, 0)
+                                SELECT  NVL(SUM(Prima_Moneda), 0) + NVL(0, 0)
                                 INTO nPrimaMonedaTotPol
                                 FROM SICAS_OC.COBERT_ACT
                                 WHERE CodCia = nCodCia
@@ -1915,7 +1915,7 @@ dbms_output.put_line('INSERTE');
                                                    OR IndCptoServicio = 'S'
                                                    OR IndCptoFondo    = 'S') ;
                  --
-                 SELECT NVL(SUM(DNC.Monto_Det_Moneda),0) +0
+                 SELECT NVL(SUM(DNC.Monto_Det_Moneda),0) + 0
                  INTO   nMtoCptoNcrMonedaAnu
                  FROM   DETALLE_NOTAS_DE_CREDITO DNC
                  INNER JOIN NOTAS_DE_CREDITO NC
@@ -1931,9 +1931,11 @@ dbms_output.put_line('INSERTE');
                    AND  NC.StsNCR           = 'ANU' ;
             END IF;
 
-            nPrimaContable2 := (NVL(nPrimaContable,0) - NVL(nPrimaContableAnu,0)) - (NVL(nMtoCptoNcrMoneda,0) - NVL(nMtoCptoNcrMonedaAnu,0));
-
+            nPrimaContable2 := (NVL(nPrimaContable,0) - NVL(nPrimaContableAnu,0)) - ((NVL(nMtoCptoNcrMoneda,0) - NVL(nMtoCptoNcrMonedaAnu,0)));
+           
             nPmaEmiCob := ((ROUND((100 / nPrimaMonedaTotPol ), 10) * NVL( nPrima_Moneda, 0)) * ROUND((nPrimaContable2/100), 10) );
+            
+            --CON KIKE nPmaEmiCob := ((ROUND((100 / nPrimaMonedaTotPol   ), 10) * NVL( nPrima_Moneda, 0)) * ROUND(( nPrimaMonedaTotPol /100), 10) );
 
             --nPmaEmiCob := nPmaEmiCob/ obj_sesasdatgen4(w).total;
 
@@ -1988,6 +1990,7 @@ dbms_output.put_line('INSERTE');
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
                         vl_Contado := 1;
+                        COMMIT;
                     WHEN OTHERS THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, obj_sesasdatgen(x).NumPoliza,obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                 END;
@@ -6252,12 +6255,4 @@ END;
     END SINIESTROS_GM;
 
 END OC_SESASCOLECTIVO;
-
 /
-
-CREATE OR REPLACE PUBLIC SYNONYM OC_SESASCOLECTIVO FOR SICAS_OC.OC_SESASCOLECTIVO;
-/
-
-GRANT EXECUTE ON SICAS_OC.OC_SESASCOLECTIVO TO PUBLIC;
-/
-
