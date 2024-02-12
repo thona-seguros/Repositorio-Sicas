@@ -4224,10 +4224,14 @@ dbms_output.put_line('INSERTE');
                    AND  NC.StsNCR           = 'ANU' ;
             END IF;
 
-            nPrimaContable2 := (NVL(nPrimaContable,0) - NVL(nPrimaContableAnu,0)) - (NVL(nMtoCptoNcrMoneda,0) - NVL(nMtoCptoNcrMonedaAnu,0));
+            /*nPrimaContable2 := (NVL(nPrimaContable,0) - NVL(nPrimaContableAnu,0)) - (NVL(nMtoCptoNcrMoneda,0) - NVL(nMtoCptoNcrMonedaAnu,0));
 
             nPmaEmiCob := ((ROUND((100 / nPrimaMonedaTotPol ), 10) * NVL( nPrima_Moneda, 0)) * ROUND((nPrimaContable2/100), 10) );
-
+*/
+            nPrimaContable2 := (NVL(nPrimaContable,0) - NVL(nPrimaContableAnu,0)) - ((NVL(nMtoCptoNcrMoneda,0) - NVL(nMtoCptoNcrMonedaAnu,0)));
+           
+            nPmaEmiCob := ((ROUND((100 / nPrimaMonedaTotPol ), 10) * NVL( nPrima_Moneda, 0)) * ROUND((nPrimaContable2/100), 10) );
+            
             --nPmaEmiCob := nPmaEmiCob/ obj_sesasdatgen4(w).total;
 
             cTipoExtraPrima := '9';
@@ -6255,4 +6259,11 @@ END;
     END SINIESTROS_GM;
 
 END OC_SESASCOLECTIVO;
+/
+
+
+CREATE OR REPLACE PUBLIC SYNONYM OC_SESASCOLECTIVO FOR SICAS_OC.OC_SESASCOLECTIVO;
+/
+
+GRANT EXECUTE ON SICAS_OC.OC_SESASCOLECTIVO TO PUBLIC;
 /
