@@ -1,5 +1,4 @@
 CREATE OR REPLACE PACKAGE OC_REPOFACT IS
-
     PROCEDURE INSERTA_ENCABEZADO( cFormato        VARCHAR2
                                , nCodCia         NUMBER
                                , nCodEmpresa     NUMBER
@@ -96,12 +95,29 @@ CREATE OR REPLACE PACKAGE OC_REPOFACT IS
     --
     FUNCTION DEVUELVE_CORREO_USUARIO RETURN VARCHAR2;
     --
-
+    FUNCTION FUNC_MONTO_PRIMAS(NIDFACTURA IN NUMBER) RETURN NUMBER;
 END OC_REPOFACT;
-
 /
-create or replace PACKAGE BODY OC_REPOFACT IS
+CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
     --
+
+    -- MLJS 18/01/2024 SE CREA FUNCION PARA OBTENER LA PRIMA NETA TOTAL DEL RECIBO
+    FUNCTION FUNC_MONTO_PRIMAS(NIDFACTURA IN NUMBER) RETURN NUMBER IS
+         nMonto_Det_Local DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE;
+    BEGIN
+      SELECT NVL(SUM(Monto_Det_Local),0)
+        INTO nMonto_Det_Local
+        FROM DETALLE_FACTURAS D, FACTURAS F
+       WHERE D.IndCptoPrima      = 'S'
+         AND D.IdFactura         = F.IdFactura
+         AND F.IdFactura         = NIDFACTURA;
+
+         RETURN nMonto_Det_Local;
+    EXCEPTION
+      WHEN OTHERS THEN
+        nMonto_Det_Local := 0;
+    END FUNC_MONTO_PRIMAS;
+
     PROCEDURE INSERTA_ENCABEZADO( cFormato        VARCHAR2
                                , nCodCia         NUMBER
                                , nCodEmpresa     NUMBER
@@ -216,7 +232,8 @@ create or replace PACKAGE BODY OC_REPOFACT IS
             END LOOP;
         ELSE
             BEGIN
-                SELECT MAX(A),MAX(A),MAX(B)
+                --SELECT MAX(A),MAX(A),MAX(B)  -- MLJS 08/02/2024
+                SELECT MAX(A),MAX(B),MAX(C)    -- MLJS 08/02/2024 SE CORRIGE LA CONSULTA PARA EXTRAER LOS CORREOS CORRECTOS
                  INTO cEmail1,cEmail2,cEmail3
                 FROM (SELECT DECODE(codvalor, 'EMAIL1', LOWER(DESCVALLST), NULL) A,
                              DECODE(codvalor, 'EMAIL2', LOWER(DESCVALLST), NULL) B,
@@ -4052,7 +4069,7 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                     P.PORCENCONTRIBUTORIO, P.PORCENCONTRIBUTORIO, TXT.DESCGIRONEGOCIO,
                     P.CODTIPONEGOCIO, P.FUENTERECURSOSPRIMA, P.CODPAQCOMERCIAL, CGO.DESCCATEGO,
                     P.FORMAVENTA, F.MontoPrimaCompMoneda, F.MontoPrimaCompLocal, P.CodEmpresa,
-                    OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg, DP.PlanCob, C.CodConcepto), 
+                    OC_COBERTURAS_DE_SEGUROS.RAMO_REAL_CPTO(P.CodCia, P.CodEmpresa, DP.IdTipoSeg, DP.PlanCob, C.CodConcepto),
                             P.CODPLANPAGO, TS.CODTIPOPLAN, TS.IndMultiramo
             ORDER BY F.IdFactura;
 
@@ -4744,13 +4761,15 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                                nOtrasCompPM    := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
                             END IF;
                         ELSIF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA
-                            IF C.CodConcepto = 'HONORA' THEN
+                            --IF C.CodConcepto = 'HONORA' THEN                                                      --MLJS 18/01/2024
+                            IF C.CodConcepto IN ('HONORA', 'HONACC', 'HONVDA')  AND C.CodTipoPlan = X.CodRamo THEN  --MLJS 18/01/2024 SE AGREGAN LOS CONCEPTOS DE MULTIRAMO Y EL TIPOPLAN
                                nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
                             ELSIF C.CodConcepto = 'IVAHON' THEN
                                nImpuestoHonoPFOC   := NVL(nImpuestoHonoPFOC,0) + NVL(c.Monto_Mon_Extranjera,0);
                             END IF;
                          ELSIF C.CODTIPO = 'HONORM' THEN -- HONORARIOS PERSONA MORAL
-                            IF C.CodConcepto = 'HONORA' THEN
+                            --IF C.CodConcepto = 'HONORA' THEN                                                      --MLJS 18/01/2024
+                            IF C.CodConcepto IN ('HONORA', 'HONACC', 'HONVDA')  AND C.CodTipoPlan = X.CodRamo THEN  --MLJS 18/01/2024 SE AGREGAN LOS CONCEPTOS DE MULTIRAMO Y EL TIPOPLAN
                                nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
                             ELSIF C.CodConcepto = 'IVAHON' THEN
                                nImpuestoHonoPMOC   := NVL(nImpuestoHonoPMOC,0) + NVL(c.Monto_Mon_Extranjera,0);
@@ -4854,7 +4873,7 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                             TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||
                             TO_CHAR(nImpuesto,'99999999999990.00')         ||cLimitador||
                             TO_CHAR(nPrimaTotal,'99999999999990.00')       ||cLimitador||
-                            TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00')||cLimitador||
+                            TO_CHAR(X.MtoComisi_Moneda * nFactorPrimaRamo,'99999999999990.00')||cLimitador|| --MLJS 18/01/2024 SE AGREGA FACTORXRAMO
                             TO_CHAR(nComisionesPEF,'99999999999990.00')    ||cLimitador||
                             TO_CHAR(nComisionesPEM,'99999999999990.00')    ||cLimitador||
                             TO_CHAR(nHonorariosPEF,'99999999999990.00')    ||cLimitador||
@@ -4862,10 +4881,10 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                             TO_CHAR(nHonorariosPEM,'99999999999990.00')    ||cLimitador||
                             TO_CHAR(nImpuestoHonoPM,'99999999999990.00')   ||cLimitador||
                             TO_CHAR(nOtrasCompPF,'99999999999990.00')      ||cLimitador||
-                            TO_CHAR(nImpuestoHonoPFOC,'99999999999990.00') ||cLimitador||
+                            TO_CHAR(nImpuestoHonoPFOC * nFactorPrimaRamo,'99999999999990.00') ||cLimitador||--MLJS 18/01/2024 SE AGREGA FACTORXRAMO
                             TO_CHAR(nOtrasCompPm,'99999999999990.00')      ||cLimitador||
-                            TO_CHAR(nImpuestoHonoPMOC,'99999999999990.00') ||cLimitador||
-                            TO_CHAR(nDifComis,'99999999999990.00')         ||cLimitador||
+                            TO_CHAR(nImpuestoHonoPMOC * nFactorPrimaRamo,'99999999999990.00') ||cLimitador||--MLJS 18/01/2024 SE AGREGA FACTORXRAMO
+                            TO_CHAR(nDifComis         * nFactorPrimaRamo,'99999999999990.00') ||cLimitador||--MLJS 18/01/2024 SE AGREGA FACTORXRAMO
                             TO_CHAR(nMtoComiAge,'99999999999990.00')       ||cLimitador||
                             TO_CHAR(nMtoHonoAge,'99999999999990.00')       ||cLimitador||
                             LPAD(cCodAge,6,'0')                            ||cLimitador||
@@ -4907,11 +4926,11 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                             X.CODPAQCOMERCIAL                              ||cLimitador||
                             X.CATEGORIA                                    ||cLimitador||
                             X.CANALFORMAVENTA                              ||cLimitador||
-                            cStatuspol                                                                         ||cLimitador||
-                            TO_CHAR(dPagadoHasta,'DD/MM/YYYY')                     ||cLimitador||
+                            cStatuspol                                               ||cLimitador||
+                            TO_CHAR(dPagadoHasta,'DD/MM/YYYY')                       ||cLimitador||
                             TO_CHAR(dCubiertoHasta,'DD/MM/YYYY')                     ||cLimitador||
-                            TO_CHAR(NVL(X.MontoPrimaRetiroMon,0),'99999999999990.00')        ||cLimitador||
-                            TO_CHAR(NVL(X.MontoPrimaRetiroLoc,0),'99999999999990.00')        ||cLimitador||
+                            TO_CHAR(NVL(X.MontoPrimaRetiroMon,0),'99999999999990.00')||cLimitador||
+                            TO_CHAR(NVL(X.MontoPrimaRetiroLoc,0),'99999999999990.00')||cLimitador||
                             X.CodRamo        ||cLimitador||
                             X.DescRamo       ||
                             CHR(13);
@@ -6266,13 +6285,15 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                        nOtrasCompPM    := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
                     END IF;
                 ELSIF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA
-                    IF C.CodConcepto = 'HONORA' THEN
+                    --IF C.CodConcepto = 'HONORA' THEN                                                  --MLJS 18/01/2024
+                    IF C.CodConcepto IN ('HONORA','HONACC','HONVDA') AND C.CodTipoPlan = X.CodRamo THEN --MLJS 18/01/2024 SE INCLUYERON LOS CONCEPTOS DE MULTIRAMO, SE AGREGA EL TIPOPLAN
                        nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
                     ELSIF C.CodConcepto = 'IVAHON' THEN
                        nImpuestoHonoPFOC   := NVL(nImpuestoHonoPFOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios
                     END IF;
-                ELSIF C.CODTIPO = 'HONORM' THEN -- HONORARIOS PERSONA MORAL
-                    IF C.CodConcepto = 'HONORA' THEN
+               ELSIF C.CODTIPO = 'HONORM' THEN -- HONORARIOS PERSONA MORAL
+                    --IF C.CodConcepto = 'HONORA' THEN                                                  --MLJS 18/01/2024
+                    IF C.CodConcepto IN ('HONORA','HONACC','HONVDA') AND C.CodTipoPlan = X.CodRamo THEN --MLJS 18/01/2024 SE INCLUYERON LOS CONCEPTOS DE MULTIRAMO, SE AGREGA EL TIPOPLAN
                        nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
                     ELSIF C.CodConcepto = 'IVAHON' THEN
                        nImpuestoHonoPMOC   := NVL(nImpuestoHonoPMOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios
@@ -6377,7 +6398,7 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                             TO_CHAR(nDerechos,'99999999999990.00')         ||cLimitador||
                             TO_CHAR(nImpuesto,'99999999999990.00')         ||cLimitador||
                             TO_CHAR(nPrimaTotal,'99999999999990.00')       ||cLimitador||
-                            TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00')||cLimitador||
+                            TO_CHAR(X.MtoComisi_Moneda * nFactorPrimaRamo,'99999999999990.00')||cLimitador|| --MLJS 18/01/2024 SE AGREGA FACTORXRAMO
                             TO_CHAR(nComisionesPEF,'99999999999990.00')    ||cLimitador||
                             TO_CHAR(nComisionesPEM,'99999999999990.00')    ||cLimitador||
                             TO_CHAR(nHonorariosPEF,'99999999999990.00')    ||cLimitador||
@@ -6385,10 +6406,10 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                             TO_CHAR(nHonorariosPEM,'99999999999990.00')    ||cLimitador||
                             TO_CHAR(nImpuestoHonoPM,'99999999999990.00')   ||cLimitador||
                             TO_CHAR(nOtrasCompPF,'99999999999990.00')      ||cLimitador||
-                            TO_CHAR(nImpuestoHonoPFOC,'99999999999990.00') ||cLimitador||
+                            TO_CHAR(nImpuestoHonoPFOC * nFactorPrimaRamo,'99999999999990.00') ||cLimitador|| --MLJS 18/01/2024 SE AGREGA FACTORXRAMO
                             TO_CHAR(nOtrasCompPM,'99999999999990.00')      ||cLimitador||
-                            TO_CHAR(nImpuestoHonoPMOC,'99999999999990.00') ||cLimitador||
-                            TO_CHAR(nDifComis,'99999999999990.00')         ||cLimitador||
+                            TO_CHAR(nImpuestoHonoPMOC * nFactorPrimaRamo,'99999999999990.00') ||cLimitador|| --MLJS 18/01/2024 SE AGREGA FACTORXRAMO
+                            TO_CHAR(nDifComis         * nFactorPrimaRamo,'99999999999990.00') ||cLimitador|| --MLJS 18/01/2024 SE AGREGA FACTORXRAMO
                             TO_CHAR(nMtoComiAge,'99999999999990.00')       ||cLimitador||
                             TO_CHAR(nMtoHonoAge,'99999999999990.00')       ||cLimitador||
                             LPAD(cCodAge,6,'0')                            ||cLimitador||
@@ -7654,13 +7675,15 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                         END IF;
                             ---- jmmd20190523Se incluyen los conceptos para HONORF y HONORM
                      ELSIF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA
-                                        IF C.CodConcepto = 'HONORA' THEN
+                           --IF C.CodConcepto = 'HONORA' THEN                                                    --MLJS 18/01/2024
+	      	                 IF C.CodConcepto IN ('HONORA','HONACC','HONVDA') AND  C.CodTipoPlan = X.CodRamo THEN  --MLJS 18/01/2024 SE INCLUYERON LOS CONCEPTOS DE MULTIRAMO
                                    nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
                                   ELSIF C.CodConcepto = 'IVAHON' THEN
                                     nImpuestoHonoPFOC   := NVL(nImpuestoHonoPFOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios
                            END IF;
                      ELSIF C.CODTIPO = 'HONORM' THEN -- HONORARIOS PERSONA MORAL
-                             IF C.CodConcepto = 'HONORA' THEN
+                             --IF C.CodConcepto = 'HONORA' THEN                                                   --MLJS 18/01/2024
+                             IF C.CodConcepto IN ('HONORA','HONACC','HONVDA') AND  C.CodTipoPlan = X.CodRamo THEN --MLJS 18/01/2024 SE INCLUYERON LOS CONCEPTOS DE MULTIRAMO
                                    nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
                                   ELSIF C.CodConcepto = 'IVAHON' THEN
                                     nImpuestoHonoPMOC   := NVL(nImpuestoHonoPMOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios
@@ -7705,9 +7728,10 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                         ------------------------------------------------------------------------------------------------------------------------------------------------------
                     END IF;
 
-                    nPrimaTotalLocal    := OC_DETALLE_FACTURAS.MONTO_PRIMAS(X.IdTransaccion);
+                    --nPrimaTotalLocal    := OC_DETALLE_FACTURAS.MONTO_PRIMAS(X.IdTransaccion); --MLJS 18/01/2024
+                    nPrimaTotalLocal    := FUNC_MONTO_PRIMAS(X.IdRecibo);                       --MLJS 18/01/2024 FUNCIÓN NUEVA
                     nFactorPrimaRamo    := OC_FACTURAR.FACTOR_PRORRATEO_RAMO(X.CodCia, X.IdPoliza, X.IDetPol, X.CodRamo, nPrimaTotalLocal);
-              nDifComis := NVL(X.MtoComisi_Moneda,0) - NVL(nTotComisDist,0);
+                    nDifComis           := NVL(X.MtoComisi_Moneda,0) - NVL(nTotComisDist,0);
 
               SELECT NVL(MIN(NumComprob),'0')
                 INTO cNumComprob
@@ -7779,10 +7803,10 @@ create or replace PACKAGE BODY OC_REPOFACT IS
                         TO_CHAR(nHonorariosPEM,'99999999999990.00')    ||cLimitador||
                         TO_CHAR(nImpuestoHonoPM,'99999999999990.00')   ||cLimitador||
                         TO_CHAR(nOtrasCompPF,'99999999999990.00')      ||cLimitador||
-                        TO_CHAR(nImpuestoHonoPFOC,'99999999999990.00') ||cLimitador||
+                        TO_CHAR(nImpuestoHonoPFOC  * nFactorPrimaRamo,'99999999999990.00') ||cLimitador|| --MLJS 18/01/2024 SE AGREGA EL FACTORXRAMO VIFLEX
                         TO_CHAR(nOtrasCompPM,'99999999999990.00')      ||cLimitador||
-                        TO_CHAR(nImpuestoHonoPMOC,'99999999999990.00') ||cLimitador||
-                        TO_CHAR(nDifComis,'99999999999990.00')         ||cLimitador||
+                        TO_CHAR(nImpuestoHonoPMOC  * nFactorPrimaRamo,'99999999999990.00') ||cLimitador|| --MLJS 18/01/2024 SE AGREGA EL FACTORXRAMO VIFLEX
+                        TO_CHAR(nDifComis          * nFactorPrimaRamo,'99999999999990.00') ||cLimitador|| --MLJS 18/01/2024 SE AGREGA EL FACTORXRAMO VIFLEX
                         TO_CHAR(nMtoComiAge,'99999999999990.00')       ||cLimitador||
                         TO_CHAR(nMtoHonoAge,'99999999999990.00')       ||cLimitador||
                         LPAD(cCodAge,6,'0')                            ||cLimitador||
@@ -8243,3 +8267,4 @@ create or replace PACKAGE BODY OC_REPOFACT IS
     END DEVUELVE_CORREO_USUARIO;
     --
 END OC_REPOFACT;
+/
