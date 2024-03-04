@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          TH_CARGA_OPC IS
+CREATE OR REPLACE PACKAGE SICAS_OC.TH_CARGA_OPC IS
 /******************************************************************************/
 -- TH_CARGA_OPC
 -- PAQUETE UTILIZADO PARA CARGAR LA INFORMACION DE OPC CADA CIERRE DE MES     --
@@ -14,9 +14,9 @@ PROCEDURE CC_CARGA (
 /******************************************************************************/
 -- PROCEDIMIENTO DE CIFRAS DE CONTROL DE LA CARGA DIARIA                     --
 -- CREACION      :  MARIA DE LA LUZ JIMENEZ SILVA                            --
--- FECHA CREACIÓN: 22/01/2020 
--- MODIFICACION  : 
--- FECHA DE ULT MODIF.: 
+-- FECHA CREACIÓN: 22/01/2020
+-- MODIFICACION  :
+-- FECHA DE ULT MODIF.:
 /******************************************************************************/
   PIDCARGA        IN NUMBER  ,
   P_FECHA_INICIAL IN DATE    ,
@@ -33,22 +33,22 @@ PROCEDURE CARGA_INICIAL(
 -- PROCEDIMIENTO DE CARGA INICIAL MENSUAL DE LOS SINIESTROS CON RESERVA AL   --
 -- CIERRE DEL MES ANTERIOR A LA FECHA DE PROCESO                             --
 -- CREACION :  IGNACIO CASTILLO OROZCO                                       --
--- FECHA CREACIÓN 14/02/2019 
+-- FECHA CREACIÓN 14/02/2019
 -- MODIFICACION : MARIA DE LA LUZ JIMENEZ SILVA
 -- FECHA DE ULT MODIF.: 12/08/2019
-/******************************************************************************/  
-  P_CODCIA    IN NUMBER  , 
+/******************************************************************************/
+  P_CODCIA    IN NUMBER  ,
   P_AÑO_PROC  IN NUMBER  ,
   P_MES_PROC  IN NUMBER  ,
   P_AÑO_ANT   IN NUMBER  ,
-  P_MES_ANT   IN NUMBER  ,  
-  P_IDPROCESO IN NUMBER  ,  
+  P_MES_ANT   IN NUMBER  ,
+  P_IDPROCESO IN NUMBER  ,
   P_NUMREGS      IN OUT NUMBER  ,
-  P_IMPTE_RVAINI IN OUT NUMBER  ,    
+  P_IMPTE_RVAINI IN OUT NUMBER  ,
   P_ID_ERROR     OUT NUMBER  ,
   P_MENSAJE      OUT VARCHAR2);
 
-PROCEDURE CARGA_DETALLE_MOVTOS( 
+PROCEDURE CARGA_DETALLE_MOVTOS(
 /******************************************************************************/
 -- PROCEDIMIENTO DE CARGA DE DETALLE DE MOVIMIENTOS DE SINIESTROS QUE SE     --
 -- TUVIERON EN EL MES                                                        --
@@ -66,7 +66,7 @@ PROCEDURE CARGA_DETALLE_MOVTOS(
   P_ID_SINIESTRO  IN NUMBER,
   P_ID_ERROR      OUT NUMBER,
   P_MENSAJE       OUT VARCHAR2);
-  
+
 PROCEDURE CARGA_RESUMEN_MOVTOS(
 /******************************************************************************/
 -- PROCEDIMIENTO DE CARGA DE RESUMEN DE MOVIMIENTOS DE SINIESTROS QUE SE     --
@@ -87,12 +87,12 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
 
 FUNCTION FUNVALIDACGAINICIAL (
   P_AÑO_PROC  IN NUMBER  ,
-  P_MES_PROC  IN NUMBER  )   RETURN VARCHAR2;    
+  P_MES_PROC  IN NUMBER  )   RETURN VARCHAR2;
 
 FUNCTION FUNVALIDA_CARGA (
   P_FECHA_INICIAL IN DATE,
   P_FECHA_FINAL   IN DATE ) RETURN NUMBER;
-  
+
 PROCEDURE CTROL_CGA_RVA (
   PIDCARGA        IN NUMBER,
   PIDVERSION      IN NUMBER,
@@ -105,7 +105,7 @@ PROCEDURE CTROL_CGA_RVA (
   PIMPTE_AJUMAS   IN NUMBER,
   PTOT_REGS_AA    IN NUMBER,
   PIMPTE_AJUMENOS IN NUMBER,
-  PTOT_REG_AD     IN NUMBER, 
+  PTOT_REG_AD     IN NUMBER,
   PIMPTE_PAGOS    IN NUMBER,
   PTOT_REGS_PA    IN NUMBER,
   PIMPTE_DESPAGOS IN NUMBER,
@@ -115,14 +115,14 @@ PROCEDURE CTROL_CGA_RVA (
   PCODUSUARIO     IN VARCHAR2,
   P_ID_ERROR OUT NUMBER  ,
   P_MENSAJE  OUT VARCHAR2);
-  
+
 PROCEDURE CARGA_PERIODICA(
 /******************************************************************************/
 -- PROCEDIMIENTO PARA LA EJECUCION DE LA CARGA PERIODICA                     --
 -- CREACION     : MARIA DE LA LUZ JIMENEZ SILVA                              --
--- FECHA CREACIÓN 22/01/2020 
--- MODIFICACION : 
--- FECHA DE ULT MODIF.: 
+-- FECHA CREACIÓN 22/01/2020
+-- MODIFICACION :
+-- FECHA DE ULT MODIF.:
 /******************************************************************************/
   PPERIODICIDAD   IN NUMBER,
   PFECINICIAL     IN DATE,
@@ -131,10 +131,8 @@ PROCEDURE CARGA_PERIODICA(
   P_ID_ERROR OUT NUMBER  ,
   P_MENSAJE  OUT VARCHAR2);
 END TH_CARGA_OPC;
-
 /
-
-create or replace PACKAGE BODY          TH_CARGA_OPC IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.TH_CARGA_OPC IS
 -- TH_CARGA_OPC                                                               --
 -- PAQUETE UTILIZADO PARA CARGA MENSUAL DE LA INFORMACION DE RESERVA OPC      --
 -- DISEÑO   : MARIA DE LA LUZ JIMENEZ SILVA                                   --
@@ -157,12 +155,12 @@ BEGIN
 EXCEPTION
    WHEN OTHERS THEN
       RETURN NULL;
-END;   
-   
+END;
+
 FUNCTION FUNVALIDACGAINICIAL (
   P_AÑO_PROC  IN NUMBER  ,
   P_MES_PROC  IN NUMBER  )   RETURN VARCHAR2 IS
-  
+
   nExisteCgaIni  NUMBER(10);
 BEGIN
    SELECT COUNT(*)
@@ -170,7 +168,7 @@ BEGIN
    FROM   RESERVA R
    WHERE  AÑO_MOVIMIENTO = P_AÑO_PROC
    AND    MES_MOVIMIENTO = P_MES_PROC;
-   
+
    IF nExisteCgaIni = 0 THEN
       RETURN 'N';
    ELSE
@@ -181,7 +179,7 @@ END;
 FUNCTION FUNVALIDA_CARGA (
   P_FECHA_INICIAL IN DATE,
   P_FECHA_FINAL   IN DATE ) RETURN NUMBER IS
-  
+
   NHAYREGS  NUMBER(8);
 BEGIN
    SELECT COUNT(*)
@@ -189,12 +187,12 @@ BEGIN
    FROM   RESERVA_DET
    WHERE  FE_MOVTO BETWEEN P_FECHA_INICIAL
                    AND     P_FECHA_FINAL;
-                   
-   RETURN NHAYREGS;              
+
+   RETURN NHAYREGS;
 EXCEPTION
   WHEN NO_DATA_FOUND THEN
-     RETURN 0;              
-END;   
+     RETURN 0;
+END;
 
 
 PROCEDURE CC_CARGA (
@@ -207,7 +205,7 @@ PROCEDURE CC_CARGA (
   PTOT_REGS_RI    IN NUMBER,
   P_ID_ERROR     OUT NUMBER  ,
   P_MENSAJE      OUT VARCHAR2) IS
-  
+
    CURSOR CurCC IS
        SELECT *
        FROM   RESERVA_DET
@@ -215,7 +213,7 @@ PROCEDURE CC_CARGA (
        AND    FE_MOVTO     <= P_FECHA_FINAL
        AND    ID_SINIESTRO  = DECODE(NVL(P_ID_SINIESTRO,0),0,ID_SINIESTRO,P_ID_SINIESTRO)
        ORDER BY TIPO_MOVIMIENTO;
-   
+
    NAJUMAS         NUMBER(5);
    NAJUMEN         NUMBER(5);
    NPAGOS          NUMBER(5);
@@ -224,69 +222,69 @@ PROCEDURE CC_CARGA (
    NIMPTE_AJUMEN   NUMBER(18,2);
    NIMPTE_PAGOS    NUMBER(18,2);
    NIMPTE_DESPAGOS NUMBER(18,2);
-   NTOTREGS        NUMBER(5);   
-BEGIN     
+   NTOTREGS        NUMBER(5);
+BEGIN
    NAJUMAS       := 0;
    NAJUMEN       := 0;
    NPAGOS        := 0;
-   NDESPAGOS     := 0; 
-     NTOTREGS      := 0;
-     NIMPTE_AJUMAS := 0;
-     NIMPTE_AJUMEN := 0;
-     NIMPTE_PAGOS    := 0;
+   NDESPAGOS     := 0;
+	 NTOTREGS      := 0;
+	 NIMPTE_AJUMAS := 0;
+	 NIMPTE_AJUMEN := 0;
+	 NIMPTE_PAGOS    := 0;
    NIMPTE_DESPAGOS := 0;
    P_ID_ERROR      := 0;
    P_MENSAJE       := NULL;
    VGNOMPROCFUN := 'CC_CARGA';
-   FOR I IN CurCC LOOP        
-      NTOTREGS  := NTOTREGS + 1;      
+   FOR I IN CurCC LOOP
+   	  NTOTREGS  := NTOTREGS + 1;
       IF I.TIPO_MOVIMIENTO IN ('ESTINI','AJUMAS') THEN
-         NAJUMAS                 := NAJUMAS + 1;
-         NIMPTE_AJUMAS           := NIMPTE_AJUMAS + I.IMPTE_MOVIMIENTO;
-         
-      ELSIF I.TIPO_MOVIMIENTO IN ('AJUMEN') THEN
-         NAJUMEN                 := NAJUMEN + 1;
-         NIMPTE_AJUMEN           := NIMPTE_AJUMEN + I.IMPTE_MOVIMIENTO;
-        
-      ELSIF I.TIPO_MOVIMIENTO IN ('PAGOS') THEN
-         NPAGOS                  := NPAGOS + 1;
-         NIMPTE_PAGOS            := NIMPTE_PAGOS + I.IMPTE_MOVIMIENTO;
-        
+      	 NAJUMAS                 := NAJUMAS + 1;
+      	 NIMPTE_AJUMAS           := NIMPTE_AJUMAS + I.IMPTE_MOVIMIENTO;
 
-      ELSIF I.TIPO_MOVIMIENTO IN ('DESPAGOS') THEN   
-         NDESPAGOS               := NDESPAGOS + 1;
-         NIMPTE_DESPAGOS         := NIMPTE_DESPAGOS + I.IMPTE_MOVIMIENTO;
-        
+      ELSIF I.TIPO_MOVIMIENTO IN ('AJUMEN') THEN
+      	 NAJUMEN                 := NAJUMEN + 1;
+      	 NIMPTE_AJUMEN           := NIMPTE_AJUMEN + I.IMPTE_MOVIMIENTO;
+
+      ELSIF I.TIPO_MOVIMIENTO IN ('PAGOS') THEN
+      	 NPAGOS                  := NPAGOS + 1;
+      	 NIMPTE_PAGOS            := NIMPTE_PAGOS + I.IMPTE_MOVIMIENTO;
+
+
+      ELSIF I.TIPO_MOVIMIENTO IN ('DESPAGOS') THEN
+      	 NDESPAGOS               := NDESPAGOS + 1;
+      	 NIMPTE_DESPAGOS         := NIMPTE_DESPAGOS + I.IMPTE_MOVIMIENTO;
+
       END IF;
-   END LOOP; 
-     
+   END LOOP;
+
    CTROL_CGA_RVA (PIDCARGA      , 1           , P_IDPROCESO    , P_FECHA_INICIAL, P_FECHA_FINAL, P_ID_SINIESTRO,
-                  PIMPTE_RVA_INI, PTOT_REGS_RI, NIMPTE_AJUMAS  , NAJUMAS        , NIMPTE_AJUMEN, NAJUMEN, 
+                  PIMPTE_RVA_INI, PTOT_REGS_RI, NIMPTE_AJUMAS  , NAJUMAS        , NIMPTE_AJUMEN, NAJUMEN,
                   NIMPTE_PAGOS  , NPAGOS      , NIMPTE_DESPAGOS, NDESPAGOS      ,  NULL        , NULL,
                   USER          , P_ID_ERROR  , P_MENSAJE      );
-                                   
+
 EXCEPTION
    WHEN OTHERS THEN
-      P_ID_ERROR := SQLCODE;    
+      P_ID_ERROR := SQLCODE;
       P_MENSAJE  := VGNOMPROCFUN||'/'||SQLERRM;
-      RAISE_APPLICATION_ERROR(-20230,'Error en'|| ' ' ||P_MENSAJE);                  
+      RAISE_APPLICATION_ERROR(-20230,'Error en'|| ' ' ||P_MENSAJE);
 END;
-PROCEDURE CARGA_INICIAL(  
+PROCEDURE CARGA_INICIAL(
   P_CODCIA    IN NUMBER  ,
   P_AÑO_PROC  IN NUMBER  ,
   P_MES_PROC  IN NUMBER  ,
   P_AÑO_ANT   IN NUMBER  ,
-  P_MES_ANT   IN NUMBER  ,   
+  P_MES_ANT   IN NUMBER  ,
   P_IDPROCESO IN NUMBER  ,
   P_NUMREGS      IN OUT NUMBER  ,
   P_IMPTE_RVAINI IN OUT NUMBER  ,
   P_ID_ERROR     OUT NUMBER  ,
   P_MENSAJE      OUT VARCHAR2) IS
 
-  REC_RESERVA    RESERVA%ROWTYPE;  
-  nNUMREGS       NUMBER(8);  
+  REC_RESERVA    RESERVA%ROWTYPE;
+  nNUMREGS       NUMBER(8);
   NIMPTE_RVAINI  NUMBER(18,2);
-  
+
 CURSOR C_CGA_INI IS
    SELECT *
    FROM   RESERVA R
@@ -300,30 +298,30 @@ CURSOR C_CGA_INI IS
           AND    MES_MOVIMIENTO = R.MES_MOVIMIENTO
           AND    ID_SINIESTRO   = R.ID_SINIESTRO
           GROUP BY ID_SINIESTRO
-          HAVING SUM(RESERVA_FINAL) !=0);          
-          
+          HAVING SUM(RESERVA_FINAL) !=0);
+
 PROCEDURE INSERTA_RESERVA(
   P_RESERVA   IN RESERVA%ROWTYPE,
   P_ID_ERROR OUT NUMBER  ,
   P_MENSAJE  OUT VARCHAR2) IS
-  
+
   REC_RESERVA RESERVA%ROWTYPE;
 BEGIN
    P_ID_ERROR   := 0;
    P_MENSAJE    := NULL;
    REC_RESERVA  := P_RESERVA;
    VGNOMPROCFUN := 'INSERTA_RVA';
-      
+
    INSERT INTO RESERVA VALUES REC_RESERVA;
-      
+
 EXCEPTION
   WHEN OTHERS THEN
-     P_ID_ERROR := SQLCODE;    
+     P_ID_ERROR := SQLCODE;
      P_MENSAJE  := VGNOMPROCFUN||'/'||SQLERRM;
      RAISE_APPLICATION_ERROR(-20230,'Error en'|| ' ' ||P_MENSAJE);
 END;
 
-          
+
 BEGIN
    P_ID_ERROR    := 0;
    VGNOMPROCFUN  := 'CARGA_INICIAL';
@@ -334,30 +332,30 @@ BEGIN
       REC_RESERVA.CODCIA            := P_CODCIA;
       REC_RESERVA.AÑO_MOVIMIENTO    := P_AÑO_PROC;
       REC_RESERVA.MES_MOVIMIENTO    := P_MES_PROC;
-      REC_RESERVA.NUMSINIREF        := REPLACE(REPLACE(REPLACE(REPLACE(REC_RESERVA.NUMSINIREF,CHR(13),''),CHR(10),''), CHR(11),''), CHR(9),'');     
-      REC_RESERVA.ID_PROCESO        := P_IDPROCESO;                  
+      REC_RESERVA.NUMSINIREF        := REPLACE(REPLACE(REPLACE(REPLACE(REC_RESERVA.NUMSINIREF,CHR(13),''),CHR(10),''), CHR(11),''), CHR(9),'');
+      REC_RESERVA.ID_PROCESO        := P_IDPROCESO;
       REC_RESERVA.ID_VALIDACION     := FUNIDVALIDA;
       REC_RESERVA.RESERVA_FINAL     := REC_RESERVA.RESERVA_FINAL;
       REC_RESERVA.RESERVA_ANTERIOR  := REC_RESERVA.RESERVA_FINAL;
       REC_RESERVA.ESTIMACION_INICIAL:= 0;
       REC_RESERVA.AJUSTES_MAS       := 0;
-      REC_RESERVA.AJUSTES_MENOS     := 0; 
-      REC_RESERVA.PAGOS             := 0; 
-      REC_RESERVA.DESPAGOS          := 0;       
-      
+      REC_RESERVA.AJUSTES_MENOS     := 0;
+      REC_RESERVA.PAGOS             := 0;
+      REC_RESERVA.DESPAGOS          := 0;
+
       NIMPTE_RVAINI  := NIMPTE_RVAINI + REC_RESERVA.RESERVA_ANTERIOR;
-      
+
       INSERTA_RESERVA(REC_RESERVA, VG_ID_ERROR, VG_MENSAJE);
-            
+
       --IF SUBSTR(nNUMREGS,-3,3) = '000' THEN
       --   COMMIT;
-      --END IF;      
-            
-   END LOOP;   
-   
+      --END IF;
+
+   END LOOP;
+
    P_NUMREGS      := nNUMREGS;
-   P_IMPTE_RVAINI := NIMPTE_RVAINI;  
-                    
+   P_IMPTE_RVAINI := NIMPTE_RVAINI;
+
 EXCEPTION
    WHEN OTHERS THEN
       P_ID_ERROR := SQLCODE;
@@ -375,9 +373,9 @@ PROCEDURE CARGA_DETALLE_MOVTOS(
   P_ID_SINIESTRO  IN NUMBER  ,
   P_ID_ERROR     OUT NUMBER  ,
   P_MENSAJE      OUT VARCHAR2) IS
-  
-  nSINIESTRO          SINIESTRO.IDSINIESTRO%TYPE; 
-  nIDTRANSACCION      COBERTURA_SINIESTRO.IDTRANSACCION%TYPE;    
+
+  nSINIESTRO          SINIESTRO.IDSINIESTRO%TYPE;
+  nIDTRANSACCION      COBERTURA_SINIESTRO.IDTRANSACCION%TYPE;
 
   cCOBERTURA_ACT      RESERVA_DET.ID_COBERTURA%TYPE;
   cCOBERTURA_ANT      RESERVA_DET.ID_COBERTURA%TYPE;
@@ -387,8 +385,8 @@ PROCEDURE CARGA_DETALLE_MOVTOS(
   nEXISTE_SINIESTRO   NUMBER;
   cSIGNO              VARCHAR2(1);
 
-  --- 
-  nREGISTROS          NUMBER;  
+  ---
+  nREGISTROS          NUMBER;
   nNumMovtosA         NUMBER;
   nNumMovtosD         NUMBER;
   nImporteAA          NUMBER(18,2);
@@ -397,33 +395,33 @@ PROCEDURE CARGA_DETALLE_MOVTOS(
   nNumMovtosDP        NUMBER;
   nImportePA          NUMBER(18,2);
   nImporteDP          NUMBER(18,2);
- 
+
   nMOVTO                NUMBER := 0;
   REC_RESERVA_DET      RESERVA_DET%ROWTYPE;
-  
+
 CURSOR INICIAL IS
     SELECT DISTINCT DT.VALOR1 SINI
-     FROM DETALLE_TRANSACCION DT        
+     FROM DETALLE_TRANSACCION DT
     WHERE ((P_ID_SINIESTRO <> 0 AND DT.VALOR1 = P_ID_SINIESTRO)
        OR  (P_ID_SINIESTRO =  0 AND DT.VALOR1 = DT.VALOR1))
-      AND  DT.IDTRANSACCION <> 0  
+      AND  DT.IDTRANSACCION <> 0
       AND  DT.CODEMPRESA              = P_CODCIA
-      AND  DT.CODCIA                  = P_CODCIA     
-      AND  EXISTS (  
+      AND  DT.CODCIA                  = P_CODCIA
+      AND  EXISTS (
        SELECT *
        FROM   TRANSACCION T
-       WHERE  TRUNC(T.FECHATRANSACCION) BETWEEN P_FECHA_INICIAL AND P_FECHA_FINAL  
-       AND  T.IDPROCESO     = 6 
-       AND  T.CODCIA        = DT.CODCIA 
-       AND  T.CODEMPRESA    = DT.CODEMPRESA 
-       AND  T.IDTRANSACCION = DT.IDTRANSACCION)            
-    ORDER BY 1;          
+       WHERE  TRUNC(T.FECHATRANSACCION) BETWEEN P_FECHA_INICIAL AND P_FECHA_FINAL
+       AND  T.IDPROCESO     = 6
+       AND  T.CODCIA        = DT.CODCIA
+       AND  T.CODEMPRESA    = DT.CODEMPRESA
+       AND  T.IDTRANSACCION = DT.IDTRANSACCION)
+    ORDER BY 1;
 --
 -- TRANSACCION RESERVA
 --
 CURSOR TRAN IS
    SELECT *
-   FROM (    
+   FROM (
         SELECT DT.VALOR1 SINI,
              DECODE(CD.MOVDEBCRED,'C',T.IDTRANSACCION) TRANSAC,
              DECODE(CD.MOVDEBCRED,'D',T.IDTRANSACCION) TRANSACANUL,
@@ -457,7 +455,7 @@ CURSOR DET_TRAN IS
           TRUNC(FECHATRANSACCION) FETRANSAC,
           TO_NUMBER(TO_CHAR(FECHATRANSACCION,'YYYY')) AÑO_FETRANSAC,
           TO_NUMBER(TO_CHAR(FECHATRANSACCION,'MM'))   MES_FETRANSAC,
-          DT.CORRELATIVO  SECUEN,       
+          DT.CORRELATIVO  SECUEN,
           T.USUARIOGENERO USUARIO,
           TRIM(DT.CODSUBPROCESO) SUBPROCESO,
           NVL(VALOR1,' ')  SINIESTRO,
@@ -470,7 +468,7 @@ CURSOR DET_TRAN IS
      FROM TRANSACCION         T,
           DETALLE_TRANSACCION DT
     WHERE T.IDTRANSACCION  = nIDTRANSACCION
-      AND TRUNC(T.FECHATRANSACCION) BETWEEN P_FECHA_INICIAL AND P_FECHA_FINAL 
+      AND TRUNC(T.FECHATRANSACCION) BETWEEN P_FECHA_INICIAL AND P_FECHA_FINAL
       --
       AND DT.IDTRANSACCION = T.IDTRANSACCION
     ORDER BY T.FECHATRANSACCION;
@@ -480,23 +478,23 @@ CURSOR DET_TRAN IS
 CURSOR TRAN_A IS
    SELECT DECODE (DT.CODSUBPROCESO,'APRSIN',T.IDTRANSACCION,0) TRANSAC,
            DECODE (DT.CODSUBPROCESO,'ANUAPR',T.IDTRANSACCION,0) TRANSACANUL
-    FROM  DETALLE_TRANSACCION DT,          
+    FROM  DETALLE_TRANSACCION DT,
           TRANSACCION          T,
-          APROBACIONES        AA 
-    WHERE DT.VALOR1    = nSINIESTRO 
+          APROBACIONES        AA
+    WHERE DT.VALOR1    = nSINIESTRO
     AND   DT.OBJETO in ('APROBACIONES')
     --
     AND   T.IDTRANSACCION = DT.IDTRANSACCION
     AND   TRUNC(T.FECHATRANSACCION) BETWEEN P_FECHA_INICIAL AND P_FECHA_FINAL
     --
-    AND   AA.IDTRANSACCION (+) = T.IDTRANSACCION 
+    AND   AA.IDTRANSACCION (+) = T.IDTRANSACCION
     UNION
     SELECT DECODE (DT.CODSUBPROCESO,'APRSIN',T.IDTRANSACCION,0) TRANSAC,
            DECODE (DT.CODSUBPROCESO,'ANUAPR',T.IDTRANSACCION,0) TRANSACANUL
-    FROM  DETALLE_TRANSACCION DT,          
+    FROM  DETALLE_TRANSACCION DT,
           TRANSACCION          T,
-          APROBACION_ASEG      AA 
-    WHERE DT.VALOR1  =  nSINIESTRO 
+          APROBACION_ASEG      AA
+    WHERE DT.VALOR1  =  nSINIESTRO
     AND   DT.OBJETO in ('APROBACION_ASEG')
     --
     AND   T.IDTRANSACCION = DT.IDTRANSACCION
@@ -512,7 +510,7 @@ CURSOR DET_TRAN_A IS
            TRUNC(T.FECHATRANSACCION) FETRANSAC,
            TO_NUMBER(TO_CHAR(FECHATRANSACCION,'YYYY')) AÑO_FETRANSAC,
            TO_NUMBER(TO_CHAR(FECHATRANSACCION,'MM'))   MES_FETRANSAC,
-           T.USUARIOGENERO USUARIO,              
+           T.USUARIOGENERO USUARIO,
            DT.CORRELATIVO   SECUEN,
            DT.CODSUBPROCESO SUBPROCESO,
            DT.OBJETO        OBJETO,
@@ -522,10 +520,10 @@ CURSOR DET_TRAN_A IS
            T.IDPROCESO      PROCESO,
            DA.CODTRANSAC,
            DA.IDDETAPROB,
-           DA.CODCPTOTRANSAC,       
+           DA.CODCPTOTRANSAC,
            DA.COD_PAGO      COBERTURA,
            DA.MONTO_LOCAL   MTLOCAL,
-           CTS.SIGNO        SIGNO       
+           CTS.SIGNO        SIGNO
       FROM TRANSACCION         T,
            DETALLE_TRANSACCION DT,
            DETALLE_APROBACION_ASEG  DA,
@@ -541,7 +539,7 @@ CURSOR DET_TRAN_A IS
        AND DA.CODCPTOTRANSAC NOT IN ('SUPMED')
        --
        AND CTS.CODCIA        = T.CODCIA
-       AND CTS.CODTRANSAC    = DA.CODTRANSAC 
+       AND CTS.CODTRANSAC    = DA.CODTRANSAC
     UNION
     SELECT NVL(T.IDTRANSACCION,0)  TRANSAC,
            TRUNC(T.FECHATRANSACCION) FETRANSAC,
@@ -576,24 +574,24 @@ CURSOR DET_TRAN_A IS
        AND DA.CODCPTOTRANSAC NOT IN ('SUPMED')
        --
        AND CTS.CODCIA        = T.CODCIA
-       AND CTS.CODTRANSAC    = DA.CODTRANSAC 
+       AND CTS.CODTRANSAC    = DA.CODTRANSAC
       ORDER BY 2, 11,14;
 
 PROCEDURE INSERTA_RESERVA_DET(
   P_RESERVA_DET  IN RESERVA_DET%ROWTYPE,
   P_ID_ERROR    OUT NUMBER          ,
   P_MENSAJE     OUT VARCHAR2       ) IS
-  
+
   REC_RESERVA_DET RESERVA_DET%ROWTYPE;
 BEGIN
    P_ID_ERROR   := 0;
    REC_RESERVA_DET  := P_RESERVA_DET;
    VGNOMPROCFUN := 'INSERTA_RESERVA_DET';
-   
+
    INSERT INTO RESERVA_DET VALUES REC_RESERVA_DET;
 EXCEPTION
   WHEN OTHERS THEN
-     P_ID_ERROR := SQLCODE;    
+     P_ID_ERROR := SQLCODE;
      P_MENSAJE  := VGNOMPROCFUN||'/'||SQLERRM;
      RAISE_APPLICATION_ERROR(-20230,'Error en : '||P_MENSAJE);
 END;
@@ -608,30 +606,30 @@ BEGIN
    VG_ID_ERROR   := 0;
    REC_RESERVA_DET  := P_RESERVA_DET;
    VGNOMPROCFUN := 'DELETE_RESERVA_DET';
-    
+
    DELETE FROM RESERVA_DET RD
     WHERE RD.ID_SINIESTRO    = REC_RESERVA_DET.ID_SINIESTRO
       AND RD.ID_COBERTURA    = REC_RESERVA_DET.ID_COBERTURA
-      AND RD.NMOD            = REC_RESERVA_DET.NMOD 
+      AND RD.NMOD            = REC_RESERVA_DET.NMOD
       AND RD.AÑO_MOVIMIENTO  = REC_RESERVA_DET.AÑO_MOVIMIENTO
       AND RD.MES_MOVIMIENTO  = REC_RESERVA_DET.MES_MOVIMIENTO
       AND RD.TRANSACCION     = REC_RESERVA_DET.TRANSACCION
       AND RD.FE_MOVTO        = REC_RESERVA_DET.FE_MOVTO
       AND RD.TIPO_MOVIMIENTO = REC_RESERVA_DET.TIPO_MOVIMIENTO;
-      
-    P_ID_ERROR :=  VG_ID_ERROR; 
+
+    P_ID_ERROR :=  VG_ID_ERROR;
 EXCEPTION
    WHEN OTHERS THEN
-     P_ID_ERROR := SQLCODE;    
-     P_MENSAJE  := VGNOMPROCFUN||'/'||SQLERRM; 
+     P_ID_ERROR := SQLCODE;
+     P_MENSAJE  := VGNOMPROCFUN||'/'||SQLERRM;
      RAISE_APPLICATION_ERROR(-20230,'Error en : '||P_MENSAJE);
 END;
-       
+
 BEGIN
    VG_ID_ERROR  := 0;
    P_ID_ERROR   := VG_ID_ERROR;
    VGNOMPROCFUN := 'CARGA_DETALLE_MOVTOS';
-   VGVALIDACION := FUNIDVALIDA;  
+   VGVALIDACION := FUNIDVALIDA;
    nREGISTROS   := 0;
    nNumMovtosA  := 0;
    nNumMovtosD  := 0;
@@ -641,101 +639,103 @@ BEGIN
    nImporteAD   := 0;
    nImportePA   := 0;
    nImporteDP   := 0;
-   
+
    --- cuadn hay un reproceso de siniestro se debe de elminar la historia
    IF P_IDPROCESO = 2 THEN
    BEGIN
       DELETE FROM RESERVA_DET RD
-      WHERE RD.ID_SINIESTRO    = P_ID_SINIESTRO;      
+      WHERE RD.ID_SINIESTRO    = P_ID_SINIESTRO;
+      COMMIT;
    END;
    ELSE
      IF (FUNVALIDA_CARGA (P_FECHA_INICIAL,P_FECHA_FINAL)) <> 0 THEN
         DELETE FROM RESERVA_DET RD
         WHERE  FE_MOVTO BETWEEN P_FECHA_INICIAL
-                        AND     P_FECHA_FINAL;                              
+                        AND     P_FECHA_FINAL;
+        COMMIT;
      END IF;
    END IF;
-   
+
    FOR I IN INICIAL LOOP
       nSINIESTRO := I.SINI;
-      nREGISTROS := nREGISTROS + 1;    
+      nREGISTROS := nREGISTROS + 1;
       --
       -- TRANSACCIONES DE RESERVA
       --
-      VG_MENSAJE := '1.TRANSACCIONES DE RESERVA';     
+      VG_MENSAJE := '1.TRANSACCIONES DE RESERVA';
       FOR T IN TRAN LOOP
-         nIDTRANSACCION := T.TRANSAC; 
-         cSIGNO         := T.SIGNO;          
+         nIDTRANSACCION := T.TRANSAC;
+         cSIGNO         := T.SIGNO;
          FOR DT IN DET_TRAN LOOP
             BEGIN
                SELECT COUNT(*)
                  INTO nEXISTE_SINIESTRO
                  FROM RESERVA_DET RD
                 WHERE RD.ID_SINIESTRO   = nSINIESTRO
-                  AND RD.ID_COBERTURA   = DT.COBERTURA  
-                  AND RD.NMOD           = DT.NMOD 
+                  AND RD.ID_COBERTURA   = DT.COBERTURA
+                  AND RD.NMOD           = DT.NMOD
                   AND RD.AÑO_MOVIMIENTO = DT.AÑO_FETRANSAC
                   AND RD.MES_MOVIMIENTO = DT.MES_FETRANSAC
                   AND RD.TRANSACCION    = DT.TRANSAC
-                  AND RD.FE_MOVTO       = DT.FETRANSAC;    
+                  AND RD.FE_MOVTO       = DT.FETRANSAC;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
                   nEXISTE_SINIESTRO := 0;
-               WHEN OTHERS THEN    
+               WHEN OTHERS THEN
                   nEXISTE_SINIESTRO := 0;
-            END; 
-            
-            IF nEXISTE_SINIESTRO = 0 THEN 
-               IF DT.SUBPROCESO != 'SIN' THEN 
+            END;
+
+            IF nEXISTE_SINIESTRO = 0 THEN
+               IF DT.SUBPROCESO != 'SIN' THEN
                   IF DT.NMOD = 1 THEN
-                     cTIPO_MOVTO := 'ESTINI';                   
+                     cTIPO_MOVTO := 'ESTINI';
                   ELSE
                      IF cSIGNO = '+' THEN
                         cTIPO_MOVTO := 'AJUMAS';
                      ELSE
                         cTIPO_MOVTO := 'AJUMEN';
-                     END IF;     
+                     END IF;
                   END IF;
                   IF DT.SUBPROCESO = 'EMIRES' AND T.TRANSACANUL != 0 THEN
                      cSIGNO := '+';
-                  END IF;  
-                                     
-                  REC_RESERVA_DET.TRANSACCION      := DT.TRANSAC;                                        
-                  REC_RESERVA_DET.ID_SINIESTRO     := DT.SINIESTRO;      
+                  END IF;
+
+                  REC_RESERVA_DET.TRANSACCION      := DT.TRANSAC;
+                  REC_RESERVA_DET.ID_SINIESTRO     := DT.SINIESTRO;
                   REC_RESERVA_DET.ID_POLIZA        := DT.POLIZA;
                   REC_RESERVA_DET.ID_COBERTURA     := DT.COBERTURA;
-                  REC_RESERVA_DET.TIPO_MOVIMIENTO  := cTIPO_MOVTO;    
-                  REC_RESERVA_DET.IMPTE_MOVIMIENTO := DT.MTLOCAL;    
+                  REC_RESERVA_DET.TIPO_MOVIMIENTO  := cTIPO_MOVTO;
+                  REC_RESERVA_DET.IMPTE_MOVIMIENTO := DT.MTLOCAL;
                   REC_RESERVA_DET.FE_MOVTO         := DT.FETRANSAC;
                   REC_RESERVA_DET.AÑO_MOVIMIENTO   := DT.AÑO_FETRANSAC;
-                  REC_RESERVA_DET.MES_MOVIMIENTO   := DT.MES_FETRANSAC;                                   
-                  REC_RESERVA_DET.NMOD             := DT.NMOD; 
-                  REC_RESERVA_DET.PROCESO          := DT.PROCESO;  
+                  REC_RESERVA_DET.MES_MOVIMIENTO   := DT.MES_FETRANSAC;
+                  REC_RESERVA_DET.NMOD             := DT.NMOD;
+                  REC_RESERVA_DET.PROCESO          := DT.PROCESO;
                   REC_RESERVA_DET.SUBPROCESO       := DT.SUBPROCESO;
-                  REC_RESERVA_DET.SIGNO            := cSIGNO;              
-                  REC_RESERVA_DET.CODCIA           := P_CODCIA;  
+                  REC_RESERVA_DET.SIGNO            := cSIGNO;
+                  REC_RESERVA_DET.CODCIA           := P_CODCIA;
                   REC_RESERVA_DET.ID_ORIGEN        := P_ORIGEN;
                   REC_RESERVA_DET.ID_VALIDACION    := VGVALIDACION;
                   REC_RESERVA_DET.ID_PROCESO       := P_IDPROCESO;
-                  
-                  INSERTA_RESERVA_DET(REC_RESERVA_DET,VG_ID_ERROR, VG_MENSAJE);               
-                  
+
+                  INSERTA_RESERVA_DET(REC_RESERVA_DET,VG_ID_ERROR, VG_MENSAJE);
+
                   IF (cTIPO_MOVTO = 'ESTINI') OR (cTIPO_MOVTO = 'AJUMAS') THEN
                      nNumMovtosA := nNumMovtosA + 1;
                      nImporteAA  := nImporteAA  + DT.MTLOCAL;
                   ELSE
-                     nNumMovtosD := nNumMovtosD + 1;  
+                     nNumMovtosD := nNumMovtosD + 1;
                      nImporteAD  := nImporteAD  + DT.MTLOCAL;
                   END IF;
-               END IF;   
-            END IF;     
+               END IF;
+            END IF;
          END LOOP;
-         
+
       END LOOP;
-      
+
       --
       -- TRANSACCION DE ANULACION DE RESERVA
-      --      
+      --
       VG_MENSAJE := '2.TRANSACCIONES ANULACION DE RESERVA';
       FOR T IN TRAN LOOP
          nIDTRANSACCION := T.TRANSACANUL;
@@ -747,125 +747,125 @@ BEGIN
                  INTO nEXISTE_SINIESTRO
                  FROM RESERVA_DET RD
                 WHERE RD.ID_SINIESTRO    = nSINIESTRO
-                  AND RD.ID_COBERTURA    = DT.COBERTURA  
-                  AND RD.NMOD            = DT.NMOD 
+                  AND RD.ID_COBERTURA    = DT.COBERTURA
+                  AND RD.NMOD            = DT.NMOD
                   AND RD.AÑO_MOVIMIENTO  = DT.AÑO_FETRANSAC
-                  AND RD.MES_MOVIMIENTO  = DT.MES_FETRANSAC 
+                  AND RD.MES_MOVIMIENTO  = DT.MES_FETRANSAC
                   AND RD.TRANSACCION     = DT.TRANSAC
-                  AND RD.FE_MOVTO        = DT.FETRANSAC  
+                  AND RD.FE_MOVTO        = DT.FETRANSAC
                   AND RD.TIPO_MOVIMIENTO = cTIPO_MOVTO;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
                   nEXISTE_SINIESTRO := 0;
                WHEN OTHERS THEN
-                  nEXISTE_SINIESTRO := 0;   
-            END; 
-  
-            IF nEXISTE_SINIESTRO = 0 THEN 
-               IF DT.SUBPROCESO != 'SIN' THEN 
-                  REC_RESERVA_DET.ID_SINIESTRO     := DT.SINIESTRO;      
+                  nEXISTE_SINIESTRO := 0;
+            END;
+
+            IF nEXISTE_SINIESTRO = 0 THEN
+               IF DT.SUBPROCESO != 'SIN' THEN
+                  REC_RESERVA_DET.ID_SINIESTRO     := DT.SINIESTRO;
                   REC_RESERVA_DET.ID_POLIZA        := DT.POLIZA;
                   REC_RESERVA_DET.ID_COBERTURA     := DT.COBERTURA;
-                  REC_RESERVA_DET.TIPO_MOVIMIENTO  := cTIPO_MOVTO;    
-                  REC_RESERVA_DET.IMPTE_MOVIMIENTO := ABS(DT.MTLOCAL);    
+                  REC_RESERVA_DET.TIPO_MOVIMIENTO  := cTIPO_MOVTO;
+                  REC_RESERVA_DET.IMPTE_MOVIMIENTO := ABS(DT.MTLOCAL);
                   REC_RESERVA_DET.FE_MOVTO         := DT.FETRANSAC;
                   REC_RESERVA_DET.AÑO_MOVIMIENTO   := DT.AÑO_FETRANSAC;
-                  REC_RESERVA_DET.MES_MOVIMIENTO   := DT.MES_FETRANSAC;      
+                  REC_RESERVA_DET.MES_MOVIMIENTO   := DT.MES_FETRANSAC;
                   REC_RESERVA_DET.TRANSACCION      := DT.TRANSAC;
-                  REC_RESERVA_DET.NMOD             := DT.NMOD; 
-                  REC_RESERVA_DET.PROCESO          := DT.PROCESO;  
+                  REC_RESERVA_DET.NMOD             := DT.NMOD;
+                  REC_RESERVA_DET.PROCESO          := DT.PROCESO;
                   REC_RESERVA_DET.SUBPROCESO       := DT.SUBPROCESO;
-                  REC_RESERVA_DET.SIGNO            := cSIGNO;              
-                  REC_RESERVA_DET.CODCIA           := P_CODCIA;  
+                  REC_RESERVA_DET.SIGNO            := cSIGNO;
+                  REC_RESERVA_DET.CODCIA           := P_CODCIA;
                   REC_RESERVA_DET.ID_ORIGEN        := P_ORIGEN;
                   REC_RESERVA_DET.ID_VALIDACION    := VGVALIDACION;
                   REC_RESERVA_DET.ID_PROCESO       := P_IDPROCESO;
-                  
-                  nNumMovtosD := nNumMovtosD + 1;  
+
+                  nNumMovtosD := nNumMovtosD + 1;
                   nImporteAD  := nImporteAD  + REC_RESERVA_DET.IMPTE_MOVIMIENTO;
-                  
-                  INSERTA_RESERVA_DET(REC_RESERVA_DET,VG_ID_ERROR, VG_MENSAJE);  
-               END IF;   
-            END IF;       
+
+                  INSERTA_RESERVA_DET(REC_RESERVA_DET,VG_ID_ERROR, VG_MENSAJE);
+               END IF;
+            END IF;
          END LOOP;
-      END LOOP; 
-      
-     
+      END LOOP;
+
+
       --
       -- TRANSACCION DE APROBACIONES
       --
-      VG_MENSAJE := '3.TRANSACCION DE APROBACIONES';  
-      nNumMovtosPA:= 0;  nImportePA := 0;          
+      VG_MENSAJE := '3.TRANSACCION DE APROBACIONES';
+      nNumMovtosPA:= 0;  nImportePA := 0;
       nNumMovtosDP:= 0;  nImporteDP := 0;
       FOR T IN TRAN_A LOOP
-         nIDTRANSACCION := T.TRANSAC;          
-         FOR DT IN DET_TRAN_A LOOP  
-            cCOBERTURA_ACT := DT.COBERTURA;           
+         nIDTRANSACCION := T.TRANSAC;
+         FOR DT IN DET_TRAN_A LOOP
+            cCOBERTURA_ACT := DT.COBERTURA;
             nMOVTO := nMOVTO + 1;
             cSIGNO := DT.SIGNO;
-            cTIPO_MOVTO    := 'PAGOS';                         
-            
-            IF DT.CODTRANSAC IN ('DEDUAD','DEDUBA')THEN                               
-               cCOBERTURA_ACT := cCOBERTURA_ANT; 
+            cTIPO_MOVTO    := 'PAGOS';
+
+            IF DT.CODTRANSAC IN ('DEDUAD','DEDUBA')THEN
+               cCOBERTURA_ACT := cCOBERTURA_ANT;
                cTIPO_MOVTO    := 'DEDUC';
-            ELSIF DT.CODTRANSAC IN ('DESCUE') THEN  
-               cTIPO_MOVTO    := 'DESCUE';    
-               cCOBERTURA_ACT := cCOBERTURA_ANT; 
-            ELSIF DT.COBERTURA = 'DEDUC' THEN   
-               cCOBERTURA_ACT := cCOBERTURA_ANT; 
-               cTIPO_MOVTO    := DT.COBERTURA;   
-            END IF;  
-                                    
+            ELSIF DT.CODTRANSAC IN ('DESCUE') THEN
+               cTIPO_MOVTO    := 'DESCUE';
+               cCOBERTURA_ACT := cCOBERTURA_ANT;
+            ELSIF DT.COBERTURA = 'DEDUC' THEN
+               cCOBERTURA_ACT := cCOBERTURA_ANT;
+               cTIPO_MOVTO    := DT.COBERTURA;
+            END IF;
+
             BEGIN
                SELECT COUNT(*)
                  INTO nEXISTE_SINIESTRO
                  FROM RESERVA_DET RD
                 WHERE RD.ID_SINIESTRO    = nSINIESTRO
                   AND RD.ID_COBERTURA    = cCOBERTURA_ACT
-                  AND RD.NMOD            = DT.NMOD 
+                  AND RD.NMOD            = DT.NMOD
                   AND RD.AÑO_MOVIMIENTO  = DT.AÑO_FETRANSAC
                   AND RD.MES_MOVIMIENTO  = DT.MES_FETRANSAC
                   AND RD.TRANSACCION     = DT.TRANSAC
                   AND RD.FE_MOVTO        = DT.FETRANSAC
                   AND RD.TIPO_MOVIMIENTO = cTIPO_MOVTO
-                  ;    
+                  ;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
                   nEXISTE_SINIESTRO := 0;
                WHEN OTHERS THEN
-                  nEXISTE_SINIESTRO := 0; 
-            END; 
-            
+                  nEXISTE_SINIESTRO := 0;
+            END;
+
             IF nMOVTO = 1 THEN
-               cCOBERTURA_ANT := DT.COBERTURA;                                
-            END IF;        
-   
-            IF nEXISTE_SINIESTRO = 0 AND DT.CODTRANSAC NOT IN ('ISRSIN','IVASIN')  THEN                    
-               REC_RESERVA_DET.ID_SINIESTRO     := DT.SINIESTRO;      
+               cCOBERTURA_ANT := DT.COBERTURA;
+            END IF;
+
+            IF nEXISTE_SINIESTRO = 0 AND DT.CODTRANSAC NOT IN ('ISRSIN','IVASIN')  THEN
+               REC_RESERVA_DET.ID_SINIESTRO     := DT.SINIESTRO;
                REC_RESERVA_DET.ID_POLIZA        := DT.POLIZA;
                REC_RESERVA_DET.ID_COBERTURA     := cCOBERTURA_ACT; --DT.COBERTURA;
-               REC_RESERVA_DET.TIPO_MOVIMIENTO  := cTIPO_MOVTO;    
-               REC_RESERVA_DET.IMPTE_MOVIMIENTO := ABS(DT.MTLOCAL);    
+               REC_RESERVA_DET.TIPO_MOVIMIENTO  := cTIPO_MOVTO;
+               REC_RESERVA_DET.IMPTE_MOVIMIENTO := ABS(DT.MTLOCAL);
                REC_RESERVA_DET.FE_MOVTO         := DT.FETRANSAC;
                REC_RESERVA_DET.AÑO_MOVIMIENTO   := DT.AÑO_FETRANSAC;
-               REC_RESERVA_DET.MES_MOVIMIENTO   := DT.MES_FETRANSAC;      
+               REC_RESERVA_DET.MES_MOVIMIENTO   := DT.MES_FETRANSAC;
                REC_RESERVA_DET.TRANSACCION      := DT.TRANSAC;
-               REC_RESERVA_DET.NMOD             := DT.NMOD; 
-               REC_RESERVA_DET.PROCESO          := DT.PROCESO;  
+               REC_RESERVA_DET.NMOD             := DT.NMOD;
+               REC_RESERVA_DET.PROCESO          := DT.PROCESO;
                REC_RESERVA_DET.SUBPROCESO       := DT.SUBPROCESO;
-               REC_RESERVA_DET.SIGNO            := cSIGNO;              
-               REC_RESERVA_DET.CODCIA           := P_CODCIA;  
+               REC_RESERVA_DET.SIGNO            := cSIGNO;
+               REC_RESERVA_DET.CODCIA           := P_CODCIA;
                REC_RESERVA_DET.ID_ORIGEN        := P_ORIGEN;
                REC_RESERVA_DET.ID_VALIDACION    := VGVALIDACION;
                REC_RESERVA_DET.ID_PROCESO       := P_IDPROCESO;
-                  
-               INSERTA_RESERVA_DET(REC_RESERVA_DET,VG_ID_ERROR, VG_MENSAJE); 
-               
+
+               INSERTA_RESERVA_DET(REC_RESERVA_DET,VG_ID_ERROR, VG_MENSAJE);
+
                IF DT.COBERTURA NOT IN ('DEDUC') THEN
-                  nNumMovtosPA := nNumMovtosPA + 1;  
-               END IF;   
-               nImportePA   := nImportePA  + REC_RESERVA_DET.IMPTE_MOVIMIENTO;  
-                                                                                                     
+                  nNumMovtosPA := nNumMovtosPA + 1;
+               END IF;
+               nImportePA   := nImportePA  + REC_RESERVA_DET.IMPTE_MOVIMIENTO;
+
             ELSE
                BEGIN
                  SELECT *
@@ -873,7 +873,7 @@ BEGIN
                    FROM RESERVA_DET RD
                   WHERE RD.ID_SINIESTRO    = nSINIESTRO
                     AND RD.ID_COBERTURA    = cCOBERTURA_ACT
-                    AND RD.NMOD            = DT.NMOD 
+                    AND RD.NMOD            = DT.NMOD
                     AND RD.AÑO_MOVIMIENTO  = DT.AÑO_FETRANSAC
                     AND RD.MES_MOVIMIENTO  = DT.MES_FETRANSAC
                     AND RD.TRANSACCION     = DT.TRANSAC
@@ -883,104 +883,104 @@ BEGIN
                   WHEN OTHERS THEN
                      nEXISTE_SINIESTRO := nSINIESTRO;
                END;
-               
+
                IF  DT.IDDETAPROB > 1 AND  DT.CODTRANSAC NOT IN ('DEDUAD','DEDUBA') THEN
                    REC_RESERVA_DET.IMPTE_MOVIMIENTO := REC_RESERVA_DET.IMPTE_MOVIMIENTO + ABS(DT.MTLOCAL);
-               END IF;  
+               END IF;
                UPDATE RESERVA_DET RD
                   SET    IMPTE_MOVIMIENTO =  REC_RESERVA_DET.IMPTE_MOVIMIENTO
                   WHERE RD.ID_SINIESTRO    = nSINIESTRO
                     AND RD.ID_COBERTURA    = cCOBERTURA_ACT
-                    AND RD.NMOD            = DT.NMOD 
+                    AND RD.NMOD            = DT.NMOD
                     AND RD.AÑO_MOVIMIENTO  = DT.AÑO_FETRANSAC
                     AND RD.MES_MOVIMIENTO  = DT.MES_FETRANSAC
                     AND RD.TRANSACCION     = DT.TRANSAC
                     AND RD.FE_MOVTO        = DT.FETRANSAC
-                    AND RD.TIPO_MOVIMIENTO = cTIPO_MOVTO;                 
-            END IF;  
-                        
-            cCOBERTURA_ANT     := cCOBERTURA_ACT;  
-            
+                    AND RD.TIPO_MOVIMIENTO = cTIPO_MOVTO;
+            END IF;
+
+            cCOBERTURA_ANT     := cCOBERTURA_ACT;
+
          END LOOP;
-      END LOOP; 
-                 
+      END LOOP;
+
       --
       -- TRANSACCION DE ANULACION  DE APROBACIONES
       --
-      VG_MENSAJE := '4.TRANSACCION DE ANULACION  DE APROBACIONES';   
-      nNumMovtosDP := 0;  nImporteDP := 0;     
+      VG_MENSAJE := '4.TRANSACCION DE ANULACION  DE APROBACIONES';
+      nNumMovtosDP := 0;  nImporteDP := 0;
       FOR T IN TRAN_A LOOP
          nIDTRANSACCION := T.TRANSACANUL;
-         
+
          FOR DT IN DET_TRAN_A LOOP
-            cCOBERTURA_ACT := DT.COBERTURA;           
+            cCOBERTURA_ACT := DT.COBERTURA;
             nMOVTO         := nMOVTO + 1;
             cSIGNO         := DT.SIGNO;
             cTIPO_MOVTO    := 'DESPAG';
             IF cSIGNO = '-' THEN
-                cSIGNO  := '+'; 
+                cSIGNO  := '+';
             ELSE
-                cSIGNO  := '-';   
+                cSIGNO  := '-';
             END IF;
-            IF (DT.COBERTURA = 'DEDUC' AND DT.CODTRANSAC IN ('DEDUAD','DEDUBA')) THEN                
-               cCOBERTURA_ACT := cCOBERTURA_ANT; 
-               cTIPO_MOVTO    := DT.COBERTURA;                
-            ELSIF (DT.COBERTURA = 'DEDUC' AND DT.CODTRANSAC IN ('DESCUE')) THEN      
-               cCOBERTURA_ACT := cCOBERTURA_ANT; 
+            IF (DT.COBERTURA = 'DEDUC' AND DT.CODTRANSAC IN ('DEDUAD','DEDUBA')) THEN
+               cCOBERTURA_ACT := cCOBERTURA_ANT;
+               cTIPO_MOVTO    := DT.COBERTURA;
+            ELSIF (DT.COBERTURA = 'DEDUC' AND DT.CODTRANSAC IN ('DESCUE')) THEN
+               cCOBERTURA_ACT := cCOBERTURA_ANT;
                cTIPO_MOVTO    := 'DESCUE';
-            ELSIF DT.COBERTURA = 'DEDUC' THEN   
-               cCOBERTURA_ACT := cCOBERTURA_ANT; 
-               cTIPO_MOVTO    := DT.COBERTURA;                                
-            END IF; 
-            
+            ELSIF DT.COBERTURA = 'DEDUC' THEN
+               cCOBERTURA_ACT := cCOBERTURA_ANT;
+               cTIPO_MOVTO    := DT.COBERTURA;
+            END IF;
+
             BEGIN
                SELECT COUNT(*)
                  INTO nEXISTE_SINIESTRO
                  FROM RESERVA_DET RD
                 WHERE RD.ID_SINIESTRO    = nSINIESTRO
                   AND RD.ID_COBERTURA    = cCOBERTURA_ACT
-                  AND RD.NMOD            = DT.NMOD 
+                  AND RD.NMOD            = DT.NMOD
                   AND RD.AÑO_MOVIMIENTO  = DT.AÑO_FETRANSAC
                   AND RD.MES_MOVIMIENTO  = DT.MES_FETRANSAC
                   AND RD.TRANSACCION     = DT.TRANSAC
                   AND RD.FE_MOVTO        = DT.FETRANSAC
                   AND RD.TIPO_MOVIMIENTO = cTIPO_MOVTO
-                  ;    
+                  ;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
                   nEXISTE_SINIESTRO := 0;
                WHEN OTHERS THEN
-                  nEXISTE_SINIESTRO := 0; 
-            END; 
-            
+                  nEXISTE_SINIESTRO := 0;
+            END;
+
             IF nMOVTO = 1 THEN
                cCOBERTURA_ANT := DT.COBERTURA;
             END IF;
-                        
-            IF nEXISTE_SINIESTRO = 0 THEN    
-               REC_RESERVA_DET.ID_SINIESTRO     := DT.SINIESTRO;      
+
+            IF nEXISTE_SINIESTRO = 0 THEN
+               REC_RESERVA_DET.ID_SINIESTRO     := DT.SINIESTRO;
                REC_RESERVA_DET.ID_POLIZA        := DT.POLIZA;
                REC_RESERVA_DET.ID_COBERTURA     := cCOBERTURA_ACT; --DT.COBERTURA;
-               REC_RESERVA_DET.TIPO_MOVIMIENTO  := cTIPO_MOVTO;    
-               REC_RESERVA_DET.IMPTE_MOVIMIENTO := ABS(DT.MTLOCAL);    
+               REC_RESERVA_DET.TIPO_MOVIMIENTO  := cTIPO_MOVTO;
+               REC_RESERVA_DET.IMPTE_MOVIMIENTO := ABS(DT.MTLOCAL);
                REC_RESERVA_DET.FE_MOVTO         := DT.FETRANSAC;
                REC_RESERVA_DET.AÑO_MOVIMIENTO   := DT.AÑO_FETRANSAC;
-               REC_RESERVA_DET.MES_MOVIMIENTO   := DT.MES_FETRANSAC;      
+               REC_RESERVA_DET.MES_MOVIMIENTO   := DT.MES_FETRANSAC;
                REC_RESERVA_DET.TRANSACCION      := DT.TRANSAC;
-               REC_RESERVA_DET.NMOD             := DT.NMOD; 
-               REC_RESERVA_DET.PROCESO          := DT.PROCESO;  
+               REC_RESERVA_DET.NMOD             := DT.NMOD;
+               REC_RESERVA_DET.PROCESO          := DT.PROCESO;
                REC_RESERVA_DET.SUBPROCESO       := DT.SUBPROCESO;
-               REC_RESERVA_DET.SIGNO            := cSIGNO;              
-               REC_RESERVA_DET.CODCIA           := P_CODCIA;  
+               REC_RESERVA_DET.SIGNO            := cSIGNO;
+               REC_RESERVA_DET.CODCIA           := P_CODCIA;
                REC_RESERVA_DET.ID_ORIGEN        := P_ORIGEN;
                REC_RESERVA_DET.ID_VALIDACION    := VGVALIDACION;
                REC_RESERVA_DET.ID_PROCESO       := P_IDPROCESO;
-                  
+
                INSERTA_RESERVA_DET(REC_RESERVA_DET,VG_ID_ERROR, VG_MENSAJE);
                IF DT.COBERTURA NOT IN ('DEDUC') THEN
-                  nNumMovtosDP :=  nNumMovtosDP + 1;  
-               END IF;   
-               nImporteDP   :=  nImporteDP  + REC_RESERVA_DET.IMPTE_MOVIMIENTO; 
+                  nNumMovtosDP :=  nNumMovtosDP + 1;
+               END IF;
+               nImporteDP   :=  nImporteDP  + REC_RESERVA_DET.IMPTE_MOVIMIENTO;
              ELSE
                 BEGIN
                  SELECT *
@@ -988,7 +988,7 @@ BEGIN
                    FROM RESERVA_DET RD
                   WHERE RD.ID_SINIESTRO    = nSINIESTRO
                     AND RD.ID_COBERTURA    = cCOBERTURA_ACT
-                    AND RD.NMOD            = DT.NMOD 
+                    AND RD.NMOD            = DT.NMOD
                     AND RD.AÑO_MOVIMIENTO  = DT.AÑO_FETRANSAC
                     AND RD.MES_MOVIMIENTO  = DT.MES_FETRANSAC
                     AND RD.TRANSACCION     = DT.TRANSAC
@@ -1000,35 +1000,35 @@ BEGIN
                END;
                IF  DT.IDDETAPROB > 1 AND  DT.CODTRANSAC NOT IN ('DEDUAD','DEDUBA') THEN
                    REC_RESERVA_DET.IMPTE_MOVIMIENTO := REC_RESERVA_DET.IMPTE_MOVIMIENTO + ABS(DT.MTLOCAL);
-               END IF;  
+               END IF;
                   UPDATE RESERVA_DET RD
                   SET    IMPTE_MOVIMIENTO =  IMPTE_MOVIMIENTO + ABS(DT.MTLOCAL)
                   WHERE RD.ID_SINIESTRO    = nSINIESTRO
                     AND RD.ID_COBERTURA    = cCOBERTURA_ACT
-                    AND RD.NMOD            = DT.NMOD 
+                    AND RD.NMOD            = DT.NMOD
                     AND RD.AÑO_MOVIMIENTO  = DT.AÑO_FETRANSAC
                     AND RD.MES_MOVIMIENTO  = DT.MES_FETRANSAC
                     AND RD.TRANSACCION     = DT.TRANSAC
                     AND RD.FE_MOVTO        = DT.FETRANSAC
-                    AND RD.TIPO_MOVIMIENTO = cTIPO_MOVTO;   
-               --END IF;         
-             END IF;  
-             
+                    AND RD.TIPO_MOVIMIENTO = cTIPO_MOVTO;
+               --END IF;
+             END IF;
+
              cCOBERTURA_ANT := cCOBERTURA_ACT;
-                
+
           END LOOP;
       END LOOP;
-      --      
+      --
       IF SUBSTR(nREGISTROS,-2,2) = '00' THEN
          COMMIT;
-      END IF;        
+      END IF;
    END LOOP;
-   
+
 EXCEPTION
-   WHEN OTHERS THEN  
-      DBMS_OUTPUT.PUT_LINE('EROR:'||nSINIESTRO||'/'||SQLERRM);    
+   WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('EROR:'||nSINIESTRO||'/'||SQLERRM);
       P_ID_ERROR := VG_ID_ERROR;
-      P_MENSAJE  := VGNOMPACKAGE||'/'||VG_MENSAJE||'/'||nSINIESTRO;            
+      P_MENSAJE  := VGNOMPACKAGE||'/'||VG_MENSAJE||'/'||nSINIESTRO;
       RAISE_APPLICATION_ERROR(-20230,'Error en : '||P_MENSAJE);
 END CARGA_DETALLE_MOVTOS;
 
@@ -1041,9 +1041,9 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
   P_ID_SINIESTRO  IN NUMBER,
   P_ID_ERROR OUT NUMBER  ,
   P_MENSAJE  OUT VARCHAR2) IS
- 
-  V_SINIESTRO         SINIESTRO.IDSINIESTRO%TYPE; 
-  V_SINIESTRO_ANT     SINIESTRO.IDSINIESTRO%TYPE; 
+
+  V_SINIESTRO         SINIESTRO.IDSINIESTRO%TYPE;
+  V_SINIESTRO_ANT     SINIESTRO.IDSINIESTRO%TYPE;
   V_NUMSINIREF        SINIESTRO.NUMSINIREF%TYPE;
   V_FEC_NOTIFICACION  SINIESTRO.FEC_NOTIFICACION%TYPE;
   V_FEC_OCURRENCIA    SINIESTRO.FEC_OCURRENCIA%TYPE;
@@ -1054,8 +1054,8 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
   V_COD_ASEGURADO     SINIESTRO.COD_ASEGURADO%TYPE;
   V_CODCLIENTE        POLIZAS.CODCLIENTE%TYPE;
   V_IDTIPOSEG         DETALLE_POLIZA.IDTIPOSEG%TYPE;
-  V_AÑO               NUMBER := 0; 
-  V_MES               NUMBER := 0;  
+  V_AÑO               NUMBER := 0;
+  V_MES               NUMBER := 0;
 
   V_CUENTA_NUEVOS     NUMBER;
   V_EXISTE_SINIESTRO  NUMBER;
@@ -1063,8 +1063,8 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
   V_RESERVA_FINAL     RESERVA.RESERVA_FINAL%TYPE    := 0;
   V_MOVTO             NUMBER;
   V_ANIOMES_ACT       NUMBER(6);
-  V_ANIOMES_ANT       NUMBER(6); 
-  V_ANIOMES_PROC      NUMBER(6); 
+  V_ANIOMES_ANT       NUMBER(6);
+  V_ANIOMES_PROC      NUMBER(6);
   V_COBERT_ANT        COBERTURA_SINIESTRO_ASEG.CODCOBERT%TYPE;
   V_COBERT_ACT        COBERTURA_SINIESTRO_ASEG.CODCOBERT%TYPE;
   V_ULTANIOMES        VARCHAR2(6);
@@ -1078,16 +1078,16 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
 
   CURSOR INICIAL IS
       SELECT TO_CHAR(DT.FE_MOVTO,'YYYYMM') ANIOMES,
-             TO_CHAR(DT.FE_MOVTO,'YYYY') ANIO, 
-             TO_CHAR(DT.FE_MOVTO,'MM') MES, 
-             DT.ID_SINIESTRO SINI, 
+             TO_CHAR(DT.FE_MOVTO,'YYYY') ANIO,
+             TO_CHAR(DT.FE_MOVTO,'MM') MES,
+             DT.ID_SINIESTRO SINI,
              DT.ID_COBERTURA
        FROM  RESERVA_DET DT
        WHERE DT.FE_MOVTO BETWEEN P_FECHA_INICIAL AND P_FECHA_FINAL
        AND ((P_ID_SINIESTRO = 0 )
        OR   (P_ID_SINIESTRO <> 0 AND DT.ID_SINIESTRO = P_ID_SINIESTRO))
     GROUP BY TO_CHAR(DT.FE_MOVTO,'YYYYMM'), TO_CHAR(DT.FE_MOVTO,'YYYY'), TO_CHAR(DT.FE_MOVTO,'MM'),
-                DT.ID_SINIESTRO, DT.ID_COBERTURA      
+                DT.ID_SINIESTRO, DT.ID_COBERTURA
       ORDER BY 4,5,1;
 
   CURSOR COB_RES IS
@@ -1112,7 +1112,7 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
              AND DT.TIPO_MOVIMIENTO = 'ESTINI'
              AND DT.AÑO_MOVIMIENTO  = V_AÑO
              AND DT.MES_MOVIMIENTO  = V_MES
-           GROUP BY DT.ID_COBERTURA,DT.TIPO_MOVIMIENTO       
+           GROUP BY DT.ID_COBERTURA,DT.TIPO_MOVIMIENTO
   UNION
   SELECT DT.ID_COBERTURA,
          DT.TIPO_MOVIMIENTO,
@@ -1126,7 +1126,7 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
      AND DT.TIPO_MOVIMIENTO = 'AJUMAS'
      AND DT.AÑO_MOVIMIENTO  = V_AÑO
      AND DT.MES_MOVIMIENTO  = V_MES
-   GROUP BY DT.ID_COBERTURA, DT.TIPO_MOVIMIENTO       
+   GROUP BY DT.ID_COBERTURA, DT.TIPO_MOVIMIENTO
   UNION
   SELECT DT.ID_COBERTURA,
          DT.TIPO_MOVIMIENTO,
@@ -1146,14 +1146,14 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
          CASE WHEN DT.TIPO_MOVIMIENTO = 'DEDUC'  THEN 'PAGOS'
               WHEN DT.TIPO_MOVIMIENTO = 'DESCUE' THEN 'PAGOS'
               ELSE DT.TIPO_MOVIMIENTO
-         END TIPO_MOVIMIENTO,                         
+         END TIPO_MOVIMIENTO,
          0 ESTINI,
          0 AJUMAS,
          0 AJUMEN,
          SUM(CASE WHEN DT.TIPO_MOVIMIENTO = 'PAGOS' THEN DT.IMPTE_MOVIMIENTO
-                  WHEN DT.TIPO_MOVIMIENTO = 'DEDUC' AND DT.SIGNO= '-' THEN 
+                  WHEN DT.TIPO_MOVIMIENTO = 'DEDUC' AND DT.SIGNO= '-' THEN
                        DT.IMPTE_MOVIMIENTO *-1
-                  WHEN DT.TIPO_MOVIMIENTO = 'DESCUE' AND DT.SIGNO= '-' THEN 
+                  WHEN DT.TIPO_MOVIMIENTO = 'DESCUE' AND DT.SIGNO= '-' THEN
                        DT.IMPTE_MOVIMIENTO *-1
              END) PAGOS,
          0 DESPAG
@@ -1162,8 +1162,8 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
      AND DT.TIPO_MOVIMIENTO IN ('PAGOS','DEDUC','DESCUE')
      AND DT.AÑO_MOVIMIENTO  = V_AÑO
      AND DT.MES_MOVIMIENTO  = V_MES
-     AND DT.TRANSACCION  IN (SELECT TRANSACCION 
-                               FROM RESERVA_DET 
+     AND DT.TRANSACCION  IN (SELECT TRANSACCION
+                               FROM RESERVA_DET
                               WHERE ID_SINIESTRO = DT.ID_SINIESTRO
                                 AND AÑO_MOVIMIENTO = DT.AÑO_MOVIMIENTO
                                 AND MES_MOVIMIENTO = DT.MES_MOVIMIENTO
@@ -1172,21 +1172,21 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
               CASE WHEN DT.TIPO_MOVIMIENTO = 'DEDUC'  THEN 'PAGOS'
                    WHEN DT.TIPO_MOVIMIENTO = 'DESCUE' THEN 'PAGOS'
                    ELSE DT.TIPO_MOVIMIENTO
-              END  
+              END
   UNION
   SELECT DT.ID_COBERTURA,
          CASE WHEN DT.TIPO_MOVIMIENTO = 'DEDUC'  THEN 'DESPAG'
               WHEN DT.TIPO_MOVIMIENTO = 'DESCUE' THEN 'DESPAG'
               ELSE DT.TIPO_MOVIMIENTO
-         END TIPO_MOVIMIENTO,                         
+         END TIPO_MOVIMIENTO,
          0 ESTINI,
          0 AJUMAS,
          0 AJUMEN,
          0 PAGOS,
          SUM(CASE WHEN DT.TIPO_MOVIMIENTO = 'DESPAG' AND DT.SIGNO= '-' THEN DT.IMPTE_MOVIMIENTO*-1
-                  WHEN DT.TIPO_MOVIMIENTO = 'DEDUC'  THEN 
+                  WHEN DT.TIPO_MOVIMIENTO = 'DEDUC'  THEN
                        DT.IMPTE_MOVIMIENTO
-                  WHEN DT.TIPO_MOVIMIENTO = 'DESCUE' THEN 
+                  WHEN DT.TIPO_MOVIMIENTO = 'DESCUE' THEN
                        DT.IMPTE_MOVIMIENTO
              END) DESPAG
     FROM RESERVA_DET DT
@@ -1194,21 +1194,21 @@ PROCEDURE CARGA_RESUMEN_MOVTOS(
      AND DT.TIPO_MOVIMIENTO IN ('DESPAG','DEDUC','DESCUE')
      AND DT.AÑO_MOVIMIENTO  = V_AÑO
      AND DT.MES_MOVIMIENTO  = V_MES
-     AND DT.TRANSACCION  IN (SELECT TRANSACCION 
-                               FROM RESERVA_DET 
+     AND DT.TRANSACCION  IN (SELECT TRANSACCION
+                               FROM RESERVA_DET
                               WHERE ID_SINIESTRO = DT.ID_SINIESTRO
                                 AND AÑO_MOVIMIENTO = DT.AÑO_MOVIMIENTO
                                 AND MES_MOVIMIENTO = DT.MES_MOVIMIENTO
                                 AND TIPO_MOVIMIENTO = 'DESPAG')
-                           
+
  GROUP BY DT.ID_COBERTURA,
           CASE WHEN DT.TIPO_MOVIMIENTO = 'DEDUC'  THEN 'DESPAG'
             WHEN DT.TIPO_MOVIMIENTO = 'DESCUE' THEN 'DESPAG'
             ELSE DT.TIPO_MOVIMIENTO
-          END              
+          END
   )
-  WHERE ID_COBERTURA = V_COBERT_ACT 
-  GROUP BY ID_COBERTURA  
+  WHERE ID_COBERTURA = V_COBERT_ACT
+  GROUP BY ID_COBERTURA
   ORDER BY ID_COBERTURA;
 
 FUNCTION FUN_RVA_ANT (
@@ -1216,7 +1216,7 @@ FUNCTION FUN_RVA_ANT (
   PMES       IN NUMBER  ,
   PSINIESTRO IN NUMBER  ,
   PCOBERTURA IN VARCHAR2) RETURN NUMBER IS
-  
+
   W_RESERVA_ANTERIOR RESERVA.RESERVA_ANTERIOR%TYPE;
 BEGIN
    SELECT RESERVA_ANTERIOR
@@ -1225,34 +1225,34 @@ BEGIN
    WHERE  AÑO_MOVIMIENTO = PANIO
    AND    MES_MOVIMIENTO = PMES
    AND    ID_SINIESTRO   = PSINIESTRO
-   AND    ID_COBERTURA   = PCOBERTURA;  
-   
+   AND    ID_COBERTURA   = PCOBERTURA;
+
    RETURN W_RESERVA_ANTERIOR;
-   
+
 EXCEPTION
-   WHEN NO_DATA_FOUND THEN 
-      RETURN 0; 
-END;   
-  
+   WHEN NO_DATA_FOUND THEN
+      RETURN 0;
+END;
+
 FUNCTION FUN_DIFMESES(
   PANIOMES_ACT IN NUMBER,
   PANIOMES_ANT IN NUMBER) RETURN NUMBER IS
-  
+
   V_NUMMESES  NUMBER(8);
-  
+
 BEGIN
   VGNOMPROCFUN := 'FUN_DIFMESES';
-  V_NUMMESES := MONTHS_BETWEEN(TO_DATE(PANIOMES_ACT,'YYYYMM'),TO_DATE(PANIOMES_ANT,'YYYYMM'));  
-     
+  V_NUMMESES := MONTHS_BETWEEN(TO_DATE(PANIOMES_ACT,'YYYYMM'),TO_DATE(PANIOMES_ANT,'YYYYMM'));
+
   RETURN (V_NUMMESES);
 EXCEPTION
    WHEN OTHERS THEN
-      P_MENSAJE := VGNOMPROCFUN||'/'||SQLERRM; 
-      RAISE_APPLICATION_ERROR(-20230,'Error en : '||P_MENSAJE);     
-      RETURN  0; 
+      P_MENSAJE := VGNOMPROCFUN||'/'||SQLERRM;
+      RAISE_APPLICATION_ERROR(-20230,'Error en : '||P_MENSAJE);
+      RETURN  0;
 END;
 
-PROCEDURE RESERVA_PENDIENTE( 
+PROCEDURE RESERVA_PENDIENTE(
   P_REC_RESERVA       IN RESERVA%ROWTYPE,
   P_RESERVA           IN RESERVA.RESERVA_FINAL%TYPE,
   P_RESERVA_FINAL     IN RESERVA.RESERVA_FINAL%TYPE,
@@ -1262,41 +1262,41 @@ PROCEDURE RESERVA_PENDIENTE(
   P_TIPODEPROCESO     IN NUMBER  , --(1-ENTRE MESES 2-A FECHA PROCESO )
   P_EXISTESIN         IN NUMBER  ,  -- 0 NO EXISTE, 1 EXISTE
   P_ID_ERROR         OUT NUMBER  ,
-  P_MENSAJE          OUT VARCHAR2) IS 
-  
-  V_AÑO               NUMBER := 0; 
-  V_MES               NUMBER := 0; 
-  
+  P_MENSAJE          OUT VARCHAR2) IS
+
+  V_AÑO               NUMBER := 0;
+  V_MES               NUMBER := 0;
+
   R_RESERVA          RESERVA%ROWTYPE;
   V_DIFMESES         NUMBER(8);
-  
+
 BEGIN
    P_ID_ERROR      := 0;
    VGNOMPROCFUN    := 'RESERVA_PENDIENTE';
    V_DIFMESES      := FUN_DIFMESES(P_ANIOMES_ACT,P_ANIOMES_ANT);
-   R_RESERVA       := P_REC_RESERVA  ; 
-           
+   R_RESERVA       := P_REC_RESERVA  ;
+
    IF P_RESERVA_FINAL <> 0 AND ((V_DIFMESES > 1 AND P_IDPROCESO <> 2) OR (V_DIFMESES >= 1 AND P_IDPROCESO = 2)) THEN
-      R_RESERVA.ESTIMACION_INICIAL := 0; 
+      R_RESERVA.ESTIMACION_INICIAL := 0;
       R_RESERVA.AJUSTES_MAS        := 0;
       R_RESERVA.AJUSTES_MENOS      := 0;
       R_RESERVA.PAGOS              := 0;
       R_RESERVA.DESPAGOS           := 0;
       R_RESERVA.RESERVA_ANTERIOR   := P_RESERVA;
       R_RESERVA.RESERVA_FINAL      := P_RESERVA;
-       
+
       IF (P_TIPODEPROCESO= 1) THEN -- AND P_IDPROCESO <> 2) THEN
          V_DIFMESES := V_DIFMESES -1;
-      END IF;      
-      
+      END IF;
+
       FOR Z IN 1..(V_DIFMESES) LOOP
          V_AÑO := TO_CHAR(ADD_MONTHS(TO_DATE(P_ANIOMES_ANT,'YYYYMM'),Z),'YYYY');
-         V_MES := TO_CHAR(ADD_MONTHS(TO_DATE(P_ANIOMES_ANT,'YYYYMM'),Z),'MM'); 
+         V_MES := TO_CHAR(ADD_MONTHS(TO_DATE(P_ANIOMES_ANT,'YYYYMM'),Z),'MM');
          R_RESERVA.AÑO_MOVIMIENTO := V_AÑO;
-         R_RESERVA.MES_MOVIMIENTO := V_MES;                                                 
-                
+         R_RESERVA.MES_MOVIMIENTO := V_MES;
+
          IF P_EXISTESIN = 0 THEN
-            INSERT INTO RESERVA VALUES R_RESERVA;  
+            INSERT INTO RESERVA VALUES R_RESERVA;
          ELSE
             UPDATE RESERVA
             SET    RESERVA_ANTERIOR = P_RESERVA,
@@ -1304,18 +1304,18 @@ BEGIN
             WHERE  AÑO_MOVIMIENTO   = V_AÑO
               AND  MES_MOVIMIENTO   = V_MES
               AND  ID_SINIESTRO     = R_RESERVA.ID_SINIESTRO
-              AND  ID_COBERTURA     = R_RESERVA.ID_COBERTURA;            
-         END IF;   
-      END LOOP;    
-   END IF;   
+              AND  ID_COBERTURA     = R_RESERVA.ID_COBERTURA;
+         END IF;
+      END LOOP;
+   END IF;
 EXCEPTION
    WHEN OTHERS THEN
       P_ID_ERROR := SQLCODE;
-      P_MENSAJE  := VGNOMPROCFUN||'/'||SQLERRM;    
-      RAISE_APPLICATION_ERROR(-20230,'Error en : '||P_MENSAJE); 
+      P_MENSAJE  := VGNOMPROCFUN||'/'||SQLERRM;
+      RAISE_APPLICATION_ERROR(-20230,'Error en : '||P_MENSAJE);
 END RESERVA_PENDIENTE;
 
-BEGIN /*PRINCIPAL*/ 
+BEGIN /*PRINCIPAL*/
    P_ID_ERROR      := 0;
    VGNOMPROCFUN    := 'CARGA_RESUMEN_MOVTOS';
    V_REGISTROS     := 0;
@@ -1324,14 +1324,14 @@ BEGIN /*PRINCIPAL*/
    V_COBERT_ACT    := '';
    V_COBERT_ANT    := '';
    V_REGISTROS     := 0;
-   
+
    IF P_IDPROCESO = 2 THEN
    BEGIN
       DELETE FROM RESERVA R
-      WHERE  R.ID_SINIESTRO = P_ID_SINIESTRO;      
+      WHERE  R.ID_SINIESTRO = P_ID_SINIESTRO;
    END;
    END IF;
-   
+
     FOR I IN INICIAL LOOP
        V_AÑO              := I.ANIO;
        V_MES              := I.MES;
@@ -1347,24 +1347,24 @@ BEGIN /*PRINCIPAL*/
        V_COD_ASEGURADO    := '';
        V_CODCLIENTE       := '';
        V_IDTIPOSEG        := '';
-       V_REGISTROS        := V_REGISTROS + 1;  
+       V_REGISTROS        := V_REGISTROS + 1;
        V_CONTCOBS         := V_CONTCOBS + 1;
        V_COBERT_ACT       := I.ID_COBERTURA;
-        
+
        REC_RESERVA.CODCIA         := P_CODCIA;
-       REC_RESERVA.ID_SINIESTRO   := I.SINI;     
+       REC_RESERVA.ID_SINIESTRO   := I.SINI;
        REC_RESERVA.ID_PROCESO     := P_IDPROCESO;
        REC_RESERVA.ID_ORIGEN      := P_ORIGEN;
        REC_RESERVA.ID_VALIDACION  := FUNIDVALIDA;
-             
-       V_ANIOMES_ACT      := TO_NUMBER(I.ANIO||LPAD(I.MES,2,0));  
---       V_ANIOMES_PROC     := TO_NUMBER(TO_CHAR(P_FECHA_INICIAL,'YYYYMM'));                                        
+
+       V_ANIOMES_ACT      := TO_NUMBER(I.ANIO||LPAD(I.MES,2,0));
+--       V_ANIOMES_PROC     := TO_NUMBER(TO_CHAR(P_FECHA_INICIAL,'YYYYMM'));
        V_ANIOMES_PROC     := TO_NUMBER(TO_CHAR(P_FECHA_FINAL,'YYYYMM'));
-         
+
       IF V_CONTCOBS = 1 THEN
          V_COBERT_ANT   := V_COBERT_ACT;
-      END IF;    
-      
+      END IF;
+
       -- SE OBTIENE EL ANIOMES MAS ACTUAL
       BEGIN
          SELECT MAX(TO_CHAR(DT.FE_MOVTO,'YYYYMM')) ANIOMES
@@ -1375,9 +1375,9 @@ BEGIN /*PRINCIPAL*/
          GROUP BY  DT.ID_COBERTURA;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-              V_ULTANIOMES := NULL;                           
-      END;  
-      
+              V_ULTANIOMES := NULL;
+      END;
+
        --INFORMACIÓN DEL SINIESTRO
       BEGIN
          VG_MENSAJE := 'INFORMACIÓN DEL SINIESTRO';
@@ -1394,7 +1394,7 @@ BEGIN /*PRINCIPAL*/
                 REC_RESERVA.NUMPOLUNICO,    REC_RESERVA.COD_ASEGURADO,
                 REC_RESERVA.COD_CLIENTE,    REC_RESERVA.TIPO_SEGURO,
                 REC_RESERVA.CODCIA,         REC_RESERVA.ID_MONEDA,
-                REC_RESERVA.ID_RAMO,        REC_RESERVA.ID_IND_O_COL    
+                REC_RESERVA.ID_RAMO,        REC_RESERVA.ID_IND_O_COL
            FROM SINIESTRO        S,
                 POLIZAS          P,
                 DETALLE_POLIZA   DP,
@@ -1416,8 +1416,8 @@ BEGIN /*PRINCIPAL*/
       EXCEPTION
          WHEN OTHERS THEN
             RAISE_APPLICATION_ERROR(-20230,'Error en : '||VG_MENSAJE);
-      END; 
-      
+      END;
+
       SELECT COUNT(*)
         INTO V_EXISTE_SINIESTRO
         FROM RESERVA R
@@ -1425,70 +1425,70 @@ BEGIN /*PRINCIPAL*/
          AND R.MES_MOVIMIENTO = V_MES
          AND R.ID_SINIESTRO   = V_SINIESTRO
          AND R.ID_COBERTURA   = V_COBERT_ACT;
-      
+
       FOR J IN COB_RES LOOP
          V_MOVTO := V_MOVTO + 1;
          REC_RESERVA.ID_COBERTURA  := J.ID_COBERTURA;
-                                                       
+
          IF V_MOVTO = 1 THEN
             V_RESERVA_ANT := 0;
             V_ANIOMES_ANT   := V_ANIOMES_ACT;
             V_SINIESTRO_ANT := V_SINIESTRO;
-         ELSE                
-            V_RESERVA_ANT := V_RESERVA_FINAL;                
+         ELSE
+            V_RESERVA_ANT := V_RESERVA_FINAL;
          END IF;
-                                
+
           IF V_SINIESTRO_ANT != V_SINIESTRO OR V_COBERT_ACT != V_COBERT_ANT THEN
-             V_RESERVA_ANT   := 0; 
+             V_RESERVA_ANT   := 0;
              V_RESERVA_FINAL := 0;
              V_ANIOMES_ANT   := 0;
              V_COBERT_ANT    := V_COBERT_ACT;
-          END IF; 
-           
-          IF V_COBERT_ACT = V_COBERT_ANT THEN
-             V_RESERVA_ANT := V_RESERVA_FINAL;                
           END IF;
-            
-          REC_RESERVA.RESERVA_ANTERIOR  := V_RESERVA_ANT;                                                                                                        
-            
-          REC_RESERVA.RESERVA_FINAL      := 0;                                      
+
+          IF V_COBERT_ACT = V_COBERT_ANT THEN
+             V_RESERVA_ANT := V_RESERVA_FINAL;
+          END IF;
+
+          REC_RESERVA.RESERVA_ANTERIOR  := V_RESERVA_ANT;
+
+          REC_RESERVA.RESERVA_FINAL      := 0;
           REC_RESERVA.AÑO_MOVIMIENTO     := I.ANIO;
           REC_RESERVA.MES_MOVIMIENTO     := I.MES;
-          REC_RESERVA.ESTIMACION_INICIAL := NVL(J.ESTINI,0); 
-          REC_RESERVA.AJUSTES_MAS        := NVL(J.AJUMAS,0); 
-          REC_RESERVA.AJUSTES_MENOS      := NVL(J.AJUMEN,0); 
-          REC_RESERVA.PAGOS              := NVL(J.PAGOS,0); 
-          REC_RESERVA.DESPAGOS           := NVL(J.DESPAG,0); 
-          
-          REC_RESERVA.RESERVA_ANTERIOR   := V_RESERVA_ANT;  
-          
-          IF V_EXISTE_SINIESTRO = 0 THEN             
-             V_CUENTA_NUEVOS := V_CUENTA_NUEVOS + 1; 
-                            
+          REC_RESERVA.ESTIMACION_INICIAL := NVL(J.ESTINI,0);
+          REC_RESERVA.AJUSTES_MAS        := NVL(J.AJUMAS,0);
+          REC_RESERVA.AJUSTES_MENOS      := NVL(J.AJUMEN,0);
+          REC_RESERVA.PAGOS              := NVL(J.PAGOS,0);
+          REC_RESERVA.DESPAGOS           := NVL(J.DESPAG,0);
+
+          REC_RESERVA.RESERVA_ANTERIOR   := V_RESERVA_ANT;
+
+          IF V_EXISTE_SINIESTRO = 0 THEN
+             V_CUENTA_NUEVOS := V_CUENTA_NUEVOS + 1;
+
              INSERT INTO RESERVA VALUES REC_RESERVA;
-                 --                                                 
+                 --
              UPDATE RESERVA R
                 SET R.RESERVA_FINAL  = NVL(R.RESERVA_ANTERIOR,0) + NVL(J.ESTINI,0) + NVL(J.AJUMAS,0) - NVL(J.AJUMEN,0) - NVL(J.PAGOS,0) + NVL(J.DESPAG,0)
               WHERE R.CODCIA         = 1
                 AND R.ID_SINIESTRO   = V_SINIESTRO
                 AND R.AÑO_MOVIMIENTO = V_AÑO
                 AND R.MES_MOVIMIENTO = V_MES
-                AND R.ID_COBERTURA   = J.ID_COBERTURA;                                
-             
+                AND R.ID_COBERTURA   = J.ID_COBERTURA;
+
              --- ARRASTRA RESERVA PENDIENTE ENTRE PERIODOS.
              IF V_ANIOMES_ANT <> 0 THEN
                 RESERVA_PENDIENTE(REC_RESERVA,V_RESERVA_ANT,V_RESERVA_FINAL,V_ANIOMES_ACT,V_ANIOMES_ANT,P_IDPROCESO,1,0,VG_ID_ERROR, VG_MENSAJE);
              END IF;
              V_RESERVA_FINAL := V_RESERVA_ANT + NVL(J.ESTINI,0) + NVL(J.AJUMAS,0) - NVL(J.AJUMEN,0) - NVL(J.PAGOS,0) + NVL(J.DESPAG,0);
-             
+
              -- ARRASTRA RESERVA PENDIENTE A LA FECHA DE PROCESO
              IF V_ULTANIOMES = V_ANIOMES_ACT THEN
                 RESERVA_PENDIENTE(REC_RESERVA,V_RESERVA_FINAL,V_RESERVA_FINAL,V_ANIOMES_PROC,V_ANIOMES_ACT,P_IDPROCESO,2,0,VG_ID_ERROR, VG_MENSAJE);
-             END IF;   
+             END IF;
           ELSE
              V_RESERVA_ANT   := FUN_RVA_ANT (V_AÑO,V_MES,V_SINIESTRO,J.ID_COBERTURA);
              V_RESERVA_FINAL := V_RESERVA_ANT + NVL(J.ESTINI,0) + NVL(J.AJUMAS,0) - NVL(J.AJUMEN,0) - NVL(J.PAGOS,0) + NVL(J.DESPAG,0);
-             
+
              UPDATE RESERVA R
              SET    RESERVA_ANTERIOR   = V_RESERVA_ANT,
                     ESTIMACION_INICIAL = NVL(J.ESTINI,0),
@@ -1501,28 +1501,28 @@ BEGIN /*PRINCIPAL*/
              AND    MES_MOVIMIENTO     = V_MES
              AND    ID_SINIESTRO       = V_SINIESTRO
              AND    ID_COBERTURA       = J.ID_COBERTURA;
-             
-              --- ARRASTRA RESERVA PENDIENTE ENTRE PERIODOS.       
-             IF V_ANIOMES_ANT <> 0 THEN      
+
+              --- ARRASTRA RESERVA PENDIENTE ENTRE PERIODOS.
+             IF V_ANIOMES_ANT <> 0 THEN
                 RESERVA_PENDIENTE(REC_RESERVA,V_RESERVA_ANT,V_RESERVA_FINAL,V_ANIOMES_ACT,V_ANIOMES_ANT,P_IDPROCESO,1,1,VG_ID_ERROR, VG_MENSAJE);
-             END IF;                          
+             END IF;
              -- ARRASTRA RESERVA PENDIENTE A LA FECHA DE PROCESO
              IF V_ULTANIOMES = V_ANIOMES_ACT THEN
                 RESERVA_PENDIENTE(REC_RESERVA,V_RESERVA_FINAL,V_RESERVA_FINAL,V_ANIOMES_PROC,V_ANIOMES_ACT,P_IDPROCESO,2,1,VG_ID_ERROR, VG_MENSAJE);
-             END IF;    
-          END IF;      
-      END LOOP;           
+             END IF;
+          END IF;
+      END LOOP;
       V_SINIESTRO_ANT := V_SINIESTRO;
       V_COBERT_ANT    := V_COBERT_ACT;
-      V_ANIOMES_ANT   := V_ANIOMES_ACT;   
-      
+      V_ANIOMES_ANT   := V_ANIOMES_ACT;
+
       IF SUBSTR(V_REGISTROS,-3,3) = '000' THEN
          COMMIT;
-      END IF;           
-      --   
+      END IF;
+      --
     END LOOP;
 --
-   DBMS_OUTPUT.PUT_LINE('FIN -> '||TO_CHAR(SYSDATE,'YYYY/MM/DD HH24:MI:SS')); 
+   DBMS_OUTPUT.PUT_LINE('FIN -> '||TO_CHAR(SYSDATE,'YYYY/MM/DD HH24:MI:SS'));
 EXCEPTION
    WHEN OTHERS THEN
       P_MENSAJE := VGNOMPACKAGE||'/'||SQLERRM||'/'||P_MENSAJE;
@@ -1541,7 +1541,7 @@ PROCEDURE CTROL_CGA_RVA (
   PIMPTE_AJUMAS   IN NUMBER,
   PTOT_REGS_AA    IN NUMBER,
   PIMPTE_AJUMENOS IN NUMBER,
-  PTOT_REG_AD     IN NUMBER, 
+  PTOT_REG_AD     IN NUMBER,
   PIMPTE_PAGOS    IN NUMBER,
   PTOT_REGS_PA    IN NUMBER,
   PIMPTE_DESPAGOS IN NUMBER,
@@ -1551,9 +1551,9 @@ PROCEDURE CTROL_CGA_RVA (
   PCODUSUARIO     IN VARCHAR2,
   P_ID_ERROR OUT NUMBER  ,
   P_MENSAJE  OUT VARCHAR2) IS
-  
+
   NHAYCGA          NUMBER;
-  
+
   REC_CTROL_RVA   CTROL_CGA_RESERVA%ROWTYPE;
   CTI_PROCESO     CTROL_CGA_RESERVA.TI_PROCESO%TYPE;
   CTF_PROCESO     CTROL_CGA_RESERVA.TF_PROCESO%TYPE;
@@ -1571,18 +1571,18 @@ BEGIN
       AND    PERIODICIDAD  = PPERIODICIDAD
       AND    FECINICIAL    = PFECINICIAL
       AND    FECFINAL      = PFECFINAL;
-      
+
    EXCEPTION
       WHEN OTHERS THEN
-         NHAYCGA := 0;         
-   END; 
-   
-    
+         NHAYCGA := 0;
+   END;
+
+
     REC_CTROL_RVA.IDCARGA        := PIDCARGA;
     REC_CTROL_RVA.IDVERSION      := 1;
-    REC_CTROL_RVA.PERIODICIDAD   := PPERIODICIDAD;   
-    REC_CTROL_RVA.FECINICIAL     := PFECINICIAL;   
-    REC_CTROL_RVA.FECFINAL       := PFECFINAL;    
+    REC_CTROL_RVA.PERIODICIDAD   := PPERIODICIDAD;
+    REC_CTROL_RVA.FECINICIAL     := PFECINICIAL;
+    REC_CTROL_RVA.FECFINAL       := PFECFINAL;
     REC_CTROL_RVA.ID_SINIESTRO   := PID_SINIESTRO;
     REC_CTROL_RVA.FECCARGA       := SYSDATE;
     REC_CTROL_RVA.IMPTE_RVA_INI  := CASE WHEN NVL(PIMPTE_RVA_INI,0)  = 0 THEN 0 ELSE PIMPTE_RVA_INI  END;
@@ -1601,11 +1601,11 @@ BEGIN
     IF CTF_PROCESO IS NULL THEN
        REC_CTROL_RVA.TF_PROCESO     := TO_CHAR(SYSDATE,'DD/MM/YYYY HH24:MI:SS');
     ELSE REC_CTROL_RVA.TF_PROCESO   := CTF_PROCESO;  END IF;
-      
+
     REC_CTROL_RVA.CODUSUARIO     := PCODUSUARIO;
-   
-   IF NHAYCGA = 0 THEN      
-      INSERT INTO CTROL_CGA_RESERVA VALUES REC_CTROL_RVA;                                             
+
+   IF NHAYCGA = 0 THEN
+      INSERT INTO CTROL_CGA_RESERVA VALUES REC_CTROL_RVA;
    ELSE
         UPDATE CTROL_CGA_RESERVA
         SET    IMPTE_RVA_INI  = REC_CTROL_RVA.IMPTE_RVA_INI,
@@ -1613,7 +1613,7 @@ BEGIN
                IMPTE_AJUMAS   = REC_CTROL_RVA.IMPTE_AJUMAS,
                TOT_REGS_AA    = REC_CTROL_RVA.TOT_REGS_AA,
                IMPTE_AJUMENOS = REC_CTROL_RVA.IMPTE_AJUMENOS,
-               TOT_REG_AD     = REC_CTROL_RVA.TOT_REG_AD, 
+               TOT_REG_AD     = REC_CTROL_RVA.TOT_REG_AD,
                IMPTE_PAGOS    = REC_CTROL_RVA.IMPTE_PAGOS,
                TOT_REGS_PA    = REC_CTROL_RVA.TOT_REGS_PA,
                IMPTE_DESPAGOS = REC_CTROL_RVA.IMPTE_DESPAGOS,
@@ -1623,125 +1623,126 @@ BEGIN
         AND    IDVERSION     = PIDVERSION
         AND    PERIODICIDAD  = PPERIODICIDAD
         AND    FECINICIAL    = PFECINICIAL
-        AND    FECFINAL      = PFECFINAL; 
-               
-   END IF;  
+        AND    FECFINAL      = PFECFINAL;
+
+   END IF;
   -- COMMIT;
-EXCEPTION                                     
+EXCEPTION
    WHEN OTHERS THEN
       P_ID_ERROR  := SQLCODE;
       P_MENSAJE   := SQLERRM;
-END;                                   
+END;
 
 PROCEDURE CARGA_PERIODICA(
-  PPERIODICIDAD   IN NUMBER, 
+  PPERIODICIDAD   IN NUMBER,
   PFECINICIAL     IN DATE,
   PFECFINAL       IN DATE,
   PID_SINIESTRO   IN NUMBER,
   P_ID_ERROR     OUT NUMBER  ,
   P_MENSAJE      OUT VARCHAR2) IS
-  
+
   NIDCARGA         CTROL_CGA_RESERVA.IDCARGA%TYPE;
   NAÑO_MOVIMIENTO  RESERVA.AÑO_MOVIMIENTO%TYPE;
   NMES_MOVIMIENTO  RESERVA.MES_MOVIMIENTO%TYPE;
 
   NCODCIA          RESERVA.CODCIA%TYPE;
   NAÑO_ANTERIOR    RESERVA.AÑO_MOVIMIENTO%TYPE;
-  NMES_ANTERIOR    RESERVA.MES_MOVIMIENTO%TYPE;   
+  NMES_ANTERIOR    RESERVA.MES_MOVIMIENTO%TYPE;
   NID_ERROR        NUMBER(8);
   CMENSAJE         VARCHAR2(2000);
   NIDPROCESO       RESERVA.ID_PROCESO%TYPE;
   LINEA_ERROR      VARCHAR2(1000);
-  DTI_INICIO       VARCHAR2(30);   
-   
+  DTI_INICIO       VARCHAR2(30);
+
   NNUMREGCI        NUMBER(5);
   NIMPORTECI       NUMBER(18,2);
   NIDSINIESTRO     NUMBER;
   eERROR           EXCEPTION;
-   
-BEGIN     
+
+BEGIN
    P_ID_ERROR := 0;
    P_MENSAJE  := NULL;
    SELECT NVL(MAX(IDCARGA),0) + 1
    INTO   NIDCARGA
    FROM   CTROL_CGA_RESERVA;
-   
+
    NCODCIA    := 1;
    NNUMREGCI  := 0;
    NIMPORTECI := 0;
-   -- 
+   --
    DTI_INICIO      := TO_CHAR(SYSDATE,'DD/MM/YYYY HH24:MI:SS');
-     NAÑO_MOVIMIENTO := TO_NUMBER(TO_CHAR(PFECINICIAL,'RRRR'));
+	 NAÑO_MOVIMIENTO := TO_NUMBER(TO_CHAR(PFECINICIAL,'RRRR'));
    NMES_MOVIMIENTO := TO_NUMBER(TO_CHAR(PFECINICIAL,'MM'));
    NMES_ANTERIOR   := TO_NUMBER(TO_CHAR(ADD_MONTHS(PFECINICIAL,-1),'MM'));
-   NAÑO_ANTERIOR   := TO_NUMBER(TO_CHAR(ADD_MONTHS(PFECINICIAL,-1),'RRRR'));   
+   NAÑO_ANTERIOR   := TO_NUMBER(TO_CHAR(ADD_MONTHS(PFECINICIAL,-1),'RRRR'));
    NIDSINIESTRO    := PID_SINIESTRO;
    NIDPROCESO      := PPERIODICIDAD;
-  
+
    --se crea el rgistro de ccontrol de carga
-   CTROL_CGA_RVA (NIDCARGA     ,  1, NIDPROCESO, PFECINICIAL, PFECFINAL,                              
-                  PID_SINIESTRO,  0,             0,           0,  
+   CTROL_CGA_RVA (NIDCARGA     ,  1, NIDPROCESO, PFECINICIAL, PFECFINAL,
+                  PID_SINIESTRO,  0,             0,           0,
                   0,              0,             0,           0,
-                  0,              0,             0,           DTI_INICIO, 
-                  NULL             ,          USER,           NID_ERROR, 
+                  0,              0,             0,           DTI_INICIO,
+                  NULL             ,          USER,           NID_ERROR,
                   CMENSAJE );
-  
-   IF  NID_ERROR <> 0 THEN    
-      ROLLBACK;
-      P_ID_ERROR  := NID_ERROR;
-      P_MENSAJE   := CMENSAJE;
-      RAISE eERROR;    
-   END IF;
-   LINEA_ERROR := '1. CARGA INICIAL';  
-   
-   IF TRUNC(PFECINICIAL, 'MM') = PFECINICIAL THEN
-      DELETE FROM RESERVA WHERE AÑO_MOVIMIENTO = NAÑO_MOVIMIENTO AND MES_MOVIMIENTO = NMES_MOVIMIENTO;
-      COMMIT;
-   END IF;
-   
-   -- CARGA INICIAL
-   IF (FUNVALIDACGAINICIAL(NAÑO_MOVIMIENTO,NMES_MOVIMIENTO)= 'N') AND (NIDPROCESO <> 2) THEN
-     CARGA_INICIAL(NCODCIA,NAÑO_MOVIMIENTO,NMES_MOVIMIENTO, NAÑO_ANTERIOR, NMES_ANTERIOR,NIDPROCESO,NNUMREGCI,NIMPORTECI,NID_ERROR,CMENSAJE);   
-   END IF;               
-   IF  NID_ERROR <> 0 THEN 
-      ROLLBACK;
-      P_ID_ERROR  := NID_ERROR;
-      P_MENSAJE   := LINEA_ERROR||' '||CMENSAJE;
-      RAISE eERROR;          
-   END IF; 
-   -- SE CARGA EL DETALLE DE MOVTOS
-   LINEA_ERROR := '2. DETALLE DE MOVTOS RVA';     
-   CARGA_DETALLE_MOVTOS(NCODCIA,'SICAS',PFECINICIAL,PFECFINAL,NIDPROCESO,NIDSINIESTRO,NID_ERROR,CMENSAJE);
-   IF  NID_ERROR <> 0 THEN 
-      ROLLBACK;
-      P_ID_ERROR  := NID_ERROR;
-      P_MENSAJE   := LINEA_ERROR||' '||CMENSAJE;
-      RAISE eERROR;          
-   END IF;             
-   
-   -- SE CARGA TABA FINAL DE RESERVA
-   LINEA_ERROR := '3. RESUMEN DE MOVTOS'; 
-   CARGA_RESUMEN_MOVTOS(NCODCIA,'SICAS',PFECINICIAL,PFECFINAL,NIDPROCESO,NIDSINIESTRO,NID_ERROR,CMENSAJE);
-   IF  NID_ERROR <> 0 THEN 
-      ROLLBACK;
-      P_ID_ERROR  := NID_ERROR;
-      P_MENSAJE   := LINEA_ERROR||' '||CMENSAJE;
-      RAISE eERROR;         
-   END IF;
-   -- 
-   --COMMIT;
-   CC_CARGA (NIDCARGA,PFECINICIAL,PFECFINAL,NIDPROCESO,NIDSINIESTRO,NIMPORTECI,NNUMREGCI,NID_ERROR,CMENSAJE);
-   IF NID_ERROR = 0 THEN
-     COMMIT;
-   ELSE 
+
+   IF  NID_ERROR <> 0 THEN
       ROLLBACK;
       P_ID_ERROR  := NID_ERROR;
       P_MENSAJE   := CMENSAJE;
       RAISE eERROR;
-   END IF;  
+   END IF;
+   LINEA_ERROR := '1. CARGA INICIAL';
+
+   IF TRUNC(PFECINICIAL, 'MM') = PFECINICIAL THEN
+   	  DELETE FROM RESERVA WHERE AÑO_MOVIMIENTO = NAÑO_MOVIMIENTO AND MES_MOVIMIENTO = NMES_MOVIMIENTO;
+   	  COMMIT;
+   END IF;
+
+   -- CARGA INICIAL
+   IF (FUNVALIDACGAINICIAL(NAÑO_MOVIMIENTO,NMES_MOVIMIENTO)= 'N') AND (NIDPROCESO <> 2) THEN
+     CARGA_INICIAL(NCODCIA,NAÑO_MOVIMIENTO,NMES_MOVIMIENTO, NAÑO_ANTERIOR, NMES_ANTERIOR,NIDPROCESO,NNUMREGCI,NIMPORTECI,NID_ERROR,CMENSAJE);
+   END IF;
+   IF  NID_ERROR <> 0 THEN
+      ROLLBACK;
+      P_ID_ERROR  := NID_ERROR;
+      P_MENSAJE   := LINEA_ERROR||' '||CMENSAJE;
+      RAISE eERROR;
+   END IF;
+   -- SE CARGA EL DETALLE DE MOVTOS
+   LINEA_ERROR := '2. DETALLE DE MOVTOS RVA';
+   CARGA_DETALLE_MOVTOS(NCODCIA,'SICAS',PFECINICIAL,PFECFINAL,NIDPROCESO,NIDSINIESTRO,NID_ERROR,CMENSAJE);
+   IF  NID_ERROR <> 0 THEN
+      ROLLBACK;
+      P_ID_ERROR  := NID_ERROR;
+      P_MENSAJE   := LINEA_ERROR||' '||CMENSAJE;
+      RAISE eERROR;
+   END IF;
+
+   -- SE CARGA TABA FINAL DE RESERVA
+   LINEA_ERROR := '3. RESUMEN DE MOVTOS';
+   CARGA_RESUMEN_MOVTOS(NCODCIA,'SICAS',PFECINICIAL,PFECFINAL,NIDPROCESO,NIDSINIESTRO,NID_ERROR,CMENSAJE);
+   IF  NID_ERROR <> 0 THEN
+      ROLLBACK;
+      P_ID_ERROR  := NID_ERROR;
+      P_MENSAJE   := LINEA_ERROR||' '||CMENSAJE;
+      RAISE eERROR;
+   END IF;
+   --
+   --COMMIT;
+   CC_CARGA (NIDCARGA,PFECINICIAL,PFECFINAL,NIDPROCESO,NIDSINIESTRO,NIMPORTECI,NNUMREGCI,NID_ERROR,CMENSAJE);
+   IF NID_ERROR = 0 THEN
+     COMMIT;
+   ELSE
+      ROLLBACK;
+      P_ID_ERROR  := NID_ERROR;
+      P_MENSAJE   := CMENSAJE;
+      RAISE eERROR;
+   END IF;
 EXCEPTION
    WHEN eERROR THEN
-      ROLLBACK;   
+      ROLLBACK;
 END CARGA_PERIODICA;
-  
+
 END TH_CARGA_OPC;
+/
