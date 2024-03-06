@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_FACTURAR IS
+create or replace PACKAGE          OC_FACTURAR IS
 
 -- CALCULO DE COMISIONES PARA RAMOS PAQUETE                                  2022/01/22  JMMD
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
@@ -7686,7 +7686,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                        AND  CS.IdTipoSeg    = C.IdTipoSeg
                        AND  CS.CodEmpresa   = C.CodEmpresa
                        AND  CS.CodCia       = C.CodCia
-                       AND  C.StsCobertura IN ('EMI','SOL','XRE')
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
                        AND  C.IDetPol       = nIDetPol
                        AND  C.IdPoliza      = nIdPoliza
                        AND  C.CodCia        = nCodCia
@@ -7701,7 +7701,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                        AND  CS.IdTipoSeg    = C.IdTipoSeg
                        AND  CS.CodEmpresa   = C.CodEmpresa
                        AND  CS.CodCia       = C.CodCia
-                       AND  C.StsCobertura IN ('EMI','SOL','XRE')
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
                        AND  C.IDetPol       = nIDetPol
                        AND  C.IdPoliza      = nIdPoliza
                        AND  C.CodCia        = nCodCia
