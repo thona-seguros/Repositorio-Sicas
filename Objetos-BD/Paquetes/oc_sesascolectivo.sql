@@ -1,5 +1,5 @@
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
-/* 15/02/2024*/
+/* 13/03/2024*/
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.SESAS_DATGEN.CODEMPRESA%TYPE,
@@ -1488,7 +1488,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                 AND D.CODUSUARIO = cCodUsuario
                 AND D.NUMPOLIZA >= '0'
                 AND D.NUMCERTIFICADO >= '0'
-                GROUP BY D.CODCIA,D.CODEMPRESA,D.CODREPORTE,D.CODUSUARIO,D.NUMPOLIZA,D.IDPOLIZA,D.CODASEGURADO
+                --GROUP BY D.CODCIA,D.CODEMPRESA,D.CODREPORTE,D.CODUSUARIO,D.NUMPOLIZA,D.IDPOLIZA,D.CODASEGURADO
         ) GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,NUMPOLIZA,IDPOLIZA;
 
     TYPE rec_sesaslleno IS RECORD (
@@ -1537,9 +1537,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND CodUsuario = cCodUsuario
             AND IDPOLIZA = nIdPoliza
             AND IDETPOL = nIdetPol
-            AND NUMPOLIZA >= '0'--(SELECT MIN(NUMPOLIZA) FROM SESAS_DATGEN)
+            AND NUMPOLIZA >= '0'
             AND NUMCERTIFICADO = TRIM(LPAD(IdPoliza, 8, '0')) || TRIM(LPAD(IDetPol, 2, '0'))
-                || TRIM(LPAD(CodAsegurado, 10, '0'))--(SELECT MIN(NUMCERTIFICADO) FROM SESAS_DATGEN);
+                || TRIM(LPAD(CodAsegurado, 10, '0'))
         ORDER BY IDPOLIZA,IDETPOL,CODASEGURADO;
 
         TYPE rec_sesasdatgen2 IS RECORD (
@@ -1571,8 +1571,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND P.IdPoliza = nIdPolizaProc
             AND P.StsPoliza NOT IN ( 'SOL', 'PRE' )
             AND ( P.MotivAnul IS NULL
-                  OR NVL(P.MotivAnul, 'NULL') IS NOT NULL
-                  /*AND P.FecSts BETWEEN dvarFecDesde AND dvarFecHasta AJUSTE*/ )
+                  OR NVL(P.MotivAnul, 'NULL') IS NOT NULL)
         UNION
         SELECT
             D.IdPoliza,
@@ -1598,8 +1597,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             AND ( D.MotivAnul IS NULL
                   OR NVL(D.MotivAnul, 'NULL') IS NOT NULL
                   AND D.FecAnul BETWEEN dvarFecDesde AND dvarFecHasta
-                  OR P.StsPoliza = 'ANU'
-                  /*AND P.FecSts BETWEEN dvarFecDesde AND dvarFecHasta AJUSTE*/  );
+                  OR P.StsPoliza = 'ANU' );
       --
         TYPE rec_sesasdatgen4 IS RECORD (
              IDPOLIZA     NUMBER,
@@ -1608,7 +1606,6 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             OrdenSESAS    NUMBER,
             PeriodoEspera NUMBER,
             ClaveSESAS    VARCHAR2(3),
-           -- NumDiasRenta     NUMBER,
             Suma_Moneda   NUMBER,
             Prima_Moneda  NUMBER,
             TOTAL       NUMBER
@@ -1626,7 +1623,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             NVL(CS.OrdenSESAS, 0)         OrdenSESAS,
             NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera,
             NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS            ,
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda,
+            0 Suma_Moneda,
             SUM(C.Prima_Moneda)           Prima_Moneda
         FROM  SICAS_OC.COBERT_ACT C
             INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
@@ -1642,7 +1639,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             NVL(OrdenSESAS, 0),
             NVL(PeriodoEsperaMeses, 0),
             NVL(CLAVESESASNEW, '99'),
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE (SumaAseg_Moneda) END )
+            0
 
         UNION ALL
 
@@ -1650,7 +1647,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             NVL(OrdenSESAS, 0)         OrdenSESAS,
             NVL(PeriodoEsperaMeses, 0) PeriodoEspera,
             NVL(CLAVESESASNEW, '99')   ClaveSESAS,
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda,
+            0 Suma_Moneda,
             SUM(C.Prima_Moneda)        Prima_Moneda
         FROM  SICAS_OC.COBERT_ACT_ASEG C
             INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
@@ -1665,8 +1662,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             NVL(OrdenSESAS, 0),
             NVL(PeriodoEsperaMeses, 0),
             NVL(CLAVESESASNEW, '99'),
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE (SumaAseg_Moneda) END )
-
+            0
         )A
         INNER JOIN SESAS_DATGEN D
             ON D.IDPOLIZA = A.IDPOLIZA
@@ -1696,6 +1692,112 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         obj_sesasdatgen3   type_sesasdatgen3;
 
         nDiasRenta         NUMBER;
+
+    vl_idPoliza NUMBER := 0;
+    CURSOR  CUR1 IS
+SELECT DISTINCT D.IDPOLIZA FROM SICAS_OC.SESAS_DATGEN D
+WHERE D.CODCIA = nCodCia 
+                    AND D.CODEMPRESA = nCodEmpresa 
+                    AND D.CODREPORTE = 'SESADATVIG' 
+                    AND D.CODUSUARIO = cCodUsuario;
+
+       CURSOR COBERT_SUM IS
+WITH GET_DAT_GEN AS (SELECT D.*
+                    FROM SICAS_OC.SESAS_DATGEN D
+                    WHERE D.CODCIA = nCodCia 
+                    AND D.CODEMPRESA = nCodEmpresa 
+                    AND D.CODREPORTE = 'SESADATVIG' 
+                    AND D.CODUSUARIO = cCodUsuario
+
+                ),
+    GET_SUM_ASEG AS (SELECT C.IDPOLIZA
+                        ,C.IDETPOL
+                        ,C.CodCobert
+                        ,NVL(CS.OrdenSESAS, 0)         OrdenSESAS
+                        ,NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera
+                        ,NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS
+                        ,( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda
+                        --,SUM(C.Prima_Moneda)           Prima_Moneda
+                        ,C.COD_ASEGURADO
+                    FROM  SICAS_OC.COBERT_ACT C
+                        ,SICAS_OC.COBERTURAS_DE_SEGUROS CS 
+                    WHERE C.CodCia = nCodCia
+                    AND C.CODEMPRESA = nCodEmpresa 
+                    AND C.StsCobertura IN ('ANU','EMI','EXA','PRE','REN','SUS')
+                    AND CS.IdTipoSeg = C.IdTipoSeg 
+                    AND CS.PlanCob = C.PlanCob
+                    AND CS.CodCobert = C.CodCobert
+                    AND CS.CodEmpresa = C.CodEmpresa
+                    AND CS.CodCia = C.CodCia
+                    UNION ALL
+                    SELECT C.IDPOLIZA
+                        ,C.IDETPOL
+                        ,C.CodCobert
+                        ,NVL(OrdenSESAS, 0)         OrdenSESAS
+                        ,NVL(PeriodoEsperaMeses, 0) PeriodoEspera
+                        ,NVL(CLAVESESASNEW, '99')   ClaveSESAS
+                        ,( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda
+                        --,SUM(C.Prima_Moneda)        Prima_Moneda
+                        ,C.COD_ASEGURADO
+                    FROM  SICAS_OC.COBERT_ACT_ASEG C
+                        ,SICAS_OC.COBERTURAS_DE_SEGUROS CS 
+                    WHERE C.CodCia = nCodCia
+                    AND C.CODEMPRESA = nCodEmpresa 
+                    AND C.StsCobertura IN ('ANU','EMI','EXA','PRE','REN','SUS')
+                    AND CS.IdTipoSeg = C.IdTipoSeg 
+                    AND CS.PlanCob = C.PlanCob
+                    AND CS.CodCobert = C.CodCobert
+                    AND CS.CodEmpresa = C.CodEmpresa
+                    AND CS.CodCia = C.CodCia
+        )
+SELECT --COUNT(1)
+    A.IDPOLIZA
+    ,A.IDETPOL
+    ,D.NUMPOLIZA
+    ,D.NUMCERTIFICADO
+    ,A.CodCobert
+    ,A.OrdenSESAS
+    ,A.PeriodoEspera
+    ,A.ClaveSESAS
+    ,A.Suma_Moneda
+    ,D.CODASEGURADO
+    --,A.Prima_Moneda
+    ,COUNT(1) TOTAL
+FROM GET_DAT_GEN D
+    ,GET_SUM_ASEG A
+WHERE A.IDPOLIZA = D.IDPOLIZA
+AND A.IDETPOL = D.IDETPOL
+AND A.COD_ASEGURADO = D.CODASEGURADO
+and  A.IDPOLIZA  = vl_idPoliza
+GROUP BY A.IDPOLIZA
+    ,A.IDETPOL
+    ,D.NUMPOLIZA
+    ,D.NUMCERTIFICADO
+    ,A.CodCobert
+    ,A.OrdenSESAS
+    ,A.PeriodoEspera
+    ,A.ClaveSESAS
+    ,A.Suma_Moneda
+    --,A.Prima_Moneda
+    ,D.CODASEGURADO
+ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
+;
+
+        TYPE rec_sesasdatgenX IS RECORD (
+             NUMPOLIZA     VARCHAR2(15),
+             NumCertificado      VARCHAR2(20),
+             CodCobert     VARCHAR2(6),
+            OrdenSESAS    NUMBER,
+            PeriodoEspera NUMBER,
+            ClaveSESAS    VARCHAR2(3),
+            Suma_Moneda   NUMBER,
+            Prima_Moneda  NUMBER,
+            TOTAL       NUMBER
+        );
+
+        TYPE type_sesasdatgenX IS TABLE OF rec_sesasdatgenX;
+        obj_sesasdatgenX   type_sesasdatgenX;
+
     BEGIN
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
@@ -1883,7 +1985,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                                    OR IndCptoFondo    = 'S' )
                    AND  F.Stsfact          IN ('ANU') 
                    AND  DF.IdFactura        = F.IdFactura;
-                 --*/
+                 --
                  SELECT /*+ INDEX(T SYS_C0032162) */ NVL(SUM(DNC.Monto_Det_Moneda),0) +0
                  INTO   nMtoCptoNcrMoneda
                  FROM   DETALLE_NOTAS_DE_CREDITO DNC
@@ -1921,17 +2023,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
             nPmaEmiCob := ((ROUND((100 / nPrimaMonedaTotPol ), 10) * NVL( nPrima_Moneda, 0)) * ROUND((nPrimaContable2/100), 10) );
 
-            --nPmaEmiCob := nPmaEmiCob/ obj_sesasdatgen4(w).total;
-
-            --cTipoExtraPrima := '9';
             cTipoSumaSeg := SICAS_OC.OC_PROCESOSSESAS.GETTIPOSUMASEG(nCodCia, LPAD(obj_sesasdatgen4(w).ClaveSESAS, 2, '0'),'VIDA');
-
-            --nDiasRenta := SICAS_OC.OC_PROCESOSSESAS.GETNUMDIASRENTA();
-           /* nPrimaDevengada := SICAS_OC.OC_PROCESOSSESAS.GETPRIMADEVENGADA(nidPoliza, nPmaEmiCob, dFecHasta, dFecIniVig, dFecFinVig);
-
-            IF dFecFinVig <= dFecHasta THEN
-                nPrimaDevengada := nPmaEmiCob;
-            END IF;*/
 
                 BEGIN
 
@@ -1947,7 +2039,6 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         PeriodoEspera,
                         SumaAsegurada,
                         PrimaEmitida,
-                       -- PrimaDevengada,
                         OrdenSesas,
                         IDPOLIZA,
                         idetpol,
@@ -1962,7 +2053,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         LPAD(obj_sesasdatgen4(w).ClaveSESAS, 2, '0'),
                         cTipoSumaSeg,
                         obj_sesasdatgen4(w).PeriodoEspera,
-                        NVL(obj_sesasdatgen4(w).Suma_Moneda, 0),
+                        0,
                         nPmaEmiCob,
                         obj_sesasdatgen4(w).OrdenSESAS,
                         nIdPoliza,
@@ -1972,19 +2063,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
-                        UPDATE SICAS_OC.SESAS_EMISION
-                        SET --PrimaEmitida = NVL(PrimaEmitida, 0) + nPmaEmiCob,
-                              SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(NVL(obj_sesasdatgen4(w).Suma_Moneda, 0), 0),
-                              --primadevengada = primadevengada + nPrimaDevengada,
-                              fechainsert = sysdate
-                        WHERE CodCia = nCodCia
-                            AND CodEmpresa = nCodEmpresa
-                            AND CodReporte = cCodReporteProces
-                            AND CodUsuario = cCodUsuario
-                            AND NumPoliza = obj_sesasdatgen(x).NumPoliza
-                            AND NumCertificado = obj_sesasdatgen(x).NumCertificado
-                            AND Cobertura = LPAD(obj_sesasdatgen4(w).ClaveSESAS, 2, '0');
-                        COMMIT;
+                        vl_Contado := 1;
                     WHEN OTHERS THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, obj_sesasdatgen(x).NumPoliza,obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                 END;
@@ -2000,17 +2079,41 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
     END LOOP;
     CLOSE COBERT_Q;
 
+COMMIT;
+    FOR i IN CUR1 LOOP
+        vl_idPoliza := i.idpoliza;
+    FOR COBERT_SUM_LOOP IN COBERT_SUM LOOP
+        UPDATE SICAS_OC.SESAS_EMISION
+        SET SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(COBERT_SUM_LOOP.Suma_Moneda, 0),
+              fechainsert = sysdate
+        WHERE CodCia = nCodCia
+            AND CodEmpresa = nCodEmpresa
+            AND CodReporte = cCodReporteProces
+            AND CodUsuario = cCodUsuario
+            AND NumPoliza = COBERT_SUM_LOOP.NumPoliza
+            AND IDPOLIZA = vl_idPoliza
+            AND NumCertificado = COBERT_SUM_LOOP.NumCertificado
+            AND Cobertura = LPAD(COBERT_SUM_LOOP.ClaveSESAS, 2, '0')
+            AND IDPOLIZA = COBERT_SUM_LOOP.IDPOLIZA
+            AND IDETPOL = COBERT_SUM_LOOP.IDETPOL
+            AND CODASEGURADO = COBERT_SUM_LOOP.CODASEGURADO
+            AND SumaAsegurada = 0
+            ;
+
+    END LOOP;
+    END LOOP;
+COMMIT;
+
 
         BEGIN
             OPEN c_Llenado;
                 LOOP
                 FETCH c_Llenado
                     BULK COLLECT INTO obj_sesaslleno;
-                    FOR x IN 1..obj_sesaslleno.COUNT LOOP
+                    FORALL x IN 1..obj_sesaslleno.COUNT 
 
                         UPDATE SICAS_OC.SESAS_EMISION
                         SET PRIMAEMITIDA = ROUND(PRIMAEMITIDA / obj_sesaslleno(x).TOTAL,2),
-                            
                             FECHAINSERT = SYSDATE
                         WHERE CODCIA = obj_sesaslleno(x).CodCia
                             AND CODEMPRESA = obj_sesaslleno(x).CodEmpresa
@@ -2019,7 +2122,6 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                             AND NUMPOLIZA = obj_sesaslleno(x).NUMPOLIZA
                             AND IDPOLIZA = obj_sesaslleno(x).IDPOLIZA;
 
-                    END LOOP;
 
                 EXIT WHEN obj_sesaslleno.COUNT = 0;
                 END LOOP;
@@ -2423,6 +2525,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                             AND NumSiniestro = x.NumSiniestro
 
                             AND Cobertura = y.ClaveSesas;
+
 
 
                     WHEN OTHERS THEN
@@ -3931,7 +4034,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             NVL(CS.OrdenSESAS, 0)         OrdenSESAS,
             NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera,
             NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS            ,
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda,
+            0 Suma_Moneda,
             SUM(C.Prima_Moneda)           Prima_Moneda
         FROM  SICAS_OC.COBERT_ACT C
             INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
@@ -3946,8 +4049,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             C.IDPOLIZA,C.IDETPOL,C.CodCobert,
             NVL(OrdenSESAS, 0),
             NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99'),
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE (SumaAseg_Moneda) END )
+            NVL(CLAVESESASNEW, '99')
 
         UNION ALL
 
@@ -3955,7 +4057,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             NVL(OrdenSESAS, 0)         OrdenSESAS,
             NVL(PeriodoEsperaMeses, 0) PeriodoEspera,
             NVL(CLAVESESASNEW, '99')   ClaveSESAS,
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda,
+            0 Suma_Moneda,
             SUM(C.Prima_Moneda)        Prima_Moneda
         FROM  SICAS_OC.COBERT_ACT_ASEG C
             INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
@@ -3969,8 +4071,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         GROUP BY  C.IDPOLIZA,C.IDETPOL,C.CodCobert,
             NVL(OrdenSESAS, 0),
             NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99'),
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE (SumaAseg_Moneda) END )
+            NVL(CLAVESESASNEW, '99')
 
         )A
         INNER JOIN SESAS_DATGEN D
@@ -4001,6 +4102,96 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         obj_sesasdatgen3   type_sesasdatgen3;
 
         nDiasRenta         NUMBER;
+
+        vl_idPoliza NUMBER := 0;
+    CURSOR  CUR1 IS
+SELECT DISTINCT D.IDPOLIZA FROM SICAS_OC.SESAS_DATGEN D
+WHERE D.CODCIA = nCodCia 
+                    AND D.CODEMPRESA = nCodEmpresa 
+                    AND D.CODREPORTE = 'SESADATAPC' 
+                    AND D.CODUSUARIO = cCodUsuario;
+
+       CURSOR COBERT_SUM IS
+WITH GET_DAT_GEN AS (SELECT D.*
+                    FROM SICAS_OC.SESAS_DATGEN D
+                    WHERE D.CODCIA = nCodCia 
+                    AND D.CODEMPRESA = nCodEmpresa 
+                    AND D.CODREPORTE = 'SESADATAPC' 
+                    AND D.CODUSUARIO = cCodUsuario
+
+                ),
+    GET_SUM_ASEG AS (SELECT C.IDPOLIZA
+                        ,C.IDETPOL
+                        ,C.CodCobert
+                        ,NVL(CS.OrdenSESAS, 0)         OrdenSESAS
+                        ,NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera
+                        ,NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS
+                        ,( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda
+                        --,SUM(C.Prima_Moneda)           Prima_Moneda
+                        ,C.COD_ASEGURADO
+                    FROM  SICAS_OC.COBERT_ACT C
+                        ,SICAS_OC.COBERTURAS_DE_SEGUROS CS 
+                    WHERE C.CodCia = nCodCia
+                    AND C.CODEMPRESA = nCodEmpresa 
+                    AND C.StsCobertura IN ('ANU','EMI','EXA','PRE','REN','SUS')
+                    AND CS.IdTipoSeg = C.IdTipoSeg 
+                    AND CS.PlanCob = C.PlanCob
+                    AND CS.CodCobert = C.CodCobert
+                    AND CS.CodEmpresa = C.CodEmpresa
+                    AND CS.CodCia = C.CodCia
+                    UNION ALL
+                    SELECT C.IDPOLIZA
+                        ,C.IDETPOL
+                        ,C.CodCobert
+                        ,NVL(OrdenSESAS, 0)         OrdenSESAS
+                        ,NVL(PeriodoEsperaMeses, 0) PeriodoEspera
+                        ,NVL(CLAVESESASNEW, '99')   ClaveSESAS
+                        ,( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda
+                        --,SUM(C.Prima_Moneda)        Prima_Moneda
+                        ,C.COD_ASEGURADO
+                    FROM  SICAS_OC.COBERT_ACT_ASEG C
+                        ,SICAS_OC.COBERTURAS_DE_SEGUROS CS 
+                    WHERE C.CodCia = nCodCia
+                    AND C.CODEMPRESA = nCodEmpresa 
+                    AND C.StsCobertura IN ('ANU','EMI','EXA','PRE','REN','SUS')
+                    AND CS.IdTipoSeg = C.IdTipoSeg 
+                    AND CS.PlanCob = C.PlanCob
+                    AND CS.CodCobert = C.CodCobert
+                    AND CS.CodEmpresa = C.CodEmpresa
+                    AND CS.CodCia = C.CodCia
+        )
+SELECT --COUNT(1)
+    A.IDPOLIZA
+    ,A.IDETPOL
+    ,D.NUMPOLIZA
+    ,D.NUMCERTIFICADO
+    ,A.CodCobert
+    ,A.OrdenSESAS
+    ,A.PeriodoEspera
+    ,A.ClaveSESAS
+    ,A.Suma_Moneda
+    ,D.CODASEGURADO
+    --,A.Prima_Moneda
+    ,COUNT(1) TOTAL
+FROM GET_DAT_GEN D
+    ,GET_SUM_ASEG A
+WHERE A.IDPOLIZA = D.IDPOLIZA
+AND A.IDETPOL = D.IDETPOL
+AND A.COD_ASEGURADO = D.CODASEGURADO
+and  A.IDPOLIZA  = vl_idPoliza
+GROUP BY A.IDPOLIZA
+    ,A.IDETPOL
+    ,D.NUMPOLIZA
+    ,D.NUMCERTIFICADO
+    ,A.CodCobert
+    ,A.OrdenSESAS
+    ,A.PeriodoEspera
+    ,A.ClaveSESAS
+    ,A.Suma_Moneda
+    --,A.Prima_Moneda
+    ,D.CODASEGURADO
+ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
+;
     BEGIN
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
@@ -4282,18 +4473,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
-                        UPDATE SICAS_OC.SESAS_EMISION
-                        SET --PrimaEmitida = NVL(PrimaEmitida, 0) + nPmaEmiCob,
-                              SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(NVL(obj_sesasdatgen4(w).Suma_Moneda, 0), 0),
-                              --primadevengada = primadevengada + nPrimaDevengada,
-                              fechainsert = sysdate
-                        WHERE CodCia = nCodCia
-                            AND CodEmpresa = nCodEmpresa
-                            AND CodReporte = cCodReporteProces
-                            AND CodUsuario = cCodUsuario
-                            AND NumPoliza = obj_sesasdatgen(x).IDPOLIZA
-                            AND NumCertificado = obj_sesasdatgen(x).NumCertificado
-                            AND Cobertura = LPAD(obj_sesasdatgen4(w).ClaveSESAS, 2, '0');
+                        vl_Contado := 1;
                         COMMIT;
                     WHEN OTHERS THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, obj_sesasdatgen(x).NumPoliza,obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
@@ -4310,6 +4490,29 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
     END LOOP;
     CLOSE COBERT_Q;
 
+    FOR i IN CUR1 LOOP
+        vl_idPoliza := i.idpoliza;
+    FOR COBERT_SUM_LOOP IN COBERT_SUM LOOP
+        UPDATE SICAS_OC.SESAS_EMISION
+        SET SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(COBERT_SUM_LOOP.Suma_Moneda, 0),
+              fechainsert = sysdate
+        WHERE CodCia = nCodCia
+            AND CodEmpresa = nCodEmpresa
+            AND CodReporte = cCodReporteProces
+            AND CodUsuario = cCodUsuario
+            AND NumPoliza = COBERT_SUM_LOOP.NumPoliza
+            AND IDPOLIZA = vl_idPoliza
+            AND NumCertificado = COBERT_SUM_LOOP.NumCertificado
+            AND Cobertura = LPAD(COBERT_SUM_LOOP.ClaveSESAS, 2, '0')
+            AND IDPOLIZA = COBERT_SUM_LOOP.IDPOLIZA
+            AND IDETPOL = COBERT_SUM_LOOP.IDETPOL
+            AND CODASEGURADO = COBERT_SUM_LOOP.CODASEGURADO
+            AND SumaAsegurada = 0
+            ;
+
+    END LOOP;
+    END LOOP;
+COMMIT;
 
         BEGIN
             OPEN c_Llenado;
@@ -5622,6 +5825,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
     END DATGEN_GM;
 
+
     PROCEDURE EMISION_GM (
         nCodCia           SICAS_OC.SESAS_EMISION.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.SESAS_EMISION.CODEMPRESA%TYPE,
@@ -5646,26 +5850,24 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
       --
         CURSOR cPolizas_DatGen IS
         SELECT
-            IdPoliza,
-            IDetPol,
-            CodAsegurado,
-            FecIniVig,
-            FecFinVig,
-            FecBajcert,
-            TipoDetalle,
-            NumPoliza,
-            NumCertificado
-        FROM SICAS_OC.SESAS_DATGEN
-        WHERE CodCia = nCodCia
-            AND CodEmpresa = nCodEmpresa
-            AND CodReporte = 'SESADATGMC'
-            AND CodUsuario = cCodUsuario
-
-            AND NUMPOLIZA >= '0'--(SELECT MIN(NUMPOLIZA) FROM SESAS_DATGEN)
-            AND NUMCERTIFICADO = TRIM(LPAD(IdPoliza, 8, '0')) || TRIM(LPAD(IDetPol, 2, '0'))
-                || TRIM(LPAD(CodAsegurado, 10, '0'))--(SELECT MIN(NUMCERTIFICADO) FROM SESAS_DATGEN);
-        ORDER BY IDPOLIZA,IDETPOL,CODASEGURADO;
-
+            D.IdPoliza,
+            D.IDetPol,
+            D.CodAsegurado,
+            D.FecIniVig,
+            D.FecFinVig,
+            D.FecBajcert,
+            D.TipoDetalle,
+            D.NumPoliza,
+            D.NumCertificado
+        FROM SICAS_OC.SESAS_DATGEN D
+        WHERE D.CodCia = nCodCia
+            AND D.CodEmpresa = nCodEmpresa
+            AND D.CodReporte = 'SESADATGMC'
+            AND D.CodUsuario = cCodUsuario
+            AND NUMPOLIZA >= '0'
+             AND NUMCERTIFICADO = TRIM(LPAD(D.IdPoliza, 8, '0')) || TRIM(LPAD(D.IDetPol, 2, '0'))
+                || TRIM(LPAD(D.CodAsegurado, 10, '0'))
+      ;
         TYPE r_SesasDatGen IS RECORD (
             IdPoliza       NUMBER,
             IDetPol        NUMBER,
@@ -5681,7 +5883,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         TYPE t_SesasDatGen IS TABLE OF r_SesasDatGen;
 
         o_SesasDatGen   t_SesasDatGen;
-        
+
         CURSOR COBERT_Q IS
          SELECT A.IDPOLIZA,A.IDETPOL,A.CodCobert,
             A.OrdenSESAS,
@@ -5692,7 +5894,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             NVL(CS.OrdenSESAS, 0)         OrdenSESAS,
             NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera,
             NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS            ,
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda,
+            SUM(SumaAseg_Moneda)  Suma_Moneda,
             SUM(C.Prima_Moneda)           Prima_Moneda
         FROM  SICAS_OC.COBERT_ACT C
             INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
@@ -5707,8 +5909,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             C.IDPOLIZA,C.IDETPOL,C.CodCobert,
             NVL(OrdenSESAS, 0),
             NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99'),
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE (SumaAseg_Moneda) END )
+            NVL(CLAVESESASNEW, '99')
 
         UNION ALL
 
@@ -5716,7 +5917,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             NVL(OrdenSESAS, 0)         OrdenSESAS,
             NVL(PeriodoEsperaMeses, 0) PeriodoEspera,
             NVL(CLAVESESASNEW, '99')   ClaveSESAS,
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE /*SUM*/(SumaAseg_Moneda) END ) Suma_Moneda,
+            SUM(SumaAseg_Moneda) Suma_Moneda,
             SUM(C.Prima_Moneda)        Prima_Moneda
         FROM  SICAS_OC.COBERT_ACT_ASEG C
             INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
@@ -5730,25 +5931,22 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         GROUP BY  C.IDPOLIZA,C.IDETPOL,C.CodCobert,
             NVL(OrdenSESAS, 0),
             NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99'),
-            ( CASE NVL(CLAVESESASNEW, '99')  WHEN '10' THEN 0.0 ELSE (SumaAseg_Moneda) END )
-
+            NVL(CLAVESESASNEW, '99')
         )A
         INNER JOIN SESAS_DATGEN D
             ON D.IDPOLIZA = A.IDPOLIZA
             AND D.IDETPOL = A.IDETPOL
         WHERE D.CODCIA=nCodCia AND D.CODEMPRESA=nCodEmpresa AND D.CODREPORTE='SESADATGMC' AND D.CODUSUARIO=cCodUsuario AND D.NUMPOLIZA>= '0' AND D.NUMCERTIFICADO>= '0'
-        AND D.IDPOLIZA=nIDPOLIZA
-        AND D.IDETPOL= NIDETPOL
         GROUP BY A.IDPOLIZA,A.IDETPOL,A.CodCobert,
             A.OrdenSESAS,
             A.PeriodoEspera,
               A.ClaveSESAS            ,
             A.Suma_Moneda,A.Prima_Moneda
         ORDER BY A.IDPOLIZA, A.IDETPOL;
-        
+
+      --
         TYPE r_SesasEmision IS RECORD (
-             IDPOLIZA     NUMBER,
+            IDPOLIZA     NUMBER,
              IDETPOL      NUMBER,
              CodCobert     VARCHAR2(6),
             OrdenSESAS    NUMBER,
@@ -5759,53 +5957,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             Prima_Moneda  NUMBER,
             TOTAL       NUMBER
         );
-        
-        /*
-        CURSOR COBERT_Q IS
-        SELECT  C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-                NVL(OrdenSESAS, 0)       OrdenSESAS,
-                NVL(ClaveSESASNew, '99') ClaveSESAS,
-                SUM(SumaAseg_Moneda)     Suma_Moneda,
-                SUM(C.Prima_Moneda)      Prima_Moneda
-        FROM SICAS_OC.COBERT_ACT_ASEG C
-        INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
-            ON CS.CodCobert = C.CodCobert
-            AND CS.PlanCob = C.PlanCob
-            AND CS.IdTipoSeg = C.IdTipoSeg
-            AND CS.CodEmpresa = C.CodEmpresa
-            AND CS.CodCia = C.CodCia
-        WHERE C.IDetPol = nIDetPol
-            AND C.IdPoliza = nIdPoliza
-            AND C.CodCia = nCodCia
-            AND C.COD_ASEGURADO = nCodAsegurado
-        GROUP BY C.CodCobert,  NVL(OrdenSESAS, 0), NVL(ClaveSESASNew, '99')
-        UNION
-        SELECT  C.CodCobert,
-                NVL(OrdenSESAS, 0)       OrdenSESAS,
-                NVL(ClaveSESASNew, '99') ClaveSESAS,
-                SUM(SumaAseg_Moneda)     Suma_Moneda,
-                SUM(C.Prima_Moneda)      Prima_Moneda
-        FROM SICAS_OC.COBERT_ACT C
-        INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
-            ON CS.CodCobert = C.CodCobert
-            AND CS.PlanCob = C.PlanCob
-            AND CS.IdTipoSeg = C.IdTipoSeg
-            AND CS.CodEmpresa = C.CodEmpresa
-            AND CS.CodCia = C.CodCia
-        WHERE C.IDetPol = nIDetPol
-            AND C.IdPoliza = nIdPoliza
-            AND C.CodCia = nCodCia
-            AND C.COD_ASEGURADO = nCodAsegurado
-        GROUP BY C.CodCobert,NVL(OrdenSESAS, 0),NVL(ClaveSESASNew, '99');*/
-      --
-       /* TYPE r_SesasEmision IS RECORD (
-            CodCobert    VARCHAR2(6),
-            OrdenSESAS   NUMBER,
-            ClaveSESAS   VARCHAR2(3),
-            Suma_Moneda  NUMBER,
-            Prima_Moneda NUMBER
-        );
-*/
+
         TYPE t_SesasEmision IS TABLE OF r_SesasEmision;
 
         o_SesasEmision  t_SesasEmision;
@@ -5814,6 +5966,97 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         vl_CodValido    NUMBER;
         vl_AsegModel    NUMBER;
         vl_Asegurado2   VARCHAR2(25);
+
+        vl_idPoliza NUMBER := 0;
+    CURSOR  CUR1 IS
+SELECT DISTINCT D.IDPOLIZA FROM SICAS_OC.SESAS_DATGEN D
+WHERE D.CODCIA = nCodCia 
+                    AND D.CODEMPRESA = nCodEmpresa 
+                    AND D.CODREPORTE = 'SESADATGMC' 
+                    AND D.CODUSUARIO = cCodUsuario;
+
+       CURSOR COBERT_SUM IS
+WITH GET_DAT_GEN AS (SELECT D.*
+                    FROM SICAS_OC.SESAS_DATGEN D
+                    WHERE D.CODCIA = nCodCia 
+                    AND D.CODEMPRESA = nCodEmpresa 
+                    AND D.CODREPORTE = 'SESADATGMC' 
+                    AND D.CODUSUARIO = cCodUsuario
+
+                ),
+    GET_SUM_ASEG AS (SELECT C.IDPOLIZA
+                        ,C.IDETPOL
+                        ,C.CodCobert
+                        ,NVL(CS.OrdenSESAS, 0)         OrdenSESAS
+                        ,0 PeriodoEspera
+                        ,NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS
+                        ,(SumaAseg_Moneda)  Suma_Moneda
+                        --,SUM(C.Prima_Moneda)           Prima_Moneda
+                        ,C.COD_ASEGURADO
+                    FROM  SICAS_OC.COBERT_ACT C
+                        ,SICAS_OC.COBERTURAS_DE_SEGUROS CS 
+                    WHERE C.CodCia = nCodCia
+                    AND C.CODEMPRESA = nCodEmpresa 
+                    AND C.StsCobertura IN ('ANU','EMI','EXA','PRE','REN','SUS')
+                    AND CS.IdTipoSeg = C.IdTipoSeg 
+                    AND CS.PlanCob = C.PlanCob
+                    AND CS.CodCobert = C.CodCobert
+                    AND CS.CodEmpresa = C.CodEmpresa
+                    AND CS.CodCia = C.CodCia
+                    UNION ALL
+                    SELECT C.IDPOLIZA
+                        ,C.IDETPOL
+                        ,C.CodCobert
+                        ,NVL(OrdenSESAS, 0)         OrdenSESAS
+                        ,NVL(PeriodoEsperaMeses, 0) PeriodoEspera
+                        ,NVL(CLAVESESASNEW, '99')   ClaveSESAS
+                        ,(SumaAseg_Moneda ) Suma_Moneda
+                        --,SUM(C.Prima_Moneda)        Prima_Moneda
+                        ,C.COD_ASEGURADO
+                    FROM  SICAS_OC.COBERT_ACT_ASEG C
+                        ,SICAS_OC.COBERTURAS_DE_SEGUROS CS 
+                    WHERE C.CodCia = nCodCia
+                    AND C.CODEMPRESA = nCodEmpresa 
+                    AND C.StsCobertura IN ('ANU','EMI','EXA','PRE','REN','SUS')
+                    AND CS.IdTipoSeg = C.IdTipoSeg 
+                    AND CS.PlanCob = C.PlanCob
+                    AND CS.CodCobert = C.CodCobert
+                    AND CS.CodEmpresa = C.CodEmpresa
+                    AND CS.CodCia = C.CodCia
+        )
+SELECT --COUNT(1)
+    A.IDPOLIZA
+    ,A.IDETPOL
+    ,D.NUMPOLIZA
+    ,D.NUMCERTIFICADO
+    ,A.CodCobert
+    ,A.OrdenSESAS
+    ,0 PeriodoEspera
+    ,A.ClaveSESAS
+    ,A.Suma_Moneda
+    ,D.CODASEGURADO
+    --,A.Prima_Moneda
+    ,COUNT(1) TOTAL
+FROM GET_DAT_GEN D
+    ,GET_SUM_ASEG A
+WHERE A.IDPOLIZA = D.IDPOLIZA
+AND A.IDETPOL = D.IDETPOL
+AND A.COD_ASEGURADO = D.CODASEGURADO
+and  A.IDPOLIZA  = vl_idPoliza
+GROUP BY A.IDPOLIZA
+    ,A.IDETPOL
+    ,D.NUMPOLIZA
+    ,D.NUMCERTIFICADO
+    ,A.CodCobert
+    ,A.OrdenSESAS
+    ,0
+    ,A.ClaveSESAS
+    ,A.Suma_Moneda
+    --,A.Prima_Moneda
+    ,D.CODASEGURADO
+ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
+;
+
     BEGIN
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
@@ -5840,7 +6083,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                         nPrimaDevengada := NULL; --Implementar la funci¿n que devuelve la prima devengada
                         nPmaEmiCob := o_SesasEmision(w).Prima_Moneda;
                         nPrimaDevengada := SICAS_OC.OC_PROCESOSSESAS.GETPRIMADEVENGADA(nidPoliza, nPmaEmiCob, dvarFecHasta, dFecIniVig, dFecFinVig);
---Inserto Emisi¿n/Coberturas
+                    --Inserto Emisi¿n/Coberturas
                         IF o_SesasDatGen(x).Fecbajcert < dvarFecDesde THEN
                             nPmaEmiCob := 0;
                         END IF;
@@ -5874,7 +6117,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                     TipoExtraPrima,
                                     OrdenSesas,
                                     IDPOLIZA,
-                                    IDETPOL
+                                    idetpol,
+                                    CodAsegurado
                                 ) VALUES (
                                     nCodCia,
                                     nCodEmpresa,
@@ -5889,16 +6133,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                     nNumDiasRenta,
                                     cTipoExtraPrima,
                                     o_SesasEmision(w).OrdenSESAS,
-                                    o_SesasEmision(w).IDPOLIZA,
-                                    o_SesasEmision(w).IDETPOL
+                                    nIdPoliza,
+                                    nIDetPol,
+                                    nCodAsegurado
                                 );
 
                             EXCEPTION
                                 WHEN DUP_VAL_ON_INDEX THEN
-                                    UPDATE SICAS_OC.SESAS_EMISION
-                                    SET --PrimaEmitida = NVL(PrimaEmitida, 0) + nPmaEmiCob,
+                                    /*UPDATE SICAS_OC.SESAS_EMISION
+                                    SET PrimaEmitida = NVL(PrimaEmitida, 0) + nPmaEmiCob,
                                         SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(NVL(o_SesasEmision(w).Suma_Moneda, 0), 0),
-                                        --primadevengada = primadevengada + nPrimaDevengada,
+                                        primadevengada = primadevengada + nPrimaDevengada,
                                             fechainsert = sysdate
                                     WHERE CodCia = nCodCia
                                         AND CodEmpresa = nCodEmpresa
@@ -5906,10 +6151,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                         AND CodUsuario = cCodUsuario
                                         AND NumPoliza = o_SesasDatGen(x).NumPoliza
                                         AND NumCertificado = o_SesasDatGen(x).NumCertificado
-                                        AND Cobertura = LPAD(o_SesasEmision(w).ClaveSESAS, 2, '0');
-                              --AND  OrdenSesas     = nOrdenSesas;*/
-                                    vl_Contado := 1; 
-                                   
+                                        AND Cobertura = LPAD(o_SesasEmision(w).ClaveSESAS, 2, '0');*/
+                              --AND  OrdenSesas     = nOrdenSesas;
+                                    vl_Contado := 1;
                                 WHEN OTHERS THEN
                                     SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, SQLERRM);
                             END;
@@ -5946,7 +6190,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                                 TipoExtraPrima,
                                                 OrdenSesas,
                                                 IDPOLIZA,
-                                                IDETPOL
+                                                idetpol,
+                                                CodAsegurado
                                             ) VALUES (
                                                 nCodCia,
                                                 nCodEmpresa,
@@ -5961,16 +6206,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                                 nNumDiasRenta,
                                                 cTipoExtraPrima,
                                                 o_SesasEmision(w).OrdenSESAS,
-                                                o_SesasEmision(w).IDPOLIZA,
-                                                o_SesasEmision(w).IDETPOL
+                                                nIdPoliza,
+                                                nIDetPol,
+                                                nCodAsegurado
                                             );
 
                                         EXCEPTION
                                             WHEN DUP_VAL_ON_INDEX THEN
-                                                UPDATE SICAS_OC.SESAS_EMISION
-                                                SET --PrimaEmitida = NVL(PrimaEmitida, 0) + nPmaEmiCob,
+                                               /* UPDATE SICAS_OC.SESAS_EMISION
+                                                SET PrimaEmitida = NVL(PrimaEmitida, 0) + nPmaEmiCob,
                                                     SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(NVL(o_SesasEmision(w).Suma_Moneda, 0), 0),
-                                                    --primadevengada = primadevengada + nPrimaDevengada,
+                                                    primadevengada = primadevengada + nPrimaDevengada,
                                             fechainsert = sysdate
                                                 WHERE CodCia = nCodCia
                                                     AND CodEmpresa = nCodEmpresa
@@ -5978,7 +6224,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                                                     AND CodUsuario = cCodUsuario
                                                     AND NumPoliza = o_SesasDatGen(x).NumPoliza
                                                     AND NumCertificado = o_SesasDatGen(x).NumCertificado
-                                                    AND Cobertura = LPAD(o_SesasEmision(w).ClaveSESAS, 2, '0');
+                                                    AND Cobertura = LPAD(o_SesasEmision(w).ClaveSESAS, 2, '0');*/
                                           --AND  OrdenSesas     = nOrdenSesas;
                                                 vl_Contado := 1;
 
@@ -6024,8 +6270,38 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
         CLOSE cPolizas_DatGen;
 
+UPDATE SICAS_OC.SESAS_EMISION
+        SET SumaAsegurada = 0,
+              fechainsert = sysdate
+        WHERE CodCia = nCodCia
+            AND CodEmpresa = nCodEmpresa
+            AND CodReporte = cCodReporteProces
+            AND CodUsuario = cCodUsuario;
 
 
+FOR i IN CUR1 LOOP
+        vl_idPoliza := i.idpoliza;
+    FOR COBERT_SUM_LOOP IN COBERT_SUM LOOP
+        UPDATE SICAS_OC.SESAS_EMISION
+        SET SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(COBERT_SUM_LOOP.Suma_Moneda, 0),
+              fechainsert = sysdate
+        WHERE CodCia = nCodCia
+            AND CodEmpresa = nCodEmpresa
+            AND CodReporte = cCodReporteProces
+            AND CodUsuario = cCodUsuario
+            AND NumPoliza = COBERT_SUM_LOOP.NumPoliza
+            AND IDPOLIZA = vl_idPoliza
+            AND NumCertificado = COBERT_SUM_LOOP.NumCertificado
+            AND Cobertura = COBERT_SUM_LOOP.ClaveSESAS --LPAD(COBERT_SUM_LOOP.ClaveSESAS, 2, '0')
+            AND IDPOLIZA = COBERT_SUM_LOOP.IDPOLIZA
+            AND IDETPOL = COBERT_SUM_LOOP.IDETPOL
+            AND CODASEGURADO = COBERT_SUM_LOOP.CODASEGURADO
+            --AND SumaAsegurada = 0
+            ;
+
+    END LOOP;
+    END LOOP;
+COMMIT;
 
       OPEN cPolizas_DatGen;
         LOOP
@@ -6129,6 +6405,10 @@ END;
         END LOOP;
 
         CLOSE cPolizas_DatGen;
+
+
+
+
 
     END EMISION_GM;
 
@@ -6352,4 +6632,3 @@ END;
 
 END OC_SESASCOLECTIVO;
 /
-
