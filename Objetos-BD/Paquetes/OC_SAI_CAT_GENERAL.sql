@@ -1,0 +1,23 @@
+create or replace PACKAGE OC_SAI_CAT_GENERAL AS
+FUNCTION DESCRIPCION (nCage_Cd_Catalogo NUMBER, cCage_Id_Concep_Alf VARCHAR2, cCage_Nom_Concep VARCHAR2) RETURN VARCHAR2;
+END OC_SAI_CAT_GENERAL;
+/
+create or replace PACKAGE BODY OC_SAI_CAT_GENERAL AS
+FUNCTION DESCRIPCION (nCage_Cd_Catalogo NUMBER, cCage_Id_Concep_Alf VARCHAR2, cCage_Nom_Concep VARCHAR2) RETURN VARCHAR2 IS
+cCage_Valor_Largo SAI_CAT_GENERAL.Cage_Valor_Largo%TYPE;
+BEGIN
+   BEGIN
+      SELECT A.Cage_Valor_Largo
+        INTO cCage_Valor_Largo
+        FROM SAI_CAT_GENERAL A
+       WHERE A.CAGE_CD_CATALOGO   = nCage_Cd_Catalogo --9
+         AND A.CAGE_ID_CONCEP_ALF = cCage_Id_Concep_Alf --:BK_DATOS_SINI.MOTIVO_DE_SINIESTRO
+         AND A.CAGE_NOM_CONCEP    = cCage_Nom_Concep --:BK_DATOS_SINI.SUBMOTIVO_SINIESTRO
+       AND A.CAGE_CD_ESTATUS    = 'ACT';
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cCage_Valor_Largo := 'SIN VALOR';
+   END;
+   RETURN cCage_Valor_Largo;
+END DESCRIPCION;
+END OC_SAI_CAT_GENERAL;
