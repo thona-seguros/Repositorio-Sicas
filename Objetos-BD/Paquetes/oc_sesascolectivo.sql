@@ -1802,7 +1802,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
 
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')|| ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
-   nIdPoliza := 0;
+        nIdPoliza := 0;
         IF COBERT_Q%ISOPEN THEN
             CLOSE COBERT_Q ;
         END IF;
@@ -2079,30 +2079,31 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
     END LOOP;
     CLOSE COBERT_Q;
 
-COMMIT;
-    FOR i IN CUR1 LOOP
-        vl_idPoliza := i.idpoliza;
-    FOR COBERT_SUM_LOOP IN COBERT_SUM LOOP
-        UPDATE SICAS_OC.SESAS_EMISION
-        SET SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(COBERT_SUM_LOOP.Suma_Moneda, 0),
-              fechainsert = sysdate
-        WHERE CodCia = nCodCia
-            AND CodEmpresa = nCodEmpresa
-            AND CodReporte = cCodReporteProces
-            AND CodUsuario = cCodUsuario
-            AND NumPoliza = COBERT_SUM_LOOP.NumPoliza
-            AND IDPOLIZA = vl_idPoliza
-            AND NumCertificado = COBERT_SUM_LOOP.NumCertificado
-            AND Cobertura = LPAD(COBERT_SUM_LOOP.ClaveSESAS, 2, '0')
-            AND IDPOLIZA = COBERT_SUM_LOOP.IDPOLIZA
-            AND IDETPOL = COBERT_SUM_LOOP.IDETPOL
-            AND CODASEGURADO = COBERT_SUM_LOOP.CODASEGURADO
-            AND SumaAsegurada = 0
-            ;
-
-    END LOOP;
-    END LOOP;
-COMMIT;
+    COMMIT;
+    
+        FOR i IN CUR1 LOOP
+            vl_idPoliza := i.idpoliza;
+            FOR COBERT_SUM_LOOP IN COBERT_SUM LOOP
+                UPDATE SICAS_OC.SESAS_EMISION
+                SET SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(COBERT_SUM_LOOP.Suma_Moneda, 0),
+                      fechainsert = sysdate
+                WHERE CodCia = nCodCia
+                    AND CodEmpresa = nCodEmpresa
+                    AND CodReporte = cCodReporteProces
+                    AND CodUsuario = cCodUsuario
+                    AND NumPoliza = COBERT_SUM_LOOP.NumPoliza
+                    AND IDPOLIZA = vl_idPoliza
+                    AND NumCertificado = COBERT_SUM_LOOP.NumCertificado
+                    AND Cobertura = LPAD(COBERT_SUM_LOOP.ClaveSESAS, 2, '0')
+                    AND IDPOLIZA = COBERT_SUM_LOOP.IDPOLIZA
+                    AND IDETPOL = COBERT_SUM_LOOP.IDETPOL
+                    AND CODASEGURADO = COBERT_SUM_LOOP.CODASEGURADO
+                    AND SumaAsegurada = 0
+                    ;
+        
+            END LOOP;
+        END LOOP;
+        COMMIT;
 
 
         BEGIN
@@ -3896,7 +3897,7 @@ COMMIT;
                 AND D.CODUSUARIO = cCodUsuario
                 AND D.NUMPOLIZA >= '0'
                 AND D.NUMCERTIFICADO >= '0'
-                GROUP BY D.CODCIA,D.CODEMPRESA,D.CODREPORTE,D.CODUSUARIO,D.NUMPOLIZA,D.IDPOLIZA,D.CODASEGURADO
+                --GROUP BY D.CODCIA,D.CODEMPRESA,D.CODREPORTE,D.CODUSUARIO,D.NUMPOLIZA,D.IDPOLIZA,D.CODASEGURADO
         ) GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,NUMPOLIZA,IDPOLIZA;
 
     TYPE rec_sesaslleno IS RECORD (
@@ -4030,27 +4031,26 @@ COMMIT;
             A.PeriodoEspera,
               A.ClaveSESAS            ,
             A.Suma_Moneda,A.Prima_Moneda,COUNT(1) TOTAL
-            FROM (SELECT C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-            NVL(CS.OrdenSESAS, 0)         OrdenSESAS,
-            NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera,
-            NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS            ,
-            0 Suma_Moneda,
-            SUM(C.Prima_Moneda)           Prima_Moneda
-        FROM  SICAS_OC.COBERT_ACT C
-            INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
-                ON CS.IdTipoSeg = C.IdTipoSeg 
-                AND CS.PlanCob = C.PlanCob
-                AND CS.CodCobert = C.CodCobert
-                AND CS.CodEmpresa = C.CodEmpresa
-                AND CS.CodCia = C.CodCia
-        WHERE C.StsCobertura IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
-            AND C.CodCia = nCodCia
-        GROUP BY
-            C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-            NVL(OrdenSESAS, 0),
-            NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99')
-
+            FROM (
+                SELECT C.IDPOLIZA,C.IDETPOL,C.CodCobert,
+                    NVL(CS.OrdenSESAS, 0)         OrdenSESAS,
+                    NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera,
+                    NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS            ,
+                    0 Suma_Moneda,
+                    SUM(C.Prima_Moneda)           Prima_Moneda
+                FROM  SICAS_OC.COBERT_ACT C
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
+                    ON CS.IdTipoSeg = C.IdTipoSeg 
+                    AND CS.PlanCob = C.PlanCob
+                    AND CS.CodCobert = C.CodCobert
+                    AND CS.CodEmpresa = C.CodEmpresa
+                    AND CS.CodCia = C.CodCia
+                WHERE C.StsCobertura IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
+                AND C.CodCia = nCodCia
+                GROUP BY C.IDPOLIZA,C.IDETPOL,C.CodCobert,
+                        NVL(OrdenSESAS, 0),
+                        NVL(PeriodoEsperaMeses, 0),
+                        NVL(CLAVESESASNEW, '99'),0
         UNION ALL
 
         SELECT C.IDPOLIZA,C.IDETPOL, C.CodCobert,
@@ -4071,13 +4071,19 @@ COMMIT;
         GROUP BY  C.IDPOLIZA,C.IDETPOL,C.CodCobert,
             NVL(OrdenSESAS, 0),
             NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99')
+            NVL(CLAVESESASNEW, '99'),0
 
         )A
         INNER JOIN SESAS_DATGEN D
             ON D.IDPOLIZA = A.IDPOLIZA
             AND D.IDETPOL = A.IDETPOL
-        WHERE D.CODCIA=nCodCia AND D.CODEMPRESA=nCodEmpresa AND D.CODREPORTE='SESADATAPC' AND D.CODUSUARIO=cCodUsuario AND D.NUMPOLIZA>= '0' AND D.NUMCERTIFICADO>= '0'
+        WHERE D.CODCIA=nCodCia 
+        AND D.CODEMPRESA=nCodEmpresa
+        AND D.CODREPORTE='SESADATAPC'
+        AND D.CODUSUARIO=cCodUsuario
+        AND D.NUMPOLIZA>= '0' 
+        AND D.NUMCERTIFICADO>= '0'
+        --**#AND D.IDPOLIZA IN (43562,43563,43568,43576) --**
         GROUP BY A.IDPOLIZA,A.IDETPOL,A.CodCobert,
             A.OrdenSESAS,
             A.PeriodoEspera,
@@ -4109,7 +4115,9 @@ SELECT DISTINCT D.IDPOLIZA FROM SICAS_OC.SESAS_DATGEN D
 WHERE D.CODCIA = nCodCia 
                     AND D.CODEMPRESA = nCodEmpresa 
                     AND D.CODREPORTE = 'SESADATAPC' 
-                    AND D.CODUSUARIO = cCodUsuario;
+                    AND D.CODUSUARIO = cCodUsuario
+                    --**#AND D.IDPOLIZA IN (43562,43563,43568,43576)
+                    ;
 
        CURSOR COBERT_SUM IS
 WITH GET_DAT_GEN AS (SELECT D.*
@@ -4449,8 +4457,8 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                         OrdenSesas,
                         IDPOLIZA,
                         idetpol,
-                        CODASEGURADO
-                    ) VALUES (
+                        CODASEGURADO) 
+                    VALUES (
                         nCodCia,
                         nCodEmpresa,
                         cCodReporteProces,
@@ -4474,71 +4482,71 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                 EXCEPTION
                     WHEN DUP_VAL_ON_INDEX THEN
                         vl_Contado := 1;
-                        COMMIT;
+                        --COMMIT;
                     WHEN OTHERS THEN
                         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces, cCodUsuario, obj_sesasdatgen(x).NumPoliza,obj_sesasdatgen(x).NumCertificado, SQLCODE, SQLERRM);
                 END;
 
 
-        END LOOP;
-        EXIT WHEN obj_sesasdatgen.COUNT = 0;
-        END LOOP;
-        CLOSE cPolizas_DatGen;
-
+            END LOOP;
+            EXIT WHEN obj_sesasdatgen.COUNT = 0;
+            END LOOP;
+            CLOSE cPolizas_DatGen;
     END LOOP;
     EXIT WHEN obj_sesasdatgen4.COUNT = 0;
     END LOOP;
     CLOSE COBERT_Q;
 
-    FOR i IN CUR1 LOOP
-        vl_idPoliza := i.idpoliza;
-    FOR COBERT_SUM_LOOP IN COBERT_SUM LOOP
-        UPDATE SICAS_OC.SESAS_EMISION
-        SET SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(COBERT_SUM_LOOP.Suma_Moneda, 0),
-              fechainsert = sysdate
-        WHERE CodCia = nCodCia
-            AND CodEmpresa = nCodEmpresa
-            AND CodReporte = cCodReporteProces
-            AND CodUsuario = cCodUsuario
-            AND NumPoliza = COBERT_SUM_LOOP.NumPoliza
-            AND IDPOLIZA = vl_idPoliza
-            AND NumCertificado = COBERT_SUM_LOOP.NumCertificado
-            AND Cobertura = LPAD(COBERT_SUM_LOOP.ClaveSESAS, 2, '0')
-            AND IDPOLIZA = COBERT_SUM_LOOP.IDPOLIZA
-            AND IDETPOL = COBERT_SUM_LOOP.IDETPOL
-            AND CODASEGURADO = COBERT_SUM_LOOP.CODASEGURADO
-            AND SumaAsegurada = 0
-            ;
+    COMMIT;
 
-    END LOOP;
-    END LOOP;
-COMMIT;
+        FOR i IN CUR1 LOOP
+            vl_idPoliza := i.idpoliza;
+            FOR COBERT_SUM_LOOP IN COBERT_SUM LOOP
+                UPDATE SICAS_OC.SESAS_EMISION
+                SET SumaAsegurada = NVL(SumaAsegurada, 0) + NVL(COBERT_SUM_LOOP.Suma_Moneda, 0),
+                      fechainsert = sysdate
+                WHERE CodCia = nCodCia
+                    AND CodEmpresa = nCodEmpresa
+                    AND CodReporte = cCodReporteProces
+                    AND CodUsuario = cCodUsuario
+                    AND NumPoliza = COBERT_SUM_LOOP.NumPoliza
+                    AND IDPOLIZA = vl_idPoliza
+                    AND NumCertificado = COBERT_SUM_LOOP.NumCertificado
+                    AND Cobertura = LPAD(COBERT_SUM_LOOP.ClaveSESAS, 2, '0')
+                    AND IDPOLIZA = COBERT_SUM_LOOP.IDPOLIZA
+                    AND IDETPOL = COBERT_SUM_LOOP.IDETPOL
+                    AND CODASEGURADO = COBERT_SUM_LOOP.CODASEGURADO
+                    AND SumaAsegurada = 0
+                    ;
+        
+            END LOOP;
+        END LOOP;
+        COMMIT;
 
         BEGIN
-            OPEN c_Llenado;
-                    LOOP
-                    FETCH c_Llenado
-                        BULK COLLECT INTO obj_sesaslleno;
-                        FOR x IN 1..obj_sesaslleno.COUNT LOOP
-                            UPDATE SICAS_OC.SESAS_EMISION
-                            SET PRIMAEMITIDA = ROUND(PRIMAEMITIDA / obj_sesaslleno(x).TOTAL,2),
-                                PRIMADEVENGADA = ROUND(PRIMADEVENGADA / obj_sesaslleno(x).TOTAL,2), 
-                                FECHAINSERT = SYSDATE
-                            WHERE CODCIA = obj_sesaslleno(x).CodCia
-                                AND CODEMPRESA = obj_sesaslleno(x).CodEmpresa
-                                AND CODREPORTE = obj_sesaslleno(x).CodReporte
-                                AND CODUSUARIO = obj_sesaslleno(x).CodUsuario
-                                AND NUMPOLIZA = obj_sesaslleno(x).NUMPOLIZA
-                                AND IDPOLIZA = obj_sesaslleno(x).IDPOLIZA;
+            OPEN c_Llenado; LOOP
+                FETCH c_Llenado
+                BULK COLLECT INTO obj_sesaslleno;
+                    FOR x IN 1..obj_sesaslleno.COUNT LOOP
+                        UPDATE SICAS_OC.SESAS_EMISION
+                        SET PRIMAEMITIDA = ROUND(PRIMAEMITIDA / obj_sesaslleno(x).TOTAL,2),
+                            PRIMADEVENGADA = ROUND(PRIMADEVENGADA / obj_sesaslleno(x).TOTAL,2), 
+                            FECHAINSERT = SYSDATE
+                        WHERE CODCIA = obj_sesaslleno(x).CodCia
+                            AND CODEMPRESA = obj_sesaslleno(x).CodEmpresa
+                            AND CODREPORTE = obj_sesaslleno(x).CodReporte
+                            AND CODUSUARIO = obj_sesaslleno(x).CodUsuario
+                            AND NUMPOLIZA = obj_sesaslleno(x).NUMPOLIZA
+                            AND IDPOLIZA = obj_sesaslleno(x).IDPOLIZA;
 
-                        END LOOP;
+                    END LOOP;
 
-                    EXIT WHEN obj_sesaslleno.COUNT = 0;
+                EXIT WHEN obj_sesaslleno.COUNT = 0;
                 END LOOP;
-                CLOSE c_Llenado;
+            CLOSE c_Llenado;
         EXCEPTION
-        WHEN OTHERS THEN
-            COMMIT;
+            WHEN OTHERS THEN
+                COMMIT;
         END;
     END EMISION_AP;
 
