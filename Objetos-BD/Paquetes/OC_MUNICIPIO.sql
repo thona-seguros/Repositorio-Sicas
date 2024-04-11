@@ -5,14 +5,7 @@ CREATE OR REPLACE PACKAGE OC_MUNICIPIO IS
   FUNCTION CODIGO_ALTERNATIVO(cCodPais VARCHAR2, cCodEstado VARCHAR2, cCodMunicipio VARCHAR2) RETURN VARCHAR2;
 
 END OC_MUNICIPIO;
-
-
-
-
-
-
 /
-
 CREATE OR REPLACE PACKAGE BODY OC_MUNICIPIO IS
 
 FUNCTION NOMBRE_MUNICIPIO(cCodPais VARCHAR2, cCodEstado VARCHAR2, cCodMunicipio VARCHAR2) RETURN VARCHAR2 IS
@@ -24,9 +17,18 @@ BEGIN
         FROM CORREGIMIENTO
        WHERE CodPais      = cCodPais
          AND CodEstado    = cCodEstado
-         AND CodMunicipio = cCodMunicipio;
+         AND CodMunicipio = cCodMunicipio
+         -- MLJS 11/04/024 SE AGREGO PARA NO DETENER LA REPORTERÍA
+         AND CodCiudad    = (SELECT MAX(CodCiudad)
+                                 FROM   CORREGIMIENTO
+                                 WHERE CodPais      = cCodPais
+                                   AND CodEstado    = cCodEstado
+                                   AND CodMunicipio = cCodMunicipio) ;
+         -- MLJS 11/04/024 SE AGREGO PARA NO DETENER LA REPORTERÍA
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
+         cDescMunicipio  := 'MUNICIPIO NO EXISTE';
+      WHEN OTHERS THEN  -- MLJS 11/04/024 SE AGREGO MANEJADOR
          cDescMunicipio  := 'MUNICIPIO NO EXISTE';
    END;
    RETURN(cDescMunicipio);
@@ -45,8 +47,10 @@ BEGIN
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          cCodCorregAlterno  := NULL;
+
    END;
    RETURN(cCodCorregAlterno);
 END CODIGO_ALTERNATIVO;
 
 END OC_MUNICIPIO;
+/
