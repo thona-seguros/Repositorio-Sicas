@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_COMISIONES IS
+create or replace PACKAGE OC_COMISIONES IS
 ---- SE ADICIONO UN JOIN CATALOGO_DE_CONCEPTOS PARA RECUPERAR EL SIGNO    JMMD20220125
   PROCEDURE DISTRIBUCION(nCodCia NUMBER, nIdPoliza NUMBER,cCod_Agente VARCHAR2, nPorcApl NUMBER);
   PROCEDURE PAGA_ABONA_COMISION(nIdFactura NUMBER, cReciboPago VARCHAR2, dFecSts DATE, 
@@ -16,7 +16,6 @@ CREATE OR REPLACE PACKAGE OC_COMISIONES IS
   PROCEDURE DISTRIBUCION_WEB(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER,cCod_Agente VARCHAR2, nPorcApl NUMBER, nIdCotizacion NUMBER);
 
 END OC_COMISIONES;
-
 /
 create or replace PACKAGE BODY oc_comisiones IS
     --
@@ -62,7 +61,7 @@ create or replace PACKAGE BODY oc_comisiones IS
           END IF;
        EXCEPTION
           WHEN eDist_Realizada THEN
-             RAISE_APPLICATION_ERROR (-20100,'Distribuci髇 Realizada con anterioridad, debera elimiar la distribuci髇 actual para generar una nueva!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Distribuci贸n Realizada con anterioridad, debera elimiar la distribuci贸n actual para generar una nueva!'|| SQLERRM);
        END;
 
        BEGIN
@@ -74,7 +73,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND CodCia     = nCodCia;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'NO Existe el Origen del Agente P髄iza '|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'NO Existe el Origen del Agente P贸liza '|| SQLERRM);
        END;
 
        DECLARE
@@ -90,7 +89,7 @@ create or replace PACKAGE BODY oc_comisiones IS
           END IF;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P髄iza...!!!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P贸liza...!!!'|| SQLERRM);
        END;
        BEGIN
           SELECT DISTINCT PlanCob, IdTipoSeg
@@ -128,7 +127,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND PlanCob   = cPlanCob;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Invalido favor revisar Configuraci髇!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Invalido favor revisar Configuraci贸n!'|| SQLERRM);
        END;
 
        BEGIN
@@ -143,7 +142,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND NPC.PlanCob   = cPlanCob;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inv醠ido favor revisar Configuraci髇'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inv谩lido favor revisar Configuraci贸n'|| SQLERRM);
        END;
 
        BEGIN
@@ -231,7 +230,7 @@ create or replace PACKAGE BODY oc_comisiones IS
        END LOOP;
     EXCEPTION
        WHEN OTHERS THEN
-          RAISE_APPLICATION_ERROR (-20100,'Error en Distribuci髇 de Comisiones de P髄iza '|| ' ' || SQLERRM);
+          RAISE_APPLICATION_ERROR (-20100,'Error en Distribuci贸n de Comisiones de P贸liza '|| ' ' || SQLERRM);
     END DISTRIBUCION;
 
     PROCEDURE PAGA_ABONA_COMISION(nIdFactura NUMBER, cReciboPago VARCHAR2, dFecSts DATE,
@@ -285,8 +284,10 @@ create or replace PACKAGE BODY oc_comisiones IS
                                                                       AND P.NUM_DOC_IDENTIFICACION  = A.NUM_DOC_IDENTIFICACION
                                INNER JOIN CAT_REGIMEN_FISCAL         C ON C.IdRegFisSAT = P.IdRegFisSAT 
                                                                       AND NVL(C.PORCCONCEPTO,0) != 0   
-                                                                      AND ABS(ROUND(M.COMISION_LOCAL/D.MONTO_MON_LOCAL)) != NVL(C.PORCCONCEPTO,0)                         
------ JMMD 20220125
+                                                                      --AND ABS(ROUND(M.COMISION_LOCAL/D.MONTO_MON_LOCAL)) != NVL(C.PORCCONCEPTO,0)
+                                                                      -- GRCA -Se pone el valor en duro, porque la columna s贸lo almacena dos d铆gitos y por ende se genera una divisi贸n entre cero.
+                                                                      AND DECODE(D.MONTO_MON_LOCAL,0,ABS(ROUND(M.COMISION_LOCAL/0.0016)),ABS(ROUND(M.COMISION_LOCAL/D.MONTO_MON_LOCAL))) != NVL(C.PORCCONCEPTO,0)                           
+----- JMMD JMMD20220125
                                INNER JOIN CATALOGO_DE_CONCEPTOS      CC ON CC.CODCONCEPTO = 'RETISR' 
                                                                         AND CC.CODCIA = M.CODCIA                               
 ----- JMMD 20220125                                                                     
@@ -475,7 +476,7 @@ create or replace PACKAGE BODY oc_comisiones IS
        END IF;
     EXCEPTION
        WHEN OTHERS THEN
-          RAISE_APPLICATION_ERROR (-20100,'Error en Abono de Comisiones de Nota de Cr閐ito ' ||nIdNcr || ' ' || SQLERRM);
+          RAISE_APPLICATION_ERROR (-20100,'Error en Abono de Comisiones de Nota de Cr茅dito ' ||nIdNcr || ' ' || SQLERRM);
     END PAGA_ABONA_COMISION_NC;
 
     PROCEDURE REVERSA_DEVOLUCION(nCodCia NUMBER, nIdNcr NUMBER) IS
@@ -615,6 +616,10 @@ create or replace PACKAGE BODY oc_comisiones IS
     nPorcComisNivel3     COTIZACIONES.PorcComisAgte%TYPE;
     --
     BEGIN
+    
+    INSERT INTO LOGS_REVISION VALUES('LOS VALORES RECIBIDOS EN EL PROCEDURE SICAS_OC.OC_COMISIONES.DISTRIBUCION_WEB ->  POLIZA: ' || nIdPoliza ||' AGENTE: ' ||cCod_Agente ||' PORCENTAJEAPLI: ' || nPorcApl ||' COTIZACION: ' ||nIdCotizacion);
+    COMMIT;
+    
        BEGIN
           SELECT COUNT(*)
             INTO nCountPoliza
@@ -623,7 +628,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND IdPoliza = nIdPoliza;
 
           IF nCountPoliza > 0 THEN
-             RAISE_APPLICATION_ERROR (-20100,'Distribuci髇 Realizada con anterioridad, debera elimiar la distribuci髇 actual para generar una nueva!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Distribuci贸n Realizada con anterioridad, debera elimiar la distribuci贸n actual para generar una nueva!'|| SQLERRM);
           END IF;
        END;
 
@@ -636,7 +641,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND CodCia     = nCodCia;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'NO Existe el Origen del Agente P髄iza '|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'NO Existe el Origen del Agente P贸liza '|| SQLERRM);
        END;
 
        BEGIN
@@ -648,11 +653,11 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND IdPoliza   = nIdPoliza;
 
           IF  nComPoliza IS NULL THEN
-             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P髄iza...!!!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P贸liza...!!!'|| SQLERRM);
           END IF;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P髄iza...!!!'|| SQLERRM); 
+             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P贸liza...!!!'|| SQLERRM); 
        END;
 
        BEGIN
@@ -676,7 +681,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND Cod_Agente = cCod_Agente;
        EXCEPTION 
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Agente '||cCod_Agente||' NO v醠ido, por favor valide');
+             RAISE_APPLICATION_ERROR (-20100,'Agente '||cCod_Agente||' NO v谩lido, por favor valide');
        END;
 
        BEGIN
@@ -691,7 +696,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND NPC.PlanCob   = cPlanCob;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inv醠ido favor revisar Configuraci髇'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inv谩lido favor revisar Configuraci贸n'|| SQLERRM);
        END;
 
        SELECT C.PorcComisDir, C.PorcComisProm, C.PorcComisAgte                                                       
@@ -800,7 +805,10 @@ create or replace PACKAGE BODY oc_comisiones IS
        END LOOP;
     EXCEPTION
        WHEN OTHERS THEN
-          RAISE_APPLICATION_ERROR (-20100,'Error en Distribuci髇 de Comisiones de P髄iza '|| ' ' || SQLERRM);
+        INSERT INTO LOGS_REVISION VALUES('LOS VALORES QUE SE IBAN A INSERTAR EN PROCEDURE SICAS_OC.OC_COMISIONES.DISTRIBUCION_WEB ->  nIdPoliza: ' || nIdPoliza ||' cCod_Agente: ' ||cCod_Agente ||' nNivel: ' || nNivel || 'nProporcional' || nProporcional);
+        INSERT INTO LOGS_REVISION VALUES('LOS VALORES QUE SE IBAN A INSERTAR EN PROCEDURE SICAS_OC.OC_COMISIONES.DISTRIBUCION_WEB ->  nJefe: ' || nJefe ||' nPorcApl: ' ||nPorcApl ||' nComAgenteNivel: ' || nComAgenteNivel ||' nComisionTotalPlan: ' ||nComisionTotalPlan||' ROUND(nProporcional,5): ' || ROUND(nProporcional,5) ||' nnJefe: ' ||nnJefe||nComisionTotalPlan||' nComPoliza: ' || nComPoliza ||' cOrigen: ' ||cOrigen);
+        COMMIT;
+        RAISE_APPLICATION_ERROR (-20100,'Error en Distribuci贸n de Comisiones de P贸liza '|| ' ' || SQLERRM);
 
     END DISTRIBUCION_WEB;
 
