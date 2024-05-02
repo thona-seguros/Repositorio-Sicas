@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
+create or replace PACKAGE          SICAS_OC.OC_SESASCOLECTIVO IS
 /* 13/03/2024*/
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
@@ -124,8 +124,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
 
 END OC_SESASCOLECTIVO;
 /
-
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
+create or replace PACKAGE BODY          SICAS_OC.OC_SESASCOLECTIVO IS
 
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
@@ -197,7 +196,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     D.FecFinVig
             END                                                                                                                   FecFinVig,
             D.FecIniVig                                                                                                           FecAltCert
-		   --, SICAS_OC.OC_PROCESOSSESAS.GETFECBAJACERT( D.IdPoliza, D.FecIniVig ,D.FecFinVig,P.FecAnul,dFecHasta) 										FecBajCert
+           --, SICAS_OC.OC_PROCESOSSESAS.GETFECBAJACERT( D.IdPoliza, D.FecIniVig ,D.FecFinVig,P.FecAnul,dFecHasta)                                      FecBajCert
             ,
             SICAS_OC.OC_PROCESOSSESAS.GETFECBAJACERT(D.IdPoliza, D.FecIniVig, D.FecFinVig, XX.FecAnulExclu,dFecDesde, dFecHasta,'VIG')            FecBajCert,
             PN.FecNacimiento                                                                                                      FecNacim,
@@ -598,7 +597,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
                     D.FecFinVig
             END                                                                                                                   FecFinVig,
             D.FecIniVig                                                                                                           FecAltCert
-           --, SICAS_OC.OC_PROCESOSSESAS.GETFECBAJACERT( D.IdPoliza, D.FecIniVig ,D.FecFinVig,P.FecAnul,dFecHasta) 										FecBajCert
+           --, SICAS_OC.OC_PROCESOSSESAS.GETFECBAJACERT( D.IdPoliza, D.FecIniVig ,D.FecFinVig,P.FecAnul,dFecHasta)                                      FecBajCert
             ,
             SICAS_OC.OC_PROCESOSSESAS.GETFECBAJACERT(D.IdPoliza, D.FecIniVig, D.FecFinVig, AC.FecAnulExclu, dFecDesde, dFecHasta,'VIG')            FecBajCert,
             PN.FecNacimiento                                                                                                      FecNacim,
@@ -853,7 +852,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
             FECEMISION       DATE,
             SEXO             VARCHAR2(10),
             STATUSCERT       VARCHAR2(10),
-        --FORMAVTA	VARCHAR2(2 ),
+        --FORMAVTA  VARCHAR2(2 ),
             TIPODIVIDENDO    VARCHAR2(10),
             PLANPOLIZA       VARCHAR2(10),
             MODALIDADPOLIZA  VARCHAR2(10),
@@ -882,7 +881,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
 
-      --Inicializo variables de Afinaciｿn
+      --Inicializo variables de Afinaciﾂｿn
         nCodCia2 := 0;
         nCodEmpresa2 := 0;
         nIdPoliza := 0;
@@ -1006,7 +1005,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
         COMMIT;
 
-      --Inicializo variables de Afinaciｿn
+      --Inicializo variables de Afinaciﾂｿn
         nCodCia2 := 0;
         nCodEmpresa2 := 0;
         nIdPoliza := 0;
@@ -1137,7 +1136,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
         COMMIT;
 
-      --Inicializo variables de Afinaciｿn
+      --Inicializo variables de Afinaciﾂｿn
         nCodCia2 := 0;
         nCodEmpresa2 := 0;
         nIdPoliza := 0;
@@ -1269,7 +1268,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         COMMIT;
 
       --
-      --Inicializo variables de Afinaciｿn
+      --Inicializo variables de Afinaciﾂｿn
         nCodCia2 := 0;
         nCodEmpresa2 := 0;
         nIdPoliza := 0;
@@ -2080,7 +2079,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
     CLOSE COBERT_Q;
 
     COMMIT;
-    
+
         FOR i IN CUR1 LOOP
             vl_idPoliza := i.idpoliza;
             FOR COBERT_SUM_LOOP IN COBERT_SUM LOOP
@@ -2100,7 +2099,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                     AND CODASEGURADO = COBERT_SUM_LOOP.CODASEGURADO
                     AND SumaAsegurada = 0
                     ;
-        
+
             END LOOP;
         END LOOP;
         COMMIT;
@@ -3309,7 +3308,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY') || ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
 
-      --Inicializo variables de Afinaciｿn
+      --Inicializo variables de Afinaciﾂｿn
         nCodCia2 := 0;
         nCodEmpresa2 := 0;
         nIdPoliza := 0;
@@ -3434,7 +3433,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
         CLOSE C_POL_IND_Q;
         COMMIT;
 
-      --Inicializo variables de Afinaciｿn
+      --Inicializo variables de Afinaciﾂｿn
         nCodCia2 := 0;
         nCodEmpresa2 := 0;
         nIdPoliza := 0;
@@ -3559,7 +3558,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
         CLOSE C_POL_COL_Q;
         COMMIT;
       --
-      --Inicializo variables de Afinaciｿn
+      --Inicializo variables de Afinaciﾂｿn
         nCodCia2 := 0;
         nCodEmpresa2 := 0;
         nIdPoliza := 0;
@@ -3683,7 +3682,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
 
         CLOSE C_POL_IND_MOV_Q;
         COMMIT;
-      --Inicializo variables de Afinaciｿn
+      --Inicializo variables de Afinaciﾂｿn
         nCodCia2 := 0;
         nCodEmpresa2 := 0;
         nIdPoliza := 0;
@@ -4518,7 +4517,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                     AND CODASEGURADO = COBERT_SUM_LOOP.CODASEGURADO
                     AND SumaAsegurada = 0
                     ;
-        
+
             END LOOP;
         END LOOP;
         COMMIT;
@@ -5059,7 +5058,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                     WHERE
                             ID_POLIZA = x.IdPoliza
                         AND ID_SINIESTRO = x.NumSiniestro
-                        AND AﾑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
+                        AND Aﾃ前_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
 
                 EXCEPTION
                     WHEN OTHERS THEN
@@ -5172,7 +5171,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                     WHERE
                             ID_POLIZA = x.IdPoliza
                         AND ID_SINIESTRO = x.NumSiniestro
-                        AND AﾑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
+                        AND Aﾃ前_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
                         AND TIPO_MOVIMIENTO = 'PAGOS';
 
                 EXCEPTION
@@ -5248,7 +5247,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
             D.FecIniVig                                                                                                           FecIniVig,
             D.FecFinVig                                                                                                           FecFinVig,
             D.FecIniVig                                                                                                           FecAltCert
-		      --, SICAS_OC.OC_PROCESOSSESAS.GETFECBAJACERT(D.IdPoliza, D.FecIniVig , D.FecFinVig, P.FecAnul, dFecHasta)                          FecBajCert
+              --, SICAS_OC.OC_PROCESOSSESAS.GETFECBAJACERT(D.IdPoliza, D.FecIniVig , D.FecFinVig, P.FecAnul, dFecHasta)                          FecBajCert
             ,SICAS_OC.OC_PROCESOSSESAS.GETFECBAJACERT(D.IdPoliza, D.FecIniVig, D.FecFinVig, XX.FecAnulExclu, dFecDesde, dFecHasta)            FecBajCert,
             PN.FecNacimiento                                                                                                      FecNacim,
             P.FecEmision                                                                                                          FecEmision,
@@ -5257,11 +5256,11 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
             ,SICAS_OC.OC_PROCESOSSESAS.GETSTATUSCERT(D.CodCia, D.IdPoliza, D.IDETPOL, XX.FecAnulExclu, dFecHasta, XX.ESTADO, D.FecIniVig, D.FecFinVig, NVL(XX.Cod_Asegurado, D.Cod_Asegurado))                StatusCert,
             NVL(C.SubTipoSeg, '1')                                                                                                SubTipoSeg,
             ( CASE WHEN CEIL(MONTHS_BETWEEN(D.FecFinVig, D.FecIniVig) / 12) < 1 THEN 1 ELSE CEIL(MONTHS_BETWEEN(D.FecFinVig, D.FecIniVig) / 12) END )  AnioPoliza,
-            DECODE(C.MODALSUMAASEG, 'N', 'N', 'N')                                                                                ModSumAseg --Siempre debe retornar N, se puede implementar una funciｿn si se requieren cambiar reglas de negocio
-            ,SICAS_OC.OC_PROCESOSSESAS.GETCOASEGURO(D.CodCia, D.IdPoliza, 'GMM')                                                    Coaseguro      --no se usa la funciｿn porque dicen que por default un 1 y a futuro puede ser una funciｿn, tal vez la misma funciｿn y poner que si viene de GMMC devolver un 1
+            DECODE(C.MODALSUMAASEG, 'N', 'N', 'N')                                                                                ModSumAseg --Siempre debe retornar N, se puede implementar una funciﾂｿn si se requieren cambiar reglas de negocio
+            ,SICAS_OC.OC_PROCESOSSESAS.GETCOASEGURO(D.CodCia, D.IdPoliza, 'GMM')                                                    Coaseguro      --no se usa la funciﾂｿn porque dicen que por default un 1 y a futuro puede ser una funciﾂｿn, tal vez la misma funciﾂｿn y poner que si viene de GMMC devolver un 1
             ,SUBSTR(NVL(P.TipoDividendo, '003'), - 1)                                                                              TipoDividendo,
-            SICAS_OC.OC_PROCESOSSESAS.GETMNTODIVID(D.CodCia, D.IdPoliza)                                                          MontoDividendo --no se usa la funciｿn porque dicen que por default un 0 y a futuro puede ser una funciｿn, tal vez la misma funciｿn y poner que si viene de GMMC devolver un 0
-            ,SICAS_OC.OC_PROCESOSSESAS.GETPRIMACEDIDA(D.CodCia, D.IdPoliza)                                                        PrimaCedida    --no se usa la funciｿn porque dicen que por default un 0 y a futuro puede ser una funciｿn, tal vez la misma funciｿn y poner que si viene de GMMC devolver un 0
+            SICAS_OC.OC_PROCESOSSESAS.GETMNTODIVID(D.CodCia, D.IdPoliza)                                                          MontoDividendo --no se usa la funciﾂｿn porque dicen que por default un 0 y a futuro puede ser una funciﾂｿn, tal vez la misma funciﾂｿn y poner que si viene de GMMC devolver un 0
+            ,SICAS_OC.OC_PROCESOSSESAS.GETPRIMACEDIDA(D.CodCia, D.IdPoliza)                                                        PrimaCedida    --no se usa la funciﾂｿn porque dicen que por default un 0 y a futuro puede ser una funciﾂｿn, tal vez la misma funciﾂｿn y poner que si viene de GMMC devolver un 0
             ,P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
             NVL(XX.Cod_Asegurado, D.Cod_Asegurado)                                                                                Cod_Asegurado,
@@ -5339,14 +5338,14 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                         CEIL(MONTHS_BETWEEN(D.FecFinVig, D.FecIniVig) / 12)
                 END
             )                                                                                                                     AnioPoliza,
-            DECODE(C.MODALSUMAASEG, 'N', 'N', 'N')                                                                                ModSumAseg   --Siempre debe retornar N, se puede implementar una funciｿn si se requieren cambiar reglas de negocio
+            DECODE(C.MODALSUMAASEG, 'N', 'N', 'N')                                                                                ModSumAseg   --Siempre debe retornar N, se puede implementar una funciﾂｿn si se requieren cambiar reglas de negocio
             ,
-            SICAS_OC.OC_PROCESOSSESAS.GETCOASEGURO(D.CodCia, P.IdPoliza, 'GMM')                                                    Coaseguro    --no se usa la funciｿn porque dicen que por default un 1 y a futuro puede ser una funciｿn, tal vez la misma funciｿn y poner que si viene de GMMI devolver un 1
+            SICAS_OC.OC_PROCESOSSESAS.GETCOASEGURO(D.CodCia, P.IdPoliza, 'GMM')                                                    Coaseguro    --no se usa la funciﾂｿn porque dicen que por default un 1 y a futuro puede ser una funciﾂｿn, tal vez la misma funciﾂｿn y poner que si viene de GMMI devolver un 1
             ,
             SUBSTR(NVL(P.TipoDividendo, '003'), - 1)                                                                              TipoDividendo,
-            SICAS_OC.OC_PROCESOSSESAS.GETMNTODIVID(D.CodCia, D.IdPoliza)                                                          MontoDividendo --no se usa la funciｿn porque dicen que por default un 0 y a futuro puede ser una funciｿn, tal vez la misma funciｿn y poner que si viene de GMMC devolver un 0
+            SICAS_OC.OC_PROCESOSSESAS.GETMNTODIVID(D.CodCia, D.IdPoliza)                                                          MontoDividendo --no se usa la funciﾂｿn porque dicen que por default un 0 y a futuro puede ser una funciﾂｿn, tal vez la misma funciﾂｿn y poner que si viene de GMMC devolver un 0
             ,
-            SICAS_OC.OC_PROCESOSSESAS.GETPRIMACEDIDA(D.CodCia, P.IdPoliza)                                                        PrimaCedida  --no se usa la funciｿn porque dicen que por default un 0 y a futuro puede ser una funciｿn, tal vez la misma funciｿn y poner que si viene de GMMI devolver un 0
+            SICAS_OC.OC_PROCESOSSESAS.GETPRIMACEDIDA(D.CodCia, P.IdPoliza)                                                        PrimaCedida  --no se usa la funciﾂｿn porque dicen que por default un 0 y a futuro puede ser una funciﾂｿn, tal vez la misma funciﾂｿn y poner que si viene de GMMI devolver un 0
             ,
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
@@ -5444,14 +5443,14 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                         CEIL(MONTHS_BETWEEN(D.FecFinVig, D.FecIniVig) / 12)
                 END
             )                                                                                                                     AnioPoliza,
-            DECODE(C.MODALSUMAASEG, 'N', 'N', 'N')                                                                                ModSumAseg   --Siempre debe retornar N, se puede implementar una funciｿn si se requieren cambiar reglas de negocio
+            DECODE(C.MODALSUMAASEG, 'N', 'N', 'N')                                                                                ModSumAseg   --Siempre debe retornar N, se puede implementar una funciﾂｿn si se requieren cambiar reglas de negocio
             ,
-            SICAS_OC.OC_PROCESOSSESAS.GETCOASEGURO(D.CodCia, P.IdPoliza, 'GMM')                                                    Coaseguro    --no se usa la funciｿn porque dicen que por default un 1 y a futuro puede ser una funciｿn, tal vez la misma funciｿn y poner que si viene de GMMI devolver un 1
+            SICAS_OC.OC_PROCESOSSESAS.GETCOASEGURO(D.CodCia, P.IdPoliza, 'GMM')                                                    Coaseguro    --no se usa la funciﾂｿn porque dicen que por default un 1 y a futuro puede ser una funciﾂｿn, tal vez la misma funciﾂｿn y poner que si viene de GMMI devolver un 1
             ,
             SUBSTR(NVL(P.TipoDividendo, '003'), - 1)                                                                              TipoDividendo,
-            SICAS_OC.OC_PROCESOSSESAS.GETMNTODIVID(D.CodCia, D.IdPoliza)                                                          MontoDividendo --no se usa la funciｿn porque dicen que por default un 0 y a futuro puede ser una funciｿn, tal vez la misma funciｿn y poner que si viene de GMMC devolver un 0
+            SICAS_OC.OC_PROCESOSSESAS.GETMNTODIVID(D.CodCia, D.IdPoliza)                                                          MontoDividendo --no se usa la funciﾂｿn porque dicen que por default un 0 y a futuro puede ser una funciﾂｿn, tal vez la misma funciﾂｿn y poner que si viene de GMMC devolver un 0
             ,
-            SICAS_OC.OC_PROCESOSSESAS.GETPRIMACEDIDA(D.CodCia, P.IdPoliza)                                                        PrimaCedida  --no se usa la funciｿn porque dicen que por default un 0 y a futuro puede ser una funciｿn, tal vez la misma funciｿn y poner que si viene de GMMI devolver un 0
+            SICAS_OC.OC_PROCESOSSESAS.GETPRIMACEDIDA(D.CodCia, P.IdPoliza)                                                        PrimaCedida  --no se usa la funciﾂｿn porque dicen que por default un 0 y a futuro puede ser una funciﾂｿn, tal vez la misma funciﾂｿn y poner que si viene de GMMI devolver un 0
             ,
             P.IdPoliza                                                                                                            IdPoliza,
             D.IDetPol                                                                                                             IDetPol,
@@ -5559,7 +5558,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
         dvarFecDesde := TO_DATE(TO_CHAR(dFecDesde, 'DD/MM/YYYY')|| ' 00:00:00', 'DD/MM/YYYY HH24:MI:SS');
         dvarFecHasta := TO_DATE(TO_CHAR(dFecHasta, 'DD/MM/YYYY')|| ' 23:59:59', 'DD/MM/YYYY HH24:MI:SS');
       --
-      --Inicializo variables de Afinaciｿn
+      --Inicializo variables de Afinaciﾂｿn
         nCodCia2 := 0;
         nCodEmpresa2 := 0;
         nIdPoliza := 0;
@@ -5726,7 +5725,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                             AND CodEmpresa = o_DatGen(x).CodEmpresa
                             AND COD_ASEGURADO = o_DatGen(x).Cod_Asegurado;
 
-                        IF ( vl_CodValido = 1 ) THEN --Si el asegurado modelo corresponde al catalogo, se recorre la inserciｿn, si no, solo se inserta en el log de errores
+                        IF ( vl_CodValido = 1 ) THEN --Si el asegurado modelo corresponde al catalogo, se recorre la inserciﾂｿn, si no, solo se inserta en el log de errores
 
                             WHILE vl_Contador2 <= ( vl_AsegModel - 1 ) LOOP
                                 vl_Asegurado2 := TO_CHAR(o_DatGen(x).NumCertificado + vl_Contador2);
@@ -5800,16 +5799,16 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
 
                         ELSIF vl_CodValido > 1 THEN
                             SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(o_DatGen(x).CodCia, o_DatGen(x).CodEmpresa, o_DatGen(x).CodReporte,
-                            o_DatGen(x).CodUsuario, o_DatGen(x).NumPoliza, o_DatGen(x).NumCertificado, SQLCODE, 'La pｿliza '
+                            o_DatGen(x).CodUsuario, o_DatGen(x).NumPoliza, o_DatGen(x).NumCertificado, SQLCODE, 'La pﾂｿliza '
                                                                                                               || o_DatGen(x).IdPoliza
                                                                                                               || ' tiene '
                                                                                                               || vl_CodValido
-                                                                                                              || ' certificados de Asegurado Modelo validos en el catｿlogo.');
+                                                                                                              || ' certificados de Asegurado Modelo validos en el catﾂｿlogo.');
                         ELSIF vl_CodValido = 0 THEN
                             SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(o_DatGen(x).CodCia, o_DatGen(x).CodEmpresa, o_DatGen(x).CodReporte,
-                            o_DatGen(x).CodUsuario, o_DatGen(x).NumPoliza, o_DatGen(x).NumCertificado, SQLCODE, 'La pｿliza '
+                            o_DatGen(x).CodUsuario, o_DatGen(x).NumPoliza, o_DatGen(x).NumCertificado, SQLCODE, 'La pﾂｿliza '
                                                                                                               || o_DatGen(x).IdPoliza
-                                                                                                              || ' NO tiene certificados de Asegurado Modelo validos en el catｿlogo.');
+                                                                                                              || ' NO tiene certificados de Asegurado Modelo validos en el catﾂｿlogo.');
                         END IF;
 
                     EXCEPTION
@@ -6088,10 +6087,10 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                     FETCH COBERT_Q
                     BULK COLLECT INTO o_SesasEmision ;
                     FOR w IN 1..o_SesasEmision.COUNT LOOP
-                        nPrimaDevengada := NULL; --Implementar la funciｿn que devuelve la prima devengada
+                        nPrimaDevengada := NULL; --Implementar la funciﾂｿn que devuelve la prima devengada
                         nPmaEmiCob := o_SesasEmision(w).Prima_Moneda;
                         nPrimaDevengada := SICAS_OC.OC_PROCESOSSESAS.GETPRIMADEVENGADA(nidPoliza, nPmaEmiCob, dvarFecHasta, dFecIniVig, dFecFinVig);
-                    --Inserto Emisiｿn/Coberturas
+                    --Inserto Emisiﾂｿn/Coberturas
                         IF o_SesasDatGen(x).Fecbajcert < dvarFecDesde THEN
                             nPmaEmiCob := 0;
                         END IF;
@@ -6176,7 +6175,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                                     AND CodEmpresa = nCodEmpresa
                                     AND COD_ASEGURADO = o_SesasDatGen(x).CodAsegurado;
 
-                                IF ( vl_CodValido = 1 ) THEN --Si el asegurado modelo corresponde al catalogo, se recorre la inserciｿn, si no, solo se inserta en el log de errores
+                                IF ( vl_CodValido = 1 ) THEN --Si el asegurado modelo corresponde al catalogo, se recorre la inserciﾂｿn, si no, solo se inserta en el log de errores
                                 vl_Contador2 :=  1;
 
                                     WHILE vl_Contador2 <= ( vl_AsegModel - 1 ) LOOP
@@ -6246,11 +6245,11 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
 
 
                                 ELSIF (vl_CodValido > 1) THEN
-                                    SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces,cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, 'La pｿliza '
-                                                                                                                      || o_SesasDatGen(x).IdPoliza|| ' tiene '|| vl_CodValido|| ' certificados de Asegurado Modelo validos en el catｿlogo.');
+                                    SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces,cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, 'La pﾂｿliza '
+                                                                                                                      || o_SesasDatGen(x).IdPoliza|| ' tiene '|| vl_CodValido|| ' certificados de Asegurado Modelo validos en el catﾂｿlogo.');
                                 ELSIF (vl_CodValido = 0) THEN
-                                    SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces,cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, 'La pｿliza '
-                                                                                                                      || o_SesasDatGen(x).IdPoliza|| ' NO tiene certificados de Asegurado Modelo validos en el catｿlogo.');
+                                    SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia, nCodEmpresa, cCodReporteProces,cCodUsuario, o_SesasDatGen(x).NumPoliza, o_SesasDatGen(x).NumCertificado, SQLCODE, 'La pﾂｿliza '
+                                                                                                                      || o_SesasDatGen(x).IdPoliza|| ' NO tiene certificados de Asegurado Modelo validos en el catﾂｿlogo.');
                                 END IF;
 
                             EXCEPTION
@@ -6449,7 +6448,7 @@ END;
             S.IdSiniestro                                                                                                           NumSiniestro,
             SICAS_OC.OC_PROCESOSSESAS.GETNUMRECLAMOSINI()                                                                           NumReclamacion  --Por definir
             ,S.Fec_Ocurrencia                                                                                                        FecOcuSin,
-            S.Fec_Notificacion                                                                                                      FecRepSin       --Por Definir  fecha reclamaciｿn
+            S.Fec_Notificacion                                                                                                      FecRepSin       --Por Definir  fecha reclamaciﾂｿn
             ,SICAS_OC.OC_PROCESOSSESAS.GETENTIDADASEGURADO(S.CodPaisOcurr, S.CodProvOcurr, PN.CodPaisRes, PN.CodProvRes, S.IdPoliza) EntOcuSin,
             SICAS_OC.OC_PROCESOSSESAS.GETSTATUSSINGMM(S.CodCia, S.IdPoliza, S.IdSiniestro, S.Sts_Siniestro,(
                 CASE  WHEN R.TIPO_MOVIMIENTO IN('PAGOS') THEN R.IMPTE_MOVIMIENTO *( CASE WHEN R.SIGNO = '-' THEN -1  ELSE 1 END ) ELSE 0 END) +(
@@ -6581,7 +6580,7 @@ END;
                     FROM SICAS_OC.RESERVA_DET
                     WHERE ID_POLIZA = o_SesasSiniestro(x).IdPoliza
                         AND ID_SINIESTRO = o_SesasSiniestro(x).NumSiniestro
-                        AND AﾑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
+                        AND Aﾃ前_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
 
                 EXCEPTION
                     WHEN OTHERS THEN
@@ -6608,7 +6607,7 @@ END;
                     FROM SICAS_OC.RESERVA_DET
                     WHERE ID_POLIZA = o_SesasSiniestro(x).IdPoliza
                         AND ID_SINIESTRO = o_SesasSiniestro(x).NumSiniestro
-                        AND AﾑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
+                        AND Aﾃ前_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
                         AND TIPO_MOVIMIENTO = 'PAGOS';
 
                 EXCEPTION
@@ -6639,4 +6638,3 @@ END;
     END SINIESTROS_GM;
 
 END OC_SESASCOLECTIVO;
-/
