@@ -19,13 +19,11 @@ PROCEDURE ELIMINAR_ASISTENCIAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud 
 
 PROCEDURE COPIAR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitudOrig NUMBER, nIdSolicitudDest NUMBER);
 
-END OC_SOLICITUD_ASISTENCIAS;
- 
- 
- 
- 
-/
+PROCEDURE TRASLADA_ASISTENCIAS_SUBGRUPOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, 
+                                          nIdPoliza NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER);
 
+END OC_SOLICITUD_ASISTENCIAS;
+/
 CREATE OR REPLACE PACKAGE BODY OC_SOLICITUD_ASISTENCIAS IS
 PROCEDURE CARGAR_ASISTENCIAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                              nIdSolicitud NUMBER, nIDetSol NUMBER, nTasaCambio NUMBER, cCodMoneda VARCHAR2,
@@ -199,5 +197,37 @@ EXCEPTION
    WHEN DUP_VAL_ON_INDEX THEN
       RAISE_APPLICATION_ERROR(-20225,'Error al Insertar Asistencias en Solicitud No. ' || nIdSolicitudDest);
 END COPIAR;
+
+PROCEDURE TRASLADA_ASISTENCIAS_SUBGRUPOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, 
+                                          nIdPoliza NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER) IS
+CURSOR COB_Q IS
+   SELECT SA.CodAsistencia, SA.MontoAsistLocal, SA.MontoAsistMoneda,
+          SE.IdTipoSeg, SE.PlanCob, SE.Cod_Moneda
+     FROM SOLICITUD_ASISTENCIAS SA, SOLICITUD_EMISION SE
+    WHERE SA.CodCia        = SE.CodCia
+      AND SA.CodEmpresa    = SE.CodEmpresa
+      AND SA.IDetSol       = 1
+      AND SA.IdSolicitud   = SE.IdSolicitud
+      AND SE.CodCia        = nCodCia
+      AND SE.CodEmpresa    = nCodEmpresa
+      AND SE.IdSolicitud   = nIdSolicitud;
+BEGIN
+   FOR W IN COB_Q LOOP
+      BEGIN
+         INSERT INTO ASISTENCIAS_ASEGURADO
+                (CodCia, CodEmpresa, IdPoliza, IDetPol, Cod_Asegurado, CodAsistencia,
+                 CodMoneda, MontoAsistLocal, MontoAsistMoneda, StsAsistencia,
+                 FecSts, IdEndoso)
+         VALUES (nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado, W.CodAsistencia,
+                 W.Cod_Moneda, W.MontoAsistLocal, W.MontoAsistMoneda, 'SOLICI',
+                 TRUNC(SYSDATE), 0);
+      EXCEPTION
+         WHEN DUP_VAL_ON_INDEX THEN
+            RAISE_APPLICATION_ERROR(-20225,'Existen Asistencias Duplicadas para Detalle de la Póliza: '||
+                                    TRIM(TO_CHAR(nIdPoliza))||' - '||TO_CHAR(nIDetPol) || ' y Asegurado '||
+                                    nCod_Asegurado);
+      END;
+   END LOOP;                               
+END TRASLADA_ASISTENCIAS_SUBGRUPOS;
 
 END OC_SOLICITUD_ASISTENCIAS;
