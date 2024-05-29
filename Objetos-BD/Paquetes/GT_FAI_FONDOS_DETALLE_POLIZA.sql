@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          GT_FAI_FONDOS_DETALLE_POLIZA AS
+CREATE OR REPLACE PACKAGE SICAS_OC.GT_FAI_FONDOS_DETALLE_POLIZA AS
 
 FUNCTION NUMERO_FONDO RETURN NUMBER;
 
@@ -93,11 +93,13 @@ FUNCTION FONDO_CONTRATANTE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER)
 
 PROCEDURE APORTACION_COLECTIVA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER,
                                nIDetPol NUMBER, nCodAsegurado NUMBER, nMontoAporte NUMBER);
+                               
+PROCEDURE COPIAR_FONDOS_REN(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPolizaOrig NUMBER,
+                        nIDetPol NUMBER, nCodAsegurado NUMBER, nIdPolizaDest NUMBER);
 
 END GT_FAI_FONDOS_DETALLE_POLIZA;
-
 /
-create or replace PACKAGE BODY          GT_FAI_FONDOS_DETALLE_POLIZA AS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.GT_FAI_FONDOS_DETALLE_POLIZA AS
 
 FUNCTION NUMERO_FONDO RETURN NUMBER IS
 nIdFondo    FAI_FONDOS_DETALLE_POLIZA.IdFondo%TYPE;
@@ -1787,4 +1789,52 @@ EXCEPTION
                               ' para Asegurado No. ' || nCodAsegurado);
 END APORTACION_COLECTIVA;
 
+PROCEDURE COPIAR_FONDOS_REN(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPolizaOrig NUMBER,
+                        nIDetPol NUMBER, nCodAsegurado NUMBER, nIdPolizaDest NUMBER) IS
+
+nTasaCambioMov   FAI_FONDOS_DETALLE_POLIZA.TasaCambioMov%TYPE;
+cCodMoneda       FAI_TIPOS_DE_FONDOS.CodMoneda%TYPE;
+nIdFondo         FAI_FONDOS_DETALLE_POLIZA.IdFondo%TYPE;
+
+CURSOR FONDOS_Q IS
+   SELECT TipoFondo, PorcFondo, EnvioEstCta, NumSolicitud, MtoAporteIniLocal,
+          MtoAporteIniMoneda, TipoTasa, TasaIntGar, TipoRangoAportes,
+          NumNIP, CodEmpleado, NumRefer, FechaConf, IndAplicCobOpcional,
+          IndAplicaCobDiferido, ReglaRetiros, IndBonoPolizaEmp, PorcBonoEmp,
+          FecFinAplicBono, PlazoObligado, PlazoComprometido, IndRevaluaAportComp,
+          EdadBeneficios, EdadJubilacion, IndDescPrimaCob, MesesPreferencial,
+          FecFinPreferencial, TasaPreferencial, IndFondoContrat
+     FROM FAI_FONDOS_DETALLE_POLIZA
+    WHERE CodCia        = nCodCia
+      AND CodEmpresa    = nCodEmpresa
+      AND IdPoliza      = nIdPolizaOrig
+      AND IDetPol       = nIDetPol
+      AND CodAsegurado  = nCodAsegurado
+      AND IdFondo       > 0
+      AND  STSFONDO= 'EMITID';
+BEGIN
+   FOR W IN FONDOS_Q LOOP
+      cCodMoneda      := GT_FAI_TIPOS_DE_FONDOS.MONEDA_FONDO(nCodCia, nCodEmpresa, W.TipoFondo);
+      nTasaCambioMov  := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
+
+      GT_FAI_FONDOS_DETALLE_POLIZA.INSERTA_NUEVO_FONDO(nCodCia, nCodEmpresa, nIdPolizaDest, nIDetPol, nCodAsegurado,
+                                                       W.TipoFondo, TRUNC(SYSDATE), 'SOLICI', TRUNC(SYSDATE), W.EnvioEstCta,
+                                                       NULL, W.MtoAporteIniLocal, W.TipoTasa, nTasaCambioMov,
+                                                       TRUNC(SYSDATE), W.NumNIP, W.CodEmpleado, NULL, NULL, W.IndAplicaCobDiferido,
+                                                       W.IndAplicCobOpcional, W.ReglaRetiros, W.IndBonoPolizaEmp, W.PorcBonoEmp,
+                                                       W.FecFinAplicBono, W.PlazoObligado, W.PlazoComprometido, W.IndRevaluaAportComp,
+                                                       W.EdadBeneficios, W.EdadJubilacion, W.IndDescPrimaCob, W.MesesPreferencial,
+                                                       W.FecFinPreferencial, W.TasaPreferencial, nIdFondo, 'N', NULL, W.PorcFondo);
+      UPDATE FAI_FONDOS_DETALLE_POLIZA
+         SET IndFondoContrat  = W.IndFondoContrat
+       WHERE CodCia        = nCodCia
+         AND CodEmpresa    = nCodEmpresa
+         AND IdPoliza      = nIdPolizaDest
+         AND IDetPol       = nIDetPol
+         AND CodAsegurado  = nCodAsegurado
+         AND IdFondo       = nIdFondo;
+   END LOOP;
+END COPIAR_FONDOS_REN;
+
 END GT_FAI_FONDOS_DETALLE_POLIZA;
+/

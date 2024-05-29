@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_ASEGURADO_CERTIFICADO IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ASEGURADO_CERTIFICADO IS
 
   PROCEDURE ACTUALIZA_VALORES(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER,
                               nIdetPol NUMBER, nCod_Asegurado NUMBER);
@@ -50,11 +50,13 @@ CREATE OR REPLACE PACKAGE          OC_ASEGURADO_CERTIFICADO IS
    FUNCTION AJUSTE_SUMA_ASEG(nCodCia NUMBER, nIdPoliza NUMBER, nIdetPol NUMBER, nCod_Asegurado NUMBER) RETURN VARCHAR2;
    
    FUNCTION SUMA_ASEGURADA(nCodCia NUMBER, nIdPoliza NUMBER, nIdetPol NUMBER, nCod_Asegurado NUMBER) RETURN NUMBER;
+   
+   PROCEDURE COPIAR_REN (nCodCia NUMBER, nIdPolizaOrig NUMBER, nIdetPolOrig NUMBER, nIdPolizaDest NUMBER,
+                  nIdetPolDest NUMBER);
 
 END;
 /
-
-CREATE OR REPLACE PACKAGE BODY          OC_ASEGURADO_CERTIFICADO IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_ASEGURADO_CERTIFICADO IS
 --
 --  MODIFICACION
 --  30/05/2016  Se agrega la funcion EXISTE_ASEGURADO_CP para la emision de corto plazo         MAGO
@@ -769,4 +771,293 @@ BEGIN
    RETURN nSumaAseg;
 END SUMA_ASEGURADA;
 
+PROCEDURE COPIAR_REN (nCodCia NUMBER, nIdPolizaOrig NUMBER, nIdetPolOrig NUMBER, nIdPolizaDest NUMBER,
+                  nIdetPolDest NUMBER) IS
+nCodEmpresa       DETALLE_POLIZA.CodEmpresa%TYPE;
+vTieneAsegModelo  VARCHAR2(1);
+nExiste           NUMBER;
+nTieneCobs        NUMBER;
+nSumaAsegModelo   ASEGURADO_CERTIFICADO.SUMAASEG%TYPE;
+nPrimaAsegModelo  ASEGURADO_CERTIFICADO.PRIMANETA%TYPE;
+DFECINIVIGE       POLIZAS.FECFINVIG%TYPE;
+DFECINIVIGP       POLIZAS.FECINIVIG%TYPE;
+bContinua         BOOLEAN;
+nLinea            NUMBER    := 0;
+
+CURSOR ASEG_CERTIF_Q IS
+   SELECT CodCia, IdPoliza, Cod_Asegurado, IdEndoso,Campo1, Campo2, Campo3, Campo4,
+              Campo5, Campo6, Campo7, Campo8, Campo9, Campo10, Campo11,
+              Campo12, Campo13, Campo14, Campo15, Campo16, Campo17, Campo18,
+              Campo19, Campo20, Campo21, Campo22, Campo23, Campo24, Campo25,
+              Campo26, Campo27, Campo28, Campo29, Campo30, Campo31, Campo32,
+              Campo33, Campo34, Campo35, Campo36, Campo37, Campo38, Campo39,
+              Campo40, Campo41, Campo42, Campo43, Campo44, Campo45, Campo46,
+              Campo47, Campo48, Campo49, Campo50, Campo51, Campo52, Campo53,
+              Campo54, Campo55, Campo56, Campo57, Campo58, Campo59, Campo60,
+              Campo61, Campo62, Campo63, Campo64, Campo65, Campo66, Campo67,
+              Campo68, Campo69, Campo70, Campo71, Campo72, Campo73, Campo74,
+              Campo75, Campo76, Campo77, Campo78, Campo79, Campo80, Campo81,
+              Campo82, Campo83, Campo84, Campo85, Campo86, Campo87, Campo88,
+              Campo89, Campo90, Campo91, Campo92, Campo93, Campo94, Campo95,
+              Campo96, Campo97, Campo98, Campo99, Campo100, SumaAseg, Primaneta,
+              SumaAseg_Moneda, PrimaNeta_Moneda, MontoAporteAseg
+     FROM ASEGURADO_CERTIFICADO
+    WHERE IDetPol  = nIDetPolOrig
+      AND IdPoliza = nIdPolizaOrig
+      AND CodCia   = nCodCia
+      AND ESTADO = 'EMI';
+
+--MLJS 20/05/2024
+CURSOR ASEG_CERTIF_Q_ASMODS IS
+   SELECT CodCia, IdPoliza, Cod_Asegurado, Campo1, Campo2, Campo3, Campo4,
+              Campo5, Campo6, Campo7, Campo8, Campo9, Campo10, Campo11,
+              Campo12, Campo13, Campo14, Campo15, Campo16, Campo17, Campo18,
+              Campo19, Campo20, Campo21, Campo22, Campo23, Campo24, Campo25,
+              Campo26, Campo27, Campo28, Campo29, Campo30, Campo31, Campo32,
+              Campo33, Campo34, Campo35, Campo36, Campo37, Campo38, Campo39,
+              Campo40, Campo41, Campo42, Campo43, Campo44, Campo45, Campo46,
+              Campo47, Campo48, Campo49, Campo50, Campo51, Campo52, Campo53,
+              Campo54, Campo55, Campo56, Campo57, Campo58, Campo59, Campo60,
+              Campo61, Campo62, Campo63, Campo64, Campo65, Campo66, Campo67,
+              Campo68, Campo69, Campo70, Campo71, Campo72, Campo73, Campo74,
+              Campo75, Campo76, Campo77, Campo78, Campo79, Campo80, Campo81,
+              Campo82, Campo83, Campo84, Campo85, Campo86, Campo87, Campo88,
+              Campo89, Campo90, Campo91, Campo92, Campo93, Campo94, Campo95,
+              Campo96, Campo97, Campo98, Campo99, Campo100, SumaAseg, Primaneta,
+              SumaAseg_Moneda, PrimaNeta_Moneda, MontoAporteAseg
+     FROM ASEGURADO_CERTIFICADO
+    WHERE IDetPol       = nIDetPolOrig
+      AND IdPoliza      = nIdPolizaOrig
+      AND CodCia        = nCodCia
+      AND Cod_Asegurado = 1688154
+      AND ESTADO        = 'EMI';
+
+CURSOR ASEG_CERTIF_Q_ASMODN IS
+   SELECT CodCia, IdPoliza, Cod_Asegurado, Campo1, Campo2, Campo3, Campo4,
+              Campo5, Campo6, Campo7, Campo8, Campo9, Campo10, Campo11,
+              Campo12, Campo13, Campo14, Campo15, Campo16, Campo17, Campo18,
+              Campo19, Campo20, Campo21, Campo22, Campo23, Campo24, Campo25,
+              Campo26, Campo27, Campo28, Campo29, Campo30, Campo31, Campo32,
+              Campo33, Campo34, Campo35, Campo36, Campo37, Campo38, Campo39,
+              Campo40, Campo41, Campo42, Campo43, Campo44, Campo45, Campo46,
+              Campo47, Campo48, Campo49, Campo50, Campo51, Campo52, Campo53,
+              Campo54, Campo55, Campo56, Campo57, Campo58, Campo59, Campo60,
+              Campo61, Campo62, Campo63, Campo64, Campo65, Campo66, Campo67,
+              Campo68, Campo69, Campo70, Campo71, Campo72, Campo73, Campo74,
+              Campo75, Campo76, Campo77, Campo78, Campo79, Campo80, Campo81,
+              Campo82, Campo83, Campo84, Campo85, Campo86, Campo87, Campo88,
+              Campo89, Campo90, Campo91, Campo92, Campo93, Campo94, Campo95,
+              Campo96, Campo97, Campo98, Campo99, Campo100, SumaAseg, Primaneta,
+              SumaAseg_Moneda, PrimaNeta_Moneda, MontoAporteAseg
+     FROM ASEGURADO_CERTIFICADO
+    WHERE IDetPol        = nIDetPolOrig
+      AND IdPoliza       = nIdPolizaOrig
+      AND CodCia         = nCodCia
+      AND Cod_Asegurado != 1688154
+      AND ESTADO         = 'EMI';      
+BEGIN
+   nLinea := nLinea + 1;
+   SELECT NVL(MAX(CodEmpresa),1)
+     INTO nCodEmpresa
+     FROM POLIZAS
+    WHERE CodCia    = nCodCia
+      AND IdPoliza  = nIdPolizaOrig;
+   
+   --MLJS 20/05/2024 SE AGREGA VALIDACIÓN DE ASEGURADO MODELO PARA CARGAR LOS ASEGURADOS
+   BEGIN
+    SELECT NVL(INDASEGMODELO,'N') 
+    INTO  vTieneAsegModelo
+    FROM  DETALLE_POLIZA
+    WHERE IDetPol  = nIDetPolOrig
+    AND   IdPoliza = nIdPolizaOrig
+    AND   CodCia   = nCodCia;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+       vTieneAsegModelo := 'N';
+  END; 
+  
+  -- --MLJS 20/05/2024 SE VALIDA EN ASEGURADO_CERTIFICADO POR SI HUBO UN ENDOSO DE CAMBIO POR LISTADO DE ASEGURADO MODELO
+  BEGIN
+    SELECT COUNT(*)
+    INTO   nExiste
+    FROM   ASEGURADO_CERTIFICADO
+    WHERE  IDetPol  = nIDetPolOrig
+    AND    IdPoliza = nIdPolizaOrig
+    AND    CodCia   = nCodCia
+    AND    COD_ASEGURADO = 1688154;
+        
+    IF nExiste = 0 THEN
+      vTieneAsegModelo := 'N';
+    ELSE
+      vTieneAsegModelo := 'S'; 
+    END IF;
+  EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+        vTieneAsegModelo := 'N';
+  END;
+      
+  IF vTieneAsegModelo = 'S' THEN
+     BEGIN
+        SELECT SUMAASEG, PRIMANETA
+        INTO   nSumaAsegModelo, nPrimaAsegModelo
+        FROM   ASEGURADO_CERTIFICADO
+        WHERE  COD_ASEGURADO=1688154
+        AND    IDetPol  = nIDetPolOrig
+        AND    IdPoliza = nIdPolizaOrig
+        AND    CodCia   = nCodCia
+        AND    ESTADO   = 'EMI';
+     EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+          nSumaAsegModelo  := 0;
+          nPrimaAsegModelo := 0;
+        WHEN OTHERS THEN
+          nSumaAsegModelo  := 0;
+          nPrimaAsegModelo := 0;
+     END;
+     
+     IF (nSumaAsegModelo <> 0) AND (nPrimaAsegModelo <> 0) THEN 
+        FOR P IN ASEG_CERTIF_Q_ASMODS LOOP
+           INSERT INTO ASEGURADO_CERTIFICADO
+                 (CodCia, IdPoliza, IDetPol, Cod_Asegurado, Campo1, Campo2, Campo3, Campo4,
+                  Campo5, Campo6, Campo7, Campo8, Campo9, Campo10, Campo11,
+                  Campo12, Campo13, Campo14, Campo15, Campo16, Campo17, Campo18,
+                  Campo19, Campo20, Campo21, Campo22, Campo23, Campo24, Campo25,
+                  Campo26, Campo27, Campo28, Campo29, Campo30, Campo31, Campo32,
+                  Campo33, Campo34, Campo35, Campo36, Campo37, Campo38, Campo39,
+                  Campo40, Campo41, Campo42, Campo43, Campo44, Campo45, Campo46,
+                  Campo47, Campo48, Campo49, Campo50, Campo51, Campo52, Campo53,
+                  Campo54, Campo55, Campo56, Campo57, Campo58, Campo59, Campo60,
+                  Campo61, Campo62, Campo63, Campo64, Campo65, Campo66, Campo67,
+                  Campo68, Campo69, Campo70, Campo71, Campo72, Campo73, Campo74,
+                  Campo75, Campo76, Campo77, Campo78, Campo79, Campo80, Campo81,
+                  Campo82, Campo83, Campo84, Campo85, Campo86, Campo87, Campo88,
+                  Campo89, Campo90, Campo91, Campo92, Campo93, Campo94, Campo95,
+                  Campo96, Campo97, Campo98, Campo99, Campo100, SumaAseg, Primaneta, Estado,
+                  IdEndoso, SumaAseg_Moneda, PrimaNeta_Moneda, IdEndosoExclu, MontoAporteAseg)
+           VALUES (P.CodCia, nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado, P.Campo1, P.Campo2, P.Campo3, P.Campo4,
+                  P.Campo5, P.Campo6, P.Campo7, P.Campo8, P.Campo9, P.Campo10, P.Campo11,
+                  P.Campo12, P.Campo13, P.Campo14, P.Campo15, P.Campo16, P.Campo17, P.Campo18,
+                  P.Campo19, P.Campo20, P.Campo21, P.Campo22, P.Campo23, P.Campo24, P.Campo25,
+                  P.Campo26, P.Campo27, P.Campo28, P.Campo29, P.Campo30, P.Campo31, P.Campo32,
+                  P.Campo33, P.Campo34, P.Campo35, P.Campo36, P.Campo37, P.Campo38, P.Campo39,
+                  P.Campo40, P.Campo41, P.Campo42, P.Campo43, P.Campo44, P.Campo45, P.Campo46,
+                  P.Campo47, P.Campo48, P.Campo49, P.Campo50, P.Campo51, P.Campo52, P.Campo53,
+                  P.Campo54, P.Campo55, P.Campo56, P.Campo57, P.Campo58, P.Campo59, P.Campo60,
+                  P.Campo61, P.Campo62, P.Campo63, P.Campo64, P.Campo65, P.Campo66, P.Campo67,
+                  P.Campo68, P.Campo69, P.Campo70, P.Campo71, P.Campo72, P.Campo73, P.Campo74,
+                  P.Campo75, P.Campo76, P.Campo77, P.Campo78, P.Campo79, P.Campo80, P.Campo81,
+                  P.Campo82, P.Campo83, P.Campo84, P.Campo85, P.Campo86, P.Campo87, P.Campo88,
+                  P.Campo89, P.Campo90, P.Campo91, P.Campo92, P.Campo93, P.Campo94, P.Campo95,
+                  P.Campo96, P.Campo97, P.Campo98, P.Campo99, P.Campo100, P.SumaAseg, P.Primaneta, 'SOL',
+                  0, P.SumaAseg_Moneda, P.PrimaNeta_Moneda, 0, P.MontoAporteAseg);
+  
+           -- MLJS 21/05/2024 SE AGREGA CARGA DE ASISTENCIAS Y BENEFICIARIO
+           OC_ASISTENCIAS_ASEGURADO.COPIAR_REN(nCodCia, nIdPolizaOrig, nIDetPolOrig, nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado);
+           OC_ASISTENCIAS_DETALLE_POLIZA.COPIAR_REN(nCodCia, nIdPolizaOrig, nIDetPolOrig, nIdPolizaDest, nIDetPolDest);
+            
+           OC_BENEFICIARIO.COPIAR_REN(nIdPolizaOrig, nIDetPolOrig, P.Cod_Asegurado,
+                                      nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado);
+            
+           GT_FAI_FONDOS_DETALLE_POLIZA.COPIAR_FONDOS(nCodCia, nCodEmpresa, nIdPolizaOrig, nIDetPolOrig, P.Cod_Asegurado, nIdPolizaDest);
+        END LOOP;
+     ELSE
+        FOR P IN ASEG_CERTIF_Q_ASMODN LOOP
+           INSERT INTO ASEGURADO_CERTIFICADO
+                 (CodCia, IdPoliza, IDetPol, Cod_Asegurado, Campo1, Campo2, Campo3, Campo4,
+                  Campo5, Campo6, Campo7, Campo8, Campo9, Campo10, Campo11,
+                  Campo12, Campo13, Campo14, Campo15, Campo16, Campo17, Campo18,
+                  Campo19, Campo20, Campo21, Campo22, Campo23, Campo24, Campo25,
+                  Campo26, Campo27, Campo28, Campo29, Campo30, Campo31, Campo32,
+                  Campo33, Campo34, Campo35, Campo36, Campo37, Campo38, Campo39,
+                  Campo40, Campo41, Campo42, Campo43, Campo44, Campo45, Campo46,
+                  Campo47, Campo48, Campo49, Campo50, Campo51, Campo52, Campo53,
+                  Campo54, Campo55, Campo56, Campo57, Campo58, Campo59, Campo60,
+                  Campo61, Campo62, Campo63, Campo64, Campo65, Campo66, Campo67,
+                  Campo68, Campo69, Campo70, Campo71, Campo72, Campo73, Campo74,
+                  Campo75, Campo76, Campo77, Campo78, Campo79, Campo80, Campo81,
+                  Campo82, Campo83, Campo84, Campo85, Campo86, Campo87, Campo88,
+                  Campo89, Campo90, Campo91, Campo92, Campo93, Campo94, Campo95,
+                  Campo96, Campo97, Campo98, Campo99, Campo100, SumaAseg, Primaneta, Estado,
+                  IdEndoso, SumaAseg_Moneda, PrimaNeta_Moneda, IdEndosoExclu, MontoAporteAseg)
+           VALUES (P.CodCia, nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado, P.Campo1, P.Campo2, P.Campo3, P.Campo4,
+                  P.Campo5, P.Campo6, P.Campo7, P.Campo8, P.Campo9, P.Campo10, P.Campo11,
+                  P.Campo12, P.Campo13, P.Campo14, P.Campo15, P.Campo16, P.Campo17, P.Campo18,
+                  P.Campo19, P.Campo20, P.Campo21, P.Campo22, P.Campo23, P.Campo24, P.Campo25,
+                  P.Campo26, P.Campo27, P.Campo28, P.Campo29, P.Campo30, P.Campo31, P.Campo32,
+                  P.Campo33, P.Campo34, P.Campo35, P.Campo36, P.Campo37, P.Campo38, P.Campo39,
+                  P.Campo40, P.Campo41, P.Campo42, P.Campo43, P.Campo44, P.Campo45, P.Campo46,
+                  P.Campo47, P.Campo48, P.Campo49, P.Campo50, P.Campo51, P.Campo52, P.Campo53,
+                  P.Campo54, P.Campo55, P.Campo56, P.Campo57, P.Campo58, P.Campo59, P.Campo60,
+                  P.Campo61, P.Campo62, P.Campo63, P.Campo64, P.Campo65, P.Campo66, P.Campo67,
+                  P.Campo68, P.Campo69, P.Campo70, P.Campo71, P.Campo72, P.Campo73, P.Campo74,
+                  P.Campo75, P.Campo76, P.Campo77, P.Campo78, P.Campo79, P.Campo80, P.Campo81,
+                  P.Campo82, P.Campo83, P.Campo84, P.Campo85, P.Campo86, P.Campo87, P.Campo88,
+                  P.Campo89, P.Campo90, P.Campo91, P.Campo92, P.Campo93, P.Campo94, P.Campo95,
+                  P.Campo96, P.Campo97, P.Campo98, P.Campo99, P.Campo100, P.SumaAseg, P.Primaneta, 'SOL',
+                  0, P.SumaAseg_Moneda, P.PrimaNeta_Moneda, 0, P.MontoAporteAseg);
+           
+           -- MLJS 21/05/2024 SE AGREGA CARGA DE ASISTENCIAS
+           OC_ASISTENCIAS_ASEGURADO.COPIAR_REN(nCodCia, nIdPolizaOrig, nIDetPolOrig, nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado);
+           OC_ASISTENCIAS_DETALLE_POLIZA.COPIAR_REN(nCodCia, nIdPolizaOrig, nIDetPolOrig, nIdPolizaDest, nIDetPolDest);
+           
+           OC_BENEFICIARIO.COPIAR_REN(nIdPolizaOrig, nIDetPolOrig, P.Cod_Asegurado,
+                                      nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado);
+           GT_FAI_FONDOS_DETALLE_POLIZA.COPIAR_FONDOS(nCodCia, nCodEmpresa, nIdPolizaOrig, nIDetPolOrig, P.Cod_Asegurado, nIdPolizaDest);
+        END LOOP;
+     END IF;
+  --MLJS 20/05/2024 SE AGREGA VALIDACIÓN DE ASEGURADO MODELO PARA CARGAR LOS ASEGURADOS
+ 
+  ELSE 
+    
+    bContinua := TRUE;
+    FOR P IN ASEG_CERTIF_Q LOOP
+      
+      IF bContinua = TRUE THEN 
+         INSERT INTO ASEGURADO_CERTIFICADO
+             (CodCia, IdPoliza, IDetPol, Cod_Asegurado, Campo1, Campo2, Campo3, Campo4,
+              Campo5, Campo6, Campo7, Campo8, Campo9, Campo10, Campo11,
+              Campo12, Campo13, Campo14, Campo15, Campo16, Campo17, Campo18,
+              Campo19, Campo20, Campo21, Campo22, Campo23, Campo24, Campo25,
+              Campo26, Campo27, Campo28, Campo29, Campo30, Campo31, Campo32,
+              Campo33, Campo34, Campo35, Campo36, Campo37, Campo38, Campo39,
+              Campo40, Campo41, Campo42, Campo43, Campo44, Campo45, Campo46,
+              Campo47, Campo48, Campo49, Campo50, Campo51, Campo52, Campo53,
+              Campo54, Campo55, Campo56, Campo57, Campo58, Campo59, Campo60,
+              Campo61, Campo62, Campo63, Campo64, Campo65, Campo66, Campo67,
+              Campo68, Campo69, Campo70, Campo71, Campo72, Campo73, Campo74,
+              Campo75, Campo76, Campo77, Campo78, Campo79, Campo80, Campo81,
+              Campo82, Campo83, Campo84, Campo85, Campo86, Campo87, Campo88,
+              Campo89, Campo90, Campo91, Campo92, Campo93, Campo94, Campo95,
+              Campo96, Campo97, Campo98, Campo99, Campo100, SumaAseg, Primaneta, Estado,
+              IdEndoso, SumaAseg_Moneda, PrimaNeta_Moneda, IdEndosoExclu, MontoAporteAseg)
+         VALUES (P.CodCia, nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado, P.Campo1, P.Campo2, P.Campo3, P.Campo4,
+              P.Campo5, P.Campo6, P.Campo7, P.Campo8, P.Campo9, P.Campo10, P.Campo11,
+              P.Campo12, P.Campo13, P.Campo14, P.Campo15, P.Campo16, P.Campo17, P.Campo18,
+              P.Campo19, P.Campo20, P.Campo21, P.Campo22, P.Campo23, P.Campo24, P.Campo25,
+              P.Campo26, P.Campo27, P.Campo28, P.Campo29, P.Campo30, P.Campo31, P.Campo32,
+              P.Campo33, P.Campo34, P.Campo35, P.Campo36, P.Campo37, P.Campo38, P.Campo39,
+              P.Campo40, P.Campo41, P.Campo42, P.Campo43, P.Campo44, P.Campo45, P.Campo46,
+              P.Campo47, P.Campo48, P.Campo49, P.Campo50, P.Campo51, P.Campo52, P.Campo53,
+              P.Campo54, P.Campo55, P.Campo56, P.Campo57, P.Campo58, P.Campo59, P.Campo60,
+              P.Campo61, P.Campo62, P.Campo63, P.Campo64, P.Campo65, P.Campo66, P.Campo67,
+              P.Campo68, P.Campo69, P.Campo70, P.Campo71, P.Campo72, P.Campo73, P.Campo74,
+              P.Campo75, P.Campo76, P.Campo77, P.Campo78, P.Campo79, P.Campo80, P.Campo81,
+              P.Campo82, P.Campo83, P.Campo84, P.Campo85, P.Campo86, P.Campo87, P.Campo88,
+              P.Campo89, P.Campo90, P.Campo91, P.Campo92, P.Campo93, P.Campo94, P.Campo95,
+              P.Campo96, P.Campo97, P.Campo98, P.Campo99, P.Campo100, P.SumaAseg, P.Primaneta, 'SOL',
+              0, P.SumaAseg_Moneda, P.PrimaNeta_Moneda, 0, P.MontoAporteAseg);
+      
+         -- MLJS 21/05/2024 SE AGREGA CARGA DE ASISTENCIAS
+         OC_ASISTENCIAS_ASEGURADO.COPIAR_REN(nCodCia, nIdPolizaOrig, nIDetPolOrig, nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado);
+         OC_ASISTENCIAS_DETALLE_POLIZA.COPIAR_REN(nCodCia, nIdPolizaOrig, nIDetPolOrig, nIdPolizaDest, nIDetPolDest);
+             
+         OC_BENEFICIARIO.COPIAR_REN(nIdPolizaOrig, nIDetPolOrig, P.Cod_Asegurado,
+                                    nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado);
+         GT_FAI_FONDOS_DETALLE_POLIZA.COPIAR_FONDOS(nCodCia, nCodEmpresa, nIdPolizaOrig, nIDetPolOrig, P.Cod_Asegurado, nIdPolizaDest);
+      END IF;
+    END LOOP;
+  END IF;
+END COPIAR_REN;
+
 END OC_ASEGURADO_CERTIFICADO;
+/

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_BENEFICIARIO IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_BENEFICIARIO IS
 
   PROCEDURE INSERTA_BENEFICIARIO(nIdPoliza  NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER,
                                  nBenef NUMBER, cNombre VARCHAR2, nPorcePart NUMBER, 
@@ -23,15 +23,13 @@ CREATE OR REPLACE PACKAGE OC_BENEFICIARIO IS
                                    nBenef NUMBER) RETURN NUMBER;
 
   FUNCTION TIENE_BENEFICIARIOS(nIdPoliza NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER) RETURN VARCHAR2;
+  
+  PROCEDURE COPIAR_REN(nIdPolizaOrig NUMBER, nIDetPolOrig NUMBER, nCod_AseguradoOrig NUMBER,
+                 nIdPolizaDest NUMBER, nIDetPolDest NUMBER, nCod_AseguradoDest NUMBER);
 
 END OC_BENEFICIARIO;
- 
- 
- 
- 
 /
-
-CREATE OR REPLACE PACKAGE BODY OC_BENEFICIARIO IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_BENEFICIARIO IS
 
 PROCEDURE INSERTA_BENEFICIARIO(nIdPoliza  NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER,
                                nBenef NUMBER, cNombre VARCHAR2, nPorcePart NUMBER, 
@@ -174,4 +172,23 @@ BEGIN
    RETURN(cTieneBenef);
 END TIENE_BENEFICIARIOS;
 
+PROCEDURE COPIAR_REN(nIdPolizaOrig NUMBER, nIDetPolOrig NUMBER, nCod_AseguradoOrig NUMBER,
+                 nIdPolizaDest NUMBER, nIDetPolDest NUMBER, nCod_AseguradoDest NUMBER) IS
+CURSOR BENEF_Q IS
+   SELECT IdPoliza, IDetPol, Cod_Asegurado, Benef, Nombre, PorcePart, CodParent, Estado,
+          Sexo, FecEstado, FecAlta, FecBaja, MotBaja, Obervaciones, FecNac,
+          IndIrrevocable
+     FROM BENEFICIARIO
+    WHERE IdPoliza      = nIdPolizaOrig
+      AND IDetPol       = nIDetPolOrig
+      AND Cod_Asegurado = nCod_AseguradoOrig;
+BEGIN
+   FOR W IN BENEF_Q LOOP
+      OC_BENEFICIARIO.INSERTA_BENEFICIARIO(nIdPolizaDest, nIDetPolDest, nCod_AseguradoDest,
+                                           W.Benef, W.Nombre, W.PorcePart, W.CodParent,
+                                           W.Sexo, W.FecNac, W.IndIrrevocable);
+   END LOOP;
+END COPIAR_REN;
+
 END OC_BENEFICIARIO;
+/

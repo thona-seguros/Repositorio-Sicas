@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_ASISTENCIAS_DETALLE_POLIZA IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ASISTENCIAS_DETALLE_POLIZA IS
 
   PROCEDURE CARGAR_ASISTENCIAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                                nIdPoliza NUMBER, nIDetPol NUMBER, nTasaCambio NUMBER, cCodMoneda VARCHAR2,
@@ -11,15 +11,11 @@ CREATE OR REPLACE PACKAGE OC_ASISTENCIAS_DETALLE_POLIZA IS
   PROCEDURE EXCLUIR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER);
   PROCEDURE REVERTIR_EMISION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER);
   PROCEDURE REHABILITAR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER);
+  PROCEDURE COPIAR_REN(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPolOrig NUMBER, nIdPolizaDest NUMBER, nIDetPolDest NUMBER);
 
 END OC_ASISTENCIAS_DETALLE_POLIZA;
- 
- 
- 
- 
 /
-
-CREATE OR REPLACE PACKAGE BODY OC_ASISTENCIAS_DETALLE_POLIZA IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_ASISTENCIAS_DETALLE_POLIZA IS
 
 PROCEDURE CARGAR_ASISTENCIAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                              nIdPoliza NUMBER, nIDetPol NUMBER, nTasaCambio NUMBER, cCodMoneda VARCHAR2,
@@ -175,4 +171,27 @@ BEGIN
      AND StsAsistencia = 'ANULAD';
 END REHABILITAR;
 
+PROCEDURE COPIAR_REN(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPolOrig NUMBER, nIdPolizaDest NUMBER, nIDetPolDest NUMBER) IS
+CURSOR ASIST_Q IS
+   SELECT CodCia, CodEmpresa, IDetPol, CodAsistencia, CodMoneda, 
+          MontoAsistLocal, MontoAsistMoneda, StsAsistencia,
+          FecSts, IdEndoso
+     FROM ASISTENCIAS_DETALLE_POLIZA
+    WHERE IdPoliza = nIdPoliza
+      AND IDetPol  = nIDetPolOrig
+      AND CodCia   = nCodCia
+      AND STSASISTENCIA='EMITID';
+BEGIN
+   FOR W IN ASIST_Q LOOP
+      INSERT INTO ASISTENCIAS_DETALLE_POLIZA
+             (CodCia, CodEmpresa, IdPoliza, IDetPol, CodAsistencia,
+              CodMoneda, MontoAsistLocal, MontoAsistMoneda, StsAsistencia,
+              FecSts, IdEndoso)
+      VALUES (W.CodCia, W.CodEmpresa, nIdPolizaDest, nIDetPolDest, W.CodAsistencia,
+              W.CodMoneda, W.MontoAsistLocal, W.MontoAsistMoneda, 'SOLICI',
+              TRUNC(SYSDATE), 0);
+   END LOOP;
+END COPIAR_REN;
+
 END OC_ASISTENCIAS_DETALLE_POLIZA;
+/

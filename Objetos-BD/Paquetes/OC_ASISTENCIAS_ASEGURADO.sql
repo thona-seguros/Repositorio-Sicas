@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_ASISTENCIAS_ASEGURADO IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_ASISTENCIAS_ASEGURADO IS
 --
 -- SU AJUSTA RUTINAS DE EXTRACION PATA QUE CONSIDEREN EL ESTATUS Y EL MAXIMO ENDOSO   20230310  JICO   ESTATUS
 --
@@ -21,13 +21,10 @@ CREATE OR REPLACE PACKAGE OC_ASISTENCIAS_ASEGURADO IS
 
   PROCEDURE REHABILITAR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nCod_Asegurado NUMBER);
 
+  PROCEDURE COPIAR_REN(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPolOrig NUMBER, nIdPolizaDest NUMBER, nIDetPolDest NUMBER, nCodAsegurado NUMBER);
 END OC_ASISTENCIAS_ASEGURADO;
- 
- 
- 
- 
 /
-CREATE OR REPLACE PACKAGE BODY OC_ASISTENCIAS_ASEGURADO IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_ASISTENCIAS_ASEGURADO IS
 
     PROCEDURE CARGAR_ASISTENCIAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                                  nIdPoliza NUMBER, nIDetPol NUMBER, nTasaCambio NUMBER, nCod_Asegurado NUMBER,
@@ -331,5 +328,73 @@ CREATE OR REPLACE PACKAGE BODY OC_ASISTENCIAS_ASEGURADO IS
           AND StsAsistencia = 'ANULAD';
     END REHABILITAR;
 
+ PROCEDURE COPIAR_REN(nCodCia      NUMBER, nIdPoliza NUMBER, nIDetPolOrig NUMBER, nIdPolizaDest NUMBER, 
+                      nIDetPolDest NUMBER, nCodAsegurado NUMBER) IS
+    CURSOR ASIST_Q IS
+       SELECT *
+         FROM ASISTENCIAS_ASEGURADO A
+        WHERE IdPoliza   = nIdPoliza
+          AND IDetPol    = nIDetPolOrig
+          AND CodCia     = nCodCia
+          AND A.STSASISTENCIA = 'EMITID'   -- ESTATUS
+          AND A.COD_ASEGURADO = nCodAsegurado
+          AND A.IDENDOSO = (SELECT MAX(B.IDENDOSO)
+                              FROM ASISTENCIAS_ASEGURADO B
+                             WHERE B.IdPoliza      = A.IdPoliza
+                               AND B.IDetPol       = A.IDetPol
+                               AND B.CodCia        = A.CodCia
+                               AND B.COD_ASEGURADO = A.COD_ASEGURADO
+                               AND B.STSASISTENCIA = A.STSASISTENCIA);  -- ESTATUS
+     
+     
+     CURSOR ASEGS_Q IS
+       SELECT *
+       FROM   ASEGURADO_CERTIFICADO
+       WHERE  CODCIA   = NCODCIA
+       AND    IDPOLIZA = NIDPOLIZADEST
+       AND    IDETPOL  = nIDetPolDest
+       AND    COD_ASEGURADO = nCodAsegurado;
+     
+     
+     CURSOR ASIS_Q_ASEG IS
+         SELECT  *
+           FROM ASISTENCIAS_ASEGURADO A
+          WHERE  IDPOLIZA       = nIdPoliza
+            AND IDETPOL         =  nIDetPolOrig
+            AND CODCIA          = NCODCIA
+            AND A.STSASISTENCIA = 'EMITID'   -- ESTATUS
+            AND A.IDENDOSO      =  0 
+            AND A.COD_ASEGURADO = (
+                  SELECT MIN(COD_ASEGURADO)
+                  FROM   ASISTENCIAS_ASEGURADO
+                  WHERE  IDPOLIZA        = nIdPoliza
+                  AND    IDETPOL         = nIDetPolOrig
+                  AND    CODCIA          = NCODCIA
+                  AND    A.STSASISTENCIA = 'EMITID'   -- ESTATUS
+                  AND    A.IDENDOSO      =  0) ;
+          
+    BEGIN
+       FOR P IN ASEGS_Q LOOP
+          
+          FOR I IN ASIS_Q_ASEG LOOP
+             
+              BEGIN
+                 INSERT INTO ASISTENCIAS_ASEGURADO
+                        (CodCia, CodEmpresa, IdPoliza, IDetPol, Cod_Asegurado, CodAsistencia,
+                         CodMoneda, MontoAsistLocal, MontoAsistMoneda, StsAsistencia,
+                         FecSts, IdEndoso)
+                 VALUES (P.CodCia, I.CodEmpresa, nIdPolizaDest, nIDetPolDest, P.Cod_Asegurado, I.CodAsistencia,
+                         I.CodMoneda, I.MontoAsistLocal, I.MontoAsistMoneda, 'SOLICI',
+                         TRUNC(SYSDATE), 0);
+              EXCEPTION
+                 WHEN DUP_VAL_ON_INDEX THEN
+                    RAISE_APPLICATION_ERROR(-20225,'Existen Asistencias Duplicadas para Detalle de la Póliza: '||
+                                            TRIM(TO_CHAR(nIdPolizaDest))||' - '||TO_CHAR(nIDetPolDest) || ' y Asegurado '||
+                                            P.Cod_Asegurado);
+              END;
+           END LOOP;
+       END LOOP;
+    END COPIAR_REN;
+    
 END OC_ASISTENCIAS_ASEGURADO;
 /
