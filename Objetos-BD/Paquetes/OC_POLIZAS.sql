@@ -5139,7 +5139,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
                 VALUES
                   (nCodCia,            1, nIdPolizaOrig,    /*CNUMPOLUNICO_ACT,*/  X.NumRenov,
                    dFecHoy,             nIdPoliza,       --cNumPolUnico,      NNUMRENOV,
-                   ADD_MONTHS(dFecHoy,12),            'REN',       dFecHoy,           cUsuario);
+                   ADD_MONTHS(dFecHoy,12),            'REN',       SYSDATE,           cUsuario);
                         
                
              ---------------------------------------------------------------
