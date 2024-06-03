@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
+create or replace PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
     PROCEDURE CONTROLPRINCIPAL (
         nCodCia           SICAS_OC.ENTREGAS_CNSF_CONFIG.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE,
@@ -8,9 +8,9 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
         cCodUsuario       SICAS_OC.TEMP_REGISTROS_SESAS.CODUSUARIO%TYPE,
         cFiltrarPolizas   VARCHAR2
     );
-    
+
     PROCEDURE NOTIFICACORREO (cNombreUser VARCHAR2, cNomSesa VARCHAR2, cEstatus VARCHAR2, dInicio VARCHAR2, dFin VARCHAR2, cDuracion VARCHAR2);
-    
+
     FUNCTION GENERAENCABEZADO (
         nCodCia       SICAS_OC.CONFIG_PLANTILLAS_CAMPOS.CODCIA%TYPE,
         nCodEmpresa   SICAS_OC.CONFIG_PLANTILLAS_CAMPOS.CODEMPRESA%TYPE,
@@ -21,14 +21,14 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
     FUNCTION GETANIOPOLIZA (
         nNumPolUnico   VARCHAR 
     ) RETURN NUMBER;
-    
+
     FUNCTION GETCANTASEGAPC (
         nCodCia         NUMBER,
         nCodEmpresa     NUMBER,
         nCodAsegurado   VARCHAR,
         nCantAsegurado NUMBER
     ) RETURN NUMBER;
-    
+
     FUNCTION GETOCUPACIONAP (
         cCodActividad   VARCHAR,
         cTipoSeg        VARCHAR --IND O COL PARA SABER A QUE CATALOGO IR
@@ -360,8 +360,7 @@ vl_Duracion     VARCHAR2(4000);
 vl_NomSesa      VARCHAR2(50);
 END OC_PROCESOSSESAS;
 /
-
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
+create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
 
     PROCEDURE CONTROLPRINCIPAL (
         nCodCia           SICAS_OC.ENTREGAS_CNSF_CONFIG.CODCIA%TYPE,
@@ -398,7 +397,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         cCodEntregaDatGen   VARCHAR2(25);
         nEjecutaLog         NUMBER := 0;
     BEGIN
-        
+
         IF SUBSTR(cCodEntregaProces, 5, 3) IN ( 'DAT', 'EMI' ) THEN
             SELECT TRIM(SUBSTR(cCodEntregaProces, 1, 4)|| 'DAT'|| SUBSTR(cCodEntregaProces, 8))
             INTO cCodEntregaDatGen
@@ -439,8 +438,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         cNomArchProces := SICAS_OC.OC_ENTREGAS_CNSF_CONFIG.NOMBRE_ARCHIVO(nCodCia, nCodEmpresa, cCodEntregaProces);
         cNomArchProcesError := SICAS_OC.OC_ENTREGAS_CNSF_CONFIG.NOMBRE_ARCHIVO(nCodCia, nCodEmpresa, 'SESAERROR');
         cNomProcProces := SICAS_OC.OC_ENTREGAS_CNSF_CONFIG.NOMBRE_PROCESO(nCodCia, nCodEmpresa, cCodEntregaProces);
-        
-        
+
+
         cEncabProces := GeneraEncabezado(nCodCia, nCodEmpresa, cCodPlantilla, cSeparador);
         cEncabProcesError := GeneraEncabezado(nCodCia, nCodEmpresa, cCodPlantillaError, cSeparador);
 
@@ -449,26 +448,28 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         cDetalleDatGenError := GeneraDetalleError(nCodCia, nCodEmpresa, cCodPlantilla, cSeparador, cCodUsuario, 'ERROR');
 
 
-      --Ejecuta el Proceso de Correspondiente: Emisi�n o Siniestros, se corre con cCodEntregaDatGen para que tome como base el resultado de este
-        
+      --Ejecuta el Proceso de Correspondiente: Emisión o Siniestros, se corre con cCodEntregaDatGen para que tome como base el resultado de este
+
         BEGIN
             SELECT CODVALOR,TO_NUMBER(NVL(CVE_CNSF,'0'))
             INTO vl_Ejecucion, vl_Intento
             FROM SICAS_OC.VALORES_DE_LISTAS
             WHERE CODLISTA ='ONSESAS' 
+                AND CODVALOR=1
                 AND ROWNUM <= 1;
         EXCEPTION
             WHEN OTHERS THEN
                 vl_Ejecucion := '0';
         END;
-        
-        IF vl_Ejecucion = '0' OR vl_Intento > 2 THEN
-        
+
+        IF vl_Ejecucion = '1' OR vl_Intento > 2 THEN
+
             UPDATE SICAS_OC.VALORES_DE_LISTAS
-            SET CODVALOR = '1'
+            SET CVE_CNSF = '1'
             WHERE CODLISTA ='ONSESAS' 
-            AND ROWNUM <= 1;
-            
+                AND CODVALOR=1
+                AND ROWNUM <= 1;
+
             vl_Inicio := SYSDATE;
             EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
             IF cCodEntregaProces = 'SESADATAPC' THEN
@@ -534,20 +535,20 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
             ELSE
                 vl_NomSesa := cCodEntregaProces;
             END IF;
-            
+
             oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Inicio',TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),NULL,NULL);
 
             cBlockPlSql := 'BEGIN '|| cNomProcProces|| '( :nCodCia, :nCodEmpresa, :dFecDesde, :dFecHasta, :cCodUsuario, :cCodEntregaDatGen, :cCodEntregaProces, :cFiltrarPolizas ); END;';
             EXECUTE IMMEDIATE cBlockPlSql USING nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario, cCodEntregaDatGen, cCodEntregaProces, cFiltrarPolizas;
-            
+
             COMMIT;
 
             cNomArchZip := SUBSTR(cNomArchProces, 1, INSTR(cNomArchProces, '.') - 1)|| '.zip';
-    
+
             cNomArchZipError := SUBSTR(cNomArchProcesError, 1, INSTR(cNomArchProcesError, '.') - 1) || '.zip';
-    
+
           --Ejecuta el Armado de los Layouts y Genera los Reportes
-    
+
             SELECT COUNT(1)
             INTO nEjecutaLog
             FROM SICAS_OC.LOGERRORES_SESAS
@@ -555,32 +556,33 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                 AND CODEMPRESA = nCodEmpresa
                 AND CODUSUARIO = cCodUsuario
                 AND CODREPORTE = cCodEntregaProces;
-    
+
             GeneraReportes(nCodCia, nCodEmpresa, REPLACE(cNomArchZipError, '.zip', '.TXT'), cEncabDatGen, cDetalleDatGen, cNomArchProces,cEncabProces,cEncabProcesError, cDetalleProces, cDetalleDatGenError, cNomArchZip, nEjecutaLog);
-    
+
             SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB(nCodCia, nCodEmpresa, cCodEntregaProces, cCodUsuario, cNomArchZip);
-            
+
             UPDATE SICAS_OC.VALORES_DE_LISTAS
-            SET CODVALOR = '0',
-                CVE_CNSF = '0'
+            SET CVE_CNSF = '0'
             WHERE CODLISTA ='ONSESAS' 
-            AND ROWNUM <= 1;
-            
+                AND CODVALOR = 1
+                AND ROWNUM <= 1;
+
             COMMIT;
-            
+
         ELSE
-            
+
             vl_Intento2 := vl_Intento +1;
-            
+
             UPDATE SICAS_OC.VALORES_DE_LISTAS
             SET CVE_CNSF = TO_CHAR(vl_Intento2)
-            WHERE CODLISTA ='ONSESAS' ;
-            
+            WHERE CODLISTA ='ONSESAS' 
+                AND CODVALOR = 1;
+
             COMMIT;
              IF vl_Intento2 = 1 THEN  
-                RAISE_APPLICATION_ERROR(-20220,'       ***        YA EXISTE UN PROCESO DE SESA�s EN EJECUCION.        ***        ');
+                RAISE_APPLICATION_ERROR(-20220,'       ***        YA EXISTE UN PROCESO DE SESA´s EN EJECUCION.        ***        ');
             ELSIF vl_Intento2= 2 THEN
-                RAISE_APPLICATION_ERROR(-20220,'       ***        ESTAS INTENTANDO DETENER EL PROCESO ACTUAL DE SESA�s, FAVOR DE VALIDAR...        ***        ');
+                RAISE_APPLICATION_ERROR(-20220,'       ***        ESTAS INTENTANDO DETENER EL PROCESO ACTUAL DE SESA´s, FAVOR DE VALIDAR...        ***        ');
             ELSE
                 RAISE_APPLICATION_ERROR(-20220,'       ***        EL PROCESO ACTUAL DE SESAS SERA DETENIDO, PUEDES INICIAR EL NUEVO PROCESO AHORA!!!        ***        ');
             END IF;
@@ -588,7 +590,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
       --SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB( nCodCia, nCodEmpresa, 'SESAERROR', cCodUsuario, cNomArchZipError );
 
       vl_Final := SYSDATE;
-      
+
         SELECT 'Duracion: '||TO_CHAR(DIFERENCIA_HORAS, '00') || ':' || TO_CHAR(DIFERENCIA_MINUTOS, '00') || ':' || TO_CHAR(DIFERENCIA_SEGUNDOS, '00') 
         INTO vl_Duracion
         FROM (  SELECT FECHA_UNO,
@@ -603,22 +605,22 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                         vl_Final FECHA_DOS
                     FROM DUAL
         ));
-       
+
       oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Termino exitosamente ',TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),TO_CHAR(vl_Final,'DD/MM/YYYY HH24:MI:SS'),vl_Duracion);
     EXCEPTION
         WHEN OTHERS THEN
             UPDATE SICAS_OC.VALORES_DE_LISTAS
-            SET CODVALOR = '0',
-                CVE_CNSF = '0'
+            SET CVE_CNSF = '0'
             WHERE CODLISTA ='ONSESAS' 
+                AND CODVALOR = 1
             AND ROWNUM <= 1;
-            
+
             COMMIT;
             vl_Inicio := SYSDATE;
             vl_Final := SYSDATE;
             vl_Duracion := SQLERRM;
-            oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Termino con error',TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),TO_CHAR(vl_Final,'DD/MM/YYYY HH24:MI:SS'),vl_Duracion);
-    
+            oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Termino con error',SQLERRM,TO_CHAR(vl_Final,'DD/MM/YYYY HH24:MI:SS'),vl_Duracion);
+
     END CONTROLPRINCIPAL;
 
     FUNCTION GENERAENCABEZADO (
@@ -752,7 +754,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         nTotal      NUMBER := 0;
     BEGIN
       -- Status del Certificado
-      
+
         SELECT COUNT(1)
         INTO nTotal
         FROM SICAS_OC.SINIESTRO S
@@ -785,7 +787,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         ELSE
             cStatusCert := NULL;
         END IF;
-	  /*
+      /*
       IF cStsDetalle = 'EMI' THEN
          cStatusCert := '1'; -- En Vigor
          --
@@ -809,7 +811,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
       END IF;*/
       --
         RETURN cStatusCert;
-    
+
     END GETSTATUSCERTAP;
 
     FUNCTION GETSTATUSCERT (
@@ -849,7 +851,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         ELSE
             cStatusCert := NULL;
         END IF;
-	  /*
+      /*
       IF cStsDetalle = 'EMI' THEN
          cStatusCert := '1'; -- En Vigor
          --
@@ -1169,7 +1171,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
       --
       /*
       IF cNomArchDatGen IS NOT NULL THEN
-         --Generaci�n del Reporte de Datos Generales
+         --Generación del Reporte de Datos Generales
          cCtlArchDatGen    := UTL_FILE.FOPEN(cNomDirectorio, cNomArchDatGen, 'W', 32767);
          --
          UTL_FILE.PUT_LINE(cCtlArchDatGen, cEncabDatGen);
@@ -1189,7 +1191,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
       END IF;
       */
 
-      --Generaci�n del Reporte del Proceso
+      --Generación del Reporte del Proceso
 
         cCtlArchProces := UTL_FILE.FOPEN(cNomDirectorio, cNomArchProces, 'W', 32767);
         UTL_FILE.PUT_LINE(cCtlArchProces, cEncabProces);
@@ -1712,7 +1714,7 @@ FUNCTION GETMONTOCOMISIONAP (
                         ON DCO.IDCOMISION = COM.IDCOMISION
                 WHERE
                         DCO.CODCONCEPTO IN ( 'COMISI', 'COMIPF', 'COMIPM' )
-                  
+
                     AND EXISTS (
                         SELECT
                             *
@@ -1731,14 +1733,14 @@ FUNCTION GETMONTOCOMISIONAP (
                                        AND DTR.CODSUBPROCESO IN ( 'CFP', 'AUM', 'EAD', 'INA', 'INC',
                                                                   'IND', 'REHAP', 'RSS' ) ) )
                     )
-                  
+
                     AND DET.CORRELATIVO > 0
                     AND TO_NUMBER(DET.VALOR1) = FAC.IDPOLIZA
                     AND DET.OBJETO = 'FACTURAS'
                     AND DET.CODSUBPROCESO IN ( 'FAC', 'REHAB', 'FACFON', 'CONFAC' )
                     AND TRA.IDPROCESO IN ( 7, 8, 14, 18, 21 )
                     AND TRA.FECHATRANSACCION BETWEEN dvarFecDesde AND dvarFecHasta
-    
+
                     AND TRA.CODEMPRESA = nCodEmpresa
                     AND FAC.STSFACT <> 'PRE'
                     AND FAC.CODCIA = nCodCia
@@ -1746,7 +1748,7 @@ FUNCTION GETMONTOCOMISIONAP (
                 UNION ALL
                 SELECT DISTINCT FAC.STSFACT, FAC.IDFACTURA, DCO.MONTO_MON_EXTRANJERA * - 1 MONTOCOMISION, TRA.IDTRANSACCION, 0 CORRELATIVO, COM.COD_AGENTE
                 FROM
-                    
+
                     SICAS_OC.FACTURAS            FAC
                     INNER JOIN  SICAS_OC.TRANSACCION         TRA 
                         ON   TRA.IDTRANSACCION = NVL(FAC.IDTRANSACCIONANU, FAC.IDTRANSACCION)
@@ -1762,7 +1764,7 @@ FUNCTION GETMONTOCOMISIONAP (
                         ON DCO.IDCOMISION = COM.IDCOMISION
                 WHERE
                          DCO.CODCONCEPTO IN ( 'COMISI', 'COMIPF', 'COMIPM' )
-        
+
                     AND EXISTS (
                         SELECT
                             *
@@ -1780,7 +1782,7 @@ FUNCTION GETMONTOCOMISIONAP (
                                        AND TRA.IDPROCESO = 8
                                        AND DTR.CODSUBPROCESO IN ( 'ANUFAC' ) ) )
                     )
-     
+
                     AND DET.CORRELATIVO > 0
                     AND TO_NUMBER(DET.VALOR1) = FAC.IDPOLIZA
                     AND DET.OBJETO IN ( 'FACTURAS' )
@@ -1790,8 +1792,8 @@ FUNCTION GETMONTOCOMISIONAP (
                     AND TRA.CODEMPRESA = nCodEmpresa
                     AND FAC.CODCIA = nCodCia
                     AND FAC.IDPOLIZA = nIdPoliza
-                    
-                    
+
+
                 UNION ALL
                 SELECT  NCR.STSNCR, NCR.IDNCR, DCO.MONTO_MON_EXTRANJERA * - 1 MONTOCOMISION, TRA.IDTRANSACCION, 1, COM.COD_AGENTE
                 FROM
@@ -2539,7 +2541,7 @@ FUNCTION GETMONTOCOMISIONAP (
             IdPoliza IS NOT NULL
             AND IdPoliza > 0
         THEN  --Validacion solo para revisar que sea una poliza valida y 
-            --que los dem�s valores recibidos provienen de lo que tiene la poliza asignada
+            --que los demás valores recibidos provienen de lo que tiene la poliza asignada
             IF ( dFecFinVig <= dFecHasta ) THEN
                 nPrimaDevengada := nPrimaEmitida;
             ELSE
@@ -2790,38 +2792,38 @@ FUNCTION GETMONTOCOMISIONAP (
         WHEN OTHERS THEN
             nAnioRenova := 1;
     END GETANIOPOLIZA;
-    
+
     FUNCTION GETCANTASEGAPC (
         nCodCia         NUMBER,
         nCodEmpresa     NUMBER,
         nCodAsegurado   VARCHAR,
         nCantAsegurado  NUMBER
-        
+
     ) RETURN NUMBER IS
     vl_CantAseg     NUMBER := 0;
     BEGIN
-        
+
         SELECT COUNT(1)
         INTO vl_CantAseg
         FROM SICAS_OC.SESA_ASEGMODELO
         WHERE CODCIA = nCodCia
             AND CODEMPRESA = nCodEmpresa
             AND COD_ASEGURADO = nCodAsegurado;
-            
+
         IF vl_CantAseg >= 1 THEN
             vl_CantAseg := nCantAsegurado;
         ELSE
             vl_CantAseg := 1;
         END IF;
-        
+
         RETURN vl_CantAseg;
-        
+
     EXCEPTION
         WHEN OTHERS THEN
             vl_CantAseg := 1;
             RETURN vl_CantAseg;
     END;
-    
+
     PROCEDURE NOTIFICACORREO (cNombreUser VARCHAR2, cNomSesa VARCHAR2, cEstatus VARCHAR2, dInicio VARCHAR2, dFin VARCHAR2, cDuracion VARCHAR2) IS
     nCodCia NUMBER := 1;
     nCodEmpresa NUMBER := 1;
@@ -2832,17 +2834,17 @@ FUNCTION GETMONTOCOMISIONAP (
     cNumPolUnico            POLIZAS.NumPolUnico%TYPE;
     dFecIniVig              POLIZAS.FecIniVig%TYPE;
     cIdTipoSeg              DETALLE_POLIZA.IdTipoSeg%TYPE;
-    
+
     cSubject                VARCHAR2(10000);
     cMessage                VARCHAR2(20000);
     cEmailAuth              VARCHAR2(100)     := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'021');
     cPwdEmail               VARCHAR2(100)     := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'022');
     cEmailEnvio             VARCHAR2(100)     := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'042');
     cCadenaLogo             VARCHAR2(200)     := ' <img src="http://www.thonaseguros.mx/images/Thona_Seguros.png" alt="'||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia)||'" height="80" width="300"> ';
-    cAvisoImportante        VARCHAR2(1000)    := 'AVISO IMPORTANTE. Este correo electrónico y cualquier archivo que se adjunte al mismo, es propiedad de THONA Seguros S.A. de C.V., y podrá '||
-                                                 'contener información privada y privilegiada para uso exclusivo del destinatario. Si usted ha recibido este correo por error, por favor, notifique '||
-                                                 'al remitente y bórrelo. No está autorizado para copiar, retransmitir, utilizar o divulgar este mensaje ni los archivos adjuntos, de lo contrario '||
-                                                 'estará infringiendo leyes mexicanas y de otros países que se aplican rigurosamente.';
+    cAvisoImportante        VARCHAR2(1000)    := 'AVISO IMPORTANTE. Este correo electrÃ³nico y cualquier archivo que se adjunte al mismo, es propiedad de THONA Seguros S.A. de C.V., y podrÃ¡ '||
+                                                 'contener informaciÃ³n privada y privilegiada para uso exclusivo del destinatario. Si usted ha recibido este correo por error, por favor, notifique '||
+                                                 'al remitente y bÃ³rrelo. No estÃ¡ autorizado para copiar, retransmitir, utilizar o divulgar este mensaje ni los archivos adjuntos, de lo contrario '||
+                                                 'estarÃ¡ infringiendo leyes mexicanas y de otros paÃ­ses que se aplican rigurosamente.';
     cHTMLHeader             VARCHAR2(2000)    := '<html>'                                                                     ||CHR(13)||
                                                  '<head>'                                                                     ||CHR(13)||
                                                  '<meta http-equiv="Content-Language" content="en/us"/>'                      ||CHR(13)||
@@ -2858,7 +2860,7 @@ FUNCTION GETMONTOCOMISIONAP (
     cTextoClose             VARCHAR2(30)      := '</FONT>';
     cTextoSmall             VARCHAR2(100)     := '<FONT SIZE="2" COLOR="blue">';
     cError                  VARCHAR2(200);
-    
+
     nCod                    NUMBER;
     vl_CodAgente            NUMBER;
     vl_Mails                VARCHAR2(4000) := NULL;
@@ -2877,7 +2879,7 @@ FUNCTION GETMONTOCOMISIONAP (
     vl_cNomSesa VARCHAR2(4000);
     http_req utl_http.req;
     http_resp utl_http.resp;
-    
+
     content_type varchar2(4000);
     post_content varchar2(4000);
     vl_Enlace  varchar2(4000);
@@ -2886,23 +2888,23 @@ FUNCTION GETMONTOCOMISIONAP (
     vl_Nom  VARCHAR2(4000);
     cEmailCopia VARCHAR2(4000);
     BEGIN
-    
+
     IF cNomSesa IN ('DATOS GENERLAES AP COLECTIVO','EMISION AP COLECTIVO','DATOS GENERALES VIDA GRUPO','EMISION VIDA GRUPO') THEN
         vl_cNomSesa := cTextoImportanteOpen||' <p style="color:#D31313";>'||cNomSesa||'</p>'||cTextoImportanteClose;
     ELSE
         vl_cNomSesa := cTextoImportanteOpen||' <p style="color:#000000";>'||cNomSesa||'</p>'||cTextoImportanteClose;
     END IF;
-    
+
         cSubject := cEstatus||' ejecucion SESA '||cNomSesa;
         cMessage := cHTMLHeader||cSaltoLinea||'Por medio del presente se notifica que '||cEstatus||' la ejecucion de la SESA '||vl_cNomSesa ||cSaltoLinea||
             'Responsable: '||cNombreUser||cSaltoLinea||
             cSaltoLinea||'  Inicio: '||dInicio;
-            
+
             IF (cEstatus ='Termino exitosamente ') THEN
                 cMessage := cMessage||cSaltoLinea||'  Final: '||dFin||
                 cSaltoLinea||cTextoImportanteOpen||'   '||cDuracion||cTextoImportanteClose;
             END IF;
-            
+
             cMessage := cMessage||cSaltoLinea||cSaltoLinea||'Este Correo es Generado de Manera Automatica, Por Favor no lo Responda.'||cSaltoLinea||UTL_TCP.CRLF||cSaltoLinea||
             cCadenaLogo||cSaltoLinea||cSaltoLinea||
             cSaltoLinea||cTextoSmall||cAvisoImportante||cTextoClose||
@@ -2911,17 +2913,17 @@ FUNCTION GETMONTOCOMISIONAP (
         OC_MAIL.INIT_PARAM;
         OC_MAIL.cCtaEnvio   := cEmailAuth;
         OC_MAIL.cPwdCtaEnvio:= cPwdEmail;
-        
+
         cEmailCliente := 'lreynoso@thonaseguros.mx,jibarra@thonaseguros.mx,msiller@thonaseguros.mx,cgarcia@thonaseguros.mx';
         cEmailCopia := 'ogudino@thonaseguros.mx,chernandez@thonaseguros.mx,egarduno@thonaseguros.mx,masanchez@thonaseguros.mx,rperez@thonaseguros.mx';
-                
+
         BEGIN
             SELECT DESCVALLST 
             INTO cEmailCliente
             FROM VALORES_DE_LISTAS
             WHERE CODLISTA = 'ONSESAS'
                 AND CODVALOR = 2;
-    
+
             SELECT DESCVALLST 
             INTO cEmailCopia
             FROM VALORES_DE_LISTAS
@@ -2932,8 +2934,8 @@ FUNCTION GETMONTOCOMISIONAP (
                 cEmailCliente := 'lreynoso@thonaseguros.mx,jibarra@thonaseguros.mx,msiller@thonaseguros.mx,cgarcia@thonaseguros.mx';
                 cEmailCopia := 'ogudino@thonaseguros.mx,chernandez@thonaseguros.mx,egarduno@thonaseguros.mx,masanchez@thonaseguros.mx,rperez@thonaseguros.mx';
         END;
-         
- 
+
+
             BEGIN
                 OC_MAIL.SEND_EMAIL(NULL,cEmailEnvio,cEmailCliente,cEmailCopia,NULL,cSubject,cMessage,NULL,NULL,NULL,NULL,cError);
 
@@ -2944,13 +2946,5 @@ FUNCTION GETMONTOCOMISIONAP (
 
 
 END NOTIFICACORREO;
-    
+
 END OC_PROCESOSSESAS;
-/
-
-
-CREATE OR REPLACE PUBLIC SYNONYM OC_PROCESOSSESAS FOR SICAS_OC.OC_PROCESOSSESAS;
-/
-
-GRANT EXECUTE ON SICAS_OC.OC_PROCESOSSESAS TO PUBLIC;
-/
