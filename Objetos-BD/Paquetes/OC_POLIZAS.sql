@@ -4972,6 +4972,19 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
      AND    IDENDOSO > 0
      GROUP BY IDPOLIZA, IDETPOL, IDENDOSO
      ORDER BY IDPOLIZA DESC;
+     
+   CURSOR VALENDOS IS
+     SELECT IDETPOL, COUNT(*)
+     FROM   POLIZAS P,
+            ENDOSOS E
+     WHERE  E.CODCIA     = nCodCia
+     AND    E.IDPOLIZA   = P.IDPOLIZA
+     AND    E.TIPOENDOSO IN ('INA','IND')
+     AND    E.STSENDOSO  = 'EMI'
+     AND    P.IDPOLIZA   = nIdPolizaOrig
+     AND    TRUNC(P.FECEMISION)  != TRUNC(E.FECEMISION)
+     AND    E.FECINIVIG > P.FECINIVIG
+     GROUP BY IDETPOL;
       
    BEGIN
    
@@ -4998,32 +5011,28 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
           --DBMS_OUTPUT.PUT_LINE('nNumRenov '||nNumRenov);
           -- MLJS 23/05/2024 ANTES QUE SE GENERE EL NUMERO DE POLIZA SE VALIDA SI LA PÓLIZA A RENOVAR TIENE CERTIFICADOS
           -- CREADOS POSTERIORES A LA EMISION DE LA POLIZA
-          BEGIN
-            
-                DBMS_OUTPUT.PUT_LINE('VALIDACION ENDOSO');
-             SELECT COUNT(*)
-             INTO   NCERTPOSFINI
-             FROM   POLIZAS P,
-                    ENDOSOS E
-             WHERE  E.IDPOLIZA = P.IDPOLIZA
-             AND    E.TIPOENDOSO IN ('INA','IND')
-             AND    P.IDPOLIZA   = nIdPolizaOrig
-             AND    TRUNC(P.FECEMISION)  != TRUNC(E.FECEMISION);
-             
-             DBMS_OUTPUT.PUT_LINE('NCERTPOSFINI '||NCERTPOSFINI);  
-             --RAISE_APPLICATION_ERROR(-20226,'ERROR: '||NCERTPOSFINI|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm); 
-                
-             IF NCERTPOSFINI > 0 THEN
-                 bContinua := FALSE;
-                 --RAISE RERROR;
-                 --DBMS_OUTPUT.PUT_LINE('Certificado(s) dado de alta posterior a emisión de Póliza: '||TRIM(TO_CHAR(nIdPolizaOrig)));  
-                 return 1;
-               -- Linea := nLinea + 1;
-                 --OC_ARCHIVO.ESCRIBIR_LINEA('Certificado(s) dado de alta posterior a emisión de Póliza '||nIdPolizaOrig ,user,nLinea);               
+          bContinua := TRUE;
+          FOR I IN VALENDOS LOOP
+            BEGIN
+              SELECT COUNT(*) 
+              INTO   NUMASEGS
+              FROM   ASEGURADO_CERTIFICADO
+              WHERE  IDPOLIZA = nIdPolizaOrig
+              AND    IDETPOL  = I.IDETPOL
+              AND    IDENDOSO = 0;
+            EXCEPTION
+              WHEN OTHERS THEN
+                 NUMASEGS := 0; 
+            END;     
+               
+             IF NUMASEGS > 0 THEN
+               bContinua := TRUE;
              ELSE
-                 bContinua := TRUE; 
+               bContinua := FALSE; 
+               return 1;
+               EXIT;
              END IF;
-             
+           END LOOP;    
             -- DBMS_OUTPUT.PUT_LINE('bContinua '||bContinua);   
             /* IF NCERTPOSFINI > 0 THEN    
                 FOR T IN DETPOL_Q LOOP  
@@ -5077,11 +5086,11 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
                  END IF;
              END LOOP;*/
              
-          EXCEPTION
-             WHEN OTHERS THEN
-               NULL;
+         -- EXCEPTION
+          --   WHEN OTHERS THEN
+         --      NULL;
                --RAISE_APPLICATION_ERROR(-20226,'Error al Emitir Renovación de Póliza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);    
-          END;
+          --END;
           
           IF bContinua = TRUE THEN 
            -- MLJS 17/05/2024   
@@ -5345,7 +5354,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
               AND CodCia    = nCodCia;
 
            UPDATE COBERT_ACT
-              SET StsCobertura = 'REN'
+              SET StsCobertura = DECODE(StsCobertura,'EMI','REN',StsCobertura)
             WHERE IdPoliza     = nIdPolizaOrig
               AND CodCia       = nCodCia;
 
@@ -5355,37 +5364,37 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
               AND CodCia       = nCodCia;
 
            UPDATE ASISTENCIAS_DETALLE_POLIZA
-              SET StsAsistencia = 'RENOVA'
+              SET StsAsistencia = DECODE(StsAsistencia,'EMITID','RENOVA',StsAsistencia)
             WHERE IdPoliza     = nIdPolizaOrig
               AND CodCia       = nCodCia;
 
            UPDATE COBERT_ACT_ASEG
-              SET StsCobertura = 'REN'
+              SET StsCobertura = DECODE(StsCobertura,'EMI','REN',StsCobertura)
             WHERE IdPoliza     = nIdPolizaOrig
               AND CodCia       = nCodCia;
 
            UPDATE COBERTURA_ASEG
-              SET StsCobertura = 'REN'
+              SET StsCobertura = DECODE(StsCobertura,'EMI','REN',StsCobertura)
             WHERE IdPoliza     = nIdPolizaOrig
               AND CodCia       = nCodCia;
 
            UPDATE ASISTENCIAS_ASEGURADO
-              SET StsAsistencia = 'RENOVA'
+              SET StsAsistencia = DECODE(StsAsistencia,'EMITID','RENOVA',StsAsistencia)
             WHERE IdPoliza     = nIdPolizaOrig
               AND CodCia       = nCodCia;
 
            UPDATE ASEGURADO_CERTIFICADO
-              SET Estado = 'REN'
+              SET Estado       = DECODE(Estado,'EMI','REN',Estado)
             WHERE IdPoliza     = nIdPolizaOrig
               AND CodCia       = nCodCia;
 
            UPDATE CLAUSULAS_POLIZA
-              SET Estado = 'RENOVA'
+              SET Estado       = DECODE(Estado,'EMITID','RENOVA',Estado)
             WHERE IdPoliza     = nIdPolizaOrig
               AND CodCia       = nCodCia;
 
            UPDATE CLAUSULAS_DETALLE
-              SET Estado = 'RENOVA'
+              SET Estado       = DECODE(Estado,'EMITID','RENOVA',Estado)
             WHERE IdPoliza     = nIdPolizaOrig
               AND CodCia       = nCodCia;
             

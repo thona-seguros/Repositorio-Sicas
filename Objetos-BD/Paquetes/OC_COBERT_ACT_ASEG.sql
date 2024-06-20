@@ -1932,7 +1932,7 @@ BEGIN
                   SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                   Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
                   PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL)
-            VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, D.NumRef,
+            VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, nIdPolizaDest,
                   D.CodCobert, D.Cod_Asegurado, D.SumaAseg_Local,D.SumaAseg_Moneda, D.Tasa,
                   D.Prima_Moneda, D.Prima_Local, 0, D.PlanCob, D.Cod_Moneda,
                   D.Deducible_Local, D.Deducible_Moneda, 'SOL', D.PrimaNivMoneda, D.PrimaNivLocal,
@@ -1985,7 +1985,7 @@ BEGIN
                   SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                   Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
                   PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL)
-            VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, D.NumRef,
+            VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, nIdPolizaDest,
                   D.CodCobert, D.Cod_Asegurado, nSumaAsegIni,nSumaAsegIni, D.Tasa,
                   nPrimaIni, nPrimaIni, 0, D.PlanCob, D.Cod_Moneda,
                   nDeducLocalini, nDeducMonedaIni, 'SOL', D.PrimaNivMoneda, D.PrimaNivLocal,
@@ -2017,9 +2017,22 @@ BEGIN
             EXCEPTION
               WHEN TOO_MANY_ROWS THEN
                  nSumasDiferentes := 1;
+              WHEN NO_DATA_FOUND THEN
+                 SELECT MIN(COD_ASEGURADO), SumaAseg_Local, Prima_Local, MAX(DEDUCIBLE_LOCAL), MAX(DEDUCIBLE_MONEDA)
+                 INTO nCodAsegurado, nSumaAsegIni, nPrimaIni , nDeducLocalini, nDeducMonedaIni
+                 FROM COBERT_ACT_ASEG
+                 WHERE IDetPol   = nIDetPolOrig
+                 AND IdPoliza    = nIdPoliza
+                 AND CodCia      = nCodCia
+                 AND STSCOBERTURA='EMI'
+                 AND COD_ASEGURADO = D.COD_ASEGURADO
+                 AND CodCobert = D.CodCobert
+                 GROUP BY SumaAseg_Local, Prima_Local;
+                 bContinua := TRUE;
               WHEN OTHERS THEN
                  nSumaAsegIni := 0; nPrimaIni:=0; nDeducLocalini := 0; nDeducMonedaIni:=0;
-                 RAISE_APPLICATION_ERROR(-20226,'1.2 Error al Emitir Renovación de las coberturas de la Póliza: '||TRIM(TO_CHAR(nIdPoliza))||' y detalle: '||TRIM(TO_CHAR(nIDetPolOrig))|| ' los asegurados fueron dados de alta en un certificado emitido después de la emisión de la póliza.');
+                 bContinua := FALSE;
+                 RAISE_APPLICATION_ERROR(-20226,'1.3 Error al Emitir Renovación de las coberturas de la Póliza: '||TRIM(TO_CHAR(nIdPoliza))||' y detalle: '||TRIM(TO_CHAR(nIDetPolOrig))|| '.');
             END;
            -- nValorInicial := 1;
          -- END IF;
@@ -2028,23 +2041,25 @@ BEGIN
             nSumaAsegIni := D.SumaAseg_Local; 
             nPrimaIni    := D.Prima_Local;
           END IF;
-          INSERT INTO COBERT_ACT_ASEG
-                 (CodCia, IdPoliza, IDetPol, CodEmpresa, IdTipoSeg, TipoRef, NumRef,
-                  CodCobert, Cod_Asegurado, SumaAseg_Local, SumaAseg_Moneda, Tasa,
-                  Prima_Moneda, Prima_Local, IdEndoso, PlanCob, Cod_Moneda,
-                  Deducible_Local, Deducible_Moneda, StsCobertura, PrimaNivMoneda, PrimaNivLocal,
-                  SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
-                  Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
-                  PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL)
-          VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, D.NumRef,
-                  D.CodCobert, D.Cod_Asegurado, nSumaAsegIni,nSumaAsegIni, D.Tasa,
-                  nPrimaIni, nPrimaIni, 0, D.PlanCob, D.Cod_Moneda,
-                  nDeducLocalini , nDeducMonedaIni, 'SOL', D.PrimaNivMoneda, D.PrimaNivLocal,
-                  D.SalarioMensual, D.VecesSalario, D.SumaAsegCalculada, D.Edad_Minima, D.Edad_Maxima,
-                  D.Edad_Exclusion, D.SumaAseg_Minima, D.SumaAseg_Maxima,
-                  D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL);
-                  
-            OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(D.CodCia, D.CodCia, nIdPolizaDest, nIDetPolDest, D.Cod_Asegurado);    
+          IF bContinua = TRUE THEN
+            INSERT INTO COBERT_ACT_ASEG
+                   (CodCia, IdPoliza, IDetPol, CodEmpresa, IdTipoSeg, TipoRef, NumRef,
+                    CodCobert, Cod_Asegurado, SumaAseg_Local, SumaAseg_Moneda, Tasa,
+                    Prima_Moneda, Prima_Local, IdEndoso, PlanCob, Cod_Moneda,
+                    Deducible_Local, Deducible_Moneda, StsCobertura, PrimaNivMoneda, PrimaNivLocal,
+                    SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
+                    Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
+                    PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL)
+            VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, nIdPolizaDest,
+                    D.CodCobert, D.Cod_Asegurado, nSumaAsegIni,nSumaAsegIni, D.Tasa,
+                    nPrimaIni, nPrimaIni, 0, D.PlanCob, D.Cod_Moneda,
+                    nDeducLocalini , nDeducMonedaIni, 'SOL', D.PrimaNivMoneda, D.PrimaNivLocal,
+                    D.SalarioMensual, D.VecesSalario, D.SumaAsegCalculada, D.Edad_Minima, D.Edad_Maxima,
+                    D.Edad_Exclusion, D.SumaAseg_Minima, D.SumaAseg_Maxima,
+                    D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL);
+                    
+             OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(D.CodCia, D.CodCia, nIdPolizaDest, nIDetPolDest, D.Cod_Asegurado);
+          END IF;  
         END IF;
       END LOOP;
    END IF;
