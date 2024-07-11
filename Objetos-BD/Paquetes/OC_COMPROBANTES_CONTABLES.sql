@@ -1322,26 +1322,24 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                              nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                            X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
                            END IF;
-                        ELSE
-                           IF cCodProceso = 200 THEN
-                             IF    W.REG IN (27, 28) THEN -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
+                        ELSIF cCodProceso = 200 THEN
+                           IF    W.REG IN (27, 28) THEN -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
                              --MLJS 30/05/2024 SE AGREGA ELREGISTRO 27
                              nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                            X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
-                              ELSIF W.REG = 26 THEN -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
-                            nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
+                           ELSIF W.REG = 26 THEN -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
+                               nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                            X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
-                              END IF;
-                           ELSE
-                             IF cCodProceso IN( 300,310,320,330) THEN
+                           END IF;
+                        ELSIF cCodProceso IN( 300,310,320,330) THEN
                             nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_PAGOS(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                              X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
-                             ELSE
-                             IF cCodProceso IN( 700,900) THEN
-                               nMtoMovCuenta := W.MtoComisCuenta;
-                             END IF;
-                             END IF;
-                           END IF;
+                        ELSIF cCodProceso IN(900) THEN   
+                           -- MLJS 02/07/2024 SE AGREGA EL PROCEDIMIENTO SIGUIENTE PARA IDENTIFICAR EL IMPORTE POR AGENTE                     
+                            nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                           X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE));
+                        ELSIF cCodProceso IN( 700) THEN
+                           nMtoMovCuenta := W.MtoComisCuenta;
                         END IF;
                      ELSE             ------- JMMD20191015
 
@@ -1557,63 +1555,63 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
              X.CodUnidadNegocio := W.UEN; ---- JMMD20200817 SE CAMBIA LA UNIDAD DE NEGOCIO DE LA PLANTILLA POR LA UEN DEL TIPO DE SEGURO
              DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional|| ' cCodProceso --> '||cCodProceso||' W.CODCPTO -> '||W.CODCPTO||' X.CodUnidadNegocio '||X.CodUnidadNegocio );
               END IF; */
-              IF X.NIVELCTA1 = '5' AND X.NIVELCTA2 = '3' AND X.NIVELCTA3 = '09' THEN
-             X.CodUnidadNegocio := W.UEN;
-              END IF;
-              DBMS_OUTPUT.PUT_LINE('X.TipoRegistro -> '||X.TipoRegistro|| ' cCodProceso --> '||cCodProceso );
-               IF X.TipoRegistro = 'MO' THEN
-              IF X.TipoAgente IS NULL THEN
-                 nMtoMovCuenta := ABS(W.MtoMovCuenta);
-              ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN  --
-    ----- jmmd20220531  asi estaba                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
-                 nMtoMovCuenta := ABS(W.MtoComisCuenta);
-              ELSE
-                 nMtoMovCuenta := 0;
-              END IF;
-               ELSE
-              IF ABS(W.MtoComisCuenta) != 0 THEN
-    --------------------- JMMD20191015 IVAHON
-                  IF cConceptoAdicional = 'S' THEN
-                 IF cCodProceso = 100 THEN
-                    IF    W.REG = 26 THEN  -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
-                    nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                      X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
-                    ELSIF W.REG IN (27,28) THEN --= 28 THEN  -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
-                    --MLJS 30/05/2024 SE AGREGA ELREGISTRO 27
-                    nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                   X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
-                    END IF;
-                 ELSE
-                   IF cCodProceso = 200 THEN
-                      IF    W.REG in (27,28) THEN --= 28 THEN -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
-                     --MLJS 30/05/2024 SE AGREGA ELREGISTRO 27
-                     nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                   X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE));   --MLJS 11/12/2023 SE AGREGA AGENTE
-                      ELSIF W.REG = 26 THEN -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
-                     nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                      X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
-                      END IF;
-                   ELSE
-                     IF cCodProceso IN( 300,310,320,330) THEN
-                    DBMS_OUTPUT.PUT_LINE('cCodProceso 300,310,320,330 -> '||cCodProceso||' W.UEN --> '||W.UEN );
-                    nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_PAGOS(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                     X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
-                     ELSE
-                      IF cCodProceso IN( 700,900) THEN
-                    DBMS_OUTPUT.PUT_LINE('cCodProceso 700,900 -> '||cCodProceso||' W.UEN --> '||W.UEN );
-                    nMtoMovCuenta := W.MtoComisCuenta;
-                      END IF;
-                     END IF;
-                   END IF;
-                 END IF;
-                  ELSE             ------- JMMD20191015
-                nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                  X.TipoPersona, X.TipoAgente)); --, W.Cod_Agente)); --11/12/2023 se agrega Cod_Agente
-                  END IF;
-              ELSE
-                 nMtoMovCuenta := 0;
-              END IF;
+               IF X.NIVELCTA1 = '5' AND X.NIVELCTA2 = '3' AND X.NIVELCTA3 = '09' THEN
+                  X.CodUnidadNegocio := W.UEN;
                END IF;
+               DBMS_OUTPUT.PUT_LINE('X.TipoRegistro -> '||X.TipoRegistro|| ' cCodProceso --> '||cCodProceso );
+               IF X.TipoRegistro = 'MO' THEN
+                  IF X.TipoAgente IS NULL THEN
+                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
+                  ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN  --
+        ----- jmmd20220531  asi estaba                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
+                     nMtoMovCuenta := ABS(W.MtoComisCuenta);
+                  ELSE
+                     nMtoMovCuenta := 0;
+                  END IF;
+               ELSE --aqui
+                  IF ABS(W.MtoComisCuenta) != 0 THEN
+        --------------------- JMMD20191015 IVAHON
+                     IF cConceptoAdicional = 'S' THEN
+                        IF cCodProceso = 100 THEN
+                           IF    W.REG = 26 THEN  -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
+                              nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                              X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
+                           ELSIF W.REG IN (27,28) THEN --= 28 THEN  -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
+                              --MLJS 30/05/2024 SE AGREGA ELREGISTRO 27
+                             nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                           X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
+                           END IF;
+                        ELSIF cCodProceso = 200 THEN
+                           IF    W.REG in (27,28) THEN --= 28 THEN -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
+                             --MLJS 30/05/2024 SE AGREGA ELREGISTRO 27
+                             nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                           X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE));   --MLJS 11/12/2023 SE AGREGA AGENTE
+                           ELSIF W.REG = 26 THEN -- MLJS 05/09/2023 SE AGREGA CONDICION PARA IDENTIFICAR LOS RECIBOS Y NOTAS DE CREDITO
+                             nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_ADICIONALES(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                              X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
+                           END IF;
+                        ELSIF cCodProceso IN( 300,310,320,330) THEN
+                            DBMS_OUTPUT.PUT_LINE('cCodProceso 300,310,320,330 -> '||cCodProceso||' W.UEN --> '||W.UEN );
+                            nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_PAGOS(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                             X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
+                        ELSIF cCodProceso IN(900) THEN   
+                           -- MLJS 02/07/2024 SE AGREGA EL PROCEDIMIENTO SIGUIENTE PARA IDENTIFICAR EL IMPORTE POR AGENTE                     
+                            nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                           X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE));
+                        ELSIF cCodProceso IN( 700) THEN
+                            DBMS_OUTPUT.PUT_LINE('cCodProceso 700,900 -> '||cCodProceso||' W.UEN --> '||W.UEN );
+                            nMtoMovCuenta := W.MtoComisCuenta;
+                            -- END IF;
+                           --END IF;
+                         END IF;
+                     ELSE             ------- JMMD20191015
+                        nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                      X.TipoPersona, X.TipoAgente)); --, W.Cod_Agente)); --11/12/2023 se agrega Cod_Agente
+                     END IF;
+                  ELSE
+                     nMtoMovCuenta := 0;
+                  END IF;
+               END IF; -- aqui
                IF X.CanalComisVenta IS NOT NULL THEN
               IF OC_COMPROBANTES_CONTABLES.APLICA_CANAL_VENTA(nCodCia, nIdTransaccion, cIdTipoSeg, X.CanalComisVenta) = 'N' THEN
                  nMtoMovCuenta := 0;
