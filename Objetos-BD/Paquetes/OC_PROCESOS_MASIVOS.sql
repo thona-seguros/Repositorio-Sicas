@@ -4,7 +4,7 @@ create or replace PACKAGE OC_PROCESOS_MASIVOS IS
 -- 24/06/2020 Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPérez) -- JMMD SAT y PLD 20200624
 -- 16/01/2023 SE AGREGA RUTINA PARA EL MANEJO DE LA ACTUALIZACION DE ASEGURADOS                   -- JICO ASEGVAL 20220410
 -- 2023/03/07 SE AGREGO CAMPO DE BENEFICIARIO A INSERT  ALERTA
--- 
+-- 05/07/2024 SE AGREGA RUTINA PARA INSERTA_COBRANZA_MASIVA
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 PROCEDURE ACTUALIZA_STATUS(nIdProcMasivo NUMBER, cStsRegProceso VARCHAR2);
 PROCEDURE EMISION(nIdProcMasivo NUMBER);
@@ -75,6 +75,23 @@ PROCEDURE CARGA_ARCHIVO_ASEGURADOS ( nCodCia             NUMBER
 FUNCTION DEPURA_CADENA ( cCadenaEntrada  VARCHAR2 ) RETURN VARCHAR2;
 PROCEDURE RECUPERA_LOG_CARGA(cNomArchCarga  VARCHAR2
                              , cNomArcSalida  VARCHAR2 );
+							 
+PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia            NUMBER
+                                 , nCodEmpresa         NUMBER
+                                 , nIdPoliza           NUMBER
+                                 , nIDetPol            NUMBER 
+                                 , nIdFactura          NUMBER
+                                 , cIdTipoSeg          VARCHAR2
+                                 , cPlanCob            VARCHAR2
+                                 , cTipoProceso        VARCHAR2
+                                 , cRegDatosProc       VARCHAR2
+                                 , cNumPolUnico        VARCHAR2
+                                 , cNumDetUnico        VARCHAR2 
+                                 , cIndColectiva       VARCHAR2
+                                 , cIndAsegurado       VARCHAR2
+                                 , cCodUsuario         VARCHAR2 );
+								 
+FUNCTION ACTUALIZA_REGIS_PROCESOMASIVO(cCargaRegistro VARCHAR2)RETURN NUMBER;								 
 END OC_PROCESOS_MASIVOS;
 /
 create or replace PACKAGE BODY OC_PROCESOS_MASIVOS IS
@@ -1628,6 +1645,7 @@ PROCEDURE COBRANZA(nIdProcMasivo NUMBER) IS
 cStsFact        FACTURAS.StsFact%TYPE := '';
 nMontoPago      FACTURAS.Monto_Fact_Local%TYPE := 0;
 nIdFactura      FACTURAS.IdFactura%TYPE := 0;
+cInddomiciliado FACTURAS.Inddomiciliado%TYPE;  
 cFormPago       FACTURAS.FormPago%TYPE := '';
 cNumReciboPago  FACTURAS.ReciboPago%TYPE := '';
 dFecPago        FACTURAS.FecPago%TYPE;
@@ -1635,6 +1653,20 @@ cContinuar      VARCHAR2 (2):= 'S';
 cMontoPago      VARCHAR2(20);
 nNumCuota       FACTURAS.NumCuota%TYPE;
 cEntPago        FACTURAS.EntPago%TYPE;
+cCodPlantilla     CONFIG_PLANTILLAS_PLANCOB.CodPlantilla%TYPE;
+cTipoSeparador    VARCHAR2(10);
+nIdTransaccion    TRANSACCION.IdTransaccion%TYPE;
+nPago             NUMBER;
+cIndManejaFondos   POLIZAS.IndManejaFondos%TYPE;
+nIdetpol        FACTURAS.Idetpol%TYPE;
+cDescEntPago    VARCHAR2(100);
+cTimbrado       VARCHAR2(2);
+DescriError     VARCHAR2(100);
+cPrufecha1       VARCHAR2(10);
+cPrufecha2       VARCHAR2(10);
+cPrufecha3       VARCHAR2(10);
+cNumReferen      VARCHAR2(10);
+nMontoFactu      FACTURAS.Monto_Fact_Local%TYPE;  
 CURSOR Cobranza_Q IS
     SELECT CodCia, CodEmpresa, IdTipoSeg, PlanCob, TipoProceso,
           NumPolUnico, NumDetUnico, RegDatosProc
@@ -1642,15 +1674,25 @@ CURSOR Cobranza_Q IS
     WHERE IdProcMasivo   = nIdProcMasivo;
 BEGIN
    FOR X IN COBRANZA_Q LOOP
-      nNumCuota      := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,','));
-      cFormPago      := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,','));
-      cNumReciboPago := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,','));
-      dFecPago       := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,9,','));
-      cEntPago       := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,','));
-      nMontoPago     := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,',')),'999999.999999') ;
-      IF X.NumPolUnico != X.NumDetUnico THEN
+      cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
+      cTipoSeparador := OC_PROCESOS_MASIVOS.TIPO_SEPARADOR(cCodPlantilla);	   
+      nIdetpol          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,3,cTipoSeparador));
+      cIndManejaFondos  := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,cTipoSeparador));
+      nNumCuota         := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,cTipoSeparador));
+      cFormPago         := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,cTipoSeparador));
+      cNumReciboPago    := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,cTipoSeparador));
+      dFecPago          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,9,cTipoSeparador));
+      cEntPago          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,cTipoSeparador));
+      nMontoPago        := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,cTipoSeparador)),'9999999.999999') ;
+       
+      cPrufecha1  := TO_CHAR(dFecPago, 'DD');
+      cPrufecha2  := TO_CHAR(dFecPago, 'MM');
+      cPrufecha3  := TO_CHAR(dFecPago, 'YYYY');
+      cNumReferen := (cPrufecha1||cPrufecha2||cPrufecha3);   
+            
+      /*IF X.NumPolUnico != X.NumDetUnico THEN
           RAISE_APPLICATION_ERROR(-20100,'Numero de Poliza no Coincide con el Numero de Certificado');
-      END IF;
+      END IF;*/
       IF nNumCuota IS NULL THEN
          RAISE_APPLICATION_ERROR(-20100,'Debe Ingresar No. de Cuota a Cobrar');
       ELSIF nMontoPago IS NULL THEN
@@ -1661,27 +1703,48 @@ BEGIN
          RAISE_APPLICATION_ERROR(-20100,'Fecha de Pago NO Puede ser Mayor a la Fecha del Sistema');
       END IF;
       BEGIN
-         SELECT F.StsFact, F.IdFactura
-           INTO cStsFact, nIdFactura
+         SELECT F.StsFact, F.IdFactura , F.Inddomiciliado , F.Monto_Fact_Local
+           INTO cStsFact, nIdFactura, cInddomiciliado, nMontoFactu
            FROM FACTURAS F
           WHERE EXISTS (SELECT 1
                           FROM POLIZAS P
                          WHERE P.CodCia             = X.CodCia
                            AND P.CodEmpresa         = X.CodEmpresa
                            AND P.IdPoliza           = F.IdPoliza
-                           AND NVL(P.IndPolCol,'N') = 'N'
+                           ---AND NVL(P.IndPolCol,'N') = 'N'
                            AND P.NumPolUnico        = X.NumPolUnico)
             AND F.NumCuota = nNumCuota
+            AND F.Idetpol   = nIdetpol
+            AND F.IDFACTURA = cNumReciboPago
             AND StsFact IN ('EMI','ABO');
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
             cContinuar:='N';
+            DescriError := 'Forma de Pago no existe'; 
       END;
+      cDescEntPago := OC_ENTIDAD_FINANCIERA.DESCRIPCION(X.CodCia, cEntPago);
+      cTimbrado := OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(X.CodCia, X.CodEmpresa, cNumReciboPago,NULL, cStsFact);  
       IF OC_GENERALES.FUN_DESCRIP_LVAL('FORMPAGO',cFormPago)!= 'VALOR NO VALIDO' AND cContinuar = 'S' THEN
-         OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+         ---OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          IF cStsFact IN ('EMI','ABO') THEN
-            NULL;
+            IF cStsFact = 'EMI' AND cInddomiciliado = 'S' THEN
+               nPago := 3;
+               cContinuar := 'N';
+            ELSIF cDescEntPago = 'ENTIDAD FINANCIERA NO EXISTE' THEN
+               nPago := 4;
+               cContinuar := 'N';
+            ELSIF cTimbrado = 'N' THEN
+               nPago := 5;
+               cContinuar := 'N';
+            ELSIF nMontoPago <> nMontoFactu THEN
+               nPago := 6;
+               cContinuar := 'N';
+            ELSIF cContinuar = 'S' THEN
+               nIdTransaccion := OC_TRANSACCION.CREA(X.CodCia, X.CodEmpresa, 12, 'PAG');
+               nPago          := OC_FACTURAS.PAGAR(nIdFactura,cNumReferen, dFecPago, nMontoPago, cFormPago, cEntPago, nIdTransaccion);
+            END IF;
+
             -- Comentado Temporalmente porque ahora Necesita el IdTransaccion
             /*IF OC_FACTURAS.PAGAR(nIdFactura, cFormPago  ,cNumReciboPago , dFecPago ,nMontoPago,cFormPago,cEntPago )= 1 THEN
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'PROCE');
@@ -1692,15 +1755,67 @@ BEGIN
                OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR al pagar o abonar Factura');
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
             END IF;*/
+            IF nPago = 1 THEN
+               OC_COMPROBANTES_CONTABLES.CONTABILIZAR(X.CodCia, nIdTransaccion, 'C');
+               OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'PROCE');
+            ELSIF nPago = 2 THEN
+               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','Factura No Existe');
+               OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+            ELSIF nPago = 0 THEN
+               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR al pagar o abonar Factura');
+               OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+            ELSIF nPago = 3 THEN
+               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR Factura en Proceso de Cobro');
+               OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+            ELSIF nPago = 4 THEN
+               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR Entidad Financiera de Pago para Factura - NO EXISTE!!!');
+               OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+            ELSIF nPago = 5 THEN
+               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR No es Posible Realizar la Aplicación del Ingreso,El Recibo no Cuenta Con el Timbrado de Emisión');
+               OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+            ELSIF nPago = 6 THEN
+               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR No es Posible Realizar la Aplicación del Ingreso,El Monto del Pago es diferente al de la Factura');
+               OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+            END IF;
+                     
          END IF;
       ELSE
-         OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','Cuota  No.'||nNumCuota||' '|| 'NO Disponible para Cobro.');
-         OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+         BEGIN
+            SELECT F.StsFact, F.IdFactura , F.Inddomiciliado
+              INTO cStsFact, nIdFactura, cInddomiciliado
+              FROM FACTURAS F
+              WHERE EXISTS (SELECT 1
+                            FROM POLIZAS P
+                            WHERE P.CodCia             = X.CodCia
+                             AND P.CodEmpresa         = X.CodEmpresa
+                             AND P.IdPoliza           = F.IdPoliza
+                             AND P.NumPolUnico        = X.NumPolUnico)
+              AND F.NumCuota  = nNumCuota
+              AND F.Idetpol   = nIdetpol
+              AND F.IDFACTURA = cNumReciboPago;
+         EXCEPTION
+           WHEN NO_DATA_FOUND THEN
+            OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+         END;
+         IF cStsFact = 'ANU' THEN
+          OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','El recibo no puede ser aplicado debido a que está anulado');
+          OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+         ELSIF cStsFact = 'PAG'THEN
+          OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','El recibo no puede ser aplicado debido a que ya cuenta con estatus Aplicado');
+          OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+         ELSIF OC_GENERALES.FUN_DESCRIP_LVAL('FORMPAGO',cFormPago)= 'VALOR NO VALIDO' THEN
+          OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','Forma de Pago no existe');
+          OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+         ELSE
+          OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','Cuota  No.'||nNumCuota||' '|| 'NO Disponible para Cobro.');
+          OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+         END IF;
+         
       END IF;
    END LOOP;
 EXCEPTION
    WHEN OTHERS THEN
-      OC_procesos_masivos_log.Inserta_log(nIdProcMasivo,'COBRANZA','20225','No se puede realizar la Cobranza de la Factura: '||nIdFactura||SQLERRM);
+      OC_procesos_masivos_log.Inserta_log(nIdProcMasivo,'COBRANZA','20225','No se puede realizar la Cobranza de la Factura: '||DescriError||SQLERRM);
       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
 END COBRANZA;
 
@@ -12180,4 +12295,83 @@ END COBRANZA_APORTES_ASEG_FONDOS;
       UTL_FILE.FCLOSE(cCtlArchivo3);
       UTL_FILE.FCLOSE_ALL;
    END RECUPERA_LOG_CARGA;
+PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia             NUMBER
+                                 , nCodEmpresa         NUMBER
+                                 , nIdPoliza           NUMBER
+                                 , nIDetPol            NUMBER 
+                                 , nIdFactura          NUMBER
+                                 , cIdTipoSeg          VARCHAR2
+                                 , cPlanCob            VARCHAR2
+                                 , cTipoProceso        VARCHAR2
+                                 , cRegDatosProc       VARCHAR2
+                                 , cNumPolUnico        VARCHAR2
+                                 , cNumDetUnico        VARCHAR2 
+                                 , cIndColectiva       VARCHAR2
+                                 , cIndAsegurado       VARCHAR2
+                                 , cCodUsuario         VARCHAR2 ) IS
+
+nIdCobranza         REGI_COBRANZA_MASIVA.IdCobranza%TYPE;
+
+BEGIN
+      
+     BEGIN
+       	SELECT SEQ_COBRANZA_MASIVA.NEXTVAL
+        INTO nIdCobranza
+        FROM DUAL;
+        
+        INSERT INTO REGI_COBRANZA_MASIVA
+            (CodCia, CodEmpresa, IdCobranza, Idpoliza, IDetPol, IdFactura, IdTipoSeg, PlanCob, TipoProceso, RegDatosProc, NumPolUnico, NumDetUnico, IndColectiva, IndAsegurado, FechaEstatus, CodUsuario, Status)
+        VALUES(nCodCia, nCodEmpresa, nIdCobranza, nIdpoliza, nIDetPol, nIdFactura, cIdTipoSeg, cPlanCob, cTipoProceso, cRegDatosProc, cNumPolUnico, cNumDetUnico, cIndColectiva, cIndAsegurado, SYSDATE, cCodUsuario, 'S');
+     END;
+END INSERTA_COBRANZA_MASIVA;
+
+FUNCTION ACTUALIZA_REGIS_PROCESOMASIVO(cCargaRegistro VARCHAR2)RETURN NUMBER IS
+
+cMsjError        PROCESOS_MASIVOS_LOG.TxtError%TYPE := 'N';
+nIdProcMasivo       NUMBER;
+cConteoRegCarga     NUMBER(10) := 0;
+
+CURSOR COBRA_M IS
+       SELECT * 
+       FROM REGI_COBRANZA_MASIVA 
+       WHERE STATUS = 'S'
+       ORDER BY Idpoliza , Idetpol, IdFactura;
+       
+BEGIN
+   IF cCargaRegistro = 'S' THEN
+   
+     FOR X IN COBRA_M LOOP
+       
+        nIdProcMasivo := OC_PROCESOS_MASIVOS.CREAR(X.CodCia, X.CodEmpresa);
+        BEGIN
+          INSERT INTO PROCESOS_MASIVOS
+                      (IdProcMasivo,                    CodCia,                     CodEmpresa, 
+                       IdTipoSeg,                       PlanCob,                    TipoProceso, 
+                       StsRegProceso,                   FecSts,                     RegDatosProc, 
+                       NumPolUnico,                     NumDetUnico,                IndColectiva, 
+                       IndAsegurado,                    CodUsuario)
+                VALUES(nIdProcMasivo,                   X.CodCia,                   X.CodEmpresa, 
+                       X.IdTipoSeg,                     X.PlanCob,                  X.TipoProceso,
+                         'XPROC',                         SYSDATE,                  X.RegDatosProc, 
+                       X.NumPolUnico,                   X.NumDetUnico,              X.IndColectiva, 
+                       X.IndAsegurado,                  X.CodUsuario);
+               EXCEPTION
+                 WHEN OTHERS THEN
+                    cMsjError := SQLERRM;
+        END;
+               
+        UPDATE REGI_COBRANZA_MASIVA
+        SET Status   = 'N'
+         WHERE CodCia     = X.CodCia
+         AND   IdCobranza = X.IdCobranza
+         AND   IdPoliza  =  X.IdPoliza
+         AND   IDetPol   =  X.IDetPol;
+              
+        cConteoRegCarga := cConteoRegCarga + 1;
+            
+     END LOOP;
+   END IF;
+   RETURN (cConteoRegCarga);
+END ACTUALIZA_REGIS_PROCESOMASIVO;
+   
 END OC_PROCESOS_MASIVOS;
