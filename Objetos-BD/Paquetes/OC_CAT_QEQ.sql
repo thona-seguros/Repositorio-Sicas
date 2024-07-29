@@ -173,6 +173,7 @@ PROCEDURE ES_FORMS(
     buffer              VARCHAR2(32000);
     lvc_wallet_path     VARCHAR2(100):= OC_GENERALES.BUSCA_PARAMETRO(1,'QE6');
     lvc_wallet_pass     VARCHAR2(20):=  OC_GENERALES.BUSCA_PARAMETRO(1,'QE7');
+    umbral_search       VARCHAR2(5):=  OC_GENERALES.BUSCA_PARAMETRO(1,'QE8');
     req                 utl_http.req;
     res                 utl_http.resp;
     v_json_obj          JSON_OBJECT_T;
@@ -214,7 +215,9 @@ PROCEDURE ES_FORMS(
         IF PA_CURP IS NOT NULL THEN
             url_Find := url_Find || vl_parametro4;
         END IF;
-
+        
+        url_Find := url_Find ||'&'||'percent='||NVL(umbral_search,'90');
+        
         BEGIN
             vl_Token := SICAS_OC.OC_APIQUIENESQUIEN.getToken;
         EXCEPTION
@@ -631,7 +634,7 @@ BEGIN
    END IF;
 
    BEGIN
-    SICAS_OC.getInfoHTTP(W_NOMBRE,vl_ValorBusqueda,cFechaNacimiento,vl_ValorBusqueda2,vl_TotalCoincidencias);
+    SICAS_OC.getInfoHTTPSini(W_NOMBRE,vl_ValorBusqueda,cFechaNacimiento,vl_ValorBusqueda2,vl_TotalCoincidencias);
         IF vl_TotalCoincidencias > 0 THEN
             cES_QEQ := 'S';
         ELSE

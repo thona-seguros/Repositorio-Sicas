@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SICAS_OC.getInfoHTTP(
+create or replace PROCEDURE          SICAS_OC.getInfoHTTPSini(
                                         PA_NOMBRE           IN  VARCHAR2,
                                         PA_RFC              IN  VARCHAR2,
                                         PA_FECHANACIMIENTO  IN  VARCHAR2,
@@ -19,11 +19,12 @@ CREATE OR REPLACE PROCEDURE SICAS_OC.getInfoHTTP(
         vl_parametro2       VARCHAR2(4000) := '&'||'rfc='||PA_RFC;
         vl_parametro3       VARCHAR2(4000) := '&'||'birthday='||PA_FECHANACIMIENTO;  
         vl_parametro4       VARCHAR2(4000) := '&'||'curp='||PA_CURP;
+        
 
         buffer              VARCHAR2(32000);
         lvc_wallet_path     VARCHAR2(100):= OC_GENERALES.BUSCA_PARAMETRO(1,'QE6');
         lvc_wallet_pass     VARCHAR2(20):=  OC_GENERALES.BUSCA_PARAMETRO(1,'QE7');
-        umbral_search       VARCHAR2(5) :=  OC_GENERALES.BUSCA_PARAMETRO(1,'QE8');
+        umbral_search       VARCHAR2(5):=  OC_GENERALES.BUSCA_PARAMETRO(1,'QE8');
         v_json_obj          JSON_OBJECT_T;
         v_Succes            VARCHAR2(4000);
         v_msj_respuesta     VARCHAR2(4000);
@@ -131,7 +132,7 @@ BEGIN
 END ;
 /
 
-CREATE OR REPLACE PUBLIC SYNONYM getInfoHTTP FOR SICAS_OC.getInfoHTTP;
+CREATE OR REPLACE PUBLIC SYNONYM getInfoHTTPSini FOR SICAS_OC.getInfoHTTPSini;
     
-GRANT EXECUTE ON SICAS_OC.getInfoHTTP TO PUBLIC;
+GRANT EXECUTE ON SICAS_OC.getInfoHTTPSini TO PUBLIC;
 /

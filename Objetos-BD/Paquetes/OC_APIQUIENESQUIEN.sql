@@ -52,7 +52,8 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_APIQUIENESQUIEN IS
     buffer              VARCHAR2(32000);
     lvc_wallet_path     VARCHAR2(100):= OC_GENERALES.BUSCA_PARAMETRO(1,'QE6');
     lvc_wallet_pass     VARCHAR2(20):=  OC_GENERALES.BUSCA_PARAMETRO(1,'QE7');
-
+    umbral_search       VARCHAR2(5):=  OC_GENERALES.BUSCA_PARAMETRO(1,'QE8');
+    
     v_json_obj          JSON_OBJECT_T;
     v_Succes            VARCHAR2(4000);
     v_msj_respuesta     VARCHAR2(4000);
@@ -155,7 +156,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_APIQUIENESQUIEN IS
         IF PA_CURP IS NOT NULL THEN
             url_Find := url_Find || vl_parametro4;
         END IF;
-
+        
+        url_Find := url_Find ||'&'||'percent='||NVL(umbral_search,'90');
+        
         vl_Token := SICAS_OC.OC_APIQUIENESQUIEN.getToken;
 
         --utl_http.set_wallet(lvc_wallet_path, lvc_wallet_pass);
@@ -420,7 +423,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_APIQUIENESQUIEN IS
         IF PA_CURP IS NOT NULL THEN
             url_Find := url_Find || vl_parametro4;
         END IF;
-
+        
+        url_Find := url_Find ||'&'||'percent='||NVL(umbral_search,'90');
+        
         vl_Token := SICAS_OC.OC_APIQUIENESQUIEN.getToken;
 
         --utl_http.set_wallet(lvc_wallet_path, lvc_wallet_pass);
@@ -563,8 +568,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_APIQUIENESQUIEN IS
             url_Find := url_Find || vl_parametro4;
         END IF;
 
+        url_Find := url_Find ||'&'||'percent='||NVL(umbral_search,'90');
+        
         url_Find := url_Find||'&'||'limit=1';
-
+        
         vl_Token := SICAS_OC.OC_APIQUIENESQUIEN.getToken;
 
         --utl_http.set_wallet(lvc_wallet_path, lvc_wallet_pass);
@@ -762,7 +769,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_APIQUIENESQUIEN IS
         IF PA_CURP IS NOT NULL THEN
             url_Find := url_Find || vl_parametro4;
         END IF;
-
+        
+        --url_Find := url_Find ||'&'||'percent='||NVL(umbral_search,'90'); --PARA LAS BUSQUEDAS EN LA FORMA NO APLICA UMBRAL
+        
         BEGIN
             vl_Token := SICAS_OC.OC_APIQUIENESQUIEN.getToken;
         EXCEPTION
