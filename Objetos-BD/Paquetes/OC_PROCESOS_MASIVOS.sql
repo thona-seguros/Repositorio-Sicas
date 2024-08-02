@@ -1683,7 +1683,7 @@ BEGIN
       cNumReciboPago    := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,cTipoSeparador));
       dFecPago          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,9,cTipoSeparador));
       cEntPago          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,cTipoSeparador));
-      nMontoPago        := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,cTipoSeparador)),'9999999.999999') ;
+      nMontoPago        := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,cTipoSeparador)),'99999999.999999') ;
        
       cPrufecha1  := TO_CHAR(dFecPago, 'DD');
       cPrufecha2  := TO_CHAR(dFecPago, 'MM');
