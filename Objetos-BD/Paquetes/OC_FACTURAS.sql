@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_FACTURAS IS
+create or replace PACKAGE OC_FACTURAS IS
     -- FACTELECT VIFLEX                     20230426 CAPELE
 	-- SE AGREGO LAS FUNCIONES GENERA_VALOR_CONCEPTO ARH 17/10/2023
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
@@ -7,6 +7,7 @@ CREATE OR REPLACE PACKAGE OC_FACTURAS IS
     PROCEDURE PAGAR_CON_NOTA_DE_CREDITO(nIdFactura NUMBER, nIdNcr NUMBER, cNumReciboPago VARCHAR2,
                                         dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER);
 
+	--MASP 24/07/2024 --> Prorrateo													
     FUNCTION INSERTAR(nIdPoliza NUMBER, nIDetPol NUMBER, nCodCliente NUMBER, dFecPago DATE,
                       nMtoPagoLocal NUMBER, nMtoPagoMoneda NUMBER, nIdEndoso NUMBER,
                       nMtoComisiLocal NUMBER, nMtoComisiMoneda NUMBER, nNumPago NUMBER,
@@ -41,6 +42,7 @@ CREATE OR REPLACE PACKAGE OC_FACTURAS IS
                             dFecReversion DATE, nCodCobrador NUMBER, nIdTransaccion NUMBER);
     PROCEDURE CAMBIO_COMISIONES(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cStsFact VARCHAR2, dfeinivig DATE);  --COMI --ICOCOMI
 
+	--MASP 24/07/2024 --> Prorrateo													
     FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoliza      NUMBER,
                             nIdFactura     NUMBER,   nIdEndoso      NUMBER,  dFecIniVigFact DATE,
                             dFecFinVigPol  DATE,     nNUMCUOTA      NUMBER,  cCodPlanPagos  VARCHAR2) RETURN DATE;   -- INICIA FINVIG  LARPLA
@@ -97,11 +99,11 @@ CREATE OR REPLACE PACKAGE OC_FACTURAS IS
 	FUNCTION  GENERA_VALOR_CONCEPTO (nIdFactura IN NUMBER,nIdNcr IN NUMBER DEFAULT NULL,nCodCia IN NUMBER,
                                      nIdTransaccion IN NUMBER,cNumPolUnico IN VARCHAR2,cProceso IN VARCHAR2,
                                      dFecPago IN DATE ) RETURN VARCHAR2;
-									 
+
 	--
 END OC_FACTURAS;
 /
-CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
+create or replace PACKAGE BODY OC_FACTURAS IS
     --
     -- MODIFICACIONES
     -- INSERCION DE FECHAS A COMISIONES                                       2018/03/06  ICO COMI
@@ -355,6 +357,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
        END IF;
     END PAGAR_CON_NOTA_DE_CREDITO;
 
+	--MASP 24/07/2024 --> Prorrateo													
     FUNCTION INSERTAR(nIdPoliza     NUMBER,    nIDetPol        NUMBER,   nCodCliente         NUMBER,
                       dFecPago      DATE,      nMtoPagoLocal   NUMBER,   nMtoPagoMoneda      NUMBER,
                       nIdEndoso     NUMBER,    nMtoComisiLocal NUMBER,   nMtoComisiMoneda    NUMBER,
@@ -372,6 +375,9 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
        nIDetPolQuery   NUMBER;
        cIndFacturaPol  POLIZAS.IndFacturaPol%TYPE;
        cTipoEndoso     ENDOSOS.TipoEndoso%TYPE;
+       --
+       nFrecPagos      PLAN_DE_PAGOS.FrecPagos%TYPE;
+       nDia            NUMBER;
     BEGIN
       BEGIN
         SELECT P.FecFinVig,   P.CodEmpresa,   P.CodPlanPago, P.IndFacturaPol
@@ -396,61 +402,58 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
              cIndFacturaPol := '';
       END;
       --
-      nIdFactura     := OC_FACTURAS.F_GET_FACT(P_Msg_Regreso);  -- Cambio a secuencia XDS
+      SELECT EXTRACT(DAY FROM FecIniVig)
+      INTO   nDia
+      FROM   DETALLE_POLIZA
+      WHERE  IdPoliza = nIdPoliza
+        AND  IDetPol  = nIDetPol;
       --
+      nIdFactura     := OC_FACTURAS.F_GET_FACT(P_Msg_Regreso);  -- Cambio a secuencia XDS
       nId_Año_Poliza := OC_FACTURAS.CALCULA_AÑO_POLIZA(nIdPoliza, dFecPago);
       --
-      IF nIdEndoso > 0 AND nNumPago = 1 THEN
-         IF NVL(cIndFacturaPol, 'N') = 'S' THEN
-            nIDetPolQuery := 1;
-         ELSE
-            nIDetPolQuery := nIDetPol;
-         END IF;
-         --
-         SELECT TipoEndoso
-         INTO   cTipoEndoso
+      IF nIdEndoso > 0 THEN
+         SELECT CodPlanPago, TipoEndoso
+         INTO   cCodPlanPago, cTipoEndoso
          FROM   ENDOSOS
          WHERE  CodCia     = nCodCia
            AND  CodEmpresa = nCodEmpresa
            AND  IdPoliza   = nIdPoliza
+           AND  IDetPol    = nIDetPol
            AND  IdEndoso   = nIdEndoso;
-         --
-         IF cTipoEndoso = 'CFP' THEN
-            dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
-                                                          dFecPago, dFecFinVigPol, nNumPago , cCodPlanPago );
+        --
+         nFrecPagos     := OC_PLAN_DE_PAGOS.FRECUENCIA_PAGOS(nCodCia, nCodEmpresa, cCodPlanPago);
+         IF nNumPago = 1 THEN
+            IF NVL(cIndFacturaPol, 'N') = 'S' THEN
+               nIDetPolQuery := 1;
+            ELSE
+               nIDetPolQuery := nIDetPol;
+            END IF;
+            --
+            IF cTipoEndoso = 'CFP' THEN
+               dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
+                                                             dFecPago, dFecFinVigPol, nNumPago , cCodPlanPago );
+            ELSE
+                  IF nDia IN (28, 29, 30) THEN
+                     IF EXTRACT(MONTH FROM ADD_MONTHS(dFecPago, nFrecPagos)) = 2 THEN
+                        dFecFinVigFact := ADD_MONTHS(dFecPago, nFrecPagos);
+                     ELSE
+                        dFecFinVigFact := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecPago, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                     END IF;
+                  ELSE
+                     dFecFinVigFact := ADD_MONTHS(dFecPago, nFrecPagos);
+                  END IF;
+                  --dFecFinVigFact := ADD_MONTHS(TRUNC(dFecPago),nFrecPagos);
+            END IF;
          ELSE
-            --Query para determinar la fecha de vencimiento del primer recibo en caso de que se trate de un endoso
-            BEGIN
-               SELECT FecFinVig
-               INTO   dFecFinVigFact
-               FROM   FACTURAS
-               WHERE  CodCia   = nCodCia
-                 AND  IdPoliza = nIdPoliza
-                 AND  IDetPol  = nIDetPolQuery
-                 AND  IdEndoso = 0
-                 AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
-                 AND  IdFactura = ( SELECT MAX(A.IdFactura)
-                                    FROM   FACTURAS A
-                                    WHERE  A.CodCia   = nCodCia
-                                      AND  A.IdPoliza = nIdPoliza
-                                      AND  A.IDetPol  = nIDetPolQuery
-                                      AND  A.IdEndoso = 0
-                                      AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
-            EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                 IF NVL(nIdEndoso, 0) <> 0 THEN
-                    SELECT FecFinVig
-                    INTO   dFecFinVigFact
-                    FROM   ENDOSOS
-                    WHERE  CodCia     = nCodCia
-                      AND  CodEmpresa = nCodEmpresa
-                      AND  IdPoliza   = nIdPoliza
-                      AND  IdEndoso   = nIdEndoso;
-                 ELSE
-                    dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
-                                                                  dFecPago, dFecFinVigPol, nNumPago , cCodPlanPago );
-                 END IF;
-            END;
+            IF nDia IN (28, 29, 30) THEN
+               IF EXTRACT(MONTH FROM ADD_MONTHS(dFecPago, nFrecPagos)) = 2 THEN
+                  dFecFinVigFact := ADD_MONTHS(dFecPago, nFrecPagos);
+               ELSE
+                  dFecFinVigFact := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecPago, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+               END IF;
+            ELSE
+               dFecFinVigFact := ADD_MONTHS(dFecPago, nFrecPagos);
+            END IF;
          END IF;
       ELSE
          dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
@@ -502,12 +505,12 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
         WHERE IdFactura = nIdFactura;
 
        UPDATE FACTURAS
-          SET Monto_Fact_Local  = nMtoTotalLocal,
-              Monto_Fact_Moneda = nMtoTotalMoneda,
-              Saldo_Local       = nMtoTotalLocal,
-              Saldo_Moneda      = nMtoTotalMoneda,
-              MtoComisi_Local   = nComision_Local,
-              MtoComisi_Moneda  = nComision_Moneda
+          SET Monto_Fact_Local  = nvl(nMtoTotalLocal,0),
+              Monto_Fact_Moneda = nvl(nMtoTotalMoneda,0),
+              Saldo_Local       = nvl(nMtoTotalLocal,0),
+              Saldo_Moneda      = nvl(nMtoTotalMoneda,0),
+              MtoComisi_Local   = nvl(nComision_Local,0),
+              MtoComisi_Moneda  = nvl(nComision_Moneda,0)
         WHERE IdFactura = nIdFactura;
     END ACTUALIZA_FACTURA;
 
@@ -2711,6 +2714,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
        END IF;
     END CAMBIO_COMISIONES;
 
+	--MASP 24/07/2024 --> Prorrateo													
     FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoliza      NUMBER,
                             nIdFactura     NUMBER,   nIdEndoso      NUMBER,  dFecIniVigFact DATE,
                             dFecFinVigPol  DATE,     nNUMCUOTA      NUMBER,  cCodPlanPagos  VARCHAR2) RETURN DATE IS   -- INICIA FINVIG  LARPLA
@@ -2744,7 +2748,9 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
          cTipoEndoso := NULL;
       END IF;
       --
-      IF cTipoEndoso IN ('RSS','EAD') THEN
+	  -- MASP 24/07/2024 --> Prorrateo													
+         --Se quita del IN el tipo de endoso RSS para que calcule las fechas finales correspondientes (solicitud del área operativa)
+      IF cTipoEndoso IN ('EAD') THEN
          dFecFinVigFact  := dFecFinVig;
       ELSE
          IF nFrecPagos = 15 THEN
@@ -2763,7 +2769,7 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
             dFecFinVigFact := ADD_MONTHS(dFecIniVigFact, nFrecPagos);
          END IF;
        --
-         IF dFecFinVigFact > dFecFinVigPol THEN
+         IF TRUNC(dFecFinVigFact) > TRUNC(dFecFinVigPol) THEN
             dFecFinVigFact := dFecFinVigPol;
          END IF;
        --
@@ -4109,9 +4115,9 @@ CREATE OR REPLACE PACKAGE BODY OC_FACTURAS IS
             cValor3 := cValorAtributo;
          END IF;
       END LOOP;	  
-      
+
       cValorDescrCpto := ' '||cValor1||' '||cValor2||' '||cValor3;
-    
+
      RETURN RTRIM(LTRIM(TO_CHAR(cValorDescrCpto)));
 
     END GENERA_VALOR_CONCEPTO;

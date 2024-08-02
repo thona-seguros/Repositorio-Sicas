@@ -8,7 +8,13 @@ create or replace PACKAGE          OC_FACTURAR IS
 --PROCEDIMIETOS DONDE SE OBTIENEN LAS COMISIONES 
    PROCEDURE PROC_EMITE_FACTURAS (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_EMITE_FACT_POL (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
-   PROCEDURE PROC_EMITE_FACT_END (nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER,nTransa NUMBER);
+   --
+   --MASP 24/07/2024 --> Prorrateo
+   PROCEDURE PROC_EMITE_FACT_END( nIdPoliza  NUMBER
+                                , nIDetPol   NUMBER
+                                , nIdEndoso  NUMBER
+                                , nTransa    NUMBER );
+   --
    PROCEDURE PROC_EMITE_FACT_CAM (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    PROCEDURE PROC_FACT_FIANZA (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER);
    FUNCTION FUNC_VALIDA_RESP_POL (nIdPoliza NUMBER, nCodCia NUMBER)RETURN VARCHAR2;
@@ -17,7 +23,20 @@ create or replace PACKAGE          OC_FACTURAR IS
    PROCEDURE PROC_COMISIONAG (nIdPoliza NUMBER ,nIdetPol NUMBER,nCodCia NUMBER,nCodEmpresa NUMBER,cIdTipoSeg VARCHAR2 ,cCodMoneda VARCHAR2,nIdFactura NUMBER,nmontodetlocal  NUMBER,nmontodetmoneda  NUMBER,nTasaCambio NUMBER);
    PROCEDURE PROC_MOVCONTA (nCodCia NUMBER, nIdPoliza NUMBER, cCodMoneda VARCHAR2, cProceso VARCHAR2);
    PROCEDURE PROC_COMISIONPOL(nIdPoliza NUMBER ,nIdetPol NUMBER,nCodCia NUMBER,nCodEmpresa NUMBER,cIdTipoSeg VARCHAR2 ,cCodMoneda VARCHAR2,nIdFactura NUMBER,nmontodetlocal  NUMBER,nmontodetmoneda  NUMBER,nTasaCambio NUMBER);
-   PROCEDURE PROC_ENDO_COMI (nIdPoliza NUMBER ,nIdetPol NUMBER,nIdEndoso NUMBER,nCodCia NUMBER,nCodEmpresa NUMBER ,cIdTipoSeg VARCHAR2,cCodMoneda VARCHAR2,nIdFactura NUMBER,nmontodetlocal NUMBER,nmontodetmoneda NUMBER ,nTasaCambio NUMBER);
+   --
+   --MASP 24/07/2024 --> Prorrateo
+   PROCEDURE PROC_ENDO_COMI( nIdPoliza        NUMBER
+                           , nIdetPol         NUMBER
+                           , nIdEndoso        NUMBER
+                           , nCodCia          NUMBER
+                           , nCodEmpresa      NUMBER
+                           , cIdTipoSeg       VARCHAR2
+                           , cCodMoneda       VARCHAR2
+                           , nIdFactura       NUMBER
+                           , nmontodetlocal   NUMBER
+                           , nmontodetmoneda  NUMBER
+                           , nTasaCambio      NUMBER );   
+   --
    PROCEDURE PROC_EMITE_FACT_MENSUAL (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER,nCuota NUMBER );
    PROCEDURE PROC_EMITE_FACT_PERIODO (nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER,nTransa NUMBER,nCuota NUMBER );
    FUNCTION FUNC_VALIDA_FECHA (nCodCia NUMBER,nCodEmpresa NUMBER ,nIdPoliza NUMBER, dFecIni DATE,cCodPlanPlago VARCHAR2)RETURN VARCHAR2 ;
@@ -56,15 +75,14 @@ create or replace PACKAGE          OC_FACTURAR IS
    PROCEDURE PROC_COMISIONPOL_MULTIRAMO(nIdPoliza NUMBER ,nIdetPol NUMBER,nCodCia NUMBER,nCodEmpresa NUMBER,cIdTipoSeg VARCHAR2 ,cCodMoneda VARCHAR2,nIdFactura NUMBER,nmontodetlocal  NUMBER,nmontodetmoneda  NUMBER,nTasaCambio NUMBER);
 
 END OC_FACTURAR;
-
 /
 create or replace PACKAGE BODY          OC_FACTURAR IS
 --
 -- MODIFICACIONES
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO      2018/03/09  ICOFINVIG
--- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
+-- CALCULO DEL AÃ‘O POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 -- CORRECCION DEL TIPO DE CAMBIO PARA COMPONENTES                            2019/06/12  ICO LARPLA1
--- CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES                                  2019/08/21  ICO LARPLA2
+-- CAMBIO DE VIGENCIA POR AÃ‘OS SUBSECUENTES                                  2019/08/21  ICO LARPLA2
 -- PLAN DE PAGOS CATORCENAL                                                  2021/12/03  JMMD 20211203
 -- CALCULO DE COMISIONES PARA RAMOS PAQUETE                                  2022/01/22  JMMD
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
@@ -1793,13 +1811,15 @@ BEGIN
       PROC_MOVCONTA(nCodCia, nIdPoliza, cCodMoneda, 'EMI');
    END IF;
 END PROC_EMITE_FACT_POL;
---
+   --
+   --MASP 24/07/2024 --> Prorrateo
    PROCEDURE PROC_EMITE_FACT_END ( nIdPoliza  NUMBER
                                  , nIDetPol   NUMBER
                                  , nIdEndoso  NUMBER
                                  , nTransa    NUMBER ) IS
       nIdFactura               FACTURAS.IdFactura%TYPE;
       nNumPagos                PLAN_DE_PAGOS.NumPagos%TYPE;
+      nNumPagosProrrateo       PLAN_DE_PAGOS.NumPagos%TYPE;
       nFrecPagos               PLAN_DE_PAGOS.FrecPagos%TYPE;
       nPorcInicial             PLAN_DE_PAGOS.PorcInicial%TYPE;
       nCodCliente              POLIZAS.CodCliente%TYPE;
@@ -1862,8 +1882,13 @@ END PROC_EMITE_FACT_POL;
       nIDetPolQuery            NUMBER;
       cIndFacturaPol           POLIZAS.IndFacturaPol%TYPE;
       --
+      --Variables Prorrateo
+      dFecIni                  DATE;
+      dFecFin                  DATE;
+      nDia                     NUMBER;
+      --      
       CURSOR ENDOSO_Q IS
-             SELECT E.Prima_Neta_Local PrimaLocal, E.Prima_Neta_Moneda PrimaMoneda, E.CodPlanPago, E.PorcComis,
+             SELECT E.Prima_Neta_Local PrimaLocal, E.Prima_Neta_Moneda PrimaMoneda, E.CodPlanPago, E.PorcComis, D.FecIniVig FecIniVigDet,
                     E.FecIniVig, E.FecFinVig, E.FecEmision, E.IDetPol, D.IdTipoSeg, E.TipoEndoso, E.IndCalcDerechoEmis, 
                     TRUNC(E.FecFinVig) - TRUNC(E.FecIniVig) DiasRestantes, E.Prima_Neta_Local / (TRUNC(E.FecFinVig) - TRUNC(E.FecIniVig)) FactorPorDia
              FROM   DETALLE_POLIZA D, ENDOSOS E
@@ -1983,7 +2008,7 @@ END PROC_EMITE_FACT_POL;
       END;
       --
       BEGIN
-         SELECT CodCliente, Cod_Moneda, CodCia, CodEmpresa, IndFactElectronica, IndFacturaPol
+         SELECT CodCliente , Cod_Moneda, CodCia , CodEmpresa , IndFactElectronica , IndFacturaPol
          INTO   nCodCliente, cCodMoneda, nCodCia, nCodEmpresa, cIndFactElectronica, cIndFacturaPol
          FROM   POLIZAS
          WHERE  IdPoliza = nIdPoliza;
@@ -2062,8 +2087,8 @@ END PROC_EMITE_FACT_POL;
              --
              -- Caracteristicas del Plan de Pago
              BEGIN
-                SELECT NumPagos, FrecPagos, PorcInicial
-                INTO   nNumPagos, nFrecPagos, nPorcInicial
+                SELECT NumPagos , FrecPagos , PorcInicial , NumPagos
+                INTO   nNumPagos, nFrecPagos, nPorcInicial, nNumPagosProrrateo
                 FROM   PLAN_DE_PAGOS
                 WHERE  CodCia      = nCodCia
                   AND  CodEmpresa  = nCodEmpresa
@@ -2085,11 +2110,13 @@ END PROC_EMITE_FACT_POL;
              END IF;
              --
              IF nCantPagosReal < nNumPagos THEN
-                nNumPagos       := nCantPagosReal;
+                nNumPagos := nCantPagosReal;
              END IF;
              --
              -- Fecha del Primer Pago Siempre a Inicio de Vigencia
              dFecPago := X.FecIniVig;
+             dFecIni  := x.FecIniVigDet;  --Variable para Prorrateo
+             --
              -- Monto del Primer Pago
              nTotPrimas       := 0;
              nTotPrimasMoneda := 0;
@@ -2115,35 +2142,65 @@ END PROC_EMITE_FACT_POL;
                 nIDetPolQuery := nIDetPol;
              END IF;
              --
-             IF x.TipoEndoso = 'CFP' THEN
-                dFecIniVig1erRecibo := x.FecIniVig;
-                dFecFinVig1erRecibo := x.FecIniVig + nFrecPagos;
-                nMto1erRecibo       := nMtoPago;
-             ELSE
-                --Query para determinar la parte a cobrar del primer recibo
-                BEGIN
-                   SELECT FecVenc, FecFinVig, x.FactorPorDia * (TRUNC(FecFinVig) - TRUNC(dFecPago))
-                   INTO   dFecIniVig1erRecibo, dFecFinVig1erRecibo, nMto1erRecibo
-                   FROM   FACTURAS
-                   WHERE  CodCia   = nCodCia
-                     AND  IdPoliza = nIdPoliza
-                     AND  IDetPol  = nIDetPolQuery
-                     AND  IdEndoso = 0
-                     AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
-                     AND  IdFactura = ( SELECT MAX(A.IdFactura)
-                                        FROM   FACTURAS A
-                                        WHERE  A.CodCia   = nCodCia
-                                          AND  A.IdPoliza = nIdPoliza
-                                          AND  A.IDetPol  = nIDetPolQuery
-                                          AND  A.IdEndoso = 0
-                                          AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig) );
-                EXCEPTION
-                WHEN NO_DATA_FOUND THEN
-                     dFecIniVig1erRecibo := x.FecIniVig;
-                     dFecFinVig1erRecibo := x.FecFinVig;
-                     nMto1erRecibo       := x.FactorPorDia * (TRUNC(x.FecFinVig) - TRUNC(dFecPago));
-                END;
-             END IF;
+             --Cursor Prorrateo
+             nDia := EXTRACT(DAY FROM dFecIni);
+             FOR z IN 1..nNumPagosProrrateo LOOP
+                 IF z = 1 then
+                    IF nDia IN (28, 29, 30) THEN
+                       IF EXTRACT(MONTH FROM ADD_MONTHS(dFecIni, nFrecPagos)) = 2 THEN
+                          dFecFin := ADD_MONTHS(dFecIni, nFrecPagos);
+                       ELSE
+                          dFecFin := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecIni, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                       END IF;
+                    ELSE
+                       dFecFin := ADD_MONTHS(dFecIni, nFrecPagos);
+                    END IF;
+                 ELSE
+                    IF nDia IN (28, 29, 30) THEN
+                       IF EXTRACT(MONTH FROM ADD_MONTHS(dFecIni, nFrecPagos)) = 2 THEN
+                          dFecIni := ADD_MONTHS(dFecIni, nFrecPagos);
+                       ELSE
+                          dFecIni := TO_DATE(nDia || TO_CHAR(add_months(dFecIni, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                       END IF;
+                       --
+                       IF EXTRACT(MONTH FROM ADD_MONTHS(dFecFin, nFrecPagos)) = 2 THEN
+                          dFecFin := ADD_MONTHS(dFecFin, nFrecPagos);
+                       ELSE
+                          dFecFin := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecFin, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                       END IF;
+                    ELSE
+                       dFecIni := ADD_MONTHS(dFecIni, nFrecPagos) ;
+                       dFecFin := ADD_MONTHS(dFecFin, nFrecPagos) ;
+                    END IF;
+                 END IF;
+                 --
+                 IF TRUNC(x.FecIniVig) >= TRUNC(dFecIni) AND TRUNC(x.FecIniVig) <= TRUNC(dFecFin) THEN
+                    IF TRUNC(x.FecIniVig) = TRUNC(dFecFin) THEN
+                       dFecIniVig1erRecibo := dFecFin;
+                       --
+                       IF nDia IN (28, 29, 30) THEN
+                          IF EXTRACT(MONTH FROM ADD_MONTHS(dFecFin, nFrecPagos)) = 2 THEN
+                             dFecFinVig1erRecibo := ADD_MONTHS(dFecFin, nFrecPagos);  
+                          ELSE
+                             dFecFinVig1erRecibo := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecFin, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                          END IF;
+                       ELSE
+                          dFecFinVig1erRecibo := ADD_MONTHS(dFecFin, nFrecPagos);  
+                       END IF;
+                       --
+                       nMto1erRecibo := X.PrimaLocal / nNumPagos;
+                    ELSE
+                       dFecIniVig1erRecibo := x.FecIniVig;
+                       dFecFinVig1erRecibo := dFecFin;
+                       --
+                       IF TRUNC(x.FecIniVig) = TRUNC(dFecIni) THEN
+                           nMto1erRecibo := X.PrimaLocal / nNumPagos;
+                       ELSE
+                           nMto1erRecibo := (x.FactorPorDia * (TRUNC(dFecFinVig1erRecibo) - TRUNC(dFecIniVig1erRecibo)));
+                       END IF;
+                    END IF;    
+                 END IF;                 
+             END LOOP;
              --
              IF nNumPagos = 1 THEN
                 nMtoPagoSubs := (NVL(X.PrimaLocal, 0) - NVL(nMto1erRecibo, 0));
@@ -2161,9 +2218,21 @@ END PROC_EMITE_FACT_POL;
                     nMtoPago   := nMtoPagoSubs;
                     nTotPrimas := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
                     nMtoComisi := nMtoPago * X.PorcComis / 100;
-                    -- JMMD20211203               IF nFrecPagos NOT IN (15,7) THEN
+                    --
                     IF nFrecPagos NOT IN (15,14,7) THEN
-                       dFecPago := ADD_MONTHS(dFecPago,nFrecPagos);
+                       IF NP = 2 THEN
+                          dFecPago := dFecFinVig1erRecibo;
+                       ELSE
+                          IF nDia IN (28, 29, 30) THEN
+                             IF EXTRACT(MONTH FROM ADD_MONTHS(dFecPago, nFrecPagos)) = 2 THEN
+                                dFecPago := ADD_MONTHS(dFecPago, nFrecPagos);
+                             ELSE
+                                dFecPago := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecPago, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                             END IF;
+                          ELSE
+                             dFecPago := ADD_MONTHS(dFecPago, nFrecPagos);
+                          END IF;
+                       END IF;
                     ELSE
                        dFecPago := dFecPago + nFrecPagos;
                     END IF;
@@ -2182,9 +2251,18 @@ END PROC_EMITE_FACT_POL;
                     --
                     cRecibosrestantes := 'S';
                  END IF;
-                 -- LARPLA
+                 --
                  nIdFactura := OC_FACTURAS.INSERTAR( nIdPoliza, X.IDetPol  , nCodCliente, dFecPago   , nMtoPago, nMtoPagoMoneda, nIdEndoso , nMtoComisi, nMtoComisiMoneda,
                                                      NP       , nTasaCambio, nCod_Agente, nCodTipoDoc, nCodCia , cCodMoneda    , NULL      , nTransa   , cIndFactElectronica );
+                 --
+                 IF NP = 1 THEN
+                    UPDATE FACTURAS
+                    SET    FecFinVig = dFecFinVig1erRecibo
+                    WHERE  CodCia   = nCodCia
+                      AND  IdPoliza = nIdPoliza
+                      AND  IDetPol  = X.IDetPol
+                      AND  IdFactura = nIdFactura;
+                 END IF;   
                  --
                  FOR W IN CPTO_PRIMAS_Q LOOP
                      nFactor := W.Prima_Local / NVL(X.PrimaLocal,0);
@@ -2205,12 +2283,7 @@ END PROC_EMITE_FACT_POL;
                         nMtoAsistLocal  := (NVL(K.MontoAsistLocal,0) / nNumPagos);
                         nMtoAsistMoneda := (NVL(K.MontoAsistMoneda,0) / nNumPagos);
                      END IF;
-                    /*nAsistRestLocal  := NVL(nAsistRestLocal,0) + NVL(K.MontoAsistLocal,0) - nMtoAsistLocal;
-                    nAsistRestMoneda := NVL(nAsistRestMoneda,0) + NVL(K.MontoAsistMoneda,0) - nMtoAsistMoneda;
-                     IF NP > 1 THEN
-                        nMtoAsistLocal  := (NVL(nAsistRestLocal,0) / (nNumPagos - 1));
-                        nMtoAsistMoneda := (NVL(nAsistRestMoneda,0) / (nNumPagos - 1));
-                     END IF;*/
+                     --
                      nTotAsistLocal  := NVL(nTotAsistLocal,0) + NVL(nMtoAsistLocal,0);
                      nTotAsistMoneda := NVL(nTotAsistMoneda,0) + NVL(nMtoAsistMoneda,0);
                      OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, K.CodCptoServicio, 'N', nMtoAsistLocal, nMtoAsistMoneda);
@@ -2240,7 +2313,7 @@ END PROC_EMITE_FACT_POL;
                      --
                      IF cGraba = 'S' THEN
                         IF Y.IndRangosTipseg = 'S' THEN
-                           -- No Calcula Derechos de Emisión en Endosos
+                           -- No Calcula Derechos de EmisiÃ³n en Endosos
                            nMtoCpto  := 0;
                            nPorcCpto := 0;
                            OC_CATALOGO_CONCEPTOS_RANGOS.VALOR_CONCEPTO(nCodCia, nCodEmpresa, Y.CodCpto, X.IdTipoSeg, nIdPoliza, X.IdetPol, nIdEndoso, nMtoCpto, nPorcCpto);
@@ -2254,9 +2327,9 @@ END PROC_EMITE_FACT_POL;
                               nMtoCpto  := 0;
                               nPorcCpto := 0;
                            END IF;
-                       ELSE
-                          nMtoCpto  := Y.MtoCpto;
-                          nPorcCpto := Y.PorcCpto;
+                        ELSE
+                           nMtoCpto  := Y.MtoCpto;
+                           nPorcCpto := Y.PorcCpto;
                         END IF;
                         --
                         IF Y.Aplica = 'P' THEN
@@ -2281,7 +2354,6 @@ END PROC_EMITE_FACT_POL;
                         ELSIF Y.Aplica = 'T' THEN
                            IF NVL(nMtoCpto,0) <> 0 THEN
                               nMtoDet       := NVL(nMtoCpto,0);
-                              -- nMtoDetMoneda := NVL(nMtoCpto,0) * nTasaCambio;  --LARPLA1
                               nMtoDetMoneda := NVL(nMtoCpto,0) / nTasaCambio;    --LARPLA1
                            ELSE
                               nMtoDet       := NVL(nMtoPago,0) * (nPorcCpto / 100);
@@ -2317,8 +2389,8 @@ END PROC_EMITE_FACT_POL;
                  --
                  -- Caracteristicas del Plan de Pago
                  BEGIN
-                    SELECT NumPagos, FrecPagos, PorcInicial
-                    INTO   nNumPagos, nFrecPagos, nPorcInicial
+                    SELECT NumPagos , FrecPagos , PorcInicial , NumPagos
+                    INTO   nNumPagos, nFrecPagos, nPorcInicial, nNumPagosProrrateo
                     FROM   PLAN_DE_PAGOS
                     WHERE  CodCia      = nCodCia
                       AND  CodEmpresa  = nCodEmpresa
@@ -2345,11 +2417,8 @@ END PROC_EMITE_FACT_POL;
                  --
                  -- Fecha del Primer Pago Siempre a Inicio de Vigencia
                  dFecPago := X.FecIniVig;
-                 /*IF X.FecIniVig > X.FecEmision THEN
-                    dFecPago := X.FecIniVig;
-                 ELSE
-                    dFecPago := X.FecEmision;
-                 END IF;*/
+                 dFecIni  := x.FecIniVigDet;  --Variable para Prorrateo
+                 --
                  -- Monto del Primer Pago
                  nTotPrimas       := 0;
                  nTotPrimasMoneda := 0;
@@ -2377,28 +2446,65 @@ END PROC_EMITE_FACT_POL;
                     nIDetPolQuery := nIDetPol;
                  END IF;
                  --
-                 IF x.TipoEndoso = 'CFP' THEN
-                    dFecIniVig1erRecibo := x.FecIniVig;
-                    dFecFinVig1erRecibo := x.FecIniVig + nFrecPagos;
-                    nMto1erRecibo       := nMtoPago;
-                 ELSE
-                    --Query para determinar la parte a cobrar del primer recibo
-                    SELECT FecVenc, FecFinVig, x.FactorPorDia * (TRUNC(FecFinVig) - TRUNC(dFecPago))
-                    INTO   dFecIniVig1erRecibo, dFecFinVig1erRecibo, nMto1erRecibo
-                    FROM   FACTURAS
-                    WHERE  CodCia   = nCodCia
-                      AND  IdPoliza = nIdPoliza
-                      AND  IDetPol  = nIDetPolQuery
-                      AND  IdEndoso = 0
-                      AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
-                      AND  IdFactura = ( SELECT MAX(A.IdFactura)
-                                         FROM   FACTURAS A
-                                         WHERE  A.CodCia   = nCodCia
-                                           AND  A.IdPoliza = nIdPoliza
-                                           AND  A.IDetPol  = nIDetPolQuery
-                                           AND  A.IdEndoso = 0
-                                           AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
-                 END IF;
+                 --Cursor Prorrateo
+                 nDia := EXTRACT(DAY FROM dFecIni);
+                 FOR z IN 1..nNumPagosProrrateo LOOP
+                     IF z = 1 then
+                        IF nDia IN (28, 29, 30) THEN
+                           IF EXTRACT(MONTH FROM ADD_MONTHS(dFecIni, nFrecPagos)) = 2 THEN
+                              dFecFin := ADD_MONTHS(dFecIni, nFrecPagos);
+                           ELSE
+                              dFecFin := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecIni, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                           END IF;
+                        ELSE
+                           dFecFin := ADD_MONTHS(dFecIni, nFrecPagos);
+                        END IF;
+                     ELSE
+                        IF nDia IN (28, 29, 30) THEN
+                           IF EXTRACT(MONTH FROM ADD_MONTHS(dFecIni, nFrecPagos)) = 2 THEN
+                              dFecIni := ADD_MONTHS(dFecIni, nFrecPagos);
+                           ELSE
+                              dFecIni := TO_DATE(nDia || TO_CHAR(add_months(dFecIni, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                           END IF;
+                           --
+                           IF EXTRACT(MONTH FROM ADD_MONTHS(dFecFin, nFrecPagos)) = 2 THEN
+                              dFecFin := ADD_MONTHS(dFecFin, nFrecPagos);
+                           ELSE
+                              dFecFin := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecFin, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                           END IF;
+                        ELSE
+                           dFecIni := ADD_MONTHS(dFecIni, nFrecPagos) ;
+                           dFecFin := ADD_MONTHS(dFecFin, nFrecPagos) ;
+                        END IF;
+                     END IF;
+                     --
+                     IF TRUNC(x.FecIniVig) >= TRUNC(dFecIni) AND TRUNC(x.FecIniVig) <= TRUNC(dFecFin) THEN
+                        IF TRUNC(x.FecIniVig) = TRUNC(dFecFin) THEN
+                           dFecIniVig1erRecibo := dFecFin;
+                           --
+                           IF nDia IN (28, 29, 30) THEN
+                              IF EXTRACT(MONTH FROM ADD_MONTHS(dFecFin, nFrecPagos)) = 2 THEN
+                                 dFecFinVig1erRecibo := ADD_MONTHS(dFecFin, nFrecPagos);  
+                              ELSE
+                                 dFecFinVig1erRecibo := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecFin, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                              END IF;
+                           ELSE
+                              dFecFinVig1erRecibo := ADD_MONTHS(dFecFin, nFrecPagos);  
+                           END IF;
+                           --
+                           nMto1erRecibo := X.PrimaLocal / nNumPagos;
+                        ELSE
+                           dFecIniVig1erRecibo := x.FecIniVig;
+                           dFecFinVig1erRecibo := dFecFin;
+                           --
+                           IF TRUNC(x.FecIniVig) = TRUNC(dFecIni) THEN
+                              nMto1erRecibo := X.PrimaLocal / nNumPagos;
+                           ELSE
+                              nMto1erRecibo := (x.FactorPorDia * (TRUNC(dFecFinVig1erRecibo) - TRUNC(dFecIniVig1erRecibo)));
+                           END IF;
+                        END IF;    
+                     END IF;                 
+                 END LOOP;
                  --
                  IF nNumPagos = 1 THEN
                     nMtoPagoSubs := (NVL(X.PrimaLocal, 0) - NVL(nMto1erRecibo, 0));
@@ -2418,7 +2524,19 @@ END PROC_EMITE_FACT_POL;
                         nMtoComisi := nMtoPago * X.PorcComis / 100;
                         -- JMMD20211203                  IF nFrecPagos NOT IN (15,7) THEN
                         IF nFrecPagos NOT IN (15,14,7) THEN
-                           dFecPago := ADD_MONTHS(dFecPago,nFrecPagos);
+                           IF NP = 2 THEN
+                              dFecPago := dFecFinVig1erRecibo;
+                           ELSE
+                              IF nDia IN (28, 29, 30) THEN
+                                 IF EXTRACT(MONTH FROM ADD_MONTHS(dFecPago, nFrecPagos)) = 2 THEN
+                                    dFecPago := ADD_MONTHS(dFecPago, nFrecPagos);
+                                 ELSE
+                                    dFecPago := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecPago, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
+                                 END IF;
+                              ELSE
+                                 dFecPago := ADD_MONTHS(dFecPago, nFrecPagos);
+                              END IF;
+                           END IF;
                         ELSE
                            dFecPago := dFecPago + nFrecPagos;
                         END IF;
@@ -2441,6 +2559,15 @@ END PROC_EMITE_FACT_POL;
                      nIdFactura := OC_FACTURAS.INSERTAR( nIdPoliza, X.IDetPol  , nCodCliente, dFecPago   , nMtoPago, nMtoPagoMoneda, nIdEndoso   , nMtoComisi, nMtoComisiMoneda,
                                                          NP       , nTasaCambio, nCod_Agente, nCodTipoDoc, nCodCia , cCodMoneda    , J.CodResPago, nTransa   , cIndFactElectronica );
                      --
+                     IF NP = 1 THEN
+                        UPDATE FACTURAS
+                        SET    FecFinVig = dFecFinVig1erRecibo
+                        WHERE  CodCia   = nCodCia
+                          AND  IdPoliza = nIdPoliza
+                          AND  IDetPol  = X.IDetPol
+                          AND  IdFactura = nIdFactura;
+                     END IF;   
+                     --
                      FOR W IN CPTO_PRIMAS_Q LOOP
                          nFactor := W.Prima_Local / NVL(X.PrimaLocal,0);
                          OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
@@ -2460,12 +2587,7 @@ END PROC_EMITE_FACT_POL;
                             nMtoAsistLocal  := (NVL(K.MontoAsistLocal,0) / nNumPagos) * NVL(J.PorcResPago,0)/100;
                             nMtoAsistMoneda := (NVL(K.MontoAsistMoneda,0) / nNumPagos) * NVL(J.PorcResPago,0)/100;
                          END IF;
-                         /*nAsistRestLocal  := NVL(nAsistRestLocal,0) + (NVL(K.MontoAsistLocal,0) * NVL(J.PorcResPago,0)/100) - nMtoAsistLocal;
-                            nAsistRestMoneda := NVL(nAsistRestMoneda,0) + (NVL(K.MontoAsistMoneda,0) * NVL(J.PorcResPago,0)/100) - nMtoAsistMoneda;
-                         IF NP > 1 THEN
-                            nMtoAsistLocal  := (NVL(nAsistRestLocal,0) / (nNumPagos - 1));
-                            nMtoAsistMoneda := (NVL(nAsistRestMoneda,0) / (nNumPagos - 1));
-                         END IF;*/
+                         --
                          nTotAsistLocal  := NVL(nTotAsistLocal,0) + NVL(nMtoAsistLocal,0);
                          nTotAsistMoneda := NVL(nTotAsistMoneda,0) + NVL(nMtoAsistMoneda,0);
                          OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, K.CodCptoServicio, 'N', nMtoAsistLocal, nMtoAsistMoneda);
@@ -2495,7 +2617,7 @@ END PROC_EMITE_FACT_POL;
                          --
                          IF cGraba = 'S' THEN
                             IF Y.IndRangosTipseg = 'S' THEN
-                               -- No Calcula Derechos de Emisión en Endosos
+                               -- No Calcula Derechos de EmisiÃ³n en Endosos
                                nMtoCpto  := 0;
                                nPorcCpto := 0;
                                OC_CATALOGO_CONCEPTOS_RANGOS.VALOR_CONCEPTO(nCodCia, nCodEmpresa, Y.CodCpto, X.IdTipoSeg, nIdPoliza, X.IdetPol, nIdEndoso, nMtoCpto, nPorcCpto);
@@ -2613,8 +2735,6 @@ END PROC_EMITE_FACT_POL;
          PROC_MOVCONTA(nCodCia, nIdPoliza, cCodMoneda, 'EMI');
       END IF;
    END PROC_EMITE_FACT_END;
---
---
 --
 PROCEDURE PROC_EMITE_FACT_CAM(nIdPoliza NUMBER, nIdEndoso NUMBER, pCodCia NUMBER, nTransa NUMBER) IS --LARPLA2
 nIdFactura               FACTURAS.IdFactura%TYPE;
@@ -3604,7 +3724,7 @@ BEGIN
 
           END;
           nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
-          -- Características del Plan de Pago
+          -- CaracterÃ­sticas del Plan de Pago
           BEGIN
              SELECT NumPagos, FrecPagos, PorcInicial
                INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -3926,7 +4046,7 @@ BEGIN
                     RAISE_APPLICATION_ERROR (-20100,'Existe un error de otros');
               END;
               nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
-              -- Características del Plan de Pago
+              -- CaracterÃ­sticas del Plan de Pago
               BEGIN
                  SELECT NumPagos, FrecPagos, PorcInicial
                    INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -4691,10 +4811,19 @@ BEGIN
    END LOOP;
 END PROC_COMISIONPOL;
 
-PROCEDURE PROC_ENDO_COMI (nIdPoliza NUMBER, nIdetPol NUMBER, nIdEndoso NUMBER,
-                          nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
-                          cCodMoneda VARCHAR2, nIdFactura NUMBER, nMontoDetLocal NUMBER,
-                          nMontoDetMoneda NUMBER, nTasaCambio NUMBER) IS
+       --
+       --MASP 24/07/2024 --> Prorrateo
+       PROCEDURE PROC_ENDO_COMI( nIdPoliza        NUMBER
+                               , nIdetPol         NUMBER
+                               , nIdEndoso        NUMBER
+                               , nCodCia          NUMBER
+                               , nCodEmpresa      NUMBER
+                               , cIdTipoSeg       VARCHAR2
+                               , cCodMoneda       VARCHAR2
+                               , nIdFactura       NUMBER
+                               , nmontodetlocal   NUMBER
+                               , nmontodetmoneda  NUMBER
+                               , nTasaCambio      NUMBER ) IS
 nMontoComiLocal          COMISIONES.Comision_Local%TYPE;
 nMontoComiMoneda         COMISIONES.Comision_Moneda%TYPE;
 nPorcComisiones          DETALLE_POLIZA.PorcComis%TYPE;
@@ -4729,51 +4858,12 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
      --AND Porc_Com_Distribuida    > 0    --MLJS 20/05/2022
      ;
 BEGIN
-   SELECT NumPagos, FrecPagos
-     INTO nNumPagos, nFrecPagos
-     FROM PLAN_DE_PAGOS
-    WHERE CodPlanPago IN (SELECT CodPlanPago
-                            FROM ENDOSOS
-                           WHERE Idpoliza = nIdPoliza
-                             AND Idetpol  = nIdetPol
-                             AND IdEndoso = nIdEndoso);
-
-   SELECT FecIniVig, FecFinVig
-     INTO dFecIniVig, dFecFinVig
-     FROM ENDOSOS
-    WHERE CodCia    = nCodCia
-      AND IdPoliza  = nIdPoliza
-      AND IDetpol   = nIDetPol
-      AND IdEndoso  = nIdEndoso;
-
-   -- Determina Meses de Vigencia para Plan de Pagos
-   IF nNumPagos <= 12 THEN
-      nCantPagosReal  := FLOOR(MONTHS_BETWEEN(dFecFinVig, dFecIniVig) / nFrecPagos);
-   ELSE
-      nCantPagosReal  := FLOOR((dFecFinVig - dFecIniVig) / nFrecPagos);
-   END IF;
-
-   IF nCantPagosReal <= 0 THEN
-      nCantPagosReal := 1;
-   END IF;
-   IF nCantPagosReal < nNumPagos THEN
-      nNumPagos := nCantPagosReal;
-   END IF;
-
    FOR I IN C_AGENTES LOOP
       nCod_Agente := I.Cod_Agente;
       FOR R_Agentes IN C_AGENTES_D(I.Cod_Agente) LOOP
-         SELECT PorcComis, Prima_Neta_Local, Prima_Neta_Moneda
-           INTO NPORCCOMISIONES, NPRIMALOCAL,NPRIMAMONEDA
-           FROM ENDOSOS
-          WHERE IdPoliza  = nIdPoliza
-            AND IDETPOL   = I.IDETPOL
-            AND CodCia    = nCodCia
-            AND IdEndoso  = nIdEndoso;
-
          IF NVL(NMONTOCOMISIONES,0) = 0 THEN
-              nMontoComiLocal  := (nPrimaLocal*(R_Agentes.Porc_com_distribuida/100)/nNumPagos);
-              nMontoComiMoneda := (nPrimaMoneda*R_Agentes.Porc_com_distribuida/100)/nNumPagos;
+                     nMontoComiLocal  := nMontoDetLocal*R_Agentes.Porc_com_distribuida/100;
+                     nMontoComiMoneda := nMontoDetMoneda*R_Agentes.Porc_com_distribuida/100;
          ELSE
             nMontoComiLocal  := nMontoComisiones * (R_Agentes.Porc_Comision/100) * (I.Porc_Comision/100);
             nMontoComiMoneda := nMontoComiMoneda / nTasaCambio * (R_AGENTES.Porc_Comision/100) * (I.Porc_Comision/100);
@@ -5065,7 +5155,7 @@ BEGIN
          nMtoDesc_Local  := 0;
          nMtoDesc_Moneda := 0;
    END;
-   -- Características del Plan de Pago
+   -- CaracterÃ­sticas del Plan de Pago
    BEGIN
       SELECT NumPagos, FrecPagos, PorcInicial
         INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -5976,7 +6066,7 @@ BEGIN
          nMtoDesc_Local  := 0;
          nMtoDesc_Moneda := 0;
    END;
-   -- Características del Plan de Pago
+   -- CaracterÃ­sticas del Plan de Pago
    BEGIN
       SELECT NumPagos, FrecPagos, PorcInicial
         INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -6946,7 +7036,7 @@ BEGIN
          nMtoDesc_Local  := 0;
          nMtoDesc_Moneda := 0;
    END;
-   -- Características del Plan de Pago
+   -- CaracterÃ­sticas del Plan de Pago
    BEGIN
       SELECT NumPagos, FrecPagos, PorcInicial
         INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -7686,7 +7776,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                        AND  CS.IdTipoSeg    = C.IdTipoSeg
                        AND  CS.CodEmpresa   = C.CodEmpresa
                        AND  CS.CodCia       = C.CodCia
-                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÃ“N ANU
                        AND  C.IDetPol       = nIDetPol
                        AND  C.IdPoliza      = nIdPoliza
                        AND  C.CodCia        = nCodCia
@@ -7701,7 +7791,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                        AND  CS.IdTipoSeg    = C.IdTipoSeg
                        AND  CS.CodEmpresa   = C.CodEmpresa
                        AND  CS.CodCia       = C.CodCia
-                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÃ“N ANU
                        AND  C.IDetPol       = nIDetPol
                        AND  C.IdPoliza      = nIdPoliza
                        AND  C.CodCia        = nCodCia
@@ -8196,3 +8286,4 @@ BEGIN
 END PROC_COMISIONPOL_MULTIRAMO;
 
 END OC_FACTURAR;
+/
