@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_DETALLE_COMISION IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_DETALLE_COMISION IS
 ----- SE INCLUYE TRATAMIENTO DE COMISIONES PARA POLIZAS PAQUETE (MULTIRAMO VIFLEX)      JMMD20220114
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
 -- SE AGREGA EN EL CURSOR OC_DETALLE_COM_IMP CONSULTA IVA DE HONORARIOS PROVEEDORES 09/01/2024 MLJS
@@ -7,7 +7,7 @@ PROCEDURE INSERTA_DETALLE_COMISION(cCodCia VARCHAR2, nIdPoliza Number, nIdComisi
                                    cOrigen VARCHAR2,cIdTipoSeg VARCHAR2) ;
 END;
 /
-create or replace PACKAGE BODY          OC_DETALLE_COMISION IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DETALLE_COMISION IS
 
 ----- SE INCLUYE TRATAMIENTO DE COMISIONES PARA POLIZAS PAQUETE (MULTIRAMO VIFLEX)      JMMD20220114
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
@@ -28,6 +28,10 @@ nIdetpol                DETALLE_POLIZA.IDETPOL%TYPE;
 nFactorComision     NUMBER;
 nFactorComisionAP       NUMBER;
 cTiporamo               VARCHAR2(6);
+
+---MLJS/CAGR 01/08/2024 MULTIRAMO
+nIdFactura              FACTURAS.IDFACTURA%TYPE := 0;
+nIdNcr                  NOTAS_DE_CREDITO.IDNCR%TYPE := 0;
 
 -----
 CURSOR  Oc_Detalle_Com IS
@@ -333,6 +337,7 @@ BEGIN
       WHEN TOO_MANY_ROWS THEN
          nExiste:= 1;
    END;
+   
 ----- JMMD20220107
    SELECT NVL(INDMULTIRAMO,'N'), CODTIPOPLAN
      INTO cEsmultiramo, cCodTipoPlan
@@ -342,11 +347,9 @@ BEGIN
 ----- JMMD20220107
    IF nExiste = 0 THEN
 ----- JMMD20220107
---         dbms_output.put_line('jmmd en oc_detalle_comision cEsmultiramo  '||cEsmultiramo);
      IF cEsmultiramo = 'N' THEN
 ----- JMMD20220107
       FOR I IN Oc_Detalle_Com LOOP
---         dbms_output.put_line('jmmd en oc_detalle_comision I.CODCONCEPTO  '||I.CODCONCEPTO||' nIdComision  '||nIdComision||'  I.Monto_Mon_Extranjera  '||I.Monto_Mon_Extranjera );
          nMonto_Mon_Local      := I.Monto_Mon_Local;
          nMonto_Mon_Extranjera := I.Monto_Mon_Extranjera;
          BEGIN
@@ -380,23 +383,31 @@ BEGIN
             AND IdTipoSeg = cIdTipoSeg;
 
         FOR PCR IN P_COB_RAMOS LOOP
-        nFactorComision := OC_FACTURAR.FACTOR_PRORRATEO_RAMO( cCodCia, nIdPoliza, nIDetPol, PCR.IdRamoReal , nPrimaMoneda );
-        cCodTipoPlan := PCR.IDRAMOREAL;
+          nFactorComision := OC_FACTURAR.FACTOR_PRORRATEO_RAMO( cCodCia, nIdPoliza, nIDetPol, PCR.IdRamoReal , nPrimaMoneda );
+          cCodTipoPlan := PCR.IDRAMOREAL;
 
            FOR I IN OC_DETALLE_COMISION_CONCEPTOS LOOP
     ----- JMMD 20220113  MULTIRAMO
               SELECT SUBSTR(i.CodConcepto,4,3)
                 INTO ctiporamo
                 from dual;
-
-             dbms_output.put_line('jmmd en oc_detalle_comision ctiporamo  '||ctiporamo||' nIdComision  '||nIdComision||'  nPrimaMoneda  '||nPrimaMoneda );
+             -- SE OBTIENE EL DOCUMENTO
+              SELECT NVL(IDFACTURA,0), NVL(IDNCR,0)
+              INTO   nIdFactura, nIdNcr
+              FROM   COMISIONES 
+              WHERE  IDPOLIZA = nIdPoliza
+              AND    CODCIA   =  cCodCia
+              AND    CODEMPRESA = cCodCia
+              AND    IDETPOL    = nIdetpol
+              AND    IDCOMISION =  nIdComision;
+             
              BEGIN
                SELECT ODCV.COMISION_LOCAL, ODCV.COMISION_MONEDA
                 INTO nComision_Local, nComision_Moneda
                 FROM T_OC_DETALLE_COMISION_VIFLEX ODCV
                 WHERE ODCV.COD_AGENTE = I.COD_AGENTE
                 AND ODCV.IDPOLIZA = nIdPoliza
-                AND ODCV.NUMDOCTO = I.IDFACTURA
+                AND ODCV.NUMDOCTO = DECODE(nIdFactura,0,nIdNcr,nIdFactura)
                 AND ODCV.IDETPOL  = nIdetpol
                 AND ODCV.COD_MONEDA = I.COD_MONEDA
                 AND ODCV.TIPORAMO = ctiporamo
@@ -409,7 +420,6 @@ BEGIN
                 nMonto_Mon_Local := nComision_Local; -- * nFactorComision;
                 nMonto_Mon_Extranjera := nComision_Moneda ; --* nFactorComision;
 
---             dbms_output.put_line('jmmd en oc_detalle_comision ctiporamo  '||ctiporamo||' nMonto_Mon_Extranjera  '||nMonto_Mon_Extranjera );
              BEGIN
                 INSERT INTO DETALLE_COMISION
                       (CodCia, IdComision, CodConcepto, Monto_Mon_Local,
@@ -428,7 +438,6 @@ BEGIN
       FOR J IN Oc_Detalle_Com_IMP LOOP
          nMonto_Mon_Local      := J.Monto_Mon_Local;
          nMonto_Mon_Extranjera := J.Monto_Mon_Extranjera;
---         dbms_output.put_line('jmmd en oc_detalle_comision IdComision  '||J.IdComision||' CodConcepto  '||J.CodConcepto||'  Monto_Mon_Local  '||nMonto_Mon_Local||' Origen  '||cOrigen);
          BEGIN
             INSERT INTO DETALLE_COMISION
                   (CodCia, IdComision, CodConcepto, Monto_Mon_Local,
@@ -443,8 +452,9 @@ BEGIN
     END IF;
 ----- JMMD20220107
    ELSE
-      RAISE_APPLICATION_ERROR(-20100, 'Intenta Crear de Forma Autom√°tica un Nuevo Detalle de Comisi√≥n, pero ya Existen Registros');
+      RAISE_APPLICATION_ERROR(-20100, 'Intenta Crear de Forma Autom·tica un Nuevo Detalle de ComisiÛn, pero ya Existen Registros');
    END IF;
 END INSERTA_DETALLE_COMISION;
 
 end OC_DETALLE_COMISION;
+/

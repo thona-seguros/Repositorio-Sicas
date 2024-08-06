@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE oc_detalle_notas_de_credito IS
+CREATE OR REPLACE PACKAGE SICAS_OC.oc_detalle_notas_de_credito IS
 
   PROCEDURE INSERTA_DETALLE_NOTA(nIdNcr NUMBER, cCodCpto VARCHAR2, cIndCptoPrima VARCHAR2,
                                  nMtoDetNcrLocal NUMBER, nMtoDetNcrMoneda NUMBER);
@@ -25,10 +25,8 @@ CREATE OR REPLACE PACKAGE oc_detalle_notas_de_credito IS
   FUNCTION MONTO_CONCEPTO_FACT_ELECT(nIdNcr NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
 
 END OC_DETALLE_NOTAS_DE_CREDITO;
-
 /
-
-CREATE OR REPLACE PACKAGE BODY oc_detalle_notas_de_credito IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_detalle_notas_de_credito IS
  
 PROCEDURE INSERTA_DETALLE_NOTA(nIdNcr NUMBER, cCodCpto VARCHAR2, cIndCptoPrima VARCHAR2,
                                nMtoDetNcrLocal NUMBER, nMtoDetNcrMoneda NUMBER) IS
@@ -96,6 +94,9 @@ nMtoDetNcrMoneda  DETALLE_NOTAS_DE_CREDITO.Monto_Det_Moneda%TYPE;
 nMtoCpto          CONCEPTOS_PLAN_DE_PAGOS.MtoCpto%TYPE;
 nPorcCpto         CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
 
+--MLJS/CAGR 05/08/2024 MULTIRAMO
+cIndMultiRamo     TIPOS_DE_SEGUROS.IndMultiRamo%TYPE;
+
 CURSOR CPTO_PLAN_Q IS
    SELECT CP.CodCpto, CP.PorcCpto, CP.Aplica, CP.MtoCpto, CC.IndRangosTipseg
      FROM CONCEPTOS_PLAN_DE_PAGOS CP, CATALOGO_DE_CONCEPTOS CC
@@ -115,12 +116,31 @@ CURSOR CPTO_PLAN_Q IS
                      AND CodPlanPago = CP.CodPlanPago)
     ORDER BY CP.Prioridad;
 BEGIN
-   -- Actualiza la Base de Prima por si Aplico Retención
-   SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
+   --MLJS/ CAGR 05/08/2024 
+    BEGIN
+       SELECT NVL(T.IndMultiRamo, 'N')
+       INTO   cIndMultiRamo
+       FROM   TIPOS_DE_SEGUROS T
+       WHERE  T.IdTipoSeg  = cIdTipoSeg;
+    EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+         cIndMultiRamo := 'N';
+    END;
+   
+   IF cIndMultiRamo = 'S' THEN
+     SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
      INTO nMtoDetNcrLocal, nMtoDetNcrMoneda
      FROM DETALLE_NOTAS_DE_CREDITO
-    WHERE IdNcr   = nIdNcr;
-
+     WHERE IdNcr   = nIdNcr
+     AND   CODCPTO IN ('PRIMAS','DEREAP');
+   
+   ELSE
+       -- Actualiza la Base de Prima por si Aplico Retención
+       SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
+         INTO nMtoDetNcrLocal, nMtoDetNcrMoneda
+         FROM DETALLE_NOTAS_DE_CREDITO
+        WHERE IdNcr   = nIdNcr;
+   END IF;
    FOR Y IN CPTO_PLAN_Q LOOP
       BEGIN
          SELECT 'S'
@@ -411,3 +431,4 @@ BEGIN
 END MONTO_CONCEPTO_FACT_ELECT;
 
 END OC_DETALLE_NOTAS_DE_CREDITO;
+/

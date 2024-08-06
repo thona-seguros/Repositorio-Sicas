@@ -1,4 +1,4 @@
-create or replace PACKAGE OC_COMISIONES IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_COMISIONES IS
 ---- SE ADICIONO UN JOIN CATALOGO_DE_CONCEPTOS PARA RECUPERAR EL SIGNO    JMMD20220125
   PROCEDURE DISTRIBUCION(nCodCia NUMBER, nIdPoliza NUMBER,cCod_Agente VARCHAR2, nPorcApl NUMBER);
   PROCEDURE PAGA_ABONA_COMISION(nIdFactura NUMBER, cReciboPago VARCHAR2, dFecSts DATE, 
@@ -14,10 +14,14 @@ create or replace PACKAGE OC_COMISIONES IS
                                    nPorcApl NUMBER, cIndPago VARCHAR2);
   FUNCTION  MONTO_COMISION(nCodCia NUMBER, nIdPoliza NUMBER, nCodNivel NUMBER, nCodAgente NUMBER, nIdFactura NUMBER DEFAULT NULL, nIdNcr NUMBER DEFAULT NULL) RETURN NUMBER;      
   PROCEDURE DISTRIBUCION_WEB(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER,cCod_Agente VARCHAR2, nPorcApl NUMBER, nIdCotizacion NUMBER);
-
+  
+  PROCEDURE PROC_COMISIONPOL_MULTIRAMO(nIdPoliza NUMBER, nIdetPol NUMBER, nCodCia NUMBER,
+                           nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cCodMoneda VARCHAR2,
+                           nIdNcr NUMBER, nMontoDetLocal NUMBER, nMontoDetMoneda NUMBER,
+                           nTasaCambio NUMBER);
 END OC_COMISIONES;
 /
-create or replace PACKAGE BODY oc_comisiones IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_comisiones IS
     --
     -- MODIFICACION JICO  20160310  AJUSTE A COMISION POR ERROR AL 100 %   AJUS100
     -- SE ADICIONO UN JOIN CATALOGO_DE_CONCEPTOS PARA RECUPERAR EL SIGNO    JMMD20220125    
@@ -61,7 +65,7 @@ create or replace PACKAGE BODY oc_comisiones IS
           END IF;
        EXCEPTION
           WHEN eDist_Realizada THEN
-             RAISE_APPLICATION_ERROR (-20100,'Distribuci贸n Realizada con anterioridad, debera elimiar la distribuci贸n actual para generar una nueva!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Distribuci髇 Realizada con anterioridad, debera elimiar la distribuci髇 actual para generar una nueva!'|| SQLERRM);
        END;
 
        BEGIN
@@ -73,7 +77,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND CodCia     = nCodCia;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'NO Existe el Origen del Agente P贸liza '|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'NO Existe el Origen del Agente P髄iza '|| SQLERRM);
        END;
 
        DECLARE
@@ -89,7 +93,7 @@ create or replace PACKAGE BODY oc_comisiones IS
           END IF;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P贸liza...!!!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P髄iza...!!!'|| SQLERRM);
        END;
        BEGIN
           SELECT DISTINCT PlanCob, IdTipoSeg
@@ -127,7 +131,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND PlanCob   = cPlanCob;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Invalido favor revisar Configuraci贸n!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Invalido favor revisar Configuraci髇!'|| SQLERRM);
        END;
 
        BEGIN
@@ -142,7 +146,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND NPC.PlanCob   = cPlanCob;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inv谩lido favor revisar Configuraci贸n'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inv醠ido favor revisar Configuraci髇'|| SQLERRM);
        END;
 
        BEGIN
@@ -230,7 +234,7 @@ create or replace PACKAGE BODY oc_comisiones IS
        END LOOP;
     EXCEPTION
        WHEN OTHERS THEN
-          RAISE_APPLICATION_ERROR (-20100,'Error en Distribuci贸n de Comisiones de P贸liza '|| ' ' || SQLERRM);
+          RAISE_APPLICATION_ERROR (-20100,'Error en Distribuci髇 de Comisiones de P髄iza '|| ' ' || SQLERRM);
     END DISTRIBUCION;
 
     PROCEDURE PAGA_ABONA_COMISION(nIdFactura NUMBER, cReciboPago VARCHAR2, dFecSts DATE,
@@ -285,8 +289,8 @@ create or replace PACKAGE BODY oc_comisiones IS
                                INNER JOIN CAT_REGIMEN_FISCAL         C ON C.IdRegFisSAT = P.IdRegFisSAT 
                                                                       AND NVL(C.PORCCONCEPTO,0) != 0   
                                                                       --AND ABS(ROUND(M.COMISION_LOCAL/D.MONTO_MON_LOCAL)) != NVL(C.PORCCONCEPTO,0)
-                                                                      -- GRCA -Se pone el valor en duro, porque la columna s贸lo almacena dos d铆gitos y por ende se genera una divisi贸n entre cero.
-                                                                      AND DECODE(D.MONTO_MON_LOCAL,0,ABS(ROUND(M.COMISION_LOCAL/0.0016)),ABS(ROUND(M.COMISION_LOCAL/D.MONTO_MON_LOCAL))) != NVL(C.PORCCONCEPTO,0)                           
+                                                                      -- GRCA -Se pone el valor en duro, porque la columna s髄o almacena dos d韌itos y por ende se genera una divisi髇 entre cero.
+                                                                      AND DECODE(D.MONTO_MON_LOCAL,0,ABS(ROUND(M.COMISION_LOCAL/0.0010)),ABS(ROUND(M.COMISION_LOCAL/D.MONTO_MON_LOCAL))) != NVL(C.PORCCONCEPTO,0)                           
 ----- JMMD JMMD20220125
                                INNER JOIN CATALOGO_DE_CONCEPTOS      CC ON CC.CODCONCEPTO = 'RETISR' 
                                                                         AND CC.CODCIA = M.CODCIA                               
@@ -336,7 +340,29 @@ create or replace PACKAGE BODY oc_comisiones IS
     nMtoComisi_Local   NOTAS_DE_CREDITO.MtoComisi_Local%TYPE;
     nMonto_NCR_Local   NOTAS_DE_CREDITO.Monto_NCR_Local%TYPE;
     nMonto_NCR_Moneda  NOTAS_DE_CREDITO.Monto_NCR_Moneda%TYPE;
-
+    
+    --MLJS/CAGR 01/08/2024 MULTIRAMO
+    cIndMultiRamo      TIPOS_DE_SEGUROS.IndMultiRamo%TYPE;
+    nFactorComisionVida        NUMBER;
+    nFactorComisionAP          NUMBER;
+    nMontoComiLocal_Vida       COMISIONES.Comision_Local%TYPE := 0;
+    nMontoComiMoneda_Vida      COMISIONES.Comision_Moneda%TYPE := 0;
+    nMontoComiLocal_AP         COMISIONES.Comision_Local%TYPE := 0;
+    nMontoComiMoneda_AP        COMISIONES.Comision_Moneda%TYPE := 0;
+    cCODTIPO                   AGENTES.CODTIPO%TYPE;
+    nPorc_com_distribuida_Vida AGENTES_DISTRIBUCION_COMISION.PORC_COM_DISTRIBUIDA%TYPE := 0;
+    nPorc_com_distribuida_AP   AGENTES_DISTRIBUCION_COMISION.PORC_COM_DISTRIBUIDA%TYPE := 0;
+    nPrimaLocal_Vida       COMISIONES.Comision_Local%TYPE := 0;
+    nPrimaMoneda_Vida      COMISIONES.Comision_Moneda%TYPE := 0;
+    nPrimaLocal_AP         COMISIONES.Comision_Local%TYPE := 0;
+    nPrimaMoneda_AP        COMISIONES.Comision_Moneda%TYPE := 0;
+    nMontoComiLocal   COMISIONES.Comision_Local%TYPE := 0;
+    nMontoComiMoneda  COMISIONES.Comision_Moneda%TYPE := 0;
+    nPorcComisiones   DETALLE_POLIZA.PorcComis%TYPE;
+    nMontoComisiones  DETALLE_POLIZA.MontoComis%TYPE := 0;
+    nPrimaMoneda      DETALLE_POLIZA.Prima_Moneda%TYPE := 0;
+    nPrimaLocal       DETALLE_POLIZA.Prima_local%TYPE := 0;
+    --MLJS/CAGR 01/08/2024 MULTIRAMO
     CURSOR NOTA_Q IS
        SELECT N.IdPoliza, PO.Cod_Moneda, N.Cod_Agente, PO.CodCia, PO.CodEmpresa, N.IdetPol, N.MtoComisi_Local,
               N.MtoComisi_Moneda, N.Tasa_Cambio, N.IdNcr, N.Monto_NCR_Local, N.Monto_NCR_Moneda, DP.IdTipoSeg
@@ -352,12 +378,42 @@ create or replace PACKAGE BODY oc_comisiones IS
        WHERE IdPoliza  = nIdPoliza
          AND IDetPol   = nIdetPol
          AND CodCia    = nCodCia;
+         
+    --MLJS/CAGR 01/08/2024 MULTIRAMO
+    CURSOR P_COB_RAMOS IS
+      SELECT DISTINCT C.IDRAMOREAL
+        FROM   COBERT_ACT C
+        WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
+          AND  C.IDetPol       = nIdetPol
+          AND  C.IdPoliza      = nIdPoliza
+          AND  C.CodCia        = nCodCia
+        UNION ALL
+        SELECT DISTINCT C.IDRAMOREAL
+        FROM   COBERT_ACT_ASEG C
+        WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
+          AND  C.IDetPol       = nIdetPol
+          AND  C.IdPoliza      = nIdPoliza
+          AND  C.CodCia        = nCodCia     ;
+    
     BEGIN
+       
        FOR X IN NOTA_Q LOOP
           nIdPoliza   := X.IdPoliza;
           nIDetPol    := X.IDetPol;
           nCodCia     := X.CodCia;
-
+          
+          --MLJS/ CAGR 01/08/2024 
+          BEGIN
+             SELECT NVL(T.IndMultiRamo, 'N')
+             INTO   cIndMultiRamo
+             FROM   TIPOS_DE_SEGUROS T
+             WHERE  T.IdTipoSeg  = X.IdTipoSeg;
+          EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+               cIndMultiRamo := 'N';
+          END;
+          
+          --MLJS/ CAGR 01/08/2024 
           SELECT NVL(SUM(Monto_Det_Moneda),0), NVL(SUM(Monto_Det_Local),0)
             INTO nMonto_NCR_Moneda, nMonto_NCR_Local
             FROM DETALLE_NOTAS_DE_CREDITO D, NOTAS_DE_CREDITO N, CATALOGO_DE_CONCEPTOS C
@@ -367,12 +423,79 @@ create or replace PACKAGE BODY oc_comisiones IS
               OR C.IndCptoServicio  = 'S')
              AND D.IdNcr            = N.IdNcr
              AND N.IdNcr            = X.IdNcr;
+          
+           SELECT NVL(PorcComis,0), NVL(MontoComis,0), NVL(Prima_Local,0), NVL(Prima_Moneda,0)
+           INTO nPorcComisiones, nMontoComisiones, nPrimaLocal, nPrimaMoneda
+           FROM DETALLE_POLIZA
+          WHERE IdPoliza  = nIdPoliza
+            AND IDETPOL   = X.IDETPOL
+            AND CodCia    = nCodCia;
+ 
+            nFactorComisionVida := 0;
+            nFactorComisionAP := 0;
+          FOR PCR IN P_COB_RAMOS LOOP
 
+              IF PCR.IDRAMOREAL = '010' THEN
+                nFactorComisionVida := OC_FACTURAR.FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '010', nPrimaMoneda );
+              ELSE
+                nFactorComisionAP := OC_FACTURAR.FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '030', nPrimaMoneda );
+              END IF;
+          END LOOP;
+        
           FOR W IN DIST_Q LOOP
-             nMtoComisi_Moneda := NVL(nMonto_NCR_Moneda,0) * (W.Porc_Com_Distribuida/100) * -1;
-             nMtoComisi_Local  := NVL(nMonto_NCR_Local,0) * (W.Porc_Com_Distribuida/100) * -1;
+            IF cIndMultiRamo = 'N' THEN
+              nMtoComisi_Moneda := NVL(nMonto_NCR_Moneda,0) * (W.Porc_Com_Distribuida/100) * -1;
+              nMtoComisi_Local  := NVL(nMonto_NCR_Local,0) * (W.Porc_Com_Distribuida/100) * -1;
 
-             /*SELECT NVL(MAX(IdComision),0) + 1
+           
+             --------------- MULTIRAMO -------------------------------------------------------------
+            ELSE --IF cIndMultiRamo = 'S' THEN 
+               SELECT CODTIPO
+               INTO cCODTIPO
+               FROM AGENTES
+               WHERE COD_AGENTE = W.Cod_Agente;
+
+               IF cCODTIPO IN('HONPF', 'HONPM', 'HONORF', 'HONORM') AND W.Cod_Agente != 1019 THEN
+                 nPorc_com_distribuida_Vida := W.Porc_com_distribuida / 1.16;
+                 nPorc_com_distribuida_AP   := W.Porc_com_distribuida ;
+               ELSE
+                 nPorc_com_distribuida_Vida := W.Porc_com_distribuida;
+                 nPorc_com_distribuida_AP := W.Porc_com_distribuida;
+               END IF;
+
+                nPrimaLocal_Vida  := -1*nMonto_NCR_Local * (nFactorComisionVida);
+                nPrimaMoneda_Vida := -1*nMonto_NCR_Moneda * (nFactorComisionVida);
+                
+                nPrimaLocal_AP    := -1*nMonto_NCR_Local * (nFactorComisionAP);
+                nPrimaMoneda_AP   := -1*nMonto_NCR_Moneda * (nFactorComisionAP);
+
+                nMontoComiLocal_Vida  := (nPrimaLocal_Vida * (nPorc_com_distribuida_Vida/100));
+                nMontoComiMoneda_Vida := (nPrimaMoneda_Vida * (nPorc_com_distribuida_Vida/100));
+
+                nMontoComiLocal_AP    := (nPrimaLocal_AP * (nPorc_com_distribuida_AP/100));
+                nMontoComiMoneda_AP   := (nPrimaMoneda_AP * (nPorc_com_distribuida_AP/100));
+                
+                DBMS_OUTPUT.put_line('OC_COMISIONES  nMontoComiLocal_Vida '||nMontoComiLocal_Vida||'  nFactorComisionVida  '||nFactorComisionVida||'  nPorc_com_distribuida_Vida  '||nPorc_com_distribuida_Vida||'  W.Porc_com_distribuida  '||W.Porc_com_distribuida||'  nMtoComisi_Moneda  '||nMtoComisi_Moneda);
+
+
+                INSERT INTO T_OC_DETALLE_COMISION_VIFLEX(COD_AGENTE, IDPOLIZA, NUMDOCTO, IDETPOL , COD_MONEDA,
+                COMISION_LOCAL, COMISION_MONEDA, TIPORAMO)
+                VALUES(W.Cod_Agente, nIdPoliza, nIdNcr, nIDetPol, X.COD_MONEDA, nMontoComiLocal_Vida,
+                nMontoComiMoneda_Vida,'VDA');
+
+                INSERT INTO T_OC_DETALLE_COMISION_VIFLEX(COD_AGENTE, IDPOLIZA, NUMDOCTO, IDETPOL , COD_MONEDA,
+                COMISION_LOCAL, COMISION_MONEDA, TIPORAMO)
+                VALUES(W.Cod_Agente, nIdPoliza, nIdNcr, nIDetPol, X.COD_MONEDA, nMontoComiLocal_AP,
+                nMontoComiMoneda_AP,'ACC');
+                
+                nMtoComisi_Local       := nMontoComiLocal_Vida + nMontoComiLocal_AP;
+                nMtoComisi_Moneda      := nMontoComiMoneda_Vida + nMontoComiMoneda_AP;
+            
+             END IF;  
+             
+             
+             -----------------------------------------------------------------------------------------
+               /*SELECT NVL(MAX(IdComision),0) + 1
                INTO nIdComision
                FROM COMISIONES;
                */
@@ -388,6 +511,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              VALUES (nIdComision, X.IdPoliza, X.Cod_Moneda, W.Cod_Agente, X.CodCia, X.CodEmpresa, X.IdetPol,
                      nMtoComisi_Local, nMtoComisi_Moneda, X.Tasa_Cambio, X.IdNcr, SYSDATE,
                      USER, 'PRY', SYSDATE, W.Origen);
+                             
              OC_DETALLE_COMISION.INSERTA_DETALLE_COMISION(nCodCia, nIdPoliza, nIdComision, W.Origen, X.IdTipoSeg);
           END LOOP;
 
@@ -476,7 +600,7 @@ create or replace PACKAGE BODY oc_comisiones IS
        END IF;
     EXCEPTION
        WHEN OTHERS THEN
-          RAISE_APPLICATION_ERROR (-20100,'Error en Abono de Comisiones de Nota de Cr茅dito ' ||nIdNcr || ' ' || SQLERRM);
+          RAISE_APPLICATION_ERROR (-20100,'Error en Abono de Comisiones de Nota de Cr閐ito ' ||nIdNcr || ' ' || SQLERRM);
     END PAGA_ABONA_COMISION_NC;
 
     PROCEDURE REVERSA_DEVOLUCION(nCodCia NUMBER, nIdNcr NUMBER) IS
@@ -616,10 +740,10 @@ create or replace PACKAGE BODY oc_comisiones IS
     nPorcComisNivel3     COTIZACIONES.PorcComisAgte%TYPE;
     --
     BEGIN
-    
+
     INSERT INTO LOGS_REVISION VALUES('LOS VALORES RECIBIDOS EN EL PROCEDURE SICAS_OC.OC_COMISIONES.DISTRIBUCION_WEB ->  POLIZA: ' || nIdPoliza ||' AGENTE: ' ||cCod_Agente ||' PORCENTAJEAPLI: ' || nPorcApl ||' COTIZACION: ' ||nIdCotizacion);
     COMMIT;
-    
+
        BEGIN
           SELECT COUNT(*)
             INTO nCountPoliza
@@ -628,7 +752,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND IdPoliza = nIdPoliza;
 
           IF nCountPoliza > 0 THEN
-             RAISE_APPLICATION_ERROR (-20100,'Distribuci贸n Realizada con anterioridad, debera elimiar la distribuci贸n actual para generar una nueva!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Distribuci髇 Realizada con anterioridad, debera elimiar la distribuci髇 actual para generar una nueva!'|| SQLERRM);
           END IF;
        END;
 
@@ -641,7 +765,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND CodCia     = nCodCia;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'NO Existe el Origen del Agente P贸liza '|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'NO Existe el Origen del Agente P髄iza '|| SQLERRM);
        END;
 
        BEGIN
@@ -653,11 +777,11 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND IdPoliza   = nIdPoliza;
 
           IF  nComPoliza IS NULL THEN
-             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P贸liza...!!!'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P髄iza...!!!'|| SQLERRM);
           END IF;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P贸liza...!!!'|| SQLERRM); 
+             RAISE_APPLICATION_ERROR (-20100,'Debe asignar un porcentaje en el Detalle de la P髄iza...!!!'|| SQLERRM); 
        END;
 
        BEGIN
@@ -681,7 +805,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND Cod_Agente = cCod_Agente;
        EXCEPTION 
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Agente '||cCod_Agente||' NO v谩lido, por favor valide');
+             RAISE_APPLICATION_ERROR (-20100,'Agente '||cCod_Agente||' NO v醠ido, por favor valide');
        END;
 
        BEGIN
@@ -696,7 +820,7 @@ create or replace PACKAGE BODY oc_comisiones IS
              AND NPC.PlanCob   = cPlanCob;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inv谩lido favor revisar Configuraci贸n'|| SQLERRM);
+             RAISE_APPLICATION_ERROR (-20100,'Nivel Agente Inv醠ido favor revisar Configuraci髇'|| SQLERRM);
        END;
 
        SELECT C.PorcComisDir, C.PorcComisProm, C.PorcComisAgte                                                       
@@ -808,8 +932,248 @@ create or replace PACKAGE BODY oc_comisiones IS
         INSERT INTO LOGS_REVISION VALUES('LOS VALORES QUE SE IBAN A INSERTAR EN PROCEDURE SICAS_OC.OC_COMISIONES.DISTRIBUCION_WEB ->  nIdPoliza: ' || nIdPoliza ||' cCod_Agente: ' ||cCod_Agente ||' nNivel: ' || nNivel || 'nProporcional' || nProporcional);
         INSERT INTO LOGS_REVISION VALUES('LOS VALORES QUE SE IBAN A INSERTAR EN PROCEDURE SICAS_OC.OC_COMISIONES.DISTRIBUCION_WEB ->  nJefe: ' || nJefe ||' nPorcApl: ' ||nPorcApl ||' nComAgenteNivel: ' || nComAgenteNivel ||' nComisionTotalPlan: ' ||nComisionTotalPlan||' ROUND(nProporcional,5): ' || ROUND(nProporcional,5) ||' nnJefe: ' ||nnJefe||nComisionTotalPlan||' nComPoliza: ' || nComPoliza ||' cOrigen: ' ||cOrigen);
         COMMIT;
-        RAISE_APPLICATION_ERROR (-20100,'Error en Distribuci贸n de Comisiones de P贸liza '|| ' ' || SQLERRM);
+        RAISE_APPLICATION_ERROR (-20100,'Error en Distribuci髇 de Comisiones de P髄iza '|| ' ' || SQLERRM);
 
     END DISTRIBUCION_WEB;
+ 
+PROCEDURE PROC_COMISIONPOL_MULTIRAMO(nIdPoliza NUMBER, nIdetPol NUMBER, nCodCia NUMBER,
+                           nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2, cCodMoneda VARCHAR2,
+                           nIdNcr NUMBER, nMontoDetLocal NUMBER, nMontoDetMoneda NUMBER,
+                           nTasaCambio NUMBER) IS
+
+nMontoComiLocal   COMISIONES.Comision_Local%TYPE := 0;
+nMontoComiMoneda  COMISIONES.Comision_Moneda%TYPE := 0;
+nPorcComisiones   DETALLE_POLIZA.PorcComis%TYPE;
+nMontoComisiones  DETALLE_POLIZA.MontoComis%TYPE := 0;
+nIdTransac        TRANSACCION.IdTransaccion%TYPE;
+cExiste           VARCHAR2(1);
+nMonto            COMISIONES.Comision_Local%TYPE := 0;
+nCod_Agente       COMISIONES.Cod_Agente%TYPE;
+nnIdetPol         DETALLE_POLIZA.IdetPol%TYPE;
+nPrimaMoneda      DETALLE_POLIZA.Prima_Moneda%TYPE := 0;
+nPrimaLocal       DETALLE_POLIZA.Prima_local%TYPE := 0;
+nNumPagos         PLAN_DE_PAGOS.NUMPAGOS%TYPE;
+nFrecPagos        PLAN_DE_PAGOS.FrecPagos%TYPE;
+dFecIniVig        POLIZAS.FecIniVig%TYPE;
+dFecFinVig        POLIZAS.FecFinVig%TYPE;
+nIdComision       COMISIONES.IdComision%TYPE;
+nCantPagosReal    NUMBER(5);
+----- JMMD 20220113  MULTIRAMO
+nFactorComisionVida        NUMBER;
+nFactorComisionAP          NUMBER;
+nMontoComiLocal_Vida       COMISIONES.Comision_Local%TYPE := 0;
+nMontoComiMoneda_Vida      COMISIONES.Comision_Moneda%TYPE := 0;
+nMontoComiLocal_AP         COMISIONES.Comision_Local%TYPE := 0;
+nMontoComiMoneda_AP        COMISIONES.Comision_Moneda%TYPE := 0;
+cCODTIPO                   AGENTES.CODTIPO%TYPE;
+nPorc_com_distribuida_Vida AGENTES_DISTRIBUCION_COMISION.PORC_COM_DISTRIBUIDA%TYPE := 0;
+nPorc_com_distribuida_AP   AGENTES_DISTRIBUCION_COMISION.PORC_COM_DISTRIBUIDA%TYPE := 0;
+nPrimaLocal_Vida       COMISIONES.Comision_Local%TYPE := 0;
+nPrimaMoneda_Vida      COMISIONES.Comision_Moneda%TYPE := 0;
+nPrimaLocal_AP         COMISIONES.Comision_Local%TYPE := 0;
+nPrimaMoneda_AP        COMISIONES.Comision_Moneda%TYPE := 0;
+----- JMMD 20220113  MULTIRAMO
+
+CURSOR C_Agentes IS
+  SELECT Cod_Agente, Porc_Comision, IdetPol, IdTipoSeg
+    FROM AGENTES_DETALLES_POLIZAS
+   WHERE IdPoliza  = nIdPoliza
+     AND IDETPOL = nIdetPol; ----- JMMD20220317
+
+CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
+  SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
+         Porc_Com_Distribuida, Origen
+    FROM AGENTES_DISTRIBUCION_COMISION
+   WHERE IdPoliza                = nIdPoliza
+     AND IDetPol                 = nIdetPol
+     AND Cod_Agente              = nCod_Agente
+    -- AND Porc_Com_Proporcional   > 0      ---MLJS 24/02/2022
+    -- AND Porc_Com_Distribuida    > 0      ---MLJS 20/05/2022
+    ;
+
+CURSOR P_COB_RAMOS IS
+SELECT DISTINCT C.IDRAMOREAL
+  FROM   COBERT_ACT C
+  WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
+    AND  C.IDetPol       = nIdetPol
+    AND  C.IdPoliza      = nIdPoliza
+    AND  C.CodCia        = nCodCia
+  UNION ALL
+  SELECT DISTINCT C.IDRAMOREAL
+  FROM   COBERT_ACT_ASEG C
+  WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
+    AND  C.IDetPol       = nIdetPol
+    AND  C.IdPoliza      = nIdPoliza
+    AND  C.CodCia        = nCodCia     ;
+
+BEGIN
+--     DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO');
+   SELECT NumPagos, FrecPagos
+     INTO nNumPagos, nFrecPagos
+     FROM PLAN_DE_PAGOS
+     WHERE CodPlanPago IN (SELECT CodPlanPago
+                             FROM Polizas
+                            WHERE Idpoliza = nIdPoliza);
+
+   SELECT FecIniVig, FecFinVig
+     INTO dFecIniVig, dFecFinVig
+     FROM POLIZAS
+    WHERE CodCia    = nCodCia
+      AND IdPoliza  = nIdPoliza;
+
+   -- Determina Meses de Vigencia para Plan de Pagos
+   IF nNumPagos <= 12 THEN
+      nCantPagosReal  := FLOOR(MONTHS_BETWEEN(dFecFinVig, dFecIniVig) / nFrecPagos);
+   ELSE
+      nCantPagosReal  := FLOOR((dFecFinVig - dFecIniVig) / nFrecPagos);
+   END IF;
+
+   IF nCantPagosReal <= 0 THEN
+      nCantPagosReal := 1;
+   END IF;
+   IF nCantPagosReal < nNumPagos THEN
+      nNumPagos := nCantPagosReal;
+   END IF;
+
+   FOR I IN C_AGENTES LOOP
+      --FOR R_Agentes IN C_Agentes LOOP
+      nCod_Agente := I.Cod_Agente;
+      -- nnIdetPol    := I.IdetPol;
+
+-------------------- JMMD20220122
+         SELECT NVL(PorcComis,0), NVL(MontoComis,0), NVL(Prima_Local,0), NVL(Prima_Moneda,0)
+           INTO nPorcComisiones, nMontoComisiones, nPrimaLocal, nPrimaMoneda
+           FROM DETALLE_POLIZA
+          WHERE IdPoliza  = nIdPoliza
+            AND IDETPOL   = I.IDETPOL
+            AND CodCia    = nCodCia
+            AND IdTipoSeg = I.IdTipoSeg;
+/*        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPrimaLocal  '||nPrimaLocal);
+        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPrimaMoneda  '||nPrimaMoneda);
+        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorcComisiones  '||nPorcComisiones);
+        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nMontoComisiones  '||nMontoComisiones);  */
+----- JMMD 20220113  MULTIRAMO
+-------JMMD20220121
+            nFactorComisionVida := 0;
+            nFactorComisionAP := 0;
+        FOR PCR IN P_COB_RAMOS LOOP
+
+            IF PCR.IDRAMOREAL = '010' THEN
+-------JMMD20220121
+               nFactorComisionVida := OC_FACTURAR.FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '010', nPrimaMoneda );
+            ELSE
+              nFactorComisionAP := OC_FACTURAR.FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '030', nPrimaMoneda );
+            END IF;
+        END LOOP;
+
+-------------------- JMMD20220122
+      FOR R_Agentes IN C_AGENTES_D(I.Cod_Agente) LOOP
+----- JMMD 20220113  MULTIRAMO
+           SELECT CODTIPO
+             INTO cCODTIPO
+             FROM AGENTES
+            WHERE COD_AGENTE = R_Agentes.Cod_Agente;
+
+            DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO R_Agentes.Cod_Agente  '||R_Agentes.Cod_Agente||'  nMontoComisiones  '||nMontoComisiones);
+
+            IF cCODTIPO IN('HONPF', 'HONPM', 'HONORF', 'HONORM') AND R_Agentes.Cod_Agente != 1019 THEN
+               nPorc_com_distribuida_Vida := R_Agentes.Porc_com_distribuida / 1.16;
+--               DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorc_com_distribuida_Vida  '||nPorc_com_distribuida_Vida);
+               nPorc_com_distribuida_AP := R_Agentes.Porc_com_distribuida ;
+               DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorc_com_distribuida_AP  '||nPorc_com_distribuida_AP);
+            ELSE
+              nPorc_com_distribuida_Vida := R_Agentes.Porc_com_distribuida;
+              nPorc_com_distribuida_AP := R_Agentes.Porc_com_distribuida;
+               DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorc_com_distribuida_AP  '||nPorc_com_distribuida_AP);
+            END IF;
+-----        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nFactorComisionAP  '||nFactorComisionAP);
+-----        DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nFactorComisionVida  '||nFactorComisionVida);
+----- JMMD 20220113  MULTIRAMO
+            nPrimaLocal_Vida  := nMontoDetLocal * (nFactorComisionVida);
+           nPrimaMoneda_Vida := nMontoDetMoneda * (nFactorComisionVida);
+
+            nPrimaLocal_AP    := nMontoDetLocal * (nFactorComisionAP);
+            nPrimaMoneda_AP   := nMontoDetMoneda * (nFactorComisionAP);
+
+         IF NVL(nMontoComisiones,0) = 0 THEN
+
+            nMontoComiLocal_Vida  := (nPrimaLocal_Vida * (nPorc_com_distribuida_Vida/100));
+            nMontoComiMoneda_Vida := (nPrimaMoneda_Vida * (nPorc_com_distribuida_Vida/100));
+
+            nMontoComiLocal_AP    := (nPrimaLocal_AP * (nPorc_com_distribuida_AP/100));
+            nMontoComiMoneda_AP   := (nPrimaMoneda_AP * (nPorc_com_distribuida_AP/100));
+
+            DBMS_OUTPUT.put_line('OC_COMISIONES nMontoComiLocal_Vida:'||nMontoComiLocal_Vida||'  nPrimaLocal_Vida  '||nPrimaLocal_Vida||'  nPorc_com_distribuida_Vida  '||nPorc_com_distribuida_Vida ||'  nMontoDetLocal  '||nMontoDetLocal||'  nFactorComisionVida  '||nFactorComisionVida||'  nMontoDetLocal  '||nMontoDetLocal);
+        
+            INSERT INTO T_OC_DETALLE_COMISION_VIFLEX(COD_AGENTE, IDPOLIZA, NUMDOCTO, IDETPOL , COD_MONEDA,
+            COMISION_LOCAL, COMISION_MONEDA, TIPORAMO)
+            VALUES(R_Agentes.Cod_Agente, nIdPoliza, nIdNcr, nIDetPol, cCodMoneda, nMontoComiLocal_Vida,
+            nMontoComiMoneda_Vida,'VDA');
+
+            INSERT INTO T_OC_DETALLE_COMISION_VIFLEX(COD_AGENTE, IDPOLIZA, NUMDOCTO, IDETPOL , COD_MONEDA,
+            COMISION_LOCAL, COMISION_MONEDA, TIPORAMO)
+            VALUES(R_Agentes.Cod_Agente, nIdPoliza, nIdNcr, nIDetPol, cCodMoneda, nMontoComiLocal_AP,
+            nMontoComiMoneda_AP,'ACC');
+----- JMMD 20220114  MULTIRAMO
+            nMontoComiLocal       := nMontoComiLocal_Vida + nMontoComiLocal_AP;
+            nMontoComiMoneda      := nMontoComiMoneda_Vida + nMontoComiMoneda_AP;
+----- JMMD 20220113  MULTIRAMO
+         ELSE
+            nMontoComiLocal  := nMontoComisiones * (R_Agentes.Porc_Comision/100) * (I.Porc_Comision/100);
+            nMontoComiMoneda := nMontoComisiones / nTasaCambio * (R_AGENTES.Porc_Comision/100) * (I.Porc_Comision/100);
+         END IF;
+--       DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nMontoComiLocal  '||nMontoComiLocal||'  nMontoComiMoneda  '||nMontoComiMoneda);
+         BEGIN
+            SELECT 'S'
+              INTO cExiste
+              FROM COMISIONES
+             WHERE IdPoliza  = nIdPoliza
+               AND IdNcr     = nIdNcr
+        --       AND IDETPOL = I.IDETPOL
+              AND Cod_Agente = R_Agentes.Cod_Agente;
+         EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+               cExiste :='N';
+           WHEN TOO_MANY_ROWS THEN
+               cExiste :='S';
+         END;
+         --DBMS_OUTPUT.put_line('JMMD20220310 EN PROC_COMISIONPOL_MULTIRAMO cExiste  '||cExiste);
+         IF cExiste = 'N' THEN
+            OC_COMISIONES.INSERTA_COMISION_NC(nIdNcr);
+         ELSIF cExiste = 'S' THEN
+            UPDATE COMISIONES
+               SET Comision_Moneda  = Comision_Moneda + nMontoComiMoneda,
+                   Comision_Local   = Comision_Local   + nMontoComiLocal,
+                   Com_Saldo_Local  = Com_Saldo_Local  + nMontoComiLocal,
+                   Com_Saldo_Moneda = Com_Saldo_Moneda + nMontoComiMoneda
+             WHERE IdPoliza   = IdPoliza
+               AND IdNcr      = nIdNcr
+               AND Cod_Agente = R_AGENTES.Cod_Agente;
+
+            nMontoComiLocal := 0;
+
+            SELECT IdComision
+              INTO nIdComision
+              FROM COMISIONES
+             WHERE IdPoliza  = nIdPoliza
+               AND IdNcr     = nIdNcr
+               AND Cod_Agente = R_Agentes.Cod_Agente;
+
+            -- Elimina para Recalcular los Conceptos del Detale
+            DELETE DETALLE_COMISION WHERE IdComision = nIdComision;
+
+----             DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO ANTES DE INSERTA_DETALLE_COMISION R_Agentes.Cod_Agente  '||R_Agentes.Cod_Agente||'  nIdComision  '||nIdComision||'  R_Agentes.Origen  '||R_Agentes.Origen);       
+            OC_DETALLE_COMISION.INSERTA_DETALLE_COMISION(nCodCia, nIdPoliza, nIdComision, R_Agentes.Origen, I.IdTipoSeg);
+         END IF;
+         nMontoComiLocal := 0;
+      END LOOP;
+      nMontoComiLocal:=0;
+   END LOOP;
+----- jmmd20220114
+--  DELETE T_OC_DETALLE_COMISION_VIFLEX
+--   WHERE IDPOLIZA = nIdPoliza;
+----- jmmd20220114
+END PROC_COMISIONPOL_MULTIRAMO;
 
 END OC_COMISIONES;
+/
