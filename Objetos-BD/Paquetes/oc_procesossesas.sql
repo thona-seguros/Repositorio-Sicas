@@ -1,4 +1,5 @@
-create or replace PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
+
+create or replace PACKAGE                   SICAS_OC.OC_PROCESOSSESAS IS
     PROCEDURE CONTROLPRINCIPAL (
         nCodCia           SICAS_OC.ENTREGAS_CNSF_CONFIG.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE,
@@ -10,7 +11,9 @@ create or replace PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
     );
 
     PROCEDURE NOTIFICACORREO (cNombreUser VARCHAR2, cNomSesa VARCHAR2, cEstatus VARCHAR2, dInicio VARCHAR2, dFin VARCHAR2, cDuracion VARCHAR2);
-
+    
+    PROCEDURE NOTIFICARUTINA (cNombreUser VARCHAR2, cNomSesa VARCHAR2, cEstatus VARCHAR2, dInicio VARCHAR2, dFin VARCHAR2, cDuracion VARCHAR2);
+    
     FUNCTION GENERAENCABEZADO (
         nCodCia       SICAS_OC.CONFIG_PLANTILLAS_CAMPOS.CODCIA%TYPE,
         nCodEmpresa   SICAS_OC.CONFIG_PLANTILLAS_CAMPOS.CODEMPRESA%TYPE,
@@ -351,16 +354,21 @@ create or replace PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
 
     FUNCTION GETNUMRECLAMOSINI RETURN NUMBER;
 
+    PROCEDURE CALCULO_NUMREC (vlPnomsesa IN VARCHAR2);
+
+
 vl_Ejecucion    VARCHAR2(1) := '0';
 vl_Intento      NUMBER      :=  0;
 vl_Intento2     NUMBER      := 0;
 vl_Inicio       DATE;
 vl_Final        DATE;
 vl_Duracion     VARCHAR2(4000);
+prueba     VARCHAR2(4000);
 vl_NomSesa      VARCHAR2(50);
 END OC_PROCESOSSESAS;
 /
-create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
+
+create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
 
     PROCEDURE CONTROLPRINCIPAL (
         nCodCia           SICAS_OC.ENTREGAS_CNSF_CONFIG.CODCIA%TYPE,
@@ -396,6 +404,8 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         cCodPlantillaError  SICAS_OC.ENTREGAS_CNSF_CONFIG.CodPlantilla%TYPE;
         cCodEntregaDatGen   VARCHAR2(25);
         nEjecutaLog         NUMBER := 0;
+        vl_Rutina           NUMBER := 0;
+        vl_CorreoRutina     VARCHAR2(2) :='N';
     BEGIN
 
         IF SUBSTR(cCodEntregaProces, 5, 3) IN ( 'DAT', 'EMI' ) THEN
@@ -469,7 +479,14 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
             WHERE CODLISTA ='ONSESAS' 
                 AND CODVALOR=1
                 AND ROWNUM <= 1;
-
+            
+            SELECT COUNT(1)
+            INTO vl_Rutina
+            FROM SICAS_OC.SESAS_HISTORICO
+            WHERE ANOREP = TO_NUMBER(TO_CHAR(dFecDesde,'YYYY'));
+            
+            vl_CorreoRutina := 'N';
+            
             vl_Inicio := SYSDATE;
             EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
             IF cCodEntregaProces = 'SESADATAPC' THEN
@@ -495,12 +512,18 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                 EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_EMISION');
             ELSIF cCodEntregaProces = 'SESASINAPC' THEN
                 vl_NomSesa := 'SINIESTROS AP COLECTIVO';
+                IF vl_Rutina = 0 THEN
+                    vl_CorreoRutina := 'S';
+                END IF;
                 EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
             ELSIF cCodEntregaProces = 'SESASINVIG' THEN
                 vl_NomSesa := 'SINIESTROS VIDA GRUPO';
                 EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
             ELSIF cCodEntregaProces = 'SESASINGMC' THEN
                 vl_NomSesa := 'SINIESTROS GASTOS MEDICOS COLECTIVO';
+                IF vl_Rutina = 0 THEN
+                    vl_CorreoRutina := 'S';
+                END IF;
                 EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
             ELSIF cCodEntregaProces = 'SESADATAPI' THEN
                 vl_NomSesa := 'DATOS GENERALES AP INDIVIDUAL';
@@ -524,6 +547,9 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                 cCodEntregaDatGen := 'SESAEMIGMI';
                 EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_EMISION');
             ELSIF cCodEntregaProces = 'SESASINAPI' THEN
+                IF vl_Rutina = 0 THEN
+                    vl_CorreoRutina := 'S';
+                END IF;
                 vl_NomSesa := 'SINIESTROS AP INDIVIDUAL';
                 EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
             ELSIF cCodEntregaProces = 'SESASINVII' THEN
@@ -531,18 +557,31 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                 EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
             ELSIF cCodEntregaProces = 'SESASINGMI' THEN
                 vl_NomSesa := 'SINIESTROS GASTOS MEDICOS INDIVIDUAL';
+                IF vl_Rutina = 0 THEN
+                    vl_CorreoRutina := 'S';
+                END IF;
                 EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_SINIESTROS');
             ELSE
                 vl_NomSesa := cCodEntregaProces;
             END IF;
 
-            oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Inicio',TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),NULL,NULL);
-
+            IF vl_CorreoRutina = 'S' THEN
+                oc_procesossesas.NOTIFICARUTINA (cCodUsuario , vl_NomSesa , TO_CHAR(dFecDesde,'YYYY'),TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),NULL,NULL);
+            ELSE
+                oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Inicio',TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),NULL,NULL);
+            
+       
             cBlockPlSql := 'BEGIN '|| cNomProcProces|| '( :nCodCia, :nCodEmpresa, :dFecDesde, :dFecHasta, :cCodUsuario, :cCodEntregaDatGen, :cCodEntregaProces, :cFiltrarPolizas ); END;';
             EXECUTE IMMEDIATE cBlockPlSql USING nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario, cCodEntregaDatGen, cCodEntregaProces, cFiltrarPolizas;
 
             COMMIT;
-
+            -----avm
+      IF cCodEntregaProces IN ('SESASINAPC','SESASINGMC','SESASINAPI','SESASINGMI')THEN
+      
+      SICAS_OC.OC_PROCESOSSESAS.CALCULO_NUMREC(cCodEntregaProces);
+    END IF;
+            
+            
             cNomArchZip := SUBSTR(cNomArchProces, 1, INSTR(cNomArchProces, '.') - 1)|| '.zip';
 
             cNomArchZipError := SUBSTR(cNomArchProcesError, 1, INSTR(cNomArchProcesError, '.') - 1) || '.zip';
@@ -556,6 +595,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                 AND CODEMPRESA = nCodEmpresa
                 AND CODUSUARIO = cCodUsuario
                 AND CODREPORTE = cCodEntregaProces;
+                
 
             GeneraReportes(nCodCia, nCodEmpresa, REPLACE(cNomArchZipError, '.zip', '.TXT'), cEncabDatGen, cDetalleDatGen, cNomArchProces,cEncabProces,cEncabProcesError, cDetalleProces, cDetalleDatGenError, cNomArchZip, nEjecutaLog);
 
@@ -568,7 +608,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                 AND ROWNUM <= 1;
 
             COMMIT;
-
+            END IF;
         ELSE
 
             vl_Intento2 := vl_Intento +1;
@@ -605,8 +645,10 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                         vl_Final FECHA_DOS
                     FROM DUAL
         ));
-
-      oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Termino exitosamente ',TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),TO_CHAR(vl_Final,'DD/MM/YYYY HH24:MI:SS'),vl_Duracion);
+        
+        IF vl_CorreoRutina = 'N' THEN
+            oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Termino exitosamente ',TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),TO_CHAR(vl_Final,'DD/MM/YYYY HH24:MI:SS'),vl_Duracion);
+        END IF;
     EXCEPTION
         WHEN OTHERS THEN
             UPDATE SICAS_OC.VALORES_DE_LISTAS
@@ -887,10 +929,15 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
         cIndConcentrada SICAS_OC.POLIZAS.INDCONCENTRADA%TYPE,
         nIdEndoso       SICAS_OC.ASEGURADO_CERTIFICADO.IDENDOSO%TYPE
     ) RETURN NUMBER IS
-        nCantCertificados NUMBER;
+        nCantCertificados NUMBER := 0;
+        vl_Concentrada  VARCHAR2(1) := 'N';
+
     BEGIN
+
+    vl_Concentrada := CASE WHEN cIndConcentrada = 0 THEN 'N' ELSE 'S' END; 
         IF NVL(cIndConcentrada, 'N') = 'S' THEN
-            IF cIndAsegModelo = 'S' THEN
+
+            IF vl_Concentrada = 'S' THEN
                 IF nIdEndoso = 0 THEN
                     BEGIN
                         SELECT SICAS_OC.OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol) - ( COUNT(*) - 1 )
@@ -909,17 +956,19 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                 ELSE
                     nCantCertificados := 1;
                 END IF;
-
             ELSE
                 nCantCertificados := SICAS_OC.OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol);
             END IF;
+        ELSIF NVL(vl_Concentrada, 'N') = 'N' THEN
+            nCantCertificados := 1; --valor por defecto solicitado en requerimiento
+            nCantCertificados := SICAS_OC.OC_DETALLE_POLIZA.TOTAL_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol);
         ELSIF cIndAsegModelo = 'S' THEN
             nCantCertificados := NVL(nCantAsegModelo, 0);
         ELSE
             nCantCertificados := 1;
         END IF;
 
-        RETURN nCantCertificados;
+        RETURN NVL(nCantCertificados,0);
     END GETCANTCERTIFICADOS;
 
     FUNCTION GENERADETALLE (
@@ -945,6 +994,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                                  || '''';
         cOrderBy  VARCHAR2(4000) := ' ORDER BY NUMPOLIZA, NUMCERTIFICADO';
         cOrderBy2 VARCHAR2(4000) := ' ORDER BY EPOLIZ, ECERTI';
+        
         CURSOR c_Campos IS
         SELECT
             CASE
@@ -1015,6 +1065,8 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                                END;
 
         cCadena := 'SELECT ';
+          
+
         FOR x IN c_Campos LOOP
             cCadena := cCadena || x.Campo;
         END LOOP;
@@ -1027,9 +1079,12 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
                 cOrderBy2
             ELSE cOrderBy
         END;
+        
 
         cDetalle := cCadena;
+      DBMS_OUTPUT.PUT_LINE(cDetalle);
         RETURN cDetalle;
+        
     END GENERADETALLE;
 
     FUNCTION GENERADETALLEERROR (
@@ -1192,9 +1247,9 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
       */
 
       --Generación del Reporte del Proceso
-
         cCtlArchProces := UTL_FILE.FOPEN(cNomDirectorio, cNomArchProces, 'W', 32767);
         UTL_FILE.PUT_LINE(cCtlArchProces, cEncabProces);
+                
         OPEN c_Detalle FOR cDetalleProces;
 
         LOOP
@@ -1205,6 +1260,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
 
         CLOSE c_Detalle;
         UTL_FILE.FCLOSE(cCtlArchProces);
+        
         IF cEjecutaLog >= 1 THEN
             --generacion log de errores
             cCtlArchProces := UTL_FILE.FOPEN(cNomDirectorio, cNomArchDatGen, 'W', 32767);
@@ -1220,11 +1276,9 @@ create or replace PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
             CLOSE c_Detalle;
             UTL_FILE.FCLOSE(cCtlArchProces);
         END IF;
-
+        
         IF cEjecutaLog <> 0 THEN
-            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchDatGen
-                                                                      || ','
-                                                                      || cNomArchProces) THEN
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchDatGen) THEN
                 DBMS_OUTPUT.PUT_LINE('OK');
             END IF;
         ELSE
@@ -2947,4 +3001,236 @@ FUNCTION GETMONTOCOMISIONAP (
 
 END NOTIFICACORREO;
 
+    PROCEDURE NOTIFICARUTINA (cNombreUser VARCHAR2, cNomSesa VARCHAR2, cEstatus VARCHAR2, dInicio VARCHAR2, dFin VARCHAR2, cDuracion VARCHAR2) IS
+    nCodCia NUMBER := 1;
+    nCodEmpresa NUMBER := 1;
+    nCodCliente             CLIENTES.CodCliente%TYPE;
+    cTipoDocIdentificacion  CLIENTES.Tipo_Doc_Identificacion%TYPE;
+    cNumDocIdentificacion   CLIENTES.Num_Doc_Identificacion%TYPE;
+    cEmailCliente           CORREOS_ELECTRONICOS_PNJ.Email%TYPE;
+    cNumPolUnico            POLIZAS.NumPolUnico%TYPE;
+    dFecIniVig              POLIZAS.FecIniVig%TYPE;
+    cIdTipoSeg              DETALLE_POLIZA.IdTipoSeg%TYPE;
+
+    cSubject                VARCHAR2(10000);
+    cMessage                VARCHAR2(20000);
+    cEmailAuth              VARCHAR2(100)     := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'021');
+    cPwdEmail               VARCHAR2(100)     := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'022');
+    cEmailEnvio             VARCHAR2(100)     := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'042');
+    cCadenaLogo             VARCHAR2(200)     := ' <img src="http://www.thonaseguros.mx/images/Thona_Seguros.png" alt="'||OC_EMPRESAS.NOMBRE_COMPANIA(nCodCia)||'" height="80" width="300"> ';
+    cAvisoImportante        VARCHAR2(1000)    := 'AVISO IMPORTANTE. Este correo electrÃ³nico y cualquier archivo que se adjunte al mismo, es propiedad de THONA Seguros S.A. de C.V., y podrÃ¡ '||
+                                                 'contener informaciÃ³n privada y privilegiada para uso exclusivo del destinatario. Si usted ha recibido este correo por error, por favor, notifique '||
+                                                 'al remitente y bÃ³rrelo. No estÃ¡ autorizado para copiar, retransmitir, utilizar o divulgar este mensaje ni los archivos adjuntos, de lo contrario '||
+                                                 'estarÃ¡ infringiendo leyes mexicanas y de otros paÃ­ses que se aplican rigurosamente.';
+    cHTMLHeader             VARCHAR2(2000)    := '<html>'                                                                     ||CHR(13)||
+                                                 '<head>'                                                                     ||CHR(13)||
+                                                 '<meta http-equiv="Content-Language" content="en/us"/>'                      ||CHR(13)||
+                                                 '</head><body>'                                                              ||CHR(13);
+    cHTMLFooter             VARCHAR2(100)     := '</body></html>';
+    cTextoAlignDerecha      VARCHAR2(50)      := '<P align="right">';
+    cTextoAlignDerechaClose VARCHAR2(50)      := '</P>';
+    cSaltoLinea             VARCHAR2(5)       := '<br>';
+    cTextoImportanteOpen    VARCHAR2(10)      := '<strong>';
+    cTextoImportanteClose   VARCHAR2(10)      := '</strong>';
+    cTextoRojoOpen          VARCHAR2(100)     := '<FONT COLOR="red">';
+    cTextoAmarilloOpen      VARCHAR2(100)     := '<FONT COLOR="#ffbf00">';
+    cTextoClose             VARCHAR2(30)      := '</FONT>';
+    cTextoSmall             VARCHAR2(100)     := '<FONT SIZE="2" COLOR="blue">';
+    cError                  VARCHAR2(200);
+
+    nCod                    NUMBER;
+    vl_CodAgente            NUMBER;
+    vl_Mails                VARCHAR2(4000) := NULL;
+    cError2                  VARCHAR2(200);
+    VL_LONG                 NUMBER;
+    cNomArchivo             VARCHAR2(4000) := NULL;
+    cDirectorio             VARCHAR2(4000) := NULL;
+    vl_salida               VARCHAR2(4000) := NULL;
+    nCodSalida          NUMBER := 1;
+    nc0                 CONSTANT        NUMBER := 0;
+    nc1                 CONSTANT        NUMBER := 1;
+    nc2                 CONSTANT        NUMBER  :=2;
+    nc7                 CONSTANT        NUMBER :=7;
+    vl_Existe       NUMBER;
+    vMsjSalida          VARCHAR2(4000);
+    vl_cNomSesa VARCHAR2(4000);
+    http_req utl_http.req;
+    http_resp utl_http.resp;
+
+    content_type varchar2(4000);
+    post_content varchar2(4000);
+    vl_Enlace  varchar2(4000);
+    v_resp_chunked varchar2(4000);
+    v_resp CLOB;
+    vl_Nom  VARCHAR2(4000);
+    cEmailCopia VARCHAR2(4000);
+    BEGIN
+
+    IF cNomSesa IN ('DATOS GENERLAES AP COLECTIVO','EMISION AP COLECTIVO','DATOS GENERALES VIDA GRUPO','EMISION VIDA GRUPO') THEN
+        vl_cNomSesa := cTextoImportanteOpen||' <p style="color:#D31313";>'||cNomSesa||'</p>'||cTextoImportanteClose;
+    ELSE
+        vl_cNomSesa := cTextoImportanteOpen||' <p style="color:#000000";>'||cNomSesa||'</p>'||cTextoImportanteClose;
+    END IF;
+
+        cSubject := 'No se a ejecutado la rutina para la SESA '||cNomSesa;
+        cMessage := cHTMLHeader||cSaltoLinea||'Por medio del presente se notifica que '||cTextoImportanteOpen||'hace falta la ejecucion de la rutina del '||cEstatus||cTextoImportanteClose||' para ejecutar la SESA '||vl_cNomSesa ||cSaltoLinea||
+            'Responsable: '||cNombreUser||cSaltoLinea;
+
+            cMessage := cMessage||cSaltoLinea||cSaltoLinea||'Este Correo es Generado de Manera Automatica, Por Favor no lo Responda.'||cSaltoLinea||UTL_TCP.CRLF||cSaltoLinea||
+            cCadenaLogo||cSaltoLinea||cSaltoLinea||
+            cSaltoLinea||cTextoSmall||cAvisoImportante||cTextoClose||
+            cHTMLFooter;
+
+        OC_MAIL.INIT_PARAM;
+        OC_MAIL.cCtaEnvio   := cEmailAuth;
+        OC_MAIL.cPwdCtaEnvio:= cPwdEmail;
+
+        cEmailCliente := 'lreynoso@thonaseguros.mx,jibarra@thonaseguros.mx,msiller@thonaseguros.mx,cgarcia@thonaseguros.mx';
+        cEmailCopia := 'ogudino@thonaseguros.mx,chernandez@thonaseguros.mx,egarduno@thonaseguros.mx,masanchez@thonaseguros.mx,rperez@thonaseguros.mx';
+
+        BEGIN
+            SELECT DESCVALLST 
+            INTO cEmailCliente
+            FROM VALORES_DE_LISTAS
+            WHERE CODLISTA = 'ONSESAS'
+                AND CODVALOR = 2;
+
+            SELECT DESCVALLST 
+            INTO cEmailCopia
+            FROM VALORES_DE_LISTAS
+            WHERE CODLISTA = 'ONSESAS'
+                AND CODVALOR = 3;
+        EXCEPTION
+            WHEN OTHERS THEN
+                cEmailCliente := 'lreynoso@thonaseguros.mx,jibarra@thonaseguros.mx,msiller@thonaseguros.mx,cgarcia@thonaseguros.mx';
+                cEmailCopia := 'ogudino@thonaseguros.mx,chernandez@thonaseguros.mx,egarduno@thonaseguros.mx,masanchez@thonaseguros.mx,rperez@thonaseguros.mx';
+        END;
+
+
+            BEGIN
+                OC_MAIL.SEND_EMAIL(NULL,cEmailEnvio,cEmailCliente,cEmailCopia,NULL,cSubject,cMessage,NULL,NULL,NULL,NULL,cError);
+
+            EXCEPTION
+                WHEN OTHERS THEN
+                    SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(1,1, cNomSesa, USER, 'SISTEMA', 'No fue posible enviar el correo.', SQLCODE, ' Error al generar el archivo: '|| SQLERRM);
+            END;
+
+
+END NOTIFICARUTINA;
+
+PROCEDURE CALCULO_NUMREC (vlPnomsesa IN VARCHAR2) IS
+
+      CURSOR GET_SINIESTROS IS
+        WITH MONTO_TS AS (SELECT CODCIA
+                                ,CODEMPRESA
+                                ,NUMPOLIZA
+                                ,NUMSINIESTRO
+                                ,SUM(MONTORECLAMADO) MONTO_TOTALS
+                            FROM SICAS_OC.SESAS_SINIESTROS
+                            WHERE 1 = 1
+                            GROUP BY CODCIA, CODEMPRESA, NUMPOLIZA, NUMSINIESTRO
+                            )
+        SELECT SS.*,TS.MONTO_TOTALS
+        FROM SICAS_OC.SESAS_SINIESTROS SS
+            ,MONTO_TS TS
+        WHERE 1 = 1
+        AND TS.CODCIA = SS.CODCIA
+        AND TS.CODEMPRESA = SS.CODEMPRESA
+        AND TS.NUMPOLIZA = SS.NUMPOLIZA
+        AND TS.NUMSINIESTRO = SS.NUMSINIESTRO
+        ORDER BY SS.NUMPOLIZA, SS.NUMSINIESTRO, SS.FECCONSIN ASC, SS.MONTORECLAMADO DESC
+        ;
+    
+    vNumRec         NUMBER := 0;
+    vNumRecAnt      NUMBER := -99;
+    vSiniestroCtrl  NUMBER := NULL;
+    vMontoSum       NUMBER := 0;
+	vFechaCtrl      DATE := NULL;
+    vR3Ctrl         NUMBER := 0;
+    vR3CtrlS        NUMBER := 0;
+    vR3Ant          NUMBER := -99;
+BEGIN
+    FOR X IN GET_SINIESTROS LOOP
+        IF (vSiniestroCtrl IS NULL) THEN
+            vSiniestroCtrl := X.NUMSINIESTRO;
+            vMontoSum := X.MONTORECLAMADO;
+            vFechaCtrl := X.FECCONSIN;
+        ELSIF(vSiniestroCtrl != X.NUMSINIESTRO)THEN
+            --DBMS_OUTPUT.PUT_LINE('*********************************************');
+            vSiniestroCtrl := X.NUMSINIESTRO;
+            vMontoSum := X.MONTORECLAMADO;
+            vNumRec := 0;
+            vR3CtrlS := 0;
+            vNumRecAnt := -99;
+            vR3Ant := -99;
+        ELSE 
+            vMontoSum := (vMontoSum + X.MONTORECLAMADO);
+        END IF;
+        
+        IF(vMontoSum <= X.MONTO_TOTALS)THEN
+            IF(X.MONTORECLAMADO >= 0 AND X.FECCONSIN != vFechaCtrl)THEN
+                IF(vNumRec = 0)THEN
+                    vNumRec := X.NUMRECLAMACION;
+                ELSE
+                    vNumRec := (vNumRec + 1);
+                END IF;
+            ELSE
+                IF(vNumRec = 0)THEN
+                    vNumRec := X.NUMRECLAMACION;
+                END IF;
+            END IF;
+        ELSE
+            IF(X.MONTO_TOTALS < 0 AND vNumRec = 0)THEN
+                vNumRec := X.NUMRECLAMACION;
+            ELSE
+                IF(X.MONTORECLAMADO > 0 AND vNumRec = 0)THEN
+                    vNumRec := X.NUMRECLAMACION;
+                ELSIF(X.MONTO_TOTALS > 0)THEN
+                    vNumRec := (vNumRec + 1);
+                END IF;
+            END IF;
+        END IF;
+
+        IF(vMontoSum < X.MONTO_TOTALS)THEN
+            vR3CtrlS := (vR3CtrlS+1);
+            vR3Ctrl := vR3CtrlS;
+        ELSE
+            vR3Ctrl := 0;
+        END IF;
+        
+        IF(vR3Ant = 0 AND vMontoSum >= X.MONTO_TOTALS AND X.MONTORECLAMADO > 0)THEN
+            vNumRec := vNumRecAnt;
+        END IF;
+        
+        /*DBMS_OUTPUT.PUT_LINE(X.NUMSINIESTRO || '|' || X.NUMRECLAMACION || '|' || TO_CHAR(X.FECREPREC,'DD/MM/YYYY') || '|' || TO_CHAR(X.FECCONSIN,'DD/MM/YYYY') || '|' || X.COBERTURA
+                            || '|' || X.MONTORECLAMADO || '|' || X.MONTODEDUCIBLE || '|' || (X.MONTORECLAMADO - X.MONTODEDUCIBLE) || '|' || vMontoSum || '|' || X.MONTO_TOTALS || '|' || CASE WHEN vMontoSum >= X.MONTO_TOTALS THEN 0 ELSE vNumRec END || '|' || vNumRec);*/
+
+           UPDATE SICAS_OC.SESAS_SINIESTROS
+            SET
+            MOMENDED = (X.MONTORECLAMADO - X.MONTODEDUCIBLE) 
+            , MONTSUM = vMontoSum 
+            , MONTOTAL = X.MONTO_TOTALS 
+            , R3 = vR3Ctrl
+            , NUM_REC = vNumRec
+            WHERE CODCIA = X.CODCIA
+                AND CODEMPRESA = X.CODEMPRESA
+                AND NUMPOLIZA = X.NUMPOLIZA
+                AND NUMSINIESTRO = X.NUMSINIESTRO
+                AND MONTORECLAMADO = X.MONTORECLAMADO
+                AND COBERTURA = X.COBERTURA;
+        --AND NUMRECLAMACION = X.NUMRECLAMACION;*/
+        COMMIT;
+        vFechaCtrl := X.FECCONSIN;
+        vNumRecAnt := vNumRec;
+        vR3Ant := vR3Ctrl;
+    END LOOP;
+    EXCEPTION WHEN OTHERS THEN 
+
+         SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(1,1, vlPnomsesa, USER, 'CALCULO_NUMREC', 'Error:', SQLCODE, ' Error al generar proceso numero de reclamacion final: '|| SQLERRM);
+
+
+
+END CALCULO_NUMREC;
+
 END OC_PROCESOSSESAS;
+/
