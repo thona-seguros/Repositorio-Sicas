@@ -928,7 +928,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
         WHERE IdPoliza   = nIdPoliza
           AND CodCia     = nCodCia;
          END IF;
-
+        
+        dbms_output.put_line('nIdPoliza: ' || nIdPoliza || ' cIndFacturaPol: ' || cIndFacturaPol || ' cCodPlanPago: ' || cCodPlanPago || ' cTipoPol: ' || cTipoPol || ' cIndFactPeriodo: ' || cIndFactPeriodo);
+        
          IF cIndFacturaPol = 'S' THEN
        nIdTransac := OC_TRANSACCION.CREA(nCodCia,  nCodEmpresa, 7, 'POL');
        OC_DETALLE_TRANSACCION.CREA (nIdTransac, nCodCia, nCodEmpresa, 7, 'POL', 'POLIZAS',
@@ -1370,6 +1372,8 @@ cIndListadoAseg   COTIZACIONES.IndListadoAseg%TYPE;
 cIndCensoSubGrupo COTIZACIONES.IndCensoSubGrupo%TYPE;
 cIndPolCol        POLIZAS.IndPolCol%TYPE;
 
+nNumRenov         POLIZAS.NUMRENOV%TYPE;
+
 CURSOR POL_REN_Q IS
    SELECT TipoPol, CodCliente, CodEmpresa,  NumPolRef, CodCia, NumPolUnico,
           FecRenovacion, DescPoliza, SumaAseg_Moneda, PrimaNeta_Moneda,
@@ -1382,6 +1386,8 @@ CURSOR POL_REN_Q IS
           FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
           IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
           FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos
+          --MLJS 06/08/2024 SE AGREGAN LOS SIGUIENTES CAMPOS
+          ,CodTipoNegocio, CodPaqComercial,CodCatego, codobjetoimp, codusocfdi 
      FROM POLIZAS
     WHERE IdPoliza = nIdPolizaRen
       AND CodCia   = nCodCia;
@@ -1393,6 +1399,8 @@ CURSOR DET_POL_RENOVAR_Q IS
           IndSinAseg, CodFilial, CodCategoria, IndFactElectronica,
           IndAsegModelo, CantAsegModelo, MontoComisH, PorcComisH,
           IdDirecAviCob, IdFormaCobro, MontoAporteFondo
+          ,codobjetoimp, codusocfdi  --MLJS 06/08/2024 SE AGREGAN
+          ,NUMDETREF                 --MLJS 29/08/2024 SE COPIA LA REFERENCIA DEL DETALLE
      FROM DETALLE_POLIZA
     WHERE IdPoliza = nIdPolizaRen
       AND CodCia   = nCodCia;
@@ -1620,10 +1628,10 @@ BEGIN
          ELSE
             cNumPolUnico := TRIM(TO_CHAR(nIdPoliza)) || '-' || TRIM(TO_CHAR(NVL(X.NumRenov,0)+1,'00'));
          END IF;
-
+          
          UPDATE POLIZAS
             SET NumPolUnico   = cNumPolUnico,
-                NumRenov      = NVL(X.NumRenov,0) + 1
+                NumRenov      = nNumRenov --MLJS 06/08/2024 NVL(X.NumRenov,0) + 1
           WHERE CodCia     = nCodCia
             AND CodEmpresa = nCodEmpresa
             AND IdPoliza   = nIdPoliza;
@@ -1803,15 +1811,19 @@ BEGIN
          nTasaCambio  := OC_GENERALES.TASA_DE_CAMBIO(X.Cod_Moneda, TRUNC(SYSDATE));
          nCodEmpresa  := X.CodEmpresa;
          nPrima       := X.PrimaNeta_Moneda * nTasaCambio;
-         IF INSTR(X.NumPolUnico,'-' || TRIM(TO_CHAR(X.NumRenov,'00')),1) != 0 THEN
+         /*IF INSTR(X.NumPolUnico,'-' || TRIM(TO_CHAR(X.NumRenov,'00')),1) != 0 THEN
             cNumPolUnico := SUBSTR(X.NumPolUnico,1,INSTR(X.NumPolUnico,'-' || TRIM(TO_CHAR(X.NumRenov,'00')),1)-1) ||
                 '-' || TRIM(TO_CHAR(NVL(X.NumRenov,0)+1,'00'));
          ELSIF X.NumPolUnico IS NOT NULL THEN
             cNumPolUnico := TRIM(X.NumPolUnico) || '-' || TRIM(TO_CHAR(NVL(X.NumRenov,0)+1,'00'));
          ELSE
             cNumPolUnico := TRIM(TO_CHAR(nIdPoliza)) || '-' || TRIM(TO_CHAR(NVL(X.NumRenov,0)+1,'00'));
-         END IF;
-
+         END IF;*/
+         
+         -- MLJS 07/08/2024
+         cNumPolUnico := F_OBT_NUMPOLUNICO_REN (X.NumPolUnico);
+         nNumRenov    := F_OBT_NUMRENOV_REN (X.NumPolUnico);
+         
          INSERT INTO POLIZAS
              (IdPoliza, TipoPol, CodCliente, CodEmpresa,  NumPolRef,
              FecIniVig, FecFinVig, FecSolicitud, FecEmision, StsPoliza, FecSts,
@@ -1826,13 +1838,16 @@ BEGIN
              PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste, MontoDeducible,
              FactFormulaDeduc, CodRiesgoRea, CodTipoBono, HorasVig, DiasVig,
              IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
-             FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos)
+             FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos
+              --MLJS 06/08/2024 SE AGREGAN LOS SIGUIENTES CAMPOS
+             ,CodTipoNegocio, CodPaqComercial,CodCatego, codobjetoimp, codusocfdi)
          VALUES
              (nIdPoliza, X.TipoPol, X.CodCliente, X.CodEmpresa,  X.NumPolRef,
              dFecIni, dFecFin, dFecHoy, dFecHoy, 'XRE', dFecHoy,
              NULL, NULL, X.SumaAseg_Moneda * nTasaCambio, X.SumaAseg_Moneda,
              X.PrimaNeta_Moneda * nTasaCambio, X.PrimaNeta_Moneda, X.DescPoliza,
-             X.PorcComis, dFecFin, NVL(X.NumRenov,0)+1, X.IndExaInsp, X.CodCia,
+             X.PorcComis, dFecFin, nNumRenov, --MLJS 07/08/2024 NVL(X.NumRenov,0)+1, 
+             X.IndExaInsp, X.CodCia,
              X.Cod_Moneda, X.CodGrupoEc, X.IndPolCol, X.Cod_Agente, X.CodPlanPago,
              X.Medio_Pago, cNumPolUnico, X.IndProcFact, X.Caracteristica,
              X.IndFactPeriodo, X.FormaVenta, X.TipoRiesgo, X.IndConcentrada,
@@ -1842,7 +1857,9 @@ BEGIN
              X.PorcGtoAdmin, X.PorcGtoAdqui, X.PorcUtilidad, X.FactorAjuste, X.MontoDeducible,
              X.FactFormulaDeduc, X.CodRiesgoRea, X.CodTipoBono, X.HorasVig, X.DiasVig,
              X.IndExtraPrima, X.AsegAdheridosPor, X.PorcenContributorio,
-             X.FuenteRecursosPrima, X.IdFormaCobro, X.DiaCobroAutomatico, X.IndManejaFondos);
+             X.FuenteRecursosPrima, X.IdFormaCobro, X.DiaCobroAutomatico, X.IndManejaFondos 
+             --MLJS 06/08/2024 SE AGREGAN LOS SIGUIENTES CAMPOS
+             ,X.CodTipoNegocio, X.CodPaqComercial,X.CodCatego, X.codobjetoimp, X.codusocfdi);
 
          -- Inserta Agentes de la Póliza
          INSERT INTO AGENTE_POLIZA
@@ -1875,14 +1892,18 @@ BEGIN
                FecIniVig, FecFinVig, IdTipoSeg, Tasa_Cambio, PorcComis, PlanCob,
                StsDetalle, CodPromotor, IndDeclara, IndSinAseg, CodFilial, CodCategoria,
                IndFactElectronica, IndAsegModelo, CantAsegModelo, MontoComisH, PorcComisH,
-               IdDirecAviCob, IdFormaCobro, MontoAporteFondo)
+               IdDirecAviCob, IdFormaCobro, MontoAporteFondo
+               ,codobjetoimp, codusocfdi  --MLJS 06/08/2024 SE AGREGAN)
+               ,NUMDETREF)                --MLJS 30/08/2024 
             VALUES
                (nIdPoliza, X.IDetPol, X.CodCia, X.Cod_Asegurado, X.CodEmpresa, X.CodPlanPago,
                X.Suma_Aseg_Moneda * nTasaCambio, X.Suma_Aseg_Moneda, X.Prima_Moneda * nTasaCambio, X.Prima_Moneda,
                dFecIni, dFecFin, X.IdTipoSeg, nTasaCambio, X.PorcComis, X.PlanCob,
                'XRE', X.CodPromotor, X.IndDeclara, X.IndSinAseg, X.CodFilial, X.CodCategoria,
                X.IndFactElectronica, X.IndAsegModelo, X.CantAsegModelo, X.MontoComisH, X.PorcComisH,
-               X.IdDirecAviCob, X.IdFormaCobro, X.MontoAporteFondo);
+               X.IdDirecAviCob, X.IdFormaCobro, X.MontoAporteFondo
+               ,X.codobjetoimp, X.codusocfdi  --MLJS 06/08/2024 SE AGREGAN
+               ,X.NUMDETREF);                 --MLJS 30/08/2024 
 
           /*OC_DETALLE_TRANSACCION.CREA (nIdTransac, nCodCia, X.CodEmpresa, 3, 'CER', 'DETALLE_POLIZA',
                    nIdPoliza, NULL, NULL, NULL, nPrima);*/
@@ -2840,6 +2861,8 @@ END RENOVAR;
         FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos,
         TipoProrrata, IndConvenciones, CodTipoNegocio, CodPaqComercial,
         CodOficina,CodCatego
+        --MLJS 07/08/2024 SE AGREGAN LOS SIGUIENTES CAMPOS
+        , codobjetoimp, codusocfdi 
         FROM POLIZAS
        WHERE IdPoliza = nIdPolizaOrig
          AND CodCia   = nCodCia;
@@ -2852,6 +2875,7 @@ END RENOVAR;
         IndDeclara, IndSinAseg, CodFilial, CodCategoria, IndFactElectronica,
         IndAsegModelo, CantAsegModelo, MontoComisH, PorcComisH, IdDirecAviCob,
         IdFormaCobro, MontoAporteFondo
+        ,codobjetoimp, codusocfdi  --MLJS 07/08/2024 SE AGREGAN
         FROM DETALLE_POLIZA
        WHERE IdPoliza = nIdPolizaOrig
          AND CodCia   = nCodCia
@@ -2864,6 +2888,7 @@ END RENOVAR;
         NULL CodFilial, NULL CodCategoria, NULL IndFactElectronica,
         'N' IndAsegModelo, 0 CantAsegModelo, 0 MontoComisH, 0 PorcComisH, NULL IdDirecAviCob,
         NULL IdFormaCobro, 0 MontoAporteFondo
+        ,NULL codobjetoimp, NULL codusocfdi  --MLJS 07/08/2024 SE AGREGAN
         FROM FZ_DETALLE_FIANZAS
        WHERE IdPoliza = nIdPolizaOrig
          AND CodCia   = nCodCia;
@@ -2974,7 +2999,8 @@ END RENOVAR;
          IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
          FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos,
          TipoProrrata, IndConvenciones, CodTipoNegocio, CodPaqComercial,
-         CodOficina, CodCatego)
+         CodOficina, CodCatego
+         ,codobjetoimp, codusocfdi)  --MLJS 07/08/2024 SE AGREGAN)
        VALUES(nIdPoliza, X.CodEmpresa, nCodCia, X.TipoPol, X.NumPolRef,
          dFecHoy, ADD_MONTHS(dFecHoy,12), dFecHoy, dFecHoy, ADD_MONTHS(dFecHoy,12),
          'SOL', dFecHoy, NULL, NULL, X.SumaAseg_Local, X.SumaAseg_Moneda,
@@ -2990,7 +3016,8 @@ END RENOVAR;
          X.IndExtraPrima, X.AsegAdheridosPor, X.PorcenContributorio,
          X.FuenteRecursosPrima, X.IdFormaCobro, X.DiaCobroAutomatico, X.IndManejaFondos,
          X.TipoProrrata, X.IndConvenciones, X.CodTipoNegocio, X.CodPaqComercial,
-         X.CodOficina, X.CodCatego);
+         X.CodOficina, X.CodCatego
+         ,X.codobjetoimp, X.codusocfdi);  --MLJS 07/08/2024 SE AGREGAN
          EXCEPTION
        WHEN OTHERS THEN
             RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nueva Póliza ' ||SQLERRM);
@@ -3039,14 +3066,16 @@ END RENOVAR;
                PlanCob, MontoComis, NumDetRef, FecAnul, Motivanul, CodPromotor,
                IndDeclara, IndSinAseg, CodFilial, CodCategoria, IndFactElectronica,
                IndAsegModelo, CantAsegModelo, MontoComisH, PorcComisH, IdDirecAviCob,
-               IdFormaCobro, MontoAporteFondo)
+               IdFormaCobro, MontoAporteFondo
+               ,codobjetoimp, codusocfdi ) -- MLJS 07/08/2024
              VALUES(nIdPoliza, Y.IDetPol, nCodCia, Y.Cod_Asegurado, Y.CodEmpresa, Y.CodPlanPago,
                Y.Suma_Aseg_Local, Y.Suma_Aseg_Moneda, Y.Prima_Local, Y.Prima_Moneda,
                dFecHoy, ADD_MONTHS(dFecHoy,12), Y.IdTipoSeg, Y.Tasa_Cambio, Y.PorcComis, 'SOL',
                Y.PlanCob, Y.MontoComis, Y.NumDetRef, Y.FecAnul, Y.Motivanul, Y.CodPromotor,
                Y.IndDeclara, Y.IndSinAseg, Y.CodFilial, Y.CodCategoria, Y.IndFactElectronica,
                Y.IndAsegModelo, Y.CantAsegModelo, Y.MontoComisH, Y.PorcComisH, Y.IdDirecAviCob,
-               Y.IdFormaCobro, Y.MontoAporteFondo);
+               Y.IdFormaCobro, Y.MontoAporteFondo
+               ,Y.codobjetoimp, Y.codusocfdi ); -- MLJS 07/08/2024
           ELSE
              INSERT INTO FZ_DETALLE_FIANZAS
               (IdPoliza, Correlativo, CodCia,  CodEmpresa,
@@ -3279,12 +3308,12 @@ END RENOVAR;
                   nIdPoliza, NULL, NULL, NULL, nPrimaNeta_Moneda);
 
          FOR W IN DET_Q LOOP
-       OC_DETALLE_TRANSACCION.CREA(nIdTransaccion, nCodCia,  nCodEmpresa, 18, 'REHAB', 'DETALLE_POLIZA',
-                     nIdPoliza, W.IDetPol, NULL, NULL, W.Prima_Moneda);
-       OC_DETALLE_POLIZA.REHABILITAR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol);
-       OC_COBERT_ACT.REHABILITAR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol);
-       OC_ASISTENCIAS_DETALLE_POLIZA.REHABILITAR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol);
-       OC_BENEFICIARIO.REHABILITAR(nIdPoliza, W.IDetPol, W.Cod_Asegurado);
+           OC_DETALLE_TRANSACCION.CREA(nIdTransaccion, nCodCia,  nCodEmpresa, 18, 'REHAB', 'DETALLE_POLIZA',
+                         nIdPoliza, W.IDetPol, NULL, NULL, W.Prima_Moneda);
+           OC_DETALLE_POLIZA.REHABILITAR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol);
+           OC_COBERT_ACT.REHABILITAR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol);
+           OC_ASISTENCIAS_DETALLE_POLIZA.REHABILITAR(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol);
+           OC_BENEFICIARIO.REHABILITAR(nIdPoliza, W.IDetPol, W.Cod_Asegurado);
          END LOOP;
 
          FOR X IN ASEG_Q LOOP
@@ -3349,7 +3378,7 @@ END RENOVAR;
          SELECT MAX(T.IdTransaccion)
       INTO nIdTransaccionEmiNc
       FROM TRANSACCION T, DETALLE_TRANSACCION D
-          WHERE D.CodSubProceso     = 'NOTACR'
+          WHERE D.CodSubProceso     = 'NOTACR' 
        AND D.CodCia            = nCodCia
        AND D.CodEmpresa        = nCodEmpresa
        AND TO_NUMBER(D.Valor1) = nIdPoliza
@@ -3435,7 +3464,7 @@ END RENOVAR;
    nDiasAnul            NUMBER(6);
    nCertEmi             NUMBER(10);
    nEndosos             NUMBER(5);
-
+   
    CURSOR PRIMA_Q IS
       SELECT F.StsFact, F.IdFactura, NVL(D.Monto_Det_Moneda,0) Monto_Det_Moneda,
         D.Saldo_Det_Moneda, F.IdEndoso, F.FecVenc
@@ -3687,6 +3716,7 @@ END RENOVAR;
 
                      OC_DETALLE_TRANSACCION.CREA(nIdTransacNc, nCodCia,  nCodEmpresa, 8, 'ANUNCR', 'NOTAS_DE_CREDITO',
                              nIdPoliza, X.IDetPol, X.IdEndoso, X.IdNcr, nTotNotaCredCanc);
+                     
                   END LOOP;
 
                   IF NVL(nIdTransacNc,0) != 0 THEN
@@ -3785,6 +3815,8 @@ END RENOVAR;
                                    nIdNcr, nTasaCambio);
                OC_NOTAS_DE_CREDITO.ACTUALIZA_NOTA(nIdNcr);
                OC_NOTAS_DE_CREDITO.EMITIR(nIdNcr, NULL);
+               DBMS_OUTPUT.put_line('OC POLIZAS nMtoNcrLocal:'||nMtoNcrLocal||'  nFactor  '||nFactor||'  nMtoNcrMoneda  '||nMtoNcrMoneda);
+        
                OC_COMISIONES.INSERTA_COMISION_NC(nIdNcr);
                OC_DETALLE_TRANSACCION.CREA (nIdTransacEmiNc, nCodCia,  nCodEmpresa, 2, 'NOTACR', 'NOTAS_DE_CREDITO',
                              nIdPoliza, nIDetPol, 0, nIdNcr, nMtoNcrMoneda);
@@ -4783,13 +4815,15 @@ END ALTURA_CERO;
 
 -- PROCESOS GENERADOS PARA LA RENOVACION ESPECIAL MLJS CAGR ---
 --17/05/2024
+--07/08/2024 SE MODIFICA LA RENOVACION
 FUNCTION F_OBT_NUMPOLUNICO_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN VARCHAR2 IS
   cCadena    POLIZAS.NUMPOLUNICO%TYPE;
   nNumrenov  POLIZAS.NUMRENOV%TYPE;
 BEGIN
-  nNumrenov := TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2)) + 1;
-  cCadena   := SUBSTR(CNUMPOLUNICOORIG,1,INSTR(CNUMPOLUNICOORIG,'-'))||LPAD(TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2)) + 1,2,0);
-  RETURN (cCadena);
+    nNumrenov := TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2)) + 1;
+    --cCadena   := SUBSTR(CNUMPOLUNICOORIG,1,INSTR(CNUMPOLUNICOORIG,'-'))||LPAD(TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2)) + 1,2,0);
+    cCadena   := SUBSTR(CNUMPOLUNICOORIG,1,LENGTH(CNUMPOLUNICOORIG)-LENGTH(SUBSTR(CNUMPOLUNICOORIG,-2)))||LPAD(TO_CHAR(TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2))+1),2,0);	
+    RETURN (cCadena);
 
 EXCEPTION
   WHEN OTHERS THEN

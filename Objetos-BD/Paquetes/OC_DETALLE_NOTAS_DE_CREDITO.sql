@@ -127,20 +127,12 @@ BEGIN
          cIndMultiRamo := 'N';
     END;
    
-   IF cIndMultiRamo = 'S' THEN
-     SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
+    -- Actualiza la Base de Prima por si Aplico Retención
+   SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
      INTO nMtoDetNcrLocal, nMtoDetNcrMoneda
      FROM DETALLE_NOTAS_DE_CREDITO
-     WHERE IdNcr   = nIdNcr
-     AND   CODCPTO IN ('PRIMAS','DEREAP');
-   
-   ELSE
-       -- Actualiza la Base de Prima por si Aplico Retención
-       SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
-         INTO nMtoDetNcrLocal, nMtoDetNcrMoneda
-         FROM DETALLE_NOTAS_DE_CREDITO
-        WHERE IdNcr   = nIdNcr;
-   END IF;
+    WHERE IdNcr   = nIdNcr;
+    
    FOR Y IN CPTO_PLAN_Q LOOP
       BEGIN
          SELECT 'S'
@@ -165,7 +157,23 @@ BEGIN
             nMtoCpto  := Y.MtoCpto;
             nPorcCpto := Y.PorcCpto;
          END IF;
-
+         --MLJS/CAGR 29/08/2024 MULTIRAMO
+         IF cIndMultiRamo = 'S' THEN
+           IF Y.CodCpto IN ('DEREAP','RECACC') THEN
+              SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
+                INTO nMtoDetNcrLocal, nMtoDetNcrMoneda
+                FROM DETALLE_NOTAS_DE_CREDITO
+               WHERE IdNcr   = nIdNcr
+               AND   CODCPTO IN ('PRIMAS');
+           ELSIF Y.CodCpto IN ('DEREVI','RECVDA') THEN
+              SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
+                INTO nMtoDetNcrLocal, nMtoDetNcrMoneda
+                FROM DETALLE_NOTAS_DE_CREDITO
+               WHERE IdNcr   = nIdNcr
+               AND   CODCPTO IN ('PRIBAS','PRIADI');
+           END IF;
+         END IF;
+         --MLJS/CAGR 29/08/2024 MULTIRAMO
          IF Y.Aplica = 'P' THEN
             IF NVL(Y.MtoCpto,0) <> 0 THEN
                nMtoDet       := NVL(nMtoCpto,0);
