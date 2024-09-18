@@ -12,10 +12,12 @@ FUNCTION VALIDA_ASEG_DUPLICADOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud
 
 PROCEDURE REPORTE_ASEG_DUPLICADOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, cIndElimina VARCHAR2);
 
-END OC_SOLICITUD_DETALLE_ASEG;
- 
- 
- 
+PROCEDURE INSERTAR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, nIDetSol NUMBER, nIdAsegurado NUMBER, cTipoDocIdentificacion VARCHAR2,
+                   cNumDocIdentificacion VARCHAR2, cNombreAseg VARCHAR2, cApellidoPaternoAseg VARCHAR2, cApellidoMaternoAseg VARCHAR2,
+                   dFechaNacimiento DATE, cSexoAseg VARCHAR2, cDirecResAseg VARCHAR2, cCodigoPostalAseg VARCHAR2, nSalarioMensual NUMBER, 
+                   cNutra VARCHAR2);
+                   
+END OC_SOLICITUD_DETALLE_ASEG; 
  
 /
 
@@ -231,5 +233,20 @@ BEGIN
    OC_ARCHIVO.Escribir_Linea('</table></div></html>', USER, 9999);
    OC_ARCHIVO.Escribir_Linea('EOF', cCodUser, 0);
 END REPORTE_ASEG_DUPLICADOS;
+
+PROCEDURE INSERTAR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, nIDetSol NUMBER, nIdAsegurado NUMBER, cTipoDocIdentificacion VARCHAR2,
+                   cNumDocIdentificacion VARCHAR2, cNombreAseg VARCHAR2, cApellidoPaternoAseg VARCHAR2, cApellidoMaternoAseg VARCHAR2,
+                   dFechaNacimiento DATE, cSexoAseg VARCHAR2, cDirecResAseg VARCHAR2, cCodigoPostalAseg VARCHAR2, nSalarioMensual NUMBER, 
+                   cNutra VARCHAR2) IS
+BEGIN 
+    INSERT INTO SOLICITUD_DETALLE_ASEG
+              (CodCia, CodEmpresa, IdSolicitud, IDetSol, IdAsegurado, TipoDocIdentificacion,
+               NumDocIdentificacion, NombreAseg, ApellidoPaternoAseg, ApellidoMaternoAseg,
+               FechaNacimiento, SexoAseg, DirecResAseg, CodigoPostalAseg, SalarioMensual,
+               Nutra)
+        VALUES (nCodCia, nCodEmpresa, nIdSolicitud, nIDetSol, nIdAsegurado, cTipoDocIdentificacion,
+                cNumDocIdentificacion, cNombreAseg, cApellidoPaternoAseg, cApellidoMaternoAseg,
+                dFechaNacimiento, cSexoAseg, cDirecResAseg, cCodigoPostalAseg, nSalarioMensual, cNutra); 
+END INSERTAR;
 
 END OC_SOLICITUD_DETALLE_ASEG;

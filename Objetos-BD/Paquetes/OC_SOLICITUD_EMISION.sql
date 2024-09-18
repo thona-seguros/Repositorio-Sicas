@@ -246,6 +246,7 @@ nIdPoliza                     POLIZAS.IdPoliza%TYPE;
 cNumPolUnico                  POLIZAS.NumPolUnico%TYPE;
 cCodGrupoEc                   GRUPO_ECONOMICO.CodGrupoEc%TYPE;
 nIDetPol                      DETALLE_POLIZA.IDetPol%TYPE;
+nIDetSol                      SOLICITUD_DETALLE.IDetSol%TYPE;
 nCod_Asegurado                ASEGURADO.Cod_Asegurado%TYPE;
 nExiste                       NUMBER;
 cTipo_Doc_Identificacion_Det  SOLICITUD_DETALLE.Tipo_Doc_Identificacion%TYPE;
@@ -278,7 +279,7 @@ CURSOR ASEG_Q IS
    SELECT IDetSol, TipoDocIdentificacion, NumDocIdentificacion, IdAsegurado,
           NombreAseg, ApellidoPaternoAseg, ApellidoMaternoAseg,
           FechaNacimiento, SexoAseg, DirecResAseg, CodigoPostalAseg,
-          SalarioMensual
+          SalarioMensual, Nutra
      FROM SOLICITUD_DETALLE_ASEG
     WHERE CodCia      = nCodCia
       AND CodEmpresa  = nCodEmpresa
@@ -298,7 +299,15 @@ CURSOR COB_Q IS
       AND SC.IdSolicitud   = SE.IdSolicitud
       AND SE.CodCia        = nCodCia
       AND SE.CodEmpresa    = nCodEmpresa
-      AND SE.IdSolicitud   = nIdSolicitud;    
+      AND SE.IdSolicitud   = nIdSolicitud;   
+      
+CURSOR REGLA_SA_Q IS
+   SELECT CodCobert, ReglaSumaAseg
+     FROM SOLICITUD_REGLA_SA
+    WHERE CodCia        = nCodCia
+      AND CodEmpresa    = nCodEmpresa
+      AND IdSolicitud   = nIdSolicitud
+      AND IDetSol       = nIDetSol; 
 BEGIN
    FOR X IN SOL_Q LOOP
       IF OC_SOLICITUD_EMISION.VALIDAR(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
@@ -376,6 +385,7 @@ BEGIN
          END IF;
 
          FOR W IN DET_Q LOOP
+            nIDetSol := W.IDetSol;
             IF W.CodSubGrupo IS NOT NULL THEN
                IF NVL(X.IndFacturaPol,'N') = 'N' AND NVL(X.IndFactSubGrupo,'N') = 'S' THEN 
                   cTipo_Doc_Identificacion_Det   := W.Tipo_Doc_Identificacion;
@@ -503,6 +513,14 @@ BEGIN
                      OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
                   END IF;
                   
+                  
+                  UPDATE ASEGURADO_CERTIFICADO
+                     SET CAMPO3        = Y.Nutra
+                   WHERE CodCia        = nCodCia
+                     AND IdPoliza      = nIdPoliza
+                     AND IDetPol       = nIDetPol
+                     AND Cod_Asegurado = nCod_Asegurado;
+                  
                   FOR Z IN COB_Q LOOP
                      --Y.SalarioMensual
                      IF NVL(Z.VecesSalario,0) != 0 AND NVL(Z.FactorReglaSumaAseg,0) != 0 THEN
@@ -527,6 +545,11 @@ BEGIN
                END LOOP;
                OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, 0);
             END IF;
+            
+            FOR J IN REGLA_SA_Q LOOP
+               INSERT INTO REGLA_SA_COBER (CodCia, CodEmpresa, IdPoliza, IDetPol, CodCobert, Texto, StRegla, Usuario, Fecha_Ult_Movto)
+                  VALUES (nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, J.CodCobert, J.ReglaSumaAseg, 'ACT', USER, SYSDATE);
+            END LOOP;
          END LOOP;
 
          --  INICIA CLAUREN
@@ -558,7 +581,6 @@ BEGIN
       END IF;
    END LOOP;
 END ENVIAR_EMISION;
-
 
 PROCEDURE GENERAR_REPORTE(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitudIni NUMBER,
                           nIdSolicitudFin NUMBER, cStsSolicitud VARCHAR2, dFecIniVig DATE,
