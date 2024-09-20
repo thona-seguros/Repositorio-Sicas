@@ -434,7 +434,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
       END IF;
 
       --INICIA LAVDIN
-      IF NVL(nCodCliente,0) != 0 THEN
+      /*IF NVL(nCodCliente,0) != 0 THEN --- SE COMENTO ESTE PEDAZO DE CODIGO PARA QUE NO VALIDE LOS ASEGURADOS EN PLD SE METE UN PROCESO NOCTURNO ARH 18/09/2024
          IF cPldstaprobada = 'N'  THEN
             OC_ADMON_RIESGO.VALIDA_PERSONAS_POLIZA(nIdPoliza,cMensaje);
             IF cMensaje IS NOT NULL THEN
@@ -444,7 +444,13 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
       ELSE
          RAISE_APPLICATION_ERROR(-20200,'Póliza No. ' || nIdPoliza ||
          'NO tiene Código de Cliente o Contratante - NO Puede Emitir la Póliza');
-      END IF;
+      END IF;*/
+	  
+	  IF NVL(nCodCliente,0) = 0 THEN
+	    RAISE_APPLICATION_ERROR(-20200,'Póliza No. ' || nIdPoliza ||
+         'NO tiene Código de Cliente o Contratante - NO Puede Emitir la Póliza');
+	  END IF;
+	  
       --FIN LAVDIN
       --
       --INICIA INCIAGE
