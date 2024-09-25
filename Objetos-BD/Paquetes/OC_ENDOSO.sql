@@ -1068,12 +1068,13 @@ END EMITIR;
 
             IF OC_ASEGURADO_CERTIFICADO.TIENE_ASEGURADOS(nCodCia, nIdPoliza, nIDetPol, nIdEndoso) = 'S' THEN
                 --   --LAVDIN   INI
-                IF cPldstaprobada = 'N' AND W_ACTIVA_PLD   = 'S' THEN
-                        --OC_ADMON_RIESGO.VALIDA_PERSONAS_ENDOSO(nCodCia,nIdPoliza,nIdEndoso,cMensaje);
+                /*IF cPldstaprobada = 'N' AND W_ACTIVA_PLD = 'S' THEN
+                    OC_ADMON_RIESGO.VALIDA_PERSONAS_ENDOSO(nCodCia,nIdPoliza,nIdEndoso,cMensaje);
                     IF cMensaje IS NOT NULL THEN
                         RAISE_APPLICATION_ERROR(-20200,cMensaje);
                     END IF;
-                END IF;
+                    
+                END IF;*/
                 --  --LAVDIN   FIN
                 FOR W IN ASEG_Q LOOP
                     /*
