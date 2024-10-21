@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_ASISTENCIAS_SINIESTROS IS
+create or replace PACKAGE          OC_ASISTENCIAS_SINIESTROS IS
 PROCEDURE CREA_ASEG_ESTIM_SINI(nIdAsistencia VARCHAR2, nIdPoliza NUMBER, nCodCliente NUMBER, nIDetPol NUMBER, nNumAtencion NUMBER,
                                cMsjError OUT VARCHAR2);
 PROCEDURE EMITIR_POLIZA_ESTIM_SINI(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER,
@@ -7,8 +7,7 @@ PROCEDURE ESTIMACION_SINIESTROS(nIdAsistencia VARCHAR2, nIdPoliza NUMBER, nCodCl
                                 nNumAtencion NUMBER, nIdSiniestro IN OUT NUMBER, cMsjError OUT VARCHAR2);
 END OC_ASISTENCIAS_SINIESTROS;
 /
-
-CREATE OR REPLACE PACKAGE BODY          OC_ASISTENCIAS_SINIESTROS IS
+create or replace PACKAGE BODY          OC_ASISTENCIAS_SINIESTROS IS
 --
 --
 --
@@ -82,14 +81,14 @@ BEGIN
                AND Num_Doc_Identificacion  = cNumDocIdentif;
           EXCEPTION
             WHEN OTHERS THEN
-              RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar Persona Natural JurÌdica al Crear el Asegurado');
+              RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar Persona Natural Jur√≠dica al Crear el Asegurado');
           END;
        END IF;
        -- Valida si la Edad corrsponde con el Plan Contratado
        IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentif, cNumDocIdentif, X.CodCia, X.CodEmpresa ,cIdTipoSeg ,cPlanCob)= 'N' THEN
-          RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
+          RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
        END IF;
-       -- Obtiene el N˙mero de Asegurado
+       -- Obtiene el N√∫mero de Asegurado
        nCodAsegurado := OC_ASEGURADO.CODIGO_ASEGURADO(X.CodCia, X.CodEmpresa, cTipoDocIdentif, cNumDocIdentif);
        -- Inserta el Asegurado.
        IF nCodAsegurado = 0 THEN
@@ -148,7 +147,7 @@ BEGIN
              IF NVL(nIdSolicitud,0) = 0 THEN
                 OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, cIdTipoSeg, cPlanCob, 
                                                      nIdPoliza, nIDetPol, nTasaCambio, nCodAsegurado,
-                                                     NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0);
+                                                     NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, 0, 0); --ARH 26-08-2024
              ELSE
                 OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(X.CodCia, X.CodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCodAsegurado);
                 OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(X.CodCia, X.CodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCodAsegurado);
@@ -181,7 +180,7 @@ BEGIN
        END;
        -- Actualizar valores del Asegurado
        OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(X.CodCia, X.CodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado);
-       -- Asignar CÛdigo de Asegurado al registro Original.
+       -- Asignar C√≥digo de Asegurado al registro Original.
        BEGIN
          UPDATE ASISTENCIAS_SINIESTROS
             SET CodAsegurado  = nCodAsegurado,
@@ -210,13 +209,13 @@ BEGIN
                   AND Num_Doc_Identificacion  = X.NumDocIdentEsc;
              EXCEPTION
                WHEN OTHERS THEN
-                 RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar Persona Natural JurÌdica al Crear la Escuela');
+                 RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar Persona Natural Jur√≠dica al Crear la Escuela');
              END;
           END IF;
        END IF;
        --
     ELSE
-       cMsjError := 'No Existe la PÛliza No. ' || X.IdPoliza || ' con el Subgrupo ' || X.IDetPol;
+       cMsjError := 'No Existe la P√≥liza No. ' || X.IdPoliza || ' con el Subgrupo ' || X.IDetPol;
     END IF;
     --
     IF cMsjError IS NULL THEN
@@ -258,7 +257,7 @@ BEGIN
           AND Cod_Asegurado  = nCodAsegurado;
      EXCEPTION
        WHEN OTHERS THEN
-         cMsjError := 'No Existe Asegurado Certificado para la PÛliza No. ' || nIdpoliza || ' con el Subgrupo ' || nIDetPol;
+         cMsjError := 'No Existe Asegurado Certificado para la P√≥liza No. ' || nIdpoliza || ' con el Subgrupo ' || nIDetPol;
      END;
      -- Valida Estatus de ENDOSO
      IF NVL(nIdEndoso,0) > 0 THEN
@@ -273,7 +272,7 @@ BEGIN
              AND IdEndoso   = nIdEndoso;
         EXCEPTION
           WHEN OTHERS THEN
-            cMsjError := 'No Existe Endoso para la PÛliza No. ' || nIdPoliza || ' con el Subgrupo ' || nIdetPol;
+            cMsjError := 'No Existe Endoso para la P√≥liza No. ' || nIdPoliza || ' con el Subgrupo ' || nIdetPol;
         END;
         -- Actualiza Estatus de ENDOSO
         IF cStsEndoso = 'SOL' THEN
@@ -281,7 +280,7 @@ BEGIN
         END IF;
      END IF;
   ELSE 
-     cMsjError := 'No Existe la PÛliza No. ' || nIdPoliza || ' con el Subgrupo ' || nIdetPol || ' y Asegurado ' || nCodAsegurado;
+     cMsjError := 'No Existe la P√≥liza No. ' || nIdPoliza || ' con el Subgrupo ' || nIdetPol || ' y Asegurado ' || nCodAsegurado;
   END IF;
   --
   IF cMsjError IS NOT NULL THEN
@@ -462,7 +461,7 @@ BEGIN
                VALUES(nIdSiniestro, X.IdPoliza, 1, 0, 0, nEstimacionMoneda, X.Estimacion, cIdTipoSeg);
              EXCEPTION
                WHEN OTHERS THEN
-                 RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+                 RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
              END;
              --
              BEGIN
@@ -476,7 +475,7 @@ BEGIN
                   AND CodCobert   = cCodCobert;
              EXCEPTION 
                WHEN NO_DATA_FOUND THEn 
-                 RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de Gastos MÈdicos por Accidente (GMXA)');
+                 RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de Gastos M√©dicos por Accidente (GMXA)');
              END;
              --
              IF cExisteCob = 'S' THEN
@@ -492,7 +491,7 @@ BEGIN
                          nEstimacionMoneda, 'D', TRUNC(SYSDATE), X.Estimacion);
                 EXCEPTION
                   WHEN OTHERS THEN
-                    RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+                    RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
                 END;
              END IF;
           ELSE
@@ -504,7 +503,7 @@ BEGIN
                VALUES(nIdSiniestro, X.IdPoliza, 1, X.CodAsegurado, 0, 0, nEstimacionMoneda, X.Estimacion, cIdTipoSeg);
              EXCEPTION
                WHEN OTHERS THEN
-                 RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO ASEG (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+                 RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO ASEG (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
              END;
              --
              BEGIN
@@ -519,7 +518,7 @@ BEGIN
                   AND CodCobert     = cCodCobert;
              EXCEPTION 
                WHEN NO_DATA_FOUND THEn 
-                 RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de Gastos MÈdicos por Accidente (GMXA)');
+                 RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de Gastos M√©dicos por Accidente (GMXA)');
              END;
              --
              BEGIN
@@ -531,10 +530,10 @@ BEGIN
                       1, cCodTransac, cCodCptoTransac, NULL, nEstimacionMoneda, 'A', TRUNC(SYSDATE), X.Estimacion);
              EXCEPTION
                WHEN OTHERS THEN
-                 RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO ASEG (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+                 RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO ASEG (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
              END;
           END IF;
-		  --
+          --
        ELSIF X.TipoProceso = 'DISMINUIR' AND nCantSini > 0 THEN -- Se Aplica un Ajuste al Siniestro
           --
           cAjusteReserva    := 'S';
@@ -583,7 +582,7 @@ BEGIN
                       'SOL', nNumMod, cCodTransac, cCodCptoTransac, NULL, nEstimacionMoneda, 'D', TRUNC(SYSDATE), ABS(X.Estimacion));
              EXCEPTION
                WHEN OTHERS THEN
-                 RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Un Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+                 RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Un Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
              END;
              --
              OC_COBERTURA_SINIESTRO.EMITE_RESERVA(X.CodCia, X.CodEmpresa, X.IdSiniestro, X.IdPoliza, 1, cCodCobert, nNumMod, NULL);
@@ -606,7 +605,7 @@ BEGIN
                       'SOL', nNumMod, cCodTransac, cCodCptoTransac, NULL, nEstimacionMoneda, 'D', TRUNC(SYSDATE), ABS(X.Estimacion));
              EXCEPTION
                WHEN OTHERS THEN
-                 RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Un Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+                 RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Un Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
              END;
              --
              OC_COBERTURA_SINIESTRO_ASEG.EMITE_RESERVA(X.CodCia, X.CodEmpresa, X.IdSiniestro, X.IdPoliza, 1, X.CodAsegurado, cCodCobert, nNumMod, NULL);
@@ -614,11 +613,11 @@ BEGIN
           END IF;
           --
        ELSE
-	      cMsjError := 'La acciÛn que desea ejecutar no es v·lida';
+          cMsjError := 'La acci√≥n que desea ejecutar no es v√°lida';
        END IF;
        --
     ELSE 
-       cMsjError := 'No Existe la PÛliza No. ' || X.IdPoliza;
+       cMsjError := 'No Existe la P√≥liza No. ' || X.IdPoliza;
     END IF;
     --
     IF cMsjError IS NULL THEN

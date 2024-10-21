@@ -1,4 +1,8 @@
-CREATE OR REPLACE PACKAGE OC_COTIZACIONES_COBERT_WEB IS
+create or replace PACKAGE OC_COTIZACIONES_COBERT_WEB IS
+---- SE AGREGO EL CAMPO nFranquiciaIngresado EN LAS TABLAS COTIZACIONES_COBERT_WEB Y COTIZACIONES_COBERT_WEB    ARH 26/08/2024 
+---- SE AGREGO EN LOS PARAMETROS EL CAMPO FRANQUICIAINGRESADO EN EL LLAMADO GT_COTIZACIONES_COBERTURAS.CARGAR_COBERTURAS
+---- SE AGREGO UN REPLACE EN SERVICIO_XML ARH 26082024
+
     PROCEDURE INSERTAR( nCodCia              IN  COTIZACIONES_COBERT_WEB.CodCia%TYPE
                       , nCodEmpresa          IN  COTIZACIONES_COBERT_WEB.CodEmpresa%TYPE
                       , nIdCotizacion        IN  COTIZACIONES_COBERT_WEB.IdCotizacion%TYPE
@@ -26,7 +30,8 @@ CREATE OR REPLACE PACKAGE OC_COTIZACIONES_COBERT_WEB IS
                       , nOrdenImpresion      IN  COTIZACIONES_COBERT_WEB.OrdenImpresion%TYPE
                       , nDeducibleIngresado  IN  COTIZACIONES_COBERT_WEB.DeducibleIngresado%TYPE
                       , nCuotaPromedio       IN  COTIZACIONES_COBERT_WEB.CuotaPromedio%TYPE
-                      , nPrimaPromedio       IN  COTIZACIONES_COBERT_WEB.PrimaPromedio%TYPE );
+                      , nPrimaPromedio       IN  COTIZACIONES_COBERT_WEB.PrimaPromedio%TYPE 
+					  , nFranquiciaIngresado IN  COTIZACIONES_COBERT_WEB.FranquiciaIngresado%TYPE);---ARH26082024
 
     PROCEDURE ELIMINAR( nCodCia           IN  COTIZACIONES_COBERT_WEB.CodCia%TYPE
                       , nCodEmpresa       IN  COTIZACIONES_COBERT_WEB.CodEmpresa%TYPE
@@ -64,7 +69,6 @@ CREATE OR REPLACE PACKAGE OC_COTIZACIONES_COBERT_WEB IS
     PROCEDURE AGREGA_REGISTROS(nCODCIA NUMBER, nCODEMPRESA NUMBER, cCODCOTIZADOR VARCHAR2, cIDTIPOSEG VARCHAR2, cPLANCOB VARCHAR2, cCODGPOCOBERTWEB VARCHAR2, nIDCOTIZACION NUMBER, nIDETCOTIZACION NUMBER);
 
 END OC_COTIZACIONES_COBERT_WEB;
-
 /
 create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
    PROCEDURE INSERTAR( nCodCia              IN  COTIZACIONES_COBERT_WEB.CodCia%TYPE
@@ -94,19 +98,20 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                      , nOrdenImpresion      IN  COTIZACIONES_COBERT_WEB.OrdenImpresion%TYPE
                      , nDeducibleIngresado  IN  COTIZACIONES_COBERT_WEB.DeducibleIngresado%TYPE
                      , nCuotaPromedio       IN  COTIZACIONES_COBERT_WEB.CuotaPromedio%TYPE
-                     , nPrimaPromedio       IN  COTIZACIONES_COBERT_WEB.PrimaPromedio%TYPE ) IS
+                     , nPrimaPromedio       IN  COTIZACIONES_COBERT_WEB.PrimaPromedio%TYPE
+                     , nFranquiciaIngresado IN  COTIZACIONES_COBERT_WEB.FranquiciaIngresado%TYPE ) IS ---ARH26082024																													
    BEGIN
        INSERT INTO COTIZACIONES_COBERT_WEB
           ( CodCia, CodEmpresa, IdCotizacion, IdetCotizacion, CodGpoCobertWeb, CodCobertWeb, 
             SumaAsegCobLocal, SumaAsegCobMoneda, Tasa, PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal,
             DeducibleCobMoneda, SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion,
             SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, OrdenImpresion,
-            DeducibleIngresado, CuotaPromedio, PrimaPromedio )
+            DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado )
        VALUES ( nCodCia, nCodEmpresa, nIdCotizacion, nIdetCotizacion, nCodGpoCobertWeb, cCodCobertWeb, 
                 nSumaAsegCobLocal, nSumaAsegCobMoneda, nTasa, nPrimaCobLocal, nPrimaCobMoneda, nDeducibleCobLocal,
                 nDeducibleCobMoneda, nSalarioMensual, nVecesSalario, nSumaAsegCalculada, nEdad_Minima, nEdad_Maxima, nEdad_Exclusion,
                 nSumaAseg_Minima, nSumaAseg_Maxima, nPorcExtraPrimaDet, nMontoExtraPrimaDet, nSumaIngresada, nOrdenImpresion,
-                nDeducibleIngresado, nCuotaPromedio, nPrimaPromedio );
+                nDeducibleIngresado, nCuotaPromedio, nPrimaPromedio, nFranquiciaIngresado ); ---ARH260820234
    END INSERTAR;
 
    PROCEDURE ELIMINAR( nCodCia           IN  COTIZACIONES_COBERT_WEB.CodCia%TYPE
@@ -139,6 +144,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
       cIdTipoSeg          COTIZACIONES.IdTipoSeg%TYPE;
       cPlanCob            COTIZACIONES.PlanCob%TYPE;
       cDescCobertWeb      VARCHAR2(500);
+      cCobertwebl         VARCHAR2(200);
       --
       CURSOR Grupos IS
          SELECT CodGpoCobertWeb, OC_VALORES_DE_LISTAS.BUSCA_LVALOR( 'GPOCOBWEB', CodGpoCobertWeb ) CodGpoCobertWebDesc
@@ -155,7 +161,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
          SELECT IdetCotizacion    , CodCobertWeb     , SumaAsegCobLocal  , SumaAsegCobMoneda , Tasa           , PrimaCobLocal    , 
                 PrimaCobMoneda    , DeducibleCobLocal, DeducibleCobMoneda, SalarioMensual    , VecesSalario   , SumaAsegCalculada,
                 Edad_Minima       , Edad_Maxima      , Edad_Exclusion    , SumaAseg_Minima   , SumaAseg_Maxima, PorcExtraPrimaDet,
-                MontoExtraPrimaDet, SumaIngresada    , OrdenImpresion    , DeducibleIngresado, CuotaPromedio  , PrimaPromedio
+                MontoExtraPrimaDet, SumaIngresada    , OrdenImpresion    , DeducibleIngresado, CuotaPromedio  , PrimaPromedio, FranquiciaIngresado ---ARH26082024
          FROM   COTIZACIONES_COBERT_WEB
          WHERE  CodCia          = nCodCia
            AND  CodEmpresa      = nCodEmpresa
@@ -183,10 +189,17 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
           --
           FOR y IN Coberturas LOOP
              cDescCobertWeb := OC_COBERTURAS_DE_SEGUROS.DESCRIPCION_COBERTURA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, y.CodCobertWeb);
+            IF y.CodCobertWeb = 'GF>12' THEN  ---ARH 26082024
+                 cCobertwebl := REPLACE(y.CodCobertWeb,'>', '&'||'gt;');
+             ELSIF y.CodCobertWeb = 'GF<12' THEN
+                 cCobertwebl := REPLACE(y.CodCobertWeb,'<', '&'||'lt;');
+             ELSE
+                 cCobertwebl:= y.CodCobertWeb;
+             END IF;
              -- 
              cResultado := cResultado || '<COBERTURA>';
              cResultado := cResultado || '<IDETCOTIZACION>'     || y.IdetCotizacion     || '</IDETCOTIZACION>';
-             cResultado := cResultado || '<CODCOBERTWEB>'       || y.CodCobertWeb       || '</CODCOBERTWEB>';
+             cResultado := cResultado || '<CODCOBERTWEB>'       || cCobertwebl       || '</CODCOBERTWEB>';
              cResultado := cResultado || '<DESCCOBERTWEB>'      || cDescCobertWeb       || '</DESCCOBERTWEB>';
              cResultado := cResultado || '<SUMAASEGCOBLOCAL>'   || y.SumaAsegCobLocal   || '</SUMAASEGCOBLOCAL>';
              cResultado := cResultado || '<SUMAASEGCOBMONEDA>'  || y.SumaAsegCobMoneda  || '</SUMAASEGCOBMONEDA>';
@@ -210,6 +223,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
              cResultado := cResultado || '<DEDUCIBLEINGRESADO>' || y.DeducibleIngresado || '</DEDUCIBLEINGRESADO>';
              cResultado := cResultado || '<CUOTAPROMEDIO>'      || y.CuotaPromedio      || '</CUOTAPROMEDIO>';
              cResultado := cResultado || '<PRIMAPROMEDIO>'      || y.PrimaPromedio      || '</PRIMAPROMEDIO>';
+             cResultado := cResultado || '<FRANQUICIAINGRESADO>'|| y.FranquiciaIngresado|| '</FRANQUICIAINGRESADO>'; ---ARH2602024   
              cResultado := cResultado || '</COBERTURA>';
           END LOOP;
           --
@@ -240,7 +254,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                 Tasa, PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal, DeducibleCobMoneda,
                 SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                 Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima, PorcExtraprimaDet, MontoExtraprimaDet,
-                SumaIngresada, OrdenImpresion, DeducibleIngresado, CuotaPromedio, PrimaPromedio
+                SumaIngresada, OrdenImpresion, DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado ---ARH26042024
            FROM COTIZACIONES_COBERT_WEB
           WHERE CodCia        = nCodCia
             AND CodEmpresa    = nCodEmpresa
@@ -256,7 +270,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                                                  W.DeducibleCobMoneda, W.SalarioMensual      , W.VecesSalario      , W.SumaAsegCalculada,
                                                  W.Edad_Minima       , W.Edad_Maxima         , W.Edad_Exclusion    , W.SumaAseg_Minima  ,
                                                  W.SumaAseg_Maxima   , W.PorcExtraPrimaDet   , W.MontoExtraPrimaDet, W.SumaIngresada    ,
-                                                 W.OrdenImpresion    , W.DeducibleIngresado  , W.CuotaPromedio     , W.PrimaPromedio );
+                                                 W.OrdenImpresion    , W.DeducibleIngresado  , W.CuotaPromedio     , W.PrimaPromedio , W.FranquiciaIngresado); ---ARH26082024
          END IF;
       END LOOP;
    END COPIAR_COTIZACION;
@@ -276,6 +290,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
     cPlanCob             COTIZACIONES.PlanCob%TYPE;
     cDescCobertWeb       VARCHAR2(500);
     cIndAsegModelo       COTIZACIONES.IndAsegModelo%TYPE;
+    cCobertloca          VARCHAR2(200);  
        --
     CURSOR Grupos IS
        SELECT A.CodGpoCobertWeb, OC_VALORES_DE_LISTAS.BUSCA_LVALOR( 'GPOCOBWEB', A.CodGpoCobertWeb ) CodGpoCobertWebDesc
@@ -298,7 +313,8 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
           SELECT C.IdetCotizacion    , C.CodCobert        , C.SumaAsegCobLocal  , C.SumaAsegCobMoneda , C.Tasa           , C.PrimaCobLocal    , 
                  C.PrimaCobMoneda    , C.DeducibleCobLocal, C.DeducibleCobMoneda, C.SalarioMensual    , C.VecesSalario   , C.SumaAsegCalculada,
                  C.Edad_Minima       , C.Edad_Maxima      , C.Edad_Exclusion    , C.SumaAseg_Minima   , C.SumaAseg_Maxima, C.PorcExtraPrimaDet,
-                 C.MontoExtraPrimaDet, C.SumaIngresada    , B.OrdenImpresion    , C.DeducibleIngresado, C.CuotaPromedio  , C.PrimaPromedio
+                 C.MontoExtraPrimaDet, C.SumaIngresada    , B.OrdenImpresion    , C.DeducibleIngresado, C.CuotaPromedio  , C.PrimaPromedio,
+                 C.FranquiciaIngresado ---ARH26082024 
             FROM COTIZACIONES_COBERT_WEB    A
              ,   COTIZACIONES_COBERT_MASTER B
              ,   COTIZACIONES_COBERT_ASEG   C
@@ -324,7 +340,8 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
           SELECT C.IdetCotizacion    , C.CodCobert        , C.SumaAsegCobLocal  , C.SumaAsegCobMoneda , C.Tasa           , C.PrimaCobLocal    , 
                  C.PrimaCobMoneda    , C.DeducibleCobLocal, C.DeducibleCobMoneda, C.SalarioMensual    , C.VecesSalario   , C.SumaAsegCalculada,
                  C.Edad_Minima       , C.Edad_Maxima      , C.Edad_Exclusion    , C.SumaAseg_Minima   , C.SumaAseg_Maxima, C.PorcExtraPrimaDet,
-                 C.MontoExtraPrimaDet, C.SumaIngresada    , B.OrdenImpresion    , C.DeducibleIngresado, C.CuotaPromedio  , C.PrimaPromedio
+                 C.MontoExtraPrimaDet, C.SumaIngresada    , B.OrdenImpresion    , C.DeducibleIngresado, C.CuotaPromedio  , C.PrimaPromedio,
+                 C.FranquiciaIngresado ---ARH26082024 
             FROM COTIZACIONES_COBERT_WEB    A
              ,   COTIZACIONES_COBERT_MASTER B
              ,   COTIZACIONES_COBERTURAS   C
@@ -365,10 +382,17 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
           IF NVL(cIndAsegModelo,'N') = 'S' THEN
              FOR y IN COBERT_SUBGPO_Q LOOP
                 cDescCobertWeb := OC_COBERTURAS_DE_SEGUROS.DESCRIPCION_COBERTURA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, y.CodCobert);
+               IF y.CodCobert = 'GF>12' THEN  ---ARH 14062023
+                 cCobertloca := REPLACE(y.CodCobert,'>', '&'||'gt;');
+               ELSIF y.CodCobert = 'GF<12' THEN
+                 cCobertloca := REPLACE(y.CodCobert,'<', '&'||'lt;');
+               ELSE
+                 cCobertloca:= y.CodCobert;
+               END IF; 
                 -- 
                 cResultado := cResultado || '<COBERTURA>';
                 cResultado := cResultado || '<IDETCOTIZACION>'     || y.IdetCotizacion     || '</IDETCOTIZACION>';
-                cResultado := cResultado || '<CODCOBERTWEB>'       || y.CodCobert          || '</CODCOBERTWEB>';
+                cResultado := cResultado || '<CODCOBERTWEB>'       || cCobertloca          || '</CODCOBERTWEB>';
                 cResultado := cResultado || '<DESCCOBERTWEB>'      || cDescCobertWeb       || '</DESCCOBERTWEB>';
                 cResultado := cResultado || '<SUMAASEGCOBLOCAL>'   || y.SumaAsegCobLocal   || '</SUMAASEGCOBLOCAL>';
                 cResultado := cResultado || '<SUMAASEGCOBMONEDA>'  || y.SumaAsegCobMoneda  || '</SUMAASEGCOBMONEDA>';
@@ -392,15 +416,23 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                 cResultado := cResultado || '<DEDUCIBLEINGRESADO>' || y.DeducibleIngresado || '</DEDUCIBLEINGRESADO>';
                 cResultado := cResultado || '<CUOTAPROMEDIO>'      || y.CuotaPromedio      || '</CUOTAPROMEDIO>';
                 cResultado := cResultado || '<PRIMAPROMEDIO>'      || y.PrimaPromedio      || '</PRIMAPROMEDIO>';
+                cResultado := cResultado || '<FRANQUICIAINGRESADO>'|| y.FranquiciaIngresado|| '</FRANQUICIAINGRESADO>'; ---ARH26082024 
                 cResultado := cResultado || '</COBERTURA>';
              END LOOP;
           ELSE
              FOR y IN Coberturas LOOP
                 cDescCobertWeb := OC_COBERTURAS_DE_SEGUROS.DESCRIPCION_COBERTURA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, y.CodCobert);
+                IF y.CodCobert = 'GF>12' THEN  ---ARH 26082024
+                   cCobertloca := REPLACE(y.CodCobert,'>', '&'||'gt;');
+                ELSIF y.CodCobert = 'GF<12' THEN
+                   cCobertloca := REPLACE(y.CodCobert,'<', '&'||'lt;');
+                ELSE
+                   cCobertloca:= y.CodCobert;
+                END IF;  
                 -- 
                 cResultado := cResultado || '<COBERTURA>';
                 cResultado := cResultado || '<IDETCOTIZACION>'     || y.IdetCotizacion     || '</IDETCOTIZACION>';
-                cResultado := cResultado || '<CODCOBERTWEB>'       || y.CodCobert          || '</CODCOBERTWEB>';
+                cResultado := cResultado || '<CODCOBERTWEB>'       || cCobertloca          || '</CODCOBERTWEB>';
                 cResultado := cResultado || '<DESCCOBERTWEB>'      || cDescCobertWeb       || '</DESCCOBERTWEB>';
                 cResultado := cResultado || '<SUMAASEGCOBLOCAL>'   || y.SumaAsegCobLocal   || '</SUMAASEGCOBLOCAL>';
                 cResultado := cResultado || '<SUMAASEGCOBMONEDA>'  || y.SumaAsegCobMoneda  || '</SUMAASEGCOBMONEDA>';
@@ -424,6 +456,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                 cResultado := cResultado || '<DEDUCIBLEINGRESADO>' || y.DeducibleIngresado || '</DEDUCIBLEINGRESADO>';
                 cResultado := cResultado || '<CUOTAPROMEDIO>'      || y.CuotaPromedio      || '</CUOTAPROMEDIO>';
                 cResultado := cResultado || '<PRIMAPROMEDIO>'      || y.PrimaPromedio      || '</PRIMAPROMEDIO>';
+                cResultado := cResultado || '<FRANQUICIAINGRESADO>'|| y.FranquiciaIngresado|| '</FRANQUICIAINGRESADO>'; ---ARH26082024  
                 cResultado := cResultado || '</COBERTURA>';
              END LOOP;
           END IF;
@@ -467,26 +500,29 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
     cCodCobertWeb        COTIZACIONES_COBERT_WEB.CodCobertWeb%TYPE;
     nSumaAsegCobLocal    COTIZACIONES_COBERT_WEB.SumaAsegCobLocal%TYPE;
     nSumaAsegCobMoneda   COTIZACIONES_COBERT_WEB.SumaAsegCobMoneda%TYPE;
-    nTasa                     COTIZACIONES_COBERT_WEB.Tasa%TYPE;                
-    nPrimaCobLocal       COTIZACIONES_COBERT_WEB.PrimaCobLocal%TYPE;        
-    nPrimaCobMoneda      COTIZACIONES_COBERT_WEB.PrimaCobMoneda%TYPE;   
-    nDeducibleCobLocal  COTIZACIONES_COBERT_WEB.DeducibleCobLocal%TYPE; 
+    nTasa                COTIZACIONES_COBERT_WEB.Tasa%TYPE;              
+    nPrimaCobLocal       COTIZACIONES_COBERT_WEB.PrimaCobLocal%TYPE;      
+    nPrimaCobMoneda      COTIZACIONES_COBERT_WEB.PrimaCobMoneda%TYPE; 
+    nDeducibleCobLocal   COTIZACIONES_COBERT_WEB.DeducibleCobLocal%TYPE; 
     nDeducibleCobMoneda  COTIZACIONES_COBERT_WEB.DeducibleCobMoneda%TYPE;
-    nSalarioMensual    COTIZACIONES_COBERT_WEB.SalarioMensual%TYPE; 
-    nVecesSalario        COTIZACIONES_COBERT_WEB.VecesSalario %TYPE;        
-    nSumaAsegCalculada   COTIZACIONES_COBERT_WEB.SumaAsegCalculada%TYPE;    
+    nSalarioMensual      COTIZACIONES_COBERT_WEB.SalarioMensual%TYPE; 
+    nVecesSalario        COTIZACIONES_COBERT_WEB.VecesSalario %TYPE;      
+    nSumaAsegCalculada   COTIZACIONES_COBERT_WEB.SumaAsegCalculada%TYPE;  
     nEdad_Minima         COTIZACIONES_COBERT_WEB.Edad_Minima%TYPE;      
-    nEdad_Maxima          COTIZACIONES_COBERT_WEB.Edad_Maxima%TYPE;     
-    nEdad_Exclusion      COTIZACIONES_COBERT_WEB.Edad_Exclusion%TYPE;   
-    nSumaAseg_Minima       COTIZACIONES_COBERT_WEB.SumaAseg_Minima%TYPE;    
+    nEdad_Maxima         COTIZACIONES_COBERT_WEB.Edad_Maxima%TYPE;     
+    nEdad_Exclusion      COTIZACIONES_COBERT_WEB.Edad_Exclusion%TYPE; 
+    nSumaAseg_Minima     COTIZACIONES_COBERT_WEB.SumaAseg_Minima%TYPE;  
     nSumaAseg_Maxima     COTIZACIONES_COBERT_WEB.SumaAseg_Maxima%TYPE;  
-    nPorcExtraprimaDet  COTIZACIONES_COBERT_WEB.PorcExtraprimaDet%TYPE; 
-    nMontoExtraprimaDet COTIZACIONES_COBERT_WEB.MontoExtraprimaDet%TYPE;          
-    nSumaIngresada       COTIZACIONES_COBERT_WEB.SumaIngresada%TYPE;        
-    nOrdenImpresion      COTIZACIONES_COBERT_WEB.OrdenImpresion%TYPE;   
+    nPorcExtraprimaDet   COTIZACIONES_COBERT_WEB.PorcExtraprimaDet%TYPE; 
+    nMontoExtraprimaDet  COTIZACIONES_COBERT_WEB.MontoExtraprimaDet%TYPE;          
+    nSumaIngresada       COTIZACIONES_COBERT_WEB.SumaIngresada%TYPE;      
+    nOrdenImpresion      COTIZACIONES_COBERT_WEB.OrdenImpresion%TYPE; 
     nDeducibleIngresado  COTIZACIONES_COBERT_WEB.DeducibleIngresado%TYPE;
-    nCuotaPromedio       COTIZACIONES_COBERT_WEB.CuotaPromedio%TYPE;        
-    nPrimaPromedio       COTIZACIONES_COBERT_WEB.PrimaPromedio%TYPE;     
+    nCuotaPromedio       COTIZACIONES_COBERT_WEB.CuotaPromedio%TYPE;      
+    nPrimaPromedio       COTIZACIONES_COBERT_WEB.PrimaPromedio%TYPE;   
+    nFranquiciaIngresado COTIZACIONES_COBERT_WEB.FranquiciaIngresado%TYPE;   ---ARH26082024 
+    nMontoDiario         COTIZACIONES_COBERT_WEB_TEMP.MontoDiario%TYPE;   ---ARH26082024
+    nDias_cal            COTIZACIONES_COBERT_WEB_TEMP.Dias_cal%TYPE;   ---ARH26082024
 
     cExiste              VARCHAR2(1);
     --
@@ -516,9 +552,9 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
     --
     CURSOR Cotizacion_Coberturas IS
        SELECT CodCia, CodEmpresa, IdCotizacion, IdetCotizacion, CodGpoCobertWeb, CodCobertWeb, SumaAsegCobLocal, SumaAsegCobMoneda,
-              Tasa, PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal,   DeducibleCobMoneda, SalarioMensual, VecesSalario, SumaAsegCalculada,
-              Edad_Minima, Edad_Maxima, Edad_Exclusion, Sumaaseg_Minima,    Sumaaseg_Maxima, PorcExtraprimaDet, MontoExtraprimaDet, 
-              SumaIngresada, OrdenImpresion, DeducibleIngresado, CuotaPromedio, PrimaPromedio
+              Tasa, PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal, DeducibleCobMoneda, SalarioMensual, VecesSalario, SumaAsegCalculada,
+              Edad_Minima, Edad_Maxima, Edad_Exclusion, Sumaaseg_Minima,  Sumaaseg_Maxima, PorcExtraprimaDet, MontoExtraprimaDet, 
+              SumaIngresada, OrdenImpresion, DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario , Dias_cal ---ARH26082024
          FROM COTIZACIONES_COBERT_WEB_TEMP
         WHERE CodCia        = nCodCia
           AND CodEmpresa    = nCodEmpresa
@@ -601,18 +637,23 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                    nIdetCotizacion      := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 2 THEN
                    cCodCobertWeb        := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
+                   IF cCodCobertWeb = 'GF' || chr(38) || 'lt;12' THEN
+                      cCodCobertWeb := 'GF<12';
+                   ELSIF cCodCobertWeb = 'GF' || chr(38) || 'gt;12' THEN
+                      cCodCobertWeb := 'GF>12';  
+                   END IF;
                 ELSIF b = 3 THEN
                    nSumaAsegCobLocal    := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 4 THEN
                    nSumaAsegCobMoneda   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 5 THEN   
-                   nTasa                   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
+                   nTasa                 := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 6 THEN
                    nPrimaCobLocal       := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 7 THEN
                    nPrimaCobMoneda      := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 8 THEN
-                   nDeducibleCobLocal   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));    
+                   nDeducibleCobLocal   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));  
                 ELSIF b = 9 THEN
                    nDeducibleCobMoneda  := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 10 THEN
@@ -632,7 +673,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                 ELSIF b = 17 THEN
                    nSumaAseg_Maxima     := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 18 THEN 
-                   nPorcExtraprimaDet   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));    
+                   nPorcExtraprimaDet   := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));  
                 ELSIF b = 19 THEN
                    nMontoExtraprimaDet  := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));
                 ELSIF b = 20 THEN
@@ -645,6 +686,12 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                    nCuotaPromedio       := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));    
                 ELSIF b = 24 THEN
                    nPrimaPromedio       := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto ));    
+                ELSIF b = 25 THEN
+                   nFranquiciaIngresado := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto )); ---ARH26082024
+                ELSIF b = 26 THEN
+                   nMontoDiario         := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto )); ---ARH26082024
+                ELSIF b = 27 THEN
+                   nDias_cal            := XMLDOM.GETNODEVALUE( XMLDOM.GETFIRSTCHILD( xElementoNieto )); ---ARH26082024
                 END IF;
              END LOOP;
              --
@@ -652,11 +699,11 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                 ( CodCia, CodEmpresa, IdCotizacion, IdetCotizacion, CodGpoCobertWeb, CodCobertWeb, SumaAsegCobLocal, SumaAsegCobMoneda, 
                   Tasa, PrimaCoblocal, PrimaCobMoneda, DeducibleCobLocal, DeducibleCobMoneda,SalarioMensual,VecesSalario,SumaAsegCalculada,
                   Edad_Minima,Edad_Maxima,Edad_Exclusion,SumaAseg_Minima,SumaAseg_Maxima,PorcExtraPrimaDet,MontoExtraPrimaDet,SumaIngresada,
-                  OrdenImpresion,DeducibleIngresado,CuotaPromedio,PrimaPromedio)
+                  OrdenImpresion,DeducibleIngresado,CuotaPromedio,PrimaPromedio,FranquiciaIngresado, MontoDiario, Dias_cal)
              VALUES ( nCodCia, nCodEmpresa, nIdCotizacion, nIdetCotizacion, nCodGpoCobertWeb, cCodCobertWeb, nSumaAsegCobLocal, nSumaAsegCobMoneda,
                       nTasa, nPrimaCoblocal, nPrimaCobMoneda, nDeducibleCobLocal, nDeducibleCobMoneda, nSalarioMensual, nVecesSalario, nSumaAsegCalculada,
-                      nEdad_Minima, nEdad_Maxima, nEdad_Exclusion, nSumaAseg_Minima, nSumaAseg_Maxima, nPorcExtraPrimaDet, nMontoExtraPrimaDet, nSumaIngresada,
-                      nOrdenImpresion, nDeducibleIngresado, nCuotaPromedio, nPrimaPromedio);
+                      nEdad_Minima, nEdad_Maxima, nEdad_Exclusion, nSumaAseg_Minima, nSumaAseg_Maxima, nPorcExtraPrimaDet, nMontoExtraPrimaDet, 
+                      nSumaIngresada,nOrdenImpresion, nDeducibleIngresado, nCuotaPromedio, nPrimaPromedio, nFranquiciaIngresado, nMontoDiario, nDias_cal); ---ARH26082024
           END LOOP;
        END LOOP;
        BEGIN
@@ -726,6 +773,21 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
 
              GENERALES_PLATAFORMA_DIGITAL.RECIBE_GENERALES_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, xFactorEscalaPO);
           END IF;
+          IF X.CodCobertWeb = 'GF<12' OR X.CodCobertWeb = 'GF>12'  THEN
+
+              UPDATE COTIZACIONES_DETALLE
+              SET EDADLIMITE = X.Edad_Maxima
+              WHERE CODCIA = nCodCia
+              AND CODEMPRESA = nCodEmpresa
+              AND IDCOTIZACION = nIdCotizacion;
+
+          END IF;
+           
+          IF X.CodCobertWeb = 'RDH' OR X.CodCobertWeb = 'INCTPA'  THEN
+             
+             GT_COTIZACIONES_CLAUSULAS.COTIZACION_WEB_CLAUSULAS(nCodCia, nCodEmpresa, nIdCotizacion, X.CodCobertWeb, X.MontoDiario, X.SumaAsegCobLocal); ---ARH 26/08/2024
+           
+          END IF; 
        END LOOP;
 
        IF NVL(cIndAsegModelo,'N') = 'S' THEN
@@ -740,7 +802,8 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                                                              NVL(x.SumaAseg_Minima,0), NVL(x.SumaAseg_Maxima,0),
                                                              NVL(x.PorcExtraPrimaDet,0), NVL(x.MontoExtraprimaDet,0), NVL(x.SumaIngresada,0),
                                                              NVL(x.DeducibleIngresado,0), NVL(x.CuotaPromedio,0), 
-                                                             NVL(x.PrimaPromedio,0));       
+                                                             NVL(x.PrimaPromedio,0), NVL(x.FranquiciaIngresado,0), 
+                                                             NVL(x.MontoDiario,0),  NVL(x.Dias_cal,0)); ---ARH26082024 
              END LOOP;                                                
              GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion, I.IDetCotizacion);  
           END LOOP;   
@@ -756,7 +819,8 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                                                              NVL(x.SumaAseg_Minima,0), NVL(x.SumaAseg_Maxima,0),
                                                              NVL(x.PorcExtraPrimaDet,0), NVL(x.MontoExtraprimaDet,0), NVL(x.SumaIngresada,0),
                                                              NVL(x.DeducibleIngresado,0), NVL(x.CuotaPromedio,0), 
-                                                             NVL(x.PrimaPromedio,0));           
+                                                             NVL(x.PrimaPromedio,0), NVL(x.FranquiciaIngresado,0), 
+                                                             NVL(x.MontoDiario,0),  NVL(x.Dias_cal,0)); ---ARH26082024   
              END LOOP;                                                
              GT_COTIZACIONES_ASEG.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion,  
                                                      I.IDetCotizacion, I.IdAsegurado);
@@ -774,7 +838,8 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                                                           NVL(X.SumaAseg_Minima,0), NVL(X.SumaAseg_Maxima,0),
                                                           NVL(X.PorcExtraPrimaDet,0), NVL(X.MontoExtraprimaDet,0), NVL(X.SumaIngresada,0),
                                                           NVL(X.DeducibleIngresado,0), NVL(X.CuotaPromedio,0), 
-                                                          NVL(X.PrimaPromedio,0));     
+                                                          NVL(X.PrimaPromedio,0), NVL(x.FranquiciaIngresado,0), 
+                                                          NVL(x.MontoDiario,0),  NVL(x.Dias_cal,0)); ---ARH26082024 
        END LOOP;      
 
        GENERALES_PLATAFORMA_DIGITAL.RECALCULAR_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, cIdTipoSeg, cPlanCob, 'N', 'N', 'S');
@@ -880,6 +945,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
     nDeducibleCobMoneda  COTIZACIONES_COBERT_MASTER.DeducibleCobMoneda%TYPE;
     nDeducibleCobLocal   COTIZACIONES_COBERT_MASTER.DeducibleCobLocal%TYPE;
     nIDetCotizacion      COTIZACIONES_COBERT_MASTER.IDetCotizacion%TYPE;
+    nFranquiciaIngresado COTIZACIONES_COBERT_MASTER.FranquiciaIngresado%TYPE;
     cCodCobert           COTIZACIONES_COBERT_MASTER.CodCobert%TYPE;
     cCodMoneda           COTIZACIONES.Cod_Moneda%TYPE;
     nTasaCambio          NUMBER;
@@ -899,7 +965,8 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                                   PASSING D.COBERTURAS
                                      COLUMNS 
                                         CodCobert            VARCHAR2(20)   PATH 'CodCobert',
-                                        DeducibleCobMoneda   NUMBER(28)     PATH 'DeducibleCobMoneda'
+                                        DeducibleCobMoneda   NUMBER(28)     PATH 'DeducibleCobMoneda',
+                                        FranquiciaIngresado  NUMBER(28)     PATH 'FranquiciaIngresado'  ---ARH26082024 
                                         ) COB
                          )                     
        SELECT * FROM COB_DATA;     
@@ -919,6 +986,9 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
           IF X.DeducibleCobMoneda IS NOT NULL THEN
              nDeducibleCobMoneda := X.DeducibleCobMoneda;
              nDeducibleCobLocal  := nDeducibleCobMoneda * nTasaCambio;
+          END IF;
+          IF X.FranquiciaIngresado IS NOT NULL THEN
+             nFranquiciaIngresado := X.FranquiciaIngresado;
           END IF;
        END LOOP;
 
@@ -945,7 +1015,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
     --
     PROCEDURE AGREGA_REGISTROS(nCODCIA NUMBER, nCODEMPRESA NUMBER, cCODCOTIZADOR VARCHAR2, cIDTIPOSEG VARCHAR2, cPLANCOB VARCHAR2, cCODGPOCOBERTWEB VARCHAR2, nIDCOTIZACION NUMBER, nIDETCOTIZACION NUMBER) AS
     BEGIN
-        FOR ENT IN (SELECT CODCIA, CODEMPRESA, CODCOTIZADOR, IDTIPOSEG, PLANCOB, CODGPOCOBERTWEB, CODCOBERTWEB, SUMAASEGCOBLOCAL, SUMAASEGCOBMONEDA, TASA, PRIMACOBLOCAL, PRIMACOBMONEDA, DEDUCIBLECOBLOCAL, DEDUCIBLECOBMONEDA, SALARIOMENSUAL, VECESSALARIO, SUMAASEGCALCULADA, EDAD_MINIMA, EDAD_MAXIMA, EDAD_EXCLUSION, SUMAASEG_MINIMA, SUMAASEG_MAXIMA, PORCEXTRAPRIMADET, MONTOEXTRAPRIMADET, SUMAINGRESADA, ORDENIMPRESION, DEDUCIBLEINGRESADO, CUOTAPROMEDIO, PRIMAPROMEDIO
+        FOR ENT IN (SELECT CODCIA, CODEMPRESA, CODCOTIZADOR, IDTIPOSEG, PLANCOB, CODGPOCOBERTWEB, CODCOBERTWEB, SUMAASEGCOBLOCAL, SUMAASEGCOBMONEDA, TASA, PRIMACOBLOCAL, PRIMACOBMONEDA, DEDUCIBLECOBLOCAL, DEDUCIBLECOBMONEDA, SALARIOMENSUAL, VECESSALARIO, SUMAASEGCALCULADA, EDAD_MINIMA, EDAD_MAXIMA, EDAD_EXCLUSION, SUMAASEG_MINIMA, SUMAASEG_MAXIMA, PORCEXTRAPRIMADET, MONTOEXTRAPRIMADET, SUMAINGRESADA, ORDENIMPRESION, DEDUCIBLEINGRESADO, CUOTAPROMEDIO, PRIMAPROMEDIO, FRANQUICIAINGRESADO  ---ARH26082024
                       FROM COTIZADOR_COBERT_WEB G
                      WHERE G.CODCIA        = nCODCIA
                        AND G.CODEMPRESA    = nCODEMPRESA
@@ -954,8 +1024,8 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                        AND G.PLANCOB       = cPLANCOB
                        AND G.CODGPOCOBERTWEB = cCODGPOCOBERTWEB) LOOP
 
-            INSERT INTO COTIZACIONES_COBERT_WEB  (CODCIA, CODEMPRESA, IDCOTIZACION, IDETCOTIZACION, CODGPOCOBERTWEB, CODCOBERTWEB, SUMAASEGCOBLOCAL, SUMAASEGCOBMONEDA, TASA, PRIMACOBLOCAL, PRIMACOBMONEDA, DEDUCIBLECOBLOCAL, DEDUCIBLECOBMONEDA, SALARIOMENSUAL, VECESSALARIO, SUMAASEGCALCULADA, EDAD_MINIMA, EDAD_MAXIMA, EDAD_EXCLUSION, SUMAASEG_MINIMA, SUMAASEG_MAXIMA, PORCEXTRAPRIMADET, MONTOEXTRAPRIMADET, SUMAINGRESADA, ORDENIMPRESION, DEDUCIBLEINGRESADO, CUOTAPROMEDIO, PRIMAPROMEDIO,ACTUALIZO_USUARIO, ACTUALIZO_FECHA) VALUES 
-                                                 (ENT.CODCIA, ENT.CODEMPRESA, nIDCOTIZACION, nIDETCOTIZACION, ENT.CODGPOCOBERTWEB, ENT.CODCOBERTWEB, ENT.SUMAASEGCOBLOCAL, ENT.SUMAASEGCOBMONEDA, ENT.TASA, ENT.PRIMACOBLOCAL, ENT.PRIMACOBMONEDA, ENT.DEDUCIBLECOBLOCAL, ENT.DEDUCIBLECOBMONEDA, ENT.SALARIOMENSUAL, ENT.VECESSALARIO, ENT.SUMAASEGCALCULADA, ENT.EDAD_MINIMA, ENT.EDAD_MAXIMA, ENT.EDAD_EXCLUSION, ENT.SUMAASEG_MINIMA, ENT.SUMAASEG_MAXIMA, ENT.PORCEXTRAPRIMADET, ENT.MONTOEXTRAPRIMADET, ENT.SUMAINGRESADA, ENT.ORDENIMPRESION, ENT.DEDUCIBLEINGRESADO, ENT.CUOTAPROMEDIO, ENT.PRIMAPROMEDIO, USER, SYSDATE);
+            INSERT INTO COTIZACIONES_COBERT_WEB  (CODCIA, CODEMPRESA, IDCOTIZACION, IDETCOTIZACION, CODGPOCOBERTWEB, CODCOBERTWEB, SUMAASEGCOBLOCAL, SUMAASEGCOBMONEDA, TASA, PRIMACOBLOCAL, PRIMACOBMONEDA, DEDUCIBLECOBLOCAL, DEDUCIBLECOBMONEDA, SALARIOMENSUAL, VECESSALARIO, SUMAASEGCALCULADA, EDAD_MINIMA, EDAD_MAXIMA, EDAD_EXCLUSION, SUMAASEG_MINIMA, SUMAASEG_MAXIMA, PORCEXTRAPRIMADET, MONTOEXTRAPRIMADET, SUMAINGRESADA, ORDENIMPRESION, DEDUCIBLEINGRESADO, CUOTAPROMEDIO, PRIMAPROMEDIO,ACTUALIZO_USUARIO, ACTUALIZO_FECHA, FRANQUICIAINGRESADO) VALUES 
+                                                 (ENT.CODCIA, ENT.CODEMPRESA, nIDCOTIZACION, nIDETCOTIZACION, ENT.CODGPOCOBERTWEB, ENT.CODCOBERTWEB, ENT.SUMAASEGCOBLOCAL, ENT.SUMAASEGCOBMONEDA, ENT.TASA, ENT.PRIMACOBLOCAL, ENT.PRIMACOBMONEDA, ENT.DEDUCIBLECOBLOCAL, ENT.DEDUCIBLECOBMONEDA, ENT.SALARIOMENSUAL, ENT.VECESSALARIO, ENT.SUMAASEGCALCULADA, ENT.EDAD_MINIMA, ENT.EDAD_MAXIMA, ENT.EDAD_EXCLUSION, ENT.SUMAASEG_MINIMA, ENT.SUMAASEG_MAXIMA, ENT.PORCEXTRAPRIMADET, ENT.MONTOEXTRAPRIMADET, ENT.SUMAINGRESADA, ENT.ORDENIMPRESION, ENT.DEDUCIBLEINGRESADO, ENT.CUOTAPROMEDIO, ENT.PRIMAPROMEDIO, USER, SYSDATE, ENT.FRANQUICIAINGRESADO); ---ARH26082024
         END LOOP;                  
 
     END AGREGA_REGISTROS;

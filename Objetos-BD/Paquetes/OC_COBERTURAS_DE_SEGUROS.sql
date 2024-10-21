@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_COBERTURAS_DE_SEGUROS IS
+create or replace PACKAGE OC_COBERTURAS_DE_SEGUROS IS
 
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
 
@@ -43,14 +43,15 @@ FUNCTION COBERTURA_IDRAMOREAL(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VAR
 FUNCTION RAMO_REAL_CPTO(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
                         cPlanCob VARCHAR2, cCodCpto VARCHAR2) RETURN VARCHAR2;
 
+FUNCTION VALOR_FRANQUICIA(nIdPoliza NUMBER, nIdetPol NUMBER, cPlanCob VARCHAR2, cIdTipoSeg VARCHAR2,
+                          cCodCobert VARCHAR2,cCodasegurado VARCHAR2) RETURN NUMBER;
 
 END OC_COBERTURAS_DE_SEGUROS;
-
 /
-
-CREATE OR REPLACE PACKAGE BODY OC_COBERTURAS_DE_SEGUROS IS
+create or replace PACKAGE BODY OC_COBERTURAS_DE_SEGUROS IS
 
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
+-- FUNCTION VALOR_FRANQUICIA                        26/08/2024  ARH
 
 PROCEDURE COPIAR(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSegOrig VARCHAR2,
                  cPlanCobOrig VARCHAR2, cIdTipoSegDest VARCHAR2, cPlanCobDest VARCHAR2) IS
@@ -183,7 +184,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          cClaveSesas := NULL;
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci髇 de Coberturas del Tipo de Seguro ' || cIdTipoSeg ||
+         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci贸n de Coberturas del Tipo de Seguro ' || cIdTipoSeg ||
                                  ' y Plan de Coberturas ' || cPlanCob);
    END;
    RETURN(cClaveSesas);
@@ -210,7 +211,7 @@ BEGIN
          nSumaAsegMaxima   := 0;
          nSumaAsegMaxIndiv := 0;
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci髇 de Coberturas del Tipo de Seguro ' || cIdTipoSeg ||
+         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci贸n de Coberturas del Tipo de Seguro ' || cIdTipoSeg ||
                                  ' y Plan de Coberturas ' || cPlanCob);
    END;
    IF TipoSuma = 'MIN' THEN
@@ -241,7 +242,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          nPeriodoesperaMeses  := 0;
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci髇 de Coberturas para Periodo de Espera Meses del Tipo de Seguro ' || cIdTipoSeg ||
+         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci贸n de Coberturas para Periodo de Espera Meses del Tipo de Seguro ' || cIdTipoSeg ||
                                  ' Plan de Coberturas ' || cPlanCob || ' y Cobertura ' || cCodCobert);
    END;
    RETURN(nPeriodoesperaMeses);
@@ -287,7 +288,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          nOrdenSESAS  := 0;
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci髇 de Coberturas para Orden en SESAS del Tipo de Seguro ' || cIdTipoSeg ||
+         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci贸n de Coberturas para Orden en SESAS del Tipo de Seguro ' || cIdTipoSeg ||
                                  ' Plan de Coberturas ' || cPlanCob || ' y Cobertura ' || cCodCobert);
    END;
    RETURN(nOrdenSESAS);
@@ -310,7 +311,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          nFactorTasa  := 1;
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci髇 de Coberturas para Tipo de Tasa del Tipo de Seguro ' || cIdTipoSeg ||
+         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci贸n de Coberturas para Tipo de Tasa del Tipo de Seguro ' || cIdTipoSeg ||
                                  ' Plan de Coberturas ' || cPlanCob || ' y Cobertura ' || cCodCobert);
    END;
    RETURN(nFactorTasa);
@@ -333,7 +334,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN
          cIndReaSiniestro  := 'N';
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci髇 de Coberturas para Indicador de Reasguro en Siniestros del Tipo de Seguro ' ||
+         RAISE_APPLICATION_ERROR(-20220,'Error en Configuraci贸n de Coberturas para Indicador de Reasguro en Siniestros del Tipo de Seguro ' ||
                                  cIdTipoSeg || ' Plan de Coberturas ' || cPlanCob || ' y Cobertura ' || cCodCobert);
    END;
    RETURN(cIndReaSiniestro);
@@ -420,5 +421,46 @@ BEGIN
    END;
    RETURN cIdRamoReal;
 END RAMO_REAL_CPTO;
+
+FUNCTION VALOR_FRANQUICIA(nIdPoliza NUMBER, nIdetPol NUMBER, cPlanCob VARCHAR2, cIdTipoSeg VARCHAR2,
+                        cCodCobert VARCHAR2,cCodasegurado VARCHAR2) RETURN NUMBER IS
+nVFranquicia COBERT_ACT_ASEG.Franquiciaingresado%TYPE;
+cCodtarifa   COBERTURAS_DE_SEGUROS.Codtarifa%TYPE; 
+
+BEGIN
+   BEGIN
+      SELECT Codtarifa
+        INTO cCodtarifa
+        FROM COBERTURAS_DE_SEGUROS 
+       WHERE PlanCob    = cPlanCob
+         AND CodCobert  = cCodCobert
+         AND IdTipoSeg  = cIdTipoSeg;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cCodtarifa := NULL;
+   END;
+   
+   IF cCodtarifa != 'DEDUCIBLE-FRANQUICIA' THEN
+       nVFranquicia := 0;
+   ELSE
+    BEGIN
+     SELECT CASE
+             WHEN(CZ.FRANQUICIAINGRESADO > CZ.DEDUCIBLE_LOCAL)THEN
+               NVL(CZ.FRANQUICIAINGRESADO,0)
+            END
+              DEDUCIBLE
+              INTO nVFranquicia
+              FROM COBERT_ACT_ASEG CZ
+              WHERE CZ.IdPoliza = nIdPoliza
+              AND CZ.CODCOBERT  = cCodCobert
+              AND COD_ASEGURADO = cCodasegurado
+              AND CZ.IDETPOL = nIdetPol;
+        EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+          nVFranquicia := 0;
+    END;
+   END IF;
+   RETURN nVFranquicia;
+END VALOR_FRANQUICIA;
 
 END OC_COBERTURAS_DE_SEGUROS;

@@ -1,13 +1,17 @@
-CREATE OR REPLACE PACKAGE          GT_COTIZACIONES_CLAUSULAS IS
+create or replace PACKAGE          GT_COTIZACIONES_CLAUSULAS IS
 
   PROCEDURE RECOTIZACION_CLAUSULAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIdRecotizacion NUMBER);
   PROCEDURE CREAR_CLAUSULAS_POL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIdPoliza NUMBER);
   PROCEDURE ACTUALIZA_CLAUSULAS(ncodcia NUMBER, ncodempresa NUMBER, nOrigen NUMBER, nDestino NUMBER);
+  FUNCTION EXISTE_CLAUSULA_COTI(nCodCia NUMBER, nIdCotizacion NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2; ---ARH 23/08/2024
+  PROCEDURE ACTUALICOTI_RENOV_CLAUSU(nCodCia NUMBER, nIdCotizacion NUMBER, cCodClausula VARCHAR2, cIndicadorcoti VARCHAR2);  --ARH 23/08/2024
+  PROCEDURE CREAR_TEXTORIESGOS_COTIZA(nCodCia NUMBER, cTiponegocio VARCHAR2, cLaboral VARCHAR2, cRies24_365 VARCHAR2, cTraslados VARCHAR2, nIdCotizacion NUMBER); --ARH 23/08/2024
+  PROCEDURE COTIZACION_WEB_CLAUSULAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, cCodCobertWeb VARCHAR2, nMontoDiario NUMBER,
+                                     nSumaAsegCobLocal NUMBER);--ARH 23/08/2024
   
 END GT_COTIZACIONES_CLAUSULAS;
 /
-
-CREATE OR REPLACE PACKAGE BODY          GT_COTIZACIONES_CLAUSULAS IS
+create or replace PACKAGE BODY          GT_COTIZACIONES_CLAUSULAS IS
 
     PROCEDURE RECOTIZACION_CLAUSULAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIdRecotizacion NUMBER) IS
     CURSOR DET_Q IS
@@ -24,7 +28,7 @@ CREATE OR REPLACE PACKAGE BODY          GT_COTIZACIONES_CLAUSULAS IS
              VALUES (nCodCia, nCodEmpresa, nIdReCotizacion, W.CodClausula);
           EXCEPTION
              WHEN DUP_VAL_ON_INDEX THEN
-                RAISE_APPLICATION_ERROR(-20200,'Duplicada Cl�usula de Cotizaci�n No. ' || nIdReCotizacion);
+                RAISE_APPLICATION_ERROR(-20200,'Duplicada Cláusula de Cotización No. ' || nIdReCotizacion);
           END;
        END LOOP;
        ACTUALIZA_CLAUSULAS(nCodCia, NCodEmpresa, nIdCotizacion, nIdRecotizacion); 
@@ -83,4 +87,108 @@ CREATE OR REPLACE PACKAGE BODY          GT_COTIZACIONES_CLAUSULAS IS
         --
     END;
     --    
+FUNCTION EXISTE_CLAUSULA_COTI(nCodCia NUMBER, nIdCotizacion NUMBER, cCodClausula VARCHAR2) RETURN VARCHAR2 IS
+cExiste  VARCHAR2(1);
+BEGIN
+   BEGIN
+      SELECT 'S'
+        INTO cExiste
+        FROM COTIZACIONES_CLAUSULAS
+       WHERE CodCia       = nCodCia
+         AND IdCotizacion = nIdCotizacion
+         AND CodClausula = cCodClausula
+         AND Indicadorcoti = 'S';
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cExiste := 'N';
+      WHEN TOO_MANY_ROWS THEN
+         cExiste := 'S';
+   END;
+ RETURN(cExiste);
+END EXISTE_CLAUSULA_COTI;
+
+PROCEDURE ACTUALICOTI_RENOV_CLAUSU(nCodCia NUMBER, nIdCotizacion NUMBER, cCodClausula VARCHAR2, cIndicadorcoti VARCHAR2) IS
+BEGIN
+   UPDATE COTIZACIONES_CLAUSULAS
+      SET Indicadorcoti = cIndicadorcoti
+    WHERE CodCia        = nCodCia
+      AND IdCotizacion  = nIdCotizacion
+      AND CodClausula   = cCodClausula;
+      
+END ACTUALICOTI_RENOV_CLAUSU;
+
+PROCEDURE CREAR_TEXTORIESGOS_COTIZA(nCodCia NUMBER, cTiponegocio VARCHAR2, cLaboral VARCHAR2, cRies24_365 VARCHAR2, cTraslados VARCHAR2, nIdCotizacion NUMBER) IS
+cTextElegibilidad   COMBINACION_RIESGOCUBIERTO.TextoElegibilidad%TYPE;
+cTextRiesgoCubiert  COMBINACION_RIESGOCUBIERTO.TextoRiesgoCubierto%TYPE;
+cExiste  VARCHAR2(1) := 'S';
+
+BEGIN
+   BEGIN
+      SELECT TextoElegibilidad,TextoRiesgoCubierto
+        INTO cTextElegibilidad,cTextRiesgoCubiert
+        FROM COMBINACION_RIESGOCUBIERTO
+       WHERE CodCia         = nCodCia
+         AND Tipo_Negocio   = cTiponegocio
+         AND Laboral_Riesg  = cLaboral
+         AND Dia24365_Riesg = cRies24_365
+         AND Traslado_Riesg = cTraslados;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cExiste := 'N';
+      WHEN TOO_MANY_ROWS THEN
+         cExiste := 'N';
+   END;
+   
+   IF cExiste = 'S' THEN
+     UPDATE COTIZACIONES
+      SET DescElegibilidad  = cTextElegibilidad, 
+          DescRiesgosCubiertos = cTextRiesgoCubiert
+    WHERE CodCia        = nCodCia
+      AND IdCotizacion  = nIdCotizacion;
+   END IF;
+END CREAR_TEXTORIESGOS_COTIZA;
+
+PROCEDURE COTIZACION_WEB_CLAUSULAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, cCodCobertWeb VARCHAR2, nMontoDiario NUMBER,
+                                   nSumaAsegCobLocal NUMBER) IS
+cTEXTO	VARCHAR2(4000);
+cCodClausula VARCHAR2(20);
+cMonto       VARCHAR2(50);
+cSumAseg     VARCHAR2(50);
+
+
+
+  
+BEGIN
+    
+   Select to_char(nMontoDiario, '$99,999.00') 
+    INTO cMonto
+    from dual;
+     
+    Select to_char(nSumaAsegCobLocal, '$99,999.00') 
+    INTO cSumAseg
+    from dual;
+   
+
+   IF cCodCobertWeb = 'RDH' THEN
+       cTEXTO:= 'La cobertura de Indemnización Diaria por Hospitalización comenzará a operar a partir del tercer día de hospitalización y hasta por 90 días después del accidente siempre y cuando permanezca hospitalizado el asegurado, con pagos diarios de' || cMonto ||  ' m.n teniendo como límite la Suma Asegurada contratada de,' || cSumAseg || ' m.n.';
+ 
+       cCodClausula := 'RDHA01';
+      
+   ELSIF cCodCobertWeb = 'INCTPA' THEN
+   
+       cTEXTO:= 'La cobertura de Incapacidad Temporal por Accidente comenzará a operar a partir del día 12 de incapacidad temporal causada por un accidente, donde se pagará en una sola exhibición la Suma Asegurada contratada de'  || cSumAseg || ' M.N.';
+ 
+       cCodClausula := 'INTA01';
+   END IF;
+   
+   BEGIN
+               INSERT INTO COTIZACIONES_CLAUSULAS
+                      (CodCia, CodEmpresa, IdCotizacion, CodClausula, Textoclausula)
+               VALUES (nCodCia, nCodEmpresa, nIdCotizacion, cCodClausula, cTEXTO);
+            EXCEPTION
+               WHEN DUP_VAL_ON_INDEX THEN
+                    RAISE_APPLICATION_ERROR(-20200,'Duplicada Cláusula de Cotización No. ' || nIdCotizacion);
+   END;
+END COTIZACION_WEB_CLAUSULAS;
+
 END GT_COTIZACIONES_CLAUSULAS;

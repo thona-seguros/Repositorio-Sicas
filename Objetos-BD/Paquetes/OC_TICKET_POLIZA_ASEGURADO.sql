@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_TICKET_POLIZA_ASEGURADO IS
+create or replace PACKAGE          OC_TICKET_POLIZA_ASEGURADO IS
 PROCEDURE INSERTAR( nCodCia             IN  TICKET_POLIZA_ASEGURADO.CodCia%TYPE
                   , nCodEmpresa         IN  TICKET_POLIZA_ASEGURADO.CodEmpresa%TYPE
                   , nCodCliente         IN  TICKET_POLIZA_ASEGURADO.CodCliente%TYPE
@@ -94,10 +94,8 @@ FUNCTION EXISTE_TICKET( nCodCia             IN  TICKET_POLIZA_ASEGURADO.CodCia%T
                       , dFechaCompra        IN  TICKET_POLIZA_ASEGURADO.FechaCompra%TYPE
                       , cNumeroConsecutivo  IN  TICKET_POLIZA_ASEGURADO.NumeroConsecutivo%TYPE ) RETURN VARCHAR2;                           
 END OC_TICKET_POLIZA_ASEGURADO;
-
 /
-
-CREATE OR REPLACE PACKAGE BODY          OC_TICKET_POLIZA_ASEGURADO IS
+create or replace PACKAGE BODY          OC_TICKET_POLIZA_ASEGURADO IS
 PROCEDURE INSERTAR( nCodCia             IN  TICKET_POLIZA_ASEGURADO.CodCia%TYPE
                   , nCodEmpresa         IN  TICKET_POLIZA_ASEGURADO.CodEmpresa%TYPE
                   , nCodCliente         IN  TICKET_POLIZA_ASEGURADO.CodCliente%TYPE
@@ -325,11 +323,11 @@ BEGIN
          nIDetPol := OC_TICKET_POLIZA_ASEGURADO.SUGBRUPO (nCodCia, nCodEmpresa, nIdPoliza);
       END IF;
    ELSE 
-      RAISE_APPLICATION_ERROR(-20100,'ERROR NO Existe configurada pÛliza para la fecha '||dFechaRegistro);
+      RAISE_APPLICATION_ERROR(-20100,'ERROR NO Existe configurada p√≥liza para la fecha '||dFechaRegistro);
    END IF;
 EXCEPTION 
    WHEN OTHERS THEN 
-      RAISE_APPLICATION_ERROR(-20100,'ERROR al obetener datos de PÛliza: '||SQLERRM||' - '||SQLCODE);
+      RAISE_APPLICATION_ERROR(-20100,'ERROR al obetener datos de P√≥liza: '||SQLERRM||' - '||SQLCODE);
 END POLIZA_SUBGRUPO; 
 
 FUNCTION CUENTA_CUMULOS( nCodCia        IN  TICKET_POLIZA_ASEGURADO.CodCia%TYPE
@@ -405,7 +403,7 @@ BEGIN
       WHEN NO_DATA_FOUND THEN 
          nIDetPol := 0;
       WHEN TOO_MANY_ROWS THEN 
-         RAISE_APPLICATION_ERROR(-20100,'ERROR Existe m·s de un Subgrupo registraso para el asegurado '||nCodAsegurado||' en el dÌa '||dFechaRegistro);
+         RAISE_APPLICATION_ERROR(-20100,'ERROR Existe m√°s de un Subgrupo registraso para el asegurado '||nCodAsegurado||' en el d√≠a '||dFechaRegistro);
    END;
    RETURN nIDetPol;
 END SUBGRUPO_REGISTRADO;
@@ -474,7 +472,8 @@ CURSOR COTCOB_Q IS
           M.SumaAsegCalculada, M.Edad_Minima, M.Edad_Maxima, M.Edad_Exclusion, M.SumaAseg_Minima,
           M.SumaAseg_Maxima, M.PorcExtraPrimaDet, M.MontoExtraPrimaDet, 
           M.SumaIngresada, C.IndAsegModelo, C.IndCensoSubGrupo,
-          M.CuotaPromedio, M.PrimaPromedio, M.DeducibleIngresado
+          M.CuotaPromedio, M.PrimaPromedio, M.DeducibleIngresado, M.Franquiciaingresado, M.MontoDiario,
+          M.Dias_Cal---ARH 26-08-2024
      FROM COTIZACIONES_COBERT_MASTER M, COTIZACIONES C
     WHERE M.CodCia         = C.CodCia
       AND M.CodEmpresa     = C.CodEmpresa
@@ -504,7 +503,8 @@ BEGIN
                 Salariomensual, Vecessalario, SumaAsegCalculada, Edad_Minima, 
                 Edad_Maxima, Edad_Exclusion, Sumaaseg_Minima, Sumaaseg_Maxima, 
                 Porcextraprimadet, Montoextraprimadet, Sumaingresada, Primanivmoneda, 
-                Primanivlocal)
+                Primanivlocal, Franquiciaingresado, MontoDiario,---ARH 06-08-2024
+                Dias_Cal)
          VALUES(nCodCia, nCodEmpresa, nIdpoliza, nIdetpol, cIdTipoSeg, 'POLI',
                 nIdpoliza, I.CodCobert, nCodAsegurado, NVL(nSumaAsegLocal,0), NVL(nSumaAsegMoneda,0),
                 I.Tasa, NVL(nValorMoneda,0), NVL(nValorLocal,0), 0, 'SOL', cPlanCob,
@@ -512,7 +512,7 @@ BEGIN
                 NVL(I.SalarioMensual,0), NVL(I.VecesSalario,0), NVL(I.SumaAsegCalculada,0),
                 I.Edad_Minima, I.Edad_Maxima, I.Edad_Exclusion, I.SumaAseg_Minima, I.SumaAseg_Maxima, 
                 I.PorcExtraPrimaDet, I.MontoExtraPrimaDet, I.SumaIngresada, 0,
-                0);
+                0, I.Franquiciaingresado, I.MontoDiario, I.Dias_Cal);---ARH 06-08-2024
          END;
    END LOOP;
    OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIdetPol, nCodAsegurado);

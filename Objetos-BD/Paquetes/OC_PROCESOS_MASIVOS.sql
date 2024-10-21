@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_PROCESOS_MASIVOS IS
+create or replace PACKAGE OC_PROCESOS_MASIVOS IS
 -- MODIFICACION
 -- 01/10/2019 Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)        -- JMMD SAT y PLD 20200406
 -- 24/06/2020 Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPérez) -- JMMD SAT y PLD 20200624
@@ -94,7 +94,7 @@ PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia            NUMBER
 FUNCTION ACTUALIZA_REGIS_PROCESOMASIVO(cCargaRegistro VARCHAR2)RETURN NUMBER;								 
 END OC_PROCESOS_MASIVOS;
 /
-create or replace PACKAGE BODY          OC_PROCESOS_MASIVOS IS
+create or replace PACKAGE BODY OC_PROCESOS_MASIVOS IS
 --
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
@@ -2604,7 +2604,7 @@ BEGIN
                                    OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS( x.CodCia         , x.CodEmpresa    , x.IdTipoSeg       , x.PlanCob          , nIdPoliza       ,
                                                                          nIDetPol         , nTasaCambio     , nCod_Asegurado    , z.CodCobert        , nSumaAseguradaOk,
                                                                          nSalarioMensualOk, nVecesSalarioOk , z.Edad_Minima     , z.Edad_Maxima      , z.Edad_Exclusion,
-                                                                         z.SumaAsegMinima , z.SumaAsegMaxima, nPorcExtraPrimaDet, nMontoExtraPrimaDet, z.SumaAsegManual );
+                                                                         z.SumaAsegMinima , z.SumaAsegMaxima, nPorcExtraPrimaDet, nMontoExtraPrimaDet, z.SumaAsegManual , 0, 0, 0); --ARH 26-08-2024
                                    --
                                    IF NVL(z.PrimaPromedio, 0) > 0 THEN
                                       BEGIN
@@ -7866,7 +7866,7 @@ BEGIN
 --                                   OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,
 --                                                                       nIdPoliza, nIDetPol, nTasaCambio, nCod_Asegurado);
                                   OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, nIdPoliza,
-                                                                       nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0);
+                                                                       nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, 0 ,0);---ARH 16/10/2024
                                    UPDATE COBERT_ACT_ASEG
                                       SET PRIMA_MONEDA  = (PRIMA_MONEDA / 365) * nDiasPlan,
                                           PRIMA_LOCAL   = (PRIMA_LOCAL / 365) * nDiasPlan,
@@ -11822,7 +11822,7 @@ BEGIN
 --                                                                nIdPoliza, nIDetPol, nTasaCambio, nCod_Asegurado);
                             BEGIN
                                OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, nIdPoliza,
-                                                                    nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0);
+                                                                    nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, 0, 0);---ARH 16/10/2024
                             EXCEPTION
                                WHEN OTHERS THEN
                                   NULL;

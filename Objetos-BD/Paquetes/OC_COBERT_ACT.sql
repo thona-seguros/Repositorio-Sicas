@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_COBERT_ACT IS
+create or replace PACKAGE OC_COBERT_ACT IS
 
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
 
@@ -41,7 +41,6 @@ FUNCTION TOTAL_PRIMA_NIVELADA(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER,
 
 
 END OC_COBERT_ACT;
-
 /
 create or replace PACKAGE BODY OC_COBERT_ACT IS
 
@@ -170,7 +169,7 @@ BEGIN
             AND D.IDetPol        = nIDetPol;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20225,'No Existe Detalle de P髄iza para Generar Coberturas');
+            RAISE_APPLICATION_ERROR(-20225,'No Existe Detalle de P贸liza para Generar Coberturas');
       END;
 
       nEdad         := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, nCodEmpresa, nCod_Asegurado, dFecIniVig);
@@ -270,7 +269,7 @@ BEGIN
                IF OC_TARIFA_DINAMICA.TARIFA_VIGENTE(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecEmision) = 0 THEN
                   IF nIdTarifa = 0 THEN
                      RAISE_APPLICATION_ERROR(-20225,'NO Existe Tarifa Vigente por Sexo, Edad y Riesgo para el Tipo de Seguro ' || cIdTipoSeg ||
-                                             ' Plan de Coberturas ' || cPlanCob || ' y Fecha de Inicio de Vigencia de la P髄iza ' ||
+                                             ' Plan de Coberturas ' || cPlanCob || ' y Fecha de Inicio de Vigencia de la P贸liza ' ||
                                              TO_CHAR(dFecIniVig,'DD/MM/RRRR'));
                   END IF;
                   IF X.CodTarifa IN ('EDADYSEXO','SEXOEDAD') THEN
@@ -479,7 +478,7 @@ BEGIN
                          Cod_Asegurado, PrimaNivMoneda, PrimaNivLocal, SalarioMensual,
                          VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                          Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet,
-                         MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL)
+                         MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL, FranquiciaIngresado, MontoDiario, Dias_Cal) --ARH 26-08-2024
                   VALUES(nIdPoliza, nIDetPol, nCodEmpresa, cIdTipoSeg, nCodCia,
                          X.CodCobert, cStsCobertura, nSumaAsegLocal, nSumaAsegMoneda,
                          nValor, nValorMoneda, nTasa, 0, 'POLI',
@@ -487,10 +486,10 @@ BEGIN
                          nCod_Asegurado, nPrimaNivMoneda, nPrimaNivLocal, NVL(nSalarioMensual,0),
                          NVL(nVecesSalario,0), NVL(nSumaAsegManual,0), nEdad_MinimaCob,
                          nEdad_MaximaCob, nEdad_ExclusionCob, nSumaAseg_MinimaCob,
-                         nSumaAseg_MaximaCob, nPorcExtraPrima, nMontoExtraPrima, nSumaIngresada, X.IDRAMOREAL);
+                         nSumaAseg_MaximaCob, nPorcExtraPrima, nMontoExtraPrima, nSumaIngresada, X.IDRAMOREAL, 0, 0, 0); --ARH 26-08-2024
                EXCEPTION
                   WHEN DUP_VAL_ON_INDEX THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P髄iza: '||
+                     RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P贸liza: '||
                                              TRIM(TO_CHAR(nIdPoliza))||' - '||TO_CHAR(nIDetPol));
                END;
             END IF;
@@ -613,7 +612,7 @@ BEGIN
             AND D.IDetPol        = nIDetPol;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20225,'No Existe Detalle de P髄iza para Generar Coberturas');
+            RAISE_APPLICATION_ERROR(-20225,'No Existe Detalle de P贸liza para Generar Coberturas');
       END;
 
       nEdad  := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, nCodEmpresa, nCod_Asegurado, dFecIniVig);
@@ -644,7 +643,7 @@ BEGIN
          IF OC_TARIFA_DINAMICA.TARIFA_VIGENTE(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecEmision) = 0 THEN
             IF nIdTarifa = 0 THEN
                RAISE_APPLICATION_ERROR(-20225,'NO Existe Tarifa Vigente por Sexo, Edad y Riesgo para el Tipo de Seguro ' || cIdTipoSeg ||
-                                       ' Plan de Coberturas ' || cPlanCob || ' y Fecha de Inicio de Vigencia de la P髄iza ' ||
+                                       ' Plan de Coberturas ' || cPlanCob || ' y Fecha de Inicio de Vigencia de la P贸liza ' ||
                                        TO_CHAR(dFecIniVig,'DD/MM/RRRR'));
             END IF;
 

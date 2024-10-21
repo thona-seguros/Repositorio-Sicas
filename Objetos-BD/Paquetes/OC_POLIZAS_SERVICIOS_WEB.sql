@@ -1,4 +1,5 @@
-CREATE OR REPLACE PACKAGE          OC_POLIZAS_SERVICIOS_WEB AS
+create or replace PACKAGE          OC_POLIZAS_SERVICIOS_WEB AS
+    ----UPDATE PARA ACTUALIZAR CodPlanPago ARH 26/08/2024 
    FUNCTION CONSULTA_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN XMLTYPE;
 
    FUNCTION LISTADO_POLIZA(nCodCia         NUMBER,     nCodEmpresa     NUMBER,     nIdPoliza       NUMBER,     nCodAgente      NUMBER,
@@ -27,7 +28,6 @@ CREATE OR REPLACE PACKAGE          OC_POLIZAS_SERVICIOS_WEB AS
                            cMotivAnul VARCHAR2, cCod_Moneda VARCHAR2, cRespuesta OUT VARCHAR2, cTipoProceso VARCHAR2 DEFAULT 'POLIZA') RETURN Number;
     --
 END OC_POLIZAS_SERVICIOS_WEB;
-
 /
 create or replace PACKAGE BODY          OC_POLIZAS_SERVICIOS_WEB IS
 /*   _______________________________________________________________________________________________________________________________
@@ -112,7 +112,7 @@ create or replace PACKAGE BODY          OC_POLIZAS_SERVICIOS_WEB IS
              AND P.IdPoliza    = A.IdPoliza;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR(-20200,'Póliza '||nIdPoliza||' no existente en Base de Datos'); 
+             RAISE_APPLICATION_ERROR(-20200,'PÃ³liza '||nIdPoliza||' no existente en Base de Datos'); 
        END;
        SELECT XMLROOT (xPrevPol, VERSION '1.0" encoding="UTF-8')
          INTO xPoliza
@@ -126,7 +126,7 @@ create or replace PACKAGE BODY          OC_POLIZAS_SERVICIOS_WEB IS
                             nLimInferior    IN NUMBER,     nLimSuperior    IN NUMBER,     nTotRegs        OUT NUMBER  --> 23/12/2020   (JALV)
                             )
     RETURN XMLTYPE IS
-    /*   _______________________________________________________________________________________________________________________________    
+    /*   _______________________________________________________________________________________________________________________________  
         |                                                                                                                               |
         |                                                           HISTORIA                                                            |
         | Elaboro    : ??                                                                                                               |
@@ -137,8 +137,8 @@ create or replace PACKAGE BODY          OC_POLIZAS_SERVICIOS_WEB IS
         |              Digital y tranforma la salida en formato XML.                                                                    |
         | Modificado : Si                                                                                                               |
         | Ult. modif.: 22/02/2021                                                                                                       |
-        | Modifico   : J. Alberto Lopez Valle   (JALV)                                                                                  |
-        | Email      : alopez@thonaseguros.mx                                                                                           |
+        | Modifico    : J. Alberto Lopez Valle   (JALV)                                                                                  |
+        | Email       : alopez@thonaseguros.mx                                                                                           |
         | Obj. Modif.: Se agregan criterios de rangos de fechas dependiendo del Estado (solo para EMI, REN y ANU) de la Poliza:         |
         |                I) Status y  Fecha dados.      Rango de fechas sobre el status indicado.                                       |
         |               II) Sin Status pero con Fechas. Aplica rango de fechas para todos y cada uno de los Status.                     |
@@ -148,12 +148,12 @@ create or replace PACKAGE BODY          OC_POLIZAS_SERVICIOS_WEB IS
         |   23/12/2020  Se agrega funcionalidad de paginacion a este listado de Polizas.                                                |
         |                                                                                                                               |
         | Parametros:                                                                                                                   |
-        |           nCodCia             Codigo de la Compañia           (Entrada)                                                       |
-        |           nCodEmpresa         Codigo de la Empresa            (Entrada)                                                       |
-        |           nIdPoliza           ID de la Poliza                 (Entrada)                                                       |
-        |           nCodAgente          Codigo del Agente               (Entrada)                                                       |
-        |           dFecIni             Fecha de Inicio de Vig.         (Entrada)                                                       |
-        |           dFecFin             Fecha de Fin de Vig.            (Entrada)                                                       |
+        |         nCodCia        Codigo de la CompaÃ±ia           (Entrada)                                                       |
+        |         nCodEmpresa       Codigo de la Empresa         (Entrada)                                                       |
+        |         nIdPoliza         ID de la Poliza                 (Entrada)                                                       |
+        |         nCodAgente        Codigo del Agente            (Entrada)                                                       |
+        |         dFecIni             Fecha de Inicio de Vig.          (Entrada)                                                       |
+        |         dFecFin             Fecha de Fin de Vig.          (Entrada)                                                       |
         |           nIdCotizacion       ID de Cotizacion                (Entrada)                                                       |
         |           cStsPoliza          Estado de la Poliza             (Entrada)                                                       |
         |           cApePaternoCli      Apellido Paterno del Cliente    (Entrada)                                                       |
@@ -528,7 +528,7 @@ create or replace PACKAGE BODY          OC_POLIZAS_SERVICIOS_WEB IS
        BEGIN
           --
           IF GT_COTIZACIONES.EXISTE_COTIZACION_EMITIDA(nCodCia, nCodEmpresa, nIdCotizacion) = 'N' THEN
-             NULL; --RETURN 'Esta cotización no esta emitida: ' || NIDCOTIZACION;
+             NULL; --RETURN 'Esta cotizaciÃ³n no esta emitida: ' || NIDCOTIZACION;
           END IF;
           --
           FOR X IN ( SELECT * 
@@ -709,6 +709,18 @@ create or replace PACKAGE BODY          OC_POLIZAS_SERVICIOS_WEB IS
                 UPDATE COTIZACIONES
                 SET    IndAsegModelo = 'S'
                 WHERE  IdCotizacion = nIdCotizacion;
+             END IF;
+             -----UPDATE PARA ACTUALIZAR CodPlanPago ARH 30/06/2023
+             IF X.CodPlanPago IS NOT NULL THEN
+                UPDATE POLIZAS P SET P.CODPLANPAGO = X.CodPlanPago
+                  WHERE P.CODCIA      = nCodCia
+                    AND P.CODEMPRESA  = nCodEmpresa
+                    AND P.IDPOLIZA    = nIdPoliza;
+
+                 UPDATE DETALLE_POLIZA P SET P.CODPLANPAGO = X.CodPlanPago
+                  WHERE P.CODCIA      = nCodCia
+                    AND P.CODEMPRESA  = nCodEmpresa
+                    AND P.IDPOLIZA    = nIdPoliza;                               
              END IF;
           END LOOP;
           --
@@ -944,7 +956,7 @@ create or replace PACKAGE BODY          OC_POLIZAS_SERVICIOS_WEB IS
             -- http://192.168.0.232:8889/reports/rwservlet?report=ENDOSOS.rep&destype=cache&desformat=pdf&userid=sicas_oc/sicas@desarrollo&paramform=no&P_CODCIA=1&P_IDENDOSO=1&P_POLIZA=35497
             --           
         EXCEPTION WHEN OTHERS THEN
-            cRESPUESTA := 'La póliza no es de Plataforma Digital, se suspende el proceso';                           
+            cRESPUESTA := 'La pÃ³liza no es de Plataforma Digital, se suspende el proceso';                           
         END;
         --        
         RETURN nEjecucion;

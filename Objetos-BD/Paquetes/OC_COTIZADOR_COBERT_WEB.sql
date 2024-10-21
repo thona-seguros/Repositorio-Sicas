@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_COTIZADOR_COBERT_WEB IS
+create or replace PACKAGE          OC_COTIZADOR_COBERT_WEB IS
    PROCEDURE INSERTAR( nCodCia              IN  COTIZADOR_COBERT_WEB.CodCia%TYPE
                      , nCodEmpresa          IN  COTIZADOR_COBERT_WEB.CodEmpresa%TYPE
                      , cCodCotizador        IN  COTIZADOR_COBERT_WEB.CodCotizador%TYPE
@@ -29,7 +29,8 @@ CREATE OR REPLACE PACKAGE          OC_COTIZADOR_COBERT_WEB IS
                      , nOrdenImpresion      IN  COTIZADOR_COBERT_WEB.OrdenImpresion%TYPE
                      , nDeducibleIngresado  IN  COTIZADOR_COBERT_WEB.DeducibleIngresado%TYPE
                      , nCuotaPromedio       IN  COTIZADOR_COBERT_WEB.CuotaPromedio%TYPE
-                     , nPrimaPromedio       IN  COTIZADOR_COBERT_WEB.PrimaPromedio%TYPE );
+                     , nPrimaPromedio       IN  COTIZADOR_COBERT_WEB.PrimaPromedio%TYPE
+                     , nFranquiciaIngresado IN  COTIZADOR_COBERT_WEB.FranquiciaIngresado%TYPE );
 
    PROCEDURE ELIMINAR( nCodCia           IN  COTIZADOR_COBERT_WEB.CodCia%TYPE
                      , nCodEmpresa       IN  COTIZADOR_COBERT_WEB.CodEmpresa%TYPE
@@ -54,7 +55,7 @@ CREATE OR REPLACE PACKAGE          OC_COTIZADOR_COBERT_WEB IS
 END OC_COTIZADOR_COBERT_WEB;
 /
 
-CREATE OR REPLACE PACKAGE BODY          OC_COTIZADOR_COBERT_WEB IS
+create or replace PACKAGE BODY          OC_COTIZADOR_COBERT_WEB IS
    PROCEDURE INSERTAR( nCodCia              IN  COTIZADOR_COBERT_WEB.CodCia%TYPE
                      , nCodEmpresa          IN  COTIZADOR_COBERT_WEB.CodEmpresa%TYPE
                      , cCodCotizador        IN  COTIZADOR_COBERT_WEB.CodCotizador%TYPE
@@ -85,19 +86,20 @@ CREATE OR REPLACE PACKAGE BODY          OC_COTIZADOR_COBERT_WEB IS
                      , nOrdenImpresion      IN  COTIZADOR_COBERT_WEB.OrdenImpresion%TYPE
                      , nDeducibleIngresado  IN  COTIZADOR_COBERT_WEB.DeducibleIngresado%TYPE
                      , nCuotaPromedio       IN  COTIZADOR_COBERT_WEB.CuotaPromedio%TYPE
-                     , nPrimaPromedio       IN  COTIZADOR_COBERT_WEB.PrimaPromedio%TYPE ) IS
+                     , nPrimaPromedio       IN  COTIZADOR_COBERT_WEB.PrimaPromedio%TYPE
+                     , nFranquiciaIngresado IN  COTIZADOR_COBERT_WEB.FranquiciaIngresado%TYPE ) IS
    BEGIN
        INSERT INTO COTIZADOR_COBERT_WEB
           ( CodCia, CodEmpresa, CodCotizador, IdTipoSeg, PlanCob, CodGpoCobertWeb, CodCobertWeb, IdCotizacion, IdetCotizacion,
             SumaAsegCobLocal, SumaAsegCobMoneda, Tasa, PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal,
             DeducibleCobMoneda, SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion,
             SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, OrdenImpresion,
-            DeducibleIngresado,CuotaPromedio, PrimaPromedio )
+            DeducibleIngresado,CuotaPromedio, PrimaPromedio, FranquiciaIngresado )
        VALUES ( nCodCia, nCodEmpresa, cCodCotizador, cIdTipoSeg, cPlanCob, nCodGpoCobertWeb, cCodCobertWeb, nIdCotizacion, nIdetCotizacion,
                 nSumaAsegCobLocal, nSumaAsegCobMoneda, nTasa, nPrimaCobLocal, nPrimaCobMoneda, nDeducibleCobLocal,
                 nDeducibleCobMoneda, nSalarioMensual, nVecesSalario, nSumaAsegCalculada, nEdad_Minima, nEdad_Maxima, nEdad_Exclusion,
                 nSumaAseg_Minima, nSumaAseg_Maxima, nPorcExtraPrimaDet, nMontoExtraPrimaDet, nSumaIngresada, nOrdenImpresion,
-                nDeducibleIngresado, nCuotaPromedio, nPrimaPromedio );
+                nDeducibleIngresado, nCuotaPromedio, nPrimaPromedio, nFranquiciaIngresado );
    END INSERTAR;
 
    PROCEDURE ELIMINAR( nCodCia           IN  COTIZADOR_COBERT_WEB.CodCia%TYPE
@@ -169,7 +171,8 @@ CREATE OR REPLACE PACKAGE BODY          OC_COTIZADOR_COBERT_WEB IS
                                                                XMLElement("OrdenImpresion", OrdenImpresion),
                                                                XMLElement("DeducibleIngresado", DeducibleIngresado),
                                                                XMLElement("CuotaPromedio", CuotaPromedio),
-                                                               XMLElement("PrimaPromedio", PrimaPromedio)
+                                                               XMLElement("PrimaPromedio", PrimaPromedio),
+                                                               XMLElement("FranquiciaIngresado", FranquiciaIngresado)
                                                              )
                                                  )
                                       ) 

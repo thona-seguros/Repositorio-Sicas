@@ -9,7 +9,7 @@ CREATE OR REPLACE PACKAGE          GT_COTIZACIONES_COBERTURAS IS
                               nEdad_Maxima NUMBER, nEdad_Exclusion NUMBER, nSumaAseg_Minima NUMBER,
                               nSumaAseg_Maxima NUMBER, nPorcExtraPrimaDet NUMBER, nMontoExtraPrimaDet NUMBER,
                               nSumaIngresada NUMBER, nDeducibleIngresado NUMBER, nCuotaPromedio NUMBER,
-                              nPrimaPromedio NUMBER);
+                              nPrimaPromedio NUMBER, nFranquiciaIngresado NUMBER, nMontoDiario NUMBER, nDias_cal NUMBER);
   PROCEDURE COPIAR_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER, nIDetCotizacionDest NUMBER);
   PROCEDURE CREAR_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER, nIDetCotizacion NUMBER,
                              nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER, cIndPolCol VARCHAR2);
@@ -47,7 +47,7 @@ CURSOR COB_Q IS
           SalarioMensual, VecesSalario, SumaAsegCalculada,
           Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
           SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet,
-          SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio
+          SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_cal
      FROM COTIZACIONES_COBERTURAS
     WHERE CodCia       = nCodCia
       AND CodEmpresa   = nCodEmpresa
@@ -62,14 +62,14 @@ BEGIN
                  SalarioMensual, VecesSalario, SumaAsegCalculada,
                  Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
                  SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet,
-                 SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio)
+                 SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_cal)
          VALUES (nCodCia, nCodEmpresa, nIdReCotizacion, W.IDetCotizacion, W.CodCobert,
                  W.SumaAsegCobLocal, W.SumaAsegCobMoneda, W.Tasa, W.PrimaCobLocal,
                  W.PrimaCobMoneda, W.DeducibleCobLocal, W.DeducibleCobMoneda,
                  W.SalarioMensual, W.VecesSalario, W.SumaAsegCalculada,
                  W.Edad_Minima, W.Edad_Maxima, W.Edad_Exclusion, W.SumaAseg_Minima,
                  W.SumaAseg_Maxima, W.PorcExtraPrimaDet, W.MontoExtraPrimaDet,
-                 W.SumaIngresada, W.DeducibleIngresado, W.CuotaPromedio, W.PrimaPromedio);
+                 W.SumaIngresada, W.DeducibleIngresado, W.CuotaPromedio, W.PrimaPromedio, W.FranquiciaIngresado, W.MontoDiario, W.Dias_cal);
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20200,'Duplicado Cobertura de Detalle Cotización No. ' || nIdReCotizacion || ' y Cobertura ' ||W.CodCobert);
@@ -84,8 +84,9 @@ PROCEDURE CARGAR_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCH
                             nEdad_Maxima NUMBER, nEdad_Exclusion NUMBER, nSumaAseg_Minima NUMBER,
                             nSumaAseg_Maxima NUMBER, nPorcExtraPrimaDet NUMBER, nMontoExtraPrimaDet NUMBER,
                             nSumaIngresada NUMBER, nDeducibleIngresado NUMBER, nCuotaPromedio NUMBER,
-                            nPrimaPromedio NUMBER) IS
-cCod_Moneda             COTIZACIONES.Cod_Moneda%TYPE;
+                            nPrimaPromedio NUMBER, nFranquiciaIngresado NUMBER,nMontoDiario NUMBER,
+                            nDias_cal NUMBER) IS
+cCod_Moneda             COTIZACIONES.Cod_Moneda%TYPE;													 
 nTasaCambioDet          TASAS_CAMBIO.Tasa_Cambio%TYPE;
 nTasaCambio             TASAS_CAMBIO.Tasa_Cambio%TYPE;
 dFecCotizacion          COTIZACIONES.FecCotizacion%TYPE ;
@@ -128,6 +129,8 @@ nSumaAseg_MaximaCob     COTIZACIONES_COBERTURAS.SumaAseg_Minima%TYPE;
 cCodCotizador           COTIZACIONES.CodCotizador%TYPE;
 cRiesgoTarifa           COTIZACIONES_DETALLE.RiesgoTarifa%TYPE;
 nIdTarifa               TARIFA_CONTROL_VIGENCIAS.IdTarifa%TYPE;
+nFranquicia             COTIZACIONES.FranquiciaIngresado%TYPE; -- ARH - 23/08/2024
+nFactorRiesgo           FACTORES_RIESGOS.FactorRiesgo%TYPE; -- ARH - 23/08/2024		   
 nEdad                   NUMBER(5);
 nExiste                 NUMBER;
 nExisteAgen             NUMBER;
@@ -137,6 +140,7 @@ nValorMoneda            NUMBER;
 nCantAseg               NUMBER;
 cTarifaDinamica         VARCHAR2(1) := 'N';
 nPorcGtoAdminTar        TARIFA_SEXO_EDAD_RIESGO.PorcGtoAdmin%TYPE;
+nFactorSuma             NUMBER; -- ARH - 23/08/2024												   
 
 CURSOR COB_Q IS
    SELECT CodCobert, Porc_Tasa, TipoTasa, Prima_Cobert,
@@ -156,12 +160,12 @@ BEGIN
              NVL(IndAsegModelo,'N'), NVL(IndListadoAseg,'N'), NVL(IndCensoSubgrupo,'N'),
              PorcDescuento, PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad, FactorAjuste,
              MontoDeducible, FactFormulaDeduc, NVL(IndExtraPrima,'N'), TipoProrrata,
-             CodCotizador
+             CodCotizador, FranquiciaIngresado -- ARH - 23/08/2024
         INTO cCod_Moneda, dFecCotizacion, dFecIniVigCot, dFecFinVigCot, nHorasVig, nDiasVig,
              cIndAsegModelo, cIndListadoAseg, cIndCensoSubgrupo, 
              nPorcDescuento, nPorcGtoAdmin, nPorcGtoAdqui, nPorcUtilidad, nFactorAjuste,
              nMontoDeducible, nFactFormulaDeduc_Cot /*JROD ENE 2019*/, cIndExtraPrima, cTipoProrrata, 
-             cCodCotizador
+             cCodCotizador, nFranquicia -- ARH - 23/08/2024
         FROM COTIZACIONES
        WHERE CodCia       = nCodCia
          AND CodEmpresa   = nCodEmpresa
@@ -173,6 +177,8 @@ BEGIN
 
    IF NVL(nDeducibleIngresado,0) != 0 THEN
       nMontoDeducible := NVL(nDeducibleIngresado,0);
+    ELSE
+      nMontoDeducible := 0;
    END IF;
 
    IF GT_COTIZADOR_CONFIG.TIPO_DE_COTIZADOR(nCodCia, nCodEmpresa, cCodCotizador) IN ('API','APC') THEN
@@ -341,46 +347,133 @@ BEGIN
                ELSE
                   nSumaAsegMoneda := NVL(nSumaAsegManual,0);
                END IF;
-               nTasa            := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
+               ----nTasa            := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
+                                                                          ----X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
 
-               nPorcGtoAdminTar := OC_TARIFA_SEXO_EDAD_RIESGO.PORCEN_GASTOS_ADMIN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                                  X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
+               IF X.CodTarifa != 'DEDUCIBLE-FRANQUICIA' THEN -- ARH - 23/08/2024
+                  nTasa            := OC_TARIFA_SEXO_EDAD_RIESGO.TASA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
+                                                                             X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
 
-               IF NVL(nTasa,0) > 0 THEN
-                  nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
+                  nPorcGtoAdminTar := OC_TARIFA_SEXO_EDAD_RIESGO.PORCEN_GASTOS_ADMIN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
+                                                                                     X.CodCobert, nEdad, cSexo, cRiesgo, nIdTarifa, NULL);
 
-                  nTasa := NVL(nTasa,0) * (1 + (NVL(nPorcExtraPrima,0) / 100));
+                  IF NVL(nTasa,0) > 0 THEN
+                     nTasa := NVL(nTasa,0) * (1 - (NVL(nPorcDescuento,0) / 100));
 
-                  nTasa := NVL(nTasa,0) + NVL(nMontoExtraPrima,0);
+                     nTasa := NVL(nTasa,0) * (1 + (NVL(nPorcExtraPrima,0) / 100));
 
-                  nTasa := NVL(nTasa,0) * NVL(nFactorAjuste,0);
+                     nTasa := NVL(nTasa,0) + NVL(nMontoExtraPrima,0);
 
-                  IF NVL(nFactorAjusteSubGrupo,0) > 0 THEN
-                     nTasa := NVL(nTasa,0) * NVL(nFactorAjusteSubGrupo,0);
+														  
+                     nTasa := NVL(nTasa,0) * NVL(nFactorAjuste,0);
+						 
+
+                     IF NVL(nFactorAjusteSubGrupo,0) > 0 THEN
+                        nTasa := NVL(nTasa,0) * NVL(nFactorAjusteSubGrupo,0);
+                     END IF;
+
+                     -- Factor Deducible ??
+                     nTasa := (1-(NVL(nFactFormulaDeduc,0) * NVL(nMontoDeducible,0))) * NVL(nTasa,0);
+						 
+
+                     IF NVL(nHorasVig,0) > 0 THEN
+                        nTasa := NVL(nTasa,0) * (NVL(nHorasVig,0) / 24);
+                     END IF;
+
+                     IF NVL(nDiasVig,0) > 0 THEN
+                        nTasa := NVL(nTasa,0) * (NVL(nDiasVig,0) / 365);
+                     END IF;
+
+                     /*IF cTipoProrrata = 'D365' THEN
+                        nTasa := (NVL(nTasa,0) / 365) * (dFecFinVigCot - dFecIniVigCot);
+                     END IF;
+
+                     IF NVL(nDiasVig,0) > 0 THEN
+                        nTasa := NVL(nTasa,0) * (NVL(nDiasVig,0) / OC_GENERALES.DIAS_ANIO(dFecIniVigCot, dFecFinVigCot));
+                     END IF;*/
+
+                     nTasa := NVL(nTasa,0) / (1 - (NVL(nPorcGtoAdqui,0) / 100) - (NVL(nPorcUtilidad,0) / 100) -
+                              (NVL(nPorcGtoAdmin,0) / 100) -  (NVL(nPorcGtoAdminTar,0) / 100));
+                  END IF;
+                  nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
+                                                                             X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa, NULL); --nSumaAsegMoneda);
+               ELSE
+                  -- ARH - 23/08/2024
+                  nFactorRiesgo := GT_FACTORES_RIESGOS.FACTOR(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, cRiesgoTarifa, dFecCotizacion);
+
+                  IF NVL(nMontoDeducible,0) > 0 AND NVL(nFranquiciaIngresado,0) = 0 THEN ---ARH23082024
+                     IF 0 > (1 - ((NVL(nMontoDeducible,0) / NVL(nSumaAsegMoneda,0) - .05))) THEN
+                        nFactorSuma := 0;
+                     ELSE
+                        nFactorSuma := (1 - (NVL(nMontoDeducible,0) / NVL(nSumaAsegMoneda,0))) - .05;---ARH23082024
+                     END IF;
+
+                     nTasa := 21014 * POWER(NVL(nSumaAsegMoneda,0),-0.835) * NVL(nFactorSuma,0) * NVL(nFactorRiesgo,0) * 
+                              (NVL(nHorasVig,0) / 24) * (nDiasVig / 365) * NVL(nFactorAjusteSubGrupo,0) *
+                               NVL(nFactorAjuste,0);
+                  ELSIF NVL(nMontoDeducible,0) = 0 AND NVL(nFranquiciaIngresado,0) > 0 THEN ---ARH23082024 
+                     IF 0 > (1 - ((NVL(nFranquiciaIngresado,0) / NVL(nSumaAsegMoneda,0) - .05))) THEN
+                        nFactorSuma := 0;
+                     ELSE
+                        nFactorSuma := (1 - (NVL(nFranquiciaIngresado,0) / NVL(nSumaAsegMoneda,0)));---ARH23082024
+                     END IF;
+
+                     nTasa := 21014 * POWER(NVL(nSumaAsegMoneda,0),-0.835) * NVL(nFactorSuma,0) * NVL(nFactorRiesgo,0) * 
+                              (NVL(nHorasVig,0) / 24) * (nDiasVig / 365) * NVL(nFactorAjusteSubGrupo,0) *
+                               NVL(nFactorAjuste,0);
+   
+                  ELSIF NVL(nMontoDeducible,0) > NVL(nFranquiciaIngresado,0) THEN ---ARH23082024
+                     IF 0 > (1 - ((NVL(nMontoDeducible,0) / NVL(nSumaAsegMoneda,0) - .05))) THEN
+                        nFactorSuma := 0;
+                     ELSE
+                        nFactorSuma := (1 - (NVL(nMontoDeducible,0) / NVL(nSumaAsegMoneda,0))) - .05;---ARH23082024
+                     END IF;
+
+                     nTasa := 21014 * POWER(NVL(nSumaAsegMoneda,0),-0.835) * NVL(nFactorSuma,0) * NVL(nFactorRiesgo,0) * 
+                              (NVL(nHorasVig,0) / 24) * (nDiasVig / 365) * NVL(nFactorAjusteSubGrupo,0) *
+                               NVL(nFactorAjuste,0);
+   
+                  ELSIF NVL(nFranquiciaIngresado,0) > NVL(nMontoDeducible,0) THEN ---ARH07062023
+                     IF 0 > (1 - ((NVL(nFranquiciaIngresado,0) / NVL(nSumaAsegMoneda,0) - .05))) THEN
+                        nFactorSuma := 0;
+                     ELSE
+                        nFactorSuma := (1 - (NVL(nFranquiciaIngresado,0) / NVL(nSumaAsegMoneda,0)));---ARH23082024
+                     END IF;
+
+                     nTasa := 21014 * POWER(NVL(nSumaAsegMoneda,0),-0.835) * NVL(nFactorSuma,0) * NVL(nFactorRiesgo,0) * 
+                              (NVL(nHorasVig,0) / 24) * (nDiasVig / 365) * NVL(nFactorAjusteSubGrupo,0) *
+                               NVL(nFactorAjuste,0);
+   
+                  ELSIF NVL(nMontoDeducible,0) = 0 AND NVL(nFranquiciaIngresado,0) = 0 THEN ---ARH23082024 	
+                     IF 0 > (1 - ((NVL(nMontoDeducible,0) / NVL(nSumaAsegMoneda,0) - .05))) THEN
+                        nFactorSuma := 0;
+                     ELSE
+                        nFactorSuma := (1 - (NVL(nFranquiciaIngresado,0) / NVL(nSumaAsegMoneda,0)));---ARH23082024
+                     END IF;
+
+                     nTasa := 21014 * POWER(NVL(nSumaAsegMoneda,0),-0.835) * NVL(nFactorSuma,0) * NVL(nFactorRiesgo,0) * 
+                              (NVL(nHorasVig,0) / 24) * (nDiasVig / 365) * NVL(nFactorAjusteSubGrupo,0) *
+                               NVL(nFactorAjuste,0);
+                  ELSE
+                     RAISE_APPLICATION_ERROR(-20200,'Para la Cobertura ' || X.CodCobert || ' debe Asignar Deducible o Franquicia para el Cálculo');
+
                   END IF;
 
-                  -- Factor Deducible ??
-                  nTasa := (1-(NVL(nFactFormulaDeduc,0) * NVL(nMontoDeducible,0))) * NVL(nTasa,0);
+                  nTasa := NVL(nTasa,0) / (1 - (NVL(nPorcGtoAdqui,0) / 100) - (NVL(nPorcUtilidad,0) / 100) - (NVL(nPorcGtoAdmin,0) / 100));
+																													  
+						   
 
-                  IF NVL(nHorasVig,0) > 0 THEN
-                     nTasa := NVL(nTasa,0) * (NVL(nHorasVig,0) / 24);
+                  nValorMoneda    := 0;
+   
+                  IF NVL(nMontoDeducible,0) !=  0 OR NVL(nFranquiciaIngresado,0) !=  0 THEN ---ARH23082024
+                     UPDATE COTIZACIONES
+                     SET MontoDeducible        = NVL(nMontoDeducible,0),
+                         FranquiciaIngresado   = NVL(nFranquiciaIngresado,0)
+                     WHERE CodCia         = nCodCia
+                     AND CodEmpresa     = nCodEmpresa
+                     AND IdCotizacion   = nIdCotizacion;
                   END IF;
-
-                  IF NVL(nDiasVig,0) > 0 THEN
-                     nTasa := NVL(nTasa,0) * (NVL(nDiasVig,0) / 365);
-                  END IF;
-
-                  /*IF cTipoProrrata = 'D365' THEN
-                     nTasa := (NVL(nTasa,0) / 365) * (dFecFinVigCot - dFecIniVigCot);
-                  END IF;
-
-                  IF NVL(nDiasVig,0) > 0 THEN
-                     nTasa := NVL(nTasa,0) * (NVL(nDiasVig,0) / OC_GENERALES.DIAS_ANIO(dFecIniVigCot, dFecFinVigCot));
-                  END IF;*/
-
-                  nTasa := NVL(nTasa,0) / (1 - (NVL(nPorcGtoAdqui,0) / 100) - (NVL(nPorcUtilidad,0) / 100) -
-                           (NVL(nPorcGtoAdmin,0) / 100) -  (NVL(nPorcGtoAdminTar,0) / 100));
+    
                END IF;
 
                IF NVL(nSumaAsegMoneda,0) = 0 THEN
@@ -388,8 +481,8 @@ BEGIN
                END IF;
 
                nSumaAsegMoneda := NVL(nSumaAsegMoneda,0) * NVL(nCantAseg,0);
-               nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
-                                                                          X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa, NULL); --nSumaAsegMoneda);
+               ---nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
+                                                                         -- X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa, NULL); --nSumaAsegMoneda);
                IF NVL(nValorMoneda,0) = 0 AND NVL(nTasa,0) != 0 THEN
                   nValorMoneda := NVL(nSumaAsegMoneda,0) * NVL(nTasa,0) / 1000;
                END IF;
@@ -455,13 +548,13 @@ BEGIN
             nSumaAsegLocal  := NVL(nSumaAsegMoneda,0) * nTasaCambio;
          END IF;
 
-         IF nMontoDeducible != 0 THEN
+         IF nMontoDeducible != 0 AND X.CodTarifa = 'DEDUCIBLE-FRANQUICIA'THEN
             nDeducibleCobMoneda := nMontoDeducible;
             nDeducibleCobLocal  := NVL(nMontoDeducible,0) * nTasaCambio;
          ELSE
-            IF NVL(X.MontoDeducible,0) != 0 THEN
-               nDeducibleCobMoneda := NVL(X.MontoDeducible,0);
-               nDeducibleCobLocal  := NVL(X.MontoDeducible,0) * nTasaCambio;
+            IF NVL(nDeducibleIngresado,0) != 0 THEN ---ARH 23082024
+               nDeducibleCobMoneda := NVL(nDeducibleIngresado,0);
+               nDeducibleCobLocal  := NVL(nDeducibleIngresado,0) * nTasaCambio;
             ELSE
                nDeducibleCobMoneda := NVL(nSumaAsegMoneda,0) * NVL(X.PorcenDeducible,0) / 100;
                nDeducibleCobLocal  := NVL(nDeducibleCobMoneda,0) * nTasaCambio;
@@ -479,7 +572,7 @@ BEGIN
                          SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion,
                          SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet,
                          MontoExtraPrimaDet, SumaIngresada, DeducibleIngresado,
-                         CuotaPromedio, PrimaPromedio)
+                         CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_cal)
                   VALUES(nCodCia, nCodEmpresa, nIdCotizacion, nIDetCotizacion, 
                          X.CodCobert, NVL(nSumaAsegLocal,0), NVL(nSumaAsegMoneda,0),
                          nTasa, NVL(nValor,0), NVL(nValorMoneda,0), NVL(nDeducibleCobLocal,0),
@@ -487,7 +580,7 @@ BEGIN
                          NVL(nSumaAsegManual,0), nEdad_MinimaCob, nEdad_MaximaCob, nEdad_ExclusionCob,
                          nSumaAseg_MinimaCob, nSumaAseg_MaximaCob, nPorcExtraPrima,
                          nMontoExtraPrima, nSumaIngresada, NVL(nDeducibleIngresado,0),
-                         nCuotaPromedio, nPrimaPromedio);
+                         nCuotaPromedio, nPrimaPromedio, NVL(nFranquiciaIngresado,0), NVL(nMontoDiario,0), nDias_cal);
                EXCEPTION
                   WHEN DUP_VAL_ON_INDEX THEN
                      UPDATE COTIZACIONES_COBERTURAS
@@ -511,7 +604,10 @@ BEGIN
                             SumaIngresada         = nSumaIngresada,
                             DeducibleIngresado    = NVL(nDeducibleIngresado,0),
                             CuotaPromedio         = NVL(nCuotaPromedio,0),
-                            PrimaPromedio         = NVL(nPrimaPromedio,0)
+                            PrimaPromedio         = NVL(nPrimaPromedio,0),
+                            FranquiciaIngresado   = NVL(nFranquiciaIngresado,0),
+                            MontoDiario           = NVL(nMontoDiario,0),
+                            Dias_cal              = nDias_cal
                       WHERE CodCia         = nCodCia
                         AND CodEmpresa     = nCodEmpresa
                         AND IdCotizacion   = nIdCotizacion
@@ -528,7 +624,7 @@ BEGIN
                          SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion,
                          SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet,
                          MontoExtraPrimaDet, SumaIngresada, DeducibleIngresado,
-                         CuotaPromedio, PrimaPromedio)
+                         CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_cal)
                   VALUES(nCodCia, nCodEmpresa, nIdCotizacion, nIDetCotizacion, nIdAsegurado,
                          X.CodCobert, NVL(nSumaAsegLocal,0), NVL(nSumaAsegMoneda,0),
                          nTasa, NVL(nValor,0), NVL(nValorMoneda,0), NVL(nDeducibleCobLocal,0),
@@ -536,7 +632,7 @@ BEGIN
                          NVL(nSumaAsegManual,0), nEdad_MinimaCob, nEdad_MaximaCob, nEdad_ExclusionCob,
                          nSumaAseg_MinimaCob, nSumaAseg_MaximaCob, nPorcExtraPrima,
                          nMontoExtraPrima, nSumaIngresada, NVL(nDeducibleIngresado,0),
-                         NVL(nCuotaPromedio,0), NVL(nPrimaPromedio,0));
+                         NVL(nCuotaPromedio,0), NVL(nPrimaPromedio,0), NVL(nFranquiciaIngresado,0), NVL(nMontoDiario,0), nDias_cal);
                EXCEPTION
                   WHEN DUP_VAL_ON_INDEX THEN
                      UPDATE COTIZACIONES_COBERT_ASEG
@@ -560,7 +656,10 @@ BEGIN
                             SumaIngresada         = nSumaIngresada,
                             DeducibleIngresado    = NVL(nDeducibleIngresado,0),
                             CuotaPromedio         = NVL(nCuotaPromedio,0),
-                            PrimaPromedio         = NVL(nPrimaPromedio,0)
+                            PrimaPromedio         = NVL(nPrimaPromedio,0),
+                            FranquiciaIngresado   = NVL(nFranquiciaIngresado,0),
+                            MontoDiario           = NVL(nMontoDiario,0),
+                            Dias_cal              = nDias_cal
                       WHERE CodCia         = nCodCia
                         AND CodEmpresa     = nCodEmpresa
                         AND IdCotizacion   = nIdCotizacion
@@ -582,7 +681,7 @@ CURSOR COB_Q IS
           SalarioMensual, VecesSalario, SumaAsegCalculada,
           Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
           SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,
-          DeducibleIngresado, CuotaPromedio, PrimaPromedio
+          DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_cal
      FROM COTIZACIONES_COBERTURAS
     WHERE CodCia         = nCodCia
       AND CodEmpresa     = nCodEmpresa
@@ -598,14 +697,14 @@ BEGIN
                  SalarioMensual, VecesSalario, SumaAsegCalculada,
                  Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
                  SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet,
-                 SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio)
+                 SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_cal)
          VALUES (nCodCia, nCodEmpresa, nIdCotizacion, nIDetCotizacionDest, W.CodCobert,
                  W.SumaAsegCobLocal, W.SumaAsegCobMoneda, W.Tasa, W.PrimaCobLocal,
                  W.PrimaCobMoneda, W.DeducibleCobLocal, W.DeducibleCobMoneda,
                  W.SalarioMensual, W.VecesSalario, W.SumaAsegCalculada,
                  W.Edad_Minima, W.Edad_Maxima, W.Edad_Exclusion, W.SumaAseg_Minima,
                  W.SumaAseg_Maxima, W.PorcExtraPrimaDet, W.MontoExtraPrimaDet,
-                 W.SumaIngresada, W.DeducibleIngresado, W.CuotaPromedio, W.PrimaPromedio);
+                 W.SumaIngresada, W.DeducibleIngresado, W.CuotaPromedio, W.PrimaPromedio, W.FranquiciaIngresado, W.MontoDiario, W.Dias_cal);
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20200,'Duplicado Cobertura de Detalle Cotización No. ' || nIDetCotizacion || 
@@ -630,7 +729,7 @@ CURSOR COTCOB_Q IS
           C.SAMIAutorizado, C.PlanCob, C.Cod_Moneda, M.SalarioMensual, M.VecesSalario,
           M.SumaAsegCalculada, M.Edad_Minima, M.Edad_Maxima, M.Edad_Exclusion, M.SumaAseg_Minima,
           M.SumaAseg_Maxima, M.PorcExtraPrimaDet, M.MontoExtraPrimaDet, M.SumaIngresada,
-          C.IndAsegModelo, C.IndCensoSubGrupo
+          C.IndAsegModelo, C.IndCensoSubGrupo,M.Franquiciaingresado, M.MontoDiario, M.Dias_cal  ---ARH23082024
      FROM COTIZACIONES_COBERTURAS M, COTIZACIONES C
     WHERE M.CodCia         = C.CodCia
       AND M.CodEmpresa     = C.CodEmpresa
@@ -667,14 +766,14 @@ BEGIN
                     Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
                     SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, 
                     SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
-                    PrimaNivMoneda, PrimaNivLocal)
+                    PrimaNivMoneda, PrimaNivLocal, Franquiciaingresado, MontoDiario, Dias_cal) ---ARH23082024
              VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert, 
                     X.SumaAsegCobLocal/nCantAsegurados, X.SumaAsegCobMoneda/nCantAsegurados, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0,
                     'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
                     nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario, 
                     X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
                     X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada, 
-                    0, 0);
+                    0, 0, X.Franquiciaingresado , X.MontoDiario , X.Dias_cal);
              --
              nSumaAsegLocal    := nSumaAsegLocal  + (X.SumaAsegCobLocal/nCantAsegurados);
              nSumaAsegMoneda   := nSumaAsegMoneda + (X.SumaAsegCobMoneda/nCantAsegurados);
@@ -719,14 +818,14 @@ BEGIN
                     Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
                     SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
                     SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
-                    PrimaNivMoneda, PrimaNivLocal)
+                    PrimaNivMoneda, PrimaNivLocal, Franquiciaingresado, MontoDiario, Dias_cal) ---ARH23082024
              VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert,
                     X.SumaAsegCobLocal/nCantAsegurados, X.SumaAsegCobMoneda/nCantAsegurados, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0, 
                     'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
                     nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario, 
                     X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
                     X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada,
-                    0, 0);
+                    0, 0, X.Franquiciaingresado, X.MontoDiario, X.Dias_cal);
 /*          ELSE
              INSERT INTO COBERT_ACT
                    (CodEmpresa, CodCia, IdPoliza, IDetPol, IdTipoSeg, TipoRef, NumRef, CodCobert,

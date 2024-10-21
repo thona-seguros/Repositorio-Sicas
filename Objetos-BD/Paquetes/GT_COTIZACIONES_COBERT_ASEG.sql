@@ -42,7 +42,7 @@ CURSOR COB_Q IS
           SalarioMensual, VecesSalario, SumaAsegCalculada,
           Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
           SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,
-          DeducibleIngresado, CuotaPromedio, PrimaPromedio
+          DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_Cal  ---ARH 28/02/2024
      FROM COTIZACIONES_COBERT_ASEG
     WHERE CodCia       = nCodCia
       AND CodEmpresa   = nCodEmpresa
@@ -57,14 +57,14 @@ BEGIN
                  SalarioMensual, VecesSalario, SumaAsegCalculada,
                  Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
                  SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet,
-                 SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio)
+                 SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_Cal)
          VALUES (nCodCia, nCodEmpresa, nIdReCotizacion, W.IDetCotizacion, W.IdAsegurado,
                  W.CodCobert, W.SumaAsegCobLocal, W.SumaAsegCobMoneda, W.Tasa, W.PrimaCobLocal,
                  W.PrimaCobMoneda, W.DeducibleCobLocal, W.DeducibleCobMoneda,
                  W.SalarioMensual, W.VecesSalario, W.SumaAsegCalculada,
                  W.Edad_Minima, W.Edad_Maxima, W.Edad_Exclusion, W.SumaAseg_Minima,
                  W.SumaAseg_Maxima, W.PorcExtraPrimaDet, W.MontoExtraPrimaDet,
-                 W.SumaIngresada, W.DeducibleIngresado, W.CuotaPromedio, W.PrimaPromedio);
+                 W.SumaIngresada, W.DeducibleIngresado, W.CuotaPromedio, W.PrimaPromedio, W.FranquiciaIngresado, W.MontoDiario, W.Dias_Cal); ---ARH 28/02/2024
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20200,'Duplicado Cobertura de Censo o Asegurado en Cotización No. ' || nIdReCotizacion || ' y Cobertura ' ||W.CodCobert);
@@ -80,7 +80,7 @@ CURSOR COB_Q IS
           VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima, 
           Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima, 
           PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,
-          DeducibleIngresado, CuotaPromedio, PrimaPromedio
+          DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_Cal --ARH 28/02/2024
      FROM COTIZACIONES_COBERT_ASEG
     WHERE CodCia         = nCodCia
       AND CodEmpresa     = nCodEmpresa
@@ -96,14 +96,14 @@ BEGIN
                  SalarioMensual, VecesSalario, SumaAsegCalculada,
                  Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima,
                  SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet,
-                 SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio)
+                 SumaIngresada, DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado, MontoDiario, Dias_Cal)--- ARH 21/03/2024
          VALUES (nCodCia, nCodEmpresa, nIdCotizacion, nIDetCotizacionDest, W.IdAsegurado,
                  W.CodCobert, W.SumaAsegCobLocal, W.SumaAsegCobMoneda, W.Tasa, W.PrimaCobLocal,
                  W.PrimaCobMoneda, W.DeducibleCobLocal, W.DeducibleCobMoneda,
                  W.SalarioMensual, W.VecesSalario, W.SumaAsegCalculada,
                  W.Edad_Minima, W.Edad_Maxima, W.Edad_Exclusion, W.SumaAseg_Minima,
                  W.SumaAseg_Maxima, W.PorcExtraPrimaDet, W.MontoExtraPrimaDet,
-                 W.SumaIngresada, W.DeducibleIngresado, W.CuotaPromedio, W.PrimaPromedio);
+                 W.SumaIngresada, W.DeducibleIngresado, W.CuotaPromedio, W.PrimaPromedio, W.FranquiciaIngresado, W.MontoDiario, W.Dias_Cal); ---ARH 28/02/2024
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20200,'Duplicado Cobertura de Censo o Asegurado en Cotización No. ' ||  nIdCotizacion || 
@@ -127,7 +127,7 @@ CURSOR COTCOB_Q IS
           C.SAMIAutorizado, C.PlanCob, C.Cod_Moneda, M.SalarioMensual, M.VecesSalario,
           M.SumaAsegCalculada, M.Edad_Minima, M.Edad_Maxima, M.Edad_Exclusion, M.SumaAseg_Minima,
           M.SumaAseg_Maxima, M.PorcExtraPrimaDet, M.MontoExtraPrimaDet, 
-          M.SumaIngresada, C.IndAsegModelo, C.IndCensoSubGrupo
+          M.SumaIngresada, C.IndAsegModelo, C.IndCensoSubGrupo, M.FranquiciaIngresado, M.MontoDiario, M.Dias_Cal  ----28022024 ARH
      FROM COTIZACIONES_COBERT_ASEG M, COTIZACIONES C
     WHERE M.CodCia         = C.CodCia
       AND M.CodEmpresa     = C.CodEmpresa
@@ -156,14 +156,14 @@ BEGIN
                 Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
                 SumaAsegCalculada, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, 
                 SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
-                PrimaNivMoneda, PrimaNivLocal)
+                PrimaNivMoneda, PrimaNivLocal, FranquiciaIngresado, MontoDiario, Dias_Cal)
          VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert,
                 X.SumaAsegCobLocal, X.SumaAsegCobMoneda, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0, 
                 'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
                 nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario, 
                 X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
                 X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada,
-                0, 0);
+                0, 0,X.FranquiciaIngresado, X.MontoDiario, X.Dias_Cal);
 
          nSumaAsegLocal    := nSumaAsegLocal  + X.SumaAsegCobLocal;
          nSumaAsegMoneda   := nSumaAsegMoneda + X.SumaAsegCobMoneda;
@@ -193,14 +193,14 @@ BEGIN
                 Cod_Asegurado, IndCambioSAMI, SumaAsegOrigen, SalarioMensual, VecesSalario, 
                 SumaAsegCalculada, Edad_Minima, Edad_Maxima,  Edad_Exclusion, SumaAseg_Minima, 
                 SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, 
-                PrimaNivMoneda, PrimaNivLocal)
+                PrimaNivMoneda, PrimaNivLocal, FranquiciaIngresado, MontoDiario, Dias_Cal)
          VALUES(nCodEmpresa, nCodCia, nIdPoliza, nIDetPol, X.IdTipoSeg, 'POLI', nIdPoliza, X.CodCobert, 
                 X.SumaAsegCobLocal, X.SumaAsegCobMoneda, X.Tasa, X.PrimaCobLocal, X.PrimaCobMoneda, 0, 
                 'SOL', X.PlanCob, X.Cod_Moneda, X.DeducibleCobLocal, X.DeducibleCobMoneda, 
                 nCodAsegurado, cIndCambioSAMI, NULL, X.SalarioMensual, X.VecesSalario,
                 X.SumaAsegCalculada, X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAseg_Minima,
                 X.SumaAseg_Maxima, X.PorcExtraPrimaDet, X.MontoExtraPrimaDet, X.SumaIngresada,
-                0, 0);
+                0, 0, X.FranquiciaIngresado, X.MontoDiario, X.Dias_Cal);
       END LOOP;
    END IF;
 EXCEPTION

@@ -220,7 +220,8 @@ CURSOR COT_Q IS
           FuenteRecursosPrima, TipoProrrata, PorcComisAgte, PorcComisProm, PorcComisDir, 
           IndConvenciones, PorcConvenciones, DescCuotasPrimaNiv, DescElegibilidad,
           DescRiesgosCubiertos, IndCotizacionWeb,
-          IndCotizacionBaseWeb, GASTOSEXPEDICION, CODTIPONEGOCIO, CODPAQCOMERCIAL, CODOFICINA, CODCATEGO
+          IndCotizacionBaseWeb, GASTOSEXPEDICION, CODTIPONEGOCIO, CODPAQCOMERCIAL, CODOFICINA,
+          CODCATEGO, FranquiciaIngresado, RIESGOTARIFA, TIPNEGO_WEB, RIES_LABOR, RIES_24365, RIES_TRASLA  -- ARH 22/02/2024																												  
      FROM COTIZACIONES
     WHERE CodCia       = nCodCia
       AND CodEmpresa   = nCodEmpresa
@@ -298,7 +299,8 @@ BEGIN
                  DescActividadAseg, DescFormulaDividendos, NumPolRenovacion, AsegAdheridosPor, PorcenContributorio, 
                  FuenteRecursosPrima, TipoProrrata, PorcComisAgte, PorcComisProm, PorcComisDir,  IndConvenciones, 
                  PorcConvenciones, DescCuotasPrimaNiv, DescElegibilidad, DescRiesgosCubiertos, 
-                 IndCotizacionWeb, IndCotizacionBaseWeb, GASTOSEXPEDICION, CODTIPONEGOCIO, CODPAQCOMERCIAL, CODOFICINA, CODCATEGO )
+                 IndCotizacionWeb, IndCotizacionBaseWeb, GASTOSEXPEDICION, CODTIPONEGOCIO, CODPAQCOMERCIAL, 
+                 CODOFICINA, CODCATEGO, FranquiciaIngresado, RIESGOTARIFA, TIPNEGO_WEB, RIES_LABOR, RIES_24365, RIES_TRASLA )-- ARH 22/02/2024 
          VALUES (nCodCia, nCodEmpresa, nIdReCotizacion, cNumUnicoCotizacion, W.CodCotizador, W.NumCotizacionRef, 
                  nIdCotizacion, 'COTIZA', TRUNC(SYSDATE), W.NombreContratante, W.FecIniVigCot, W.FecFinVigCot, 
                  TRUNC(SYSDATE), TRUNC(SYSDATE) + GT_COTIZADOR_CONFIG.DIAS_VIGENCIA_COTIZACION(nCodCia, nCodEmpresa, W.CodCotizador),
@@ -313,7 +315,8 @@ BEGIN
                  W.DescFormulaDividendos, W.NumPolRenovacion, W.AsegAdheridosPor, W.PorcenContributorio, 
                  W.FuenteRecursosPrima, W.TipoProrrata, W.PorcComisAgte, W.PorcComisProm, W.PorcComisDir, 
                  W.IndConvenciones, W.PorcConvenciones, W.DescCuotasPrimaNiv, W.DescElegibilidad, W.DescRiesgosCubiertos,
-                 W.IndCotizacionWeb, W.IndCotizacionBaseWeb, NVL(W.GASTOSEXPEDICION, 0), W.CODTIPONEGOCIO, W.CODPAQCOMERCIAL, W.CODOFICINA, W.CODCATEGO );
+                 W.IndCotizacionWeb, W.IndCotizacionBaseWeb, NVL(W.GASTOSEXPEDICION, 0), W.CODTIPONEGOCIO, W.CODPAQCOMERCIAL, 
+                 W.CODOFICINA, W.CODCATEGO, W.FranquiciaIngresado, W.RIESGOTARIFA, W.TIPNEGO_WEB, W.RIES_LABOR, W.RIES_24365, W.RIES_TRASLA );-- ARH 22/02/2024
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20200,'Duplicada Cotización No. ' || nIdCotizacion);
@@ -462,7 +465,7 @@ CURSOR COB_DET_Q IS
           VecesSalario, Edad_Minima, Edad_Maxima, Edad_Exclusion,
           SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet, 
           MontoExtraPrimaDet, SumaIngresada, DeducibleIngresado,
-          CuotaPromedio, PrimaPromedio
+          CuotaPromedio, PrimaPromedio, FranquiciaIngresado, Montodiario, Dias_Cal  ---ARH 23/02/2024
      FROM COTIZACIONES_COBERTURAS
     WHERE CodCia         = nCodCia
       AND CodEmpresa     = nCodEmpresa
@@ -489,7 +492,7 @@ CURSOR COB_ASEG_Q IS
    SELECT IDetCotizacion, IdAsegurado, CodCobert, SumaAsegCobMoneda, SalarioMensual,
           VecesSalario, Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, 
           SumaAseg_Maxima, PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,
-          DeducibleIngresado, CuotaPromedio, PrimaPromedio
+          DeducibleIngresado, CuotaPromedio, PrimaPromedio, FranquiciaIngresado
      FROM COTIZACIONES_COBERT_ASEG
     WHERE CodCia         = nCodCia
       AND CodEmpresa     = nCodEmpresa
@@ -502,7 +505,7 @@ BEGIN
       IF cIndAsegModelo = 'S' THEN
          IF GT_COTIZACIONES_DETALLE.TIENE_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, W.IDetCotizacion) = 'N' THEN
                GT_COTIZACIONES_COBERTURAS.CARGAR_COBERTURAS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdCotizacion, 
-                                                            W.IDetCotizacion, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                                                             W.IDetCotizacion, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
          ELSE
             FOR Y IN COB_DET_Q LOOP
                GT_COTIZACIONES_COBERTURAS.CARGAR_COBERTURAS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdCotizacion, 
@@ -510,7 +513,8 @@ BEGIN
                                                             Y.SalarioMensual, Y.VecesSalario, Y.Edad_Minima, Y.Edad_Maxima,
                                                             Y.Edad_Exclusion, Y.SumaAseg_Minima, Y.SumaAseg_Maxima,
                                                             Y.PorcExtraPrimaDet, Y.MontoExtraPrimaDet, Y.SumaIngresada,
-                                                            Y.DeducibleIngresado, Y.CuotaPromedio, Y.PrimaPromedio);
+                                                            Y.DeducibleIngresado, Y.CuotaPromedio, Y.PrimaPromedio, Y.FranquiciaIngresado,
+                                                            Y.Montodiario, Y.Dias_Cal); ---ARH 22/02/2024
             END LOOP;
          END IF;
          GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(nCodCia, nCodEmpresa, nIdCotizacion, W.IDetCotizacion);
@@ -518,7 +522,7 @@ BEGIN
          FOR C IN CENSO_Q LOOP
             IF GT_COTIZACIONES_CENSO_ASEG.TIENE_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, C.IDetCotizacion, C.IdAsegurado) = 'N' THEN
                   GT_COTIZACIONES_COBERTURAS.CARGAR_COBERTURAS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdCotizacion, 
-                                                               C.IDetCotizacion, C.IdAsegurado, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                                                               C.IDetCotizacion, C.IdAsegurado, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             ELSE
                nIdAsegurado := C.IdAsegurado;
                FOR Y IN COB_ASEG_Q LOOP
@@ -527,7 +531,7 @@ BEGIN
                                                                Y.SalarioMensual, Y.VecesSalario, Y.Edad_Minima, Y.Edad_Maxima,
                                                                Y.Edad_Exclusion, Y.SumaAseg_Minima, Y.SumaAseg_Maxima,
                                                                Y.PorcExtraPrimaDet, Y.MontoExtraPrimaDet, Y.SumaIngresada,
-                                                               Y.DeducibleIngresado, Y.CuotaPromedio, Y.PrimaPromedio);
+                                                               Y.DeducibleIngresado, Y.CuotaPromedio, Y.PrimaPromedio, Y.FranquiciaIngresado, 0, 0); ---ARH 22/02/2024
                END LOOP;
             END IF;
             GT_COTIZACIONES_CENSO_ASEG.ACTUALIZAR_VALORES(nCodCia, nCodEmpresa, nIdCotizacion, C.IDetCotizacion, C.IdAsegurado);
@@ -537,7 +541,7 @@ BEGIN
          FOR A IN ASEG_Q LOOP
             IF GT_COTIZACIONES_ASEG.TIENE_COBERTURAS(nCodCia, nCodEmpresa, nIdCotizacion, A.IDetCotizacion, A.IdAsegurado) = 'N' THEN
                   GT_COTIZACIONES_COBERTURAS.CARGAR_COBERTURAS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdCotizacion, 
-                                                               A.IDetCotizacion, A.IdAsegurado, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                                                               A.IDetCotizacion, A.IdAsegurado, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             ELSE
                nIdAsegurado := A.IdAsegurado;
                FOR Y IN COB_ASEG_Q LOOP
@@ -546,7 +550,7 @@ BEGIN
                                                                Y.SalarioMensual, Y.VecesSalario, Y.Edad_Minima, Y.Edad_Maxima,
                                                                Y.Edad_Exclusion, Y.SumaAseg_Minima, Y.SumaAseg_Maxima,
                                                                Y.PorcExtraPrimaDet, Y.MontoExtraPrimaDet, Y.SumaIngresada,
-                                                               Y.DeducibleIngresado, Y.CuotaPromedio, Y.PrimaPromedio);
+                                                               Y.DeducibleIngresado, Y.CuotaPromedio, Y.PrimaPromedio, Y.FranquiciaIngresado, 0, 0); ---ARH 21/03/2023
                END LOOP;
             END IF;
             GT_COTIZACIONES_ASEG.ACTUALIZAR_VALORES(nCodCia, nCodEmpresa, nIdCotizacion, A.IDetCotizacion, A.IdAsegurado);
@@ -712,7 +716,8 @@ CURSOR COT_Q IS
           AsegAdheridosPor, PorcenContributorio, FuenteRecursosPrima, TipoProrrata, 
           PorcComisAgte, PorcComisProm, PorcComisDir, IndConvenciones, PorcConvenciones,
           DescCuotasPrimaNiv, DescElegibilidad, DescRiesgosCubiertos, IndCotizacionWeb,
-          IndCotizacionBaseWeb, GASTOSEXPEDICION, CODTIPONEGOCIO, CODPAQCOMERCIAL, CODOFICINA, CODCATEGO
+          IndCotizacionBaseWeb, GASTOSEXPEDICION, CODTIPONEGOCIO, CODPAQCOMERCIAL, CODOFICINA, CODCATEGO,
+          FRANQUICIAINGRESADO, RIESGOTARIFA, TIPNEGO_WEB, RIES_LABOR, RIES_24365, RIES_TRASLA  -- ARH 22/02/2024
      FROM COTIZACIONES C
     WHERE CodCia       = nCodCia
       AND CodEmpresa   = nCodEmpresa
@@ -735,7 +740,8 @@ BEGIN
                  DescActividadAseg,  DescFormulaDividendos, NumPolRenovacion, AsegAdheridosPor, PorcenContributorio, 
                  FuenteRecursosPrima, TipoProrrata, PorcComisAgte, PorcComisProm, PorcComisDir, 
                  IndConvenciones, PorcConvenciones, DescCuotasPrimaNiv, DescElegibilidad, DescRiesgosCubiertos,
-                 IndCotizacionWeb, IndCotizacionBaseWeb, GastosExpedicion, CodTipoNegocio, CodPaqComercial, CodOficina, CodCatego )
+                 IndCotizacionWeb, IndCotizacionBaseWeb, GastosExpedicion, CodTipoNegocio, CodPaqComercial, CodOficina, CodCatego,
+                 FranquiciaIngresado, RiesgoTarifa, Tipnego_Web, Ries_Labor, Ries_24365, Ries_Trasla )-- ARH 22/02/2024
          VALUES (nCodCia, nCodEmpresa, nIdCotizacionCopia, W.NumUnicoCotizacion, W.CodCotizador, W.NumCotizacionRef, 
                  NULL, 'COTIZA', TRUNC(SYSDATE), W.NombreContratante, W.FecIniVigCot, W.FecFinVigCot, 
                  TRUNC(SYSDATE), TRUNC(SYSDATE) + GT_COTIZADOR_CONFIG.DIAS_VIGENCIA_COTIZACION(nCodCia, nCodEmpresa, W.CodCotizador),
@@ -749,7 +755,8 @@ BEGIN
                  USER, W.DescGiroNegocio,  W.DescActividadAseg, W.DescFormulaDividendos, W.NumPolRenovacion, W.AsegAdheridosPor, 
                  W.PorcenContributorio,  W.FuenteRecursosPrima, W.TipoProrrata, W.PorcComisAgte, W.PorcComisProm, W.PorcComisDir, 
                  W.IndConvenciones, W.PorcConvenciones, W.DescCuotasPrimaNiv, W.DescElegibilidad, W.DescRiesgosCubiertos,
-                 W.IndCotizacionWeb, W.IndCotizacionBaseWeb, NVL(W.GastosExpedicion, 0), W.CodTipoNegocio, W.CodPaqComercial, W.CodOficina, W.CodCatego );
+                 W.IndCotizacionWeb, W.IndCotizacionBaseWeb, NVL(W.GastosExpedicion, 0), W.CodTipoNegocio, W.CodPaqComercial, 
+                 W.CodOficina, W.CodCatego, W.FranquiciaIngresado, W.RiesgoTarifa, W.Tipnego_Web, W.Ries_Labor, W.Ries_24365, W.Ries_Trasla );
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20200,'Duplicada Cotización No. ' || nIdCotizacion);
@@ -1105,7 +1112,7 @@ CURSOR COTIZ_Q IS
          CodTipoBono, HorasVig, DiasVig, IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
          FuenteRecursosPrima, PorcComisProm, PorcComisDir, TipoProrrata, IndConvenciones, 
          CodTipoNegocio, CodPaqComercial, CodOficina , CodCatego, IdTipoSeg, PlanCob,
-         IndCotizacionWeb, IndCotizacionBaseWeb, DescElegibilidad
+         IndCotizacionWeb, IndCotizacionBaseWeb, DescElegibilidad,Franquiciaingresado
     FROM COTIZACIONES c
    WHERE CodCia        = nCodCia
      AND CodEmpresa    = nCodEmpresa
@@ -1233,8 +1240,6 @@ BEGIN
                 SAMIPoliza           = nSAMIPoliza,
                 FormaVenta           = X.CanalFormaventa,
                 TipoAdministracion   = X.TipoAdministracion,
-                --HoraVigIni           = X.HorasVig,
-                --HoraVigFin           = X.HorasVig,
                 HoraVigIni           = cHoraVigIni,
                 HoraVigFin           = cHoraVigFin,
                 PorcDescuento        = X.PorcDescuento,
@@ -1254,14 +1259,15 @@ BEGIN
                 FuenteRecursosPrima  = X.FuenteRecursosPrima,
                 TipoProrrata         = X.TipoProrrata,
                 IndConvenciones      = X.IndConvenciones,
-                CODTIPONEGOCIO       = X.CODTIPONEGOCIO,
-                CODPAQCOMERCIAL      = X.CODPAQCOMERCIAL,
-                CODOFICINA           = X.CODOFICINA,
-                CODCATEGO            = X.CODCATEGO,
+                CodTipoNegocio       = X.CodTipoNegocio,
+                CodPaqComercial      = X.CodPaqComercial,
+                CodOficina           = X.CodOficina,
+                CodCatego            = X.CodCatego,
                 NumPolUnico          = cNumPolUnico,
                 DescPoliza           = SUBSTR(X.DescElegibilidad, 1, 2000),
                 IndConcentrada       = NVL(cIndConcentrada, IndConcentrada),
-                CodGrupoEc           = NVL(cCodGrupoEc, CodGrupoEc)
+                CodGrupoEc           = NVL(cCodGrupoEc, CodGrupoEc),
+				Franquiciaingresado  = X.Franquiciaingresado
          WHERE  CodCia     = nCodCia
            AND  CodEmpresa = nCodEmpresa
            AND  IdPoliza   = nIdPoliza;
@@ -1483,7 +1489,8 @@ CURSOR COT_Q IS
           AsegAdheridosPor, PorcenContributorio, FuenteRecursosPrima, TipoProrrata, 
           PorcComisAgte, PorcComisProm, PorcComisDir, IndConvenciones, PorcConvenciones,
           DescCuotasPrimaNiv, DescElegibilidad, DescRiesgosCubiertos, IndCotizacionWeb,
-          IndCotizacionBaseWeb, GASTOSEXPEDICION,  CODTIPONEGOCIO, CODPAQCOMERCIAL , CODOFICINA, CODCATEGO
+          IndCotizacionBaseWeb, GASTOSEXPEDICION,  CODTIPONEGOCIO, CODPAQCOMERCIAL , 
+          CODOFICINA, CODCATEGO, FranquiciaIngresado, RIESGOTARIFA, TIPNEGO_WEB, RIES_LABOR, RIES_24365, RIES_TRASLA  -- ARH 22/02/2024
      FROM COTIZACIONES
     WHERE CodCia       = nCodCia
       AND CodEmpresa   = nCodEmpresa
@@ -1506,7 +1513,8 @@ BEGIN
                  DescActividadAseg,  DescFormulaDividendos, NumPolRenovacion, AsegAdheridosPor, PorcenContributorio, 
                  FuenteRecursosPrima, TipoProrrata, PorcComisAgte, PorcComisProm, PorcComisDir, 
                  IndConvenciones, PorcConvenciones, DescCuotasPrimaNiv, DescElegibilidad, DescRiesgosCubiertos,
-                 IndCotizacionWeb, IndCotizacionBaseWeb, GASTOSEXPEDICION, CODTIPONEGOCIO, CODPAQCOMERCIAL, CODOFICINA, CODCATEGO )
+                 IndCotizacionWeb, IndCotizacionBaseWeb, GASTOSEXPEDICION, CODTIPONEGOCIO, CODPAQCOMERCIAL, 
+				 CODOFICINA, CODCATEGO, FranquiciaIngresado, RIESGOTARIFA, TIPNEGO_WEB, RIES_LABOR, RIES_24365, RIES_TRASLA )-- ARH 22/02/2024
          VALUES (nCodCia, nCodEmpresa, nIdCotizacionCopia, W.NumUnicoCotizacion, W.CodCotizador, W.NumCotizacionRef, 
                  NULL, 'COTIZA', TRUNC(SYSDATE), W.NombreContratante, W.FecIniVigCot, W.FecFinVigCot, 
                  TRUNC(SYSDATE), TRUNC(SYSDATE) + GT_COTIZADOR_CONFIG.DIAS_VIGENCIA_COTIZACION(nCodCia, nCodEmpresa, W.CodCotizador),
@@ -1520,7 +1528,8 @@ BEGIN
                  USER, W.DescGiroNegocio,  W.DescActividadAseg, W.DescFormulaDividendos, W.NumPolRenovacion, W.AsegAdheridosPor, 
                  W.PorcenContributorio,  W.FuenteRecursosPrima, W.TipoProrrata, W.PorcComisAgte, W.PorcComisProm, W.PorcComisDir, 
                  W.IndConvenciones, W.PorcConvenciones, W.DescCuotasPrimaNiv, W.DescElegibilidad, W.DescRiesgosCubiertos,
-                 W.IndCotizacionWeb, W.IndCotizacionBaseWeb, NVL(W.GASTOSEXPEDICION, 0), W.CODTIPONEGOCIO, W.CODPAQCOMERCIAL, w.CODOFICINA, W.CODCATEGO );
+                 W.IndCotizacionWeb, W.IndCotizacionBaseWeb, NVL(W.GASTOSEXPEDICION, 0), W.CODTIPONEGOCIO, W.CODPAQCOMERCIAL, 
+				 W.CODOFICINA, W.CODCATEGO, W.FranquiciaIngresado, W.RIESGOTARIFA, W.TIPNEGO_WEB, W.RIES_LABOR, W.RIES_24365, W.RIES_TRASLA );-- ARH 22/02/2024
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20200,'Duplicada Cotización No. ' || nIdCotizacion);

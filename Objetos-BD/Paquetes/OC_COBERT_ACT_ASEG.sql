@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_COBERT_ACT_ASEG IS
+create or replace PACKAGE          OC_COBERT_ACT_ASEG IS
 
 ---- SE INCLUYE IDRAMOREAL A LOS CURSORES E INSERTS           JMMD20220122
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
@@ -9,7 +9,7 @@ PROCEDURE CARGAR_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCH
                             nSumaAsegManual NUMBER, nSalarioMensual NUMBER, nVecesSalario NUMBER,
                             nEdad_Minima NUMBER, nEdad_Maxima NUMBER, nEdad_Exclusion NUMBER,
                             nSumaAseg_Minima NUMBER, nSumaAseg_Maxima NUMBER, nPorcExtraPrima NUMBER,
-                            nMontoExtraPrima NUMBER, nSumaIngresada NUMBER);
+                            nMontoExtraPrima NUMBER, nSumaIngresada NUMBER,nFranquiciaingresado NUMBER, nMontoDiario NUMBER, nDias_Cal NUMBER);
 
 FUNCTION CALCULO_COBERTURA(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
                            cPlanCob VARCHAR2, nIdPoliza NUMBER, nIDetPol NUMBER,
@@ -63,13 +63,13 @@ PROCEDURE CARGAR_COBERTURAS_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTi
                             nEdad_Exclusion NUMBER, nSumaAseg_Minima NUMBER, nSumaAseg_Maxima NUMBER,
                             nPorcExtraPrimaDet NUMBER, nMontoExtraPrimaDet NUMBER, nSumaIngresada NUMBER,
                             nDeducibleIngresado NUMBER, nCuotaPromedio NUMBER, nPrimaPromedio NUMBER,
-                            nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER);
-                            
+                            nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER, nFranquiciaingresado NUMBER);
+
 PROCEDURE COPIAR_REN(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPolOrig NUMBER, nIdPolizaDest NUMBER, nIDetPolDest NUMBER);
 
 END OC_COBERT_ACT_ASEG;
 /
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COBERT_ACT_ASEG IS
+create or replace PACKAGE BODY          OC_COBERT_ACT_ASEG IS
 
 ---- SE INCLUYE IDRAMOREAL A LOS CURSORES E INSERTS           JMMD20220122
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
@@ -80,7 +80,8 @@ PROCEDURE CARGAR_COBERTURAS(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCH
                             nSumaAsegManual NUMBER, nSalarioMensual NUMBER, nVecesSalario NUMBER,
                             nEdad_Minima NUMBER, nEdad_Maxima NUMBER, nEdad_Exclusion NUMBER,
                             nSumaAseg_Minima NUMBER, nSumaAseg_Maxima NUMBER, nPorcExtraPrima NUMBER,
-                            nMontoExtraPrima NUMBER, nSumaIngresada NUMBER) IS
+                            nMontoExtraPrima NUMBER, nSumaIngresada NUMBER,nFranquiciaingresado NUMBER, 
+                            nMontoDiario NUMBER, nDias_Cal NUMBER) IS
 nCod_Moneda             POLIZAS.Cod_Moneda%TYPE;
 nTasaCambioDet          DETALLE_POLIZA.Tasa_Cambio%TYPE;
 dFecEmision             POLIZAS.FecEmision%TYPE ;
@@ -269,7 +270,7 @@ BEGIN
                IF OC_TARIFA_DINAMICA.TARIFA_VIGENTE(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecEmision) = 0 THEN
                   IF nIdTarifa = 0 THEN
                      RAISE_APPLICATION_ERROR(-20225,'NO Existe Tarifa Vigente por Sexo, Edad y Riesgo para el Tipo de Seguro ' || cIdTipoSeg ||
-                                             ' Plan de Coberturas ' || cPlanCob || ' y Fecha de Inicio de Vigencia de la P髄iza ' ||
+                                             ' Plan de Coberturas ' || cPlanCob || ' y Fecha de Inicio de Vigencia de la P贸liza ' ||
                                              TO_CHAR(dFecIniVig,'DD/MM/RRRR'));
                   END IF;
 
@@ -282,7 +283,7 @@ BEGIN
                            AND D.IdetPol        = nIDetPol;
                      EXCEPTION
                         WHEN NO_DATA_FOUND THEN
-                           RAISE_APPLICATION_ERROR(-20225,'No Existe Detalle de P髄iza para Generar Coberturas');
+                           RAISE_APPLICATION_ERROR(-20225,'No Existe Detalle de P贸liza para Generar Coberturas');
                      END;
                      cTarifaDinamica := 'N'; -- EC - 20/01/2017
                      cSexo           := OC_ASEGURADO.SEXO_ASEGURADO(nCodCia, nCodEmpresa, nCod_Asegurado);
@@ -481,7 +482,7 @@ BEGIN
                          Cod_Asegurado, PrimaNivMoneda, PrimaNivLocal, SalarioMensual,
                          VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                          Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet,
-                         MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL)
+                         MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
                   VALUES(nIdPoliza, nIDetPol, nCodEmpresa, cIdTipoSeg, nCodCia,
                          X.CodCobert, cStsCobertura, nSumaAsegLocal, nSumaAsegMoneda,
                          nValor, nValorMoneda, nTasa, nIdEndoso, 'POLI',
@@ -489,10 +490,11 @@ BEGIN
                          nCod_Asegurado, nPrimaNivMoneda, nPrimaNivLocal, NVL(nSalarioMensual,0),
                          NVL(nVecesSalario,0), NVL(nSumaAsegManual,0), nEdad_MinimaCob,
                          nEdad_MaximaCob, nEdad_ExclusionCob, nSumaAseg_MinimaCob,
-                         nSumaAseg_MaximaCob, nPorcExtraPrima, nMontoExtraPrima, nSumaIngresada, X.IDRAMOREAL);
+                         nSumaAseg_MaximaCob, nPorcExtraPrima, nMontoExtraPrima, nSumaIngresada, X.IDRAMOREAL, 
+                         nFranquiciaingresado, nMontoDiario , nDias_Cal);
                EXCEPTION
                   WHEN DUP_VAL_ON_INDEX THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P髄iza: '||
+                     RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P贸liza: '||
                                             TRIM(TO_CHAR(nIdPoliza))||' - '||TO_CHAR(nIDetPol));
                END;
             END IF;
@@ -590,7 +592,7 @@ BEGIN
             AND D.IdetPol        = nIDetPol;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20225,'No Existe Detalle de P髄iza para Generar Coberturas');
+            RAISE_APPLICATION_ERROR(-20225,'No Existe Detalle de P贸liza para Generar Coberturas');
       END;
 
       nEdad         := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, nCodEmpresa, nCod_Asegurado, dFecIniVig);
@@ -622,7 +624,7 @@ BEGIN
          IF OC_TARIFA_DINAMICA.TARIFA_VIGENTE(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecEmision) = 0 THEN
             IF nIdTarifa = 0 THEN
                RAISE_APPLICATION_ERROR(-20225,'NO Existe Tarifa Vigente por Sexo, Edad y Riesgo para el Tipo de Seguro ' || cIdTipoSeg ||
-                                       ' Plan de Coberturas ' || cPlanCob || ' y Fecha de Inicio de Vigencia de la P髄iza ' ||
+                                       ' Plan de Coberturas ' || cPlanCob || ' y Fecha de Inicio de Vigencia de la P贸liza ' ||
                                        TO_CHAR(dFecIniVig,'DD/MM/RRRR'));
             END IF;
 
@@ -920,17 +922,17 @@ BEGIN
                    Cod_Asegurado, PrimaNivMoneda, PrimaNivLocal, SalarioMensual,
                    VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                    Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet,
-                   MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL)
+                   MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
             VALUES(nIdPoliza, nIDetPol, nCodEmpresa, cIdTipoSeg, nCodCia,
                    X.CodCobert, 'SOL', nSumaAsegMoneda, nSumaAsegLocal,
                    nValor, nValorMoneda, nTasa, 0, 'POLI',
                    nIdPoliza, cPlanCob, X.Cod_Moneda, nDeducibleCobLocal,
                    nDeducibleCobMoneda, nCod_Asegurado, 0, 0, 0, 0, 0,
                    X.Edad_Minima, X.Edad_Maxima, X.Edad_Exclusion, X.SumaAsegMinima,
-                   X.SumaAsegMaxima, 0, 0, 0, X.IDRAMOREAL );
+                   X.SumaAsegMaxima, 0, 0, 0, X.IDRAMOREAL, 0, 0, 0);
          EXCEPTION
             WHEN DUP_VAL_ON_INDEX THEN
-               RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P髄iza: '||
+               RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P贸liza: '||
                                       TRIM(TO_CHAR(nIdPoliza))||' - '||TO_CHAR(nIDetPol));
          END;
       END LOOP;
@@ -972,7 +974,8 @@ CURSOR COB_Q IS
           SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima,
           Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
           PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,
-          NVL(IDRAMOREAL, OC_COBERTURAS_DE_SEGUROS.COBERTURA_IDRAMOREAL(CodCia, CODEMPRESA, IdTipoSeg, PlanCob, CodCobert)) IDRAMOREAL
+          NVL(IDRAMOREAL, OC_COBERTURAS_DE_SEGUROS.COBERTURA_IDRAMOREAL(CodCia, CODEMPRESA, IdTipoSeg, PlanCob, CodCobert)) IDRAMOREAL,
+          Franquiciaingresado, MontoDiario, Dias_Cal  
      FROM COBERT_ACT_ASEG
     WHERE CodCia        = nCodCia
       AND CodEmpresa    = nCodEmpresa
@@ -1002,7 +1005,7 @@ BEGIN
          AND Cod_Asegurado  = nCod_Asegurado;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20225,'No Existe Asegurado: ' || nCod_Asegurado || ' en P髄iza y Detalle No. ' ||
+         RAISE_APPLICATION_ERROR(-20225,'No Existe Asegurado: ' || nCod_Asegurado || ' en P贸liza y Detalle No. ' ||
                                 TRIM(TO_CHAR(nIdPoliza))||' - '||TO_CHAR(nIDetPol));
    END;
    FOR W IN ASEG_Q LOOP
@@ -1024,7 +1027,7 @@ BEGIN
                    Cod_Asegurado, PrimaNivMoneda, PrimaNivLocal, SalarioMensual,
                    VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                    Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet,
-                   MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL)
+                   MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
             VALUES(nIdPoliza, nIDetPol, nCodEmpresa, cIdTipoSeg, nCodCia,
                    Z.CodCobert, W.Estado, Z.SumaAseg_Local, Z.SumaAseg_Moneda,
                    Z.Prima_Local, Z.Prima_Moneda, Z.Tasa, Z.IdEndoso, Z.TipoRef,
@@ -1032,10 +1035,10 @@ BEGIN
                    W.Cod_Asegurado, Z.PrimaNivMoneda, Z.PrimaNivLocal, Z.SalarioMensual,
                    Z.VecesSalario, Z.SumaAsegCalculada, Z.Edad_Minima, Z.Edad_Maxima,
                    Z.Edad_Exclusion, Z.SumaAseg_Minima, Z.SumaAseg_Maxima, Z.PorcExtraPrimaDet,
-                   Z.MontoExtraPrimaDet, Z.SumaIngresada, Z.IDRAMOREAL);
+                   Z.MontoExtraPrimaDet, Z.SumaIngresada, Z.IDRAMOREAL, Z.Franquiciaingresado, Z.MontoDiario, Z.Dias_Cal);
          EXCEPTION
             WHEN DUP_VAL_ON_INDEX THEN
-               RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P髄iza: '||
+               RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P贸liza: '||
                                       TRIM(TO_CHAR(nIdPoliza))||' - '||TO_CHAR(nIDetPol));
          END;
       END LOOP;
@@ -1114,7 +1117,7 @@ BEGIN
    EXCEPTION
       WHEN DUP_VAL_ON_INDEX THEN
          RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas en COBERTURA_ASEG para Asegurado No. ' ||
-                                 TRIM(TO_CHAR(nCod_Asegurado)) || ' en Detalle de la P髄iza: '||
+                                 TRIM(TO_CHAR(nCod_Asegurado)) || ' en Detalle de la P贸liza: '||
                                  TRIM(TO_CHAR(nIdPoliza)) ||' - '||TO_CHAR(nIDetPol));
    END;
 END EMITIR;
@@ -1162,7 +1165,8 @@ CURSOR COBASEGCERT_Q IS
           PrimaNivMoneda, PrimaNivLocal, SalarioMensual, VecesSalario, SumaAsegCalculada,
           Edad_Minima, Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
           PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,
-          NVL(IDRAMOREAL, OC_COBERTURAS_DE_SEGUROS.COBERTURA_IDRAMOREAL(CodCia, CODEMPRESA, IdTipoSeg, PlanCob, CodCobert)) IDRAMOREAL
+          NVL(IDRAMOREAL, OC_COBERTURAS_DE_SEGUROS.COBERTURA_IDRAMOREAL(CodCia, CODEMPRESA, IdTipoSeg, PlanCob, CodCobert)) IDRAMOREAL,
+          Franquiciaingresado, MontoDiario, Dias_Cal
      FROM COBERT_ACT_ASEG
     WHERE IDetPol  = nIDetPolOrig
       AND IdPoliza = nIdPoliza
@@ -1176,14 +1180,14 @@ BEGIN
               Deducible_Local, Deducible_Moneda, StsCobertura, PrimaNivMoneda, PrimaNivLocal,
               SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
               Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
-              PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL)
+              PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
       VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, D.NumRef,
               D.CodCobert, D.Cod_Asegurado, D.SumaAseg_Local, D.SumaAseg_Moneda, D.Tasa,
               D.Prima_Moneda, D.Prima_Local, 0, D.PlanCob, D.Cod_Moneda,
               D.Deducible_Local, D.Deducible_Moneda, 'SOL', D.PrimaNivMoneda, D.PrimaNivLocal,
               D.SalarioMensual, D.VecesSalario, D.SumaAsegCalculada, D.Edad_Minima, D.Edad_Maxima,
               D.Edad_Exclusion, D.SumaAseg_Minima, D.SumaAseg_Maxima,
-              D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL);
+              D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL, D.Franquiciaingresado, D.MontoDiario, D.Dias_Cal);
    END LOOP;
 END COPIAR;
 
@@ -1318,7 +1322,8 @@ CURSOR COB_Q IS
           SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima,
           Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
           PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,
-          NVL(IDRAMOREAL, OC_COBERTURAS_DE_SEGUROS.COBERTURA_IDRAMOREAL(CodCia, CODEMPRESA, IdTipoSeg, PlanCob, CodCobert)) IDRAMOREAL
+          NVL(IDRAMOREAL, OC_COBERTURAS_DE_SEGUROS.COBERTURA_IDRAMOREAL(CodCia, CODEMPRESA, IdTipoSeg, PlanCob, CodCobert)) IDRAMOREAL,
+          Franquiciaingresado,MontoDiario,Dias_Cal
      FROM COBERT_ACT_ASEG
     WHERE CodCia        = nCodCia
       AND CodEmpresa    = nCodEmpresa
@@ -1394,7 +1399,7 @@ BEGIN
                       Cod_Asegurado, PrimaNivMoneda, PrimaNivLocal, SalarioMensual,
                       VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                       Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet,
-                      MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL)
+                      MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
                VALUES(nIdPoliza, nIDetPol, nCodEmpresa, cIdTipoSeg, nCodCia,
                       Z.CodCobert, W.Estado, Z.SumaAseg_Local, Z.SumaAseg_Moneda,
                       --Z.Prima_Local, Z.Prima_Moneda, Z.Tasa, nIdEndoso, Z.TipoRef,
@@ -1403,10 +1408,10 @@ BEGIN
                       W.Cod_Asegurado, Z.PrimaNivMoneda, Z.PrimaNivLocal, Z.SalarioMensual,
                       Z.VecesSalario, Z.SumaAsegCalculada, Z.Edad_Minima, Z.Edad_Maxima,
                       Z.Edad_Exclusion, Z.SumaAseg_Minima, Z.SumaAseg_Maxima, Z.PorcExtraPrimaDet,
-                      Z.MontoExtraPrimaDet, Z.SumaIngresada,Z.IDRAMOREAL);
+                      Z.MontoExtraPrimaDet, Z.SumaIngresada,Z.IDRAMOREAL, Z.Franquiciaingresado, Z.MontoDiario, Z.Dias_Cal);
             EXCEPTION
                WHEN DUP_VAL_ON_INDEX THEN
-                  RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P髄iza: '||
+                  RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la P贸liza: '||
                                          TRIM(TO_CHAR(nIdPoliza))||' - '||TO_CHAR(nIDetPol));
             END;
          END IF;
@@ -1470,7 +1475,7 @@ PROCEDURE CARGAR_COBERTURAS_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTi
                             nEdad_Exclusion NUMBER, nSumaAseg_Minima NUMBER, nSumaAseg_Maxima NUMBER,
                             nPorcExtraPrimaDet NUMBER, nMontoExtraPrimaDet NUMBER, nSumaIngresada NUMBER,
                             nDeducibleIngresado NUMBER, nCuotaPromedio NUMBER, nPrimaPromedio NUMBER,
-                            nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER) IS
+                            nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER,nFranquiciaingresado NUMBER) IS
 cCod_Moneda             COTIZACIONES.Cod_Moneda%TYPE;
 nTasaCambioDet          TASAS_CAMBIO.Tasa_Cambio%TYPE;
 nTasaCambio             TASAS_CAMBIO.Tasa_Cambio%TYPE;
@@ -1554,7 +1559,7 @@ BEGIN
          AND IdCotizacion = nIdCotizacion;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20200,'NO Existe Cotizaci髇 No. : ' || TRIM(TO_CHAR(nIdCotizacion)));
+         RAISE_APPLICATION_ERROR(-20200,'NO Existe Cotizaci贸n No. : ' || TRIM(TO_CHAR(nIdCotizacion)));
    END;
 
    IF NVL(nDeducibleIngresado,0) != 0 THEN
@@ -1575,7 +1580,7 @@ BEGIN
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
             RAISE_APPLICATION_ERROR(-20200,'NO Existe Detalle No. ' || nIDetCotizacion ||
-                                    ' en Cotizaci髇 No. : ' || TRIM(TO_CHAR(nIdCotizacion)));
+                                    ' en Cotizaci贸n No. : ' || TRIM(TO_CHAR(nIdCotizacion)));
       END;
    ELSE
       cRiesgoTarifa := NULL;
@@ -1637,7 +1642,7 @@ BEGIN
             nSumaAsegMoneda := 0;
             nSumaAsegLocal  := 0;
 
-            -- Si viene Suma Asegurada de Cotizaci髇 se Mantiene Sustituye la Configuraci髇
+            -- Si viene Suma Asegurada de Cotizaci贸n se Mantiene Sustituye la Configuraci贸n
             IF NVL(nSumaAsegManual,0) = 0 THEN
                nSumaAsegMoneda := X.SumaAsegurada * NVL(nCantAseg,0);
             ELSE
@@ -1770,7 +1775,7 @@ BEGIN
                       Salariomensual, Vecessalario, Sumaasegcalculada, Edad_Minima,
                       Edad_Maxima, Edad_Exclusion, Sumaaseg_Minima, Sumaaseg_Maxima,
                       Porcextraprimadet, Montoextraprimadet, Sumaingresada, Primanivmoneda,
-                      Primanivlocal,IDRAMOREAL)
+                      Primanivlocal,IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
                VALUES(nCodCia, nCodEmpresa, nIdpoliza, nIdetpol, cIdTipoSeg, 'POLI',
                       nIdpoliza, X.CodCobert, nCodAsegurado, NVL(nSumaAsegLocal,0), NVL(nSumaAsegMoneda,0),
                       nTasa, NVL(nValorMoneda,0), NVL(nValor,0), nIdEndoso, 'SOL', cPlanCob,
@@ -1778,7 +1783,7 @@ BEGIN
                       NVL(nSalarioMensual,0), NVL(nVecesSalario,0), NVL(nSumaAsegManual,0),
                       nEdad_MinimaCob, nEdad_MaximaCob, nEdad_ExclusionCob, nSumaAseg_MinimaCob, nSumaAseg_MaximaCob,
                       nPorcExtraPrima, nMontoExtraPrima, nSumaIngresada, 0,
-                      0,X.IDRAMOREAL);
+                      0,X.IDRAMOREAL, nFranquiciaingresado, 0, 0);
             END;
          END IF;
       END IF;
@@ -1816,7 +1821,7 @@ CURSOR COBASEGCERT_Q IS
       AND IdPoliza = nIdPoliza
       AND CodCia   = nCodCia
       AND STSCOBERTURA='EMI';
-      
+
 CURSOR COBASEGCERT_Q_ASMODS IS
    SELECT CodCia, IdPoliza, CodEmpresa, IdTipoSeg, TipoRef, NumRef, CodCobert,
           Cod_Asegurado, SumaAseg_Local, SumaAseg_Moneda, Tasa, Prima_Moneda,
@@ -1831,7 +1836,7 @@ CURSOR COBASEGCERT_Q_ASMODS IS
       AND CodCia   = nCodCia
       AND COD_ASEGURADO = 1688154
       AND STSCOBERTURA='EMI';
-      
+
 CURSOR COBASEGCERT_Q_ASMODN IS
    SELECT CodCia, IdPoliza, CodEmpresa, IdTipoSeg, TipoRef, NumRef, CodCobert,
           Cod_Asegurado, SumaAseg_Local, SumaAseg_Moneda, Tasa, Prima_Moneda,
@@ -1846,7 +1851,7 @@ CURSOR COBASEGCERT_Q_ASMODN IS
       AND CodCia   = nCodCia
       AND COD_ASEGURADO != 1688154
       AND STSCOBERTURA='EMI';
-      
+
 BEGIN
   bContinua := TRUE;
   nValorInicial := 0;
@@ -1861,7 +1866,7 @@ BEGIN
     WHEN NO_DATA_FOUND THEN
        vTieneAsegModelo := 'N';
   END; 
-  
+
   -- MLJS 21/05/2024 SE VALIDA EN ASEGURADO_CERTIFICADO POR SI HUBO UN ENDOSO DE CAMBIO 
   -- POR LISTADO DE ASEGURADO MODELO
   BEGIN
@@ -1872,7 +1877,7 @@ BEGIN
     AND    IdPoliza = nIdPoliza
     AND    CodCia   = nCodCia
     AND    COD_ASEGURADO = 1688154;
-        
+
     IF nExiste = 0 THEN
       vTieneAsegModelo := 'N';
     ELSE
@@ -1882,7 +1887,7 @@ BEGIN
      WHEN NO_DATA_FOUND THEN
         vTieneAsegModelo := 'N';
   END;
-  
+
    IF vTieneAsegModelo = 'S' THEN
       BEGIN
         SELECT SUMAASEG, PRIMANETA
@@ -1897,9 +1902,9 @@ BEGIN
         WHEN OTHERS THEN
           nSumaAsegModelo  := 0;
           nPrimaAsegModelo := 0;
-          --RAISE_APPLICATION_ERROR(-20226,'1 Error al Emitir Renovaci髇 de las coberturas de la P髄iza: '||TRIM(TO_CHAR(nIdPoliza))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
+          --RAISE_APPLICATION_ERROR(-20226,'1 Error al Emitir Renovaci贸n de las coberturas de la P贸liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
       END;
-      
+
       --MLJS 20/05/2024 SE VALIDA EN ASEGURADO_CERTIFICADO POR SI HUBO UN ENDOSO DE CAMBIO POR LISTADO DE ASEGURADO MODELO
       BEGIN
         SELECT COUNT(*)
@@ -1909,7 +1914,7 @@ BEGIN
         AND    IdPoliza = nIdPoliza
         AND    CodCia   = nCodCia
         AND    COD_ASEGURADO = 1688154;
-            
+
         IF nExiste = 0 THEN
           vTieneAsegModelo := 'N';
         ELSE
@@ -1919,11 +1924,11 @@ BEGIN
          WHEN NO_DATA_FOUND THEN
             vTieneAsegModelo := 'N';
       END;
-  
+
       IF (nSumaAsegModelo <> 0) AND (nPrimaAsegModelo <> 0) THEN 
-        
+
           FOR D IN COBASEGCERT_Q_ASMODS LOOP
-            
+
             INSERT INTO COBERT_ACT_ASEG
                  (CodCia, IdPoliza, IDetPol, CodEmpresa, IdTipoSeg, TipoRef, NumRef,
                   CodCobert, Cod_Asegurado, SumaAseg_Local, SumaAseg_Moneda, Tasa,
@@ -1931,18 +1936,18 @@ BEGIN
                   Deducible_Local, Deducible_Moneda, StsCobertura, PrimaNivMoneda, PrimaNivLocal,
                   SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                   Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
-                  PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL)
+                  PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
             VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, nIdPolizaDest,
                   D.CodCobert, D.Cod_Asegurado, D.SumaAseg_Local,D.SumaAseg_Moneda, D.Tasa,
                   D.Prima_Moneda, D.Prima_Local, 0, D.PlanCob, D.Cod_Moneda,
                   D.Deducible_Local, D.Deducible_Moneda, 'SOL', D.PrimaNivMoneda, D.PrimaNivLocal,
                   D.SalarioMensual, D.VecesSalario, D.SumaAsegCalculada, D.Edad_Minima, D.Edad_Maxima,
                   D.Edad_Exclusion, D.SumaAseg_Minima, D.SumaAseg_Maxima,
-                  D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL);
-                  
+                  D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL, 0, 0, 0);
+
             OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(D.CodCia, D.CodCia, nIdPolizaDest, nIDetPolDest, D.Cod_Asegurado);      
           END LOOP;
-        
+
       ELSE       
           FOR D IN COBASEGCERT_Q_ASMODN LOOP
             IF nValorInicial = 0 THEN
@@ -1973,7 +1978,7 @@ BEGIN
                     GROUP BY SumaAseg_Local, Prima_Local;
                 WHEN OTHERS THEN
                   nSumaAsegIni :=0; nPrimaIni := 0; nDeducLocalini := 0; nDeducMonedaIni:=0;
-                  RAISE_APPLICATION_ERROR(-20226,'1.1 Error al Emitir Renovaci髇 de las coberturas de la P髄iza: '||TRIM(TO_CHAR(nIdPoliza))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
+                  RAISE_APPLICATION_ERROR(-20226,'1.1 Error al Emitir Renovaci贸n de las coberturas de la P贸liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
               END;
               nValorInicial := 1;
             END IF; 
@@ -1984,15 +1989,15 @@ BEGIN
                   Deducible_Local, Deducible_Moneda, StsCobertura, PrimaNivMoneda, PrimaNivLocal,
                   SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                   Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
-                  PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL)
+                  PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
             VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, nIdPolizaDest,
                   D.CodCobert, D.Cod_Asegurado, nSumaAsegIni,nSumaAsegIni, D.Tasa,
                   nPrimaIni, nPrimaIni, 0, D.PlanCob, D.Cod_Moneda,
                   nDeducLocalini, nDeducMonedaIni, 'SOL', D.PrimaNivMoneda, D.PrimaNivLocal,
                   D.SalarioMensual, D.VecesSalario, D.SumaAsegCalculada, D.Edad_Minima, D.Edad_Maxima,
                   D.Edad_Exclusion, D.SumaAseg_Minima, D.SumaAseg_Maxima,
-                  D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL);
-                  
+                  D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL, 0, 0, 0);
+
             OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(D.CodCia, D.CodCia, nIdPolizaDest, nIDetPolDest, D.Cod_Asegurado);
             --OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(D.CodCia, D.CodCia, nIdPolizaDest, nIDetPolDest, D.Cod_Asegurado);        
           END LOOP;
@@ -2000,7 +2005,7 @@ BEGIN
    ELSE
       nSumasDiferentes := 0;
       FOR D IN COBASEGCERT_Q LOOP 
-        
+
         IF bContinua = TRUE THEN
          -- IF nValorInicial = 0 THEN
             BEGIN
@@ -2032,11 +2037,11 @@ BEGIN
               WHEN OTHERS THEN
                  nSumaAsegIni := 0; nPrimaIni:=0; nDeducLocalini := 0; nDeducMonedaIni:=0;
                  bContinua := FALSE;
-                 RAISE_APPLICATION_ERROR(-20226,'1.3 Error al Emitir Renovaci髇 de las coberturas de la P髄iza: '||TRIM(TO_CHAR(nIdPoliza))||' y detalle: '||TRIM(TO_CHAR(nIDetPolOrig))|| '.');
+                 RAISE_APPLICATION_ERROR(-20226,'1.3 Error al Emitir Renovaci贸n de las coberturas de la P贸liza: '||TRIM(TO_CHAR(nIdPoliza))||' y detalle: '||TRIM(TO_CHAR(nIDetPolOrig))|| '.');
             END;
            -- nValorInicial := 1;
          -- END IF;
-          
+
           IF nSumasDiferentes = 1 THEN
             nSumaAsegIni := D.SumaAseg_Local; 
             nPrimaIni    := D.Prima_Local;
@@ -2049,22 +2054,21 @@ BEGIN
                     Deducible_Local, Deducible_Moneda, StsCobertura, PrimaNivMoneda, PrimaNivLocal,
                     SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
                     Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
-                    PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL)
+                    PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
             VALUES (D.CodCia, nIdPolizaDest, nIDetPolDest, D.CodEmpresa, D.IdTipoSeg, D.TipoRef, nIdPolizaDest,
                     D.CodCobert, D.Cod_Asegurado, nSumaAsegIni,nSumaAsegIni, D.Tasa,
                     nPrimaIni, nPrimaIni, 0, D.PlanCob, D.Cod_Moneda,
                     nDeducLocalini , nDeducMonedaIni, 'SOL', D.PrimaNivMoneda, D.PrimaNivLocal,
                     D.SalarioMensual, D.VecesSalario, D.SumaAsegCalculada, D.Edad_Minima, D.Edad_Maxima,
                     D.Edad_Exclusion, D.SumaAseg_Minima, D.SumaAseg_Maxima,
-                    D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL);
-                    
+                    D.PorcExtraPrimaDet, D.MontoExtraPrimaDet, D.SumaIngresada,D.IDRAMOREAL, 0, 0, 0);
+
              OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(D.CodCia, D.CodCia, nIdPolizaDest, nIDetPolDest, D.Cod_Asegurado);
           END IF;  
         END IF;
       END LOOP;
    END IF;
-   
+
 END COPIAR_REN;
 
 END OC_COBERT_ACT_ASEG;
-/

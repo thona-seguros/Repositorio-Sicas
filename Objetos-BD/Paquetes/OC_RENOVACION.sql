@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_RENOVACION IS
+create or replace PACKAGE          OC_RENOVACION IS
 
    FUNCTION MIGRA_A_AUTOFACIL( P_POLIZA  IN  NUMBER
                              , MENSAJE  OUT VARCHAR2 ) RETURN NUMBER;
@@ -81,7 +81,6 @@ CREATE OR REPLACE PACKAGE          OC_RENOVACION IS
                               , nCodEmpresa  RENOVACIONES.CodEmpresa%TYPE ) RETURN XMLTYPE;
 
 END OC_RENOVACION;
-
 /
 create or replace PACKAGE BODY          OC_RENOVACION IS
 --
@@ -573,11 +572,11 @@ BEGIN
   END; 
   --  
   nDuracionPlan := OC_PLAN_COBERTURAS.DURACION_PLAN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob);
-  -- Renovaci髇 de P髄iza
+  -- Renovaci贸n de P贸liza
   IF nDuracionPlan > 1 AND
      NNUMRENOV + 2 > nDuracionPlan THEN
      CMENSAJE_SALIDA := ' - POLIZA CON PROBLEMAS ';
-     RAISE_APPLICATION_ERROR(-20204,' La Renovaci髇 Supera la Duraci髇 del Plan de Coberturas ');
+     RAISE_APPLICATION_ERROR(-20204,' La Renovaci贸n Supera la Duraci贸n del Plan de Coberturas ');
   END IF;
   --
   nTasaCambio  := OC_GENERALES.TASA_DE_CAMBIO(CCOD_MONEDA, TRUNC(SYSDATE));
@@ -670,7 +669,7 @@ BEGIN
              CMENSAJE_SALIDA := ' - T_POLIZAS ';
              RAISE_APPLICATION_ERROR(-20206,' T_POLIZAS ');
       END;
-      -- Inserta Agentes de la P髄iza
+      -- Inserta Agentes de la P贸liza
       FOR A IN AGE_POL LOOP 
           BEGIN
             INSERT INTO AGENTE_POLIZA
@@ -685,7 +684,7 @@ BEGIN
                 RAISE_APPLICATION_ERROR(-20206,' T_AGENTE_POLIZA ');
           END;
       END LOOP;
-      -- Inserta Distribuci髇 de Agentes de la P髄iza
+      -- Inserta Distribuci贸n de Agentes de la P贸liza
       FOR AP IN AGE_POL_D LOOP 
           BEGIN
             INSERT INTO AGENTES_DISTRIBUCION_POLIZA
@@ -702,7 +701,7 @@ BEGIN
                  RAISE_APPLICATION_ERROR(-20206,' T_AGENTES_DISTRIBUCION_POLIZA ');
           END;  
       END LOOP;
-      -- Cla鷖ulas de P髄iza
+      -- Cla煤sulas de P贸liza
       BEGIN
          OC_CLAUSULAS_POLIZA.RENOVAR(nCodCia, nIdPolizaRen, nIdPoliza);
       EXCEPTION
@@ -713,7 +712,7 @@ BEGIN
       -- 
   END LOOP;
   --
-  -- Renovaci髇 de Detalles de P髄iza
+  -- Renovaci贸n de Detalles de P贸liza
   --
   IF CID_GENERA_SUBGRUPOS = 'S' THEN
      FOR D IN DET_POL_RENOVAR_Q LOOP
@@ -833,7 +832,8 @@ BEGIN
                      --
                      SALARIOMENSUAL,        VECESSALARIO,          SUMAASEGCALCULADA,     EDAD_MINIMA,
                      EDAD_MAXIMA,           EDAD_EXCLUSION,        SUMAASEG_MINIMA,       SUMAASEG_MAXIMA,
-                     PORCEXTRAPRIMADET,     MONTOEXTRAPRIMADET,    SUMAINGRESADA)
+                     PORCEXTRAPRIMADET,     MONTOEXTRAPRIMADET,    SUMAINGRESADA,         FRANQUICIAINGRESADO,   MONTODIARIO, 
+                     DIAS_CAL) 
                   VALUES
                     (Y.CODEMPRESA,          Y.CODCIA,              nIdPoliza,             Y.IDETPOL,
                      Y.IDTIPOSEG,           Y.TIPOREF,             Y.NUMREF,              Y.CODCOBERT,
@@ -845,7 +845,8 @@ BEGIN
                      --
                      Y.SALARIOMENSUAL,      Y.VECESSALARIO,        Y.SUMAASEGCALCULADA,   Y.EDAD_MINIMA,
                      Y.EDAD_MAXIMA,         Y.EDAD_EXCLUSION,      Y.SUMAASEG_MINIMA,     Y.SUMAASEG_MAXIMA,
-                     Y.PORCEXTRAPRIMADET,   Y.MONTOEXTRAPRIMADET,  Y.SUMAINGRESADA);
+                     Y.PORCEXTRAPRIMADET,   Y.MONTOEXTRAPRIMADET,  Y.SUMAINGRESADA,       Y.FRANQUICIAINGRESADO,  Y.MONTODIARIO,
+                     Y.DIAS_CAL);  
                 EXCEPTION
                   WHEN OTHERS THEN
                        CMENSAJE_SALIDA := ' - T_COBERT_ACT ';
@@ -916,7 +917,8 @@ BEGIN
                      --
                      SALARIOMENSUAL,        VECESSALARIO,          SUMAASEGCALCULADA,     EDAD_MINIMA,
                      EDAD_MAXIMA,           EDAD_EXCLUSION,        SUMAASEG_MINIMA,       SUMAASEG_MAXIMA,
-                     PORCEXTRAPRIMADET,     MONTOEXTRAPRIMADET,    SUMAINGRESADA)
+                     PORCEXTRAPRIMADET,     MONTOEXTRAPRIMADET,    SUMAINGRESADA,         FRANQUICIAINGRESADO,   MONTODIARIO, 
+                    DIAS_CAL) 
                   VALUES
                     (Z.CODEMPRESA,          Z.CODCIA,              nIdPoliza,             Z.IDETPOL,
                      Z.IDTIPOSEG,           Z.TIPOREF,             Z.NUMREF,              Z.CODCOBERT,
@@ -928,7 +930,8 @@ BEGIN
                      --
                      Z.SALARIOMENSUAL,      Z.VECESSALARIO,        Z.SUMAASEGCALCULADA,   Z.EDAD_MINIMA,
                      Z.EDAD_MAXIMA,         Z.EDAD_EXCLUSION,      Z.SUMAASEG_MINIMA,     Z.SUMAASEG_MAXIMA,
-                     Z.PORCEXTRAPRIMADET,   Z.MONTOEXTRAPRIMADET,  Z.SUMAINGRESADA);
+                     Z.PORCEXTRAPRIMADET,   Z.MONTOEXTRAPRIMADET,  Z.SUMAINGRESADA,       Z.FRANQUICIAINGRESADO,  Z.MONTODIARIO, 
+                     Z.DIAS_CAL); 
                 EXCEPTION
                   WHEN OTHERS THEN
                        CMENSAJE_SALIDA := ' - T_COBERT_ACT_ASEG ';
@@ -939,7 +942,7 @@ BEGIN
      END LOOP;
   END IF;
   --
-  -- Beneficiarios de Detalles de P髄iza
+  -- Beneficiarios de Detalles de P贸liza
   --
   FOR B IN BENEF_Q LOOP
       BEGIN
@@ -1132,8 +1135,8 @@ END RENOVAR;          --01/12/2019  RENOV
          nAnoSeleccion := nAnoEjecucion;
       END IF;
       --
-      --El d韆 1 se libera reporte con las p髄izas a renovar entre el 1 y el 14 del siguiente mes
-      --El d韆 15 se libera reporte con las p髄izas a renovar entre el 15 y el 31 del siguiente mes
+      --El d铆a 1 se libera reporte con las p贸lizas a renovar entre el 1 y el 14 del siguiente mes
+      --El d铆a 15 se libera reporte con las p贸lizas a renovar entre el 15 y el 31 del siguiente mes
       --
       IF nDiaEjecucion = 1 THEN
          dFechaDesde := TO_DATE('01-'|| TRIM(TO_CHAR(nMesSeleccion, '00')) || '-' || TRIM(TO_CHAR(nAnoSeleccion, '0000')), 'DD-MM-YYYY');
@@ -1665,7 +1668,7 @@ END RENOVAR;          --01/12/2019  RENOV
                                       WHERE  F.IDPOLIZA =  nIdPoliza   
                                         AND  F.STSFACT != 'ANU' );  
       EXCEPTION
-    WHEN OTHERS THEN
+     WHEN OTHERS THEN
            nMntoPmaNta := 0;
       END;
       --
@@ -1682,7 +1685,7 @@ END RENOVAR;          --01/12/2019  RENOV
                                     AND  F.STSFACT != 'ANU' );
       EXCEPTION
       WHEN OTHERS THEN
-         nMntoRecFin := 0;
+          nMntoRecFin := 0;
       END;                        
       --
       BEGIN
@@ -1698,7 +1701,7 @@ END RENOVAR;          --01/12/2019  RENOV
                                     AND  F.STSFACT != 'ANU' );
       EXCEPTION
       WHEN OTHERS THEN
-         nMntoDeremi := 0;
+          nMntoDeremi := 0;
       END;                           
       --
       BEGIN
@@ -1730,7 +1733,7 @@ END RENOVAR;          --01/12/2019  RENOV
            AND  N.IDNCR = DN.IDNCR;
       EXCEPTION
       WHEN OTHERS THEN
-         nMntoPmaNta_NC := 0;
+          nMntoPmaNta_NC := 0;
       END;
       --
       BEGIN
@@ -1746,7 +1749,7 @@ END RENOVAR;          --01/12/2019  RENOV
            AND  N.IDNCR = DN.IDNCR ; 
       EXCEPTION
       WHEN OTHERS THEN
-         nMntoDeremi_NC := 0;
+          nMntoDeremi_NC := 0;
       END;
       --
       BEGIN 
@@ -1762,7 +1765,7 @@ END RENOVAR;          --01/12/2019  RENOV
            AND  N.IDNCR = DN.IDNCR;
       EXCEPTION
       WHEN OTHERS THEN
-         nMntoRecFin_NC := 0;
+          nMntoRecFin_NC := 0;
       END;
       --
       BEGIN 
@@ -1778,7 +1781,7 @@ END RENOVAR;          --01/12/2019  RENOV
            AND  N.IDNCR = DN.IDNCR;
       EXCEPTION
       WHEN OTHERS THEN
-         nMntoIvaSin_NC := 0;
+          nMntoIvaSin_NC := 0;
       END;
       --
       BEGIN
@@ -1789,7 +1792,7 @@ END RENOVAR;          --01/12/2019  RENOV
            AND  F.STSFACT != 'ANU';
       EXCEPTION
       WHEN OTHERS THEN
-         nMntoPrimTot := 0;
+          nMntoPrimTot := 0;
       END;
       --
       BEGIN
@@ -1800,7 +1803,7 @@ END RENOVAR;          --01/12/2019  RENOV
            AND  N.STSNCR != 'ANU';
       EXCEPTION
       WHEN OTHERS THEN
-         nMtoNCTot := 0;
+          nMtoNCTot := 0;
       END;
       --
       nPrimaNeta        := NVL(nMntoPmaNta , 0) - NVL(nMntoPmaNta_NC, 0);
@@ -1847,28 +1850,28 @@ END RENOVAR;          --01/12/2019  RENOV
           BEGIN
              SELECT A1.COD_AGENTE, A1.CODNIVEL, OC_AGENTES.NOMBRE_AGENTE(A1.CODCIA, A1.COD_AGENTE),
                     B2.COD_AGENTE, B2.CODNIVEL, OC_AGENTES.NOMBRE_AGENTE(B2.CODCIA, B2.COD_AGENTE),
-                    C3.COD_AGENTE, C3.CODNIVEL, OC_AGENTES.NOMBRE_AGENTE(C3.CODCIA, C3.COD_AGENTE)
+                     C3.COD_AGENTE, C3.CODNIVEL, OC_AGENTES.NOMBRE_AGENTE(C3.CODCIA, C3.COD_AGENTE)
              INTO   nAgente     , nNivel     , cNombre,
                     nJefeAgente , nJefeNivel , cJefeNombre,
                     nGfeDrAgente, nGfeDrNivel, cGfeDrNombre
              FROM   AGENTES  A1
                 ,   AGENTES  B2
                 ,   AGENTES  C3
-       WHERE  A1.COD_AGENTE    = C.Cod_Agente_Distr
-         AND  B2.COD_AGENTE    = A1.COD_AGENTE_JEFE
-         AND  C3.COD_AGENTE(+) = B2.COD_AGENTE_JEFE;
+          WHERE  A1.COD_AGENTE    = C.Cod_Agente_Distr
+            AND  B2.COD_AGENTE    = A1.COD_AGENTE_JEFE
+            AND  C3.COD_AGENTE(+) = B2.COD_AGENTE_JEFE;
           EXCEPTION
           WHEN OTHERS THEN                        
                nAgente      := NULL;
                nNivel       := NULL;
                cNombre      := NULL;       
-         nJefeAgente  := NULL;
+            nJefeAgente  := NULL;
                nJefeNivel   := NULL;
                cJefeNombre  := NULL;
-         nGfeDrAgente := NULL;
+            nGfeDrAgente := NULL;
                nGfeDrNivel  := NULL;
                cGfeDrNombre := NULL;
-          END;  
+          END; 
           --
           IF nJefeNivel = 2 THEN
              nCodAgenteN2 := nJefeAgente;

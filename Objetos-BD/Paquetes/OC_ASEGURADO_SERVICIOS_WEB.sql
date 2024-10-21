@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_ASEGURADO_SERVICIOS_WEB AS
+create or replace PACKAGE OC_ASEGURADO_SERVICIOS_WEB AS
    PROCEDURE CARGA_ASEGURADOS( nCodCia      NUMBER
                              , nCodEmpresa  NUMBER
                              , nIdPoliza    NUMBER
@@ -40,7 +40,6 @@ FUNCTION CONSULTA_POLIZA_UNAM ( nCodCia         NUMBER,
 RETURN XMLTYPE;
 
 END OC_ASEGURADO_SERVICIOS_WEB;
-
 /
 create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
    PROCEDURE CARGA_ASEGURADOS( nCodCia      NUMBER
@@ -121,7 +120,7 @@ create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
       CURSOR cCoberturas IS
          SELECT CodCobert         , SumaAsegCobLocal, SumaAsegCobMoneda, Tasa              , PrimaCobLocal, PrimaCobMoneda, DeducibleCobLocal,
                 DeducibleCobMoneda, SalarioMensual  , VecesSalario     , SumaaSegCalculada , Edad_Minima  , Edad_Maxima   , Edad_Exclusion   ,
-                SumaAseg_Minima   , SumaAseg_Maxima , PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada
+                SumaAseg_Minima   , SumaAseg_Maxima , PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, Franquiciaingresado
          FROM   COTIZACIONES_COBERT_MASTER
          WHERE  CodCia       = nCodCia
            AND  CodEmpresa   = nCodEmpresa
@@ -232,7 +231,7 @@ create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
                                      dFecIniVig, dFecFinVig, cCodPlanPago, 0, 0, 0, '010', NULL);
                END IF;
             END IF;
-            OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndoso);
+            OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndoso); --- se debe de quitar para produccion ARH
          END IF;
          nIDetCotizacion := nIDetPol;
          BEGIN
@@ -259,7 +258,7 @@ create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
                   IF NVL(nIdSolicitud,0) = 0 THEN
                      IF NVL(nIdCotizacion,0) = 0 THEN
                         OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza,
-                                                             nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0);
+                                                             nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                      ELSE
                         GT_COTIZACIONES_COBERT_MASTER.CREAR_COBERTURAS_POLIZA(nCodCia, nCodEmpresa, nIdCotizacion, nIDetCotizacion, nIdPoliza, nIDetPol, nCod_Asegurado, 'S', nSumaAsegurada);
                      END IF;
@@ -312,6 +311,7 @@ create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
               ,    PorcExtraPrimaDet  = x.PorcExtraPrimaDet
               ,    MontoExtraPrimaDet = x.MontoExtraPrimaDet
               ,    SumaIngresada      = x.SumaIngresada
+			  ,    Franquiciaingresado= x.Franquiciaingresado
              WHERE CodCia     = nCodCia
                AND CodEmpresa = nCodEmpresa
                AND IdPoliza   = nIdPoliza
@@ -379,9 +379,9 @@ FUNCTION LISTADO_ASEGURADO (nCodCia         IN NUMBER,  nCodEmpresa         IN N
     | Obj. Modif.: Se agregan filtros por Nombre, apellido Paterno y apellido Materno.                                              |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
-    |           nCodCia                 Codigo de Compañia              (Entrada)                                                   |
+    |           nCodCia                 Codigo de CompaÃ±ia              (Entrada)                                                   |
     |           nCodEmpresa             Codigo de Empresa               (Entrada)                                                   |
-    |           nIdPoliza               ID de la Póliza                 (Entrada)                                                   |
+    |           nIdPoliza               ID de la PÃ³liza                 (Entrada)                                                   |
     |           nCodAgente              Codigo de Empresa               (Entrada)                                                   |
     |           nLimInferior            Limite inferior de pagina       (Entrada)                                                   |
     |           nLimSuperior            Limite superior de pagina       (Entrada)                                                   |
@@ -907,7 +907,7 @@ FUNCTION CONSULTA_ASEGURADO (nCodCia  NUMBER,  nCodEmpresa NUMBER, nCodAsegurado
     | Obj. Modif.: N/A                                                                                                              |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
-    |           nodCia                  Codigo de Compañia              (Entrada)                                                   |    
+    |           nodCia                  Codigo de CompaÃ±ia              (Entrada)                                                   |    
     |       nNoContratante        Codigo del Cliente             (Entrada)                                                   |
     |           nCodEmpresa             Codigo de Empresa               (Entrada)                                                   |
     |_______________________________________________________________________________________________________________________________|
@@ -1147,13 +1147,13 @@ FUNCTION VALIDA_ASEG_UNAM(  nCodCia         NUMBER,
     | Modificado : Si                                                                                                               |
     | Ult. modif.: 05/02/2021                                                                                                       |
     | Modifico  : J. Alberto Lopez Valle                                                                                           |
-    | Obj. Modif.: Se cambio funcionalidad por completo. Verifica que exista una Poliza asociada, Si existe o no su contraseña de   |
+    | Obj. Modif.: Se cambio funcionalidad por completo. Verifica que exista una Poliza asociada, Si existe o no su contraseÃ±a de   |
     |              Usuario si no es asi la genera,encripta e inserta el usuario. Verifica tambien si el cliente existe en el        |
     |              servicio de impresion de certificados individuales si no es asi lo agrega. Restringe el numero de intentos para  |
     |              determinar si puede o no hacerlo directamente en Plataforma Digital o con ejecutivo. Devuelve el Password.       |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
-    |           nodCia                  Codigo de Compañia                  (Entrada)                                               |        
+    |           nodCia                  Codigo de CompaÃ±ia                  (Entrada)                                               |        
     |           nCodEmpresa             Codigo de Empresa                   (Entrada)                                               |
     |       cNombre                 Nombre del Asegurado             (Entrada)                                               |
     |       cApePaterno            Apellido Paterno del Asegurado      (Entrada)                                               |
@@ -1182,7 +1182,7 @@ BEGIN
       --nCodAsegurado := TO_NUMBER(SUBSTR(cCodAsegurado,5,LENGTH(cCodAsegurado)));
 
     BEGIN
-            --> Este servicio validará que el asegurado existe a partir del nombre, apellidos y fecha de nacimiento,
+            --> Este servicio validarÃ¡ que el asegurado existe a partir del nombre, apellidos y fecha de nacimiento,
             SELECT  DISTINCT NVL(A.cod_asegurado,0), P.codcliente, P.idpoliza, C.stscliente
             --INTO cExiste                                                      --> JALV (-) 05/02/2021
             INTO    nCodAsegurado, nCodCliente, nIdPoliza, cStsCliente          --> JALV (+) 05/02/2021
@@ -1225,7 +1225,7 @@ BEGIN
             --DBMS_OUTPUT.PUT_LINE('  Luego validar si el Cliente '||nCodCliente||' existe en CTES_CERTIF_INDIV');
             cExisteCte:= OC_CTES_CERTIF_INDIV.EXISTE_CTE_CERT(nCodCia, nCodEmpresa, nCodCliente);
 
-            --DBMS_OUTPUT.PUT_LINE('Validar accion segun el número de intento');                     
+            --DBMS_OUTPUT.PUT_LINE('Validar accion segun el nÃºmero de intento');                     
             IF nIntento = 0 AND cExisteUsr = 'N' THEN    --> Registrar Password y/o Cliente (NoIntentos = 1)
                 --DBMS_OUTPUT.PUT_LINE('Ninguna vez ('||nIntento||'): No Existe el Password ni usuario. Se Genera y Encripta el Password');
                 cPasswE   := OC_USER_CERTIF_INDIV.CREA_PASSW_CERT (cNombre, cApePaterno, cApeMaterno, nCodAsegurado);  --> Cambiar Prefijo del Nombre ****
@@ -1261,7 +1261,7 @@ BEGIN
                 --DBMS_OUTPUT.PUT_LINE('Segunda vez ('||nIntento||'): Devolver el pasword ya registrado');
              --   cResultado := OC_USER_CERTIF_INDIV.OBTENER_PASSW_CERT(nCodCia, nCodEmpresa, nCodAsegurado);
             ELSE
-                --DBMS_OUTPUT.PUT_LINE('Tercera ocasión o mas ('||nIntento||')');
+                --DBMS_OUTPUT.PUT_LINE('Tercera ocasiÃ³n o mas ('||nIntento||')');
                 --DBMS_OUTPUT.PUT_LINE('Devolver Mensaje de Numero de intentos excedido');
                 cResultado := 'Numero de intentos excedido';
             END IF;
@@ -1278,7 +1278,7 @@ BEGIN
 
       EXCEPTION 
          WHEN NO_DATA_FOUND THEN
-            --DBMS_OUTPUT.PUT_LINE('No existe, devolver mensaje de asegurado no registrado en pólizas UNAM');
+            --DBMS_OUTPUT.PUT_LINE('No existe, devolver mensaje de asegurado no registrado en pÃ³lizas UNAM');
             --cExiste := 'N';                                                   --> JALV (-) 05/02/2021
             nCodAsegurado := 0;                                                 --> JALV (-) 05/02/2021
             cResultado := 'NO EXISTE el asegurado en Polizas de UNAM';
@@ -1387,11 +1387,11 @@ RETURN XMLTYPE IS
     | Obj. Modif.: N/A                                                                                                              |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
-    |           nCodCia                 Codigo de Compañia              (Entrada)                                                   |
+    |           nCodCia                 Codigo de CompaÃ±ia              (Entrada)                                                   |
     |           nCodEmpresa             Codigo de Empresa               (Entrada)                                                   |
     |           nCodAsegurado           Codigo del Asegurado            (Entrada)                                                   |
     |           cCodAgrupador           Codigo del Agrupador            (Entrada)                                                   |
-    |           cPassword               Contraseña a validar            (Entrada)                                                   |
+    |           cPassword               ContraseÃ±a a validar            (Entrada)                                                   |
     |_______________________________________________________________________________________________________________________________|
 */
 cCoincidePw     VARCHAR2(1);
