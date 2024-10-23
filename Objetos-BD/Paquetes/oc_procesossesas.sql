@@ -1,5 +1,5 @@
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOSSESAS IS
 
-create or replace PACKAGE                   SICAS_OC.OC_PROCESOSSESAS IS
     PROCEDURE CONTROLPRINCIPAL (
         nCodCia           SICAS_OC.ENTREGAS_CNSF_CONFIG.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.ENTREGAS_CNSF_CONFIG.CODEMPRESA%TYPE,
@@ -7,13 +7,12 @@ create or replace PACKAGE                   SICAS_OC.OC_PROCESOSSESAS IS
         dFecDesde         DATE,
         dFecHasta         DATE,
         cCodUsuario       SICAS_OC.TEMP_REGISTROS_SESAS.CODUSUARIO%TYPE,
-        cFiltrarPolizas   VARCHAR2
-    );
+        cFiltrarPolizas   VARCHAR2 );
 
     PROCEDURE NOTIFICACORREO (cNombreUser VARCHAR2, cNomSesa VARCHAR2, cEstatus VARCHAR2, dInicio VARCHAR2, dFin VARCHAR2, cDuracion VARCHAR2);
-    
+
     PROCEDURE NOTIFICARUTINA (cNombreUser VARCHAR2, cNomSesa VARCHAR2, cEstatus VARCHAR2, dInicio VARCHAR2, dFin VARCHAR2, cDuracion VARCHAR2);
-    
+
     FUNCTION GENERAENCABEZADO (
         nCodCia       SICAS_OC.CONFIG_PLANTILLAS_CAMPOS.CODCIA%TYPE,
         nCodEmpresa   SICAS_OC.CONFIG_PLANTILLAS_CAMPOS.CODEMPRESA%TYPE,
@@ -356,19 +355,20 @@ create or replace PACKAGE                   SICAS_OC.OC_PROCESOSSESAS IS
 
     PROCEDURE CALCULO_NUMREC (vlPnomsesa IN VARCHAR2);
 
-
-vl_Ejecucion    VARCHAR2(1) := '0';
-vl_Intento      NUMBER      :=  0;
-vl_Intento2     NUMBER      := 0;
-vl_Inicio       DATE;
-vl_Final        DATE;
-vl_Duracion     VARCHAR2(4000);
-prueba     VARCHAR2(4000);
-vl_NomSesa      VARCHAR2(50);
+    vl_Ejecucion    VARCHAR2(1) := '0';
+    vl_Intento      NUMBER      :=  0;
+    vl_Intento2     NUMBER      := 0;
+    vl_Inicio       DATE;
+    vl_Final        DATE;
+    vl_Duracion     VARCHAR2(4000);
+    prueba          VARCHAR2(4000);
+    vl_NomSesa      VARCHAR2(50);
+    cNomDirectorio     VARCHAR2(1000) := OC_VALORES_DE_LISTAS.BUSCA_LVALOR('SO_PATH', 'REPORT');
+    
 END OC_PROCESOSSESAS;
 /
 
-create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOSSESAS IS
 
     PROCEDURE CONTROLPRINCIPAL (
         nCodCia           SICAS_OC.ENTREGAS_CNSF_CONFIG.CODCIA%TYPE,
@@ -407,7 +407,16 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
         vl_Rutina           NUMBER := 0;
         vl_CorreoRutina     VARCHAR2(2) :='N';
     BEGIN
-
+    
+        BEGIN
+            UTL_FILE.FREMOVE(cNomDirectorio,'SESASLOGERROR.TXT');
+        EXCEPTION
+            WHEN OTHERS THEN
+                NULL;
+        END;
+        
+        EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+        
         IF SUBSTR(cCodEntregaProces, 5, 3) IN ( 'DAT', 'EMI' ) THEN
             SELECT TRIM(SUBSTR(cCodEntregaProces, 1, 4)|| 'DAT'|| SUBSTR(cCodEntregaProces, 8))
             INTO cCodEntregaDatGen
@@ -479,16 +488,16 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
             WHERE CODLISTA ='ONSESAS' 
                 AND CODVALOR=1
                 AND ROWNUM <= 1;
-            
+
             SELECT COUNT(1)
             INTO vl_Rutina
             FROM SICAS_OC.SESAS_HISTORICO
             WHERE ANOREP = TO_NUMBER(TO_CHAR(dFecDesde,'YYYY'));
-            
+
             vl_CorreoRutina := 'N';
-            
+
             vl_Inicio := SYSDATE;
-            EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.LOGERRORES_SESAS');
+            
             IF cCodEntregaProces = 'SESADATAPC' THEN
                 vl_NomSesa := 'DATOS GENERALES AP COLECTIVO';
                 EXECUTE IMMEDIATE ('TRUNCATE TABLE SICAS_OC.SESAS_DATGEN');
@@ -569,19 +578,18 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
                 oc_procesossesas.NOTIFICARUTINA (cCodUsuario , vl_NomSesa , TO_CHAR(dFecDesde,'YYYY'),TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),NULL,NULL);
             ELSE
                 oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Inicio',TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),NULL,NULL);
-            
-       
+
+
             cBlockPlSql := 'BEGIN '|| cNomProcProces|| '( :nCodCia, :nCodEmpresa, :dFecDesde, :dFecHasta, :cCodUsuario, :cCodEntregaDatGen, :cCodEntregaProces, :cFiltrarPolizas ); END;';
             EXECUTE IMMEDIATE cBlockPlSql USING nCodCia, nCodEmpresa, dFecDesde, dFecHasta, cCodUsuario, cCodEntregaDatGen, cCodEntregaProces, cFiltrarPolizas;
 
             COMMIT;
             -----avm
-      IF cCodEntregaProces IN ('SESASINAPC','SESASINGMC','SESASINAPI','SESASINGMI')THEN
-      
-      SICAS_OC.OC_PROCESOSSESAS.CALCULO_NUMREC(cCodEntregaProces);
-    END IF;
-            
-            
+			IF cCodEntregaProces IN ('SESASINAPC','SESASINGMC','SESASINAPI','SESASINGMI')THEN
+				SICAS_OC.OC_PROCESOSSESAS.CALCULO_NUMREC(cCodEntregaProces);
+			END IF;
+
+
             cNomArchZip := SUBSTR(cNomArchProces, 1, INSTR(cNomArchProces, '.') - 1)|| '.zip';
 
             cNomArchZipError := SUBSTR(cNomArchProcesError, 1, INSTR(cNomArchProcesError, '.') - 1) || '.zip';
@@ -595,11 +603,17 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
                 AND CODEMPRESA = nCodEmpresa
                 AND CODUSUARIO = cCodUsuario
                 AND CODREPORTE = cCodEntregaProces;
-                
 
             GeneraReportes(nCodCia, nCodEmpresa, REPLACE(cNomArchZipError, '.zip', '.TXT'), cEncabDatGen, cDetalleDatGen, cNomArchProces,cEncabProces,cEncabProcesError, cDetalleProces, cDetalleDatGenError, cNomArchZip, nEjecutaLog);
 
-            SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB(nCodCia, nCodEmpresa, cCodEntregaProces, cCodUsuario, cNomArchZip);
+			/*IF(nEjecutaLog > 0)THEN
+				SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB(nCodCia, nCodEmpresa, cCodEntregaProces, cCodUsuario, cNomArchZip);
+				SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB(nCodCia, nCodEmpresa, cEncabProcesError, cCodUsuario, cNomArchZipError);
+			ELSE*/
+				SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB(nCodCia, nCodEmpresa, cCodEntregaProces, cCodUsuario, cNomArchZip);
+			--END IF;
+
+            --SICAS_OC.OC_REPORTES_THONA.COPIA_ARCHIVO_BLOB(nCodCia, nCodEmpresa, cCodEntregaProces, cCodUsuario, cNomArchZip);
 
             UPDATE SICAS_OC.VALORES_DE_LISTAS
             SET CVE_CNSF = '0'
@@ -608,6 +622,7 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
                 AND ROWNUM <= 1;
 
             COMMIT;
+
             END IF;
         ELSE
 
@@ -645,7 +660,7 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
                         vl_Final FECHA_DOS
                     FROM DUAL
         ));
-        
+
         IF vl_CorreoRutina = 'N' THEN
             oc_procesossesas.NOTIFICACORREO (cCodUsuario , vl_NomSesa , 'Termino exitosamente ',TO_CHAR(vl_Inicio,'DD/MM/YYYY HH24:MI:SS'),TO_CHAR(vl_Final,'DD/MM/YYYY HH24:MI:SS'),vl_Duracion);
         END IF;
@@ -994,7 +1009,7 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
                                  || '''';
         cOrderBy  VARCHAR2(4000) := ' ORDER BY NUMPOLIZA, NUMCERTIFICADO';
         cOrderBy2 VARCHAR2(4000) := ' ORDER BY EPOLIZ, ECERTI';
-        
+
         CURSOR c_Campos IS
         SELECT
             CASE
@@ -1065,7 +1080,7 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
                                END;
 
         cCadena := 'SELECT ';
-          
+
 
         FOR x IN c_Campos LOOP
             cCadena := cCadena || x.Campo;
@@ -1079,12 +1094,12 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
                 cOrderBy2
             ELSE cOrderBy
         END;
-        
+
 
         cDetalle := cCadena;
       DBMS_OUTPUT.PUT_LINE(cDetalle);
         RETURN cDetalle;
-        
+
     END GENERADETALLE;
 
     FUNCTION GENERADETALLEERROR (
@@ -1220,6 +1235,10 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
         cCtlArchDatGen UTL_FILE.FILE_TYPE;
         cCtlArchProces UTL_FILE.FILE_TYPE;
         cNomDirectorio VARCHAR2(100);
+
+        l_file          BLOB;
+        l_zip           BLOB;
+        NOM_ARCHIVO_ZIP VARCHAR2(200);
     BEGIN
         cNomDirectorio := SICAS_OC.OC_VALORES_DE_LISTAS.BUSCA_LVALOR('SO_PATH', 'REPORT');
 
@@ -1249,7 +1268,7 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
       --Generación del Reporte del Proceso
         cCtlArchProces := UTL_FILE.FOPEN(cNomDirectorio, cNomArchProces, 'W', 32767);
         UTL_FILE.PUT_LINE(cCtlArchProces, cEncabProces);
-                
+
         OPEN c_Detalle FOR cDetalleProces;
 
         LOOP
@@ -1260,8 +1279,8 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
 
         CLOSE c_Detalle;
         UTL_FILE.FCLOSE(cCtlArchProces);
-        
-        IF cEjecutaLog >= 1 THEN
+                
+        IF NVL(cEjecutaLog,0) >= 1 THEN
             --generacion log de errores
             cCtlArchProces := UTL_FILE.FOPEN(cNomDirectorio, cNomArchDatGen, 'W', 32767);
             UTL_FILE.PUT_LINE(cCtlArchProces, cEncabProcesError);
@@ -1276,21 +1295,99 @@ create or replace PACKAGE BODY                   SICAS_OC.OC_PROCESOSSESAS IS
             CLOSE c_Detalle;
             UTL_FILE.FCLOSE(cCtlArchProces);
         END IF;
-        
-        IF cEjecutaLog <> 0 THEN
-            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchDatGen) THEN
-                DBMS_OUTPUT.PUT_LINE('OK');
-            END IF;
-        ELSE
+
+        IF NVL(cEjecutaLog,0) >= 1 THEN
+                /*SE ESCRIBE LA PARTE DEL LOG DE ERRORES POR EXISTIR*/
+                BEGIN
+                    FOR ENT IN (SELECT COLUMN_VALUE ARCHIVO
+                        from table(GT_WEB_SERVICES.split(cNomArchDatGen))) LOOP
+                        l_file := zip_util_pkg.file_to_blob (cNomDirectorio, ENT.ARCHIVO);
+                        zip_util_pkg.add_file (l_zip, ENT.ARCHIVO, l_file);
+                    END LOOP;
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        NULL;
+                END;
+                
+                /*SE ESCRIBE LA PARTE DE LA SESA EN CASO DE EXISTIR*/
+                BEGIN
+                    FOR ENT IN (SELECT COLUMN_VALUE ARCHIVO
+                        from table(GT_WEB_SERVICES.split(cNomArchProces))) LOOP
+                        l_file := zip_util_pkg.file_to_blob (cNomDirectorio, ENT.ARCHIVO);
+                        zip_util_pkg.add_file (l_zip, ENT.ARCHIVO, l_file);
+                    END LOOP;
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        NULL;
+                END;
+
+                zip_util_pkg.finish_zip (l_zip);
+                --  
+                IF INSTR(UPPER(cNomArchZip), '.ZIP')> 0 THEN
+                    NOM_ARCHIVO_ZIP := UPPER(cNomArchZip);
+                ELSE
+                    NOM_ARCHIVO_ZIP := UPPER(cNomArchZip) || '.ZIP';
+                END IF;
+                --
+                zip_util_pkg.save_zip (l_zip, cNomDirectorio, NOM_ARCHIVO_ZIP);
+                --
+                BEGIN
+                    FOR ENT IN (SELECT COLUMN_VALUE ARCHIVO
+                                 from table(GT_WEB_SERVICES.split(cNomArchProces))) LOOP
+                        UTL_FILE.FREMOVE(cNomDirectorio, ENT.ARCHIVO);                     
+                    END LOOP;
+                EXCEPTION 
+                    WHEN OTHERS THEN 
+                        NULL; 
+                END;
+            /*
             IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchProces) THEN
                 DBMS_OUTPUT.PUT_LINE('OK');
             END IF;
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchDatGen) THEN
+                DBMS_OUTPUT.PUT_LINE('OK');
+            END IF;
+			*/
+        ELSE
+
+                BEGIN
+                    FOR ENT IN (SELECT COLUMN_VALUE ARCHIVO
+                        from table(GT_WEB_SERVICES.split(cNomArchProces))) LOOP
+                        l_file := zip_util_pkg.file_to_blob (cNomDirectorio, ENT.ARCHIVO);
+                        zip_util_pkg.add_file (l_zip, ENT.ARCHIVO, l_file);
+                    END LOOP;
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        NULL;
+                END;
+                --
+                zip_util_pkg.finish_zip (l_zip);
+                --  
+                IF INSTR(UPPER(cNomArchZip), '.ZIP')> 0 THEN
+                    NOM_ARCHIVO_ZIP := UPPER(cNomArchZip);
+                ELSE
+                    NOM_ARCHIVO_ZIP := UPPER(cNomArchZip) || '.ZIP';
+                END IF;
+                --
+                zip_util_pkg.save_zip (l_zip, cNomDirectorio, NOM_ARCHIVO_ZIP);
+                --
+                BEGIN
+                    FOR ENT IN (SELECT COLUMN_VALUE ARCHIVO
+                                 from table(GT_WEB_SERVICES.split(cNomArchProces))) LOOP
+                        UTL_FILE.FREMOVE(cNomDirectorio, ENT.ARCHIVO);                     
+                    END LOOP;
+                EXCEPTION WHEN OTHERS THEN NULL; 
+                END;
+            /*
+            IF ZIP_UTIL_PKG.ZIP_ARCHIVOS(cNomDirectorio, cNomArchZip, cNomArchProces) THEN
+                DBMS_OUTPUT.PUT_LINE('OK');
+            END IF;*/
         END IF;
 
     EXCEPTION
         WHEN OTHERS THEN
             UTL_FILE.FCLOSE(cCtlArchDatGen);
-            SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia,nCodEmpresa, cNomArchDatGen, USER, 'SISTEMA', '', SQLCODE, ' Error al generar el archivo: '|| SQLERRM);
+            SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia,nCodEmpresa, cNomArchDatGen, USER, 'SISTEMA', '', SQLCODE, ' Error al generar el archivo: GENERAREPORTES - '|| SQLERRM);
 
     END GENERAREPORTES;
 
@@ -2995,7 +3092,7 @@ FUNCTION GETMONTOCOMISIONAP (
 
             EXCEPTION
                 WHEN OTHERS THEN
-                    SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(1,1, cNomSesa, USER, 'SISTEMA', 'No fue posible enviar el correo.', SQLCODE, ' Error al generar el archivo: '|| SQLERRM);
+                    SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(1,1, cNomSesa, USER, 'SISTEMA', 'No fue posible enviar el correo.', SQLCODE, ' Error al enviar correo: '|| SQLERRM);
             END;
 
 
@@ -3112,9 +3209,8 @@ END NOTIFICACORREO;
 
             EXCEPTION
                 WHEN OTHERS THEN
-                    SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(1,1, cNomSesa, USER, 'SISTEMA', 'No fue posible enviar el correo.', SQLCODE, ' Error al generar el archivo: '|| SQLERRM);
+                    SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(1,1, cNomSesa, USER, 'SISTEMA', 'No fue posible enviar el correo.', SQLCODE, ' Error al enviar correo rutina: '|| SQLERRM);
             END;
-
 
 END NOTIFICARUTINA;
 
@@ -3140,7 +3236,7 @@ PROCEDURE CALCULO_NUMREC (vlPnomsesa IN VARCHAR2) IS
         AND TS.NUMSINIESTRO = SS.NUMSINIESTRO
         ORDER BY SS.NUMPOLIZA, SS.NUMSINIESTRO, SS.FECCONSIN ASC, SS.MONTORECLAMADO DESC
         ;
-    
+
     vNumRec         NUMBER := 0;
     vNumRecAnt      NUMBER := -99;
     vSiniestroCtrl  NUMBER := NULL;
@@ -3166,7 +3262,7 @@ BEGIN
         ELSE 
             vMontoSum := (vMontoSum + X.MONTORECLAMADO);
         END IF;
-        
+
         IF(vMontoSum <= X.MONTO_TOTALS)THEN
             IF(X.MONTORECLAMADO >= 0 AND X.FECCONSIN != vFechaCtrl)THEN
                 IF(vNumRec = 0)THEN
@@ -3197,11 +3293,11 @@ BEGIN
         ELSE
             vR3Ctrl := 0;
         END IF;
-        
+
         IF(vR3Ant = 0 AND vMontoSum >= X.MONTO_TOTALS AND X.MONTORECLAMADO > 0)THEN
             vNumRec := vNumRecAnt;
         END IF;
-        
+
         /*DBMS_OUTPUT.PUT_LINE(X.NUMSINIESTRO || '|' || X.NUMRECLAMACION || '|' || TO_CHAR(X.FECREPREC,'DD/MM/YYYY') || '|' || TO_CHAR(X.FECCONSIN,'DD/MM/YYYY') || '|' || X.COBERTURA
                             || '|' || X.MONTORECLAMADO || '|' || X.MONTODEDUCIBLE || '|' || (X.MONTORECLAMADO - X.MONTODEDUCIBLE) || '|' || vMontoSum || '|' || X.MONTO_TOTALS || '|' || CASE WHEN vMontoSum >= X.MONTO_TOTALS THEN 0 ELSE vNumRec END || '|' || vNumRec);*/
 
@@ -3225,12 +3321,16 @@ BEGIN
         vR3Ant := vR3Ctrl;
     END LOOP;
     EXCEPTION WHEN OTHERS THEN 
-
          SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(1,1, vlPnomsesa, USER, 'CALCULO_NUMREC', 'Error:', SQLCODE, ' Error al generar proceso numero de reclamacion final: '|| SQLERRM);
-
-
 
 END CALCULO_NUMREC;
 
 END OC_PROCESOSSESAS;
+/
+
+GRANT EXECUTE ON SICAS_OC.OC_PROCESOSSESAS TO PUBLIC;
+/
+
+--SYNONYM
+CREATE OR REPLACE PUBLIC SYNONYM OC_PROCESOSSESAS FOR SICAS_OC.OC_PROCESOSSESAS;
 /

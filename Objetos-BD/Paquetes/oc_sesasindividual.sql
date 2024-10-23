@@ -1,4 +1,4 @@
-create or replace PACKAGE          SICAS_OC.OC_SESASINDIVIDUAL IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASINDIVIDUAL IS
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.SESAS_DATGEN.CODEMPRESA%TYPE,
@@ -109,7 +109,8 @@ create or replace PACKAGE          SICAS_OC.OC_SESASINDIVIDUAL IS
 
 END OC_SESASINDIVIDUAL;
 /
-create or replace PACKAGE BODY                                     SICAS_OC.OC_SESASINDIVIDUAL IS
+
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASINDIVIDUAL IS
 
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
@@ -656,7 +657,7 @@ create or replace PACKAGE BODY                                     SICAS_OC.OC_S
                                                         obj_sesasdatgen(x).CodReporte,
                                                         obj_sesasdatgen(x).CodUsuario,
                                                         obj_sesasdatgen(x).NumPoliza,
-                                                        obj_sesasdatgen(x).NumCertificado,
+                                                        (CASE WHEN obj_sesasdatgen(x).IdPoliza = 56006 THEN obj_sesasdatgen(x).NumCertificado||'000' ELSE obj_sesasdatgen(x).NumCertificado END),
                                                         obj_sesasdatgen(x).TipoSeguro,
                                                         obj_sesasdatgen(x).Moneda,
                                                         NVL(obj_sesasdatgen(x).EntidadAsegurado,'09'),
@@ -3333,7 +3334,7 @@ cStatus2 :='A';
             NVL(CS.OrdenSesas, 0)                         OrdenSesas,
             (H.MONTO
                    -- , CS.CodCobert
-            
+
             --SICAS_OC.OC_PROCESOSSESAS.GETNUMRECLAMACION() /*C.NumMod */ NumReclamacion,
             -- H.NUM_REC NumReclamacion,
              -- H.MONTO MontoReclamado,
@@ -3528,7 +3529,7 @@ cStatus2 :='A';
                     FROM SICAS_OC.RESERVA_DET
                     WHERE ID_POLIZA = x.IdPoliza
                         AND ID_SINIESTRO = x.NumSiniestro
-                        AND Aﾃ前_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde,'YYYY'))
+                        AND AﾑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde,'YYYY'))
                         AND TIPO_MOVIMIENTO = 'PAGOS';
                 EXCEPTION
                     WHEN OTHERS THEN
@@ -3545,20 +3546,20 @@ cStatus2 :='A';
                     WHERE
                             ID_POLIZA = x.IdPoliza
                         AND ID_SINIESTRO = x.NumSiniestro
-                        AND Aﾃ前_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
+                        AND AﾑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
 
                 EXCEPTION
                     WHEN OTHERS THEN
                         dFecConSin := NULL;
                 END;*/
-                
+
                   BEGIN
                     /*SELECT  MIN(FE_MOVTO)
                     INTO dFecConSin
                     FROM  SICAS_OC.RESERVA_DET
                     WHERE ID_POLIZA = x.IdPoliza
                         AND ID_SINIESTRO = x.NumSiniestro
-                        AND Aﾃ前_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
+                        AND AﾑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
                     */
                     SELECT  FECREP
                     INTO dFecConSin
@@ -3568,10 +3569,10 @@ cStatus2 :='A';
                     AND ANOREP = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
                     AND NUM_REC = x.NumReclamacion
                     AND MONTO = y.MontoReclamado;
-                 
+
                  -- AND FECREP = X.FECREP;
-                    
-                   
+
+
                 EXCEPTION
                     WHEN OTHERS THEN
                         dFecConSin := NULL;
@@ -3707,7 +3708,7 @@ cStatus2 :='A';
             END IF;
             END LOOP;
         END LOOP;
-        
+
         UPDATE SICAS_OC.SESAS_SINIESTROS A
         SET A.MONTORECLAMADO = (A.MONTORECLAMADO - A.MONTODEDUCIBLE),
             A.MONTODEDUCIBLE = 0,
@@ -3721,14 +3722,14 @@ cStatus2 :='A';
 
              ;
               COMMIT;
-             
+
         UPDATE SICAS_OC.SESAS_SINIESTROS A
         SET  A.MONTORECLAMADO = (A.MONTORECLAMADO - A.MONTODEDUCIBLE) --SE SUMA PORQUE VA POR LOS NEGATIVOS
          WHERE A.NUMPOLIZA = A.NumPoliza
             AND A.NUMSINIESTRO = A.NumSiniestro
             AND A.MONTORECLAMADO <= 0;
               commit;
-        
+
        UPDATE SICAS_OC.SESAS_SINIESTROS A
         SET  A.MONTODEDUCIBLE = 0,
             A.MONTOPAGSIN = 0
@@ -3739,7 +3740,7 @@ cStatus2 :='A';
                     WHERE B.NumPoliza = A.NumPoliza
                     AND B.NumSiniestro = A.NumSiniestro
                     AND B.MONTORECLAMADO > 0 ),0);
-                
+
            UPDATE SICAS_OC.SESAS_SINIESTROS A
             SET A.MONTORECLAMADO = (A.MONTORECLAMADO-A.MONTODEDUCIBLE),
                 A.MONTODEDUCIBLE = 0,
@@ -3751,7 +3752,7 @@ cStatus2 :='A';
                     AND B.MONTORECLAMADO > 0)
                  ;
                   COMMIT;
-             
+
 
                     /*
         UPDATE SICAS_OC.SESAS_SINIESTROS
@@ -3767,11 +3768,11 @@ cStatus2 :='A';
                   WHERE rn = 1
                 )
              ;
-                   
+
       */
-    
+
     COMMIT;
-    
+
         UPDATE SICAS_OC.SESAS_SINIESTROS
         SET STATUSRECLAMACION = SICAS_OC.OC_PROCESOSSESAS.GETSTATUSSIN(CodCia, NULL, NumSiniestro, StatusReclamacion, MONTOPAGSIN, MONTORECLAMADO, 'SINAPI'),
             FECPAGSIN = CASE WHEN MONTOPAGSIN = 0 THEN NULL  ELSE FECPAGSIN END,
@@ -4891,7 +4892,7 @@ END;
             || TRIM(LPAD(S.Cod_Asegurado, 10, '0'))                                                                                 NumCertificado,
             S.IdSiniestro                                                                                                           NumSiniestro,
                H.NUM_REC NumReclamacion,--SICAS_OC.OC_PROCESOSSESAS.GETNUMRECLAMOSINI()                                                                           NumReclamacion  --Por definir
-            
+
             S.Fec_Ocurrencia                                                                                                        FecOcuSin,
             S.Fec_Notificacion                                                                                                      FecRepSin       --Por Definir  fecha reclamaciﾃｳn
             ,
@@ -5022,7 +5023,7 @@ END;
                                                   INNER JOIN SICAS_OC.SESAS_HISTORICO H ON  H.IDSINIESTRO = S.IDSINIESTRO   AND H.IDPOLIZA = P.IDPOLIZA  --AND H.COBERTURA = R.ID_COBERTURA 
        /*S.Fec_Notificacion  BETWEEN dvarFecDesde AND dvarFecHasta
             AND  */
-            
+
         WHERE  
         (H.ANOREP IS NULL OR H.ANOREP = TO_NUMBER(TO_CHAR(to_date(dvarFecDesde),'YYYY')))
               AND  S.Sts_Siniestro != 'SOL'
@@ -5108,7 +5109,7 @@ END;
         o_SesasSiniestro t_SesasSiniestro;
         nMonto_Moneda    NUMBER;
         nMontoPagado     NUMBER;
-        
+
         vl_NoHayRutina  NUMBER := 0;
     BEGIN
 
@@ -5139,15 +5140,15 @@ END;
                     FROM  SICAS_OC.RESERVA_DET
                     WHERE ID_POLIZA = o_SesasSiniestro(x).IdPoliza
                         AND ID_SINIESTRO = o_SesasSiniestro(x).NumSiniestro
-                        AND Aﾃ前_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
+                        AND AﾑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
 
                 EXCEPTION
                     WHEN OTHERS THEN
                         dFecConSin := NULL;
                 END;*/
-                
+
                   BEGIN
-                  
+
                     SELECT  FECREP
                     INTO dFecConSin
                     FROM  SICAS_OC.SESAS_HISTORICO
@@ -5156,15 +5157,15 @@ END;
                     AND ANOREP = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
                     AND NUM_REC = o_SesasSiniestro(x).NumReclamacion
                     AND MONTO = o_SesasSiniestro(x).MontoReclamado;
-                 
+
                  -- AND FECREP = X.FECREP;
-                    
-                   
+
+
                 EXCEPTION
                     WHEN OTHERS THEN
                         dFecConSin := NULL;
                 END;
-                
+
                   BEGIN
                 SELECT SUM(( CASE WHEN TIPO_MOVIMIENTO IN ( 'PAGOS' ) THEN IMPTE_MOVIMIENTO * ( CASE WHEN SIGNO = '-' THEN -1 ELSE 1 END ) ELSE  0 END ) + (
                 CASE WHEN TIPO_MOVIMIENTO IN ( 'DESPAG', 'DESCUE', 'DEDUC' ) THEN IMPTE_MOVIMIENTO * ( CASE WHEN SIGNO = '-' THEN -1 ELSE 1  END ) ELSE 0  END  )) Monto_Pago_Moneda
@@ -5231,7 +5232,7 @@ END;
             fechainsert = sysdate
         WHERE  NUMPOLIZA = NumPoliza
             AND NUMSINIESTRO = NumSiniestro;--OrdeSesas
-            
+
            UPDATE SICAS_OC.SESAS_SINIESTROS A
         SET A.MONTORECLAMADO = (A.MONTORECLAMADO - A.MONTODEDUCIBLE),
             A.MONTODEDUCIBLE = 0,
@@ -5245,14 +5246,14 @@ END;
 
              ;
               COMMIT;
-             
+
         UPDATE SICAS_OC.SESAS_SINIESTROS A
         SET  A.MONTORECLAMADO = (A.MONTORECLAMADO - A.MONTODEDUCIBLE) --SE SUMA PORQUE VA POR LOS NEGATIVOS
          WHERE A.NUMPOLIZA = A.NumPoliza
             AND A.NUMSINIESTRO = A.NumSiniestro
             AND A.MONTORECLAMADO <= 0;
               commit;
-        
+
        UPDATE SICAS_OC.SESAS_SINIESTROS A
         SET  A.MONTODEDUCIBLE = 0,
             A.MONTOPAGSIN = 0
@@ -5263,7 +5264,7 @@ END;
                     WHERE B.NumPoliza = A.NumPoliza
                     AND B.NumSiniestro = A.NumSiniestro
                     AND B.MONTORECLAMADO > 0 ),0);
-                
+
            UPDATE SICAS_OC.SESAS_SINIESTROS A
             SET A.MONTORECLAMADO = (A.MONTORECLAMADO-A.MONTODEDUCIBLE),
                 A.MONTODEDUCIBLE = 0,
@@ -5275,8 +5276,8 @@ END;
                     AND B.MONTORECLAMADO > 0)
                  ;
                   COMMIT;
-             
-          
+
+
 
         UPDATE SICAS_OC.SESAS_SINIESTROS
         SET  STATUSRECLAMACION = SICAS_OC.OC_PROCESOSSESAS.GETSTATUSSIN(CodCia, NULL, NumSiniestro, StatusReclamacion, MONTOPAGSIN, MONTORECLAMADO, 'SINAPI'),
@@ -5284,7 +5285,7 @@ END;
                 fechainsert = sysdate
         WHERE NUMPOLIZA = NumPoliza
             AND NUMSINIESTRO = NumSiniestro;--OrdeSesas
-  
+
 
 
     END SINIESTROS_GM;
@@ -5294,6 +5295,7 @@ END OC_SESASINDIVIDUAL;
 
 GRANT EXECUTE ON SICAS_OC.OC_SESASINDIVIDUAL TO PUBLIC;
 /
-  --SINONIMO
-  CREATE OR REPLACE PUBLIC SYNONYM OC_SESASINDIVIDUAL FOR SICAS_OC.OC_SESASINDIVIDUAL;
-  /
+
+--SYNONYM
+CREATE OR REPLACE PUBLIC SYNONYM OC_SESASINDIVIDUAL FOR SICAS_OC.OC_SESASINDIVIDUAL;
+/
