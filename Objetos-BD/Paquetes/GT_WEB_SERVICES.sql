@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          GT_WEB_SERVICES AS
+create or replace PACKAGE SICAS_OC.GT_WEB_SERVICES AS
     --
     xmlString   VARCHAR2(32767);
     xmlResult   XMLTYPE;
@@ -22,7 +22,7 @@ END GT_WEB_SERVICES;
 
 /
 
-CREATE OR REPLACE PACKAGE BODY          GT_WEB_SERVICES IS
+create or replace PACKAGE BODY SICAS_OC.GT_WEB_SERVICES IS
     --
     FUNCTION ExtraStr(cTAG clob, cXxmlString clob := xmlString) return varchar2 is        
         cValor clob;
@@ -314,7 +314,7 @@ CREATE OR REPLACE PACKAGE BODY          GT_WEB_SERVICES IS
                 sqlParametros := sqlParametros || '     ' || '''' || param.value || '''' || ' ' || replace(PARAM.param, ':', '') || ',' || CHR(10);
                 cDatosXml := REPLACE(cDatosXml, PARAM.param, param.value);
             END LOOP;                                
-            cDatosXml   := REPLACE(cDatosXml, '¨', '''');
+            cDatosXml   := REPLACE(cDatosXml, 'Β¨', '''');
 
             OPEN curResp FOR cDatosXml; 
             --
@@ -355,7 +355,7 @@ CREATE OR REPLACE PACKAGE BODY          GT_WEB_SERVICES IS
                 sqlParametros := sqlParametros || '     ' || '''' || param.value || '''' || ' ' || replace(PARAM.param, ':', '') || ',' || CHR(10);
                 cDatosXml := replace(cDatosXml, PARAM.param, param.value);
             END LOOP;        
-            cDatosXml   := replace(cDatosXml, '¨', '''');
+            cDatosXml   := replace(cDatosXml, 'Β¨', '''');
             GT_WEB_SERVICES.XMLSTRING := NULL;
 
             IF LENGTH(cDatosXml) > 0 THEN
@@ -381,12 +381,12 @@ CREATE OR REPLACE PACKAGE BODY          GT_WEB_SERVICES IS
                         sqlParametros := sqlParametros || '     ' || '''' || param.value || '''' || ' ' || replace(PARAM.param, ':', '') || ',' || CHR(10);
                         cRespStrXML := GT_WEB_SERVICES.REPLACE_CLOB (cRespStrXML, PARAM.param, param.value);
                     END LOOP;        
-                    cRespStrXML   := GT_WEB_SERVICES.REPLACE_CLOB(cRespStrXML, '¨', '''');            
+                    cRespStrXML   := GT_WEB_SERVICES.REPLACE_CLOB(cRespStrXML, 'Β¨', '''');            
                     GT_WEB_SERVICES.InicializaDom(l_response_payload);
                     EXECUTE IMMEDIATE cRespStrXML;
                 exception when others then
                     --DBMS_OUTPUT.PUT_LINE('ERROR-XX21->' || cRespStrXML);
-                    raise_application_error(-20010, 'No hay Respuesta del WS, posiblemente el periodo o el envνo no hay datos a procesar' || CHR(10) || SQLERRM);                                        
+                    raise_application_error(-20010, 'No hay Respuesta del WS, posiblemente el periodo o el envΓ­o no hay datos a procesar' || CHR(10) || SQLERRM);                                        
                 END;
             END IF;
 
@@ -501,7 +501,7 @@ CREATE OR REPLACE PACKAGE BODY          GT_WEB_SERVICES IS
             cDoc := xmltype(cLinXml);
             RETURN  cDoc;
     EXCEPTION WHEN OTHERS THEN
-        RETURN  xmltype(nvl(cLinXml,'<?xml version="1.0" encoding="utf-8"?><ERROR>Revise la configuraciσn de los atributos, pudierα falta atributos del nombre del espacio</ERROR>'));
+        RETURN  xmltype(nvl(cLinXml,'<?xml version="1.0" encoding="utf-8"?><ERROR>Revise la configuraciΓ³n de los atributos, pudierΓ΅ falta atributos del nombre del espacio</ERROR>'));
     END GENERA_XML;
     --
     FUNCTION ExtraeDatos_XML(Doc XMLTYPE, DatosTag VARCHAR2) Return Varchar2 is            
@@ -608,10 +608,10 @@ CREATE OR REPLACE PACKAGE BODY          GT_WEB_SERVICES IS
         Cadena1 varchar2(1000); 
         Cadena2 varchar2(1000);
     BEGIN
-        SELECT TRANSLATE(upper(pCadena1), 'ραινσϊΰθμςωγυβκξττδλοφόηΡΑΙΝΣΪΐΘΜÒΩΓΥΒΚΞΤΫΔΛΟΦάΗ,.-<>;:_{}[]+*~^΄¨Ώ΅\?=)(/&%$#"!|°¬','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
+        SELECT TRANSLATE(upper(pCadena1), 'Γ±Γ΅Γ©Γ­Γ³ΓΊΓ Γ¨Γ¬Γ²ΓΉΓ£ΓµΓΆΓªΓ®Γ΄Γ΄Γ¤Γ«Γ―Γ¶ΓΌΓ§Γ‘ΓΓ‰ΓΓ“ΓΓ€ΓΓΓ’Γ™ΓƒΓ•Γ‚ΓΓΓ”Γ›Γ„Γ‹ΓΓ–ΓΓ‡,.-<>;:_{}[]+*~^Β΄Β¨ΒΏΒ΅\?=)(/&%$#"!|Β°Β¬','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
           INTO Cadena1
         from DUAL;
-        SELECT TRANSLATE(upper(pCadena2), 'ραινσϊΰθμςωγυβκξττδλοφόηΡΑΙΝΣΪΐΘΜÒΩΓΥΒΚΞΤΫΔΛΟΦάΗ,.-<>;:_{}[]+*~^΄¨Ώ΅\?=)(/&%$#"!|°¬','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
+        SELECT TRANSLATE(upper(pCadena2), 'Γ±Γ΅Γ©Γ­Γ³ΓΊΓ Γ¨Γ¬Γ²ΓΉΓ£ΓµΓΆΓªΓ®Γ΄Γ΄Γ¤Γ«Γ―Γ¶ΓΌΓ§Γ‘ΓΓ‰ΓΓ“ΓΓ€ΓΓΓ’Γ™ΓƒΓ•Γ‚ΓΓΓ”Γ›Γ„Γ‹ΓΓ–ΓΓ‡,.-<>;:_{}[]+*~^Β΄Β¨ΒΏΒ΅\?=)(/&%$#"!|Β°Β¬','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
           INTO Cadena2
         from DUAL;
 
@@ -657,10 +657,10 @@ CREATE OR REPLACE PACKAGE BODY          GT_WEB_SERVICES IS
         Cadena2 varchar2(1000);
     BEGIN
 
-        SELECT TRANSLATE(upper(pCadena1), 'ραινσϊΰθμςωγυβκξττδλοφόηΡΑΙΝΣΪΐΘΜÒΩΓΥΒΚΞΤΫΔΛΟΦάΗ,.-<>;:_{}[]+*~^΄¨Ώ΅\?=)(/&%$#"!|°¬','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
+        SELECT TRANSLATE(upper(pCadena1), 'Γ±Γ΅Γ©Γ­Γ³ΓΊΓ Γ¨Γ¬Γ²ΓΉΓ£ΓµΓΆΓªΓ®Γ΄Γ΄Γ¤Γ«Γ―Γ¶ΓΌΓ§Γ‘ΓΓ‰ΓΓ“ΓΓ€ΓΓΓ’Γ™ΓƒΓ•Γ‚ΓΓΓ”Γ›Γ„Γ‹ΓΓ–ΓΓ‡,.-<>;:_{}[]+*~^Β΄Β¨ΒΏΒ΅\?=)(/&%$#"!|Β°Β¬','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
           INTO Cadena1
         from DUAL;
-        SELECT TRANSLATE(upper(pCadena2), 'ραινσϊΰθμςωγυβκξττδλοφόηΡΑΙΝΣΪΐΘΜÒΩΓΥΒΚΞΤΫΔΛΟΦάΗ,.-<>;:_{}[]+*~^΄¨Ώ΅\?=)(/&%$#"!|°¬','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
+        SELECT TRANSLATE(upper(pCadena2), 'Γ±Γ΅Γ©Γ­Γ³ΓΊΓ Γ¨Γ¬Γ²ΓΉΓ£ΓµΓΆΓªΓ®Γ΄Γ΄Γ¤Γ«Γ―Γ¶ΓΌΓ§Γ‘ΓΓ‰ΓΓ“ΓΓ€ΓΓΓ’Γ™ΓƒΓ•Γ‚ΓΓΓ”Γ›Γ„Γ‹ΓΓ–ΓΓ‡,.-<>;:_{}[]+*~^Β΄Β¨ΒΏΒ΅\?=)(/&%$#"!|Β°Β¬','naeiouaeiouaoaeiooaeioucNAEIOUAEIOUAOAEIOOAEIOUC') 
           INTO Cadena2
         from DUAL;
 

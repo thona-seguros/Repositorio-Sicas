@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_NOMINA IS
+create or replace PACKAGE SICAS_OC.OC_NOMINA IS
 -- MODIFICACION DE PROCEDURES COMISIONAG Y COMISIONPOL POR PROYECTO DE OGAS  20210212
 FUNCTION  CREAR(nCodCia VARCHAR2) RETURN NUMBER;
 PROCEDURE GENERA_NOMINA (nCodCia NUMBER, nCodEmp NUMBER, nIdNomina NUMBER, 
@@ -23,7 +23,7 @@ END OC_NOMINA;
 
 /
 
-CREATE OR REPLACE PACKAGE BODY OC_NOMINA IS
+create or replace PACKAGE BODY SICAS_OC.OC_NOMINA IS
 --
 -- 20190930  SE AJUSTE LA PROGRAMACION      ICO
 -- 20191223  SE DESCOMENTA EL PROCEDIMIENTO REVERTIR NOMINA Y SE COMPLETAN DATOS DE INDICES  JMMD
@@ -43,6 +43,7 @@ END CREAR;
 PROCEDURE GENERA_NOMINA (nCodCia     NUMBER,    nCodEmp  NUMBER,  nIdNomina      NUMBER,
                          cCod_Moneda VARCHAR2,  nCalculo NUMBER,  cIndAutomatica VARCHAR2) IS
 cExite       VARCHAR2(1);
+cUsuario VARCHAR2(40);
 --
 CURSOR CUR_COMISIONES IS
   SELECT C.Cod_Agente,      C.CodCia,       C.CodEmpresa,   C.Cod_Moneda, 
@@ -76,6 +77,14 @@ BEGIN
          AND Estado      = 'LIQ';
    END IF;
    --
+   BEGIN --PST 27-11-2023 TODO EL QUERY
+      SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	  IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	  END IF;
+   EXCEPTION WHEN OTHERS THEN
+        cUsuario := USER;
+   END;
    FOR X IN CUR_COMISIONES LOOP
 /*       BEGIN
          SELECT CodFormaPago, CodEntidadFinan, NumCuentabancaria
@@ -106,7 +115,7 @@ BEGIN
               INSERT INTO NOMINA_COMISION
                (CodCia,   CodEmpresa,   IdNomina,  Estado,  FecEmision,  CreadoPor,  IndAutomatica)
               VALUES 
-               (X.CodCia, X.CodEmpresa, nIdNomina, 'EMI',   SYSDATE,     USER,       cIndAutomatica);
+               (X.CodCia, X.CodEmpresa, nIdNomina, 'EMI',   SYSDATE,     cUsuario,       cIndAutomatica);
          WHEN OTHERS THEN
             cExite := 'S';
        END;
@@ -120,7 +129,7 @@ BEGIN
    END LOOP;
 EXCEPTION
      WHEN OTHERS THEN
-       RAISE_APPLICATION_ERROR(-20225,'No fue posible completar el proceso, ocurrió el siguiente error: ' || SQLERRM);
+       RAISE_APPLICATION_ERROR(-20225,'No fue posible completar el proceso, ocurriÃ³ el siguiente error: ' || SQLERRM);
 END GENERA_NOMINA;
 
 PROCEDURE PROC_ACTSTSNOM (nCodCia NUMBER, nCodEmpresa NUMBER , nIdNomina NUMBER,  cStsNom VARCHAR2) IS
@@ -140,6 +149,7 @@ cEntFinan    FORMAS_PAGO_AGENTES.EntFinan%TYPE;
 cNum_Cuenta  FORMAS_PAGO_AGENTES.Num_Cuenta%TYPE;
 nIdNcr       NOTAS_DE_CREDITO.IdNcr%TYPE;
 nTasaCambio  DETALLE_POLIZA.Tasa_Cambio%TYPE;
+cUsuario     VARCHAR2(40);
 --
 CURSOR CUR_FACTURAS IS
   SELECT C.IdFactura, C.Comision_Local, C.Comision_Moneda
@@ -183,11 +193,20 @@ BEGIN
      AND IdNomina     = nIdNomina
      AND FechaLiquida IS NULL;
   --
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	  END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cUsuario := USER;
+  END;
+
   IF nReg != 0 THEN
      --
      UPDATE NOMINA_COMISION
         SET FechaLiquida = SYSDATE,
-            LiquidaPor   = USER
+            LiquidaPor   = cUsuario
       WHERE CodCia       = nCodCia
         AND CodEmpresa   = nCodEmpresa
         AND IdNomina     = nIdNomina;
@@ -247,7 +266,7 @@ BEGIN
             AND CodCia   = nCodCia;
       END LOOP;
    ELSE
-      RAISE_APPLICATION_ERROR(-20225,'No puede pagar la Nómina porque existen Agentes a quienes no se les ha Generado pago, por favor verifique.');
+      RAISE_APPLICATION_ERROR(-20225,'No puede pagar la NÃ³mina porque existen Agentes a quienes no se les ha Generado pago, por favor verifique.');
    END IF;
 END PAGO_NOMINA;
 --
@@ -264,7 +283,7 @@ CURSOR NCR_Q IS
      AND IdNomina  = nIdNomina
      AND CodCia    = nCodCia;
 BEGIN
-  -- Anula Notas de Crédito
+  -- Anula Notas de CrÃ©dito
   FOR X IN NCR_Q LOOP
       IF NVL(nIdTransacNc,0) = 0 THEN
          nIdTransacNc := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 2, 'NOTACR');
@@ -293,7 +312,7 @@ BEGIN
            AND NumTransaccion = X.IdTransacAplic;
       EXCEPTION
         WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR(-20225,'No existe Comprobante Contable del Pago de la Nota de Crédito No. '||X.IdNcr);
+             RAISE_APPLICATION_ERROR(-20225,'No existe Comprobante Contable del Pago de la Nota de CrÃ©dito No. '||X.IdNcr);
       END;
       --
       OC_COMPROBANTES_CONTABLES.REVERSA_COMPROBANTE(nCodCia, nNumComprob, cTipoComprob);
@@ -328,7 +347,7 @@ END ANULA_NOMINA;
 
 PROCEDURE GENERA_DETALLE_NOMINA_COM (nCodCia NUMBER, nIdNomina NUMBER) IS
 --
----- JMMD20200722 SE MODIFICA EL CURSOR AÑADIENDO UN UNION PARA GENERAR EL CONCEPTO TRIVHO (TRASPASO DE IVA HONORARIOS) PARA OGAS 
+---- JMMD20200722 SE MODIFICA EL CURSOR AÃ‘ADIENDO UN UNION PARA GENERAR EL CONCEPTO TRIVHO (TRASPASO DE IVA HONORARIOS) PARA OGAS 
 CURSOR CUR_COMISIONES IS
  SELECT CO.CodCia,CO.IdNomina,DC.CodConcepto,CO.Cod_Agente,CO.Cod_Moneda,
         SUM(DC.Monto_Mon_Local) MontoNetoLocal,
@@ -367,9 +386,19 @@ END GENERA_DETALLE_NOMINA_COM;
 
 PROCEDURE MODIFICA_COMISION (nCodCia      NUMBER,  nCodEmpresa   NUMBER,  nIdComision   NUMBER, nComAntLocal NUMBER, 
                              nComActLocal NUMBER,  nComAntMoneda NUMBER,  nComActMoneda NUMBER) IS
+    cUsuario Varchar2(40);
 BEGIN
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cUsuario := USER;
+  END;
+
    UPDATE COMISIONES C
-      SET C.UsrMod              = USER,
+      SET C.UsrMod              = cUsuario,
           C.FecMod              = SYSDATE,
           C.Comision_Local      = nComActLocal,
           C.Comision_Local_Ant  = nComAntLocal,
@@ -574,9 +603,9 @@ BEGIN
          AND FecEnvioSc IS NOT NULL;
       --
       IF nExiste != 0 THEN
-         RAISE_APPLICATION_ERROR(-20225,'NO es Posible Revertir la Liquidación de Comisiones No. ' ||
+         RAISE_APPLICATION_ERROR(-20225,'NO es Posible Revertir la LiquidaciÃ³n de Comisiones No. ' ||
                                  nIdNomina || ', Porque la Contabilidad fue Enviada al Sistema Central Contable. ' ||
-                                 ' Debe Anular la Liquidación.');
+                                 ' Debe Anular la LiquidaciÃ³n.');
       END IF;
    END LOOP;
    --
@@ -653,7 +682,7 @@ BEGIN
      AND IdNomina   = nIdNomina;
 EXCEPTION
   WHEN OTHERS THEN
-       RAISE_APPLICATION_ERROR(-20225,'Error al Asignar Autorización: '||nIdAutorizacion||' '||SQLERRM);
+       RAISE_APPLICATION_ERROR(-20225,'Error al Asignar AutorizaciÃ³n: '||nIdAutorizacion||' '||SQLERRM);
 END ACTUALIZA_AUTORIZACION;
 
 FUNCTION REVISAR(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2 IS

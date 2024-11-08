@@ -1,4 +1,4 @@
-create or replace PACKAGE OC_PROCESOS_MASIVOS IS
+create or replace PACKAGE SICAS_OC.OC_PROCESOS_MASIVOS IS
 -- MODIFICACION
 -- 01/10/2019 Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPérez)        -- JMMD SAT y PLD 20200406
 -- 24/06/2020 Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPérez) -- JMMD SAT y PLD 20200624
@@ -75,7 +75,6 @@ PROCEDURE CARGA_ARCHIVO_ASEGURADOS ( nCodCia             NUMBER
 FUNCTION DEPURA_CADENA ( cCadenaEntrada  VARCHAR2 ) RETURN VARCHAR2;
 PROCEDURE RECUPERA_LOG_CARGA(cNomArchCarga  VARCHAR2
                              , cNomArcSalida  VARCHAR2 );
-
 PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia            NUMBER
                                  , nCodEmpresa         NUMBER
                                  , nIdPoliza           NUMBER
@@ -90,11 +89,13 @@ PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia            NUMBER
                                  , cIndColectiva       VARCHAR2
                                  , cIndAsegurado       VARCHAR2
                                  , cCodUsuario         VARCHAR2 );
-
 FUNCTION ACTUALIZA_REGIS_PROCESOMASIVO(cCargaRegistro VARCHAR2)RETURN NUMBER;								 
+																					  
 END OC_PROCESOS_MASIVOS;
+
 /
-create or replace PACKAGE BODY OC_PROCESOS_MASIVOS IS
+
+create or replace PACKAGE BODY SICAS_OC.OC_PROCESOS_MASIVOS IS
 --
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
@@ -1088,8 +1089,8 @@ BEGIN
          SET UltValor = nIdProcMasivo
        WHERE CodCia   = cCodCia
          AND CodCampo = 'IDPROCMASIVO';
-         
-       COMMIT;
+		 
+	  COMMIT;
    END;
    RETURN (nIdProcMasivo);
 END CREAR;
@@ -1647,7 +1648,7 @@ PROCEDURE COBRANZA(nIdProcMasivo NUMBER) IS
 cStsFact        FACTURAS.StsFact%TYPE := '';
 nMontoPago      FACTURAS.Monto_Fact_Local%TYPE := 0;
 nIdFactura      FACTURAS.IdFactura%TYPE := 0;
-cInddomiciliado FACTURAS.Inddomiciliado%TYPE;  
+cInddomiciliado FACTURAS.Inddomiciliado%TYPE;										   
 cFormPago       FACTURAS.FormPago%TYPE := '';
 cNumReciboPago  FACTURAS.ReciboPago%TYPE := '';
 dFecPago        FACTURAS.FecPago%TYPE;
@@ -1668,7 +1669,7 @@ cPrufecha1       VARCHAR2(10);
 cPrufecha2       VARCHAR2(10);
 cPrufecha3       VARCHAR2(10);
 cNumReferen      VARCHAR2(10);
-nMontoFactu      FACTURAS.Monto_Fact_Local%TYPE;  
+nMontoFactu      FACTURAS.Monto_Fact_Local%TYPE;
 CURSOR Cobranza_Q IS
     SELECT CodCia, CodEmpresa, IdTipoSeg, PlanCob, TipoProceso,
           NumPolUnico, NumDetUnico, RegDatosProc
@@ -1676,22 +1677,20 @@ CURSOR Cobranza_Q IS
     WHERE IdProcMasivo   = nIdProcMasivo;
 BEGIN
    FOR X IN COBRANZA_Q LOOP
-      cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
-      cTipoSeparador := OC_PROCESOS_MASIVOS.TIPO_SEPARADOR(cCodPlantilla);     
+	  cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);																																 cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
+      cTipoSeparador := OC_PROCESOS_MASIVOS.TIPO_SEPARADOR(cCodPlantilla);	   
       nIdetpol          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,3,cTipoSeparador));
-      cIndManejaFondos  := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,cTipoSeparador));
-      nNumCuota         := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,cTipoSeparador));
-      cFormPago         := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,cTipoSeparador));
-      cNumReciboPago    := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,cTipoSeparador));
-      dFecPago          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,9,cTipoSeparador));
-      cEntPago          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,cTipoSeparador));
-      nMontoPago        := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,cTipoSeparador)),'99999999.999999') ;
-
-      cPrufecha1  := TO_CHAR(dFecPago, 'DD');
-      cPrufecha2  := TO_CHAR(dFecPago, 'MM');
-      cPrufecha3  := TO_CHAR(dFecPago, 'YYYY');
-      cNumReferen := (cPrufecha1||cPrufecha2||cPrufecha3);   
-
+      cIndManejaFondos  := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,cTipoSeparador));																					   
+      nNumCuota      	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,cTipoSeparador));
+      cFormPago      	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,cTipoSeparador));
+      cNumReciboPago 	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,cTipoSeparador));
+      dFecPago       	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,9,cTipoSeparador));
+      cEntPago       	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,cTipoSeparador));
+      nMontoPago     	:= TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,cTipoSeparador)),'9999999.999999') ;
+	cPrufecha1  := TO_CHAR(dFecPago, 'DD');
+    cPrufecha2  := TO_CHAR(dFecPago, 'MM');
+    cPrufecha3  := TO_CHAR(dFecPago, 'YYYY');
+    cNumReferen := (cPrufecha1||cPrufecha2||cPrufecha3);
       /*IF X.NumPolUnico != X.NumDetUnico THEN
           RAISE_APPLICATION_ERROR(-20100,'Numero de Poliza no Coincide con el Numero de Certificado');
       END IF;*/
@@ -1713,22 +1712,22 @@ BEGIN
                          WHERE P.CodCia             = X.CodCia
                            AND P.CodEmpresa         = X.CodEmpresa
                            AND P.IdPoliza           = F.IdPoliza
-                           ---AND NVL(P.IndPolCol,'N') = 'N'
+                           --AND NVL(P.IndPolCol,'N') = 'N'
                            AND P.NumPolUnico        = X.NumPolUnico)
             AND F.NumCuota = nNumCuota
-            AND F.Idetpol   = nIdetpol
+			AND F.Idetpol   = nIdetpol
             AND F.IDFACTURA = cNumReciboPago
             AND StsFact IN ('EMI','ABO');
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
             cContinuar:='N';
-            DescriError := 'Forma de Pago no existe'; 
+			DescriError := 'Forma de Pago no existe'; 			
       END;
-      cDescEntPago := OC_ENTIDAD_FINANCIERA.DESCRIPCION(X.CodCia, cEntPago);
+	  cDescEntPago := OC_ENTIDAD_FINANCIERA.DESCRIPCION(X.CodCia, cEntPago);
       cTimbrado := OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(X.CodCia, X.CodEmpresa, cNumReciboPago,NULL, cStsFact);  
       IF OC_GENERALES.FUN_DESCRIP_LVAL('FORMPAGO',cFormPago)!= 'VALOR NO VALIDO' AND cContinuar = 'S' THEN
-         ---OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
+         --OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          IF cStsFact IN ('EMI','ABO') THEN
             IF cStsFact = 'EMI' AND cInddomiciliado = 'S' THEN
                nPago := 3;
@@ -1745,8 +1744,7 @@ BEGIN
             ELSIF cContinuar = 'S' THEN
                nIdTransaccion := OC_TRANSACCION.CREA(X.CodCia, X.CodEmpresa, 12, 'PAG');
                nPago          := OC_FACTURAS.PAGAR(nIdFactura,cNumReferen, dFecPago, nMontoPago, cFormPago, cEntPago, nIdTransaccion);
-            END IF;
-
+            END IF;	   
             -- Comentado Temporalmente porque ahora Necesita el IdTransaccion
             /*IF OC_FACTURAS.PAGAR(nIdFactura, cFormPago  ,cNumReciboPago , dFecPago ,nMontoPago,cFormPago,cEntPago )= 1 THEN
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'PROCE');
@@ -1757,7 +1755,7 @@ BEGIN
                OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR al pagar o abonar Factura');
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
             END IF;*/
-            IF nPago = 1 THEN
+			IF nPago = 1 THEN
                OC_COMPROBANTES_CONTABLES.CONTABILIZAR(X.CodCia, nIdTransaccion, 'C');
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'PROCE');
             ELSIF nPago = 2 THEN
@@ -1778,11 +1776,10 @@ BEGIN
             ELSIF nPago = 6 THEN
                OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR No es Posible Realizar la Aplicación del Ingreso,El Monto del Pago es diferente al de la Factura');
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
-            END IF;
-
+            END IF;	   
          END IF;
       ELSE
-         BEGIN
+		BEGIN	  
             SELECT F.StsFact, F.IdFactura , F.Inddomiciliado
               INTO cStsFact, nIdFactura, cInddomiciliado
               FROM FACTURAS F
@@ -1799,7 +1796,7 @@ BEGIN
            WHEN NO_DATA_FOUND THEN
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          END;
-         IF cStsFact = 'ANU' THEN
+		IF cStsFact = 'ANU' THEN
           OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','El recibo no puede ser aplicado debido a que está anulado');
           OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          ELSIF cStsFact = 'PAG'THEN
@@ -1812,7 +1809,6 @@ BEGIN
           OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','Cuota  No.'||nNumCuota||' '|| 'NO Disponible para Cobro.');
           OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          END IF;
-
       END IF;
    END LOOP;
 EXCEPTION
@@ -5880,6 +5876,14 @@ BEGIN
    SELECT USER ,USERENV('TERMINAL')                   ---  SIGUECARGA
      INTO USUSARIO, TERMINAL
      FROM SYS.DUAL;
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO USUSARIO FROM DUAL;
+	IF(USUSARIO IS NULL)THEN
+		USUSARIO := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    USUSARIO := USER;
+  END;
 
    FOR X IN EMI_Q LOOP
       cMsjError := NULL;
@@ -6525,7 +6529,7 @@ BEGIN
                RAISE_APPLICATION_ERROR(-20225,'OTHERS Error al actualizar SINIESTRO : '||SQLERRM);
          END;
       ELSE
-         OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede Pagar el Siniestro: '||cMsjError);
+         OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','3. No se puede Pagar el Siniestro: '||cMsjError);
          OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
 
          ---  aevs   seguimiento de  cargas masivas
@@ -6548,7 +6552,7 @@ BEGIN
 EXCEPTION
    WHEN OTHERS THEN
       ROLLBACK;
-      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede Pagar el Siniestro '||SQLERRM);
+      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','4. No se puede Pagar el Siniestro '||SQLERRM);
       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
 END PAGO_SINIESTROS;
 
@@ -8219,6 +8223,14 @@ BEGIN
    SELECT USER ,USERENV('TERMINAL')                   ---  SIGUECARGA
      INTO USUSARIO , TERMINAL
      FROM SYS.DUAL;
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO USUSARIO FROM DUAL;
+	IF(USUSARIO IS NULL)THEN
+		USUSARIO := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    USUSARIO := USER;
+  END;
 
    FOR i IN EMI_Q(nIdProcMasivo) LOOP
       IF i.STSREGPROCESO = 'EMI'  THEN
@@ -8638,6 +8650,14 @@ BEGIN
    SELECT USER ,USERENV('TERMINAL')                   ---  SIGUECARGA
      INTO USUSARIO , TERMINAL
      FROM SYS.DUAL;
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO USUSARIO FROM DUAL;
+	IF(USUSARIO IS NULL)THEN
+		USUSARIO := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    USUSARIO := USER;
+  END;
 
    FOR i IN EMI_Q(nIdProcMasivo) LOOP
       IF  i.STSREGPROCESO = 'EMI'  THEN  --si hay un registro atorado, pero ya emitido previamente, lo quita.
@@ -9105,6 +9125,14 @@ BEGIN
    SELECT USER ,USERENV('TERMINAL')                   ---  SIGUECARGA
      INTO USUSARIO , TERMINAL
      FROM SYS.DUAL;
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO USUSARIO FROM DUAL;
+	IF(USUSARIO IS NULL)THEN
+		USUSARIO := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    USUSARIO := USER;
+  END;
 
    FOR i IN EMI_Q(nIdProcMasivo) LOOP
       IF  i.STSREGPROCESO = 'EMI'  THEN
@@ -9347,6 +9375,14 @@ BEGIN
    SELECT USER ,USERENV('TERMINAL')                   ---  SIGUECARGA
      INTO USUSARIO , TERMINAL
      FROM SYS.DUAL;
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO USUSARIO FROM DUAL;
+	IF(USUSARIO IS NULL)THEN
+		USUSARIO := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    USUSARIO := USER;
+  END;
 
    FOR i IN EMI_Q(nIdProcMasivo) LOOP
 
@@ -10284,7 +10320,7 @@ nMtoRetImpCedular   NUMBER(14,2);
 nMtoPagar           NUMBER(28,2);
 cRFCBenef           VARCHAR2(16);
 cNombProvBenef      VARCHAR2(100);
-cNumAsist           VARCHAR2(15);
+cNumAsist           VARCHAR2(30);
 cNumUnicoPol        VARCHAR2(15);
 nIdeFactExt         FACTURA_EXTERNA.IDEFACTEXT%TYPE;
 nExiste             NUMBER;
@@ -10302,7 +10338,7 @@ nMtoIVACalc         NUMBER(28,2);
 nPosInicio          NUMBER;
 nPosFin             NUMBER;
 cSeparador          VARCHAR2(1) := '|';
-cIndActAseg         VARCHAR2(1) := 'N';
+cIndActAseg         VARCHAR2(2) := 'N';
 cCodCptoTransacDed  COBERTURA_SINIESTRO.CodCptoTransac%TYPE;
 cIndFecEquiv       SUB_PROCESO.IndFecEquiv%TYPE;
 cIndFecEquivPro    PROC_TAREA.IndFecEquiv%TYPE;
@@ -10314,7 +10350,9 @@ ncuantos           NUMBER;
 cST_RESOLUCIO      ADMON_RIESGO_SINIESTROS.ST_RESOLUCION%TYPE;
 cTP_RESOLUCION     ADMON_RIESGO_SINIESTROS.TP_RESOLUCION%TYPE;
 nDiasautpld        NUMBER;
-
+cband varchar2(1000);
+ninicio number;
+nband number;
 CURSOR PAGO_Q  IS
    SELECT C.NomCampo, C.OrdenCampo, C.OrdenProceso, C.OrdenDatoPart
      FROM CONFIG_PLANTILLAS_CAMPOS C
@@ -10367,6 +10405,16 @@ BEGIN
    SELECT  USER ,USERENV('TERMINAL')                   ---  SIGUECARGA
      INTO  USUSARIO , TERMINAL
      FROM  SYS.DUAL;
+	 
+	BEGIN --PST 27-11-2023 TODO EL QUERY
+		SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO USUSARIO FROM DUAL;
+		IF(USUSARIO IS NULL)THEN
+			USUSARIO := USER;
+		END IF;
+	EXCEPTION
+		WHEN OTHERS THEN
+			USUSARIO := USER;
+	END;
 
    FOR X IN EMI_Q LOOP
       IF X.IndRegValidado = 'N' OR X.IndArchValidado = 'N' THEN
@@ -10386,7 +10434,7 @@ BEGIN
       cIndFecEquiv    := OC_SUB_PROCESO.INDICA_FEC_EQUIVALENTE_SUBPROC(6, 'APRSIN');
       dFechaCont      := GT_FECHA_CONTABLE_EQUIVALENTE.FECHA_CONTABLE(X.CodCia, X.CodEmpresa);
       dFechaReal      := GT_FECHA_CONTABLE_EQUIVALENTE.FECHA_REAL(X.CodCia, X.CodEmpresa);
-
+cband:='uno';
       IF cIndFecEquivPro = 'S' THEN
          IF cIndFecEquiv = 'S' THEN
             dFechaCamb   := dFechaCont;
@@ -10396,6 +10444,7 @@ BEGIN
       ELSE
          dFechaCamb := dFechaReal;
       END IF;
+cband:='1.1';
 
       IF cTipoPago = 'P'  THEN
           Desc_Tpo_Pgo := 'PAGO PARCIAL';
@@ -10404,13 +10453,26 @@ BEGIN
           Desc_Tpo_Pgo := 'PAGO TOTAL';
           cTipoAprobacion := 'T';
       END IF;
+cband:='1.2'||' - ('||replace(rtrim(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,cSeparador))),chr(32),'')||')';
 
-      nIdSiniestro := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,cSeparador));
+begin
+    select to_number(substr(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,cSeparador)),1,1))
+    into nband
+    from dual;
+    ninicio:=1;
+exception
+    when others then
+ninicio:=2;
+end;
+
+      nIdSiniestro := substr(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,cSeparador)),ninicio,999);
+cband:='1.3'||' - ('||LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,cSeparador))||')';
 
       IF nIdSiniestro IS NULL THEN
         cMsjError := 'Error en LayOut: No Contiene Número de Siniestro, Favor de validar la información.';
         RAISE_APPLICATION_ERROR(-20225,'Error en LayOut: No Contiene Número de Siniestro, Favor de validar la información.');
       END IF;
+cband:='dos';
 
       BEGIN
         SELECT IdPoliza,IDetPol,Cod_Moneda
@@ -10494,6 +10556,7 @@ BEGIN
                          cMsjError := 'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la información.';
                          RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la información.');
                     END;
+cband:='tres';
                     BEGIN
                         SELECT DISTINCT CodCobert
                           INTO cCodCobert
@@ -10552,6 +10615,7 @@ BEGIN
                     cMsjError := 'Persona encontrada en an el archivo de SAT PRESUNTOS.';
                     RAISE_APPLICATION_ERROR(-20225,'Persona encontrada en el archivo de SAT PRESUNTOS, requiere de autorizacion.');
                 END IF;
+cband:='cuatro';
 -------
 ------- JMMD20191025 VALIDACION DE REGISTROS EN PLD
 ----------
@@ -10616,6 +10680,7 @@ BEGIN
                      WHEN OTHERS THEN
                       CONTINUE;
                     END;
+cband:='cinco';
 ---------------
                     SELECT COUNT(*)
                       INTO ncuantos
@@ -10641,6 +10706,7 @@ BEGIN
 
 ---------------
                 END IF;
+cband:='seis';
 -------
                 --- SIN VALIDACIONES
                 nMtoHono          := TO_NUMBER(LTRIM(REPLACE(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,13,cSeparador),',')));
@@ -10670,27 +10736,32 @@ BEGIN
                        END IF;
                    END IF;
                 END IF;
+cband:='siete';
 
                 --VALIDA IMPUESTOS
                 IF nMtoIva <> 0 THEN
                     --IVA
+                    cband:='7.1';
                     OC_CATALOGO_DE_CONCEPTOS.TIPO_CONCEPTO(X.CodCia, 'IVASIN', cIndTipoConcepto, nPorcConcepto, nMontoConcepto);
                     IF nPorcConcepto = 0 THEN
+                        cband:='7.1.1';
                         cMsjError := 'Porcentaje De Iva Es Cero En La Configuracion Del Concepto, Por Favor Valide';
                         RAISE_APPLICATION_ERROR(-20225,'Porcentaje De Iva Es Cero En La Configuracion Del Concepto, Por Favor Valide');
                     ELSE
+                        cband:='7.1.2';
                         nMtoIVACalc := (nMtoHono + nMtoHosp + nMtoOtrosGtos) * (nPorcConcepto / 100);
                         nMtoBruto := nMtoHono + nMtoHosp + nMtoOtrosGtos;
                         IF ABS((nMtoIva - nMtoIVACalc)) = 0.01 THEN --- SI LA DIFERENCIA ES DE UN CENTAVO ENTONCES SE RESTA LA DIFERENCIA AL IVA DEL ARCHIVO Y SE SUMA AL SUBTOTAL
-
+                            cband:='7.1.2.1';
                             UPDATE PROCESOS_MASIVOS
                                SET RegDatosProc = REPLACE(X.RegDatosProc,TO_CHAR(nMtoIva),TO_CHAR(nMtoIva - 0.01))
                              WHERE IdProcMasivo = nIdProcMasivo;
-
+                            cband:='7.1.2.2';
                             UPDATE PROCESOS_MASIVOS
                                SET RegDatosProc = REPLACE(X.RegDatosProc,TO_CHAR(nMtoHosp),TO_CHAR(nMtoHosp + 0.01))
                              WHERE IdProcMasivo = nIdProcMasivo;
                         ELSE
+                            cband:='7.1.3.1';
                             IF nMtoIva > nMtoIVACalc THEN
                                 cMsjError := 'El Monto De Iva Declarado En El Archivo Excede Al Porcentaje De Iva Configurado En El Sistema, Por Favor Valide';
                                 RAISE_APPLICATION_ERROR(-20225,'El Monto De Iva Declarado En El Archivo Excede Al Porcentaje De Iva Configurado En El Sistema, Por Favor Valide');
@@ -10699,19 +10770,25 @@ BEGIN
                     END IF;
                 ELSIF nMtoIsr <> 0 THEN
                     --ISR
+                        cband:='7.2';
                         OC_CATALOGO_DE_CONCEPTOS.TIPO_CONCEPTO(X.CodCia, 'ISRSIN', cIndTipoConcepto, nPorcConcepto, nMontoConcepto);
                     IF nPorcConcepto = 0 THEN
+                        cband:='7.2.1';
                         cMsjError := 'Porcentaje De ISR Es Cero En La Configuración Del Concepto, Por Favor Valide';
                         RAISE_APPLICATION_ERROR(-20225,'Porcentaje De ISR Es Cero En La Configuración Del Concepto, Por Favor Valide');
                     ELSE
+                        cband:='7.2.2';
                         IF ROUND((nMtoHono + nMtoHosp + nMtoOtrosGtos) * (nPorcConcepto / 100),2) < nMtoIsr THEN
+                            cband:='7.2.2.1';
                             cMsjError := 'El Monto De ISR Registrado En El Archivo Excede El monto Del Gasto Mas El Porcentaje De ISR Configurado, Por Favor Valide';
                             RAISE_APPLICATION_ERROR(-20225,'El Monto De ISR Registrado En El Archivo Excede El monto Del Gasto Mas El Porcentaje De ISR Configurado, Por Favor Valide');
                         END IF;
                     END IF;
                 ELSIF nMtoRetImpCedular <> 0 THEN
+                    cband:='7.3';
                     --IMPUESTO CEDULAR O LOCAL
                     OC_CATALOGO_DE_CONCEPTOS.TIPO_CONCEPTO(X.CodCia, 'IMPLOC', cIndTipoConcepto, nPorcConcepto, nMontoConcepto);
+                    cband:='7.3.1';
                     IF nPorcConcepto = 0 THEN
                         cMsjError := 'Porcentaje De Impuesto Local (Cedular) Es Cero En La Configuración Del Concepto, Por Favor Valide';
                         RAISE_APPLICATION_ERROR(-20225,'Porcentaje De Impuesto Local (Cedular) Es Cero En La Configuración Del Concepto, Por Favor Valide');
@@ -10722,7 +10799,9 @@ BEGIN
                         END IF;
                     END IF;
                 ELSIF nMtoRetIva <> 0 THEN
+                    cband:='7.4';
                     OC_CATALOGO_DE_CONCEPTOS.TIPO_CONCEPTO(X.CodCia, 'RETIVA', cIndTipoConcepto, nPorcConcepto, nMontoConcepto);
+                    cband:='7.4.1';
                     IF nMtoIva <> 0 THEN
                         IF nPorcConcepto = 0 THEN
                             cMsjError := 'Porcentaje De Retención De IVA Es Cero En La Configuración Del Concepto, Por Favor Valide';
@@ -10738,7 +10817,7 @@ BEGIN
                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Validar La Retencion De Iva Debido A Que El Monto De Iva Es Cero, Por Favor Valide');
                     END IF;
                 END IF;
-
+                cband:='7.5';
                 ---TRANSACCION
                 IF OC_COBERTURAS_DE_SEGUROS.VALIDA_BASICA (X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, cCodCobert) = 'S' THEN
                    cCodTransac        := 'PARVBA';
@@ -10749,15 +10828,17 @@ BEGIN
                    cCodCptoTransac    := 'PARVAD';
                    cCodCptoTransacDed := 'DEDUAD'; --- SE AGREGA PARA NO AFECTAR EL CONCEPTO AL CREAR LA APROBACION DE PAGO
                 END IF;
-
+                cband:='7.6';
                 --VALIDA PERSONA NATURAL JURIDICA
-                cIndActAseg       := RTRIM(LTRIM(NVL(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,28,cSeparador),'N')));
+                cIndActAseg       := REPLACE(REPLACE(RTRIM(LTRIM(NVL(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,28,cSeparador),'N'))),CHR(10),''),CHR(13),'');
                 cNombreAsegurado  := RTRIM(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,cSeparador)));
                 cApePatAseg       := RTRIM(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,cSeparador)));
                 cApeMatAseg       := RTRIM(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,cSeparador)));
                 ----------------------------- SI cIndActAseg = 'S' ENTONCES SE ACTUALIZA PERSONA NATURAL JURIDICA
+                cband:='7.7';
                 IF cIndActAseg = 'N' THEN
                     BEGIN
+                        cband:='7.7.1';
                         SELECT pa.tipo_doc_identificacion , pa.num_doc_identificacion,A23.COD_ASEGURADO
                           INTO cTipoDocIdent , cNumDocIdent, nCodAsegCarga
                           FROM PERSONA_NATURAL_JURIDICA  pa,ASEGURADO A23
@@ -10780,11 +10861,14 @@ BEGIN
                     END;
 
                     --VALIDA DIFERENCIA ENTRE ASEGURADO DE CARGA Y ASEGURADO DEL SISTEMA
+                    cband:='7.8';
                     IF nCodAsegCarga != nCodAsegurado THEN
                        cMsjError := ' El Nombre de Asegurado cargado No concuerda con el Asegurado del Siniestro   ( Codigo de Carga '||nCodAsegCarga||'  Codigo del Siniestro  '||nCodAsegurado||' )  ';
                        RAISE_APPLICATION_ERROR(-20225,'El Nombre de Asegurado cargado No concuerda con el Asegurado del Siniestro   ( Codigo de Carga '||nCodAsegCarga||'  Codigo del Siniestro  '||nCodAsegurado||' )  ');
                     END IF;
+cband:='ocho';
                 ELSE
+cband:='nueve';
                     --- SE ACTUALIZAN DATOS DE PERSONA NATURAL JURIDICA
                     SELECT A23.tipo_doc_identificacion , A23.num_doc_identificacion
                       INTO cTipoDocIdent , cNumDocIdent
@@ -10841,6 +10925,7 @@ BEGIN
                    cMsjError := 'Error: '||SQLERRM;
                    RAISE_APPLICATION_ERROR(-20225,'Error en Insert DATOS_PART_SINIESTROS: '||SQLERRM);
                 END;
+cband:='diex';
 
                 FOR I IN PAGO_Q LOOP
                    nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + nOrden;
@@ -10908,6 +10993,7 @@ BEGIN
                 -- PARA EL LOG DEBERA TRAER TODOS LOS IDSINEISTRO DE LA TABLA FACTURA_EXTERNA SI ES QUE APLICA------------------------------
                 END IF;
             END IF;
+cband:='once';
 
             nMtoPendPago := nMtoReservadoMoneda - nMtoPagadoMoneda;
             --nMontoLocal := nMtoPagar; --+ nMtoIva;
@@ -10940,6 +11026,8 @@ BEGIN
             --nMtoBruto := nMtoHono + nMtoHosp + nMtoOtrosGtos;
             --nMtoTotPagCalc
             nMtoBruto := 0;
+cband:='doce';
+
             IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(X.CodCia, nIdPoliza, nIDetPol, nCodAsegurado) = 'S' THEN
                  --COLECTIVO
                    nNumAprobacion := OC_APROBACION_ASEG.INSERTA_APROBACION(nIdSiniestro, nIdPoliza, nCodAsegurado,
@@ -11222,6 +11310,7 @@ BEGIN
                       END IF;
                    END LOOP;
             END IF;
+cband:='trece';
 
             -- Se adiciona la condición de proveedor y numdoc no sean nulos.
             IF cNombProvBenef IS NOT NULL THEN
@@ -11276,6 +11365,7 @@ BEGIN
                END;
 
             END IF;
+cband:='catorce';
 
             --cNombreArchLogem   := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,27,','));
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'PROCE');
@@ -11356,7 +11446,7 @@ BEGIN
                   RAISE_APPLICATION_ERROR(-20225,'OTHERS Error al actualizar SINIESTRO : '||SQLERRM);
             END;
       ELSE
-        OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede Pagar el Siniestro: '||cMsjError);
+        OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','1. No se puede Pagar el Siniestro: '||cMsjError);
         OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
 
      ---  aevs   seguimiento de  cargas masivas
@@ -11377,22 +11467,34 @@ BEGIN
           END;
       END IF;
    END LOOP;
+   cband:='quince';
+
 EXCEPTION
    WHEN OTHERS THEN
       ROLLBACK;
-      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede Pagar el Siniestro '||SQLERRM);
+      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225',cband||'-'||'2. No se puede Pagar el Siniestro '||SQLERRM);
       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
 END PAGO_SINIESTROS_MASIVO;
 
 FUNCTION  VALIDA_ARCHIVO_CARGA(cNomArchivoCarga VARCHAR2) RETURN BOOLEAN IS
 nCuenta NUMBER;
+cusuario varchar2(50);
 BEGIN
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cusuario FROM DUAL;
+	IF(cusuario IS NULL)THEN
+		cusuario := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cusuario := USER;
+  END;
+
    SELECT COUNT(*)
      INTO nCuenta
      FROM PROCESOS_MASIVOS
     WHERE NomArchivoCarga = cNomArchivoCarga
       AND IndRegValidado = 'N'
-      AND CodUsuario = USER;
+      AND CodUsuario = cusuario;
 
    IF nCuenta = 0 THEN
       RETURN TRUE;
@@ -12297,7 +12399,8 @@ END COBRANZA_APORTES_ASEG_FONDOS;
       UTL_FILE.FCLOSE(cCtlArchivo3);
       UTL_FILE.FCLOSE_ALL;
    END RECUPERA_LOG_CARGA;
-PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia             NUMBER
+   
+   PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia             NUMBER
                                  , nCodEmpresa         NUMBER
                                  , nIdPoliza           NUMBER
                                  , nIDetPol            NUMBER 
@@ -12317,7 +12420,7 @@ nIdCobranza         REGI_COBRANZA_MASIVA.IdCobranza%TYPE;
 BEGIN
 
      BEGIN
-        SELECT SEQ_COBRANZA_MASIVA.NEXTVAL
+       	SELECT SEQ_COBRANZA_MASIVA.NEXTVAL
         INTO nIdCobranza
         FROM DUAL;
 

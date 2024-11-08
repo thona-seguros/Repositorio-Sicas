@@ -1,4 +1,4 @@
-CREATE OR REPLACE package          xlsx_builder_pkg
+create or replace package SICAS_OC.XLSX_BUILDER_PKG
 authid current_user as
 /**********************************************
 **
@@ -349,7 +349,7 @@ end;
 
 /
 
-create or replace package body          xlsx_builder_pkg
+create or replace package body SICAS_OC.XLSX_BUILDER_PKG
 as 
 --
   c_LOCAL_FILE_HEADER        constant raw(4) := hextoraw( '504B0304' ); -- Local file header signature

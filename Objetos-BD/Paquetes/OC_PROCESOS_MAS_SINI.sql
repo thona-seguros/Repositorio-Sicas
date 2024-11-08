@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_PROCESOS_MAS_SINI IS
+create or replace PACKAGE SICAS_OC.OC_PROCESOS_MAS_SINI IS
 --
 --  28/02/2017  Rutina para constituir solo reserva en INFONACOT      -- JICO ASEGMAS 
 --  07/08/2018  Ajuste para cambio especial                           -- JICO INFO2
@@ -73,7 +73,8 @@ PROCEDURE SOLICITUD_PAGOS_EMISION(NCODCIA      NUMBER,     NCODEMPRESA     NUMBE
 END OC_PROCESOS_MAS_SINI;
 
 /
-create or replace PACKAGE BODY OC_PROCESOS_MAS_SINI IS
+
+create or replace PACKAGE BODY SICAS_OC.OC_PROCESOS_MAS_SINI IS
 --
 --  28/02/2017  Rutina para constituir solo reserva en INFONACOT      -- JICO ASEGMAS 
 --  07/08/2018  Ajuste para cambio especial                           -- JICO INFO2
@@ -331,8 +332,8 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
           cCodCptoTranPgo := 'PARVAD';
     ELSE
        nCodError := 29;
-       cObservacion := 'Error, el Tipo de Cobertura no es v·lido.';
-       RAISE_APPLICATION_ERROR(-20225,'Error, el Tipo de Cobertura no es v·lido.');
+       cObservacion := 'Error, el Tipo de Cobertura no es v√°lido.';
+       RAISE_APPLICATION_ERROR(-20225,'Error, el Tipo de Cobertura no es v√°lido.');
     END IF;
     --
     -- VALIDA SI ES UN AJUSTE O NUEVO SINIESTRO
@@ -368,8 +369,8 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
        EXCEPTION
          WHEN OTHERS THEN
            nCodError := 99;
-           cObservacion := 'Error al Insertar la ObervaciÛn 1, Favor de validar la informaciÛn.';
-           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn 2, Favor de validar la informaciÛn, Error: '||SQLERRM);
+           cObservacion := 'Error al Insertar la Obervaci√≥n 1, Favor de validar la informaci√≥n.';
+           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n 2, Favor de validar la informaci√≥n, Error: '||SQLERRM);
        END;
        --
        cCodPlantilla     := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(nCodCia, nCodempresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
@@ -415,7 +416,7 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
          WHEN OTHERS THEN
            nCodError := 99;
            cObservacion := 'Error DETALLE SINIESTRO (Cero Sini).';
-           RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+           RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
        END;
        --
        BEGIN
@@ -451,7 +452,7 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
             WHEN OTHERS THEN
               nCodError := 99;
               cObservacion := 'NO Existe COBERTURA SINIESTRO (Cero Sini).';
-              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
           END;
        END IF;
        --
@@ -468,8 +469,8 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
        EXCEPTION
          WHEN OTHERS THEN
            nCodError := 99;
-           cObservacion := 'Error al Insertar la ObervaciÛn 3, Favor de validar la informaciÛn.';
-           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn 4, Favor de validar la informaciÛn, Error: '||SQLERRM);
+           cObservacion := 'Error al Insertar la Obervaci√≥n 3, Favor de validar la informaci√≥n.';
+           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n 4, Favor de validar la informaci√≥n, Error: '||SQLERRM);
        END;
        --
        BEGIN
@@ -539,7 +540,7 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
             WHEN OTHERS THEN
               nCodError := 99;
               cObservacion := 'NO Existe COBERTURA SINIESTRO (Cero Sini).';
-              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
           END;
        END IF;
        --
@@ -568,8 +569,8 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Error al Insertar la ObservaciÛn , Favor de validar la informaciÛn.';
-        RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObservaciÛn , Favor de validar la informaciÛn, Error: '||SQLERRM);
+        cObservacion := 'Error al Insertar la Observaci√≥n , Favor de validar la informaci√≥n.';
+        RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Observaci√≥n , Favor de validar la informaci√≥n, Error: '||SQLERRM);
     END;
     --
     BEGIN
@@ -578,8 +579,8 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Error al Insertar la AprobaciÛn.';
-        RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la AprobaciÛn: '|| nIdSiniestro || ' ' || SQLERRM);
+        cObservacion := 'Error al Insertar la Aprobaci√≥n.';
+        RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Aprobaci√≥n: '|| nIdSiniestro || ' ' || SQLERRM);
     END;
     --
     BEGIN
@@ -591,8 +592,8 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Insertar en DETALLE APROBACION - OcurriÛ el siguiente error.';
-        RAISE_APPLICATION_ERROR(-20225,'Insertar en DETALLE APROBACION - OcurriÛ el siguiente error: '||SQLERRM);
+        cObservacion := 'Insertar en DETALLE APROBACION - Ocurri√≥ el siguiente error.';
+        RAISE_APPLICATION_ERROR(-20225,'Insertar en DETALLE APROBACION - Ocurri√≥ el siguiente error: '||SQLERRM);
     END;
     --
     nBenef := 1;
@@ -646,8 +647,8 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario.';
-        RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
+        cObservacion := 'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario.';
+        RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
     END;
     --
     BEGIN
@@ -655,8 +656,8 @@ DBMS_OUTPUT.PUT_LINE('OC_PROCESOS_MAS_SINI');
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Error al Pagar la AprobaciÛn del Siniestro.';
-        RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la AprobaciÛn del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
+        cObservacion := 'Error al Pagar la Aprobaci√≥n del Siniestro.';
+        RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobaci√≥n del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
     END;
     --
     -- PROCESO DE PAGOS  FIN
@@ -690,7 +691,7 @@ cCodPlantilla          CONFIG_PLANTILLAS_PLANCOB.CodPlantilla%TYPE;
 cNumSiniRef            SINIESTRO.NumSiniRef%TYPE;
 cMotivSiniestro        SINIESTRO.Motivo_de_Siniestro%TYPE;
 cCodPaisOcurr          SINIESTRO.CodPaisOcurr%TYPE := '001';
-cCodProvOcurr          SINIESTRO.CodProvOcurr%TYPE := '009'; -- No est·n mandando la direccion del Trabajador, por lo que por default es D.F.
+cCodProvOcurr          SINIESTRO.CodProvOcurr%TYPE := '009'; -- No est√°n mandando la direccion del Trabajador, por lo que por default es D.F.
 dFec_Ocurrencia        SINIESTRO.Fec_Ocurrencia%TYPE;
 dFec_Notificacion      SINIESTRO.Fec_Notificacion%TYPE;
 cDescSiniestro         OBSERVACION_SINIESTRO.Descripcion%TYPE;
@@ -804,8 +805,8 @@ BEGIN
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
         nCodError    := 22;
-        cObservacion := 'Codigo Error 22: No est· reportado en los listados.';
-        RAISE_APPLICATION_ERROR(-20225,'Codigo Error 22: No est· reportado en los listados.');
+        cObservacion := 'Codigo Error 22: No est√° reportado en los listados.';
+        RAISE_APPLICATION_ERROR(-20225,'Codigo Error 22: No est√° reportado en los listados.');
     END;
     --
     BEGIN
@@ -820,7 +821,7 @@ BEGIN
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
         nCodError    := 22;
-        cObservacion := 'Codigo Error 22: No est· reportado en los listados.';
+        cObservacion := 'Codigo Error 22: No est√° reportado en los listados.';
         RAISE_APPLICATION_ERROR(-20225,cObservacion);
     END;
     --
@@ -863,8 +864,8 @@ BEGIN
           cCodCptoTranPgo := 'PARVAD';
     ELSE
        nCodError := 29;
-       cObservacion := 'Error, el Tipo de Cobertura no es v·lido.';
-       RAISE_APPLICATION_ERROR(-20225,'Error, el Tipo de Cobertura no es v·lido.');
+       cObservacion := 'Error, el Tipo de Cobertura no es v√°lido.';
+       RAISE_APPLICATION_ERROR(-20225,'Error, el Tipo de Cobertura no es v√°lido.');
     END IF;
     --
     -- VALIDA SI ES UN AJUSTE O NUEVO SINIESTRO
@@ -900,8 +901,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
            nCodError := 99;
-           cObservacion := 'Error al Insertar la ObervaciÛn 1, Favor de validar la informaciÛn.';
-           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn 2, Favor de validar la informaciÛn, Error: '||SQLERRM);
+           cObservacion := 'Error al Insertar la Obervaci√≥n 1, Favor de validar la informaci√≥n.';
+           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n 2, Favor de validar la informaci√≥n, Error: '||SQLERRM);
        END;
        --
        cCodPlantilla     := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(nCodCia, nCodempresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
@@ -947,7 +948,7 @@ BEGIN
          WHEN OTHERS THEN
            nCodError := 99;
            cObservacion := 'Error DETALLE SINIESTRO (Cero Sini).';
-           RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+           RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
        END;
        --
        BEGIN
@@ -983,7 +984,7 @@ BEGIN
             WHEN OTHERS THEN
               nCodError := 99;
               cObservacion := 'NO Existe COBERTURA SINIESTRO (Cero Sini).';
-              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
           END;
        END IF;
        --
@@ -1000,8 +1001,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
            nCodError := 99;
-           cObservacion := 'Error al Insertar la ObervaciÛn 3, Favor de validar la informaciÛn.';
-           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn 4, Favor de validar la informaciÛn, Error: '||SQLERRM);
+           cObservacion := 'Error al Insertar la Obervaci√≥n 3, Favor de validar la informaci√≥n.';
+           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n 4, Favor de validar la informaci√≥n, Error: '||SQLERRM);
        END;
        --
        BEGIN
@@ -1071,7 +1072,7 @@ BEGIN
             WHEN OTHERS THEN
               nCodError := 99;
               cObservacion := 'NO Existe COBERTURA SINIESTRO (Cero Sini).';
-              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
+              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
           END;
        END IF;
        --
@@ -2139,14 +2140,14 @@ nPorcConcepto          CATALOGO_DE_CONCEPTOS.PorcConcepto%TYPE;
 nMontoConcepto         CATALOGO_DE_CONCEPTOS.MontoConcepto%TYPE;
 cIndTipoConcepto       CATALOGO_DE_CONCEPTOS.IndTipoConcepto%TYPE;
 nBENEF                 BENEF_SIN.BENEF%TYPE;
-cNOMBRE_BENEF          BENEF_SIN.NOMBRE%TYPE;
+cNOMBRE_BENEF       	 BENEF_SIN.NOMBRE%TYPE;
 cAPE_PAT_BENEF         BENEF_SIN.APELLIDO_PATERNO%TYPE;
 cAPE_MAT_BENEF         BENEF_SIN.APELLIDO_MATERNO%TYPE;
 nPORC_PART             BENEF_SIN.PORCEPART%TYPE;
 nID_PARENTESCO         BENEF_SIN.CODPARENT%TYPE;
 cID_SEXO               BENEF_SIN.SEXO%TYPE;
 cRFC                   BENEF_SIN.NUM_DOC_TRIBUTARIO%TYPE;
-nCUENTA_CLAVE          BENEF_SIN.NUMCUENTABANCARIA%TYPE;
+nCUENTA_CLAVE	         BENEF_SIN.NUMCUENTABANCARIA%TYPE;
 cID_BANCO              BENEF_SIN.ENT_FINANCIERA%TYPE;
 WEXISTE_BENEF          NUMBER  := 0;
 cID_APLICA_IVA         VARCHAR2(1);
@@ -2160,6 +2161,7 @@ WCID_EDAD_MINORIA      BENEF_SIN.ID_EDAD_MINORIA%TYPE;
 WCNOMBRE_MINORIA       BENEF_SIN.NOMBRE_MINORIA%TYPE;
 WNPORC_MINORIA         BENEF_SIN.PORC_MINORIA%TYPE;
 CTIPO_PAGO             BENEF_SIN.TIPO_PAGO%TYPE;
+cUsuario varchar2(50);
 --
 CURSOR SIN_Q IS
    SELECT CodCia, CodEmpresa, IdTipoSeg, PlanCob, NumPolUnico,
@@ -2275,8 +2277,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
            nCodError := 99;
-           cObservacion := 'Error al Insertar la AprobaciÛn.';
-           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la AprobaciÛn: '|| nIdSiniestro || ' ' || SQLERRM);
+           cObservacion := 'Error al Insertar la Aprobaci√≥n.';
+           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Aprobaci√≥n: '|| nIdSiniestro || ' ' || SQLERRM);
        END;
        --
        -- DETALLE DE PRIMA
@@ -2347,7 +2349,14 @@ BEGIN
        ELSE
            nBENEF := 1;
        END IF;
-       --
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cUsuario := USER;
+  END;       --
        BEGIN
          INSERT INTO BENEF_SIN
            (IDSINIESTRO,         IDPOLIZA,           COD_ASEGURADO,         BENEF,
@@ -2377,7 +2386,7 @@ BEGIN
              --
              WNPORCENTISR,       'RFC',              cRFC,                   cAPE_PAT_BENEF,
              cAPE_MAT_BENEF,     CTIPO_PAGO,         TRUNC(SYSDATE),         '',
-             nCodCia,            nCodempresa,        USER,                   TRUNC(SYSDATE),
+             nCodCia,            nCodempresa,        cusuario,                   TRUNC(SYSDATE),
              --
              WCIDTIPO_PAGO,      '',                 '',                     '',
              WCID_EDAD_MINORIA,  WCNOMBRE_MINORIA,   WNPORC_MINORIA,         '',
@@ -2399,8 +2408,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
               nCodError := 99;
-              cObservacion := 'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario.';
-              RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
+              cObservacion := 'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario.';
+              RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
        END;
        --
        BEGIN
@@ -2408,8 +2417,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
               nCodError := 99;
-              cObservacion := 'Error al Pagar la AprobaciÛn del Siniestro.';
-              RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la AprobaciÛn del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
+              cObservacion := 'Error al Pagar la Aprobaci√≥n del Siniestro.';
+              RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobaci√≥n del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
        END;
        --
        IF WFECHA IS NOT NULL OR WID_APLICA_CONTA = 'N' THEN
@@ -2480,8 +2489,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
            nCodError := 99;
-           cObservacion := 'Error al Insertar la AprobaciÛn.';
-           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la AprobaciÛn: '|| nIdSiniestro || ' ' || SQLERRM);
+           cObservacion := 'Error al Insertar la Aprobaci√≥n.';
+           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Aprobaci√≥n: '|| nIdSiniestro || ' ' || SQLERRM);
        END;
        --
        -- DETALLE DE PRIMA
@@ -2551,7 +2560,14 @@ BEGIN
        ELSE
            nBENEF := 1;
        END IF;
-       --
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cUsuario := USER;
+  END;       --
        BEGIN
          INSERT INTO BENEF_SIN
            (IDSINIESTRO,         IDPOLIZA,           COD_ASEGURADO,         BENEF,
@@ -2581,7 +2597,7 @@ BEGIN
              --
              WNPORCENTISR,       'RFC',              cRFC,                   cAPE_PAT_BENEF,
              cAPE_MAT_BENEF,     CTIPO_PAGO,         TRUNC(SYSDATE),         '',
-             nCodCia,            nCodempresa,        USER,                   TRUNC(SYSDATE),
+             nCodCia,            nCodempresa,        cUsuario,                   TRUNC(SYSDATE),
              --
              WCIDTIPO_PAGO,      '',                 '',                     '',
              WCID_EDAD_MINORIA,  WCNOMBRE_MINORIA,   WNPORC_MINORIA,         '',
@@ -2603,8 +2619,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
               nCodError := 99;
-              cObservacion := 'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario.';
-              RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
+              cObservacion := 'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario.';
+              RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
        END;
        --
        BEGIN
@@ -2612,8 +2628,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
               nCodError := 99;
-              cObservacion := 'Error al Pagar la AprobaciÛn aseg del Siniestro.';
-              RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la AprobaciÛn aseg del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
+              cObservacion := 'Error al Pagar la Aprobaci√≥n aseg del Siniestro.';
+              RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobaci√≥n aseg del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
        END;
        --
        IF WFECHA IS NOT NULL OR WID_APLICA_CONTA = 'N' THEN
@@ -2953,6 +2969,8 @@ cMsjError              PROCESOS_MASIVOS_LOG.TxtError%TYPE := NULL;
 cExisteCob             VARCHAR2(1);
 nCodError              NUMBER(2) := Null;
 cObservacion           VARCHAR2(100);
+cUsuario varchar2(50);
+
 --
 --
 BEGIN
@@ -3060,7 +3078,14 @@ BEGIN
               cObservacion := 'Codigo Error 89:NO Existe Cobertura por others.';
               RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||CCODCOBERT);
        END;
-       --
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cUsuario := USER;
+  END;       --
        IF cExisteCob = 'S' THEN
              BEGIN
                INSERT INTO COBERTURA_SINIESTRO
@@ -3082,7 +3107,7 @@ BEGIN
                  TRUNC(SYSDATE),         0,                      NULL,                 NULL,
                  --
                  NCODCIA,                NCODEMPRESA,            CCOD_MONEDA,          NCOD_ASEGURADO,
-                 CCOD_TPRESERVA,         1,                      USER,                 TRUNC(SYSDATE));
+                 CCOD_TPRESERVA,         1,                      cusuario,                 TRUNC(SYSDATE));
              EXCEPTION
                WHEN OTHERS THEN
                     nCodError := 99;
@@ -3173,7 +3198,16 @@ BEGIN
               RAISE_APPLICATION_ERROR(-20225,'NO Existe Cobertura de '||CCODCOBERT);
        END;
        --
-       IF cExisteCob = 'S' THEN
+		BEGIN --PST 27-11-2023 TODO EL QUERY
+			SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+			IF(cUsuario IS NULL)THEN
+				cUsuario := USER;
+			END IF;
+		EXCEPTION
+			WHEN OTHERS THEN
+				cUsuario := USER;
+		END;
+         IF cExisteCob = 'S' THEN
              BEGIN
                INSERT INTO COBERTURA_SINIESTRO_ASEG
                 (IDDETSIN,               CODCOBERT,              IDSINIESTRO,          IDPOLIZA,
@@ -3194,7 +3228,7 @@ BEGIN
                  TRUNC(SYSDATE),         0,                      NULL,                 NULL,
                  --
                  NCODCIA,                NCODEMPRESA,            CCOD_MONEDA,          NCOD_ASEGURADO,
-                 CCOD_TPRESERVA,         1,                      USER,                 TRUNC(SYSDATE));
+                 CCOD_TPRESERVA,         1,                      cusuario,                 TRUNC(SYSDATE));
              EXCEPTION
                WHEN OTHERS THEN
                     nCodError := 99;
@@ -3611,6 +3645,7 @@ cExisteAPRO            VARCHAR2(1);
 nCodError              NUMBER(2) := Null;
 cObservacion           VARCHAR2(100);
 WNIDDETSIN             COBERTURA_SINIESTRO_ASEG.IDDETSIN%TYPE;
+cUsuario varchar2(50);
 --
 CURSOR APROBA IS
 SELECT *
@@ -3709,6 +3744,15 @@ BEGIN
             cObservacion := 'Codigo Error 89:NO Existe Aprobacion por others.';
             RAISE_APPLICATION_ERROR(-20225,'NO Existe Aprobacion de '||NNUM_APROBACION);
      END;
+	BEGIN --PST 27-11-2023 TODO EL QUERY
+		SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+		IF(cUsuario IS NULL)THEN
+			cUsuario := USER;
+		END IF;
+	EXCEPTION
+		WHEN OTHERS THEN
+			cUsuario := USER;
+	END;
      --
      IF cExisteAPRO = 'S' THEN
         FOR X IN APROBA LOOP
@@ -3726,7 +3770,7 @@ BEGIN
             X.TIPO_APROBACION,      X.MONTO_LOCAL,    X.MONTO_MONEDA,       'SOL', 
             X.TIPO_DE_APROBACION,   '',               X.INDDISPERSION,       X.CTALIQUIDADORA,
             X.IDEFACTEXT,           X.BENEF,          '',                   '',
-            USER,                   X.TERMINAL,       '',                   TRUNC(SYSDATE),
+            cusuario,                   X.TERMINAL,       '',                   TRUNC(SYSDATE),
             X.NUMPAGREF,            '',               X. CODCIA,            X.CODEMPRESA,
             X.COD_MONEDA,           X.CODCOBERT,      X.COD_ASEGURADO,      'MASIVO',
             TRUNC(SYSDATE));
@@ -3799,6 +3843,15 @@ BEGIN
             cObservacion := 'Codigo Error 89:NO Existe Aprobacion por others.';
             RAISE_APPLICATION_ERROR(-20225,'NO Existe Aprobacion de '||NNUM_APROBACION);
      END;
+	BEGIN --PST 27-11-2023 TODO EL QUERY
+		SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+		IF(cUsuario IS NULL)THEN
+			cUsuario := USER;
+		END IF;
+	EXCEPTION
+		WHEN OTHERS THEN
+			cUsuario := USER;
+	END;
      --
      IF cExisteAPRO = 'S' THEN
         FOR X IN APROBA_A LOOP
@@ -3816,7 +3869,7 @@ BEGIN
             X.TIPO_APROBACION,      X.MONTO_LOCAL,    X.MONTO_MONEDA,       'SOL', 
             X.TIPO_DE_APROBACION,   '',               X.INDDISPERSION,       X.CTALIQUIDADORA,
             X.IDEFACTEXT,           X.BENEF,          '',                   '',
-            USER,                   X.TERMINAL,       '',                   TRUNC(SYSDATE),
+            cusuario,                   X.TERMINAL,       '',                   TRUNC(SYSDATE),
             X.NUMPAGREF,            '',               X. CODCIA,            X.CODEMPRESA,
             X.COD_MONEDA,           X.CODCOBERT,      X.COD_ASEGURADO,      'MASIVO',
             TRUNC(SYSDATE));
@@ -4031,8 +4084,8 @@ BEGIN
           EXCEPTION
             WHEN OTHERS THEN
                  nCodError := 99;
-                 cObservacion := 'Error al Pagar la AprobaciÛn del Siniestro.';
-                 RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la AprobaciÛn del Siniestro: '|| NIDSINIESTRO || ' ' || SQLERRM);
+                 cObservacion := 'Error al Pagar la Aprobaci√≥n del Siniestro.';
+                 RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobaci√≥n del Siniestro: '|| NIDSINIESTRO || ' ' || SQLERRM);
           END;
           -- 
           IF DFECHA IS NOT NULL THEN
@@ -4115,8 +4168,8 @@ BEGIN
          EXCEPTION
             WHEN OTHERS THEN
                  nCodError := 99;
-                 cObservacion := 'Error al Pagar la AprobaciÛn del Siniestro.';
-                 RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la AprobaciÛn del Siniestro: '|| NIDSINIESTRO || ' ' || SQLERRM);
+                 cObservacion := 'Error al Pagar la Aprobaci√≥n del Siniestro.';
+                 RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobaci√≥n del Siniestro: '|| NIDSINIESTRO || ' ' || SQLERRM);
           END;
           -- 
           IF DFECHA IS NOT NULL THEN

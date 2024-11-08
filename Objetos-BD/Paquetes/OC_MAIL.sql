@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_MAIL IS
+create or replace PACKAGE SICAS_OC.OC_MAIL IS
    /* Package variable Declaration. */
    nCodCia                          NUMBER;
    cCtaEnvio                        VARCHAR2(50);
@@ -116,13 +116,28 @@ CREATE OR REPLACE PACKAGE          OC_MAIL IS
                        , P_ERROR            OUT VARCHAR2
                         );
 END OC_MAIL;
+
 /
 
-CREATE OR REPLACE PACKAGE BODY          OC_MAIL IS
+create or replace PACKAGE BODY SICAS_OC.OC_MAIL IS
     
    PROCEDURE INIT_PARAM IS
+   cUsuario VARCHAR2(1000);
    BEGIN
-       OC_MAIL.nCodCia      := OC_GENERALES.CODCIA_USUARIO(USER);
+       BEGIN --PST 27-11-2023 TODO EL QUERY
+        SELECT APEX_CUSTOM_AUTH.GET_USERNAME
+        INTO cUsuario
+        FROM DUAL
+        ;
+
+        IF(cUsuario IS NULL)THEN
+            cUsuario := USER;
+        END IF;
+       EXCEPTION WHEN OTHERS THEN
+        cUsuario := USER;
+       END;
+
+       OC_MAIL.nCodCia      := OC_GENERALES.CODCIA_USUARIO(cUsuario);
        OC_MAIL.SMTP_HOST    := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'019');
        OC_MAIL.SMTP_PORT    := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'020');
        OC_MAIL.SMTP_DOMAIN  := OC_GENERALES.BUSCA_PARAMETRO(nCodCia,'019');

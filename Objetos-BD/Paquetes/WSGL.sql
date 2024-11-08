@@ -1,4 +1,4 @@
-CREATE OR REPLACE package wsgl is
+create or replace package SICAS_OC.WSGL is
 
 --------------------------------------------------------------------------------
 -- Declare constants for use in Layout procedures
@@ -528,14 +528,9 @@ CREATE OR REPLACE package wsgl is
   pragma restrict_references( EscapeItem, WNDS, WNPS );
 END WSGL;
 
- 
- 
- 
- 
- 
 /
 
-create or replace package body wsgl is
+create or replace package body SICAS_OC.WSGL is
 
 -- Current version of WSGL
    WSGL_VERSION constant varchar2(30) := '6.5.22.0.1';
@@ -2221,8 +2216,8 @@ begin
         if g_submit
         then
            htp.p('document.write(''<input type=button value="'||New_Title||'" onClick="return ' ||p_type||'_OnClick(this)">'')');
-   else
-        htp.p('document.write(''<input type=submit value="'||New_Title||'" onClick="return ' ||p_type||'_OnClick(this),false">'')');
+	else
+    	  htp.p('document.write(''<input type=submit value="'||New_Title||'" onClick="return ' ||p_type||'_OnClick(this),false">'')');
           g_submit := TRUE ;
         end if ;
      else
@@ -2231,10 +2226,10 @@ begin
         if g_submit
         then
             htp.p('document.write(''<input type=button value="'||New_Title||'" onClick="return ' ||p_type||'_OnClick(this,0,&quot;' || p_target|| '&quot;)">'')');
-   else
+	else
            htp.p('document.write(''<input type=submit value="'||New_Title||'" onClick="return ' ||p_type||'_OnClick(this,0,&quot;' || p_target|| '&quot;),false">'')');
-      g_submit := TRUE ;
-   end if ;
+	   g_submit := TRUE ;
+	end if ;
      end if;
      htp.p('//-->');
      htp.p('</SCRIPT>');
@@ -2267,10 +2262,10 @@ begin
        -- COMM_SRC: ER 1499943 - Jason King
        -- Make first button "submit"
        if g_submit then
-         htp.p ('document.write(''<input type=button value="'||New_Title||'" onClick="' ||
+    	   htp.p ('document.write(''<input type=button value="'||New_Title||'" onClick="' ||
                  New_Button_JS || '; return ' ||p_type||'_OnClick(this,0,&quot;' || p_target|| '&quot;)">'')');
        else
-       htp.p ('document.write(''<input type=submit value="'||New_Title||'" onClick="' ||
+    	 htp.p ('document.write(''<input type=submit value="'||New_Title||'" onClick="' ||
                  New_Button_JS || '; return ' ||p_type||'_OnClick(this,0,&quot;' || p_target|| '&quot;),false">'')');
          g_submit := TRUE ;
        end if;
@@ -2365,7 +2360,7 @@ document.write(''<input type=button value="'||New_Title||'" onClick="return ' ||
        Submit_Button_Text := Submit_Button_Text ||'
 document.write(''<input type=submit value="'||New_Title||'" onClick="return ' ||p_type||'_OnClick(this,'||p_index||'),false">'')';
 
-     g_submit := TRUE ;
+	  g_submit := TRUE ;
        end if ;
      else
        if g_submit
@@ -2375,7 +2370,7 @@ document.write(''<input type=button value="'||New_Title||'" onClick="return ' ||
        else
           Submit_Button_Text := Submit_Button_Text ||'
 document.write(''<input type=submit value="'||New_Title||'" onClick="return ' ||p_type||'_OnClick(this,'||p_index||',&quot;' || p_target|| '&quot;),false">'')';
-     g_submit := true ;
+	  g_submit := true ;
        end if ;
      end if;
      Submit_Button_Text := Submit_Button_Text ||'
@@ -2413,7 +2408,7 @@ htf.formSubmit(p_name, p_title, 'ID="'||p_title||'"');
        then
          Submit_Button_Text := Submit_Button_Text ||'document.write(''<input type=button value="'||New_Title||'" onClick="' ||
                New_Button_JS || '; return ' ||p_type||'_OnClick(this,'||p_index||')">'')';
-   else
+	else
          Submit_Button_Text := Submit_Button_Text ||'document.write(''<input type=submit value="'||New_Title||'" onClick="' ||
                New_Button_JS || '; return ' ||p_type||'_OnClick(this,'||p_index||'),false">'')';
        end if ;
