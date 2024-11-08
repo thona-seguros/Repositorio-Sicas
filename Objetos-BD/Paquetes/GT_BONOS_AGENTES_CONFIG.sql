@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE GT_BONOS_AGENTES_CONFIG AS
+create or replace PACKAGE SICAS_OC.GT_BONOS_AGENTES_CONFIG AS
 
 FUNCTION NUMERO_BONO RETURN NUMBER;
 
@@ -52,9 +52,10 @@ FUNCTION URL_FIRMAFUNC_BONO (nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas N
 FUNCTION CARGO_FIRMAFUNC_BONO (nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER) RETURN VARCHAR2;
 
 END GT_BONOS_AGENTES_CONFIG;
+
 /
 
-CREATE OR REPLACE PACKAGE BODY GT_BONOS_AGENTES_CONFIG AS
+create or replace PACKAGE BODY SICAS_OC.GT_BONOS_AGENTES_CONFIG AS
 
 FUNCTION NUMERO_BONO RETURN NUMBER IS
 nIdBonoVentas   BONOS_AGENTES_CONFIG.IdBonoVentas%TYPE;
@@ -69,6 +70,7 @@ END NUMERO_BONO;
 PROCEDURE COPIAR (nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER, cCodigoBonoDest VARCHAR2, 
                   cDescripBonoDest VARCHAR2, dFecIniBonoDest DATE, dFecFinBonoDest DATE) IS
 nIdBonoVentasDest   BONOS_AGENTES_CONFIG.IdBonoVentas%TYPE;
+cUsuario varchar2(200);
 CURSOR BONO_Q IS
    SELECT TipoBonoConv, FrecuenciaBono, ReglaBono, IndAgteConvEsp, IndExcluConvEsp,
           IndPolEspecificas, IndIdTipoSegPlanes, IndEmisionNueva, IndRenovacion, 
@@ -82,6 +84,15 @@ CURSOR BONO_Q IS
       AND CodEmpresa   = nCodEmpresa
       AND IdBonoVentas = nIdBonoVentas;
 BEGIN
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cUsuario := USER;
+  END;
+
    FOR W IN BONO_Q LOOP
       nIdBonoVentasDest := GT_BONOS_AGENTES_CONFIG.NUMERO_BONO;
       INSERT INTO BONOS_AGENTES_CONFIG
@@ -102,7 +113,7 @@ BEGIN
              W.IndPolEspecificas, W.IndIdTipoSegPlanes, W.IndEmisionNueva, W.IndRenovacion,  
              W.CodNivelBono, W.IndPromotoria, W.PorcenPromotoria, W.CantAgentesProd,  
              W.ProdMinAgentesProd, W.IndAsegTitulares, W.EdadIniAsegTit, W.EdadFinAsegTit, 
-             W.PorcenAsegTit, USER, TRUNC(SYSDATE), W.CptoEstadoCuenta, W.CodTipoPlan, 
+             W.PorcenAsegTit, CUSUARIO, TRUNC(SYSDATE), W.CptoEstadoCuenta, W.CodTipoPlan, 
              W.CodTipoBono, W.IndEmisionRetro, W.NombFuncionarioFirma, W.RutaFirma, 
              W.PuestoFuncionarioFirma);
 
@@ -116,36 +127,65 @@ BEGIN
 END COPIAR;
 
 PROCEDURE ACTIVAR_BONO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER) IS
+cUsuario VARCHAR2(200);
 BEGIN
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cUsuario := USER;
+  END;
+
    UPDATE BONOS_AGENTES_CONFIG
       SET StsBono     = 'ACTIVO',
           FecStatus   = TRUNC(SYSDATE),
           FecUltModif = TRUNC(SYSDATE),
-          CodUsuario  = USER
+          CodUsuario  = CUSUARIO
     WHERE CodCia       = nCodCia
       AND CodEmpresa   = nCodEmpresa
       AND IdBonoVentas = nIdBonoVentas;
 END ACTIVAR_BONO;
 
 PROCEDURE CONFIGURAR_BONO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER) IS
+CUSUARIO VARCHAR2(200);
 BEGIN
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cUsuario := USER;
+  END;
+
    UPDATE BONOS_AGENTES_CONFIG
       SET StsBono     = 'CONFIG',
           FecStatus   = TRUNC(SYSDATE),
           FecUltModif = TRUNC(SYSDATE),
-          CodUsuario  = USER
+          CodUsuario  = CUSUARIO
     WHERE CodCia       = nCodCia
       AND CodEmpresa   = nCodEmpresa
       AND IdBonoVentas = nIdBonoVentas;
 END CONFIGURAR_BONO;
 
 PROCEDURE SUSPENDER_BONO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER) IS
+CUSUARIO VARCHAR2(200);
 BEGIN
+  BEGIN --PST 27-11-2023 TODO EL QUERY
+    SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO cUsuario FROM DUAL;
+	IF(cUsuario IS NULL)THEN
+		cUsuario := USER;
+	END IF;
+  EXCEPTION WHEN OTHERS THEN
+    cUsuario := USER;
+  END;
    UPDATE BONOS_AGENTES_CONFIG
       SET StsBono     = 'SUSPEN',
           FecStatus   = TRUNC(SYSDATE),
           FecUltModif = TRUNC(SYSDATE),
-          CodUsuario  = USER
+          CodUsuario  = CUSUARIO
     WHERE CodCia       = nCodCia
       AND CodEmpresa   = nCodEmpresa
       AND IdBonoVentas = nIdBonoVentas;
@@ -178,19 +218,19 @@ BEGIN
        RETURN(cIndAgteConvEsp);
     ELSIF cIndicador = 'ECE' THEN -- Excluye Agentes con Convenio Especial
        RETURN(cIndExcluConvEsp);
-    ELSIF cIndicador = 'BPE' THEN -- Bono por P髄izas Espec韋icas
+    ELSIF cIndicador = 'BPE' THEN -- Bono por P贸lizas Espec铆ficas
        RETURN(cIndPolEspecificas);
     ELSIF cIndicador = 'BPP' THEN -- Bono por Productos y Planes
        RETURN(cIndIdTipoSegPlanes);
-    ELSIF cIndicador = 'PEN' THEN -- Sumariza P髄izas Nuevas
+    ELSIF cIndicador = 'PEN' THEN -- Sumariza P贸lizas Nuevas
        RETURN(cIndEmisionNueva);
     ELSIF cIndicador = 'PRE' THEN -- Sumariza Renovaciones
        RETURN(cIndRenovacion);
-    ELSIF cIndicador = 'PRO' THEN -- Si Agente Pertenece a Promotor韆
+    ELSIF cIndicador = 'PRO' THEN -- Si Agente Pertenece a Promotor铆a
        RETURN(cIndPromotoria);
-    ELSIF cIndicador = 'AST' THEN -- Considerar Edades de Asegurados Titulares para Ponderaci髇 Adicional
+    ELSIF cIndicador = 'AST' THEN -- Considerar Edades de Asegurados Titulares para Ponderaci贸n Adicional
        RETURN(cIndAsegTitulares);
-    ELSIF cIndicador = 'RET' THEN -- Considerar P髄izas Emitidas Antes de la Fecha de Inicio del C醠culo
+    ELSIF cIndicador = 'RET' THEN -- Considerar P贸lizas Emitidas Antes de la Fecha de Inicio del C谩lculo
        RETURN(cIndEmisionRetro);
     ELSE
        RAISE_APPLICATION_ERROR(-20100,'Indicador NO Definido para Bonos');
@@ -227,7 +267,7 @@ BEGIN
    RETURN(nPorcenPromotoria);
 EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      RAISE_APPLICATION_ERROR(-20205,'Error en Porcentaje de Promotor韆');
+      RAISE_APPLICATION_ERROR(-20205,'Error en Porcentaje de Promotor铆a');
 END PORCENTAJE_PROMOTORIA;
 
 FUNCTION PORCENTAJE_ASEG_TITULARES(nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER) RETURN NUMBER IS
@@ -257,7 +297,7 @@ BEGIN
    RETURN(nProducMinimaBono);
 EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      RAISE_APPLICATION_ERROR(-20205,'Error en Producci髇 M韓ima para Bono');
+      RAISE_APPLICATION_ERROR(-20205,'Error en Producci贸n M铆nima para Bono');
 END PRODUCCION_MINIMA;
 
 FUNCTION PROD_MINIMA_CONV_NAC(nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER) RETURN NUMBER IS
@@ -272,7 +312,7 @@ BEGIN
    RETURN(nProdMinimaConvNac);
 EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      RAISE_APPLICATION_ERROR(-20205,'Error en Producci髇 M韓ima para Convenci髇 Nacional');
+      RAISE_APPLICATION_ERROR(-20205,'Error en Producci贸n M铆nima para Convenci贸n Nacional');
 END PROD_MINIMA_CONV_NAC;
 
 FUNCTION PROD_MINIMA_CONV_INT(nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER) RETURN NUMBER IS
@@ -287,7 +327,7 @@ BEGIN
    RETURN(nProdMinimaConvInt);
 EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      RAISE_APPLICATION_ERROR(-20205,'Error en Producci髇 M韓ima para Convenci髇 Internacional');
+      RAISE_APPLICATION_ERROR(-20205,'Error en Producci贸n M铆nima para Convenci贸n Internacional');
 END PROD_MINIMA_CONV_INT;
 
 FUNCTION MINIMO_POLIZAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER) RETURN NUMBER IS
@@ -302,7 +342,7 @@ BEGIN
    RETURN(nMinimoPolizas);
 EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      RAISE_APPLICATION_ERROR(-20205,'Error en M韓imo de P髄izas para Bono');
+      RAISE_APPLICATION_ERROR(-20205,'Error en M铆nimo de P贸lizas para Bono');
 END MINIMO_POLIZAS;
 
 FUNCTION RANGO_EDAD_ASEG_TITULAR(nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER, nEdad NUMBER) RETURN VARCHAR2 IS
@@ -402,7 +442,7 @@ BEGIN
    RETURN(nProdMinAgentesProd);
 EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      RAISE_APPLICATION_ERROR(-20205,'Error en Producci髇 M韓ima de Agentes');
+      RAISE_APPLICATION_ERROR(-20205,'Error en Producci贸n M铆nima de Agentes');
 END PROD_MINIMA_AGENTES;
 
 FUNCTION CONCEPTO_BONO_ESTADO_CUENTA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdBonoVentas NUMBER) RETURN VARCHAR2 IS

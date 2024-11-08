@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE th_comisiones IS
+create or replace PACKAGE SICAS_OC.TH_COMISIONES IS
 
   -- Author  : RSERNA
   -- Created : 26/07/2016 15:25:10
@@ -89,14 +89,11 @@ CREATE OR REPLACE PACKAGE th_comisiones IS
                                          vAgente IN saldos_comisiones_detalle.cd_agente%TYPE,
                                          vFecIni IN DATE                                    ,
                                          vFecFin IN DATE                                    ); 
-END th_comisiones;
+END TH_COMISIONES;
 
- 
-
- 
 /
 
-create or replace PACKAGE BODY th_comisiones IS
+create or replace PACKAGE BODY SICAS_OC.TH_COMISIONES IS
   -- Private type declarations
     PROCEDURE Elimina_movimientos (vCia    IN saldos_comisiones_detalle.cd_cia%TYPE   , 
                      vAgente IN saldos_comisiones_detalle.cd_agente%TYPE,
@@ -803,7 +800,7 @@ create or replace PACKAGE BODY th_comisiones IS
                     AND id_poliza        = pIdPoliza    
                     AND id_endoso        = pIdEndoso   
                     AND id_recibo        = pIdRecibo    
-                    AND id_comision      = pIdComision;                
+                    AND id_comision      = pIdComision;				   
                COMMIT;                    
       END mete_detalle;
 
@@ -1068,8 +1065,8 @@ create or replace PACKAGE BODY th_comisiones IS
                      AND C.CodCia             = Y.CodCia
                      AND C.IdComision         = Y.IdComision
                      AND C.Comision_Local     <>0                                        
-                     AND ((N.Fecsts BETWEEN vFecIni AND vFecFin) OR
-                                                  --to_date('&P_FECDESDE','dd/mm/yyyy') AND to_date('&P_FECHASTA','dd/mm/yyyy')) OR 
+                  	 AND ((N.Fecsts BETWEEN vFecIni AND vFecFin) OR
+                              					  --to_date('&P_FECDESDE','dd/mm/yyyy') AND to_date('&P_FECHASTA','dd/mm/yyyy')) OR 
 --                          (TRUNC(c.fec_estado)  BETWEEN vFecini AND vFecFin))    --Aparentemente esto es lo correcto 07/10/2016                                      
                           (TRUNC(c.fec_liquidacion)  BETWEEN vFecini AND vFecFin)) -- Corrección para igualar los Saldos con el programa de forms (repocomi.fmb ) 03/09/2016
 --                                                  To_date('&P_FECDESDE','dd/mm/yyyy') AND to_date('&P_FECHASTA','dd/mm/yyyy')))
@@ -1516,4 +1513,4 @@ create or replace PACKAGE BODY th_comisiones IS
       COMMIT;
       DBMS_OUTPUT.PUT_LINE('Procesé: '||q*2||' Saldos de '||q||' agentes');
     END;
-END th_comisiones;
+END TH_COMISIONES;
