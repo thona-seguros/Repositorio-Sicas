@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_POLIZAS IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
 --
 -- HOMOLOGACION VIFLEX                             JMMD 01/03/2022
 -- INCIDENCIA AGENTE                               INCIAGE  JICO 14/06/2023
@@ -104,7 +104,7 @@ create or replace PACKAGE          OC_POLIZAS IS
 
 END OC_POLIZAS;
 /
-create or replace PACKAGE BODY          OC_POLIZAS IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
    --
    -- BITACORA DE CAMBIO
    -- SE AGREGO LA FUNCIONALIDAD DE LAVADO DE DINERO                        JICO 18/05/2017  LAVDIN
@@ -216,8 +216,8 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
            NULL, NULL, 0, 'N');
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
-       RAISE_APPLICATION_ERROR(-20225,'Ya Existe No. de P√≥liza: '||TRIM(cNumPolUnico)||
-                ' en la Compa√±√≠a '||TO_CHAR(nCodCia));
+       RAISE_APPLICATION_ERROR(-20225,'Ya Existe No. de PÛliza: '||TRIM(cNumPolUnico)||
+                ' en la CompaÒÌa '||TO_CHAR(nCodCia));
       END;
       RETURN(nIdPoliza);
    END INSERTAR_POLIZA;
@@ -235,8 +235,8 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
          WHEN NO_DATA_FOUND THEN
        cNumPolUnico := NULL;
          WHEN TOO_MANY_ROWS THEN
-       RAISE_APPLICATION_ERROR(-20225,'Existen Varios Registros de la P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))||
-                ' en la Compa√±√≠a '||TO_CHAR(nCodCia));
+       RAISE_APPLICATION_ERROR(-20225,'Existen Varios Registros de la PÛliza: '||TRIM(TO_CHAR(nIdPoliza))||
+                ' en la CompaÒÌa '||TO_CHAR(nCodCia));
       END;
       RETURN(cNumPolUnico);
    END NUMERO_UNICO;
@@ -331,6 +331,8 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
    nIdFormaCobro               POLIZAS.IdFormaCobro%TYPE;
    NUNPRICIPAL                 VARCHAR2(2);      --INCIAGE
    cCobertura                  VARCHAR2(10);
+   
+   nCodAsegurado               ASEGURADO.COD_ASEGURADO%TYPE;  --MLJS 14/11/2024
 
    CURSOR CPTO_PRIMAS_Q IS
       SELECT CS.CodCpto
@@ -379,7 +381,7 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
         FROM AGENTES_DISTRIBUCION_POLIZA
        WHERE IdPoliza = nIdPoliza
          AND CodCia   = nCodCia;
-   CURSOR COBERT_Q IS  ----ARH 26/08/2024
+   CURSOR COBERT_Q IS  ----ARH 26/08/2024 ERROR DE LIBERACION
       SELECT C.CODCOBERT
         FROM COBERT_ACT_ASEG C, COBERTURAS_DE_SEGUROS CS
        WHERE CS.CodCobert  = C.CodCobert
@@ -388,16 +390,19 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
          AND CS.CodEmpresa = C.CodEmpresa
          AND CS.CodCia     = C.CodCia
          AND C.IdPoliza    = nIdPoliza
-         AND C.CodCia      = nCodCia; 
+         AND C.CodCia      = nCodCia
+         --MLJS 14/11/2024 ERROR DE LIBERACION SE AGREGA CONDICION PARA ELOMINAR EL
+         -- PRODUCTO CARTESINAO
+         AND C.COD_ASEGURADO = nCodAsegurado;  
    BEGIN
       nEmite := 'N';
 
       FOR X IN CPTO_PRIMAS_Q LOOP
          IF X.CodCpto IS NULL THEN
-       RAISE_APPLICATION_ERROR(-20200,'Debe Configurar los Conceptos de Prima en Coberturas antes de Emitir la P√≥liza');
+       RAISE_APPLICATION_ERROR(-20200,'Debe Configurar los Conceptos de Prima en Coberturas antes de Emitir la PÛliza');
          ELSE
        IF OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, X.CodCpto) = 'CONCEPTO NO EXISTE' THEN
-          RAISE_APPLICATION_ERROR(-20200,'Concepto de Prima Configurado en Coberturas ' || X.CodCpto || ' NO es V√°lido');
+          RAISE_APPLICATION_ERROR(-20200,'Concepto de Prima Configurado en Coberturas ' || X.CodCpto || ' NO es V·lido');
        END IF;
          END IF;
       END LOOP;
@@ -410,9 +415,9 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
        AND CodCia   = nCodCia;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-       RAISE_APPLICATION_ERROR(-20200,'No ha Ingresado Certificados/Subgrupos a la P√≥liza');
+       RAISE_APPLICATION_ERROR(-20200,'No ha Ingresado Certificados/Subgrupos a la PÛliza');
          WHEN TOO_MANY_ROWS THEN
-       RAISE_APPLICATION_ERROR(-20200,'Asign√≥ Diferentes Tipos de Seguros o Planes de Cobertura a los Certificados/Subgrupos a la P√≥liza');
+       RAISE_APPLICATION_ERROR(-20200,'AsignÛ Diferentes Tipos de Seguros o Planes de Cobertura a los Certificados/Subgrupos a la PÛliza');
       END;
 
       SELECT IndExaInsp, SumaAseg_Local, TipoPol, TipoAdministracion, NumPolUnico,
@@ -435,13 +440,13 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
       IF NVL(nNumRenov,0) = 0 THEN
          IF OC_PLAN_COBERTURAS.VALIDA_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecIniVig) = 'N' THEN
        IF OC_PROCESO_AUTORIZA_USUARIO.PROCESO_AUTORIZADO(nCodCia, '9145', USER, 'NOAPLI',1) = 'N' THEN
-          RAISE_APPLICATION_ERROR(-20225,'La Configuraci√≥n del Producto S√≥lo Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' D√≠as de Retroactividad Por Favor Valide su P√≥liza '||TRIM(TO_CHAR(nIdPoliza)));
+          RAISE_APPLICATION_ERROR(-20225,'La ConfiguraciÛn del Producto SÛlo Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' DÌas de Retroactividad Por Favor Valide su PÛliza '||TRIM(TO_CHAR(nIdPoliza)));
        END IF;
          END IF;
       ELSE
          IF OC_PLAN_COBERTURAS.VALIDA_DIAS_RETROACTIVOS_REN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecIniVig) = 'N' THEN
        IF OC_PROCESO_AUTORIZA_USUARIO.PROCESO_AUTORIZADO(nCodCia, '9145', USER, 'NOAPLI',1) = 'N' THEN
-          RAISE_APPLICATION_ERROR(-20225,'La Configuraci√≥n del Producto S√≥lo Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS_REN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' D√≠as de Retroactividad Para Renovaci√≥n Por Favor Valide su P√≥liza '||TRIM(TO_CHAR(nIdPoliza)));
+          RAISE_APPLICATION_ERROR(-20225,'La ConfiguraciÛn del Producto SÛlo Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS_REN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' DÌas de Retroactividad Para RenovaciÛn Por Favor Valide su PÛliza '||TRIM(TO_CHAR(nIdPoliza)));
        END IF;
          END IF;
       END IF;
@@ -455,13 +460,13 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
             END IF;
          END IF;
       ELSE
-         RAISE_APPLICATION_ERROR(-20200,'P√≥liza No. ' || nIdPoliza ||
-         'NO tiene C√≥digo de Cliente o Contratante - NO Puede Emitir la P√≥liza');
+         RAISE_APPLICATION_ERROR(-20200,'PÛliza No. ' || nIdPoliza ||
+         'NO tiene CÛdigo de Cliente o Contratante - NO Puede Emitir la PÛliza');
       END IF;*/
-	  
+
 	  IF NVL(nCodCliente,0) = 0 THEN
-	    RAISE_APPLICATION_ERROR(-20200,'P√≥liza No. ' || nIdPoliza ||
-         'NO tiene C√≥digo de Cliente o Contratante - NO Puede Emitir la P√≥liza');
+	    RAISE_APPLICATION_ERROR(-20200,'PÛliza No. ' || nIdPoliza ||
+         'NO tiene CÛdigo de Cliente o Contratante - NO Puede Emitir la PÛliza');
 	  END IF;
       --FIN LAVDIN
       --
@@ -490,21 +495,21 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
        AND IdPoliza    != nIdPoliza;
 
          IF NVL(nCantPol,0) > 0 THEN
-       RAISE_APPLICATION_ERROR(-20200,'No. de P√≥liza Unico YA fue Asignado para otra P√≥liza que est√° Emitida o en Solicitud.');
+       RAISE_APPLICATION_ERROR(-20200,'No. de PÛliza Unico YA fue Asignado para otra PÛliza que est· Emitida o en Solicitud.');
          END IF;
       END IF;
 
       IF cTipoAdministracion IS NULL AND cIndManejaFondos = 'N' THEN
-         RAISE_APPLICATION_ERROR(-20200,'Debe Asignar el Tipo de Administraci√≥n de la P√≥liza');
+         RAISE_APPLICATION_ERROR(-20200,'Debe Asignar el Tipo de AdministraciÛn de la PÛliza');
       END IF;
 
       IF cIndManejaFondos = 'S' THEN
          IF NVL(nIdFormaCobro,0) = 0 THEN
-       RAISE_APPLICATION_ERROR(-20200,'Debe Asignar la Forma o Medio de Cobro para la P√≥liza');
+       RAISE_APPLICATION_ERROR(-20200,'Debe Asignar la Forma o Medio de Cobro para la PÛliza');
          END IF;
 
          IF OC_PERSONA_NATURAL_JURIDICA.EMAIL(cTipo_Doc_Identificacion, cNum_Doc_Identificacion) IS NULL THEN
-       RAISE_APPLICATION_ERROR(-20200,'Debe Ingresar el Email para el Contratante de la P√≥liza en Persona Natural Jur√≠dica');
+       RAISE_APPLICATION_ERROR(-20200,'Debe Ingresar el Email para el Contratante de la PÛliza en Persona Natural JurÌdica');
          END IF;
       END IF;
 
@@ -519,7 +524,7 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
          AND CodCia   = nCodCia;
 
       IF NVL(nRegisA,0) = 0 THEN
-         RAISE_APPLICATION_ERROR(-20200,'No ha Ingresado Distribuci√≥n de Agentes a Nivel P√≥liza');
+         RAISE_APPLICATION_ERROR(-20200,'No ha Ingresado DistribuciÛn de Agentes a Nivel PÛliza');
       END IF;
 
       SELECT COUNT(*)
@@ -536,33 +541,33 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
          FOR T IN DET_Q LOOP
        IF T.FecIniVig < dFecIniVig THEN
           RAISE_APPLICATION_ERROR(-20200,'Fecha de Inicio de Vigencia del ' || TO_CHAR(T.FecIniVig,'DD/MM/RRRR') ||
-                   ' en el SubGrupo No. ' || T.IDetPol || ' Es MENOR a la Fecha de Inicio de Vigencia de la P√≥liza ' ||
+                   ' en el SubGrupo No. ' || T.IDetPol || ' Es MENOR a la Fecha de Inicio de Vigencia de la PÛliza ' ||
                    TO_CHAR(dFecIniVig,'DD/MM/RRRR'));
        ELSIF T.FecIniVig > dFecFinVig THEN
           RAISE_APPLICATION_ERROR(-20200,'Fecha de Inicio de Vigencia del ' || TO_CHAR(T.FecIniVig,'DD/MM/RRRR') ||
-                   ' en el SubGrupo No. ' || T.IDetPol || ' Es MAYOR a la Fecha de Fin de Vigencia de la P√≥liza ' ||
+                   ' en el SubGrupo No. ' || T.IDetPol || ' Es MAYOR a la Fecha de Fin de Vigencia de la PÛliza ' ||
                    TO_CHAR(dFecFinVig,'DD/MM/RRRR'));
        ELSIF T.FecFinVig > dFecFinVig THEN
           RAISE_APPLICATION_ERROR(-20200,'Fecha de Fin de Vigencia al ' || TO_CHAR(T.FecFinVig,'DD/MM/RRRR') ||
-                   ' en el SubGrupo No. ' || T.IDetPol || ' Es MAYOR a la Fecha de Fin de Vigencia de la P√≥liza ' ||
+                   ' en el SubGrupo No. ' || T.IDetPol || ' Es MAYOR a la Fecha de Fin de Vigencia de la PÛliza ' ||
                    TO_CHAR(dFecFinVig,'DD/MM/RRRR'));
        END IF;
 
        IF OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, T.CodEmpresa, T.IdTipoSeg) = 'S' THEN
           IF GT_FAI_TIPOS_FONDOS_PRODUCTOS.FONDOS_COLECTIVOS(nCodCia, T.CodEmpresa, T.IdTipoSeg, T.PlanCob) = 'N' THEN  -- GTC - 06/02/2019
              IF GT_FAI_FONDOS_DETALLE_POLIZA.VALIDA_FONDOS(nCodCia, T.CodEmpresa, nIdPoliza, T.IDetPol, T.Cod_Asegurado) = 'N' THEN
-           RAISE_APPLICATION_ERROR(-20200,'Revise Configuraci√≥n de Fondos de Ahorro e Inversi√≥n al SubGrupo No. ' || T.IDetPol);
+           RAISE_APPLICATION_ERROR(-20200,'Revise ConfiguraciÛn de Fondos de Ahorro e InversiÛn al SubGrupo No. ' || T.IDetPol);
              END IF;
           END IF;
 
           IF OC_PERSONA_NATURAL_JURIDICA.EMAIL(T.Tipo_Doc_Identificacion, T.Num_Doc_Identificacion) IS NULL THEN
-             RAISE_APPLICATION_ERROR(-20200,'Debe Ingresar el Email en Persona Natural Jur√≠dica para el Asegurado del SubGrupo No. ' || T.IDetPol);
+             RAISE_APPLICATION_ERROR(-20200,'Debe Ingresar el Email en Persona Natural JurÌdica para el Asegurado del SubGrupo No. ' || T.IDetPol);
           END IF;
 
           IF T.IdFormaCobro IS NOT NULL THEN
              IF NVL(nDiaCobroAutomatico,0) = 0 AND
            OC_MEDIOS_DE_COBRO.FORMA_DE_COBRO(T.Tipo_Doc_Identificacion, T.Num_Doc_Identificacion, T.IdFormaCobro) IN ('CTC', 'DOMI', 'CLAB') THEN
-           RAISE_APPLICATION_ERROR(-20200,'Debe Indicar el D√≠a para Cobranza Autom√°tica en la P√≥liza No. ' || nIdPoliza);
+           RAISE_APPLICATION_ERROR(-20200,'Debe Indicar el DÌa para Cobranza Autom·tica en la PÛliza No. ' || nIdPoliza);
              END IF;
           END IF;
        END IF;
@@ -577,20 +582,20 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
           AND CodCia            = nCodCia;
 
        IF NVL(R.Porc_Com_Proporcional,0) != nPorcComProporcional THEN
-          RAISE_APPLICATION_ERROR(-20200,'Comisi√≥n Proporcional del ' || NVL(R.Porc_Com_Proporcional,0) ||
+          RAISE_APPLICATION_ERROR(-20200,'ComisiÛn Proporcional del ' || NVL(R.Porc_Com_Proporcional,0) ||
                    '% para el Agente ' || R.Cod_Agente_Distr ||
-                   ' a Nivel de Detalle o Certificado No. ' || T.IDetPol || ' NO es Igual a la Comisi√≥n Proporcional del ' ||
-                   nPorcComProporcional || '% a Nivel P√≥liza');
+                   ' a Nivel de Detalle o Certificado No. ' || T.IDetPol || ' NO es Igual a la ComisiÛn Proporcional del ' ||
+                   nPorcComProporcional || '% a Nivel PÛliza');
        ELSIF NVL(R.Porc_Com_Distribuida,0) != nPorc_Com_Distribuida THEN
-          RAISE_APPLICATION_ERROR(-20200,'Comisi√≥n Distribuida del ' || NVL(R.Porc_Com_Distribuida,0) ||
+          RAISE_APPLICATION_ERROR(-20200,'ComisiÛn Distribuida del ' || NVL(R.Porc_Com_Distribuida,0) ||
                    '% para el Agente ' || R.Cod_Agente_Distr ||
-                   ' a Nivel de Detalle o Certificado No. ' || T.IDetPol || ' NO es Igual a la Comisi√≥n Distribuida del ' ||
-                   nPorc_Com_Distribuida || '% a Nivel P√≥liza');
+                   ' a Nivel de Detalle o Certificado No. ' || T.IDetPol || ' NO es Igual a la ComisiÛn Distribuida del ' ||
+                   nPorc_Com_Distribuida || '% a Nivel PÛliza');
        ELSIF NVL(R.Porc_Comision_Agente,0) != nPorc_Comision_Agente THEN
-          RAISE_APPLICATION_ERROR(-20200,'Comisi√≥n del ' || NVL(R.Porc_Comision_Agente,0) ||
+          RAISE_APPLICATION_ERROR(-20200,'ComisiÛn del ' || NVL(R.Porc_Comision_Agente,0) ||
                    '% para el Agente ' || R.Cod_Agente_Distr ||
-                   ' a Nivel de Detalle o Certificado No. ' || T.IDetPol || ' NO es Igual a la Comisi√≥n del ' ||
-                   nPorc_Comision_Agente || '% a Nivel P√≥liza');
+                   ' a Nivel de Detalle o Certificado No. ' || T.IDetPol || ' NO es Igual a la ComisiÛn del ' ||
+                   nPorc_Comision_Agente || '% a Nivel PÛliza');
        END IF;
          END LOOP;
       END LOOP;
@@ -603,9 +608,9 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
        AND CodCia   = nCodCia;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-       RAISE_APPLICATION_ERROR(-20200,'No ha Ingresado Certificados/Subgrupos a la P√≥liza');
+       RAISE_APPLICATION_ERROR(-20200,'No ha Ingresado Certificados/Subgrupos a la PÛliza');
          WHEN TOO_MANY_ROWS THEN
-       RAISE_APPLICATION_ERROR(-20200,'Asign√≥ Diferentes Tipos de Seguros o Planes de Cobertura a los Certificados/Subgrupos a la P√≥liza');
+       RAISE_APPLICATION_ERROR(-20200,'AsignÛ Diferentes Tipos de Seguros o Planes de Cobertura a los Certificados/Subgrupos a la PÛliza');
       END;
 
       FOR W IN DET_Q LOOP
@@ -626,7 +631,7 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
 
          IF nRegis != 0 THEN
        RAISE_APPLICATION_ERROR(-20200,'El Detalle No. ' || W.IDetPol ||
-                ' Posee Coberturas fuera el Rango de Aceptaci√≥n para la Edad ' || nEdad);
+                ' Posee Coberturas fuera el Rango de AceptaciÛn para la Edad ' || nEdad);
          END IF;
 
          SELECT COUNT(*)
@@ -652,9 +657,9 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
           AND Cod_Agente = R.Cod_Agente;
 
        IF NVL(nPorcComProporcional,0) != 100 THEN
-          RAISE_APPLICATION_ERROR(-20200,'La Distribuci√≥n del Agente ' || R.Cod_Agente || ' en el Detalle No. ' || W.IDetPol ||
+          RAISE_APPLICATION_ERROR(-20200,'La DistribuciÛn del Agente ' || R.Cod_Agente || ' en el Detalle No. ' || W.IDetPol ||
                    ' Porc.com.propor - '||nPorcComProporcional||
-                   ' NO tiene el 100% de Distribuci√≥n para Comisiones');
+                   ' NO tiene el 100% de DistribuciÛn para Comisiones');
        END IF;
          END LOOP;
 
@@ -666,8 +671,8 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
        AND CodCia   = nCodCia;
 
          IF NVL(nPorc_Com_Distribuida,0) != W.PorcComis THEN
-       RAISE_APPLICATION_ERROR(-20200,'La Distribuci√≥n de Agentes en el Detalle No. ' || W.IDetPol ||
-                ' NO Corresponde con el % de Comisi√≥n del Detalle/Subgrupo del ' || W.PorcComis || '%');
+       RAISE_APPLICATION_ERROR(-20200,'La DistribuciÛn de Agentes en el Detalle No. ' || W.IDetPol ||
+                ' NO Corresponde con el % de ComisiÛn del Detalle/Subgrupo del ' || W.PorcComis || '%');
          END IF;
 
          IF W.IndFactElectronica = 'S' AND cIndFacturaPol = 'N' THEN
@@ -682,18 +687,19 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
              RAISE_APPLICATION_ERROR(-20225,'No Existe Asegurado: '||TRIM(TO_CHAR(W.Cod_Asegurado)) || ' en Persona Natural Juridica');
        END;
        IF cNum_TributarioCli IS NULL THEN
-          RAISE_APPLICATION_ERROR(-20225,'Asegurado: '||TRIM(TO_CHAR(W.Cod_Asegurado)) || ' No Posee Identificaci√≥n Tributaria');
+          RAISE_APPLICATION_ERROR(-20225,'Asegurado: '||TRIM(TO_CHAR(W.Cod_Asegurado)) || ' No Posee IdentificaciÛn Tributaria');
        END IF;
          END IF;
       END LOOP;
 
       FOR W IN ASEG_Q LOOP
-        FOR X IN COBERT_Q LOOP  ----ARH 26/08/2024
+        nCodAsegurado := W.Cod_Asegurado; --MLJS 14/11/2024
+        FOR X IN COBERT_Q LOOP  
             IF X.CodCobert = 'GF<12' THEN
                cCobertura := X.CodCobert;
             END IF;
         END LOOP;
-   
+
        IF cCobertura  = 'GF<12' THEN  ----ARH 26/08/2024
           nEdad   := 11;
        ELSE
@@ -715,7 +721,7 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
 
          IF nRegis != 0 THEN
        RAISE_APPLICATION_ERROR(-20200,'El Asegurado No. ' || W.Cod_Asegurado || ' del Certificado No. ' || W.IDetPol ||
-                ' Posee Coberturas fuera el Rango de Aceptaci√≥n para la Edad ' || nEdad);
+                ' Posee Coberturas fuera el Rango de AceptaciÛn para la Edad ' || nEdad);
          END IF;
 
          SELECT COUNT(*)
@@ -735,7 +741,7 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
          IF OC_TIPOS_DE_SEGUROS.MANEJA_FONDOS(nCodCia, nCodEmpresa, cIdTipoSeg) = 'S' THEN -- GTC - 06/02/2019
        IF GT_FAI_TIPOS_FONDOS_PRODUCTOS.FONDOS_COLECTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob) = 'S' THEN
           IF GT_FAI_FONDOS_DETALLE_POLIZA.VALIDA_FONDOS(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, W.Cod_Asegurado) = 'N' THEN
-             RAISE_APPLICATION_ERROR(-20200,'Revise Configuraci√≥n de Fondos de Ahorro e Inversi√≥n al SubGrupo No. ' || W.IDetPol ||
+             RAISE_APPLICATION_ERROR(-20200,'Revise ConfiguraciÛn de Fondos de Ahorro e InversiÛn al SubGrupo No. ' || W.IDetPol ||
                       ' y el Asegurado No. ' || W.Cod_Asegurado);
           END IF;
        END IF;
@@ -766,7 +772,7 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
          AND REP.CodCia         = nCodCia;
 
       IF NVL(nRequisitos,0) != 0 THEN
-         RAISE_APPLICATION_ERROR(-20200,'No puede Emitir la P√≥liza porque tiene Requisitos Pendientes de Entrega');
+         RAISE_APPLICATION_ERROR(-20200,'No puede Emitir la PÛliza porque tiene Requisitos Pendientes de Entrega');
       END IF;
 
       IF cTipoPol != 'F' THEN
@@ -786,9 +792,9 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
               AND CodCia   = nCodCia);
              IF NVL(nExamInsp,0) = 0 THEN
            IF NVL(cIndExaInsp,'N') = 'E' THEN
-              RAISE_APPLICATION_ERROR(-20200,'Esta P√≥liza requiere Datos de Ex√°menes');
+              RAISE_APPLICATION_ERROR(-20200,'Esta PÛliza requiere Datos de Ex·menes');
            ELSE
-              RAISE_APPLICATION_ERROR(-20200,'Esta P√≥liza requiere Datos de Inspecci√≥n');
+              RAISE_APPLICATION_ERROR(-20200,'Esta PÛliza requiere Datos de InspecciÛn');
            END IF;
              ELSE
            nEmite := 'S';
@@ -797,10 +803,10 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
              nEmite := 'S';
           END IF;
        ELSE
-          RAISE_APPLICATION_ERROR(-20200,'Suma Asegurada de COBERTURAS no coincide con Suma Asegurada de la P√≥liza');
+          RAISE_APPLICATION_ERROR(-20200,'Suma Asegurada de COBERTURAS no coincide con Suma Asegurada de la PÛliza');
        END IF;
          ELSE
-       RAISE_APPLICATION_ERROR(-20200,'Debe grabarle COBERTURAS a la P√≥liza');
+       RAISE_APPLICATION_ERROR(-20200,'Debe grabarle COBERTURAS a la PÛliza');
          END IF;
       ELSE
         nEmite := 'S';
@@ -835,9 +841,9 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
        cEmite :='N';
       END;
       IF cTipoFianza != '005' AND cCodContrato IS NULL THEN
-         RAISE_APPLICATION_ERROR(-20200,'Debe asignarle un Contrato V√°lido a la P√≥liza que desea Emitir');
+         RAISE_APPLICATION_ERROR(-20200,'Debe asignarle un Contrato V·lido a la PÛliza que desea Emitir');
       ELSIF cTipoFianza = '005' AND cCodProyecto IS NULL THEN
-         RAISE_APPLICATION_ERROR(-20200,'Debe asignarle un Proyecto V√°lido a la P√≥liza que desea Emitir');
+         RAISE_APPLICATION_ERROR(-20200,'Debe asignarle un Proyecto V·lido a la PÛliza que desea Emitir');
       END IF;
       RETURN(cEmite);
    END VALIDA_FIANZA;
@@ -929,7 +935,7 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
        END;
 
        IF NVL(nPorcAgtes,0) != 100 THEN
-           RAISE_APPLICATION_ERROR(-20200,'No puede Emitir la P√≥liza porque el Detalle de P√≥liza No. '|| X.IdetPol ||
+           RAISE_APPLICATION_ERROR(-20200,'No puede Emitir la PÛliza porque el Detalle de PÛliza No. '|| X.IdetPol ||
                     ', Suma ' || NVL(nPorcAgtes,0) ||' en los Agentes Participantes');
        END IF;
        IF cTipoPol = 'F' THEN
@@ -982,7 +988,7 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
              OC_FACTURAR.PROC_FACT_FIANZA(nIdPoliza, 0, nCodCia,nIdTransac);
           EXCEPTION
              WHEN OTHERS THEN
-           RAISE_APPLICATION_ERROR(-20200,'Error en Proceso de Facturaci√≥n Fianza. Favor verifique'|| SQLERRM);
+           RAISE_APPLICATION_ERROR(-20200,'Error en Proceso de FacturaciÛn Fianza. Favor verifique'|| SQLERRM);
           END ;
        END IF;
          END IF;
@@ -1041,13 +1047,13 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
              AND Estado   = 'PRO';
        EXCEPTION
           WHEN OTHERS THEN
-             RAISE_APPLICATION_ERROR(-20200,'Error en Tarea de P√≥liza No. '|| cNumPolRef ||SQLERRM);
+             RAISE_APPLICATION_ERROR(-20200,'Error en Tarea de PÛliza No. '|| cNumPolRef ||SQLERRM);
        END;
-       -- Realiza Distribuci√≥n al Reaseguro
+       -- Realiza DistribuciÛn al Reaseguro
        IF cTipoPol != 'F' THEN
           GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza, nIdTransac, TRUNC(SYSDATE), 'EMISION');
           /*IF GT_REA_DISTRIBUCION.DISTRIB_FACULTATIVA_PEND(nCodCia, nIdTransac) = 'S' THEN
-             RAISE_APPLICATION_ERROR(-20200,'Poliza No. '|| cNumPolRef || ' Posee Distribuci√≥n Facultativa Pendiente');
+             RAISE_APPLICATION_ERROR(-20200,'Poliza No. '|| cNumPolRef || ' Posee DistribuciÛn Facultativa Pendiente');
           END IF;*/
        END IF;
 
@@ -1227,7 +1233,7 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
 
       nPrimaCanc := nPrima * nFactProrrata;
 
-      -- Anula Notas de Cr√©dito
+      -- Anula Notas de CrÈdito
       FOR X IN NCR_Q LOOP
          IF NVL(nIdTransacNc,0) = 0 THEN
        nIdTransacNc := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, 'ANUNCR');
@@ -1359,12 +1365,12 @@ create or replace PACKAGE BODY          OC_POLIZAS IS
       IF cTipoPol != 'F' THEN
          GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza, nIdTransacAnul, TRUNC(SYSDATE), 'ANULAPOL');
          IF GT_REA_DISTRIBUCION.DISTRIB_FACULTATIVA_PEND(nCodCia, nIdTransacAnul) = 'S' THEN
-       RAISE_APPLICATION_ERROR(-20200,'P√≥liza No. '|| cNumPolRef || ' Posee Distribuci√≥n Facultativa Pendiente');
+       RAISE_APPLICATION_ERROR(-20200,'PÛliza No. '|| cNumPolRef || ' Posee DistribuciÛn Facultativa Pendiente');
          END IF;
       END IF;
    EXCEPTION
       WHEN OTHERS THEN
-         RAISE_APPLICATION_ERROR(-20225,'Error al Anular P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
+         RAISE_APPLICATION_ERROR(-20225,'Error al Anular PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
    END ANULAR_POLIZA;*/
 
    --FUNCTION RENOVAR(nCodCia NUMBER, nIdPolizaRen NUMBER, cEmitePoliza VARCHAR2 DEFAULT 'N') RETURN NUMBER IS
@@ -1656,7 +1662,7 @@ BEGIN
 
          UPDATE POLIZAS
             SET NumPolUnico   = cNumPolUnico,
-                NumRenov      = nNumRenov --MLJS 06/08/2024 NVL(X.NumRenov,0) + 1
+                NumRenov      = NVL(X.NumRenov,0) + 1
           WHERE CodCia     = nCodCia
             AND CodEmpresa = nCodEmpresa
             AND IdPoliza   = nIdPoliza;
@@ -1825,12 +1831,12 @@ BEGIN
    ELSE
       nIdPoliza := OC_POLIZAS.F_GET_NUMPOL(p_msg_regreso);
 
-      -- Renovaci√≥n de P√≥liza
+      -- RenovaciÛn de PÛliza
       FOR X IN POL_REN_Q LOOP
          IF nDuracionPlan > 1 AND
             X.NumRenov + 2 > nDuracionPlan THEN
-            RAISE_APPLICATION_ERROR(-20225,'Ya NO se puede Renovar la P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))||
-                   ' Porque con esta Renovaci√≥n Supera la Duraci√≥n del Plan de Coberturas ');
+            RAISE_APPLICATION_ERROR(-20225,'Ya NO se puede Renovar la PÛliza: '||TRIM(TO_CHAR(nIdPoliza))||
+                   ' Porque con esta RenovaciÛn Supera la DuraciÛn del Plan de Coberturas ');
          END IF;
 
          nTasaCambio  := OC_GENERALES.TASA_DE_CAMBIO(X.Cod_Moneda, TRUNC(SYSDATE));
@@ -1844,7 +1850,7 @@ BEGIN
          ELSE
             cNumPolUnico := TRIM(TO_CHAR(nIdPoliza)) || '-' || TRIM(TO_CHAR(NVL(X.NumRenov,0)+1,'00'));
          END IF;*/
-         
+
          -- MLJS 07/08/2024
          cNumPolUnico := F_OBT_NUMPOLUNICO_REN (X.NumPolUnico);
          nNumRenov    := F_OBT_NUMRENOV_REN (X.NumPolUnico);
@@ -1885,7 +1891,7 @@ BEGIN
              --MLJS 06/08/2024 SE AGREGAN LOS SIGUIENTES CAMPOS
              ,X.CodTipoNegocio, X.CodPaqComercial,X.CodCatego, X.codobjetoimp, X.codusocfdi);
 
-         -- Inserta Agentes de la P√≥liza
+         -- Inserta Agentes de la PÛliza
          INSERT INTO AGENTE_POLIZA
             (IdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen)
          SELECT nIdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen
@@ -1893,7 +1899,7 @@ BEGIN
           WHERE CodCia   = nCodCia
             AND IdPoliza = nIdPolizaRen;
 
-         -- Inserta Distribuci√≥n de Agentes de la P√≥liza
+         -- Inserta DistribuciÛn de Agentes de la PÛliza
          INSERT INTO AGENTES_DISTRIBUCION_POLIZA
             (CodCia, IdPoliza, CodNivel, Cod_Agente, Cod_Agente_Distr, Porc_Comision_Plan, Porc_Comision_Agente,
             Porc_com_distribuida, Porc_Com_Proporcional, Cod_Agente_Jefe, Origen)
@@ -1905,7 +1911,7 @@ BEGIN
       END LOOP;
 
       IF NVL(cIndSubGrupos,'N') = 'S' THEN
-         -- Renovaci√≥n de Detalles de P√≥liza
+         -- RenovaciÛn de Detalles de PÛliza
          FOR X IN DET_POL_RENOVAR_Q LOOP
             nIDetPol := X.IDetPol;
             nPrima   := X.Prima_Moneda * nTasaCambio;
@@ -1941,7 +1947,7 @@ BEGIN
 
          --OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
 
-         -- Renovaci√≥n de Bienes de P√≥liza
+         -- RenovaciÛn de Bienes de PÛliza
          FOR Z IN BIENES_Q LOOP
             INSERT INTO DATOS_PARTICULARES_BIENES
                (IdPoliza, IDetPol, Num_Bien, CodPais, CodEstado,
@@ -1957,7 +1963,7 @@ BEGIN
                dFecIni, dFecFin, Z.CodCia);
          END LOOP;
 
-         -- Renovaci√≥n de Asegurados de P√≥liza
+         -- RenovaciÛn de Asegurados de PÛliza
          FOR P IN PERSONAS_Q LOOP
             INSERT INTO DATOS_PARTICULARES_PERSONAS
                (IdPoliza, IDetPol, Estatura, Peso, Cavidad_Toraxica_Min,
@@ -1973,7 +1979,7 @@ BEGIN
                P.Id_Fumador, P.Observaciones, P.Porc_Subnormal, P.Prima_Moneda * nTasaCambio, P.Prima_Moneda, P.CodCia);
          END LOOP;
 
-         -- Renovaci√≥n de Autom√≥viles de P√≥liza
+         -- RenovaciÛn de AutomÛviles de PÛliza
          FOR V IN VEHI_Q LOOP
             INSERT INTO DATOS_PARTICULARES_VEHICULO
                (IdPoliza, IDetPol, Num_Vehi, Cod_Marca, Cod_Modelo, Cod_Version,
@@ -1998,7 +2004,7 @@ BEGIN
                    Q.CodEmpresa, Q.SumaAseg, Q.Primaneta, 'XRE');
             END LOOP;
 
-            -- Renovaci√≥n de Coberturas de Detalles de P√≥liza de Acuerdo a Tarifas
+            -- RenovaciÛn de Coberturas de Detalles de PÛliza de Acuerdo a Tarifas
             FOR Y IN COB_REN_Q LOOP
                OC_COBERT_ACT.CARGAR_COBERTURAS(Y.CodCia, Y.CodEmpresa, Y.IdTipoSeg, Y.PlanCob, nIdPoliza,
                                                Y.IDetPol, nTasaCambio, Y.CodCobert, Y.SumaAsegCalculada,
@@ -2008,7 +2014,7 @@ BEGIN
                                                Y.SumaIngresada);
             END LOOP;
 
-            -- Beneficiarios de Detalles de P√≥liza
+            -- Beneficiarios de Detalles de PÛliza
             FOR W IN BENEF_Q LOOP
                INSERT INTO BENEFICIARIO
                (IdPoliza, IDetPol, Cod_Asegurado, Benef, Nombre, PorcePart,
@@ -2023,7 +2029,7 @@ BEGIN
 
       OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
 
-      -- Responsables de Pago de P√≥liza
+      -- Responsables de Pago de PÛliza
       FOR W IN RESP_POL_Q LOOP
          INSERT INTO RESPONSABLE_PAGO_POL
             (IdPoliza, CodCia, Tipo_Doc_Identificacion, Num_Doc_Identificacion,
@@ -2034,7 +2040,7 @@ BEGIN
       END LOOP;
 
       IF NVL(cIndSubGrupos,'N') = 'S' THEN
-         -- Responsables de Pago de Detalles de P√≥liza
+         -- Responsables de Pago de Detalles de PÛliza
          FOR W IN RESP_DET_Q LOOP
             INSERT INTO RESPONSABLE_PAGO_DET
                (IdPoliza, CodCia, IDetPol, Tipo_Doc_Identificacion, Num_Doc_Identificacion,
@@ -2045,7 +2051,7 @@ BEGIN
          END LOOP;
       END IF;
 
-      -- Recargos de P√≥liza
+      -- Recargos de PÛliza
       FOR W IN RECARGOS_Q LOOP
          INSERT INTO RECARGOS
             (IdPoliza, CodCia, CodRec, Porc_Recargo, Monto_Local, Monto_Moneda,
@@ -2056,7 +2062,7 @@ BEGIN
       END LOOP;
 
       IF NVL(cIndSubGrupos,'N') = 'S' THEN
-         -- Detalle de Recargos de P√≥liza
+         -- Detalle de Recargos de PÛliza
          FOR W IN DET_REC_Q LOOP
             INSERT INTO DETALLE_RECARGO
                (IdPoliza, CodCia, IDetPol, CodRec, Porc_Recargo, Monto_Local, Monto_Moneda,
@@ -2067,7 +2073,7 @@ BEGIN
          END LOOP;
       END IF;
 
-      -- Descuentos de P√≥liza
+      -- Descuentos de PÛliza
       FOR W IN DESC_Q LOOP
          INSERT INTO DESCUENTOS
             (IdPoliza, CodCia, CodDesc, Porc_Desc, Monto_Local, Monto_Moneda,
@@ -2078,7 +2084,7 @@ BEGIN
       END LOOP;
 
       IF NVL(cIndSubGrupos,'N') = 'S' THEN
-         -- Detalle de Descuentos de P√≥liza
+         -- Detalle de Descuentos de PÛliza
          FOR W IN DET_DESC_Q LOOP
             INSERT INTO DETALLE_DESCUENTO
                (IdPoliza, CodCia, IDetPol, CodDesc, Porc_Desc, Monto_Local, Monto_Moneda,
@@ -2089,14 +2095,14 @@ BEGIN
          END LOOP;
       END IF;
 
-      -- Cla√∫sulas de P√≥liza
+      -- Cla˙sulas de PÛliza
       OC_CLAUSULAS_POLIZA.RENOVAR(nCodCia, nIdPolizaRen, nIdPoliza);
 
       IF NVL(cIndSubGrupos,'N') = 'S' THEN
-         -- Cla√∫sulas Detalle de P√≥liza
+         -- Cla˙sulas Detalle de PÛliza
          OC_CLAUSULAS_DETALLE.RENOVAR(nCodCia, nIdPolizaRen, nIdPoliza);
 
-         -- Tarjetas Detalle de P√≥liza
+         -- Tarjetas Detalle de PÛliza
          FOR W IN TARJ_POL_Q LOOP
             INSERT INTO DETALLE_POLIZAS_TARJETAS
                (IdPoliza, Id_DetallePolizasPago, CodLista, CodValor,
@@ -2107,7 +2113,7 @@ BEGIN
          END LOOP;
       END IF;
 
-      -- Documento de P√≥liza
+      -- Documento de PÛliza
       FOR W IN DOC_POL_Q LOOP
          INSERT INTO DOCUMENTO_POLIZA
             (IdPoliza, CodCia, IdDocumentoPoliza, IdDocumento)
@@ -2137,7 +2143,7 @@ BEGIN
          END LOOP;
       END IF;
 
-      -- Requisitos P√≥liza
+      -- Requisitos PÛliza
       FOR W IN REQ_POL_Q LOOP
          INSERT INTO REQUISITOS_ENC_POLIZA
             (IdPoliza, CodCia, CodRequisito, FecSolicitReq,
@@ -2148,7 +2154,7 @@ BEGIN
       END LOOP;
 
       IF NVL(cIndSubGrupos,'N') = 'S' THEN
-         -- Requisitos Detalles P√≥liza
+         -- Requisitos Detalles PÛliza
          FOR W IN REQ_DET_Q LOOP
             INSERT INTO REQUISITOS_POLIZA
                (IdPoliza, CodCia, IDetPol, CodRequisito, FecSolicitReq,
@@ -2245,13 +2251,13 @@ BEGIN
          OC_POLIZAS.EMITIR_POLIZA(nCodCia, nIdPoliza, nCodEmpresa);
       EXCEPTION
          WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20225,'Error al Emitir Renovaci√≥n de P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
+            RAISE_APPLICATION_ERROR(-20225,'Error al Emitir RenovaciÛn de PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
       END;
    END IF;
    RETURN(nIdPoliza);
 --EXCEPTION
 --   WHEN OTHERS THEN
---      RAISE_APPLICATION_ERROR(-20225,'Error al Renovar P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
+--      RAISE_APPLICATION_ERROR(-20225,'Error al Renovar PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
 END RENOVAR;
 
    FUNCTION EXISTE_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS
@@ -2320,7 +2326,7 @@ END RENOVAR;
           AND P.IdPoliza   = nIdPoliza;
        --
        IF cIndCotizacionWeb = 'S' THEN
-          
+
            SELECT COUNT(*)
             INTO nTotalAseg
             FROM ASEGURADO_CERTIFICADO AC, DETALLE_POLIZA D, POLIZAS P
@@ -2331,7 +2337,7 @@ END RENOVAR;
              AND P.CodEmpresa = nCodEmpresa
              AND P.CodCia     = nCodCia
              AND P.IdPoliza   = nIdPoliza; 
-               
+
           SELECT NVL(SUM(CantAsegModelo),0)
           INTO   nCantAsegModelo
           FROM TIPOS_DE_SEGUROS TS, DETALLE_POLIZA D, POLIZAS P
@@ -2468,7 +2474,7 @@ END RENOVAR;
        AND IdPoliza   = nIdPoliza;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-       RAISE_APPLICATION_ERROR(-20225,'NO Existe P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
+       RAISE_APPLICATION_ERROR(-20225,'NO Existe PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
       END;
 
       nTasaCambio       := OC_GENERALES.TASA_DE_CAMBIO(cCod_Moneda, TRUNC(SYSDATE));
@@ -2686,6 +2692,7 @@ END RENOVAR;
    nComprobantes    NUMBER(5);
    nIDetPol         DETALLE_POLIZA.IDetPol%TYPE;
    nNum_Cotizacion  POLIZAS.Num_Cotizacion%TYPE;
+   cUsuario          VARCHAR2(30);
 
    CURSOR DET_Q IS
       SELECT IDetPol, Cod_Asegurado
@@ -2773,6 +2780,12 @@ END RENOVAR;
                   AND CodCia    = nCodCia)
        AND FecEnvioSC IS NOT NULL;
       END;
+      
+        SELECT USER
+        INTO   cUsuario
+        FROM   DUAL;
+        
+        INSERT INTO TMP_REVISION VALUES (nIdPoliza, SYSDATE, cUsuario);
 
       IF NVL(nEndosos,0) = 0 AND NVL(nFacturas,0) = 0 AND NVL(nSiniestros,0) = 0 AND
          NVL(nComprobantes,0) = 0 THEN
@@ -2867,8 +2880,8 @@ END RENOVAR;
        GT_COTIZACIONES.REVIERTE_EMISION_POLIZA(nCodCia, nCodEmpresa, nNum_Cotizacion);
          END IF;
       ELSE
-         RAISE_APPLICATION_ERROR(-20225,'NO puede Revertir la Emisi√≥n porque la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
-                  ' Ya Tiene Movimientos √≥ sus Datos ya fueron Enviados a Otros Sistemas');
+         RAISE_APPLICATION_ERROR(-20225,'NO puede Revertir la EmisiÛn porque la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+                  ' Ya Tiene Movimientos Û sus Datos ya fueron Enviados a Otros Sistemas');
       END IF;
    END REVERTIR_EMISION;
 
@@ -3056,7 +3069,7 @@ END RENOVAR;
          ,X.codobjetoimp, X.codusocfdi);  --MLJS 07/08/2024 SE AGREGAN
          EXCEPTION
        WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nueva P√≥liza ' ||SQLERRM);
+            RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nueva PÛliza ' ||SQLERRM);
          END;
 
         --IF  X.Num_Cotizacion > 0 THEN
@@ -3326,7 +3339,7 @@ END RENOVAR;
        AND IdPoliza  = nIdPoliza;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-       RAISE_APPLICATION_ERROR(-20225,'NO existe la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' para Rehabilitarla');
+       RAISE_APPLICATION_ERROR(-20225,'NO existe la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' para Rehabilitarla');
       END;
 
       IF cStsPoliza = 'ANU' THEN
@@ -3387,7 +3400,7 @@ END RENOVAR;
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccion, '100');
          GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza,
                          nIdTransaccion, dFecTransaccion, 'EMISION');
-         -- Rehabilita Notas de Cr√©dito Anuladas
+         -- Rehabilita Notas de CrÈdito Anuladas
          SELECT MAX(T.IdTransaccion)
       INTO nIdTransaccionAnuNc
       FROM TRANSACCION T, DETALLE_TRANSACCION D
@@ -3410,7 +3423,7 @@ END RENOVAR;
        OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacNcRehab, '100');
          END IF;
 
-         -- Anula Notas de Cr√©dito de la Anulaci√≥n
+         -- Anula Notas de CrÈdito de la AnulaciÛn
          SELECT MAX(T.IdTransaccion)
       INTO nIdTransaccionEmiNc
       FROM TRANSACCION T, DETALLE_TRANSACCION D
@@ -3450,7 +3463,7 @@ END RENOVAR;
          OC_ENDOSO.ENDOSO_REHABILITACION(nCodCia, nCodEmpresa , nIdPoliza);  --ENDCAN
          --
       ELSE
-         RAISE_APPLICATION_ERROR(-20225,'La P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' NO est√° Anulada para Rehabilitarse');
+         RAISE_APPLICATION_ERROR(-20225,'La PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' NO est· Anulada para Rehabilitarse');
       END IF;
    END REHABILITACION;
    --
@@ -3583,7 +3596,7 @@ END RENOVAR;
          AND CodCia   = nCodCia
          AND Estado   = 'EMI';
 
-   --Se agrega Prima_Moneda para la disribucion de la cancelaci√≥n de reaseguro 310720202
+   --Se agrega Prima_Moneda para la disribucion de la cancelaciÛn de reaseguro 310720202
    CURSOR DET_Q IS
       SELECT IDetPol, IndDeclara, Cod_Asegurado, IdTipoSeg, PlanCob, Prima_Moneda
         FROM DETALLE_POLIZA
@@ -3646,7 +3659,7 @@ END RENOVAR;
          AND CodCia    = nCodCia;
 
       IF NVL(nEndosos,0) > 0 THEN
-         RAISE_APPLICATION_ERROR(-20225,'P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+         RAISE_APPLICATION_ERROR(-20225,'PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
                   ' Tiene Endosos en SOLICITUD, debe Emitirlos o Eliminarlos antes de Anular');
       END IF;
 
@@ -3658,7 +3671,7 @@ END RENOVAR;
        WHERE IdPoliza = nIdPoliza
          AND CodCia   = nCodCia;
 
-      -- Calcula Fecha de Anulaci√≥n para NO Devolver Prima
+      -- Calcula Fecha de AnulaciÛn para NO Devolver Prima
       nDiasAno      := TRUNC(dFecFinVig) - TRUNC(dFecIniVig);
 
       nTotPrimaPag  := 0;
@@ -3730,7 +3743,7 @@ END RENOVAR;
 
       IF cAnulaPoliza = 'S' THEN
          IF NVL(nTotPrimaPag,0) = 0 THEN
-       -- Anula Notas de Cr√©dito
+       -- Anula Notas de CrÈdito
                IF cTipoProceso IS NOT NULL THEN
                   FOR X IN NCR_Q LOOP
                      IF NVL(nIdTransacNc,0) = 0 THEN
@@ -3806,7 +3819,7 @@ END RENOVAR;
                            AND StsDetalle = 'EMI');
                EXCEPTION
                   WHEN NO_DATA_FOUND THEN
-                     RAISE_APPLICATION_ERROR(-20225,'No Existe Certificados Emitidos en P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)));
+                     RAISE_APPLICATION_ERROR(-20225,'No Existe Certificados Emitidos en PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)));
                END;
 
                SELECT MIN(Cod_Agente)
@@ -3886,7 +3899,7 @@ END RENOVAR;
          OC_CLAUSULAS_POLIZA.ANULAR_TODAS(nCodCia, nIdPoliza);
 
          FOR W IN DET_Q LOOP
-               --Se generaci√≥n de detalle de transacci√≥n para la disribucion de la cancelaci√≥n de reaseguro 310720202
+               --Se generaciÛn de detalle de transacciÛn para la disribucion de la cancelaciÛn de reaseguro 310720202
                OC_DETALLE_TRANSACCION.CREA(nIdTransacAnul, nCodCia,  nCodEmpresa, 2, 'CER', 'DETALLE_POLIZA', nIdPoliza, W.IDetPol, NULL, NULL, W.Prima_Moneda);
                --
                -- GTC - 17-12-2018
@@ -3925,7 +3938,7 @@ END RENOVAR;
          IF cTipoPol != 'F' THEN
             GT_REA_DISTRIBUCION.DISTRIBUYE_REASEGURO(nCodCia, nCodEmpresa, nIdPoliza, nIdTransacAnul, TRUNC(SYSDATE), 'ANULAPOL');
             IF GT_REA_DISTRIBUCION.DISTRIB_FACULTATIVA_PEND(nCodCia, nIdTransacAnul) = 'S' THEN
-                RAISE_APPLICATION_ERROR(-20200,'P√≥liza No. '|| cNumPolRef || ' Posee Distribuci√≥n Facultativa Pendiente');
+                RAISE_APPLICATION_ERROR(-20200,'PÛliza No. '|| cNumPolRef || ' Posee DistribuciÛn Facultativa Pendiente');
             END IF;
          END IF;
          --
@@ -3936,7 +3949,7 @@ END RENOVAR;
              OC_DETALLE_POLIZA.ANULAR_DETALLE(nCodCia, nCodEmpresa, nIdPoliza, W.IDetPol, dFecAnulReal,
                     cMotivAnul, 'N', cCod_Moneda, cTipoProceso);
          END LOOP;
-         -- Valida si Debe Anular la P√≥liza si ya no tiene Certificados Emitidos
+         -- Valida si Debe Anular la PÛliza si ya no tiene Certificados Emitidos
          SELECT COUNT(*)
            INTO nCertEmi
            FROM DETALLE_POLIZA
@@ -3962,7 +3975,7 @@ END RENOVAR;
 
    EXCEPTION
       WHEN OTHERS THEN
-         RAISE_APPLICATION_ERROR(-20225,'Error al Anular P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
+         RAISE_APPLICATION_ERROR(-20225,'Error al Anular PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
    END ANULAR_POLIZA;
 
    PROCEDURE INSERTA_CLAUSULAS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS
@@ -4025,7 +4038,7 @@ END RENOVAR;
        AND CodCia     = nCodCia;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-       RAISE_APPLICATION_ERROR(-20225,'No. de P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' NO Existe');
+       RAISE_APPLICATION_ERROR(-20225,'No. de PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' NO Existe');
       END;
 
       FOR Y IN DET_Q LOOP
@@ -4071,9 +4084,9 @@ END RENOVAR;
        AND IdPoliza           = nIdPoliza;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-       RAISE_APPLICATION_ERROR(-20225,'No. de P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' NO Existe');
+       RAISE_APPLICATION_ERROR(-20225,'No. de PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' NO Existe');
          WHEN TOO_MANY_ROWS THEN
-       RAISE_APPLICATION_ERROR(-20225,'Error al Buscar Plan de Pagos porque Existen Varias P√≥lizas: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
+       RAISE_APPLICATION_ERROR(-20225,'Error al Buscar Plan de Pagos porque Existen Varias PÛlizas: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
       END;
       RETURN(cCodPlanPago);
    END PLAN_DE_PAGOS;
@@ -4090,9 +4103,9 @@ END RENOVAR;
        RETURN cIndFacturaPol;
    EXCEPTION
          WHEN NO_DATA_FOUND THEN
-       RAISE_APPLICATION_ERROR(-20225,'No. de P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' NO Existe');
+       RAISE_APPLICATION_ERROR(-20225,'No. de PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' NO Existe');
          WHEN TOO_MANY_ROWS THEN
-       RAISE_APPLICATION_ERROR(-20225,'Error al Buscar el Indicador de Facturaci√≥n Por P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
+       RAISE_APPLICATION_ERROR(-20225,'Error al Buscar el Indicador de FacturaciÛn Por PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
    END FACTURA_POR_POLIZA;
 
    FUNCTION CODIGO_RIESGO_REASEGURO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2 IS
@@ -4109,7 +4122,7 @@ END RENOVAR;
          WHEN NO_DATA_FOUND THEN
        cCodRiesgoRea := NULL;
          WHEN TOO_MANY_ROWS THEN
-       RAISE_APPLICATION_ERROR(-20225,'Error al Buscar el C√≥digo de Riesgo de Reaseguro en P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
+       RAISE_APPLICATION_ERROR(-20225,'Error al Buscar el CÛdigo de Riesgo de Reaseguro en PÛliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
       END;
       RETURN(cCodRiesgoRea);
    END CODIGO_RIESGO_REASEGURO;
@@ -4129,7 +4142,7 @@ END RENOVAR;
       AND IdPoliza    = nIdPoliza;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-       RAISE_APPLICATION_ERROR(-20225,'NO Existe P√≥liza Renovada No.: '||TRIM(TO_CHAR(nIdPoliza)));
+       RAISE_APPLICATION_ERROR(-20225,'NO Existe PÛliza Renovada No.: '||TRIM(TO_CHAR(nIdPoliza)));
       END;
 
       IF INSTR(cNumPolUnico,'-' || TRIM(TO_CHAR(nNumRenov,'00')),1) != 0 THEN
@@ -4148,7 +4161,7 @@ END RENOVAR;
          AND NumPolUnico LIKE cNumPolUnicoOrig || '%';
 
       IF NVL(nIdPolizaInicial,0) = 0 THEN
-         RAISE_APPLICATION_ERROR(-20225,'NO se Encontr√≥ P√≥liza de Emisi√≥n Inicial de la Renovaci√≥n de P√≥liza No.: '||TRIM(TO_CHAR(nIdPoliza)));
+         RAISE_APPLICATION_ERROR(-20225,'NO se EncontrÛ PÛliza de EmisiÛn Inicial de la RenovaciÛn de PÛliza No.: '||TRIM(TO_CHAR(nIdPoliza)));
       ELSE
          RETURN(nIdPolizaInicial);
       END IF;
@@ -4166,7 +4179,7 @@ END RENOVAR;
       AND IdPoliza    = nIdPoliza;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-       RAISE_APPLICATION_ERROR(-20225,'NO Existe Inicio de Vigencia de la P√≥liza No.: '||TRIM(TO_CHAR(nIdPoliza)));
+       RAISE_APPLICATION_ERROR(-20225,'NO Existe Inicio de Vigencia de la PÛliza No.: '||TRIM(TO_CHAR(nIdPoliza)));
       END;
       RETURN(dFecIniVig);
    END INICIO_VIGENCIA;
@@ -4183,7 +4196,7 @@ END RENOVAR;
        AND IdPoliza    = nIdPoliza;
          EXCEPTION
        WHEN NO_DATA_FOUND THEN
-          RAISE_APPLICATION_ERROR(-20225,'NO Existe N√∫mero de Intentos de Cobranza en la P√≥liza No.: '||TRIM(TO_CHAR(nIdPoliza)));
+          RAISE_APPLICATION_ERROR(-20225,'NO Existe N˙mero de Intentos de Cobranza en la PÛliza No.: '||TRIM(TO_CHAR(nIdPoliza)));
       END;
       RETURN nNumIntentosCobranza;
    END NUMERO_INTENTOS_COBRANZA;
@@ -4588,8 +4601,8 @@ END RENOVAR;
          WHEN NO_DATA_FOUND THEN
        nDiaCobroAutomatico := 0;
          WHEN TOO_MANY_ROWS THEN
-       RAISE_APPLICATION_ERROR(-20225,'Existen Varios Registros de la P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))||
-                ' en la Compa√±√≠a '||TO_CHAR(nCodCia));
+       RAISE_APPLICATION_ERROR(-20225,'Existen Varios Registros de la PÛliza: '||TRIM(TO_CHAR(nIdPoliza))||
+                ' en la CompaÒÌa '||TO_CHAR(nCodCia));
       END;
       RETURN nDiaCobroAutomatico;
    END;
@@ -4860,7 +4873,7 @@ BEGIN
 
 EXCEPTION
   WHEN OTHERS THEN
-    RAISE_APPLICATION_ERROR(-20226,'Error al Obtener el n√∫mero de P√≥liza: '||TRIM(CNUMPOLUNICOORIG)|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
+    RAISE_APPLICATION_ERROR(-20226,'Error al Obtener el n˙mero de PÛliza: '||TRIM(CNUMPOLUNICOORIG)|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
 
 END F_OBT_NUMPOLUNICO_REN;
 
@@ -5055,7 +5068,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
 
    BEGIN
 
-    DBMS_OUTPUT.PUT_LINE('ENTR√â');
+    DBMS_OUTPUT.PUT_LINE('ENTR…');
       --OC_ARCHIVO.ESCRIBIR_LINEA(SQLERRM,USER,nLinea);
       nValida:= 0;
       SELECT TRUNC(SYSDATE)
@@ -5076,7 +5089,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
 
           --DBMS_OUTPUT.PUT_LINE('cNumPolUnico '||cNumPolUnico);
           --DBMS_OUTPUT.PUT_LINE('nNumRenov '||nNumRenov);
-          -- MLJS 23/05/2024 ANTES QUE SE GENERE EL NUMERO DE POLIZA SE VALIDA SI LA P√ìLIZA A RENOVAR TIENE CERTIFICADOS
+          -- MLJS 23/05/2024 ANTES QUE SE GENERE EL NUMERO DE POLIZA SE VALIDA SI LA P”LIZA A RENOVAR TIENE CERTIFICADOS
           -- CREADOS POSTERIORES A LA EMISION DE LA POLIZA
           bContinua := TRUE;
           FOR I IN VALENDOS LOOP
@@ -5115,13 +5128,13 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
 
                   IF DFECINIVIGDP > DFECINIVIGP THEN
                     nLinea := nLinea + 1;
-                    OC_ARCHIVO.ESCRIBIR_LINEA('Certificado '||T.IDETPOL||' dado de alta posterior a emisi√≥n de P√≥liza '||nIdPolizaOrig ,user,nLinea);
+                    OC_ARCHIVO.ESCRIBIR_LINEA('Certificado '||T.IDETPOL||' dado de alta posterior a emisiÛn de PÛliza '||nIdPolizaOrig ,user,nLinea);
                   END IF;
                 END LOOP;
              END IF;*/
 
              --MLJS 23/05/2024 SE VALIDA SI LOS TODOS LOS ASEGURADOS EN UN DETALLE SE DIERON DE ALTA EN EL ENDOSO
-             -- GENERADO POSTERIOR A LA FECHA DE INICIO DE LA P√ìLIZA A RENOVAR
+             -- GENERADO POSTERIOR A LA FECHA DE INICIO DE LA P”LIZA A RENOVAR
             /* FOR N IN ASEGSEND LOOP
                 SELECT COUNT(*)
                 INTO   NUMASEGS
@@ -5142,7 +5155,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
                   IF dFecIniVigEnd > DFECINIVIGP THEN
                     nValida := 1;
                     nLinea := nLinea + 1;
-                    OC_ARCHIVO.ESCRIBIR_LINEA('P√≥liza no renovada. Todos los Asegurados del certificado '||N.IDETPOL||' dados de alta posterior a emisi√≥n de P√≥liza '||nIdPolizaOrig ,user,nLinea);
+                    OC_ARCHIVO.ESCRIBIR_LINEA('PÛliza no renovada. Todos los Asegurados del certificado '||N.IDETPOL||' dados de alta posterior a emisiÛn de PÛliza '||nIdPolizaOrig ,user,nLinea);
                   END IF;
                 END IF;
 
@@ -5156,7 +5169,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
          -- EXCEPTION
           --   WHEN OTHERS THEN
          --      NULL;
-               --RAISE_APPLICATION_ERROR(-20226,'Error al Emitir Renovaci√≥n de P√≥liza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);    
+               --RAISE_APPLICATION_ERROR(-20226,'Error al Emitir RenovaciÛn de PÛliza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);    
           --END;
 
           IF bContinua = TRUE THEN 
@@ -5200,7 +5213,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
                  X.CodOficina, X.CodCatego, X.Coaseguro, X.deducible, X.codobjetoimp, X.codusocfdi);
             EXCEPTION
                WHEN OTHERS THEN
-                 RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nueva P√≥liza ' ||SQLERRM);
+                 RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nueva PÛliza ' ||SQLERRM);
             END;
 
             --IF  X.Num_Cotizacion > 0 THEN
@@ -5467,18 +5480,18 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
 
           EXCEPTION
               WHEN RERROR THEN
-                RAISE_APPLICATION_ERROR(-20226,'Certificado(s) dado de alta posterior a emisi√≥n de P√≥liza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm); 
+                RAISE_APPLICATION_ERROR(-20226,'Certificado(s) dado de alta posterior a emisiÛn de PÛliza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm); 
 
              WHEN OTHERS THEN
 
-             --v_log := 'Error al Emitir Renovaci√≥n de P√≥liza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm;
+             --v_log := 'Error al Emitir RenovaciÛn de PÛliza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm;
 
                IF SQLCODE = -20226 THEN
 
-                   RAISE_APPLICATION_ERROR(-20226,'Error al Emitir Renovaci√≥n de P√≥liza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
+                   RAISE_APPLICATION_ERROR(-20226,'Error al Emitir RenovaciÛn de PÛliza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
                ELSE
 
-                   RAISE_APPLICATION_ERROR(-20225,'Error al Emitir Renovaci√≥n de P√≥liza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
+                   RAISE_APPLICATION_ERROR(-20225,'Error al Emitir RenovaciÛn de PÛliza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
                END IF;
 
 
@@ -5492,3 +5505,4 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
    END COPIAR_REN;
  -- PROCESOS GENERADOS PARA LA RENOVACION ESPECIAL MLJS CAGR ---  
 END OC_POLIZAS;
+/
