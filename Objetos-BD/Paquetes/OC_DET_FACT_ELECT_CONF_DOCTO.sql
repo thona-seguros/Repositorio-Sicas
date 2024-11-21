@@ -1,4 +1,4 @@
-create or replace PACKAGE OC_DET_FACT_ELECT_CONF_DOCTO IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
     -- HOMOLOGACION VIFLEX                  20220301 JMMD
     -- FACTELECT VIFLEX                     20230426 CAPELE
 	--- SE AGREGO cDescLeyEsp               ARH 17102023
@@ -10,7 +10,7 @@ create or replace PACKAGE OC_DET_FACT_ELECT_CONF_DOCTO IS
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
 /
-create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DET_FACT_ELECT_CONF_DOCTO IS
 
     -- HOMOLOGACION VIFLEX                                      20220301 JMMD
 
@@ -207,13 +207,13 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
           BEGIN
              SELECT C.Tipo_Doc_Identificacion, C.Num_Doc_Identificacion
                INTO cTipoDocIdentificacion, cNumDocIdentificacion
-               FROM CLIENTES C, PERSONA_NATURAL_JURIDICA P 
+               FROM CLIENTES C, PERSONA_NATURAL_JURIDICA P
               WHERE C.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
                 AND C.Num_Doc_Identificacion  = P.Num_Doc_Identificacion
                 AND C.CodCliente              = cCodCliente;
           EXCEPTION
              WHEN NO_DATA_FOUND THEN
-                RAISE_APPLICATION_ERROR (-20100,'Error: NO se puede determinar datos de cliente para facturaciÃ³n de venta al publico en general');
+                RAISE_APPLICATION_ERROR (-20100,'Error: NO se puede determinar datos de cliente para facturación de venta al publico en general');
           END;
        END IF;
        ----DATOS GENERALES DE POLIZA
@@ -255,7 +255,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                  );
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-              RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar Datos Generales De PÃ³liza Para Generacion De Informacion Al SAT Favor De Verificar');
+              RAISE_APPLICATION_ERROR (-20100,'Error: No Es Posible Determinar Datos Generales De Póliza Para Generacion De Informacion Al SAT Favor De Verificar');
        END;
 
        ---DATOS GENERALES DEL PAGO SI EL PROCESO ES DE PAGO
@@ -367,7 +367,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 cValorAtributo := TRIM(TO_CHAR(nSubTotal,'9999999999999999999999990.99'));
              END IF;
           WHEN 'COMVAL08' THEN
-             NULL;  
+             NULL;
           WHEN 'COMVAL09' THEN
              cValorAtributo := OC_MONEDA.CODIGO_FACTURACION_ELECTRONICA(cCodMoneda);
           WHEN 'COMVAL10' THEN
@@ -441,15 +441,15 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
              END IF;
           WHEN 'CRELVAL01' THEN
-             IF cProceso = 'PAG' AND NVL(nIdFactura,0) != 0 THEN                
+             IF cProceso = 'PAG' AND NVL(nIdFactura,0) != 0 THEN
                 cValorAtributo := OC_FACT_ELECT_DETALLE_TIMBRE.UUID_PROCESO(nCodCia, nCodEmpresa, nIdFactura, nIdNcr, 'EMI'); -- CUANDO SE PAGA SE BUSCA EL UUID DE EMISION
                 IF cValorAtributo IS NULL THEN
-                   RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que No Existe Un UUID De EmisiÃ³n De La Factura'||nIdFactura||' Por Favor Emita La FacturaciÃ³n ElectrÃ³nica Para La EmisiÃ³n Del Recibo');
+                   RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que No Existe Un UUID De Emisión De La Factura'||nIdFactura||' Por Favor Emita La Facturación Electrónica Para La Emisión Del Recibo');
                 END IF;
              ELSIF cProceso = 'EMI' AND NVL(nIdFactura,0) != 0 THEN
                 cCrel := OC_FACTURAS.FACTURA_RELACIONADA_UUID_CANC(nCodCia, nIdFactura);
-                IF cCrel IS NOT NULL THEN                        
-                   cValorAtributo := cCrel;                        
+                IF cCrel IS NOT NULL THEN
+                   cValorAtributo := cCrel;
                 END IF;
              END IF;
           WHEN 'EMIVAL01' THEN
@@ -477,9 +477,9 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                    RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr El Tipo De Persona Con La Identificacion '||TRIM(cTipoDocIdentificacion)||'-'||TRIM(cNumDocIdentificacion));
              END;
              IF cTipoPersona = 'FISICA' AND LENGTH(cValorAtributo) != 13 AND cValorAtributo != 'XAXX010101000' THEN
-                RAISE_APPLICATION_ERROR(-20225,'El RFC '||TRIM(cValorAtributo)||' No Cumpe Con La Longitud Requerida Para Personas FÃ­sicas, Por Favor Complemente El Rfc Del Cliente O Genere La FacturaciÃ³n Con El Rfc Generico');
+                RAISE_APPLICATION_ERROR(-20225,'El RFC '||TRIM(cValorAtributo)||' No Cumpe Con La Longitud Requerida Para Personas Físicas, Por Favor Complemente El Rfc Del Cliente O Genere La Facturación Con El Rfc Generico');
              ELSIF cTipoPersona = 'MORAL' AND LENGTH(cValorAtributo) != 12 AND cValorAtributo != 'XAXX010101000' THEN
-                RAISE_APPLICATION_ERROR(-20225,'El RFC '||TRIM(cValorAtributo)||' No Cumpe Con La Longitud Requerida Para Personas Moral, Por Favor Complemente El Rfc Del Cliente O Genere La FacturaciÃ³n Con El Rfc Generico');
+                RAISE_APPLICATION_ERROR(-20225,'El RFC '||TRIM(cValorAtributo)||' No Cumpe Con La Longitud Requerida Para Personas Moral, Por Favor Complemente El Rfc Del Cliente O Genere La Facturación Con El Rfc Generico');
              END IF;
           WHEN 'RECVAL02' THEN
              IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
@@ -490,7 +490,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
           WHEN 'RECVAL03' THEN
              NULL;
           WHEN 'RECVAL04' THEN
-             --- SI FACTURA POR POLIZA ENTONCES TOMA EL VALOR DEL USO DE CFDI DE LA POLIZA, SI FACTURA POR SUB GRUPO TOMARÃ? EL VALOR DEL USO DEL CFDI
+             --- SI FACTURA POR POLIZA ENTONCES TOMA EL VALOR DEL USO DE CFDI DE LA POLIZA, SI FACTURA POR SUB GRUPO TOMAR�? EL VALOR DEL USO DEL CFDI
              --- DEL SUB GRUPO CORRESPONDIENTE DEL RECIBO Y/O NOTA DE CREDITO
 
              IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
@@ -506,7 +506,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                          AND IdPoliza   = nIdPoliza;
                    EXCEPTION
                       WHEN NO_DATA_FOUND THEN
-                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||', Por favor valide la informaciÃ³n en la pÃ³liza');
+                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||', Por favor valide la información en la póliza');
                    END;
                 ELSIF NVL(cIndFacturaPol,'N') = 'N' THEN
                    BEGIN
@@ -519,21 +519,21 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                          AND IDetPol    = nIdDetPol;
                    EXCEPTION
                       WHEN NO_DATA_FOUND THEN
-                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la informaciÃ³n en la pÃ³liza y sub geupo correspondiente');
+                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la información en la póliza y sub geupo correspondiente');
                    END;
                 END IF;
              END IF;
-             cValorAtributo := cCodUsoCFDI; 
+             cValorAtributo := cCodUsoCFDI;
           WHEN 'RECVAL05' THEN
              ---- REGIMEN CONTRIBUYENTE RECEPTOR
              IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
                 cValorAtributo := TO_CHAR(616); --- HACER DINAMICO, PARA VENTA AL PUBLICO EN GENERAL EL REGIMEN DEBE SER EL 616
-             ELSE         
+             ELSE
                 nIdRegFisSat:= OC_PERSONA_NATURAL_JURIDICA.REGIMEN_FISCAL(cTipoDocIdentificacion,cNumDocIdentificacion);
                 IF nIdRegFisSat != 0 THEN
                    cValorAtributo := TO_CHAR(nIdRegFisSat);
                 ELSE
-                   RAISE_APPLICATION_ERROR(-20225,'Cliente no tiene asignado el rÃ©gimen fiscal, por favor complemente la informaciÃ³n del cliente y vuelve a generar la factura');
+                   RAISE_APPLICATION_ERROR(-20225,'Cliente no tiene asignado el régimen fiscal, por favor complemente la información del cliente y vuelve a generar la factura');
                 END IF;
              END IF;
           WHEN 'RECVAL06' THEN
@@ -568,7 +568,9 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
              cValorAtributo := OC_PAIS.CODIGO_ALTERNATIVO(cCodPaisRes);
           WHEN 'DORVAL09' THEN
              IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
-                cValorAtributo := '03200'; --- hacer dinamico, si se genera factura para venta al publico en general el CP debe ser el del emisor
+                --MLJS 09/07/2024 SE MODIFICA PARA OBTENER EL CP CON UNA FUNCION
+                --cValorAtributo := '03900'; --- hacer dinamico, si se genera factura para venta al publico en general el CP debe ser el del emisor
+                cValorAtributo := OC_EMPRESAS_DE_SEGUROS.CODIGO_POSTAL(nCodCia,nCodEmpresa);
              ELSE
                 cValorAtributo := cCodPosRes;
              END IF;
@@ -594,7 +596,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
           WHEN 'CONVAL05' THEN
              IF OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaRec, 'rfc') LIKE '%XAXX010101000%' THEN
                 cValorAtributo := NULL;
-             ELSE 
+             ELSE
                 cValorAtributo := cCodCpto;
              END IF;
           WHEN 'CONVAL06' THEN
@@ -651,7 +653,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
              IF NVL(nIdFactura,0) != 0 AND cProceso = 'EMI' THEN
                 cValorAtributo := TRIM(TO_CHAR( OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, cCodCpto, cCodTipoPlan),'9999999999999999999999990.99'));
                 DBMS_OUTPUT.PUT_LINE(LENGTH(NVL(cValorAtributo, 0))  || '-' ||  cCodRutinaCalc || ' cValorAtributo: ' || cValorAtributo || ' cCodTipoPlan: ' || cCodTipoPlan ||' cCodCpto: ' || cCodCpto);
-                
+
              ELSIF NVL(nIdNcr,0) != 0 THEN
                 cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_NOTAS_DE_CREDITO.MONTO_CONCEPTO_FACT_ELECT(nIdNcr, cCodCpto),'9999999999999999999999990.99'));
              END IF;
@@ -672,7 +674,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
           WHEN 'CONVAL10' THEN
               --- OBJETO DE IMPUESTO
               --- SI LA POLIZA FACTURA POR POLIZA, ENTONCES SE TOMA OBJETO DE IMPUESTO DE LA POLIZA
-              --- SI LA POLIZA FACTURA POR SUBGRUPO, ENTONCES SE TOMA EL OBJETO DE IMPUESTO DEL SUBGRUPO CORRESPONDIENTE AL RECIBO QUE SE ESTÃ? FACTURANDO
+              --- SI LA POLIZA FACTURA POR SUBGRUPO, ENTONCES SE TOMA EL OBJETO DE IMPUESTO DEL SUBGRUPO CORRESPONDIENTE AL RECIBO QUE SE EST�? FACTURANDO
              IF NVL(cIndFacturaPol,'N') = 'S' THEN
                 BEGIN
                    SELECT NVL(CodObjetoImp,'02')
@@ -683,7 +685,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                       AND IdPoliza   = nIdPoliza;
                 EXCEPTION
                    WHEN NO_DATA_FOUND THEN
-                      RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||', Por favor valide la informaciÃ³n en la pÃ³liza');
+                      RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||', Por favor valide la información en la póliza');
                 END;
              ELSIF NVL(cIndFacturaPol,'N') = 'N' THEN
                 BEGIN
@@ -696,20 +698,20 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                       AND IDetPol    = nIdDetPol;
                 EXCEPTION
                    WHEN NO_DATA_FOUND THEN
-                      RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la informaciÃ³n en la pÃ³liza y sub geupo correspondiente');
+                      RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la información en la póliza y sub geupo correspondiente');
                 END;
              END IF;
-             cValorAtributo := cCodObjetoImp; 
+             cValorAtributo := cCodObjetoImp;
           WHEN 'CONVAL11' THEN
              NULL;
           WHEN 'CONVAL12' THEN
              NULL;
           WHEN 'PAGSTVAL01' THEN
-             cValorAtributo := NULL; 
+             cValorAtributo := NULL;
           WHEN 'PAGSTVAL02' THEN
-             cValorAtributo := NULL; 
+             cValorAtributo := NULL;
           WHEN 'PAGSTVAL03' THEN
-             cValorAtributo := NULL; 
+             cValorAtributo := NULL;
           WHEN 'PAGSTVAL04' THEN
              IF OC_DETALLE_FACTURAS.EXISTE_CONCEPTO(nCodCia, nIdPoliza, nIdTransaccion, 'IVASIN') = 'N' THEN -- cCodCpto)
                 cValorAtributo := NULL;
@@ -729,21 +731,21 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                    AND DF.CodCpto         != 'IVASIN';
              END IF;
           WHEN 'PAGSTVAL05' THEN
-             IF OC_DETALLE_FACTURAS.EXISTE_CONCEPTO(nCodCia, nIdPoliza, nIdTransaccion, 'IVASIN') = 'N' THEN 
+             IF OC_DETALLE_FACTURAS.EXISTE_CONCEPTO(nCodCia, nIdPoliza, nIdTransaccion, 'IVASIN') = 'N' THEN
                 cValorAtributo := NULL;
              ELSE
                 cValorAtributo := TRIM(TO_CHAR(OC_DETALLE_FACTURAS.MONTO_CONCEPTO_FACT_ELECT(nIdFactura, 'IVASIN', cCodTipoPlan),'9999999999999999999999990.99'));
              END IF;
           WHEN 'PAGSTVAL06' THEN
-             cValorAtributo := NULL; 
+             cValorAtributo := NULL;
           WHEN 'PAGSTVAL07' THEN
-             cValorAtributo := NULL; 
+             cValorAtributo := NULL;
           WHEN 'PAGSTVAL08' THEN
-             cValorAtributo := NULL; 
+             cValorAtributo := NULL;
           WHEN 'PAGSTVAL09' THEN
-             cValorAtributo := NULL; 
+             cValorAtributo := NULL;
           WHEN 'PAGSTVAL10' THEN
---CAPELE 20230822          
+--CAPELE 20230822
              --IF OC_DETALLE_FACTURAS.EXISTE_CONCEPTO(nCodCia, nIdPoliza, nIdTransaccion, 'IVASIN') = 'S' THEN -- cCodCpto)
 --                cValorAtributo := NULL;
 --             ELSE
@@ -776,7 +778,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 AND D.CodProceso        = 'EMI'
                 AND F.IdFactura         = DF.IdFactura
                 AND F.CodCia            = D.CodCia
-                AND F.IdFactura         = D.IdFactura                
+                AND F.IdFactura         = D.IdFactura
                 AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_UUID_CANCELADO(D.CodCia, D.CodEmpresa, D.IdFactura, D.IdNcr, D.Uuid) = 'N'
                 --AND DF.CodCpto         != 'IVASIN'
                 ;
@@ -792,7 +794,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
           WHEN 'CONITVAL02' THEN
              NULL;
           WHEN 'CONITVAL03' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN 
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := 'Exento';
              ELSE
                 IF OC_CATALOGO_DE_CONCEPTOS.PORCENTAJE_CONCEPTO(nCodCia, cCodImpto) <> 0 THEN
@@ -800,7 +802,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
              END IF;
           WHEN 'CONITVAL04' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN 
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := NULL;
              ELSE
                 cTipoFactor := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaConit,'TipoFactor');
@@ -809,7 +811,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
              END IF;
           WHEN 'CONITVAL05' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN 
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := NULL;
              ELSE
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'EMI' THEN
@@ -843,14 +845,14 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
              IF NVL(nIdFactura,0) != 0 THEN
                 cValorAtributo := TRIM(TO_CHAR(oc_facturas.MONTO_BASE(nIdFactura, cIndExentoImp),'9999999999999999999999990.99'));
              ELSE
-                cValorAtributo := TRIM(TO_CHAR(OC_NOTAS_DE_CREDITO.MONTO_BASE_IMPUESTO(nCodCia, nIdNcr), '9999999999999999999999990.99'));                
+                cValorAtributo := TRIM(TO_CHAR(OC_NOTAS_DE_CREDITO.MONTO_BASE_IMPUESTO(nCodCia, nIdNcr), '9999999999999999999999990.99'));
              END IF;
              --DBMS_OUTPUT.PUT_LINE(LENGTH(NVL(cValorAtributo, 0))  || '-' ||  cCodRutinaCalc || ' cValorAtributo: ' || cValorAtributo || ' cCodTipoPlan: ' || cCodTipoPlan);
           WHEN 'TRAVAL02' THEN
               -- AGREGAR CODIGO DE FACTURACION ELECTRONICA A CATALOGO DE CONCEPTOS AL IMPUESTO IVASIN
              NULL;
           WHEN 'TRAVAL03' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN  
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := 'Exento';
              ELSE
                 IF OC_CATALOGO_DE_CONCEPTOS.PORCENTAJE_CONCEPTO(nCodCia, cCodImpto) <> 0 THEN
@@ -858,7 +860,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
              END IF;
           WHEN 'TRAVAL04' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN 
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := NULL;
              ELSE
                 cTipoFactor := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaConit,'TipoFactor');
@@ -867,7 +869,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
              END IF;
           WHEN 'TRAVAL05' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN 
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := NULL;
              ELSE
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'EMI' THEN
@@ -917,7 +919,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                   INTO  dFecha_Pago_CM
                   FROM  DETALLE_DOMICI_REFERE
                  WHERE  idFactura = nIdFactura
-                   AND  ESTADO    = 'PAG';   -- 31/03/2022 SE AGREGO ESTA CONDICION 
+                   AND  ESTADO    = 'PAG';   -- 31/03/2022 SE AGREGO ESTA CONDICION
 
                 cValorAtributo := TO_CHAR(dFecha_Pago_CM,'yyyy-mm-dd')||'T'||TO_CHAR(dFecha_Pago_CM,'hh24:mm:ss');
              ELSIF NVL(cIndPlataforma,'N') = 'S' THEN
@@ -965,7 +967,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
           WHEN 'PAGSPDOCVAL01' THEN
              cValorAtributo := OC_FACT_ELECT_DETALLE_TIMBRE.UUID_PROCESO(nCodCia, nCodEmpresa, nIdFactura, nIdNcr, 'EMI'); -- CUANDO SE PAGA SE BUSCA EL UUID DE EMISION
              IF cValorAtributo IS NULL THEN
-                RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que No Existe Un UUID De EmisiÃ³n De La Factura'||nIdFactura||' Por Favor Emita La FacturaciÃ³n ElectrÃ³nica Para La EmisiÃ³n Del Recibo');
+                RAISE_APPLICATION_ERROR(-20225,'No Es Posible Generar El Timbre De Pago Ya Que No Existe Un UUID De Emisión De La Factura'||nIdFactura||' Por Favor Emita La Facturación Electrónica Para La Emisión Del Recibo');
              END IF;
           WHEN 'PAGSPDOCVAL02' THEN
              cValorAtributo :=  OC_FACT_ELECT_DETALLE_TIMBRE.SERIE(nCodCia, nCodEmpresa, nIdFactura,nIdNcr, OC_FACT_ELECT_DETALLE_TIMBRE.UUID_PROCESO(nCodCia, nCodEmpresa, nIdFactura, nIdNcr, 'EMI'));
@@ -999,7 +1001,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                       AND IdPoliza   = nIdPoliza;
                 EXCEPTION
                    WHEN NO_DATA_FOUND THEN
-                      RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||', Por favor valide la informaciÃ³n en la pÃ³liza');
+                      RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||', Por favor valide la información en la póliza');
                 END;
              ELSIF NVL(cIndFacturaPol,'N') = 'N' THEN
                 BEGIN
@@ -1012,7 +1014,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                       AND IDetPol    = nIdDetPol;
                 EXCEPTION
                    WHEN NO_DATA_FOUND THEN
-                      RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la pÃ³liza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la informaciÃ³n en la pÃ³liza y sub geupo correspondiente');
+                      RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determianr el Uso de CFDI para la póliza '||cNumPolUnico||' Sub Grupo '||nIdDetPol||', Por favor valide la información en la póliza y sub geupo correspondiente');
                 END;
              END IF;
              cValorAtributo := cCodObjetoImp;
@@ -1032,7 +1034,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                         AND F.IdFactura         = D.IdFactura
                         AND NVL(DF.MTOIMPTOFACTELECT, 0) <> 0 --CAPELE
                         AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_UUID_CANCELADO(D.CodCia, D.CodEmpresa, D.IdFactura, D.IdNcr, D.Uuid) = 'N'
-                        AND DF.CodCpto         != cCodImpto;                                            
+                        AND DF.CodCpto         != cCodImpto;
                   ELSE
                     SELECT TO_CHAR(SUM(DF.Monto_Det_Moneda), '9999999999999999999990D90')
                       INTO cValorAtributo
@@ -1047,7 +1049,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                        AND F.IdFactura         = D.IdFactura
                        AND NVL(DF.MTOIMPTOFACTELECT, 0) = 0 -- CAPELE
                        AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_UUID_CANCELADO(D.CodCia, D.CodEmpresa, D.IdFactura, D.IdNcr, D.Uuid) = 'N'
-                       AND DF.CodCpto         != 'IVASIN';                  
+                       AND DF.CodCpto         != 'IVASIN';
                   END IF;
                   IF cValorAtributo = '0' THEN
                     cValorAtributo := NULL;
@@ -1055,7 +1057,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
           WHEN 'PAGSPDOCIMTRAVAL02' THEN
              cValorAtributo := NULL;
           WHEN 'PAGSPDOCIMTRAVAL03' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN  
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := 'Exento';
              ELSE
                 IF OC_CATALOGO_DE_CONCEPTOS.PORCENTAJE_CONCEPTO(nCodCia, cCodImpto) <> 0 THEN
@@ -1063,7 +1065,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
              END IF;
           WHEN 'PAGSPDOCIMTRAVAL04' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN 
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := NULL;
              ELSE
                 cTipoFactor := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaPagsPDocImTra,'TipoFactorDR');
@@ -1072,7 +1074,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
              END IF;
           WHEN 'PAGSPDOCIMTRAVAL05' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN 
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := NULL;
              ELSE
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'PAG' THEN
@@ -1109,15 +1111,15 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                        AND F.IdFactura         = D.IdFactura
                        AND NVL(DF.MTOIMPTOFACTELECT, 0) = 0 -- CAPELE
                        AND OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_UUID_CANCELADO(D.CodCia, D.CodEmpresa, D.IdFactura, D.IdNcr, D.Uuid) = 'N'
-                       AND DF.CodCpto         != 'IVASIN';   
-             END IF;   
+                       AND DF.CodCpto         != 'IVASIN';
+             END IF;
               IF cValorAtributo = '0' THEN
                 cValorAtributo := NULL;
-              END IF;                              
+              END IF;
           WHEN 'PAGSPIMTRAVAL02' THEN
              cValorAtributo := NULL;
           WHEN 'PAGSPIMTRAVAL03' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN  
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := 'Exento';
              ELSE
                 IF OC_CATALOGO_DE_CONCEPTOS.PORCENTAJE_CONCEPTO(nCodCia, cCodImpto) <> 0 THEN
@@ -1125,7 +1127,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
              END IF;
           WHEN 'PAGSPIMTRAVAL04' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN 
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := NULL;
              ELSE
                 cTipoFactor := OC_DET_FACT_ELECT_CONF_DOCTO.EXTRAE_VALOR_ATRIBUTO(OC_FACT_ELECT_CONF_DOCTO.cLineaPagsPImTra,'TipoFactorP');
@@ -1134,7 +1136,7 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
                 END IF;
              END IF;
           WHEN 'PAGSPIMTRAVAL05' THEN
-             IF NVL(cIndExentoImp,'N') = 'S' THEN 
+             IF NVL(cIndExentoImp,'N') = 'S' THEN
                 cValorAtributo := NULL;
              ELSE
                 IF NVL(nIdFactura,0) != 0 AND cProceso = 'PAG' THEN
@@ -1147,3 +1149,4 @@ create or replace PACKAGE BODY OC_DET_FACT_ELECT_CONF_DOCTO IS
     END GENERA_VALOR_ATRIBUTO;
 
 END OC_DET_FACT_ELECT_CONF_DOCTO;
+/

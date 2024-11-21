@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_EMPRESAS_DE_SEGUROS IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_EMPRESAS_DE_SEGUROS IS
 
 FUNCTION NOMBRE_EMPRESA(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2;
 FUNCTION EMAIL_EMPRESA(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2;
@@ -7,11 +7,11 @@ PROCEDURE COPIAR(nCodCia NUMBER, nCodEmpresaOrig NUMBER, nCodEmpresaDest NUMBER,
 FUNCTION TELEFONO (nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2;
 FUNCTION FAX (nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2;
 FUNCTION EMAIL (nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2;
+FUNCTION CODIGO_POSTAL(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2;
 
 END OC_EMPRESAS_DE_SEGUROS;
 /
-
-CREATE OR REPLACE PACKAGE BODY          OC_EMPRESAS_DE_SEGUROS IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_EMPRESAS_DE_SEGUROS IS
 
 FUNCTION NOMBRE_EMPRESA(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2 IS
 cNomEmpresa   EMPRESAS_DE_SEGUROS.NomEmpresa%TYPE;
@@ -53,7 +53,7 @@ BEGIN
       AND CodEmpresa = nCodEmpresa;
    IF cNum_Tributario IS NULL THEN
       RAISE_APPLICATION_ERROR(-20200,'Empresa '|| nCodCia || ' NO Tiene Registrada su Identificación Tributaria');
-   ELSE   
+   ELSE
       RETURN(cNum_Tributario);
    END IF;
 EXCEPTION
@@ -79,7 +79,7 @@ CURSOR EMP_Q IS
 
 CURSOR CONT_Q IS
    SELECT Corr_Contacto, Contacto, Departamento, TelContacto,
-          FaxContacto, Email, Puesto 
+          FaxContacto, Email, Puesto
      FROM CONTACTOS
     WHERE CodCia     = nCodCia
       AND CodEmpresa = nCodEmpresaOrig;
@@ -200,14 +200,14 @@ CURSOR PLANCOB_Q IS
           PorcGtoAdmin, PorcGtoAdqui, PorcUtilidad
      FROM PLAN_COBERTURAS
     WHERE CodCia     = nCodCia
-      AND CodEmpresa = nCodEmpresaOrig;   
+      AND CodEmpresa = nCodEmpresaOrig;
 
 CURSOR CNFPLANT_Q IS
    SELECT IdTipoSeg, PlanCob, TipoProceso, CodPlantilla,
           CodUsuario, FecUltCambio, AreaAplicacion
      FROM CONFIG_PLANTILLAS_PLANCOB
     WHERE CodCia     = nCodCia
-      AND CodEmpresa = nCodEmpresaOrig;   
+      AND CodEmpresa = nCodEmpresaOrig;
 
 CURSOR ASIS_Q IS
    SELECT IdTipoSeg, PlanCob, CodAsistencia, IndAsistOblig,
@@ -229,7 +229,7 @@ CURSOR REQPLAN_Q IS
       AND CodEmpresa = nCodEmpresaOrig;
 
 CURSOR NOMSIN_Q IS
-   SELECT IdTipoSeg, PlanCob, Codigo, Nomenclatura, 
+   SELECT IdTipoSeg, PlanCob, Codigo, Nomenclatura,
           Anio, UltSinAsig, Descipcion
      FROM CONFIG_NOMSIN
     WHERE CodCia     = nCodCia
@@ -251,7 +251,7 @@ CURSOR DIN_Q IS
       AND CodEmpresa = nCodEmpresaOrig;
 
 CURSOR DET_DIN_Q IS
-   SELECT CodCobert, TipoTarifa, IdCampo, IndAplicFormula, 
+   SELECT CodCobert, TipoTarifa, IdCampo, IndAplicFormula,
           CodCampo, OrdenProcCampo, CodCondicion, ValorIniCond,
           ValorFinCond, ValorTarifa, CampoValor, OrdenProcCampoVal,
           CodUsuario, FecUltCambio, OrdenCampo, TipoProceso
@@ -347,7 +347,7 @@ BEGIN
 
    FOR V IN PLANPAGO_Q LOOP
       INSERT INTO PLAN_DE_PAGOS
-            (CodCia, CodEmpresa, CodPlanPago, DescPlan, NumPagos, 
+            (CodCia, CodEmpresa, CodPlanPago, DescPlan, NumPagos,
              FrecPagos, PorcInicial, StsPlan, FecSts, TipoPago)
       VALUES(nCodCia, nCodEmpresaDest, V.CodPlanPago, V.DescPlan, V.NumPagos,
              V.FrecPagos, V.PorcInicial, V.StsPlan, TRUNC(SYSDATE), V.TipoPago);
@@ -372,10 +372,10 @@ BEGIN
    FOR P IN PLANT_Q LOOP
       INSERT INTO CONFIG_PLANTILLAS
             (CodCia, CodEmpresa, CodPlantilla, DescPlantilla, TipoPlantilla, StsPlantilla,
-             FecSts, NomArchivo, PathArchivo, IndSeparador, TipoSeparador, 
+             FecSts, NomArchivo, PathArchivo, IndSeparador, TipoSeparador,
              AccionPlantilla, CodUsuario, FecUltCambio, CodEntidad)
       VALUES(nCodCia, nCodEmpresaDest, P.CodPlantilla, P.DescPlantilla, P.TipoPlantilla, P.StsPlantilla,
-             TRUNC(SYSDATE), P.NomArchivo, P.PathArchivo, P.IndSeparador, P.TipoSeparador, 
+             TRUNC(SYSDATE), P.NomArchivo, P.PathArchivo, P.IndSeparador, P.TipoSeparador,
              P.AccionPlantilla, USER, TRUNC(SYSDATE), P.CodEntidad);
    END LOOP;
 
@@ -389,7 +389,7 @@ BEGIN
 
    FOR C IN CAMP_Q LOOP
       INSERT INTO CONFIG_PLANTILLAS_CAMPOS
-            (CodCia, CodEmpresa, CodPlantilla, NomTabla, OrdenProceso, OrdenCampo, 
+            (CodCia, CodEmpresa, CodPlantilla, NomTabla, OrdenProceso, OrdenCampo,
              NomCampo, IndClavePrimaria, TipoCampo, PosIniCampo, LongitudCampo,
              NumDecimales, ValorDefault, SqlValidacion, SQLValorCampo,
              IndDatoPart, OrdenDatoPart, IndAseg)
@@ -401,7 +401,7 @@ BEGIN
 
    FOR X IN TIPSEG_Q LOOP
       INSERT INTO TIPOS_DE_SEGUROS
-            (CodCia, CodEmpresa, IdTipoSeg, Descripcion, StsTipSeg, 
+            (CodCia, CodEmpresa, IdTipoSeg, Descripcion, StsTipSeg,
              FecSts, TipoSeg, IdPlantilla, CodTipoPlan,
              CodPlanPago, IndRenovAut, TipoContabilidad, DiasCancelacion)
       VALUES(nCodCia, nCodEmpresaDest, X.IdTipoSeg, X.Descripcion, X.StsTipSeg,
@@ -469,7 +469,7 @@ BEGIN
 
    FOR W IN SOBCOMIS_Q LOOP
       INSERT INTO CONFIG_SOBRECOMISIONES
-            (CodCia, CodEmpresa, IdTipoSeg, RangoInicial, 
+            (CodCia, CodEmpresa, IdTipoSeg, RangoInicial,
              RangoFinal, PorcSobComis, MontoSobComis)
       VALUES(nCodCia, nCodEmpresaDest, W.IdTipoSeg, W.RangoInicial,
              W.RangoFinal, W.PorcSobComis, W.MontoSobComis);
@@ -509,9 +509,9 @@ BEGIN
 
    FOR N IN NIVEL_Q LOOP
       INSERT INTO NIVEL_PLAN_COBERTURA
-            (CodCia, CodEmpresa, IdTipoSeg, PlanCob, 
+            (CodCia, CodEmpresa, IdTipoSeg, PlanCob,
              CodNivel, ComAgeNivel, Origen)
-      VALUES(nCodCia, nCodEmpresaDest, N.IdTipoSeg, N.PlanCob, 
+      VALUES(nCodCia, nCodEmpresaDest, N.IdTipoSeg, N.PlanCob,
              N.CodNivel, N.ComAgeNivel, N.Origen);
    END LOOP;
 
@@ -544,7 +544,7 @@ BEGIN
       nIdTarifaOrig  := T.IdTarifa;
 
       INSERT INTO TARIFA_DINAMICA
-            (CodCia, CodEmpresa, IdTarifa, IdTipoSeg, PlanCob, 
+            (CodCia, CodEmpresa, IdTarifa, IdTipoSeg, PlanCob,
              FecIniTarifa, FecFinTarifa, ObservTarifa, StsTarifa,
              FecSts, CodUsuario, FecUltCambio)
       VALUES(nCodCia, nCodEmpresaDest, nIdTarifaDest, T.IdTipoSeg, T.PlanCob,
@@ -640,7 +640,7 @@ BEGIN
 
    FOR R IN REQCOB_Q LOOP
       INSERT INTO REQUISITO_COBERT_SEGURO
-            (CodCia, CodEmpresa, IdTipoSeg, PlanCob, 
+            (CodCia, CodEmpresa, IdTipoSeg, PlanCob,
              CodCobert, CodRequisito)
       VALUES(nCodCia, nCodEmpresaDest, R.IdTipoSeg, R.PlanCob,
              R.CodCobert, R.CodRequisito);
@@ -696,4 +696,22 @@ EXCEPTION
       RETURN(cNomEmpresa);
 END EMAIL;
 
+--MLJS 09/07/2024 SE AGREGA FUNCION PARA OBTENER EL CODIGO POSTAL
+FUNCTION CODIGO_POSTAL(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN VARCHAR2 IS
+cZIPEMP EMPRESAS_DE_SEGUROS.ZIPEMP%TYPE;
+
+BEGIN
+  SELECT NVL(ZIPEMP,'SIN CP')
+     INTO cZIPEMP
+     FROM EMPRESAS_DE_SEGUROS
+    WHERE CodCia     = nCodCia
+      AND CodEmpresa = nCodEmpresa;
+      RETURN(cZIPEMP);
+EXCEPTION
+   WHEN NO_DATA_FOUND THEN
+      cZIPEMP := 'CP - NO EXISTE!!!';
+      RETURN(cZIPEMP);
+END CODIGO_POSTAL;
+
 END OC_EMPRESAS_DE_SEGUROS;
+/
