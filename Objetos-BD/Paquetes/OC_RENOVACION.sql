@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_RENOVACION IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_RENOVACION IS
 
    FUNCTION MIGRA_A_AUTOFACIL( P_POLIZA  IN  NUMBER
                              , MENSAJE  OUT VARCHAR2 ) RETURN NUMBER;
@@ -80,9 +80,10 @@ create or replace PACKAGE          OC_RENOVACION IS
    FUNCTION LISTADO_FECPROCESO( nCodCia      RENOVACIONES.CodCia%TYPE
                               , nCodEmpresa  RENOVACIONES.CodEmpresa%TYPE ) RETURN XMLTYPE;
 
+   FUNCTION F_OBT_NUMRENOV_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN NUMBER;
 END OC_RENOVACION;
 /
-create or replace PACKAGE BODY          OC_RENOVACION IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_RENOVACION IS
 --
 -- CREADO 20/06/2016
 -- BITACORA DE CAMBIOS
@@ -572,11 +573,11 @@ BEGIN
   END; 
   --  
   nDuracionPlan := OC_PLAN_COBERTURAS.DURACION_PLAN(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob);
-  -- Renovaci贸n de P贸liza
+  -- Renovaci髇 de P髄iza
   IF nDuracionPlan > 1 AND
      NNUMRENOV + 2 > nDuracionPlan THEN
      CMENSAJE_SALIDA := ' - POLIZA CON PROBLEMAS ';
-     RAISE_APPLICATION_ERROR(-20204,' La Renovaci贸n Supera la Duraci贸n del Plan de Coberturas ');
+     RAISE_APPLICATION_ERROR(-20204,' La Renovaci髇 Supera la Duraci髇 del Plan de Coberturas ');
   END IF;
   --
   nTasaCambio  := OC_GENERALES.TASA_DE_CAMBIO(CCOD_MONEDA, TRUNC(SYSDATE));
@@ -669,7 +670,7 @@ BEGIN
              CMENSAJE_SALIDA := ' - T_POLIZAS ';
              RAISE_APPLICATION_ERROR(-20206,' T_POLIZAS ');
       END;
-      -- Inserta Agentes de la P贸liza
+      -- Inserta Agentes de la P髄iza
       FOR A IN AGE_POL LOOP 
           BEGIN
             INSERT INTO AGENTE_POLIZA
@@ -684,7 +685,7 @@ BEGIN
                 RAISE_APPLICATION_ERROR(-20206,' T_AGENTE_POLIZA ');
           END;
       END LOOP;
-      -- Inserta Distribuci贸n de Agentes de la P贸liza
+      -- Inserta Distribuci髇 de Agentes de la P髄iza
       FOR AP IN AGE_POL_D LOOP 
           BEGIN
             INSERT INTO AGENTES_DISTRIBUCION_POLIZA
@@ -701,7 +702,7 @@ BEGIN
                  RAISE_APPLICATION_ERROR(-20206,' T_AGENTES_DISTRIBUCION_POLIZA ');
           END;  
       END LOOP;
-      -- Cla煤sulas de P贸liza
+      -- Cla鷖ulas de P髄iza
       BEGIN
          OC_CLAUSULAS_POLIZA.RENOVAR(nCodCia, nIdPolizaRen, nIdPoliza);
       EXCEPTION
@@ -712,7 +713,7 @@ BEGIN
       -- 
   END LOOP;
   --
-  -- Renovaci贸n de Detalles de P贸liza
+  -- Renovaci髇 de Detalles de P髄iza
   --
   IF CID_GENERA_SUBGRUPOS = 'S' THEN
      FOR D IN DET_POL_RENOVAR_Q LOOP
@@ -942,7 +943,7 @@ BEGIN
      END LOOP;
   END IF;
   --
-  -- Beneficiarios de Detalles de P贸liza
+  -- Beneficiarios de Detalles de P髄iza
   --
   FOR B IN BENEF_Q LOOP
       BEGIN
@@ -1135,8 +1136,8 @@ END RENOVAR;          --01/12/2019  RENOV
          nAnoSeleccion := nAnoEjecucion;
       END IF;
       --
-      --El d铆a 1 se libera reporte con las p贸lizas a renovar entre el 1 y el 14 del siguiente mes
-      --El d铆a 15 se libera reporte con las p贸lizas a renovar entre el 15 y el 31 del siguiente mes
+      --El d韆 1 se libera reporte con las p髄izas a renovar entre el 1 y el 14 del siguiente mes
+      --El d韆 15 se libera reporte con las p髄izas a renovar entre el 15 y el 31 del siguiente mes
       --
       IF nDiaEjecucion = 1 THEN
          dFechaDesde := TO_DATE('01-'|| TRIM(TO_CHAR(nMesSeleccion, '00')) || '-' || TRIM(TO_CHAR(nAnoSeleccion, '0000')), 'DD-MM-YYYY');
@@ -1253,6 +1254,9 @@ END RENOVAR;          --01/12/2019  RENOV
       dFecRespWeb        RENOVACIONES.FecRespWeb%TYPE;
       cIndRespCte        RENOVACIONES.IndRespCte%TYPE;
       dFecRenPag         RENOVACIONES.FecRenPag%TYPE;
+      cNumPolUnico       POLIZAS.NUMPOLUNICO%TYPE;
+      nNumRenovRen       RENOVACIONES.NumRenov%TYPE;
+
       --
       CURSOR cGenRenovacion IS
          WITH
@@ -1321,6 +1325,17 @@ END RENOVAR;          --01/12/2019  RENOV
         AND  NumRenov   = nNumRenov
         AND  TipoMovto  = 'RENWEB';
       --
+      -- MLJS 09/11/2024 SDE AGREGA LA ACTUALIZACI覰 DEL NUMERO DE RENOVACION EN LA POLIZA
+      IF nIdPolizaRen IS NOT NULL THEN
+        cNumPolUnico := OC_POLIZAS.NUMERO_UNICO(nCodCia,nIdPolizaRen);
+        nNumRenovRen := F_OBT_NUMRENOV_REN(cNumPolUnico);
+        BEGIN
+          UPDATE POLIZAS
+          SET    NUMRENOV = nNumRenovRen
+          WHERE  IDPOLIZA  = nIdPolizaRen;
+        END;
+        
+      END IF;
    EXCEPTION
    WHEN OTHERS THEN
         RAISE_APPLICATION_ERROR(-20205, 'ERROR AL ACTUZALIZAR INFORMACION GENERAL DE LA POLIZA A RENOVAR: ' || SQLERRM);
@@ -2286,4 +2301,14 @@ END RENOVAR;          --01/12/2019  RENOV
    WHEN OTHERS THEN
         RETURN xResultado;
    END LISTADO_FECPROCESO;
+ 
+--MLJS 11/11/2024 SE AGREGA FUNCION PARA OBTENER EL N贛ERO DE RENOVAVI覰.
+   FUNCTION F_OBT_NUMRENOV_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN NUMBER IS
+      nNumrenov  POLIZAS.NUMRENOV%TYPE;
+
+   BEGIN
+      nNumrenov := TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2));
+      RETURN (nNumrenov);
+   END F_OBT_NUMRENOV_REN;
 END OC_RENOVACION;
+/
