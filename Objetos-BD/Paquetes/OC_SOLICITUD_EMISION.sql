@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_SOLICITUD_EMISION IS
+create or replace PACKAGE OC_SOLICITUD_EMISION IS
 
 FUNCTION NUMERO_SOLICITUD(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN NUMBER;
 
@@ -42,10 +42,11 @@ FUNCTION FECHA_FIN_VIG(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER) 
 
 PROCEDURE DATOS_COTIZACION (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdCotizacion NUMBER); 
 
+PROCEDURE CREA_POLIZA_BASE (nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, cNumPolUnicoOrigen VARCHAR2);
+
 END OC_SOLICITUD_EMISION;
 
 /
-
 create or replace PACKAGE BODY OC_SOLICITUD_EMISION IS
 --
 -- BITACORA DE CAMBIOS
@@ -192,7 +193,7 @@ BEGIN
       RAISE_APPLICATION_ERROR(-20225,'Debe Ingresar SubGrupos a la Solicitud No. : '||TRIM(TO_CHAR(nIdSolicitud)));
    ELSIF OC_PLAN_COBERTURAS.VALIDA_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecIniVig) = 'N' THEN
       IF OC_PROCESO_AUTORIZA_USUARIO.PROCESO_AUTORIZADO(nCodCia, '9145', USER, 'NOAPLI',1) = 'N' THEN
-        RAISE_APPLICATION_ERROR(-20225,'La Configuraci髇 del Producto S髄o Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' D韆s de Retroactividad Por Favor Valide la Solicitud con su Supervisor'||TRIM(TO_CHAR(nIdSolicitud)));
+        RAISE_APPLICATION_ERROR(-20225,'La Configuraci贸n del Producto S贸lo Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' D铆as de Retroactividad Por Favor Valide la Solicitud con su Supervisor'||TRIM(TO_CHAR(nIdSolicitud)));
       END IF;
    ELSE
       FOR W IN DET_Q LOOP
@@ -213,9 +214,9 @@ BEGIN
       END LOOP;
       IF OC_SOLICITUD_EMISION.ASEGURADO_MODELO(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
          IF NVL(nTotalPrimas,0) > OC_SOLICITUD_EMISION.TOTAL_PRIMA_NETA(nCodCia, nCodEmpresa, nIdSolicitud) THEN
-            RAISE_APPLICATION_ERROR(-20225,'Distribuci髇 de Coberturas y Asistencias es Mayor a la Prima Neta de P髄iza');
+            RAISE_APPLICATION_ERROR(-20225,'Distribuci贸n de Coberturas y Asistencias es Mayor a la Prima Neta de P贸liza');
          ELSIF NVL(nTotalPrimas,0) < OC_SOLICITUD_EMISION.TOTAL_PRIMA_NETA(nCodCia, nCodEmpresa, nIdSolicitud) THEN
-            RAISE_APPLICATION_ERROR(-20225,'Distribuci髇 de Coberturas y Asistencias es Menor a la Prima Neta de P髄iza');
+            RAISE_APPLICATION_ERROR(-20225,'Distribuci贸n de Coberturas y Asistencias es Menor a la Prima Neta de P贸liza');
          END IF;
       ELSIF OC_SOLICITUD_DETALLE_ASEG.TIENE_ASEGURADOS(nCodCia, nCodEmpresa, nIdSolicitud) = 'N' THEN
          RAISE_APPLICATION_ERROR(-20225,'No ha Cargado el Listado de Asegurados a la Soicitud');
@@ -230,7 +231,7 @@ BEGIN
      END IF;
      --
       IF OC_SOLICITUD_AGENTES_DISTRIB.TIENE_DISTRIBUCION(nCodCia, nCodEmpresa, nIdSolicitud) = 'N' THEN
-         RAISE_APPLICATION_ERROR(-20225,'No Ha Realizado la Distribuci髇 de Comisiones a la Solicitud No. : '||TRIM(TO_CHAR(nIdSolicitud)));
+         RAISE_APPLICATION_ERROR(-20225,'No Ha Realizado la Distribuci贸n de Comisiones a la Solicitud No. : '||TRIM(TO_CHAR(nIdSolicitud)));
       ELSE
          RETURN('S');
       END IF;
@@ -261,7 +262,8 @@ CURSOR SOL_Q IS
           StsSolicitud, FecStsSol, CodUsuario, DescSolicitud, IndFactElectronica,
           IndCalcDerechoEmis, CodDirecRegional, TipoDocIdentifAseg,
           NumDocIdentifAseg, NumFolioPortal, IndConcentrada, CodTipoNegocio,
-          CodCatego, TipoRiesgo, Formaventa, CodObjetoImp, CodUsoCfdi, IndAsistPorPoliza
+          CodCatego, TipoRiesgo, Formaventa, CodObjetoImp, CodUsoCfdi, IndAsistPorPoliza,
+          IdPoliza
      FROM SOLICITUD_EMISION
     WHERE CodCia      = nCodCia
       AND CodEmpresa  = nCodEmpresa
@@ -287,6 +289,20 @@ CURSOR ASEG_Q IS
       AND IDetSol     = nIDetPol
     ORDER BY IdAsegurado;
 
+CURSOR ASEGPOL_Q IS    
+   SELECT P.Tipo_Doc_Identificacion, P.Num_Doc_Identificacion, P.Nombre NombreAseg,
+          P.Apellido_Paterno ApellidoPaternoAseg, P.Apellido_Materno ApellidoMaternoAseg,
+          P.FecNacimiento FechaNacimiento, P.Sexo SexoAseg, P.DirecRes DirecResAseg,
+          P.ZipRes CodigoPostalAseg, C.Campo2 SalarioMensual, C.Campo3 Nutra, C.Cod_Asegurado
+     FROM ASEGURADO_CERTIFICADO C, ASEGURADO A, PERSONA_NATURAL_JURIDICA P
+    WHERE C.CodCia                  = nCodCia
+      AND C.IdPoliza                = nIdpoliza
+      AND C.IDetPol                 = nIDetPol
+      --AND C.IdEndoso                = :nIdEndoso
+      AND C.Cod_Asegurado           = A.Cod_Asegurado
+      AND A.Tipo_Doc_Identificacion = P.Tipo_Doc_Identificacion
+      AND A.Num_Doc_Identificacion  = P.Num_Doc_Identificacion;     
+
 CURSOR COB_Q IS
    SELECT SC.CodCobert, SC.SumaAseg_Local, SC.SumaAseg_Moneda, SC.Tasa, 
           SC.Prima_Moneda, SC.Prima_Local, SC.Deducible_Local,
@@ -300,7 +316,7 @@ CURSOR COB_Q IS
       AND SE.CodCia        = nCodCia
       AND SE.CodEmpresa    = nCodEmpresa
       AND SE.IdSolicitud   = nIdSolicitud;   
-      
+
 CURSOR REGLA_SA_Q IS
    SELECT CodCobert, ReglaSumaAseg
      FROM SOLICITUD_REGLA_SA
@@ -310,275 +326,351 @@ CURSOR REGLA_SA_Q IS
       AND IDetSol       = nIDetSol; 
 BEGIN
    FOR X IN SOL_Q LOOP
-      IF OC_SOLICITUD_EMISION.VALIDAR(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
-         nCodCliente  := OC_CLIENTES.CODIGO_CLIENTE(X.Tipo_Doc_Identificacion, X.Num_Doc_Identificacion);
-         IF NVL(nCodCliente,0) = 0 THEN
-            nCodCliente  := OC_CLIENTES.INSERTAR_CLIENTE(X.Tipo_Doc_Identificacion, X.Num_Doc_Identificacion);
-         END IF;
-         nPorcComis   := OC_SOLICITUD_AGENTES_DISTRIB.PORCENTAJE_COMISION(nCodCia, nCodEmpresa, nIdSolicitud);
-         nCod_Agente  := OC_SOLICITUD_AGENTE.AGENTE_PRINCIPAL(nCodCia, nCodEmpresa, nIdSolicitud);
-         nIdPoliza    := OC_POLIZAS.INSERTAR_POLIZA(nCodCia, nCodEmpresa, cDescPoliza, X.Cod_Moneda,
-                                                    nPorcComis, nCodCliente, nCod_Agente, X.CodPlanPago, NULL,
-                                                    NULL, X.FecIniVig);
-         IF cNumPolUnicoOrigen IS NULL THEN
-            cNumPolUnico := TRIM(TO_CHAR(nIdPoliza)) || '-00';
-         ELSE
-            cNumPolUnico := cNumPolUnicoOrigen;
-         END IF;
-         cCodGrupoEc  := OC_GRUPO_ECONOMICO.VALIDA_CREA(nCodCia, X.Tipo_Doc_Identificacion,
-                                                        X.Num_Doc_Identificacion, nIdSolicitud);
-         UPDATE POLIZAS P
-            SET FecFinVig          = X.FecFinVig,          TipoAdministracion = X.TipoAdministracion,
-                CodAgrupador       = X.CodAgrupador,       IndFacturaPol      = X.IndFacturaPol,
-                HoraVigIni         = '12:00',              HoraVigFin         = '12:00',
-                IndFactElectronica = X.IndFactElectronica, IndCalcDerechoEmis = X.IndCalcDerechoEmis,
-                IndPolCol          = 'S',                  Caracteristica     = '1',
-                IndFactPeriodo     = 'N',                  FormaVenta         = X.Formaventa,
-                TipoRiesgo         = TipoRiesgo,           IndConcentrada     = IndConcentrada,
-                TipoDividendo      = '003',                IndAplicoSami      = 'N',
-                NumPolUnico        = cNumPolUnico,         CodGrupoEc         = cCodGrupoEc,
-                DescPoliza         = X.DescSolicitud,      CodDirecRegional   = X.CodDirecRegional,
-                NumFolioPortal     = X.NumFolioPortal,
-                FECRENOVACION      = X.FecFinVig,
-                CodTipoNegocio     = X.CodTipoNegocio,     CodCatego          = X.CodCatego,
-                CodObjetoImp       = X.CodObjetoImp, 
-                CodUsoCfdi         = X.CodUsoCfdi  
-          WHERE CodCia     = nCodCia
-            AND CodEmpresa = nCodEmpresa
-            AND IdPoliza   = nIdPoliza;
+        IF X.IdPoliza IS NULL THEN
+          IF OC_SOLICITUD_EMISION.VALIDAR(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
+             nCodCliente  := OC_CLIENTES.CODIGO_CLIENTE(X.Tipo_Doc_Identificacion, X.Num_Doc_Identificacion);
+             IF NVL(nCodCliente,0) = 0 THEN
+                nCodCliente  := OC_CLIENTES.INSERTAR_CLIENTE(X.Tipo_Doc_Identificacion, X.Num_Doc_Identificacion);
+             END IF;
+             nPorcComis   := OC_SOLICITUD_AGENTES_DISTRIB.PORCENTAJE_COMISION(nCodCia, nCodEmpresa, nIdSolicitud);
+             nCod_Agente  := OC_SOLICITUD_AGENTE.AGENTE_PRINCIPAL(nCodCia, nCodEmpresa, nIdSolicitud);
+             nIdPoliza    := OC_POLIZAS.INSERTAR_POLIZA(nCodCia, nCodEmpresa, cDescPoliza, X.Cod_Moneda,
+                                                        nPorcComis, nCodCliente, nCod_Agente, X.CodPlanPago, NULL,
+                                                        NULL, X.FecIniVig);
+             IF cNumPolUnicoOrigen IS NULL THEN
+                cNumPolUnico := TRIM(TO_CHAR(nIdPoliza)) || '-00';
+             ELSE
+                cNumPolUnico := cNumPolUnicoOrigen;
+             END IF;
+             cCodGrupoEc  := OC_GRUPO_ECONOMICO.VALIDA_CREA(nCodCia, X.Tipo_Doc_Identificacion,
+                                                            X.Num_Doc_Identificacion, nIdSolicitud);
+             UPDATE POLIZAS P
+                SET FecFinVig          = X.FecFinVig,          TipoAdministracion = X.TipoAdministracion,
+                    CodAgrupador       = X.CodAgrupador,       IndFacturaPol      = X.IndFacturaPol,
+                    HoraVigIni         = '12:00',              HoraVigFin         = '12:00',
+                    IndFactElectronica = X.IndFactElectronica, IndCalcDerechoEmis = X.IndCalcDerechoEmis,
+                    IndPolCol          = 'S',                  Caracteristica     = '1',
+                    IndFactPeriodo     = 'N',                  FormaVenta         = X.Formaventa,
+                    TipoRiesgo         = TipoRiesgo,           IndConcentrada     = IndConcentrada,
+                    TipoDividendo      = '003',                IndAplicoSami      = 'N',
+                    NumPolUnico        = cNumPolUnico,         CodGrupoEc         = cCodGrupoEc,
+                    DescPoliza         = X.DescSolicitud,      CodDirecRegional   = X.CodDirecRegional,
+                    NumFolioPortal     = X.NumFolioPortal,
+                    FECRENOVACION      = X.FecFinVig,
+                    CodTipoNegocio     = X.CodTipoNegocio,     CodCatego          = X.CodCatego,
+                    CodObjetoImp       = X.CodObjetoImp, 
+                    CodUsoCfdi         = X.CodUsoCfdi  
+              WHERE CodCia     = nCodCia
+                AND CodEmpresa = nCodEmpresa
+                AND IdPoliza   = nIdPoliza;
 
-         BEGIN
-            INSERT INTO AGENTE_POLIZA
-                   (IdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen)
-            SELECT nIdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen
-              FROM SOLICITUD_AGENTE
-             WHERE CodCia      = nCodCia
-               AND CodEmpresa  = nCodEmpresa
-               AND IdSolicitud = nIdSolicitud;
-         EXCEPTION
-            WHEN DUP_VAL_ON_INDEX THEN
-               RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P髄iza No. : '|| cNumPolUnico);
-         END;
+             BEGIN
+                INSERT INTO AGENTE_POLIZA
+                       (IdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen)
+                SELECT nIdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen
+                  FROM SOLICITUD_AGENTE
+                 WHERE CodCia      = nCodCia
+                   AND CodEmpresa  = nCodEmpresa
+                   AND IdSolicitud = nIdSolicitud;
+             EXCEPTION
+                WHEN DUP_VAL_ON_INDEX THEN
+                   RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P贸liza No. : '|| cNumPolUnico);
+             END;
 
-         BEGIN
-            INSERT INTO AGENTES_DISTRIBUCION_POLIZA
-                   (CodCia, IdPoliza, Cod_Agente, CodNivel,
-                   Cod_Agente_Distr, Porc_Comision_Agente, Porc_Com_Distribuida,
-                   Porc_Comision_Plan, Porc_Com_Proporcional, Cod_Agente_Jefe,
-                   Porc_Com_Poliza, Origen)
-            SELECT CodCia, nIdPoliza, Cod_Agente, CodNivel,
-                   Cod_Agente_Distr, Porc_Comision_Agente, Porc_Com_Distribuida,
-                   Porc_Comision_Plan, Porc_Com_Proporcional, Cod_Agente_Jefe,
-                   Porc_Com_Solicitud, Origen
-              FROM SOLICITUD_AGENTES_DISTRIB
-             WHERE CodCia      = nCodCia
-               AND CodEmpresa  = nCodEmpresa
-               AND IdSolicitud = nIdSolicitud;
-         EXCEPTION
-            WHEN DUP_VAL_ON_INDEX THEN
-               RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci髇 de Agentes en P髄iza No. : '|| cNumPolUnico);
-         END;
-         
-         --- OBTENER DATOS DE COTIZACION PARA LA POLIZA
-         IF X.NumCotizacion IS NOT NULL THEN
-            OC_SOLICITUD_EMISION.DATOS_COTIZACION(nCodCia, nCodEmpresa, nIdPoliza, X.NumCotizacion);
-         END IF;
+             BEGIN
+                INSERT INTO AGENTES_DISTRIBUCION_POLIZA
+                       (CodCia, IdPoliza, Cod_Agente, CodNivel,
+                       Cod_Agente_Distr, Porc_Comision_Agente, Porc_Com_Distribuida,
+                       Porc_Comision_Plan, Porc_Com_Proporcional, Cod_Agente_Jefe,
+                       Porc_Com_Poliza, Origen)
+                SELECT CodCia, nIdPoliza, Cod_Agente, CodNivel,
+                       Cod_Agente_Distr, Porc_Comision_Agente, Porc_Com_Distribuida,
+                       Porc_Comision_Plan, Porc_Com_Proporcional, Cod_Agente_Jefe,
+                       Porc_Com_Solicitud, Origen
+                  FROM SOLICITUD_AGENTES_DISTRIB
+                 WHERE CodCia      = nCodCia
+                   AND CodEmpresa  = nCodEmpresa
+                   AND IdSolicitud = nIdSolicitud;
+             EXCEPTION
+                WHEN DUP_VAL_ON_INDEX THEN
+                   RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci贸n de Agentes en P贸liza No. : '|| cNumPolUnico);
+             END;
 
+             --- OBTENER DATOS DE COTIZACION PARA LA POLIZA
+             IF X.NumCotizacion IS NOT NULL THEN
+                OC_SOLICITUD_EMISION.DATOS_COTIZACION(nCodCia, nCodEmpresa, nIdPoliza, X.NumCotizacion);
+             END IF;
+
+             FOR W IN DET_Q LOOP
+                nIDetSol := W.IDetSol;
+                IF W.CodSubGrupo IS NOT NULL THEN
+                   IF NVL(X.IndFacturaPol,'N') = 'N' AND NVL(X.IndFactSubGrupo,'N') = 'S' THEN 
+                      cTipo_Doc_Identificacion_Det   := W.Tipo_Doc_Identificacion;
+                      cNum_Doc_Identificacion_Det    := W.Num_Doc_Identificacion;
+                      cTipo_Doc_Identificacion_Aseg  := W.Tipo_Doc_Identificacion;
+                      cNum_Doc_Identificacion_Aseg   := W.Num_Doc_Identificacion;
+                   ELSE
+                      cTipo_Doc_Identificacion_Det   := X.Tipo_Doc_Identificacion;
+                      cNum_Doc_Identificacion_Det    := X.Num_Doc_Identificacion;
+                      cTipo_Doc_Identificacion_Aseg  := X.TipoDocIdentifAseg;
+                      cNum_Doc_Identificacion_Aseg   := X.NumDocIdentifAseg;
+                   END IF;
+                   OC_FILIALES.VALIDA_CREA(nCodCia, cCodGrupoEc, cTipo_Doc_Identificacion_Det,
+                                           cNum_Doc_Identificacion_Det, W.CodSubGrupo, W.DescSubGrupo);
+                   OC_FILIALES_CATEGORIAS.VALIDA_CREA(nCodCia, cCodGrupoEc, W.CodSubGrupo,
+                                                      W.CodSubGrupo, W.DescSubGrupo);
+
+                END IF;
+
+                nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, cTipo_Doc_Identificacion_Aseg, cNum_Doc_Identificacion_Aseg);
+
+                IF NVL(nCod_Asegurado,0) = 0 THEN
+                   nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, cTipo_Doc_Identificacion_Aseg, cNum_Doc_Identificacion_Aseg);
+                   INSERT INTO CLIENTE_ASEG
+                          (CodCliente, Cod_Asegurado)
+                   VALUES (nCodCliente, nCod_Asegurado);
+                END IF;
+                nIDetPol := OC_DETALLE_POLIZA.INSERTAR_DETALLE(nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob,
+                                                               nIdPoliza, X.TasaCambio, nPorcComis, nCod_Asegurado,
+                                                               X.CodPlanPago, NULL, NULL, X.FecIniVig);
+                UPDATE DETALLE_POLIZA
+                   SET CodFilial           = W.CodSubGrupo,
+                       CodCategoria        = W.CodSubGrupo,
+                       IndFactElectronica  = 'S',
+                       IndAsegModelo       = OC_SOLICITUD_EMISION.ASEGURADO_MODELO(nCodCia, nCodEmpresa, nIdSolicitud),
+                       CantAsegModelo      = OC_SOLICITUD_DETALLE.CANTIDAD_ASEGURADOS(nCodCia, nCodEmpresa, nIdSolicitud, W.IDetSol) - 1,
+                       IDetPol             = W.IDetSol,
+                       NumDetRef           = W.IDetSol,
+                       FecIniVig           = X.FecIniVig,
+                       FecFinVig           = X.FecFinVig,
+                       CodUsoCfdi          = X.CodUsoCfdi,
+                       CodObjetoImp        = X.CodObjetoImp
+                 WHERE CodCia      = nCodCia
+                   AND CodEmpresa  = nCodEmpresa
+                   AND IdPoliza    = nIdPoliza
+                   AND IDetPol     = nIDetPol;
+
+                nIDetPol := W.IDetSol;
+
+                BEGIN
+                   INSERT INTO AGENTES_DETALLES_POLIZAS
+                          (IdPoliza, IDetPol, IdTipoSeg, Cod_Agente, Porc_Comision, Ind_Principal, CodCia, Origen)
+                   SELECT nIdPoliza, nIDetPol, X.IdTipoSeg, Cod_Agente, Porc_Comision, Ind_Principal, CodCia, Origen
+                     FROM SOLICITUD_AGENTE
+                    WHERE CodCia      = nCodCia
+                      AND CodEmpresa  = nCodEmpresa
+                      AND IdSolicitud = nIdSolicitud;
+                EXCEPTION
+                   WHEN DUP_VAL_ON_INDEX THEN
+                      RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P贸liza No. : '|| cNumPolUnico ||
+                                              ' y SubGrupo No. ' || nIDetPol);
+                END;
+
+                BEGIN
+                   INSERT INTO AGENTES_DISTRIBUCION_COMISION
+                         (CodCia, IdPoliza, IDetPol, CodNivel, Cod_Agente,
+                          Cod_Agente_Distr, Porc_Comision_Plan, Porc_Comision_Agente,
+                          Porc_Com_Distribuida, Porc_Com_Proporcional, Cod_Agente_Jefe, Origen)
+                   SELECT CodCia, nIdPoliza, nIDetPol, CodNivel, Cod_Agente,
+                          Cod_Agente_Distr, Porc_Comision_Plan, Porc_Comision_Agente,
+                          Porc_Com_Distribuida, Porc_Com_Proporcional, Cod_Agente_Jefe, Origen
+                     FROM SOLICITUD_AGENTES_DISTRIB
+                    WHERE CodCia      = nCodCia
+                      AND CodEmpresa  = nCodEmpresa
+                      AND IdSolicitud = nIdSolicitud;
+                EXCEPTION
+                   WHEN DUP_VAL_ON_INDEX THEN
+                      RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci贸n de Agentes en P贸liza No. : '|| cNumPolUnico ||
+                                              ' y SubGrupo No. ' || nIDetPol);
+                END;
+
+                IF OC_SOLICITUD_EMISION.ASEGURADO_MODELO(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
+                   nCod_Asegurado := 1688154; --27305;
+                   OC_ASEGURADO_CERTIFICADO.INSERTA (nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, 0);
+                   OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                   IF NVL(X.IndAsistPorPoliza,'N') = 'S' THEN
+                      OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS_SUBGRUPOS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                   ELSE
+                      OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                   END IF;
+                   OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+                   OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+                   OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, 0);
+                ELSE
+                   FOR Y IN ASEG_Q LOOP
+                      IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(Y.TipoDocIdentificacion, Y.NumDocIdentificacion) = 'N' THEN
+                         OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA(Y.TipoDocIdentificacion, Y.NumDocIdentificacion, Y.NombreAseg,
+                                                                      Y.ApellidoPaternoAseg, Y.ApellidoMaternoAseg, NULL,
+                                                                      Y.SexoAseg, NULL, Y.FechaNacimiento, Y.DirecResAseg, NULL, NULL,
+                                                                      NULL, NULL, NULL, NULL, Y.CodigoPostalAseg, NULL, NULL, NULL, NULL);
+                      END IF;
+                      IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(Y.TipoDocIdentificacion, Y.NumDocIdentificacion,
+                                                                      nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
+                         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci贸n de Coberturas');
+                      END IF;
+
+                      nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
+                      IF nCod_Asegurado = 0 THEN
+                         nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
+                      END IF;
+
+                      BEGIN
+                         INSERT INTO CLIENTE_ASEG
+                               (CodCliente, Cod_Asegurado)
+                         VALUES(nCodCliente, nCod_Asegurado);
+                      EXCEPTION
+                         WHEN DUP_VAL_ON_INDEX THEN
+                            NULL;
+                      END;
+                      OC_ASEGURADO_CERTIFICADO.INSERTA (nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, 0);
+                      OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                      IF NVL(X.IndAsistPorPoliza,'N') = 'S' THEN
+                         OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS_SUBGRUPOS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                      ELSE
+                         OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                      END IF;
+
+
+                      UPDATE ASEGURADO_CERTIFICADO
+                         SET CAMPO3        = Y.Nutra
+                       WHERE CodCia        = nCodCia
+                         AND IdPoliza      = nIdPoliza
+                         AND IDetPol       = nIDetPol
+                         AND Cod_Asegurado = nCod_Asegurado;
+
+                      FOR Z IN COB_Q LOOP
+                         --Y.SalarioMensual
+                         IF NVL(Z.VecesSalario,0) != 0 AND NVL(Z.FactorReglaSumaAseg,0) != 0 THEN
+                            UPDATE COBERT_ACT_ASEG
+                               SET SumaAseg_Local   = Z.VecesSalario * Y.SalarioMensual, 
+                                   SumaAseg_Moneda  = Z.VecesSalario * Y.SalarioMensual,
+                                   Prima_Local      = (Z.VecesSalario * Y.SalarioMensual) * Z.FactorReglaSumaAseg, 
+                                   Prima_Moneda     = (Z.VecesSalario * Y.SalarioMensual) * Z.FactorReglaSumaAseg, 
+                                   Tasa             = Z.FactorReglaSumaAseg,
+                                   SalarioMensual   = Y.SalarioMensual,
+                                   VecesSalario     = Z.VecesSalario
+                             WHERE CodCia        = nCodCia
+                               AND CodEmpresa    = nCodEmpresa
+                               AND IdPoliza      = nIdPoliza
+                               AND IDetPol       = nIDetPol 
+                               AND Cod_Asegurado = nCod_Asegurado
+                               AND CodCobert     = Z.CodCobert;
+                         END IF;
+                      END LOOP;
+                      OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+                      OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+                   END LOOP;
+                   OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, 0);
+                END IF;
+
+                FOR J IN REGLA_SA_Q LOOP
+                   INSERT INTO REGLA_SA_COBER (CodCia, CodEmpresa, IdPoliza, IDetPol, CodCobert, Texto, StRegla, Usuario, Fecha_Ult_Movto)
+                      VALUES (nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, J.CodCobert, J.ReglaSumaAseg, 'ACT', USER, SYSDATE);
+                END LOOP;
+             END LOOP;
+
+             --  INICIA CLAUREN
+             SELECT COUNT(*)
+               INTO nEXISTE
+               FROM SOLICITUDES_CLAUSULAS SC
+              WHERE SC.CODCIA   = nCodCia
+                AND SC.IDPOLIZA = nIdSolicitud;
+             --
+             IF nEXISTE = 0 THEN
+                OC_POLIZAS.INSERTA_CLAUSULAS(nCodCia,nCodEmpresa,nIdPoliza);
+             ELSE
+                OC_SOLICITUDES_CLAUSULAS.TRASLADA_CLAUSULAS(nCodCia,nCodEmpresa,nIdSolicitud,nIdPoliza);
+             END IF;
+             --  FIN CLAUREN
+             UPDATE SOLICITUD_EMISION
+                SET IdPoliza        = nIdPoliza,
+                    NumPolUnicoAsig = cNumPolUnico
+              WHERE CodCia      = nCodCia
+                AND CodEmpresa  = nCodEmpresa
+                AND IdSolicitud = nIdSolicitud;
+
+             ---si la cotizacion es no nula entonces aplica procedimiento de pantalla 
+
+             --OC_SOLICITUD_EMISION.POR_EMITIR(nCodCia, nCodEmpresa, nIdSolicitud);
+
+             /*OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);
+             OC_POLIZAS.EMITIR_POLIZA(nCodCia, nIdPoliza, nCodEmpresa);*/
+          END IF;
+        ELSE ---- CUANDO YA HAY UNA POLIZA Y LA CARGA DE ASEGURADOS DE HACE DESDE CARGA MASIVA
          FOR W IN DET_Q LOOP
+            nIdPoliza := X.IdPoliza;
             nIDetSol := W.IDetSol;
-            IF W.CodSubGrupo IS NOT NULL THEN
-               IF NVL(X.IndFacturaPol,'N') = 'N' AND NVL(X.IndFactSubGrupo,'N') = 'S' THEN 
-                  cTipo_Doc_Identificacion_Det   := W.Tipo_Doc_Identificacion;
-                  cNum_Doc_Identificacion_Det    := W.Num_Doc_Identificacion;
-                  cTipo_Doc_Identificacion_Aseg  := W.Tipo_Doc_Identificacion;
-                  cNum_Doc_Identificacion_Aseg   := W.Num_Doc_Identificacion;
-               ELSE
-                  cTipo_Doc_Identificacion_Det   := X.Tipo_Doc_Identificacion;
-                  cNum_Doc_Identificacion_Det    := X.Num_Doc_Identificacion;
-                  cTipo_Doc_Identificacion_Aseg  := X.TipoDocIdentifAseg;
-                  cNum_Doc_Identificacion_Aseg   := X.NumDocIdentifAseg;
-               END IF;
-               OC_FILIALES.VALIDA_CREA(nCodCia, cCodGrupoEc, cTipo_Doc_Identificacion_Det,
-                                       cNum_Doc_Identificacion_Det, W.CodSubGrupo, W.DescSubGrupo);
-               OC_FILIALES_CATEGORIAS.VALIDA_CREA(nCodCia, cCodGrupoEc, W.CodSubGrupo,
-                                                  W.CodSubGrupo, W.DescSubGrupo);
-                                                  
-            END IF;
-            
-            nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, cTipo_Doc_Identificacion_Aseg, cNum_Doc_Identificacion_Aseg);
-       
-            IF NVL(nCod_Asegurado,0) = 0 THEN
-               nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, cTipo_Doc_Identificacion_Aseg, cNum_Doc_Identificacion_Aseg);
-               INSERT INTO CLIENTE_ASEG
-                      (CodCliente, Cod_Asegurado)
-               VALUES (nCodCliente, nCod_Asegurado);
-            END IF;
-            nIDetPol := OC_DETALLE_POLIZA.INSERTAR_DETALLE(nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob,
-                                                           nIdPoliza, X.TasaCambio, nPorcComis, nCod_Asegurado,
-                                                           X.CodPlanPago, NULL, NULL, X.FecIniVig);
-            UPDATE DETALLE_POLIZA
-               SET CodFilial           = W.CodSubGrupo,
-                   CodCategoria        = W.CodSubGrupo,
-                   IndFactElectronica  = 'S',
-                   IndAsegModelo       = OC_SOLICITUD_EMISION.ASEGURADO_MODELO(nCodCia, nCodEmpresa, nIdSolicitud),
-                   CantAsegModelo      = OC_SOLICITUD_DETALLE.CANTIDAD_ASEGURADOS(nCodCia, nCodEmpresa, nIdSolicitud, W.IDetSol) - 1,
-                   IDetPol             = W.IDetSol,
-                   NumDetRef           = W.IDetSol,
-                   FecIniVig           = X.FecIniVig,
-                   FecFinVig           = X.FecFinVig,
-                   CodUsoCfdi          = X.CodUsoCfdi,
-                   CodObjetoImp        = X.CodObjetoImp
-             WHERE CodCia      = nCodCia
-               AND CodEmpresa  = nCodEmpresa
-               AND IdPoliza    = nIdPoliza
-               AND IDetPol     = nIDetPol;
-
             nIDetPol := W.IDetSol;
 
-            BEGIN
-               INSERT INTO AGENTES_DETALLES_POLIZAS
-                      (IdPoliza, IDetPol, IdTipoSeg, Cod_Agente, Porc_Comision, Ind_Principal, CodCia, Origen)
-               SELECT nIdPoliza, nIDetPol, X.IdTipoSeg, Cod_Agente, Porc_Comision, Ind_Principal, CodCia, Origen
-                 FROM SOLICITUD_AGENTE
-                WHERE CodCia      = nCodCia
-                  AND CodEmpresa  = nCodEmpresa
-                  AND IdSolicitud = nIdSolicitud;
-            EXCEPTION
-               WHEN DUP_VAL_ON_INDEX THEN
-                  RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P髄iza No. : '|| cNumPolUnico ||
-                                          ' y SubGrupo No. ' || nIDetPol);
-            END;
+               FOR Y IN ASEGPOL_Q LOOP
+                 /*IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(Y.TipoDocIdentificacion, Y.NumDocIdentificacion) = 'N' THEN
+                   OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA(Y.TipoDocIdentificacion, Y.NumDocIdentificacion, Y.NombreAseg,
+                                                     Y.ApellidoPaternoAseg, Y.ApellidoMaternoAseg, NULL,
+                                                     Y.SexoAseg, NULL, Y.FechaNacimiento, Y.DirecResAseg, NULL, NULL,
+                                                     NULL, NULL, NULL, NULL, Y.CodigoPostalAseg, NULL, NULL, NULL, NULL);
+                 END IF;*/
+                 /*IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(Y.TipoDocIdentificacion, Y.NumDocIdentificacion,
+                                                     nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
+                   RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci贸n de Coberturas');
+                 END IF;*/
 
-            BEGIN
-               INSERT INTO AGENTES_DISTRIBUCION_COMISION
-                     (CodCia, IdPoliza, IDetPol, CodNivel, Cod_Agente,
-                      Cod_Agente_Distr, Porc_Comision_Plan, Porc_Comision_Agente,
-                      Porc_Com_Distribuida, Porc_Com_Proporcional, Cod_Agente_Jefe, Origen)
-               SELECT CodCia, nIdPoliza, nIDetPol, CodNivel, Cod_Agente,
-                      Cod_Agente_Distr, Porc_Comision_Plan, Porc_Comision_Agente,
-                      Porc_Com_Distribuida, Porc_Com_Proporcional, Cod_Agente_Jefe, Origen
-                 FROM SOLICITUD_AGENTES_DISTRIB
-                WHERE CodCia      = nCodCia
-                  AND CodEmpresa  = nCodEmpresa
-                  AND IdSolicitud = nIdSolicitud;
-            EXCEPTION
-               WHEN DUP_VAL_ON_INDEX THEN
-                  RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci髇 de Agentes en P髄iza No. : '|| cNumPolUnico ||
-                                          ' y SubGrupo No. ' || nIDetPol);
-            END;
+                 --nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
+                 /*IF nCod_Asegurado = 0 THEN
+                   nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
+                 END IF;*/
 
-            IF OC_SOLICITUD_EMISION.ASEGURADO_MODELO(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
-               nCod_Asegurado := 1688154; --27305;
-               OC_ASEGURADO_CERTIFICADO.INSERTA (nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, 0);
-               OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-               IF NVL(X.IndAsistPorPoliza,'N') = 'S' THEN
-                  OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS_SUBGRUPOS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-               ELSE
-                  OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-               END IF;
-               OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
-               OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
-               OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, 0);
-            ELSE
-               FOR Y IN ASEG_Q LOOP
-                  IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(Y.TipoDocIdentificacion, Y.NumDocIdentificacion) = 'N' THEN
-                     OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA(Y.TipoDocIdentificacion, Y.NumDocIdentificacion, Y.NombreAseg,
-                                                                  Y.ApellidoPaternoAseg, Y.ApellidoMaternoAseg, NULL,
-                                                                  Y.SexoAseg, NULL, Y.FechaNacimiento, Y.DirecResAseg, NULL, NULL,
-                                                                  NULL, NULL, NULL, NULL, Y.CodigoPostalAseg, NULL, NULL, NULL, NULL);
-                  END IF;
-                  IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(Y.TipoDocIdentificacion, Y.NumDocIdentificacion,
-                                                                  nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci髇 de Coberturas');
-                  END IF;
+                 /*BEGIN
+                   INSERT INTO CLIENTE_ASEG
+                        (CodCliente, Cod_Asegurado)
+                   VALUES(nCodCliente, nCod_Asegurado);
+                 EXCEPTION
+                   WHEN DUP_VAL_ON_INDEX THEN
+                     NULL;
+                 END;*/
+                 --OC_ASEGURADO_CERTIFICADO.INSERTA (nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, 0, 0);
+                 --OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, Y.Cod_Asegurado);
+                 IF NVL(X.IndAsistPorPoliza,'N') = 'S' THEN
+                   OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS_SUBGRUPOS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                 ELSE
+                   OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, Y.Cod_Asegurado);
+                 END IF;
 
-                  nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
-                  IF nCod_Asegurado = 0 THEN
-                     nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
-                  END IF;
+                 /*
+                 UPDATE ASEGURADO_CERTIFICADO
+                   SET CAMPO3        = Y.Nutra
+                  WHERE CodCia        = nCodCia
+                   AND IdPoliza      = nIdPoliza
+                   AND IDetPol       = nIDetPol
+                   AND Cod_Asegurado = nCod_Asegurado;*/
 
-                  BEGIN
-                     INSERT INTO CLIENTE_ASEG
-                           (CodCliente, Cod_Asegurado)
-                     VALUES(nCodCliente, nCod_Asegurado);
-                  EXCEPTION
-                     WHEN DUP_VAL_ON_INDEX THEN
-                        NULL;
-                  END;
-                  OC_ASEGURADO_CERTIFICADO.INSERTA (nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, 0);
-                  OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-                  IF NVL(X.IndAsistPorPoliza,'N') = 'S' THEN
-                     OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS_SUBGRUPOS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-                  ELSE
-                     OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-                  END IF;
-                  
-                  
-                  UPDATE ASEGURADO_CERTIFICADO
-                     SET CAMPO3        = Y.Nutra
-                   WHERE CodCia        = nCodCia
-                     AND IdPoliza      = nIdPoliza
-                     AND IDetPol       = nIDetPol
-                     AND Cod_Asegurado = nCod_Asegurado;
-                  
-                  FOR Z IN COB_Q LOOP
-                     --Y.SalarioMensual
-                     IF NVL(Z.VecesSalario,0) != 0 AND NVL(Z.FactorReglaSumaAseg,0) != 0 THEN
-                        UPDATE COBERT_ACT_ASEG
-                           SET SumaAseg_Local   = Z.VecesSalario * Y.SalarioMensual, 
-                               SumaAseg_Moneda  = Z.VecesSalario * Y.SalarioMensual,
-                               Prima_Local      = (Z.VecesSalario * Y.SalarioMensual) * Z.FactorReglaSumaAseg, 
-                               Prima_Moneda     = (Z.VecesSalario * Y.SalarioMensual) * Z.FactorReglaSumaAseg, 
-                               Tasa             = Z.FactorReglaSumaAseg,
-                               SalarioMensual   = Y.SalarioMensual,
-                               VecesSalario     = Z.VecesSalario
-                         WHERE CodCia        = nCodCia
-                           AND CodEmpresa    = nCodEmpresa
-                           AND IdPoliza      = nIdPoliza
-                           AND IDetPol       = nIDetPol 
-                           AND Cod_Asegurado = nCod_Asegurado
-                           AND CodCobert     = Z.CodCobert;
-                     END IF;
-                  END LOOP;
-                  OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
-                  OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+                 /*&&FOR Z IN COB_Q LOOP
+                   --Y.SalarioMensual
+                   IF NVL(Z.VecesSalario,0) != 0 AND NVL(Z.FactorReglaSumaAseg,0) != 0 THEN
+                     UPDATE COBERT_ACT_ASEG
+                        SET SumaAseg_Local   = Z.VecesSalario * Y.SalarioMensual, 
+                           SumaAseg_Moneda  = Z.VecesSalario * Y.SalarioMensual,
+                           Prima_Local      = (Z.VecesSalario * Y.SalarioMensual) * Z.FactorReglaSumaAseg, 
+                           Prima_Moneda     = (Z.VecesSalario * Y.SalarioMensual) * Z.FactorReglaSumaAseg, 
+                           Tasa             = Z.FactorReglaSumaAseg,
+                           SalarioMensual   = Y.SalarioMensual,
+                           VecesSalario     = Z.VecesSalario
+                      WHERE CodCia        = nCodCia
+                        AND CodEmpresa    = nCodEmpresa
+                        AND IdPoliza      = nIdPoliza
+                        AND IDetPol       = nIDetPol 
+                        AND Cod_Asegurado = nCod_Asegurado
+                        AND CodCobert     = Z.CodCobert;
+                   END IF;
+                 END LOOP;&&*/
+                 OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+                 OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
                END LOOP;
                OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, 0);
-            END IF;
-            
-            FOR J IN REGLA_SA_Q LOOP
-               INSERT INTO REGLA_SA_COBER (CodCia, CodEmpresa, IdPoliza, IDetPol, CodCobert, Texto, StRegla, Usuario, Fecha_Ult_Movto)
-                  VALUES (nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, J.CodCobert, J.ReglaSumaAseg, 'ACT', USER, SYSDATE);
-            END LOOP;
          END LOOP;
-
-         --  INICIA CLAUREN
-         SELECT COUNT(*)
-           INTO nEXISTE
-           FROM SOLICITUDES_CLAUSULAS SC
-          WHERE SC.CODCIA   = nCodCia
-            AND SC.IDPOLIZA = nIdSolicitud;
-         --
-         IF nEXISTE = 0 THEN
-            OC_POLIZAS.INSERTA_CLAUSULAS(nCodCia,nCodEmpresa,nIdPoliza);
-         ELSE
-            OC_SOLICITUDES_CLAUSULAS.TRASLADA_CLAUSULAS(nCodCia,nCodEmpresa,nIdSolicitud,nIdPoliza);
-         END IF;
-         --  FIN CLAUREN
-         UPDATE SOLICITUD_EMISION
-            SET IdPoliza        = nIdPoliza,
-                NumPolUnicoAsig = cNumPolUnico
-          WHERE CodCia      = nCodCia
-            AND CodEmpresa  = nCodEmpresa
-            AND IdSolicitud = nIdSolicitud;
-
-         ---si la cotizacion es no nula entonces aplica procedimiento de pantalla 
-
-         OC_SOLICITUD_EMISION.POR_EMITIR(nCodCia, nCodEmpresa, nIdSolicitud);
-
-         OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);
-         OC_POLIZAS.EMITIR_POLIZA(nCodCia, nIdPoliza, nCodEmpresa);
       END IF;
+      OC_SOLICITUD_EMISION.POR_EMITIR(nCodCia, nCodEmpresa, nIdSolicitud);
+       OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);
+      OC_POLIZAS.EMITIR_POLIZA(nCodCia, nIdPoliza, nCodEmpresa);
    END LOOP;
 END ENVIAR_EMISION;
 
@@ -661,11 +753,11 @@ BEGIN
    cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Solicitud</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status Solicitud</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Status</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Cotizaci髇</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Cotizaci贸n</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contratante</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Asegurado</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P髄iza</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status P髄iza</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P贸liza</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status P贸liza</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Emision</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia</font></th>' ||
@@ -674,10 +766,10 @@ BEGIN
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tasa de Cambio</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Plan de Pagos</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Administraci髇</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Administraci贸n</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Agrupador</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Usuario</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci髇 Regional</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci贸n Regional</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Folio Portal</font></th>';
    OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
@@ -749,6 +841,12 @@ CURSOR DET_Q IS
       AND D.IdPoliza = P.IdPoliza
       AND D.CodCia   = nCodCia
       AND P.IdPoliza = nIdPoliza;
+      
+CURSOR FACT_Q IS
+      SELECT IdFactura, IdTransaccion
+        FROM FACTURAS
+       WHERE IdPoliza  = nIdPoliza
+         AND CodCia    = nCodCia;
 BEGIN
    BEGIN
       SELECT StsPoliza, TipoPol
@@ -758,13 +856,13 @@ BEGIN
          AND CodCia    = nCodCia;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20225,'NO Existe P髄iza No. Consecutivo : '|| nIdPoliza);
+         RAISE_APPLICATION_ERROR(-20225,'NO Existe P贸liza No. Consecutivo : '|| nIdPoliza);
    END;
 
    IF cStsPoliza = 'ANU' THEN
-      RAISE_APPLICATION_ERROR(-20225,'P髄iza No. Consecutivo : '|| nIdPoliza || ' Ya Fue Anulada. No Puede Revertir la Solicitud');
+      RAISE_APPLICATION_ERROR(-20225,'P贸liza No. Consecutivo : '|| nIdPoliza || ' Ya Fue Anulada. No Puede Revertir la Solicitud');
    ELSIF cStsPoliza = 'REN' THEN
-      RAISE_APPLICATION_ERROR(-20225,'P髄iza No. Consecutivo : '|| nIdPoliza || ' Ya Fue Renovada. No Puede Revertir la Solicitud');
+      RAISE_APPLICATION_ERROR(-20225,'P贸liza No. Consecutivo : '|| nIdPoliza || ' Ya Fue Renovada. No Puede Revertir la Solicitud');
    ELSIF cStsPoliza = 'EMI' THEN
       OC_POLIZAS.REVERTIR_EMISION(nCodCia, nCodEmpresa, nIdPoliza, cTipoPol);
    END IF;
@@ -900,6 +998,21 @@ BEGIN
     WHERE CodCia   = nCodCia          --CLAUREN
       AND IdPoliza = nIdPoliza;       --CLAUREN
 
+   FOR W IN FACT_Q LOOP
+       DELETE DETALLE_FACTURAS
+        WHERE IdFactura = W.IdFactura;
+
+       DELETE FACTURAS
+        WHERE IdFactura = W.IdFactura;
+
+       DELETE REA_DISTRIBUCION
+        WHERE IdTransaccion = W.IdTransaccion;
+
+       OC_DETALLE_TRANSACCION.ELIMINAR(nCodCia, nCodEmpresa, W.IdTransaccion);
+       OC_TRANSACCION.ELIMINAR(nCodCia, nCodEmpresa, W.IdTransaccion);
+       
+   END LOOP;
+
    DELETE POLIZAS
     WHERE CodCia   = nCodCia
       AND IdPoliza = nIdPoliza;
@@ -982,14 +1095,14 @@ BEGIN
               IndFacturaPol, IndFactSubGrupo, StsSolicitud, FecStsSol, CodUsuario,
               NumCotizacion, NumPolUnicoAsig, IndAsegModelo, PrimaNetaPol, DescSolicitud,
               IndFactElectronica, IndCalcDerechoEmis, CodDirecRegional, NumFolioPortal,
-              TipoDocIdentifAseg, NumDocIdentifAseg)
+              TipoDocIdentifAseg, NumDocIdentifAseg, IndPriMin )
       SELECT CodCia, CodEmpresa, nIdSolicitudNueva, NULL, IdTipoSeg, PlanCob,
               Cod_Moneda, TasaCambio, Tipo_Doc_Identificacion, Num_Doc_Identificacion,
               FecIniVig, FecFinVig, CodPlanPago, TipoAdministracion, CodAgrupador,
               IndFacturaPol, IndFactSubGrupo, 'XENVIA', TRUNC(SYSDATE), USER,
               NumCotizacion, NULL, IndAsegModelo, PrimaNetaPol, DescSolicitud,
               IndFactElectronica, IndCalcDerechoEmis, CodDirecRegional, NULL,
-              TipoDocIdentifAseg, NumDocIdentifAseg
+              TipoDocIdentifAseg, NumDocIdentifAseg, IndPriMin 
         FROM SOLICITUD_EMISION
        WHERE CodCia      = nCodCia
          AND CodEmpresa  = nCodEmpresa
@@ -1119,5 +1232,350 @@ BEGIN
          AND IdPoliza   = nIdPoliza;  
    END LOOP;
 END DATOS_COTIZACION; 
+
+PROCEDURE CREA_POLIZA_BASE (nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, cNumPolUnicoOrigen VARCHAR2) IS 
+cDescPoliza                   POLIZAS.DescPoliza%TYPE;
+nPorcComis                    POLIZAS.PorcComis%TYPE;
+nCodCliente                   CLIENTES.CodCliente%TYPE;
+nCod_Agente                   POLIZAS.Cod_Agente%TYPE;
+nIdPoliza                     POLIZAS.IdPoliza%TYPE;
+cNumPolUnico                  POLIZAS.NumPolUnico%TYPE;
+cCodGrupoEc                   GRUPO_ECONOMICO.CodGrupoEc%TYPE;
+nIDetPol                      DETALLE_POLIZA.IDetPol%TYPE;
+nIDetSol                      SOLICITUD_DETALLE.IDetSol%TYPE;
+nCod_Asegurado                ASEGURADO.Cod_Asegurado%TYPE;
+nExiste                       NUMBER;
+cTipo_Doc_Identificacion_Det  SOLICITUD_DETALLE.Tipo_Doc_Identificacion%TYPE;
+cNum_Doc_Identificacion_Det   SOLICITUD_DETALLE.Num_Doc_Identificacion%TYPE;
+cTipo_Doc_Identificacion_Aseg SOLICITUD_DETALLE.Tipo_Doc_Identificacion%TYPE;
+cNum_Doc_Identificacion_Aseg  SOLICITUD_DETALLE.Num_Doc_Identificacion%TYPE;
+
+CURSOR SOL_Q IS
+   SELECT IdTipoSeg, PlanCob, Cod_Moneda, TasaCambio, Tipo_Doc_Identificacion,
+          Num_Doc_Identificacion, FecIniVig, FecFinVig, CodPlanPago, NumCotizacion,
+          TipoAdministracion, CodAgrupador, IndFacturaPol, IndFactSubGrupo,
+          StsSolicitud, FecStsSol, CodUsuario, DescSolicitud, IndFactElectronica,
+          IndCalcDerechoEmis, CodDirecRegional, TipoDocIdentifAseg,
+          NumDocIdentifAseg, NumFolioPortal, IndConcentrada, CodTipoNegocio,
+          CodCatego, TipoRiesgo, Formaventa, CodObjetoImp, CodUsoCfdi, IndAsistPorPoliza
+     FROM SOLICITUD_EMISION
+    WHERE CodCia      = nCodCia
+      AND CodEmpresa  = nCodEmpresa
+      AND IdSolicitud = nIdSolicitud;
+
+CURSOR DET_Q IS
+   SELECT IDetSol, CodSubGrupo, DescSubGrupo, Tipo_Doc_Identificacion, Num_Doc_Identificacion
+     FROM SOLICITUD_DETALLE
+    WHERE CodCia      = nCodCia
+      AND CodEmpresa  = nCodEmpresa
+      AND IdSolicitud = nIdSolicitud
+    ORDER BY IDetSol;
+
+CURSOR ASEG_Q IS
+   SELECT IDetSol, TipoDocIdentificacion, NumDocIdentificacion, IdAsegurado,
+          NombreAseg, ApellidoPaternoAseg, ApellidoMaternoAseg,
+          FechaNacimiento, SexoAseg, DirecResAseg, CodigoPostalAseg,
+          SalarioMensual, Nutra
+     FROM SOLICITUD_DETALLE_ASEG
+    WHERE CodCia      = nCodCia
+      AND CodEmpresa  = nCodEmpresa
+      AND IdSolicitud = nIdSolicitud
+      AND IDetSol     = nIDetPol
+    ORDER BY IdAsegurado;
+
+CURSOR COB_Q IS
+   SELECT SC.CodCobert, SC.SumaAseg_Local, SC.SumaAseg_Moneda, SC.Tasa, 
+          SC.Prima_Moneda, SC.Prima_Local, SC.Deducible_Local,
+          SC.Deducible_Moneda, SE.IdTipoSeg, SE.PlanCob, SE.Cod_Moneda,
+          SC.VecesSalario, SC.FactorReglaSumaAseg
+     FROM SOLICITUD_COBERTURAS SC, SOLICITUD_EMISION SE
+    WHERE SC.CodCia        = SE.CodCia
+      AND SC.CodEmpresa    = SE.CodEmpresa
+      AND SC.IDetSol       = nIDetPol
+      AND SC.IdSolicitud   = SE.IdSolicitud
+      AND SE.CodCia        = nCodCia
+      AND SE.CodEmpresa    = nCodEmpresa
+      AND SE.IdSolicitud   = nIdSolicitud;   
+
+CURSOR REGLA_SA_Q IS
+   SELECT CodCobert, ReglaSumaAseg
+     FROM SOLICITUD_REGLA_SA
+    WHERE CodCia        = nCodCia
+      AND CodEmpresa    = nCodEmpresa
+      AND IdSolicitud   = nIdSolicitud
+      AND IDetSol       = nIDetSol; 
+BEGIN
+    FOR X IN SOL_Q LOOP
+        --IF OC_SOLICITUD_EMISION.VALIDAR(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
+        nCodCliente  := OC_CLIENTES.CODIGO_CLIENTE(X.Tipo_Doc_Identificacion, X.Num_Doc_Identificacion);
+      IF NVL(nCodCliente,0) = 0 THEN
+         nCodCliente  := OC_CLIENTES.INSERTAR_CLIENTE(X.Tipo_Doc_Identificacion, X.Num_Doc_Identificacion);
+      END IF;
+      nPorcComis   := OC_SOLICITUD_AGENTES_DISTRIB.PORCENTAJE_COMISION(nCodCia, nCodEmpresa, nIdSolicitud);
+      nCod_Agente  := OC_SOLICITUD_AGENTE.AGENTE_PRINCIPAL(nCodCia, nCodEmpresa, nIdSolicitud);
+      nIdPoliza    := OC_POLIZAS.INSERTAR_POLIZA(nCodCia, nCodEmpresa, cDescPoliza, X.Cod_Moneda,
+                                    nPorcComis, nCodCliente, nCod_Agente, X.CodPlanPago, NULL,
+                                    NULL, X.FecIniVig);
+        IF cNumPolUnicoOrigen IS NULL THEN
+         cNumPolUnico := TRIM(TO_CHAR(nIdPoliza)) || '-00';
+        ELSE
+            cNumPolUnico := cNumPolUnicoOrigen;
+         END IF;
+         cCodGrupoEc  := OC_GRUPO_ECONOMICO.VALIDA_CREA(nCodCia, X.Tipo_Doc_Identificacion,
+                                                        X.Num_Doc_Identificacion, nIdSolicitud);
+         UPDATE POLIZAS P
+          SET FecFinVig          = X.FecFinVig,          TipoAdministracion = X.TipoAdministracion,
+              CodAgrupador       = X.CodAgrupador,       IndFacturaPol      = X.IndFacturaPol,
+              HoraVigIni         = '12:00',              HoraVigFin         = '12:00',
+              IndFactElectronica = X.IndFactElectronica, IndCalcDerechoEmis = X.IndCalcDerechoEmis,
+              IndPolCol          = 'S',                  Caracteristica     = '1',
+              IndFactPeriodo     = 'N',                  FormaVenta         = X.Formaventa,
+              TipoRiesgo         = TipoRiesgo,           IndConcentrada     = IndConcentrada,
+              TipoDividendo      = '003',                IndAplicoSami      = 'N',
+              NumPolUnico        = cNumPolUnico,         CodGrupoEc         = cCodGrupoEc,
+              DescPoliza         = X.DescSolicitud,      CodDirecRegional   = X.CodDirecRegional,
+              NumFolioPortal     = X.NumFolioPortal,
+              FECRENOVACION      = X.FecFinVig,
+              CodTipoNegocio     = X.CodTipoNegocio,     CodCatego          = X.CodCatego,
+              CodObjetoImp       = X.CodObjetoImp, 
+              CodUsoCfdi         = X.CodUsoCfdi  
+        WHERE CodCia     = nCodCia
+          AND CodEmpresa = nCodEmpresa
+          AND IdPoliza   = nIdPoliza;
+
+         BEGIN
+         INSERT INTO AGENTE_POLIZA
+                (IdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen)
+         SELECT nIdPoliza, CodCia, Cod_Agente, Porc_Comision, Ind_Principal, Origen
+           FROM SOLICITUD_AGENTE
+          WHERE CodCia      = nCodCia
+            AND CodEmpresa  = nCodEmpresa
+            AND IdSolicitud = nIdSolicitud;
+         EXCEPTION
+         WHEN DUP_VAL_ON_INDEX THEN
+            RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P贸liza No. : '|| cNumPolUnico);
+         END;
+
+         BEGIN
+            INSERT INTO AGENTES_DISTRIBUCION_POLIZA
+                  (CodCia, IdPoliza, Cod_Agente, CodNivel,
+                  Cod_Agente_Distr, Porc_Comision_Agente, Porc_Com_Distribuida,
+                  Porc_Comision_Plan, Porc_Com_Proporcional, Cod_Agente_Jefe,
+                  Porc_Com_Poliza, Origen)
+            SELECT CodCia, nIdPoliza, Cod_Agente, CodNivel,
+                  Cod_Agente_Distr, Porc_Comision_Agente, Porc_Com_Distribuida,
+                  Porc_Comision_Plan, Porc_Com_Proporcional, Cod_Agente_Jefe,
+                  Porc_Com_Solicitud, Origen
+              FROM SOLICITUD_AGENTES_DISTRIB
+             WHERE CodCia      = nCodCia
+               AND CodEmpresa  = nCodEmpresa
+               AND IdSolicitud = nIdSolicitud;
+         EXCEPTION
+            WHEN DUP_VAL_ON_INDEX THEN
+               RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci贸n de Agentes en P贸liza No. : '|| cNumPolUnico);
+         END;
+
+           --- OBTENER DATOS DE COTIZACION PARA LA POLIZA
+         IF X.NumCotizacion IS NOT NULL THEN
+            OC_SOLICITUD_EMISION.DATOS_COTIZACION(nCodCia, nCodEmpresa, nIdPoliza, X.NumCotizacion);
+         END IF;
+
+         FOR W IN DET_Q LOOP
+            nIDetSol := W.IDetSol;
+            IF W.CodSubGrupo IS NOT NULL THEN
+               IF NVL(X.IndFacturaPol,'N') = 'N' AND NVL(X.IndFactSubGrupo,'N') = 'S' THEN 
+                  cTipo_Doc_Identificacion_Det   := W.Tipo_Doc_Identificacion;
+                  cNum_Doc_Identificacion_Det    := W.Num_Doc_Identificacion;
+                  cTipo_Doc_Identificacion_Aseg  := W.Tipo_Doc_Identificacion;
+                  cNum_Doc_Identificacion_Aseg   := W.Num_Doc_Identificacion;
+               ELSE
+                  cTipo_Doc_Identificacion_Det   := X.Tipo_Doc_Identificacion;
+                  cNum_Doc_Identificacion_Det    := X.Num_Doc_Identificacion;
+                  cTipo_Doc_Identificacion_Aseg  := X.TipoDocIdentifAseg;
+                  cNum_Doc_Identificacion_Aseg   := X.NumDocIdentifAseg;
+               END IF;
+               OC_FILIALES.VALIDA_CREA(nCodCia, cCodGrupoEc, cTipo_Doc_Identificacion_Det,
+                                 cNum_Doc_Identificacion_Det, W.CodSubGrupo, W.DescSubGrupo);
+               OC_FILIALES_CATEGORIAS.VALIDA_CREA(nCodCia, cCodGrupoEc, W.CodSubGrupo,
+                                         W.CodSubGrupo, W.DescSubGrupo);
+
+            END IF;
+
+            nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, cTipo_Doc_Identificacion_Aseg, cNum_Doc_Identificacion_Aseg);
+
+            IF NVL(nCod_Asegurado,0) = 0 THEN
+               nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, cTipo_Doc_Identificacion_Aseg, cNum_Doc_Identificacion_Aseg);
+               INSERT INTO CLIENTE_ASEG
+                    (CodCliente, Cod_Asegurado)
+               VALUES (nCodCliente, nCod_Asegurado);
+            END IF;
+            nIDetPol := OC_DETALLE_POLIZA.INSERTAR_DETALLE(nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob,
+                                             nIdPoliza, X.TasaCambio, nPorcComis, nCod_Asegurado,
+                                             X.CodPlanPago, NULL, NULL, X.FecIniVig);
+            UPDATE DETALLE_POLIZA
+               SET CodFilial           = W.CodSubGrupo,
+                   CodCategoria        = W.CodSubGrupo,
+                   IndFactElectronica  = 'S',
+                   IndAsegModelo       = OC_SOLICITUD_EMISION.ASEGURADO_MODELO(nCodCia, nCodEmpresa, nIdSolicitud),
+                   CantAsegModelo      = OC_SOLICITUD_DETALLE.CANTIDAD_ASEGURADOS(nCodCia, nCodEmpresa, nIdSolicitud, W.IDetSol) - 1,
+                   IDetPol             = W.IDetSol,
+                   NumDetRef           = W.IDetSol,
+                   FecIniVig           = X.FecIniVig,
+                   FecFinVig           = X.FecFinVig,
+                   CodUsoCfdi          = X.CodUsoCfdi,
+                   CodObjetoImp        = X.CodObjetoImp
+             WHERE CodCia      = nCodCia
+               AND CodEmpresa  = nCodEmpresa
+               AND IdPoliza    = nIdPoliza
+               AND IDetPol     = nIDetPol;
+
+            nIDetPol := W.IDetSol;
+
+            BEGIN
+               INSERT INTO AGENTES_DETALLES_POLIZAS
+                    (IdPoliza, IDetPol, IdTipoSeg, Cod_Agente, Porc_Comision, Ind_Principal, CodCia, Origen)
+               SELECT nIdPoliza, nIDetPol, X.IdTipoSeg, Cod_Agente, Porc_Comision, Ind_Principal, CodCia, Origen
+                FROM SOLICITUD_AGENTE
+               WHERE CodCia      = nCodCia
+                 AND CodEmpresa  = nCodEmpresa
+                 AND IdSolicitud = nIdSolicitud;
+            EXCEPTION
+               WHEN DUP_VAL_ON_INDEX THEN
+                 RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P贸liza No. : '|| cNumPolUnico ||
+                                   ' y SubGrupo No. ' || nIDetPol);
+            END;
+
+            BEGIN
+               INSERT INTO AGENTES_DISTRIBUCION_COMISION
+                   (CodCia, IdPoliza, IDetPol, CodNivel, Cod_Agente,
+                    Cod_Agente_Distr, Porc_Comision_Plan, Porc_Comision_Agente,
+                    Porc_Com_Distribuida, Porc_Com_Proporcional, Cod_Agente_Jefe, Origen)
+               SELECT CodCia, nIdPoliza, nIDetPol, CodNivel, Cod_Agente,
+                    Cod_Agente_Distr, Porc_Comision_Plan, Porc_Comision_Agente,
+                    Porc_Com_Distribuida, Porc_Com_Proporcional, Cod_Agente_Jefe, Origen
+                FROM SOLICITUD_AGENTES_DISTRIB
+               WHERE CodCia      = nCodCia
+                 AND CodEmpresa  = nCodEmpresa
+                 AND IdSolicitud = nIdSolicitud;
+            EXCEPTION
+               WHEN DUP_VAL_ON_INDEX THEN
+                 RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci贸n de Agentes en P贸liza No. : '|| cNumPolUnico ||
+                                   ' y SubGrupo No. ' || nIDetPol);
+            END;
+
+            IF OC_SOLICITUD_EMISION.ASEGURADO_MODELO(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
+               nCod_Asegurado := 1688154; --27305;
+               OC_ASEGURADO_CERTIFICADO.INSERTA (nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, 0);
+               OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+               IF NVL(X.IndAsistPorPoliza,'N') = 'S' THEN
+                 OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS_SUBGRUPOS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+               ELSE
+                 OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+               END IF;
+               OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+               OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+               OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, 0);
+            /*??ELSE
+               FOR Y IN ASEG_Q LOOP
+                 IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(Y.TipoDocIdentificacion, Y.NumDocIdentificacion) = 'N' THEN
+                   OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA(Y.TipoDocIdentificacion, Y.NumDocIdentificacion, Y.NombreAseg,
+                                                     Y.ApellidoPaternoAseg, Y.ApellidoMaternoAseg, NULL,
+                                                     Y.SexoAseg, NULL, Y.FechaNacimiento, Y.DirecResAseg, NULL, NULL,
+                                                     NULL, NULL, NULL, NULL, Y.CodigoPostalAseg, NULL, NULL, NULL, NULL);
+                 END IF;
+                 IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(Y.TipoDocIdentificacion, Y.NumDocIdentificacion,
+                                                     nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
+                   RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci贸n de Coberturas');
+                 END IF;
+
+                 nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
+                 IF nCod_Asegurado = 0 THEN
+                   nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
+                 END IF;
+
+                 BEGIN
+                   INSERT INTO CLIENTE_ASEG
+                        (CodCliente, Cod_Asegurado)
+                   VALUES(nCodCliente, nCod_Asegurado);
+                 EXCEPTION
+                   WHEN DUP_VAL_ON_INDEX THEN
+                     NULL;
+                 END;
+                 OC_ASEGURADO_CERTIFICADO.INSERTA (nCodCia, nIdPoliza, nIDetPol, nCod_Asegurado, 0, 0);
+                 OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);??*/
+                 /*IF NVL(X.IndAsistPorPoliza,'N') = 'S' THEN
+                   OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS_SUBGRUPOS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                 ELSE
+                   OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                 END IF;*/
+
+                 /*??
+                 UPDATE ASEGURADO_CERTIFICADO
+                   SET CAMPO3        = Y.Nutra
+                  WHERE CodCia        = nCodCia
+                   AND IdPoliza      = nIdPoliza
+                   AND IDetPol       = nIDetPol
+                   AND Cod_Asegurado = nCod_Asegurado;
+
+                 FOR Z IN COB_Q LOOP
+                   --Y.SalarioMensual
+                   IF NVL(Z.VecesSalario,0) != 0 AND NVL(Z.FactorReglaSumaAseg,0) != 0 THEN
+                     UPDATE COBERT_ACT_ASEG
+                        SET SumaAseg_Local   = Z.VecesSalario * Y.SalarioMensual, 
+                           SumaAseg_Moneda  = Z.VecesSalario * Y.SalarioMensual,
+                           Prima_Local      = (Z.VecesSalario * Y.SalarioMensual) * Z.FactorReglaSumaAseg, 
+                           Prima_Moneda     = (Z.VecesSalario * Y.SalarioMensual) * Z.FactorReglaSumaAseg, 
+                           Tasa             = Z.FactorReglaSumaAseg,
+                           SalarioMensual   = Y.SalarioMensual,
+                           VecesSalario     = Z.VecesSalario
+                      WHERE CodCia        = nCodCia
+                        AND CodEmpresa    = nCodEmpresa
+                        AND IdPoliza      = nIdPoliza
+                        AND IDetPol       = nIDetPol 
+                        AND Cod_Asegurado = nCod_Asegurado
+                        AND CodCobert     = Z.CodCobert;
+                   END IF;
+                 END LOOP;
+                 OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+                 OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCod_Asegurado);
+               END LOOP;
+               OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, 0);??*/
+            END IF;
+
+            FOR J IN REGLA_SA_Q LOOP
+               INSERT INTO REGLA_SA_COBER (CodCia, CodEmpresa, IdPoliza, IDetPol, CodCobert, Texto, StRegla, Usuario, Fecha_Ult_Movto)
+                 VALUES (nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, J.CodCobert, J.ReglaSumaAseg, 'ACT', USER, SYSDATE);
+            END LOOP;
+         END LOOP;
+
+         --  INICIA CLAUREN
+         SELECT COUNT(*)
+           INTO nEXISTE
+           FROM SOLICITUDES_CLAUSULAS SC
+          WHERE SC.CODCIA   = nCodCia
+            AND SC.IDPOLIZA = nIdSolicitud;
+         --
+         IF nEXISTE = 0 THEN
+            OC_POLIZAS.INSERTA_CLAUSULAS(nCodCia,nCodEmpresa,nIdPoliza);
+         ELSE
+            OC_SOLICITUDES_CLAUSULAS.TRASLADA_CLAUSULAS(nCodCia,nCodEmpresa,nIdSolicitud,nIdPoliza);
+         END IF;
+         --  FIN CLAUREN
+         UPDATE SOLICITUD_EMISION
+            SET IdPoliza        = nIdPoliza,
+                NumPolUnicoAsig = cNumPolUnico
+          WHERE CodCia      = nCodCia
+            AND CodEmpresa  = nCodEmpresa
+            AND IdSolicitud = nIdSolicitud;
+
+         ---si la cotizacion es no nula entonces aplica procedimiento de pantalla 
+
+         --OC_SOLICITUD_EMISION.POR_EMITIR(nCodCia, nCodEmpresa, nIdSolicitud);
+
+         --OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);
+         --OC_POLIZAS.EMITIR_POLIZA(nCodCia, nIdPoliza, nCodEmpresa);
+        --END IF;
+    END LOOP;
+END CREA_POLIZA_BASE;
 
 END OC_SOLICITUD_EMISION;
