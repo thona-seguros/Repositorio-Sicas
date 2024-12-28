@@ -1,0 +1,3 @@
+ALTER TABLE TEMP_GEN_ARCHIVO ADD(
+Formato	      VARCHAR2(30),
+NombreArchivo	VARCHAR2(500));
