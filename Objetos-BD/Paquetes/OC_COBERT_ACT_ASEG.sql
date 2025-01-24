@@ -301,7 +301,7 @@ BEGIN
                         END IF;
                      END IF;
 
-                     IF NVL(nSumaAsegManual,0) != 0 THEN
+                     IF (NVL(nSumaAsegManual,0) != 0 AND  cIdTipoSeg != 'GMINDC') THEN
                         nValorMoneda    := OC_TARIFA_SEXO_EDAD_RIESGO.PRIMA_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob,
                                                                                    X.CodCobert, nEdad, cSexo, cRiesgo, 0, nIdTarifa, NULL);
                      ELSE
