@@ -3,8 +3,8 @@ CREATE OR REPLACE PACKAGE THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
    NOMBRE:       GENERALES_PLATAFORMA_DIGITAL
    1.0        12/07/2019      CPEREZ<       1. Created this package.
 ******************************************************************************/
---masp
-xInformacionFiscal  XMLTYPE;  --quitar cuando darbrain haga el cambio
+    xInformacionFiscal  XMLTYPE;  --quitar cuando darbrain haga el cambio
+    FUNCTION REQUISITOS_COBERT ( PA_IDPOLIZA IN  NUMBER,   PA_CODASEGURADO IN  NUMBER,  PA_NOMBRE IN  VARCHAR2, PA_APPATERNO IN  VARCHAR2, PA_APMATERNO    IN  VARCHAR2, PA_CODCOBERT    IN  VARCHAR2, PA_IDREQUISITO  IN  VARCHAR2 ) RETURN CLOB;
     FUNCTION ES_NUMERICO(pEntrada VARCHAR2) RETURN NUMBER;
     FUNCTION DIGITAL_PLANTILLA   (nNivel IN OUT int, pPK1 IN OUT VARCHAR2) return CLOB;
     FUNCTION DIGITAL_GENERAWHERE (pCOLUMN_NAME  VARCHAR2, pPK VARCHAR2, pSqlWhere VARCHAR2) return VARCHAR2;
@@ -21,15 +21,27 @@ xInformacionFiscal  XMLTYPE;  --quitar cuando darbrain haga el cambio
     FUNCTION CATALOGO_GIRO (pESPARAVIDA CHAR, pESACEPTADO CHAR) return CLOB;
     FUNCTION COBERTURA_ATRIBUTOS(P_IdCotizacion NUMBER, P_IDetCotizacion NUMBER) RETURN CLOB;
     --FUNCTION COBERTURA_ATRIBUTOS (P_IDTIPOSEG VARCHAR2, P_PLANCOB VARCHAR2, P_CODCOBERT VARCHAR2) RETURN CLOB ;
-    PROCEDURE RECALCULAR_COTIZACION(p_nCodCia NUMBER, p_nCodEmpresa NUMBER, p_nIdCotizacion NUMBER,
-                                  p_cIdTipoSeg VARCHAR2, p_cPlanCob VARCHAR2, p_cIndAsegModelo VARCHAR2,
-                                  p_cIndCensoSubgrupo VARCHAR2, p_cIndListadoAseg VARCHAR2);
+    --
+    --MASP Regla de Prima Mínima Anual
+    PROCEDURE RECALCULAR_COTIZACION( p_nCodCia            NUMBER
+                                   , p_nCodEmpresa        NUMBER
+                                   , p_nIdCotizacion      NUMBER
+                                   , p_cIdTipoSeg         VARCHAR2
+                                   , p_cPlanCob           VARCHAR2
+                                   , p_cIndAsegModelo     VARCHAR2
+                                   , p_cIndCensoSubgrupo  VARCHAR2
+                                   , p_cIndListadoAseg    VARCHAR2 );
+    --
     FUNCTION DESCARTA_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) return INT;                                  
     FUNCTION DIGITAL_CATALOGO_PROCESO(P_TIPOPROCESO VARCHAR2 := 'EMIS%') RETURN CLOB;
     FUNCTION PLANTILLA_DATOS_PROCESO(W_CODCIA IN NUMBER, W_CODEMPRESA NUMBER, P_IDTIPOSEG   VARCHAR2, P_PLANCOB VARCHAR2, P_TIPOPROCESO VARCHAR2 := 'EMISIO') RETURN CLOB;
     FUNCTION PLANTILLA_DATOS_PROCESO_NEW(W_CODCIA IN NUMBER, W_CODEMPRESA NUMBER, P_IDTIPOSEG   VARCHAR2, P_PLANCOB VARCHAR2, P_TIPOPROCESO VARCHAR2 := 'EMISIO') RETURN CLOB;
     FUNCTION COTIZACION_ACTUALIZA(QRY_DML VARCHAR2) RETURN NUMBER;
-    PROCEDURE COTIZACION_EMITIR(p_nCodCia NUMBER, p_nCodEmpresa NUMBER, p_nIdCotizacion NUMBER);
+    --
+    --MASP Regla de Prima Mínima Anual
+    PROCEDURE COTIZACION_EMITIR( p_nCodCia        NUMBER
+                               , p_nCodEmpresa    NUMBER
+                               , p_nIdCotizacion  NUMBER );
     --
     FUNCTION PRE_EMITE_POLIZA_NEW( nCodCia             NUMBER
                                  , nCodEmpresa         NUMBER
@@ -84,13 +96,430 @@ xInformacionFiscal  XMLTYPE;  --quitar cuando darbrain haga el cambio
                                         , cCadena             VARCHAR2
                                         , cIdPoliza           NUMBER := NULL
                                         , xInformacionFiscal  XMLTYPE ) RETURN CLOB;
+
+    /*JACF [28/09/2023] <Se agrega funciÃƒÂ³n para consultar catalogo de formas de cobro desde las listas de valores>*/
+    FUNCTION FORMAS_COBRO(LISTA VARCHAR2) RETURN CLOB;
 END GENERALES_PLATAFORMA_DIGITAL;
+
 /
 CREATE OR REPLACE PACKAGE BODY THONAPI.GENERALES_PLATAFORMA_DIGITAL AS
 /******************************************************************************
    NOMBRE:       GENERALES_PLATAFORMA_DIGITAL
    1.0        12/07/2019      CPEREZ<       1. Created this package.
 ******************************************************************************/
+    FUNCTION REQUISITOS_COBERT (  PA_IDPOLIZA     IN  NUMBER,
+                                                PA_CODASEGURADO IN  NUMBER,
+                                                PA_NOMBRE       IN  VARCHAR2,
+                                                PA_APPATERNO    IN  VARCHAR2,
+                                                PA_APMATERNO    IN  VARCHAR2,
+                                                PA_CODCOBERT    IN  VARCHAR2,
+                                                PA_IDREQUISITO  IN  VARCHAR2
+                                            ) RETURN CLOB IS
+
+    vl_IdTipoSeg        VARCHAR2(4000);
+    vl_PlanCob          VARCHAR2(4000);
+    vl_CodCobert        VARCHAR2(4000);
+    vl_CodAseg          VARCHAR2(4000);
+    CURSOR Q_FORMA IS 
+        SELECT  XMLELEMENT("DOCUMENTO", XMLATTRIBUTES(IDTIPOSEG AS "IDTIPOSEG", PLANCOB AS "PLANCOB", CODCOBERT AS "CODCOBERT", DESCCOBERT AS "DESCCOBERT", CODREQUISITO AS "CODREQUISITO", NOMARCHIVO AS "NOMARCHIVO",DESCREQUISITO AS "DESCREQUISITO", 
+                        REQUERIDO AS "REQUERIDO", ORDENEXPEDIENTE AS "ORDEN_EXPEDIENTE", ORDENPDF AS "ORDEN_PDF", CANTIDAD AS "CANTIDAD", TAMANIOBYTES AS "TAMANIO_BYTES", FORMATOS AS "FORMATOS", CLAVEOCR AS "PALABRAS_CLAVE_OCR", TOOLTIP AS "TOOLTIP")
+                ) DOCUMENTO
+        FROM (              
+                SELECT DISTINCT A.IDTIPOSEG, 
+                        A.PLANCOB,
+                        A.CODCOBERT,
+                        B.DESCCOBERT,
+                        A.CODREQUISITO,
+                        NVL(C.NOMARCHIVO,'') NOMARCHIVO,
+                        C.DESCREQUISITO ,
+                        (CASE A.REQUERIDO WHEN 'S' THEN 'TRUE' ELSE 'FALSE' END) REQUERIDO,
+                        A.ORDENEXPEDIENTE,
+                        A.ORDENPDF,
+                        A.CANTIDAD,
+                        C.TAMANIOBYTES,
+                        NVL(C.FORMATOS,'') FORMATOS,
+                        NVL(C.CLAVEOCR,'') CLAVEOCR,
+                        NVL(C.TOOLTIP,'') TOOLTIP
+                FROM SICAS_OC.DETALLE_POLIZA D
+                INNER JOIN SICAS_OC.REQUISITOS_COBERTURAS A
+                    ON A.IDTIPOSEG = D.IDTIPOSEG
+                    AND A.PLANCOB = D.PLANCOB
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS  B
+                    ON B.IDTIPOSEG = A.IDTIPOSEG
+                    AND B.PLANCOB = A.PLANCOB
+                    AND B.CODCOBERT = A.CODCOBERT
+                INNER JOIN SICAS_OC.REQUISITOS C
+                    ON C.CODREQUISITO = A.CODREQUISITO
+                WHERE A.IDTIPOSEG = NVL(vl_IdTipoSeg,A.IDTIPOSEG)
+                    AND A.PLANCOB = NVL(vl_PlanCob,A.PLANCOB)
+                    AND A.CODCOBERT = NVL(vl_CodCobert,A.CODCOBERT)
+                    AND NVL(C.NOMARCHIVO,'') = NVL(PA_IDREQUISITO,NVL(C.NOMARCHIVO,''))
+                    AND D.IDPOLIZA = PA_IDPOLIZA
+                ORDER BY A.IDTIPOSEG,A.PLANCOB,A.CODCOBERT,A.CODREQUISITO);
+
+    CURSOR Q_CODASEG IS 
+        SELECT  XMLELEMENT("DOCUMENTO", XMLATTRIBUTES(IDTIPOSEG AS "IDTIPOSEG", PLANCOB AS "PLANCOB", CODCOBERT AS "CODCOBERT", DESCCOBERT AS "DESCCOBERT", CODREQUISITO AS "CODREQUISITO", NOMARCHIVO AS "NOMARCHIVO", DESCREQUISITO AS "DESCREQUISITO", 
+                        REQUERIDO AS "REQUERIDO", ORDENEXPEDIENTE AS "ORDEN_EXPEDIENTE", ORDENPDF AS "ORDEN_PDF", CANTIDAD AS "CANTIDAD", TAMANIOBYTES AS "TAMANIO_BYTES", FORMATOS AS "FORMATOS", CLAVEOCR AS "PALABRAS_CLAVE_OCR", TOOLTIP AS "TOOLTIP")
+                ) DOCUMENTO
+        FROM (              
+                SELECT DISTINCT A.IDTIPOSEG IDTIPOSEG, 
+                        A.PLANCOB,
+                        A.CODCOBERT,
+                        B.DESCCOBERT,
+                        A.CODREQUISITO,
+                        NVL(C.NOMARCHIVO,'') NOMARCHIVO,
+                        C.DESCREQUISITO ,
+                        (CASE A.REQUERIDO WHEN 'S' THEN 'TRUE' ELSE 'FALSE' END) REQUERIDO,
+                        A.ORDENEXPEDIENTE,
+                        A.ORDENPDF,
+                        A.CANTIDAD,
+                        C.TAMANIOBYTES,
+                        NVL(C.FORMATOS,'') FORMATOS,
+                        NVL(C.CLAVEOCR,'') CLAVEOCR,
+                        NVL(C.TOOLTIP,'') TOOLTIP
+                FROM SICAS_OC.DETALLE_POLIZA D
+                LEFT JOIN SICAS_OC.COBERT_ACT CA
+                    ON CA.IDPOLIZA = D.IDPOLIZA
+                    AND CA.IDTIPOSEG = D.IDTIPOSEG
+                    AND CA.PLANCOB = D.PLANCOB
+                 LEFT JOIN SICAS_OC.COBERT_ACT_ASEG CAA
+                    ON CAA.IDPOLIZA = D.IDPOLIZA
+                    AND CAA.IDTIPOSEG = D.IDTIPOSEG
+                    AND CAA.PLANCOB = D.PLANCOB
+                INNER JOIN SICAS_OC.REQUISITOS_COBERTURAS A
+                    ON A.IDTIPOSEG = D.IDTIPOSEG
+                    AND A.PLANCOB = D.PLANCOB
+                    AND (A.CODCOBERT = CA.CODCOBERT OR A.CODCOBERT = CAA.CODCOBERT)                    
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS  B
+                    ON B.IDTIPOSEG = A.IDTIPOSEG
+                    AND B.PLANCOB = A.PLANCOB
+                    AND B.CODCOBERT = A.CODCOBERT
+                INNER JOIN SICAS_OC.REQUISITOS C
+                    ON C.CODREQUISITO = A.CODREQUISITO
+                WHERE D.IDPOLIZA = PA_IDPOLIZA -- 26052--PA_IDPOLIZA
+                    AND (NVL(CA.COD_ASEGURADO,0) = vl_CodAseg  OR  NVL(CAA.COD_ASEGURADO,0) = vl_CodAseg )--2330189 --vl_CodAseg
+                ORDER BY A.IDTIPOSEG,A.PLANCOB,A.CODCOBERT,A.CODREQUISITO);
+
+    CURSOR Q_TODOS IS 
+        SELECT  XMLELEMENT("DOCUMENTO", XMLATTRIBUTES(IDTIPOSEG AS "IDTIPOSEG", PLANCOB AS "PLANCOB", CODCOBERT AS "CODCOBERT", DESCCOBERT AS "DESCCOBERT", CODREQUISITO AS "CODREQUISITO", NOMARCHIVO AS "NOMARCHIVO", DESCREQUISITO AS "DESCREQUISITO", 
+                        REQUERIDO AS "REQUERIDO", ORDENEXPEDIENTE AS "ORDEN_EXPEDIENTE", ORDENPDF AS "ORDEN_PDF", CANTIDAD AS "CANTIDAD", TAMANIOBYTES AS "TAMANIO_BYTES", FORMATOS AS "FORMATOS", CLAVEOCR AS "PALABRAS_CLAVE_OCR", TOOLTIP AS "TOOLTIP")
+                ) DOCUMENTO
+        FROM (
+            SELECT  DISTINCT A.IDTIPOSEG, 
+                        A.PLANCOB,
+                        A.CODCOBERT,
+                        B.DESCCOBERT,
+                        A.CODREQUISITO,
+                        NVL(C.NOMARCHIVO,'') NOMARCHIVO,
+                        C.DESCREQUISITO ,
+                        (CASE A.REQUERIDO WHEN 'S' THEN 'TRUE' ELSE 'FALSE' END) REQUERIDO,
+                        A.ORDENEXPEDIENTE,
+                        A.ORDENPDF,
+                        A.CANTIDAD,
+                        C.TAMANIOBYTES,
+                        NVL(C.FORMATOS,'') FORMATOS,
+                        NVL(C.CLAVEOCR,'') CLAVEOCR,
+                        NVL(C.TOOLTIP,'') TOOLTIP
+                FROM SICAS_OC.REQUISITOS_COBERTURAS A
+                INNER JOIN SICAS_OC.DETALLE_POLIZA D
+                    ON D.IDTIPOSEG = A.IDTIPOSEG
+                    AND D.PLANCOB = A.PLANCOB
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS  B
+                    ON B.IDTIPOSEG = A.IDTIPOSEG
+                    AND B.PLANCOB = A.PLANCOB
+                    AND B.CODCOBERT = A.CODCOBERT
+                INNER JOIN SICAS_OC.REQUISITOS C
+                    ON C.CODREQUISITO = A.CODREQUISITO
+                WHERE D.IDPOLIZA = PA_IDPOLIZA --35868
+                    AND A.CODCOBERT = NVL(vl_CodCobert,A.CODCOBERT)
+                    AND NVL(C.NOMARCHIVO,'') = NVL(PA_IDREQUISITO,NVL(C.NOMARCHIVO,''))
+                ORDER BY A.IDTIPOSEG,A.PLANCOB,A.CODCOBERT,A.CODREQUISITO
+        );
+
+    CURSOR Q_TODOS2 IS 
+        SELECT  XMLELEMENT("DOCUMENTO", XMLATTRIBUTES(IDTIPOSEG AS "IDTIPOSEG", PLANCOB AS "PLANCOB", CODCOBERT AS "CODCOBERT", DESCCOBERT AS "DESCCOBERT", CODREQUISITO AS "CODREQUISITO", NOMARCHIVO AS "NOMARCHIVO", DESCREQUISITO AS "DESCREQUISITO", 
+                        REQUERIDO AS "REQUERIDO", ORDENEXPEDIENTE AS "ORDEN_EXPEDIENTE", ORDENPDF AS "ORDEN_PDF", CANTIDAD AS "CANTIDAD", TAMANIOBYTES AS "TAMANIO_BYTES", FORMATOS AS "FORMATOS", CLAVEOCR AS "PALABRAS_CLAVE_OCR", TOOLTIP AS "TOOLTIP")
+                ) DOCUMENTO
+        FROM (
+            SELECT  DISTINCT A.IDTIPOSEG, 
+                        A.PLANCOB,
+                        A.CODCOBERT,
+                        B.DESCCOBERT,
+                        A.CODREQUISITO,
+                        NVL(C.NOMARCHIVO,'') NOMARCHIVO,
+                        C.DESCREQUISITO ,
+                        (CASE A.REQUERIDO WHEN 'S' THEN 'TRUE' ELSE 'FALSE' END) REQUERIDO,
+                        A.ORDENEXPEDIENTE,
+                        A.ORDENPDF,
+                        A.CANTIDAD,
+                        C.TAMANIOBYTES,
+                        NVL(C.FORMATOS,'') FORMATOS,
+                        NVL(C.CLAVEOCR,'') CLAVEOCR,
+                        NVL(C.TOOLTIP,'') TOOLTIP
+                FROM SICAS_OC.REQUISITOS_COBERTURAS A
+                INNER JOIN SICAS_OC.DETALLE_POLIZA D
+                    ON D.IDTIPOSEG = A.IDTIPOSEG
+                    AND D.PLANCOB = A.PLANCOB
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS  B
+                    ON B.IDTIPOSEG = A.IDTIPOSEG
+                    AND B.PLANCOB = A.PLANCOB
+                    AND B.CODCOBERT = A.CODCOBERT
+                INNER JOIN SICAS_OC.REQUISITOS C
+                    ON C.CODREQUISITO = A.CODREQUISITO
+                WHERE D.IDPOLIZA = PA_IDPOLIZA --35868
+                ORDER BY A.IDTIPOSEG,A.PLANCOB,A.CODCOBERT,A.CODREQUISITO
+        );
+
+    R_FORMA             Q_FORMA%ROWTYPE;
+    R_TODOS             Q_TODOS%ROWTYPE;
+    R_TODOS2            Q_TODOS2%ROWTYPE;
+    R_ASEGURADO         Q_CODASEG%ROWTYPE;
+    cHeader             VARCHAR2(4000);
+    FORMAS              CLOB;
+    OPCION              VARCHAR2(4000);
+    vl_ApPat            VARCHAR2(4000)  := ' ';
+    vl_ApMat            VARCHAR2(4000)  := ' ';
+    vl_Nombre           VARCHAR2(4000)  := ' ';
+    vl_NombreCompleto   VARCHAR2(4000)  := ' ';
+
+    vl_Zip              NUMBER  :=  0;
+    BEGIN  
+        cHeader := 'DOCUMENTOS';
+
+        IF (PA_IDPOLIZA IS NOT NULL OR PA_IDPOLIZA <> 0) --AND (PA_CODASEGURADO IS NOT NULL OR PA_CODASEGURADO <> 0) 
+            AND (PA_NOMBRE IS NOT NULL) THEN 
+
+            BEGIN
+
+                BEGIN
+                    SELECT DISTINCT A.COD_ASEGURADO
+                    INTO vl_CodAseg
+                    FROM SICAS_OC.PERSONA_NATURAL_JURIDICA J
+                    INNER JOIN SICAS_OC.ASEGURADO A
+                        ON A.TIPO_DOC_IDENTIFICACION = J.TIPO_DOC_IDENTIFICACION
+                        AND A.NUM_DOC_IDENTIFICACION = J.NUM_DOC_IDENTIFICACION
+                    INNER JOIN SICAS_OC.COBERT_ACT_ASEG AC
+                        ON AC.COD_ASEGURADO = A.COD_ASEGURADO
+                        AND AC.IDPOLIZA = PA_IDPOLIZA
+                    WHERE REPLACE(TRANSLATE(UPPER(J.NOMBRE),'ÿÉÿÓÚ', 'AEIOU'),' ','') = REPLACE(TRANSLATE(UPPER(PA_NOMBRE),'ÿÉÿÓÚ', 'AEIOU'),' ','')
+                        AND REPLACE(TRANSLATE(UPPER(NVL(J.APELLIDO_PATERNO,' ')),'ÿÉÿÓÚ', 'AEIOU'),' ','') = REPLACE(TRANSLATE(UPPER(NVL(PA_APPATERNO,' ')),'ÿÉÿÓÚ', 'AEIOU'),' ','')
+                        AND REPLACE(TRANSLATE(UPPER(NVL(J.APELLIDO_MATERNO,' ')),'ÿÉÿÓÚ', 'AEIOU'),' ','') = REPLACE(TRANSLATE(UPPER(NVL(PA_APMATERNO,' ')),'ÿÉÿÓÚ', 'AEIOU'),' ','')
+                        AND ROWNUM <=1;
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        BEGIN
+                            SELECT DISTINCT A.COD_ASEGURADO
+                            INTO vl_CodAseg
+                            FROM SICAS_OC.PERSONA_NATURAL_JURIDICA J
+                            INNER JOIN SICAS_OC.ASEGURADO A
+                                ON A.TIPO_DOC_IDENTIFICACION = J.TIPO_DOC_IDENTIFICACION
+                                AND A.NUM_DOC_IDENTIFICACION = J.NUM_DOC_IDENTIFICACION
+                            INNER JOIN SICAS_OC.COBERT_ACT AC
+                                ON AC.COD_ASEGURADO = A.COD_ASEGURADO
+                                AND AC.IDPOLIZA = PA_IDPOLIZA
+                            WHERE REPLACE(TRANSLATE(UPPER(J.NOMBRE),'ÿÉÿÓÚ', 'AEIOU'),' ','') = REPLACE(TRANSLATE(UPPER(PA_NOMBRE),'ÿÉÿÓÚ', 'AEIOU'),' ','')
+                                AND REPLACE(TRANSLATE(UPPER(NVL(J.APELLIDO_PATERNO,' ')),'ÿÉÿÓÚ', 'AEIOU'),' ','') = REPLACE(TRANSLATE(UPPER(NVL(PA_APPATERNO,' ')),'ÿÉÿÓÚ', 'AEIOU'),' ','')
+                                AND REPLACE(TRANSLATE(UPPER(NVL(J.APELLIDO_MATERNO,' ')),'ÿÉÿÓÚ', 'AEIOU'),' ','') = REPLACE(TRANSLATE(UPPER(NVL(PA_APMATERNO,' ')),'ÿÉÿÓÚ', 'AEIOU'),' ','')
+                                AND ROWNUM <=1;
+                        EXCEPTION
+                            WHEN OTHERS THEN
+                                vl_CodAseg := 0;
+                        END;
+
+                END;
+
+        IF vl_CodAseg <> 0 THEN
+                    SELECT J.NOMBRE,NVL(J.APELLIDO_PATERNO,' '),NVL(J.APELLIDO_MATERNO,' '),NVL(J.CODPOSRES,' ')--,NVL(AC.IDTIPOSEG,ACC.IDTIPOSEG) IDTIPOSEG,NVL(AC.PLANCOB,ACC.PLANCOB) PLANCOB
+                    INTO vl_Nombre,vl_ApPat,vl_ApMat,vl_Zip--,vl_IdTipoSeg,vl_PlanCob
+                    FROM SICAS_OC.PERSONA_NATURAL_JURIDICA J
+                    INNER JOIN SICAS_OC.ASEGURADO A
+                        ON A.TIPO_DOC_IDENTIFICACION = J.TIPO_DOC_IDENTIFICACION
+                        AND A.NUM_DOC_IDENTIFICACION = J.NUM_DOC_IDENTIFICACION
+                    WHERE COD_ASEGURADO = vl_CodAseg
+                        AND ROWNUM <=1;
+
+                    SELECT IDTIPOSEG,PLANCOB 
+                    INTO vl_IdTipoSeg,vl_PlanCob
+                    FROM SICAS_OC.DETALLE_POLIZA 
+                    WHERE IDPOLIZA = PA_IDPOLIZA
+                        AND IDETPOL = 1 
+                        AND ROWNUM <= 1;
+
+                    vl_CodCobert := PA_CODCOBERT;
+                END IF;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    vl_IdTipoSeg := NULL;
+                    vl_CodAseg := NULL;
+                    FORMAS := NULL;
+            END;
+        ELSIF (PA_CODASEGURADO IS NOT NULL AND PA_CODASEGURADO <> 0) AND (PA_IDPOLIZA IS NOT NULL OR PA_IDPOLIZA <> 0) THEN
+
+            BEGIN
+                /*CONSULTA DATOS SIN TODOS LOS INNERS*/
+                SELECT J.NOMBRE,NVL(J.APELLIDO_PATERNO,' '),NVL(J.APELLIDO_MATERNO,' '),J.CODPOSRES
+                INTO vl_Nombre,vl_ApPat,vl_ApMat,vl_Zip
+                FROM SICAS_OC.PERSONA_NATURAL_JURIDICA J
+                INNER JOIN SICAS_OC.ASEGURADO A
+                    ON A.TIPO_DOC_IDENTIFICACION = J.TIPO_DOC_IDENTIFICACION
+                    AND A.NUM_DOC_IDENTIFICACION = J.NUM_DOC_IDENTIFICACION
+                WHERE A.COD_ASEGURADO = PA_CODASEGURADO
+                    AND ROWNUM <=1;
+
+                SELECT NVL(AC.COD_ASEGURADO,D.COD_ASEGURADO) COD_ASEGURADO,D.IDTIPOSEG,D.PLANCOB
+                INTO vl_CodAseg,vl_IdTipoSeg,vl_PlanCob
+                FROM SICAS_OC.DETALLE_POLIZA D
+                LEFT JOIN SICAS_OC.ASEGURADO_CERTIFICADO AC
+                    ON AC.IDPOLIZA = D.IDPOLIZA
+                    AND AC.IDETPOL = D.IDETPOL
+                WHERE D.IDPOLIZA = PA_IDPOLIZA
+                    AND AC.COD_ASEGURADO = PA_CODASEGURADO
+                    AND ROWNUM <=1;
+
+                vl_CodCobert := PA_CODCOBERT;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    vl_IdTipoSeg := NULL;
+                    vl_PlanCob := NULL;
+                    vl_CodAseg := 0;
+                    FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO></ASEGURADO>;<'|| cHeader || '>';
+                    FORMAS := FORMAS || '<DOCUMENTO></DOCUMENTO>';
+                    FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+            END;
+
+        ELSE
+            vl_PlanCob := NULL;
+            vl_IdTipoSeg := NULL;
+            vl_CodAseg := 0;
+            FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO></ASEGURADO><'|| cHeader || '>';
+            FORMAS := FORMAS || '<DOCUMENTO></DOCUMENTO>';
+            FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+        END IF;
+
+        IF vl_CodAseg = 0 OR vl_CodAseg IS NULL THEN
+            vl_CodCobert := PA_CODCOBERT;
+            vl_Zip := 0;
+
+            OPEN Q_TODOS2;
+                LOOP
+                    FETCH Q_TODOS2 INTO R_TODOS2;  
+                    EXIT WHEN Q_TODOS2%NOTFOUND;
+                        IF FORMAS IS NULL THEN
+                           FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO COD_ASEG="0" NOMBRE="'||PA_NOMBRE||'" APPATERNO="'||PA_APPATERNO||'" APMATERNO="'||PA_APMATERNO||'" CODPOST=" "></ASEGURADO><'|| cHeader || '>';
+                        END IF;
+
+                        FORMAS :=  FORMAS || R_TODOS2.DOCUMENTO.getclobval();
+
+            END LOOP;              
+            CLOSE Q_TODOS2;  
+
+            IF FORMAS IS NULL THEN --CURSOR VACIO, NO TIENE REQUISITOS ASIGNADOS EN EL CATALOGO
+                FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO></ASEGURADO><'|| cHeader || '>';
+                FORMAS := FORMAS || '<DOCUMENTO></DOCUMENTO>';
+                FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+            ELSE
+                FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+            END IF;
+
+        ELSIF vl_Nombre IS NOT NULL OR vl_Nombre <> ' ' THEN
+
+            /*SELECT J.NOMBRE,J.APELLIDO_PATERNO,J.APELLIDO_MATERNO,J.CODPOSRES,NVL(AC.COD_ASEGURADO,D.COD_ASEGURADO) COD_ASEGURADO,D.IDTIPOSEG,D.PLANCOB
+                INTO vl_Nombre,vl_ApPat,vl_ApMat,vl_Zip,vl_CodAseg,vl_IdTipoSeg,vl_PlanCob
+                FROM SICAS_OC.PERSONA_NATURAL_JURIDICA J
+                INNER JOIN SICAS_OC.ASEGURADO A
+                    ON A.TIPO_DOC_IDENTIFICACION = J.TIPO_DOC_IDENTIFICACION
+                    AND A.NUM_DOC_IDENTIFICACION = J.NUM_DOC_IDENTIFICACION
+                LEFT JOIN SICAS_OC.ASEGURADO_CERTIFICADO AC
+                    ON AC.COD_ASEGURADO = A.COD_ASEGURADO
+                INNER JOIN SICAS_OC.DETALLE_POLIZA D
+                    ON AC.IDPOLIZA = D.IDPOLIZA
+                    AND AC.IDETPOL = D.IDETPOL
+                WHERE REPLACE(TRANSLATE(UPPER(NOMBRE),'áéíóúÿÉÿÓÚ', 'aeiouAEIOU'),'  ',' ') = REPLACE(TRANSLATE(UPPER(PA_NOMBRE),'áéíóúÿÉÿÓÚ', 'aeiouAEIOU'),'  ',' ')
+                    AND REPLACE(TRANSLATE(UPPER(APELLIDO_PATERNO),'áéíóúÿÉÿÓÚ', 'aeiouAEIOU'),'  ','') = REPLACE(TRANSLATE(UPPER(PA_APPATERNO),'áéíóúÿÉÿÓÚ', 'aeiouAEIOU'),'  ','')
+                    AND REPLACE(TRANSLATE(UPPER(APELLIDO_MATERNO),'áéíóúÿÉÿÓÚ', 'aeiouAEIOU'),'  ','') = REPLACE(TRANSLATE(UPPER(PA_APMATERNO),'áéíóúÿÉÿÓÚ', 'aeiouAEIOU'),'  ','')
+                    AND D.IDPOLIZA = PA_IDPOLIZA
+                    AND ROWNUM <=1;
+*/
+                OPEN Q_CODASEG;
+                LOOP
+                    FETCH Q_CODASEG INTO   R_ASEGURADO;  
+                    EXIT WHEN Q_CODASEG%NOTFOUND;
+
+                        IF FORMAS IS NULL THEN
+                           FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO COD_ASEG="'||vl_CodAseg||'" NOMBRE="'||vl_Nombre||'" APPATERNO="'||vl_ApPat||'" APMATERNO="'||vl_ApMat||'" CODPOST="'||vl_Zip||'"></ASEGURADO><'|| cHeader || '>';
+                        END IF;
+
+                        FORMAS :=  FORMAS || R_ASEGURADO.DOCUMENTO.getclobval();
+                END LOOP;              
+                CLOSE Q_CODASEG;  
+
+                IF FORMAS IS NULL THEN --CURSOR VACIO, se retornan todas lascoberturas y requisitos que puede tener una poliza
+
+                    FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO></ASEGURADO><'|| cHeader || '>';
+                    FORMAS := FORMAS || '<DOCUMENTO></DOCUMENTO>';
+                    FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+                ELSE
+                    FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+                END IF;
+
+        ELSIF vl_IdTipoSeg IS NULL OR vl_IdTipoSeg = '' AND vl_PlanCob IS NULL AND vl_PlanCob = '' THEN 
+            OPEN Q_FORMA;
+            LOOP
+                FETCH Q_FORMA INTO   R_FORMA;  
+                EXIT WHEN Q_FORMA%NOTFOUND;
+                    IF FORMAS IS NULL THEN
+                       FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO COD_ASEG="'||vl_CodAseg||'" NOMBRE="'||vl_Nombre||'" APPATERNO="'||vl_ApPat||'" APMATERNO="'||vl_ApMat||'" CODPOST="'||vl_Zip||'"></ASEGURADO><'|| cHeader || '>';
+                    END IF;
+
+                    FORMAS :=  FORMAS || R_FORMA.DOCUMENTO.getclobval();
+            END LOOP;              
+            CLOSE Q_FORMA;  
+
+            IF FORMAS IS NULL THEN --CURSOR VACIO, se retornan todas lascoberturas y requisitos que puede tener una poliza
+                FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO></ASEGURADO><'|| cHeader || '>';
+                FORMAS := FORMAS || '<DOCUMENTO></DOCUMENTO>';
+                FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+            ELSE
+                FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+            END IF;
+
+        ELSIF (vl_IdTipoSeg IS NULL AND vl_PlanCob IS NULL) THEN   --EL CURSOR ESTA VACIO, NO SE ENCONTRO EL ASEGURADO, SE RETORNAN TODAS LAS COBERTURAS Q PUEDA TENER LA POLIZA
+            vl_CodCobert := PA_CODCOBERT;
+
+            OPEN Q_TODOS;
+                LOOP
+                    FETCH Q_TODOS INTO R_TODOS;  
+                    EXIT WHEN Q_TODOS%NOTFOUND;
+                        IF FORMAS IS NULL THEN
+                           FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO COD_ASEG="0" NOMBRE=" " APPATERNO=" " APMATERNO=" " CODPOST=" "></ASEGURADO><'|| cHeader || '>';
+                        END IF;
+
+                        FORMAS :=  FORMAS || R_TODOS.DOCUMENTO.getclobval();
+            END LOOP;              
+            CLOSE Q_TODOS;  
+
+            IF FORMAS IS NULL THEN --CURSOR VACIO, NO TIENE REQUISITOS ASIGNADOS EN EL CATALOGO
+                FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO></ASEGURADO><'|| cHeader || '>';
+                FORMAS := FORMAS || '<DOCUMENTO></DOCUMENTO>';
+                FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+            ELSE
+                FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+            END IF;
+
+        END IF;
+
+        RETURN  FORMAS;  
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('EXC: '||SQLERRM);
+            --FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><DATA><ASEGURADO></ASEGURADO><'|| cHeader || '>';
+            --FORMAS := FORMAS || '<DOCUMENTO></DOCUMENTO>';
+            --FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+
+            RETURN  FORMAS; 
+    END REQUISITOS_COBERT;
+
     FUNCTION ES_NUMERICO(pEntrada VARCHAR2) RETURN NUMBER IS
         NUMERO NUMBER ;
         wEntrada VARCHAR2(100);
@@ -601,14 +1030,34 @@ END;
         RETURN NULL;     
     END COBERTURA_ATRIBUTOS;  
     --   
-    PROCEDURE RECALCULAR_COTIZACION(p_nCodCia NUMBER, p_nCodEmpresa NUMBER, p_nIdCotizacion NUMBER,
-                                  p_cIdTipoSeg VARCHAR2, p_cPlanCob VARCHAR2, p_cIndAsegModelo VARCHAR2,
-                                  p_cIndCensoSubgrupo VARCHAR2, p_cIndListadoAseg VARCHAR2) IS
+    PROCEDURE RECALCULAR_COTIZACION( p_nCodCia            NUMBER
+                                   , p_nCodEmpresa        NUMBER
+                                   , p_nIdCotizacion      NUMBER
+                                   , p_cIdTipoSeg         VARCHAR2
+                                   , p_cPlanCob           VARCHAR2
+                                   , p_cIndAsegModelo     VARCHAR2
+                                   , p_cIndCensoSubgrupo  VARCHAR2
+                                   , p_cIndListadoAseg    VARCHAR2 ) IS
+      --
+      --MASP Regla de Prima Mínima Anual
+      CURSOR Subgrupos_PriMin IS
+             SELECT IDetCotizacion
+             FROM   COTIZACIONES_DETALLE
+             WHERE  CodCia       = p_nCodCia
+               AND  CodEmpresa   = p_nCodEmpresa
+               AND  IdCotizacion = p_nIdCotizacion;
     BEGIN                                  
-            GT_COTIZACIONES.RECALCULAR_COTIZACION (p_nCodCia , p_nCodEmpresa , p_nIdCotizacion ,
-                                  p_cIdTipoSeg , p_cPlanCob , p_cIndAsegModelo ,
-                                  p_cIndCensoSubgrupo , p_cIndListadoAseg );
-
+       GT_COTIZACIONES.RECALCULAR_COTIZACION ( p_nCodCia , p_nCodEmpresa   , p_nIdCotizacion    , p_cIdTipoSeg,
+                                               p_cPlanCob, p_cIndAsegModelo, p_cIndCensoSubgrupo, p_cIndListadoAseg );
+       --MASP Regla de Prima Mínima Anual
+       OC_PRIMA_MINIMA_ANUAL.VALIDA_PRIMAS_COTIZA( p_nCodCia, p_nCodEmpresa, p_nIdCotizacion );
+       --
+       FOR x IN Subgrupos_PriMin LOOP
+           GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES( p_nCodCia, p_nCodEmpresa, p_nIdCotizacion, x.IDetCotizacion );
+	    END LOOP;
+       --
+       GT_COTIZACIONES.ACTUALIZAR_VALORES( p_nCodCia, p_nCodEmpresa, p_nIdCotizacion );
+       --
     END RECALCULAR_COTIZACION;
     --
     FUNCTION DESCARTA_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdCotizacion NUMBER) return INT IS       
@@ -1110,10 +1559,27 @@ END;
         --                                         
     END COTIZACION_ACTUALIZA;
     --
-    PROCEDURE COTIZACION_EMITIR(p_nCodCia NUMBER, p_nCodEmpresa NUMBER, p_nIdCotizacion NUMBER)  IS
-    BEGIN                                  
-            GT_COTIZACIONES.EMITIR_COTIZACION(p_nCodCia, p_nCodEmpresa, p_nIdCotizacion);
-
+    PROCEDURE COTIZACION_EMITIR( p_nCodCia       NUMBER
+                               , p_nCodEmpresa   NUMBER
+                               , p_nIdCotizacion NUMBER )  IS
+      --MASP Regla de Prima Mínima Anual
+      CURSOR Subgrupos_PriMin IS
+             SELECT IDetCotizacion
+             FROM   COTIZACIONES_DETALLE
+             WHERE  CodCia       = p_nCodCia
+               AND  CodEmpresa   = p_nCodEmpresa
+               AND  IdCotizacion = p_nIdCotizacion;
+    BEGIN      
+       --MASP Regla de Prima Mínima Anual
+       OC_PRIMA_MINIMA_ANUAL.VALIDA_PRIMAS_COTIZA( p_nCodCia, p_nCodEmpresa, p_nIdCotizacion );
+       --
+       FOR x IN Subgrupos_PriMin LOOP
+           GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES( p_nCodCia, p_nCodEmpresa, p_nIdCotizacion, x.IDetCotizacion );
+	    END LOOP;
+       --
+       GT_COTIZACIONES.ACTUALIZAR_VALORES( p_nCodCia, p_nCodEmpresa, p_nIdCotizacion );
+       --
+       GT_COTIZACIONES.EMITIR_COTIZACION( p_nCodCia, p_nCodEmpresa, p_nIdCotizacion );
     END COTIZACION_EMITIR;
     --
    FUNCTION PRE_EMITE_POLIZA_NEW( nCodCia            NUMBER
@@ -1123,10 +1589,10 @@ END;
                                 , cIdPoliza          NUMBER := NULL ) RETURN CLOB IS
    --                             , xInformacionFiscal XMLTYPE ) RETURN CLOB IS
       --LUCERO MAYOR 
-      --cCadena           VARCHAR2(4000) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PE�ON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N|A,RFC,,GABRIELA,LOPEZ,DE SANTA ANA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,NOMB PAGA CUENTA,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
+      --cCadena           VARCHAR2(4000) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PEÃƒâ€˜ON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N|A,RFC,,GABRIELA,LOPEZ,DE SANTA ANA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,NOMB PAGA CUENTA,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
       --
       --Otros productos
-      --cCadena            VARCHAR2(32727) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PE�ON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
+      --cCadena            VARCHAR2(32727) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PEÃƒâ€˜ON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
       --  
       CRFC              VARCHAR2(20);
       nCodCliente       NUMBER;
@@ -1210,7 +1676,7 @@ END;
 BEGIN
    IF cIdPoliza IS NULL THEN
       IF SICAS_OC.GT_COTIZACIONES.EXISTE_COTIZACION_EMITIDA(NCODCIA, NCODEMPRESA, NIDCOTIZACION ) = 'N' THEN
-        RETURN 'Esta cotizaci�n no esta emitida: ' || NIDCOTIZACION;
+        RETURN 'Esta cotizaciÃƒÂ³n no esta emitida: ' || NIDCOTIZACION;
       END IF;
 
       OPEN  Q_NUMREG;
@@ -1226,8 +1692,8 @@ BEGIN
             AND IdCotizacion  = nIdCotizacion;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20200,'Error al determinar la cotizaci�n '||nIdCotizacion);
-      END;	
+            RAISE_APPLICATION_ERROR(-20200,'Error al determinar la cotizaciÃƒÂ³n '||nIdCotizacion);
+      END;  
          --
       INSERT INTO API_LOG_EMISION (Descripcion, Fecha, Id_Cotizacion) VALUES(cCadena, SYSDATE, nIdCotizacion);
       FOR ENT IN (SELECT COLUMN_VALUE Fila FROM table(GT_WEB_SERVICES.SPLIT(cCadena, '|'))) LOOP
@@ -2006,10 +2472,8 @@ BEGIN
             AND IdFactura = FC.IdFactura;
 
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(1, nIdTransac, 'C');
-         
-         IF OC_FACTURAS.IND_RFC_GENERICO(FC.IdFactura, nCodCia) = 'N' THEN
-            cCodCFDI := OC_FACTURAS.FACTURA_ELECTRONICA(FC.IdFactura, 1, 1, 'A', 'S');
-         END IF;
+
+         cCodCFDI := OC_FACTURAS.FACTURA_ELECTRONICA(FC.IdFactura, 1, 1, 'A', 'S');
           --               
          IF OC_GENERALES.BUSCA_PARAMETRO(R_Facturas.CodCia, '026') = cCodCFDI THEN --201
             NULL;
@@ -2250,10 +2714,10 @@ END PAGO_FACTURA;
    --
     FUNCTION MUESTRA_COTIZACIONES(pIDCOTIZACION NUMBER, pNombre VARCHAR2, pCodAgente NUMBER, pEstatus VARCHAR2, nNumRegIni NUMBER := 1, nNumRegFin NUMBER := 50) RETURN CLOB IS
 
-        --Consulta_Cotizaciones :   En digital lleva registro por RFC o Correo de las cotizaciones y deber�a haber guardado el numero de IDCotizacion y CODAGENTE
-        --pEstatus in 'EMITID'  Cotizaci�n solo EMITIDA
-        --            'POLEMI', Cotizaci�n con Poliza emitida
-        -- Paginaci�n de registros: nNumRegIni y nNumRegFin
+        --Consulta_Cotizaciones :   En digital lleva registro por RFC o Correo de las cotizaciones y deberÃƒÂ­a haber guardado el numero de IDCotizacion y CODAGENTE
+        --pEstatus in 'EMITID'  CotizaciÃƒÂ³n solo EMITIDA
+        --            'POLEMI', CotizaciÃƒÂ³n con Poliza emitida
+        -- PaginaciÃƒÂ³n de registros: nNumRegIni y nNumRegFin
         CURSOR Q_COTI IS
           SELECT XMLELEMENT("COTIZACION",  XMLATTRIBUTES("IDCOTIZACION" , 
                                                          "FECHA_COTIZACION",  
@@ -2534,13 +2998,13 @@ END PAGO_FACTURA;
     END MUESTRA_POLIZAS;
     --
     FUNCTION CONSULTA_AGENTE(pCodCia NUMBER, pCodEmpresa NUMBER, pCodAgente NUMBER) RETURN CLOB IS
-/*   _______________________________________________________________________________________________________________________________	
+/*   _______________________________________________________________________________________________________________________________    
     |                                                                                                                               |
     |                                                           HISTORIA                                                            |
     | Elaboro    : ??                                                                                                               |
     | Para       : THONA Seguros                                                                                                    |
     | Fecha Elab.: ??                                                                                                               |    
-	| Nombre     : CONSULTA_AGENTE	                                                                                                |
+    | Nombre     : CONSULTA_AGENTE                                                                                                  |
     | Version    : 3.0                                                                                                              |
     | Objetivo   : Funcion que obtiene informacion del Agente que coincida con el proporcionado.                                    |
     | Modificado : Si                                                                                                               |
@@ -2553,9 +3017,9 @@ END PAGO_FACTURA;
     |        04/03/2021 Correccion para que muestre el Email correcto de acuerdo al Correlativo.                                    |
     |                                                                                                                               |
     | Parametros:                                                                                                                   |
-    |			pCodCia				Codigo de la Compa�ia	        (Entrada)                                                       |
-    |			pCodEmpresa			Codigo de la Empresa	        (Entrada)                                                       |
-    |			pCodAgente			Codigo de Agente                (Entrada)                                                       |
+    |           pCodCia             Codigo de la CompaÃƒÂ±ia           (Entrada)                                                       |
+    |           pCodEmpresa         Codigo de la Empresa            (Entrada)                                                       |
+    |           pCodAgente          Codigo de Agente                (Entrada)                                                       |
     |_______________________________________________________________________________________________________________________________|
 
 */     
@@ -2747,7 +3211,7 @@ END CONDICIONES_GENERALES;
                AND P.CODEMPRESA = nCodEmpresa
                AND EXISTS (SELECT 1 FROM COTIZACIONES C WHERE C.CODCIA = nCodCia and C.CODEMPRESA = nCodEmpresa AND C.IDCOTIZACION =  NVL(P.NUM_COTIZACION,0) and C.INDCOTIZACIONWEB = 'S'); 
             IF NVL(nMonto, 0) = 0 THEN
-                raise_application_error(-20001, 'Esta p�liza, no es de origen de la Plataforma Digital');
+                raise_application_error(-20001, 'Esta pÃƒÂ³liza, no es de origen de la Plataforma Digital');
             END IF;
             SELECT SUM(O.MONTOPAGO_MONEDA)
               INTO nMonto
@@ -2889,7 +3353,7 @@ END CONDICIONES_GENERALES;
          WHEN NO_DATA_FOUND THEN
             bQueHacerSiniestros := EMPTY_BLOB();
          WHEN TOO_MANY_ROWS THEN
-            RAISE_APPLICATION_ERROR(-20200,'Existe m�s de un registro activo para el producto '||OC_TIPOS_DE_SEGUROS.TIPO_DE_SEGURO(nCodCia, nCodEmpresa, cIdTipoSeg)||SQLERRM);
+            RAISE_APPLICATION_ERROR(-20200,'Existe mÃƒÂ¡s de un registro activo para el producto '||OC_TIPOS_DE_SEGUROS.TIPO_DE_SEGURO(nCodCia, nCodEmpresa, cIdTipoSeg)||SQLERRM);
       END;
       RETURN bQueHacerSiniestros;
     END QUE_HACER_SINIESTROS;
@@ -2962,7 +3426,7 @@ BEGIN
          AND IdCotizacion  = nIdCotizacion;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20200,'No existe la Cotizaci�n '||nIdCotizacion);
+         RAISE_APPLICATION_ERROR(-20200,'No existe la CotizaciÃƒÂ³n '||nIdCotizacion);
    END;
    IF nPorcComisAgente <> nPorcComisAgte THEN
       nPorcGtoAdquiCalc := NVL(nPorcComisAgente,0) + NVL(nPorcComisProm,0) + NVL(nPorcComisDir,0);
@@ -3013,6 +3477,12 @@ nHorasVig         COTIZACIONES.HorasVig%TYPE;
 nDiasVig          COTIZACIONES.DiasVig%TYPE;
 nCantAsegurados   COTIZACIONES.CantAsegurados%TYPE;
 nFactorAjuste     COTIZACIONES.FactorAjuste%TYPE;
+cRiesgoTarifa     COTIZACIONES.RiesgoTarifa%TYPE;
+cTiponegocio      COTIZACIONES.Tipnego_Web%TYPE;
+cLaboral          COTIZACIONES.Ries_Labor%TYPE;
+cRies24_365       COTIZACIONES.Ries_24365%TYPE;
+cTraslados        COTIZACIONES.Ries_Trasla%TYPE;
+
 CURSOR cGenCotiza IS
    WITH
    COTIZA_DATA AS ( SELECT GEN.*
@@ -3022,7 +3492,12 @@ CURSOR cGenCotiza IS
                                        HorasVig       NUMBER(5)   PATH 'HorasVig',
                                        DiasVig        NUMBER(5)   PATH 'DiasVig',
                                        CantAsegurados NUMBER(10)  PATH 'CantAsegurados',
-                                       FactorAjuste   NUMBER(9,6) PATH 'FactorAjuste') GEN
+                                       FactorAjuste   NUMBER(9,6) PATH 'FactorAjuste',
+                                       RiesgoTarifa   VARCHAR(2)  PATH 'RiesgoTarifa',
+                                       Tiponegocio    VARCHAR(10) PATH 'Tiponegocio',
+                                       Laboral        VARCHAR(2)  PATH 'Laboral',
+                                       Ries24_365     VARCHAR(2)  PATH 'Ries24_365',
+                                       Traslados      VARCHAR(2)  PATH 'Traslados') GEN                
                      )
    SELECT * FROM COTIZA_DATA;
 BEGIN
@@ -3039,6 +3514,21 @@ BEGIN
       IF X.FactorAjuste IS NOT NULL THEN 
          nFactorAjuste := X.FactorAjuste;
       END IF;
+      IF X.RiesgoTarifa IS NOT NULL THEN 
+         cRiesgoTarifa := X.RiesgoTarifa;
+      END IF;
+      IF X.Tiponegocio IS NOT NULL THEN 
+         cTiponegocio := X.Tiponegocio;
+      END IF;
+      IF X.Laboral IS NOT NULL THEN 
+         cLaboral := X.Laboral;
+      END IF;
+      IF X.Ries24_365 IS NOT NULL THEN 
+         cRies24_365 := X.Ries24_365;
+      END IF;
+      IF X.Traslados IS NOT NULL THEN 
+         cTraslados := X.Traslados;   
+      END IF;
    END LOOP;
 
    --IF nHorasVig IS NOT NULL OR nDiasVig IS NOT NULL THEN
@@ -3054,13 +3544,22 @@ BEGIN
 
    UPDATE COTIZACIONES
       SET CantAsegurados   = NVL(nCantAsegurados,CantAsegurados),
-          FactorAjuste     = NVL(nFactorAjuste,FactorAjuste)
+          FactorAjuste     = NVL(nFactorAjuste,FactorAjuste),
+          RiesgoTarifa     = NVL(cRiesgoTarifa,RiesgoTarifa),
+          Tipnego_Web      = cTiponegocio,
+          Ries_Labor       = cLaboral,
+          Ries_24365       = cRies24_365,
+          Ries_Trasla      = cTraslados
     WHERE CodCia        = nCodCia
       AND CodEmpresa    = nCodEmpresa
       AND IdCotizacion  = nIdCotizacion;     
+    GT_COTIZACIONES_CLAUSULAS.CREAR_TEXTORIESGOS_COTIZA(nCodCia, cTiponegocio, cLaboral, cRies24_365, cTraslados, nIdCotizacion);--ARH 23/08/2024
 
    UPDATE COTIZACIONES_DETALLE
-      SET CantAsegurados   = NVL(nCantAsegurados,CantAsegurados)
+      SET CantAsegurados   = NVL(nCantAsegurados,CantAsegurados),
+          HorasVig         = NVL(nHorasVig,HorasVig),
+          DiasVig          = NVL(nDiasVig,DiasVig),
+          RiesgoTarifa     = NVL(cRiesgoTarifa,RiesgoTarifa)
     WHERE CodCia        = nCodCia
       AND CodEmpresa    = nCodEmpresa
       AND IdCotizacion  = nIdCotizacion;        
@@ -3258,10 +3757,10 @@ PROCEDURE CANCELACION_POLIZAS(nCodCia NUMBER,nCodEmpresa NUMBER,nIdPoliza NUMBER
                                 , cIdPoliza          NUMBER := NULL 
                                 , xInformacionFiscal XMLTYPE ) RETURN CLOB IS
       --LUCERO MAYOR 
-      --cCadena           VARCHAR2(4000) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PE�ON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N|A,RFC,,GABRIELA,LOPEZ,DE SANTA ANA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,NOMB PAGA CUENTA,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
+      --cCadena           VARCHAR2(4000) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PEÃƒâ€˜ON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N|A,RFC,,GABRIELA,LOPEZ,DE SANTA ANA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,NOMB PAGA CUENTA,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
       --
       --Otros productos
-      --cCadena            VARCHAR2(32727) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PE�ON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
+      --cCadena            VARCHAR2(32727) := 'C,RFC,PELC700807XXX,ZORRILLA,NOMCONTRATANTE,ROBERTO,,07/08/1970,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,BURGER PO KING,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N|A,RFC,,PEDRO,TIMBAK,LUPITA,,07/08/1980,,,30/07/2019,30/07/2019,RIO CHURUBUSCO,44,B,,,,55,5530199059,cperex@thonaseguros.mx,CTC,012,123456789012345000,123456789,12345645645645,01/08/2022,LUCERITO LUC PEÃƒâ€˜ON,,30/07/2019,18/08/2020,ANUA,30/07/2019,18/08/2020,,N,30/07/2019,,1,BENEFICIARIO 1,01/01/2000,25,1,N,2,BENEFICIARIO 2,01/01/2000,25,1,N,3,BENEFICIARIO 3,01/01/2000,25,1,N,4,BENEFICIARIO 4,01/01/2000,25,1,N';
       --  
       CRFC              VARCHAR2(20);
       nCodCliente       NUMBER;
@@ -3345,7 +3844,7 @@ PROCEDURE CANCELACION_POLIZAS(nCodCia NUMBER,nCodEmpresa NUMBER,nIdPoliza NUMBER
 BEGIN
    IF cIdPoliza IS NULL THEN
       IF SICAS_OC.GT_COTIZACIONES.EXISTE_COTIZACION_EMITIDA(NCODCIA, NCODEMPRESA, NIDCOTIZACION ) = 'N' THEN
-        RETURN 'Esta cotizaci�n no esta emitida: ' || NIDCOTIZACION;
+        RETURN 'Esta cotizaciÃƒÂ³n no esta emitida: ' || NIDCOTIZACION;
       END IF;
 
       OPEN  Q_NUMREG;
@@ -3361,8 +3860,8 @@ BEGIN
             AND IdCotizacion  = nIdCotizacion;
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20200,'Error al determinar la cotizaci�n '||nIdCotizacion);
-      END;	
+            RAISE_APPLICATION_ERROR(-20200,'Error al determinar la cotizaciÃƒÂ³n '||nIdCotizacion);
+      END;  
          --
       INSERT INTO API_LOG_EMISION (Descripcion, Fecha, Id_Cotizacion) VALUES(cCadena, SYSDATE, nIdCotizacion);
       FOR ENT IN (SELECT COLUMN_VALUE Fila FROM table(GT_WEB_SERVICES.SPLIT(cCadena, '|'))) LOOP
@@ -3832,6 +4331,34 @@ BEGIN
    RETURN cFacturas;                          
 END PRE_EMITE_POLIZA_NEW_CFDI40; 
 
+/*JACF [28/09/2023] <Se agrega funciÃƒÂ³n para consultar catalogo de formas de cobro desde las listas de valores>*/
+FUNCTION FORMAS_COBRO(LISTA VARCHAR2) RETURN CLOB IS    
+        CURSOR Q_FORMA IS            
+            SELECT CODLISTA, CODVALOR, DESCVALLST
+            FROM VALORES_DE_LISTAS
+            WHERE 1 = 1
+            AND CODLISTA = LISTA
+        ;
+
+         R_FORMA  Q_FORMA%ROWTYPE;
+         cHeader VARCHAR2(100);
+         FORMAS CLOB;
+         OPCION VARCHAR2(100);
+    BEGIN   
+        OPEN Q_FORMA;
+        LOOP
+            FETCH Q_FORMA INTO   R_FORMA;   
+            EXIT WHEN Q_FORMA%NOTFOUND;
+            IF FORMAS IS NULL THEN
+               cHeader := 'DATOS';
+               FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><'|| cHeader || '>';
+            END IF; 
+            OPCION := R_FORMA.DESCVALLST;
+            FORMAS := FORMAS || '<OPCION valor="'||R_FORMA.CODVALOR||'">'||OPCION||'</OPCION>';
+        END LOOP;               
+        CLOSE Q_FORMA;   
+        FORMAS :=  FORMAS || '</' || cHeader || '>';
+        RETURN  FORMAS;      
+END FORMAS_COBRO;
 
 END GENERALES_PLATAFORMA_DIGITAL;
-

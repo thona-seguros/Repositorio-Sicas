@@ -574,14 +574,6 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
         WHERE CodCia        = nCodCia
           AND CodEmpresa    = nCodEmpresa
           AND IdCotizacion  = nIdCotizacion;
-      --
-      --MASP Regla de Prima Mínima Anual
-      CURSOR Subgrupos_PriMin IS
-             SELECT IDetCotizacion
-             FROM   COTIZACIONES_DETALLE
-             WHERE  CodCia       = nCodCia
-               AND  CodEmpresa   = nCodEmpresa
-               AND  IdCotizacion = nIdCotizacion;
     BEGIN
        EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_DATE_FORMAT = ''DD/MM/YYYY''';
        --
@@ -851,16 +843,6 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
        END LOOP;      
 
        GENERALES_PLATAFORMA_DIGITAL.RECALCULAR_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, cIdTipoSeg, cPlanCob, 'N', 'N', 'S');
-
-       --MASP Regla de Prima Mínima Anual
-       OC_PRIMA_MINIMA_ANUAL.VALIDA_PRIMAS_COTIZA( nCodCia, nCodEmpresa, nIdCotizacion );
-       --
-       FOR x IN Subgrupos_PriMin LOOP
-           GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(nCodCia, nCodEmpresa, nIdCotizacion, x.IDetCotizacion);
-	    END LOOP;
-       --
-       GT_COTIZACIONES.ACTUALIZAR_VALORES(nCodCia, nCodEmpresa, nIdCotizacion);
-       --
        
        BEGIN
           SELECT PrimaCotLocal, PrimaCotMoneda--, GastosExpedicion
