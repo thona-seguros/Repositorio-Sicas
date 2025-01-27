@@ -3,6 +3,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
 -- HOMOLOGACION VIFLEX                             JMMD 01/03/2022
 -- INCIDENCIA AGENTE                               INCIAGE  JICO 14/06/2023
 -- se agreaga cursor para creacion de reglas de sumas aseguradas  26/08/2024 ARH
+-- se agreaga el campo IndPriMin para Prima Minima Anual 26/12/2024 ARH
 
 --
     FUNCTION F_GET_NUMPOL ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
@@ -331,7 +332,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
    nIdFormaCobro               POLIZAS.IdFormaCobro%TYPE;
    NUNPRICIPAL                 VARCHAR2(2);      --INCIAGE
    cCobertura                  VARCHAR2(10);
-   
+
    nCodAsegurado               ASEGURADO.COD_ASEGURADO%TYPE;  --MLJS 14/11/2024
 
    CURSOR CPTO_PRIMAS_Q IS
@@ -923,26 +924,26 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
       END IF;
 
       IF OC_POLIZAS.VALIDA_POLIZA(nCodCia, nIdPoliza) = 'S' THEN
+         OC_PRIMA_MINIMA_ANUAL.VALIDA_PRIMAS_POLIZA (nCodCia, nCodEmpresa, nIdPoliza);
          FOR X IN DET_Q LOOP
-       nPorcAgtes := 0;
-       BEGIN
+          nPorcAgtes := 0;
+          BEGIN
            SELECT SUM(Porc_Comision)
              INTO nPorcAgtes
              FROM AGENTES_DETALLES_POLIZAS
             WHERE IdPoliza = nIdPoliza
-         AND IdetPol  = X.IDetPol
-         AND CodCia   = nCodCia;
-       END;
-
-       IF NVL(nPorcAgtes,0) != 100 THEN
-           RAISE_APPLICATION_ERROR(-20200,'No puede Emitir la Póliza porque el Detalle de Póliza No. '|| X.IdetPol ||
-                    ', Suma ' || NVL(nPorcAgtes,0) ||' en los Agentes Participantes');
-       END IF;
-       IF cTipoPol = 'F' THEN
-           IF OC_POLIZAS.VALIDA_FIANZA(nCodCia, nIdPoliza, X.IDetPol) != 'S' THEN
-         RAISE_APPLICATION_ERROR(-20200,'No puede Emitir la Fianza porque Faltan Datos al Detalle '||X.IDetPol);
-           END IF;
-       END IF;
+              AND IdetPol  = X.IDetPol
+              AND CodCia   = nCodCia;
+          END;
+          IF NVL(nPorcAgtes,0) != 100 THEN
+             RAISE_APPLICATION_ERROR(-20200,'No puede Emitir la Póliza porque el Detalle de Póliza No. '|| X.IdetPol ||
+                                    ', Suma ' || NVL(nPorcAgtes,0) ||' en los Agentes Participantes');
+          END IF;
+          IF cTipoPol = 'F' THEN
+             IF OC_POLIZAS.VALIDA_FIANZA(nCodCia, nIdPoliza, X.IDetPol) != 'S' THEN
+                RAISE_APPLICATION_ERROR(-20200,'No puede Emitir la Fianza porque Faltan Datos al Detalle '||X.IDetPol);
+             END IF;
+          END IF;
          END LOOP;
 
          SELECT SUM(PrimaNeta_Local)
@@ -2780,11 +2781,11 @@ END RENOVAR;
                   AND CodCia    = nCodCia)
        AND FecEnvioSC IS NOT NULL;
       END;
-      
+
         SELECT USER
         INTO   cUsuario
         FROM   DUAL;
-        
+
         INSERT INTO TMP_REVISION VALUES (nIdPoliza, SYSDATE, cUsuario);
 
       IF NVL(nEndosos,0) = 0 AND NVL(nFacturas,0) = 0 AND NVL(nSiniestros,0) = 0 AND
@@ -2911,7 +2912,7 @@ END RENOVAR;
         TipoProrrata, IndConvenciones, CodTipoNegocio, CodPaqComercial,
         CodOficina,CodCatego, Franquiciaingresado -- ARH 26/08/2024
         --MLJS 07/08/2024 SE AGREGAN LOS SIGUIENTES CAMPOS
-        , codobjetoimp, codusocfdi 
+        , codobjetoimp, codusocfdi, IndPriMin
         FROM POLIZAS
        WHERE IdPoliza = nIdPolizaOrig
          AND CodCia   = nCodCia;
@@ -2944,7 +2945,7 @@ END RENOVAR;
 
    CURSOR COB_Q IS
      SELECT CA.IDetPol, CA.CodEmpresa, CA.CodCia, DP.IdTipoSeg, CA.CodCobert,
-       CA.SumaAseg_Moneda, CA.Prima_Moneda, TipoRef, CA.NumRef, CA.IdEndoso,
+       CA.SumaAseg_Moneda, CA.Tasa,  CA.Prima_Moneda, TipoRef, CA.NumRef, CA.IdEndoso,
        CA.PlanCob, CA.Cod_Moneda, CA.Deducible_Local, CA.Deducible_Moneda,
        CA.Cod_Asegurado, CA.IDRAMOREAL
        FROM COBERT_ACT CA, DETALLE_POLIZA DP
@@ -3049,7 +3050,7 @@ END RENOVAR;
          FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos,
          TipoProrrata, IndConvenciones, CodTipoNegocio, CodPaqComercial,
          CodOficina, CodCatego, Franquiciaingresado -- ARH 26/08/2024
-         ,codobjetoimp, codusocfdi)  --MLJS 07/08/2024 SE AGREGAN)
+         ,codobjetoimp, codusocfdi, IndPriMin)  --MLJS 07/08/2024 SE AGREGAN)-- ARH 26/12/2024 IndPriMin
        VALUES(nIdPoliza, X.CodEmpresa, nCodCia, X.TipoPol, X.NumPolRef,
          dFecHoy, ADD_MONTHS(dFecHoy,12), dFecHoy, dFecHoy, ADD_MONTHS(dFecHoy,12),
          'SOL', dFecHoy, NULL, NULL, X.SumaAseg_Local, X.SumaAseg_Moneda,
@@ -3066,7 +3067,7 @@ END RENOVAR;
          X.FuenteRecursosPrima, X.IdFormaCobro, X.DiaCobroAutomatico, X.IndManejaFondos,
          X.TipoProrrata, X.IndConvenciones, X.CodTipoNegocio, X.CodPaqComercial,
          X.CodOficina, X.CodCatego, X.Franquiciaingresado -- ARHH 26/08/2024
-         ,X.codobjetoimp, X.codusocfdi);  --MLJS 07/08/2024 SE AGREGAN
+         ,X.codobjetoimp, X.codusocfdi, X.IndPriMin);  --MLJS 07/08/2024 SE AGREGAN  -- ARH 26/12/2024 X.IndPriMin
          EXCEPTION
        WHEN OTHERS THEN
             RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nueva Póliza ' ||SQLERRM);
@@ -3205,7 +3206,7 @@ END RENOVAR;
             IdEndoso, IdTipoSeg, TipoRef, NumRef, PlanCob, Cod_Moneda,
             Deducible_Local, Deducible_Moneda, Cod_Asegurado, IDRAMOREAL)
           VALUES(nIdPoliza, Z.IDetPol, Z.CodEmpresa, Z.CodCia, Z.CodCobert, 'SOL',
-            Z.SumaAseg_Moneda, Z.SumaAseg_Moneda, Z.Prima_Moneda, Z.Prima_Moneda, NULL,
+            Z.SumaAseg_Moneda, Z.SumaAseg_Moneda, Z.Prima_Moneda, Z.Prima_Moneda, Z.Tasa,
             0, Z.IdTipoSeg, Z.TipoRef, Z.NumRef, Z.PlanCob, Z.Cod_Moneda,
             Z.Deducible_Local, Z.Deducible_Moneda, Z.Cod_Asegurado, cINDRAMOREAL);
        END LOOP;
@@ -3468,7 +3469,7 @@ END RENOVAR;
    END REHABILITACION;
    --
    PROCEDURE ANULAR_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFecAnul DATE,
-            cMotivAnul VARCHAR2, cCod_Moneda VARCHAR2, cTipoProceso VARCHAR2) IS
+                           cMotivAnul VARCHAR2, cCod_Moneda VARCHAR2, cTipoProceso VARCHAR2) IS
    dFecAnulReal         POLIZAS.FecAnul%TYPE;
    nTotPrimaPag         FACTURAS.Monto_Fact_Moneda%TYPE;
    nTotPrimaEmit        FACTURAS.Monto_Fact_Moneda%TYPE;
@@ -3513,6 +3514,8 @@ END RENOVAR;
    nDiasAnul            NUMBER(6);
    nCertEmi             NUMBER(10);
    nEndosos             NUMBER(5);
+   CSTSPOLIZA           POLIZAS.STSPOLIZA%TYPE;
+   E_STSPOLIZA          EXCEPTION;
 
    CURSOR PRIMA_Q IS
       SELECT F.StsFact, F.IdFactura, NVL(D.Monto_Det_Moneda,0) Monto_Det_Moneda,
@@ -3650,92 +3653,101 @@ END RENOVAR;
          AND IDetPol       = nIDetPol
          AND IdPoliza      = nIdPoliza
          AND CodCia        = nCodCia;
-   BEGIN
-      SELECT COUNT(*)
-        INTO nEndosos
-        FROM ENDOSOS
-       WHERE StsEndoso = 'SOL'
-         AND IdPoliza  = nIdPoliza
-         AND CodCia    = nCodCia;
+ BEGIN
+    --MLJS 23/01/2025 SE VALIDA SITUACION DE LA PÓLIZA 
+    SELECT P.STSPOLIZA
+    INTO   CSTSPOLIZA
+    FROM   POLIZAS P
+    WHERE  P.IDPOLIZA = nIdPoliza;
+    
+    IF CSTSPOLIZA = 'ANU' THEN
+       RAISE E_STSPOLIZA;
+    END IF;
+       SELECT COUNT(*)
+         INTO nEndosos
+         FROM ENDOSOS
+        WHERE StsEndoso = 'SOL'
+          AND IdPoliza  = nIdPoliza
+          AND CodCia    = nCodCia;
 
-      IF NVL(nEndosos,0) > 0 THEN
-         RAISE_APPLICATION_ERROR(-20225,'Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
-                  ' Tiene Endosos en SOLICITUD, debe Emitirlos o Eliminarlos antes de Anular');
-      END IF;
+       IF NVL(nEndosos,0) > 0 THEN
+          RAISE_APPLICATION_ERROR(-20225,'Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+                   ' Tiene Endosos en SOLICITUD, debe Emitirlos o Eliminarlos antes de Anular');
+       END IF;
 
-      SELECT FecIniVig, FecFinVig, CodCliente, IndFacturaPol,
-        PorcComis, CodPlanPago, TipoPol, NumPolRef, IndFactElectronica
-        INTO dFecIniVig, dFecFinVig, nCodCliente, cIndFacturaPol,
-        nPorcComis, cCodPlanPago, cTipoPol, cNumPolRef, cIndFactElectronica
-        FROM POLIZAS
-       WHERE IdPoliza = nIdPoliza
-         AND CodCia   = nCodCia;
+       SELECT FecIniVig, FecFinVig, CodCliente, IndFacturaPol,
+              PorcComis, CodPlanPago, TipoPol, NumPolRef, IndFactElectronica
+         INTO dFecIniVig, dFecFinVig, nCodCliente, cIndFacturaPol,
+              nPorcComis, cCodPlanPago, cTipoPol, cNumPolRef, cIndFactElectronica
+         FROM POLIZAS
+        WHERE IdPoliza = nIdPoliza
+          AND CodCia   = nCodCia;
 
-      -- Calcula Fecha de Anulación para NO Devolver Prima
-      nDiasAno      := TRUNC(dFecFinVig) - TRUNC(dFecIniVig);
+       -- Calcula Fecha de Anulación para NO Devolver Prima
+       nDiasAno      := TRUNC(dFecFinVig) - TRUNC(dFecIniVig);
 
-      nTotPrimaPag  := 0;
-      nTotPrimaEmit := 0;
-      cFactPoliza   := 'N';
-      cFactEndosos  := 'N';
+       nTotPrimaPag  := 0;
+       nTotPrimaEmit := 0;
+       cFactPoliza   := 'N';
+       cFactEndosos  := 'N';
 
-      FOR W IN PRIMA_Q LOOP
-         nTotPrimaEmit    := NVL(nTotPrimaEmit,0) + W.Monto_Det_Moneda;
-         IF W.StsFact IN ('PAG','ABO') THEN
-       nTotPrimaPag  := NVL(nTotPrimaPag,0) + (W.Monto_Det_Moneda - W.Saldo_Det_Moneda);
-         ELSIF W.IdEndoso = 0 AND W.FecVenc <= dFecAnul THEN
-       cFactPoliza   := 'S';
-         ELSIF W.IdEndoso != 0 AND W.FecVenc <= dFecAnul THEN
-       cFactEndosos  := 'S';
-         END IF;
-      END LOOP;
+       FOR W IN PRIMA_Q LOOP
+          nTotPrimaEmit    := NVL(nTotPrimaEmit,0) + W.Monto_Det_Moneda;
+          IF W.StsFact IN ('PAG','ABO') THEN
+             nTotPrimaPag  := NVL(nTotPrimaPag,0) + (W.Monto_Det_Moneda - W.Saldo_Det_Moneda);
+          ELSIF W.IdEndoso = 0 AND W.FecVenc <= dFecAnul THEN
+             cFactPoliza   := 'S';
+          ELSIF W.IdEndoso != 0 AND W.FecVenc <= dFecAnul THEN
+             cFactEndosos  := 'S';
+          END IF;
+       END LOOP;
 
-      IF NVL(nTotPrimaEmit,0) != 0 THEN
-         nDiasPagados   := CEIL(nTotPrimaPag / (nTotPrimaEmit / nDiasAno));
-      ELSE
-         nDiasPagados   := 0;
-      END IF;
-      IF NVL(nDiasPagados,0) != 0 AND cTipoProceso != 'POLIZA' THEN
-         dFecAnulReal   := dFecIniVig + nDiasPagados;
-      ELSE
-         dFecAnulReal   := dFecAnul;
-      END IF;
-      nDiasAnul      := nDiasPagados;
-      nFactProrrata  := OC_GENERALES.PRORRATA(dFecIniVig, dFecFinVig, dFecAnulReal);
-      nPrimaCanc     := nTotPrimaEmit * nFactProrrata;
+       IF NVL(nTotPrimaEmit,0) != 0 THEN
+          nDiasPagados   := CEIL(nTotPrimaPag / (nTotPrimaEmit / nDiasAno));
+       ELSE
+          nDiasPagados   := 0;
+       END IF;
+       IF NVL(nDiasPagados,0) != 0 AND cTipoProceso != 'POLIZA' THEN
+          dFecAnulReal   := dFecIniVig + nDiasPagados;
+       ELSE
+          dFecAnulReal   := dFecAnul;
+       END IF;
+       nDiasAnul      := nDiasPagados;
+       nFactProrrata  := OC_GENERALES.PRORRATA(dFecIniVig, dFecFinVig, dFecAnulReal);
+       nPrimaCanc     := nTotPrimaEmit * nFactProrrata;
 
-      cAnulaPoliza   := 'N';
-      cAnulaSubgrupo := 'N';
-      cAnulaEndoso   := 'N';
+       cAnulaPoliza   := 'N';
+       cAnulaSubgrupo := 'N';
+       cAnulaEndoso   := 'N';
 
-      IF ((NVL(nTotPrimaPag,0) = 0 OR cIndFacturaPol = 'S') AND cFactPoliza = 'S') OR cTipoProceso = 'POLIZA' THEN
-         cAnulaPoliza   := 'S';
-      ELSIF cIndFacturaPol = 'N' AND cFactPoliza = 'S' THEN
-         SELECT COUNT(DISTINCT Cod_Asegurado)
-              INTO nCantAsegSubgrupo
-              FROM DETALLE_POLIZA
-                  WHERE CodCia     = nCodCia
-               AND IdPoliza   = nIdPoliza
-               AND StsDetalle = 'EMI';
-         IF nCantAsegSubgrupo = 1 THEN
-               cAnulaPoliza   := 'S';
-         ELSE
-               SELECT MIN(IdEndoso)
-                 INTO nIdEndoso
-                 FROM FACTURAS
-                WHERE IdPoliza  = nIdPoliza
-                  AND CodCia    = nCodCia
-                  AND IdFactura IN (SELECT MIN(IdFactura)
-                                   FROM FACTURAS
-                                       WHERE IdPoliza  = nIdPoliza
-                                    AND CodCia    = nCodCia
-                                    AND FecVenc  <= dFecAnul
-                                    AND StsFact   = 'EMI');
-               IF NVL(nIdEndoso,0) = 0 THEN
-                  cAnulaSubgrupo := 'S';
-               ELSE
-                  cAnulaEndoso   := 'S';
-               END IF;
+       IF ((NVL(nTotPrimaPag,0) = 0 OR cIndFacturaPol = 'S') AND cFactPoliza = 'S') OR cTipoProceso = 'POLIZA' THEN
+          cAnulaPoliza   := 'S';
+       ELSIF cIndFacturaPol = 'N' AND cFactPoliza = 'S' THEN
+          SELECT COUNT(DISTINCT Cod_Asegurado)
+            INTO nCantAsegSubgrupo
+            FROM DETALLE_POLIZA
+           WHERE CodCia     = nCodCia
+             AND IdPoliza   = nIdPoliza
+             AND StsDetalle = 'EMI';
+          IF nCantAsegSubgrupo = 1 THEN
+             cAnulaPoliza   := 'S';
+          ELSE
+             SELECT MIN(IdEndoso)
+               INTO nIdEndoso
+               FROM FACTURAS
+              WHERE IdPoliza  = nIdPoliza
+                AND CodCia    = nCodCia
+                AND IdFactura IN (SELECT MIN(IdFactura)
+                                    FROM FACTURAS
+                                   WHERE IdPoliza  = nIdPoliza
+                                     AND CodCia    = nCodCia
+                                     AND FecVenc  <= dFecAnul
+                                     AND StsFact   = 'EMI');
+             IF NVL(nIdEndoso,0) = 0 THEN
+                cAnulaSubgrupo := 'S';
+             ELSE
+                cAnulaEndoso   := 'S';
+             END IF;
          END IF;
       ELSIF cFactEndosos = 'S' THEN
          cAnulaEndoso   := 'S';
@@ -3974,6 +3986,8 @@ END RENOVAR;
       END IF;
 
    EXCEPTION
+      WHEN E_STSPOLIZA THEN
+         RAISE_APPLICATION_ERROR(-20225,'La Póliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ya está anulada');
       WHEN OTHERS THEN
          RAISE_APPLICATION_ERROR(-20225,'Error al Anular Póliza: '||TRIM(TO_CHAR(nIdPoliza))|| ' ' ||SQLERRM);
    END ANULAR_POLIZA;
