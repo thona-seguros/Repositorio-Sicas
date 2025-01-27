@@ -332,7 +332,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
    nIdFormaCobro               POLIZAS.IdFormaCobro%TYPE;
    NUNPRICIPAL                 VARCHAR2(2);      --INCIAGE
    cCobertura                  VARCHAR2(10);
-
+   
    nCodAsegurado               ASEGURADO.COD_ASEGURADO%TYPE;  --MLJS 14/11/2024
 
    CURSOR CPTO_PRIMAS_Q IS
@@ -2781,11 +2781,11 @@ END RENOVAR;
                   AND CodCia    = nCodCia)
        AND FecEnvioSC IS NOT NULL;
       END;
-
+      
         SELECT USER
         INTO   cUsuario
         FROM   DUAL;
-
+        
         INSERT INTO TMP_REVISION VALUES (nIdPoliza, SYSDATE, cUsuario);
 
       IF NVL(nEndosos,0) = 0 AND NVL(nFacturas,0) = 0 AND NVL(nSiniestros,0) = 0 AND
@@ -3469,7 +3469,7 @@ END RENOVAR;
    END REHABILITACION;
    --
    PROCEDURE ANULAR_POLIZA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, dFecAnul DATE,
-                           cMotivAnul VARCHAR2, cCod_Moneda VARCHAR2, cTipoProceso VARCHAR2) IS
+            cMotivAnul VARCHAR2, cCod_Moneda VARCHAR2, cTipoProceso VARCHAR2) IS
    dFecAnulReal         POLIZAS.FecAnul%TYPE;
    nTotPrimaPag         FACTURAS.Monto_Fact_Moneda%TYPE;
    nTotPrimaEmit        FACTURAS.Monto_Fact_Moneda%TYPE;
@@ -3653,7 +3653,7 @@ END RENOVAR;
          AND IDetPol       = nIDetPol
          AND IdPoliza      = nIdPoliza
          AND CodCia        = nCodCia;
- BEGIN
+   BEGIN
     --MLJS 23/01/2025 SE VALIDA SITUACION DE LA PÓLIZA 
     SELECT P.STSPOLIZA
     INTO   CSTSPOLIZA
@@ -3663,91 +3663,91 @@ END RENOVAR;
     IF CSTSPOLIZA = 'ANU' THEN
        RAISE E_STSPOLIZA;
     END IF;
-       SELECT COUNT(*)
-         INTO nEndosos
-         FROM ENDOSOS
-        WHERE StsEndoso = 'SOL'
-          AND IdPoliza  = nIdPoliza
-          AND CodCia    = nCodCia;
+      SELECT COUNT(*)
+        INTO nEndosos
+        FROM ENDOSOS
+       WHERE StsEndoso = 'SOL'
+         AND IdPoliza  = nIdPoliza
+         AND CodCia    = nCodCia;
 
-       IF NVL(nEndosos,0) > 0 THEN
-          RAISE_APPLICATION_ERROR(-20225,'Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
-                   ' Tiene Endosos en SOLICITUD, debe Emitirlos o Eliminarlos antes de Anular');
-       END IF;
+      IF NVL(nEndosos,0) > 0 THEN
+         RAISE_APPLICATION_ERROR(-20225,'Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) ||
+                  ' Tiene Endosos en SOLICITUD, debe Emitirlos o Eliminarlos antes de Anular');
+      END IF;
 
-       SELECT FecIniVig, FecFinVig, CodCliente, IndFacturaPol,
-              PorcComis, CodPlanPago, TipoPol, NumPolRef, IndFactElectronica
-         INTO dFecIniVig, dFecFinVig, nCodCliente, cIndFacturaPol,
-              nPorcComis, cCodPlanPago, cTipoPol, cNumPolRef, cIndFactElectronica
-         FROM POLIZAS
-        WHERE IdPoliza = nIdPoliza
-          AND CodCia   = nCodCia;
+      SELECT FecIniVig, FecFinVig, CodCliente, IndFacturaPol,
+        PorcComis, CodPlanPago, TipoPol, NumPolRef, IndFactElectronica
+        INTO dFecIniVig, dFecFinVig, nCodCliente, cIndFacturaPol,
+        nPorcComis, cCodPlanPago, cTipoPol, cNumPolRef, cIndFactElectronica
+        FROM POLIZAS
+       WHERE IdPoliza = nIdPoliza
+         AND CodCia   = nCodCia;
 
-       -- Calcula Fecha de Anulación para NO Devolver Prima
-       nDiasAno      := TRUNC(dFecFinVig) - TRUNC(dFecIniVig);
+      -- Calcula Fecha de Anulación para NO Devolver Prima
+      nDiasAno      := TRUNC(dFecFinVig) - TRUNC(dFecIniVig);
 
-       nTotPrimaPag  := 0;
-       nTotPrimaEmit := 0;
-       cFactPoliza   := 'N';
-       cFactEndosos  := 'N';
+      nTotPrimaPag  := 0;
+      nTotPrimaEmit := 0;
+      cFactPoliza   := 'N';
+      cFactEndosos  := 'N';
 
-       FOR W IN PRIMA_Q LOOP
-          nTotPrimaEmit    := NVL(nTotPrimaEmit,0) + W.Monto_Det_Moneda;
-          IF W.StsFact IN ('PAG','ABO') THEN
-             nTotPrimaPag  := NVL(nTotPrimaPag,0) + (W.Monto_Det_Moneda - W.Saldo_Det_Moneda);
-          ELSIF W.IdEndoso = 0 AND W.FecVenc <= dFecAnul THEN
-             cFactPoliza   := 'S';
-          ELSIF W.IdEndoso != 0 AND W.FecVenc <= dFecAnul THEN
-             cFactEndosos  := 'S';
-          END IF;
-       END LOOP;
+      FOR W IN PRIMA_Q LOOP
+         nTotPrimaEmit    := NVL(nTotPrimaEmit,0) + W.Monto_Det_Moneda;
+         IF W.StsFact IN ('PAG','ABO') THEN
+       nTotPrimaPag  := NVL(nTotPrimaPag,0) + (W.Monto_Det_Moneda - W.Saldo_Det_Moneda);
+         ELSIF W.IdEndoso = 0 AND W.FecVenc <= dFecAnul THEN
+       cFactPoliza   := 'S';
+         ELSIF W.IdEndoso != 0 AND W.FecVenc <= dFecAnul THEN
+       cFactEndosos  := 'S';
+         END IF;
+      END LOOP;
 
-       IF NVL(nTotPrimaEmit,0) != 0 THEN
-          nDiasPagados   := CEIL(nTotPrimaPag / (nTotPrimaEmit / nDiasAno));
-       ELSE
-          nDiasPagados   := 0;
-       END IF;
-       IF NVL(nDiasPagados,0) != 0 AND cTipoProceso != 'POLIZA' THEN
-          dFecAnulReal   := dFecIniVig + nDiasPagados;
-       ELSE
-          dFecAnulReal   := dFecAnul;
-       END IF;
-       nDiasAnul      := nDiasPagados;
-       nFactProrrata  := OC_GENERALES.PRORRATA(dFecIniVig, dFecFinVig, dFecAnulReal);
-       nPrimaCanc     := nTotPrimaEmit * nFactProrrata;
+      IF NVL(nTotPrimaEmit,0) != 0 THEN
+         nDiasPagados   := CEIL(nTotPrimaPag / (nTotPrimaEmit / nDiasAno));
+      ELSE
+         nDiasPagados   := 0;
+      END IF;
+      IF NVL(nDiasPagados,0) != 0 AND cTipoProceso != 'POLIZA' THEN
+         dFecAnulReal   := dFecIniVig + nDiasPagados;
+      ELSE
+         dFecAnulReal   := dFecAnul;
+      END IF;
+      nDiasAnul      := nDiasPagados;
+      nFactProrrata  := OC_GENERALES.PRORRATA(dFecIniVig, dFecFinVig, dFecAnulReal);
+      nPrimaCanc     := nTotPrimaEmit * nFactProrrata;
 
-       cAnulaPoliza   := 'N';
-       cAnulaSubgrupo := 'N';
-       cAnulaEndoso   := 'N';
+      cAnulaPoliza   := 'N';
+      cAnulaSubgrupo := 'N';
+      cAnulaEndoso   := 'N';
 
-       IF ((NVL(nTotPrimaPag,0) = 0 OR cIndFacturaPol = 'S') AND cFactPoliza = 'S') OR cTipoProceso = 'POLIZA' THEN
-          cAnulaPoliza   := 'S';
-       ELSIF cIndFacturaPol = 'N' AND cFactPoliza = 'S' THEN
-          SELECT COUNT(DISTINCT Cod_Asegurado)
-            INTO nCantAsegSubgrupo
-            FROM DETALLE_POLIZA
-           WHERE CodCia     = nCodCia
-             AND IdPoliza   = nIdPoliza
-             AND StsDetalle = 'EMI';
-          IF nCantAsegSubgrupo = 1 THEN
-             cAnulaPoliza   := 'S';
-          ELSE
-             SELECT MIN(IdEndoso)
-               INTO nIdEndoso
-               FROM FACTURAS
-              WHERE IdPoliza  = nIdPoliza
-                AND CodCia    = nCodCia
-                AND IdFactura IN (SELECT MIN(IdFactura)
-                                    FROM FACTURAS
-                                   WHERE IdPoliza  = nIdPoliza
-                                     AND CodCia    = nCodCia
-                                     AND FecVenc  <= dFecAnul
-                                     AND StsFact   = 'EMI');
-             IF NVL(nIdEndoso,0) = 0 THEN
-                cAnulaSubgrupo := 'S';
-             ELSE
-                cAnulaEndoso   := 'S';
-             END IF;
+      IF ((NVL(nTotPrimaPag,0) = 0 OR cIndFacturaPol = 'S') AND cFactPoliza = 'S') OR cTipoProceso = 'POLIZA' THEN
+         cAnulaPoliza   := 'S';
+      ELSIF cIndFacturaPol = 'N' AND cFactPoliza = 'S' THEN
+         SELECT COUNT(DISTINCT Cod_Asegurado)
+              INTO nCantAsegSubgrupo
+              FROM DETALLE_POLIZA
+                  WHERE CodCia     = nCodCia
+               AND IdPoliza   = nIdPoliza
+               AND StsDetalle = 'EMI';
+         IF nCantAsegSubgrupo = 1 THEN
+               cAnulaPoliza   := 'S';
+         ELSE
+               SELECT MIN(IdEndoso)
+                 INTO nIdEndoso
+                 FROM FACTURAS
+                WHERE IdPoliza  = nIdPoliza
+                  AND CodCia    = nCodCia
+                  AND IdFactura IN (SELECT MIN(IdFactura)
+                                   FROM FACTURAS
+                                       WHERE IdPoliza  = nIdPoliza
+                                    AND CodCia    = nCodCia
+                                    AND FecVenc  <= dFecAnul
+                                    AND StsFact   = 'EMI');
+               IF NVL(nIdEndoso,0) = 0 THEN
+                  cAnulaSubgrupo := 'S';
+               ELSE
+                  cAnulaEndoso   := 'S';
+               END IF;
          END IF;
       ELSIF cFactEndosos = 'S' THEN
          cAnulaEndoso   := 'S';

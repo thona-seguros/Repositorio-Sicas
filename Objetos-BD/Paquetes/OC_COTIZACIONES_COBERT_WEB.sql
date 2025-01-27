@@ -1,4 +1,4 @@
-create or replace PACKAGE OC_COTIZACIONES_COBERT_WEB IS
+create or replace PACKAGE          OC_COTIZACIONES_COBERT_WEB IS
 ---- SE AGREGO EL CAMPO nFranquiciaIngresado EN LAS TABLAS COTIZACIONES_COBERT_WEB Y COTIZACIONES_COBERT_WEB    ARH 26/08/2024 
 ---- SE AGREGO EN LOS PARAMETROS EL CAMPO FRANQUICIAINGRESADO EN EL LLAMADO GT_COTIZACIONES_COBERTURAS.CARGAR_COBERTURAS
 ---- SE AGREGO UN REPLACE EN SERVICIO_XML ARH 26082024
@@ -574,7 +574,14 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
         WHERE CodCia        = nCodCia
           AND CodEmpresa    = nCodEmpresa
           AND IdCotizacion  = nIdCotizacion;
-
+      --
+      --MASP Regla de Prima Mínima Anual
+      CURSOR Subgrupos_PriMin IS
+             SELECT IDetCotizacion
+             FROM   COTIZACIONES_DETALLE
+             WHERE  CodCia       = nCodCia
+               AND  CodEmpresa   = nCodEmpresa
+               AND  IdCotizacion = nIdCotizacion;
     BEGIN
        EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_DATE_FORMAT = ''DD/MM/YYYY''';
        --
@@ -758,12 +765,14 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
        END LOOP;
        -- 
        FOR x IN Cotizacion_Coberturas LOOP --- ACTUALIZA FACTOR DE AJUSTE PO ANTES DE CARGAR COBERTURAS
+
           IF OC_FACTOR_ESCALA_PO.EXISTE_FACTOR_ESCALA(X.CodCia, X.CodEmpresa, cIdTipoSeg, cPlanCob , X.CodCobertWeb) = 'S' THEN
              cEscala := OC_FACTOR_ESCALA_PO.ESCALA(X.CodCia, X.CodEmpresa, cIdTipoSeg, cPlanCob , X.CodCobertWeb);
              IF cEscala != 'X' THEN 
                 nFactorAjuste := OC_FACTOR_ESCALA_PO.FACTOR_ESCALA(X.CodCia, X.CodEmpresa, cIdTipoSeg, cPlanCob , X.CodCobertWeb , cEscala);
              END IF;
           END IF;
+
           IF nFactorAjuste != 1 THEN 
              SELECT XMLROOT(XMLELEMENT("DATA",
                          XMLELEMENT("FactorAjuste",nFactorAjuste)),
@@ -822,8 +831,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                                                              NVL(x.PrimaPromedio,0), NVL(x.FranquiciaIngresado,0), 
                                                              NVL(x.MontoDiario,0),  NVL(x.Dias_cal,0)); ---ARH26082024   
              END LOOP;                                                
-             GT_COTIZACIONES_ASEG.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion,  
-                                                     I.IDetCotizacion, I.IdAsegurado);
+             GT_COTIZACIONES_ASEG.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion, I.IDetCotizacion, I.IdAsegurado);
              GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion, I.IDetCotizacion);  
           END LOOP;   
        END IF;      
@@ -844,6 +852,16 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
 
        GENERALES_PLATAFORMA_DIGITAL.RECALCULAR_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, cIdTipoSeg, cPlanCob, 'N', 'N', 'S');
 
+       --MASP Regla de Prima Mínima Anual
+       OC_PRIMA_MINIMA_ANUAL.VALIDA_PRIMAS_COTIZA( nCodCia, nCodEmpresa, nIdCotizacion );
+       --
+       FOR x IN Subgrupos_PriMin LOOP
+           GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(nCodCia, nCodEmpresa, nIdCotizacion, x.IDetCotizacion);
+	    END LOOP;
+       --
+       GT_COTIZACIONES.ACTUALIZAR_VALORES(nCodCia, nCodEmpresa, nIdCotizacion);
+       --
+       
        BEGIN
           SELECT PrimaCotLocal, PrimaCotMoneda--, GastosExpedicion
             INTO nPrimaCotLocal, nPrimaCotMoneda--, nGastosExpedicion
@@ -1031,3 +1049,4 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
     END AGREGA_REGISTROS;
     --    
 END OC_COTIZACIONES_COBERT_WEB;
+/

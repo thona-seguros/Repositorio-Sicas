@@ -1,4 +1,4 @@
-create or replace PACKAGE OC_SOLICITUD_EMISION IS
+CREATE OR REPLACE PACKAGE OC_SOLICITUD_EMISION IS
 
 FUNCTION NUMERO_SOLICITUD(nCodCia NUMBER, nCodEmpresa NUMBER) RETURN NUMBER;
 
@@ -45,9 +45,9 @@ PROCEDURE DATOS_COTIZACION (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER
 PROCEDURE CREA_POLIZA_BASE (nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, cNumPolUnicoOrigen VARCHAR2);
 
 END OC_SOLICITUD_EMISION;
-
 /
-create or replace PACKAGE BODY OC_SOLICITUD_EMISION IS
+
+CREATE OR REPLACE PACKAGE BODY OC_SOLICITUD_EMISION IS
 --
 -- BITACORA DE CAMBIOS
 -- SE AGREGO LA FUNCIONALIDAD PARA RENOVACION DE CLAUSULAS 10/08/2017  CLAUREN
@@ -193,7 +193,7 @@ BEGIN
       RAISE_APPLICATION_ERROR(-20225,'Debe Ingresar SubGrupos a la Solicitud No. : '||TRIM(TO_CHAR(nIdSolicitud)));
    ELSIF OC_PLAN_COBERTURAS.VALIDA_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, dFecIniVig) = 'N' THEN
       IF OC_PROCESO_AUTORIZA_USUARIO.PROCESO_AUTORIZADO(nCodCia, '9145', USER, 'NOAPLI',1) = 'N' THEN
-        RAISE_APPLICATION_ERROR(-20225,'La Configuraci贸n del Producto S贸lo Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' D铆as de Retroactividad Por Favor Valide la Solicitud con su Supervisor'||TRIM(TO_CHAR(nIdSolicitud)));
+        RAISE_APPLICATION_ERROR(-20225,'La Configuraci髇 del Producto S髄o Tiene '||OC_PLAN_COBERTURAS.NUMERO_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob)||' D韆s de Retroactividad Por Favor Valide la Solicitud con su Supervisor'||TRIM(TO_CHAR(nIdSolicitud)));
       END IF;
    ELSE
       FOR W IN DET_Q LOOP
@@ -214,9 +214,9 @@ BEGIN
       END LOOP;
       IF OC_SOLICITUD_EMISION.ASEGURADO_MODELO(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
          IF NVL(nTotalPrimas,0) > OC_SOLICITUD_EMISION.TOTAL_PRIMA_NETA(nCodCia, nCodEmpresa, nIdSolicitud) THEN
-            RAISE_APPLICATION_ERROR(-20225,'Distribuci贸n de Coberturas y Asistencias es Mayor a la Prima Neta de P贸liza');
+            RAISE_APPLICATION_ERROR(-20225,'Distribuci髇 de Coberturas y Asistencias es Mayor a la Prima Neta de P髄iza');
          ELSIF NVL(nTotalPrimas,0) < OC_SOLICITUD_EMISION.TOTAL_PRIMA_NETA(nCodCia, nCodEmpresa, nIdSolicitud) THEN
-            RAISE_APPLICATION_ERROR(-20225,'Distribuci贸n de Coberturas y Asistencias es Menor a la Prima Neta de P贸liza');
+            RAISE_APPLICATION_ERROR(-20225,'Distribuci髇 de Coberturas y Asistencias es Menor a la Prima Neta de P髄iza');
          END IF;
       ELSIF OC_SOLICITUD_DETALLE_ASEG.TIENE_ASEGURADOS(nCodCia, nCodEmpresa, nIdSolicitud) = 'N' THEN
          RAISE_APPLICATION_ERROR(-20225,'No ha Cargado el Listado de Asegurados a la Soicitud');
@@ -231,7 +231,7 @@ BEGIN
      END IF;
      --
       IF OC_SOLICITUD_AGENTES_DISTRIB.TIENE_DISTRIBUCION(nCodCia, nCodEmpresa, nIdSolicitud) = 'N' THEN
-         RAISE_APPLICATION_ERROR(-20225,'No Ha Realizado la Distribuci贸n de Comisiones a la Solicitud No. : '||TRIM(TO_CHAR(nIdSolicitud)));
+         RAISE_APPLICATION_ERROR(-20225,'No Ha Realizado la Distribuci髇 de Comisiones a la Solicitud No. : '||TRIM(TO_CHAR(nIdSolicitud)));
       ELSE
          RETURN('S');
       END IF;
@@ -325,6 +325,9 @@ CURSOR REGLA_SA_Q IS
       AND IdSolicitud   = nIdSolicitud
       AND IDetSol       = nIDetSol; 
 BEGIN
+   --Valida si aplica la regla de Prima M韓ima Anual y aplica el recalculo correspondiente
+   OC_PRIMA_MINIMA_ANUAL.VALIDA_PRIMAS_SOL( nCodCia, nCodEmpresa, nIdSolicitud );
+   --
    FOR X IN SOL_Q LOOP
         IF X.IdPoliza IS NULL THEN
           IF OC_SOLICITUD_EMISION.VALIDAR(nCodCia, nCodEmpresa, nIdSolicitud) = 'S' THEN
@@ -374,7 +377,7 @@ BEGIN
                    AND IdSolicitud = nIdSolicitud;
              EXCEPTION
                 WHEN DUP_VAL_ON_INDEX THEN
-                   RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P贸liza No. : '|| cNumPolUnico);
+                   RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P髄iza No. : '|| cNumPolUnico);
              END;
 
              BEGIN
@@ -393,7 +396,7 @@ BEGIN
                    AND IdSolicitud = nIdSolicitud;
              EXCEPTION
                 WHEN DUP_VAL_ON_INDEX THEN
-                   RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci贸n de Agentes en P贸liza No. : '|| cNumPolUnico);
+                   RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci髇 de Agentes en P髄iza No. : '|| cNumPolUnico);
              END;
 
              --- OBTENER DATOS DE COTIZACION PARA LA POLIZA
@@ -462,7 +465,7 @@ BEGIN
                       AND IdSolicitud = nIdSolicitud;
                 EXCEPTION
                    WHEN DUP_VAL_ON_INDEX THEN
-                      RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P贸liza No. : '|| cNumPolUnico ||
+                      RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P髄iza No. : '|| cNumPolUnico ||
                                               ' y SubGrupo No. ' || nIDetPol);
                 END;
 
@@ -480,7 +483,7 @@ BEGIN
                       AND IdSolicitud = nIdSolicitud;
                 EXCEPTION
                    WHEN DUP_VAL_ON_INDEX THEN
-                      RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci贸n de Agentes en P贸liza No. : '|| cNumPolUnico ||
+                      RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci髇 de Agentes en P髄iza No. : '|| cNumPolUnico ||
                                               ' y SubGrupo No. ' || nIDetPol);
                 END;
 
@@ -506,7 +509,7 @@ BEGIN
                       END IF;
                       IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(Y.TipoDocIdentificacion, Y.NumDocIdentificacion,
                                                                       nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
-                         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci贸n de Coberturas');
+                         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci髇 de Coberturas');
                       END IF;
 
                       nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
@@ -611,7 +614,7 @@ BEGIN
                  END IF;*/
                  /*IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(Y.TipoDocIdentificacion, Y.NumDocIdentificacion,
                                                      nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
-                   RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci贸n de Coberturas');
+                   RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci髇 de Coberturas');
                  END IF;*/
 
                  --nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);
@@ -753,11 +756,11 @@ BEGIN
    cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Solicitud</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status Solicitud</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Status</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Cotizaci贸n</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Cotizaci髇</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Contratante</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Asegurado</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P贸liza</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status P贸liza</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P髄iza</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status P髄iza</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Emision</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vigencia</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vigencia</font></th>' ||
@@ -766,10 +769,10 @@ BEGIN
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tasa de Cambio</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Plan de Pagos</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Administraci贸n</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Administraci髇</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Agrupador</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Usuario</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci贸n Regional</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci髇 Regional</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Folio Portal</font></th>';
    OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
@@ -856,13 +859,13 @@ BEGIN
          AND CodCia    = nCodCia;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20225,'NO Existe P贸liza No. Consecutivo : '|| nIdPoliza);
+         RAISE_APPLICATION_ERROR(-20225,'NO Existe P髄iza No. Consecutivo : '|| nIdPoliza);
    END;
 
    IF cStsPoliza = 'ANU' THEN
-      RAISE_APPLICATION_ERROR(-20225,'P贸liza No. Consecutivo : '|| nIdPoliza || ' Ya Fue Anulada. No Puede Revertir la Solicitud');
+      RAISE_APPLICATION_ERROR(-20225,'P髄iza No. Consecutivo : '|| nIdPoliza || ' Ya Fue Anulada. No Puede Revertir la Solicitud');
    ELSIF cStsPoliza = 'REN' THEN
-      RAISE_APPLICATION_ERROR(-20225,'P贸liza No. Consecutivo : '|| nIdPoliza || ' Ya Fue Renovada. No Puede Revertir la Solicitud');
+      RAISE_APPLICATION_ERROR(-20225,'P髄iza No. Consecutivo : '|| nIdPoliza || ' Ya Fue Renovada. No Puede Revertir la Solicitud');
    ELSIF cStsPoliza = 'EMI' THEN
       OC_POLIZAS.REVERTIR_EMISION(nCodCia, nCodEmpresa, nIdPoliza, cTipoPol);
    END IF;
@@ -1353,7 +1356,7 @@ BEGIN
             AND IdSolicitud = nIdSolicitud;
          EXCEPTION
          WHEN DUP_VAL_ON_INDEX THEN
-            RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P贸liza No. : '|| cNumPolUnico);
+            RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P髄iza No. : '|| cNumPolUnico);
          END;
 
          BEGIN
@@ -1372,7 +1375,7 @@ BEGIN
                AND IdSolicitud = nIdSolicitud;
          EXCEPTION
             WHEN DUP_VAL_ON_INDEX THEN
-               RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci贸n de Agentes en P贸liza No. : '|| cNumPolUnico);
+               RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci髇 de Agentes en P髄iza No. : '|| cNumPolUnico);
          END;
 
            --- OBTENER DATOS DE COTIZACION PARA LA POLIZA
@@ -1441,7 +1444,7 @@ BEGIN
                  AND IdSolicitud = nIdSolicitud;
             EXCEPTION
                WHEN DUP_VAL_ON_INDEX THEN
-                 RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P贸liza No. : '|| cNumPolUnico ||
+                 RAISE_APPLICATION_ERROR(-20225,'Ya existen Agentes Cargados en P髄iza No. : '|| cNumPolUnico ||
                                    ' y SubGrupo No. ' || nIDetPol);
             END;
 
@@ -1459,7 +1462,7 @@ BEGIN
                  AND IdSolicitud = nIdSolicitud;
             EXCEPTION
                WHEN DUP_VAL_ON_INDEX THEN
-                 RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci贸n de Agentes en P贸liza No. : '|| cNumPolUnico ||
+                 RAISE_APPLICATION_ERROR(-20225,'Ya existe Distribuci髇 de Agentes en P髄iza No. : '|| cNumPolUnico ||
                                    ' y SubGrupo No. ' || nIDetPol);
             END;
 
@@ -1485,7 +1488,7 @@ BEGIN
                  END IF;
                  IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(Y.TipoDocIdentificacion, Y.NumDocIdentificacion,
                                                      nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
-                   RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci贸n de Coberturas');
+                   RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado No. ' || Y.IdAsegurado || ' Fuera del Rango de Aceptaci髇 de Coberturas');
                  END IF;
 
                  nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, Y.TipoDocIdentificacion, Y.NumDocIdentificacion);

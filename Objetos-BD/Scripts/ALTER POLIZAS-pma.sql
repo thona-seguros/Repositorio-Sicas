@@ -1,0 +1,5 @@
+ALTER TABLE SICAS_OC.POLIZAS ADD
+   ( INDPRIMIN  VARCHAR2(1)
+   );
+
+COMMENT ON COLUMN SICAS_OC.POLIZAS.INDPRIMIN IS 'Indicador de si Aplica Regla de Prima Anual Mínima S/N';
