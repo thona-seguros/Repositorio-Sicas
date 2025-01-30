@@ -1,16 +1,11 @@
-CREATE OR REPLACE PACKAGE OC_FILIALES  IS
+create or replace PACKAGE OC_FILIALES  IS
    FUNCTION NOMBRE_FILIAL (nCodCia NUMBER, cCodGrupoEc VARCHAR2, cCodFilial VARCHAR2) RETURN VARCHAR2;
    FUNCTION NOMBRE_ADICIONAL(nCodCia NUMBER, cCodGrupoEc VARCHAR2, cCodFilial VARCHAR2) RETURN VARCHAR2;
    PROCEDURE VALIDA_CREA(nCodCia NUMBER, cCodGrupoEc VARCHAR2, cTipo_Doc_Identificacion VARCHAR2, 
                          cNum_Doc_Identificacion VARCHAR2, cCodFilial VARCHAR2, cDescripcion VARCHAR2);
 END OC_FILIALES;
- 
- 
- 
- 
 /
-
-CREATE OR REPLACE PACKAGE BODY OC_FILIALES IS
+create or replace PACKAGE BODY OC_FILIALES IS
 FUNCTION NOMBRE_FILIAL (nCodCia NUMBER, cCodGrupoEc VARCHAR2, cCodFilial VARCHAR2) RETURN  VARCHAR2 IS
 cNombre VARCHAR2(200);
 BEGIN
@@ -59,9 +54,9 @@ BEGIN
         FROM FILIALES
        WHERE CodCia                  = nCodCia
          AND CodGrupoEc              = cCodGrupoEc
-         AND CodFilial               = cCodFilial
-         AND Tipo_Doc_Identificacion = cTipo_Doc_Identificacion
-         AND Num_Doc_Identificacion  = cNum_Doc_Identificacion;
+         AND CodFilial               = cCodFilial;
+         --AND Tipo_Doc_Identificacion = cTipo_Doc_Identificacion --Se quita validación para revisar llave primaria FILIALES Y FILIALES_CATEGORIAS JJG 29/01/2025
+         --AND Num_Doc_Identificacion  = cNum_Doc_Identificacion;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          INSERT INTO FILIALES
@@ -70,7 +65,7 @@ BEGIN
          VALUES (cCodFilial, nCodCia, cCodGrupoEc, cTipo_Doc_Identificacion, cNum_Doc_Identificacion,
                  cDescripcion, 'ACTIVO', NULL);
       WHEN TOO_MANY_ROWS THEN
-         RAISE_APPLICATION_ERROR(-20225,'Existe Varias Filiales o SubGrupos para Tipo Doc. de Identificaci�n : ' || 
+         RAISE_APPLICATION_ERROR(-20225,'Existe Varias Filiales o SubGrupos para Tipo Doc. de Identificación : ' || 
                                  cTipo_Doc_Identificacion || ' No. ' || cNum_Doc_Identificacion);
    END;
 END VALIDA_CREA;
