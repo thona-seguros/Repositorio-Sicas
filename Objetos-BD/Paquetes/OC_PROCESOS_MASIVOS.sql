@@ -1,7 +1,7 @@
-create or replace PACKAGE SICAS_OC.OC_PROCESOS_MASIVOS IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOS_MASIVOS IS
 -- MODIFICACION
--- 01/10/2019 Se incluyen validaciones para proveedores sat (Ya incluye cambios de CP√©rez)        -- JMMD SAT y PLD 20200406
--- 24/06/2020 Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CP√©rez) -- JMMD SAT y PLD 20200624
+-- 01/10/2019 Se incluyen validaciones para proveedores sat (Ya incluye cambios de CPÈrez)        -- JMMD SAT y PLD 20200406
+-- 24/06/2020 Se incluyen nuevas validaciones para proveedores sat (Ya incluye cambios de CPÈrez) -- JMMD SAT y PLD 20200624
 -- 16/01/2023 SE AGREGA RUTINA PARA EL MANEJO DE LA ACTUALIZACION DE ASEGURADOS                   -- JICO ASEGVAL 20220410
 -- 2023/03/07 SE AGREGO CAMPO DE BENEFICIARIO A INSERT  ALERTA
 -- 05/07/2024 SE AGREGA RUTINA PARA INSERTA_COBRANZA_MASIVA
@@ -78,24 +78,22 @@ PROCEDURE RECUPERA_LOG_CARGA(cNomArchCarga  VARCHAR2
 PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia            NUMBER
                                  , nCodEmpresa         NUMBER
                                  , nIdPoliza           NUMBER
-                                 , nIDetPol            NUMBER 
+                                 , nIDetPol            NUMBER
                                  , nIdFactura          NUMBER
                                  , cIdTipoSeg          VARCHAR2
                                  , cPlanCob            VARCHAR2
                                  , cTipoProceso        VARCHAR2
                                  , cRegDatosProc       VARCHAR2
                                  , cNumPolUnico        VARCHAR2
-                                 , cNumDetUnico        VARCHAR2 
+                                 , cNumDetUnico        VARCHAR2
                                  , cIndColectiva       VARCHAR2
                                  , cIndAsegurado       VARCHAR2
                                  , cCodUsuario         VARCHAR2 );
-FUNCTION ACTUALIZA_REGIS_PROCESOMASIVO(cCargaRegistro VARCHAR2)RETURN NUMBER;								 
-																					  
+FUNCTION ACTUALIZA_REGIS_PROCESOMASIVO(cCargaRegistro VARCHAR2)RETURN NUMBER;
+
 END OC_PROCESOS_MASIVOS;
-
 /
-
-create or replace PACKAGE BODY SICAS_OC.OC_PROCESOS_MASIVOS IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_PROCESOS_MASIVOS IS
 --
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2) IS
 BEGIN
@@ -179,7 +177,7 @@ BEGIN
       WHERE IdProcMasivo  = nIdProcMasivo;
    EXCEPTION
        WHEN OTHERS THEN
-         OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'ERROR','20225','Error en Actualizaci√≥n de  PROCESOS_MASIVOS '||SQLERRM);
+         OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'ERROR','20225','Error en ActualizaciÛn de  PROCESOS_MASIVOS '||SQLERRM);
          OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
      END ;
   END IF;
@@ -255,11 +253,11 @@ BEGIN
       dFecNacimiento    := TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,12,',')),'DD/MM/RRRR');
 
       IF cSexo NOT IN ('M','F','N') THEN
-         RAISE_APPLICATION_ERROR(-20100,'C√≥digo de Sexo debe contener M, F o N. Favor de Corregir.');
+         RAISE_APPLICATION_ERROR(-20100,'CÛdigo de Sexo debe contener M, F o N. Favor de Corregir.');
       END IF;
 
       IF X.NumPolUnico != X.NumDetUnico THEN
-         RAISE_APPLICATION_ERROR(-20100,'N√∫mero de P√≥liza no Coincide con el N√∫mero de Certificado');
+         RAISE_APPLICATION_ERROR(-20100,'N˙mero de PÛliza no Coincide con el N˙mero de Certificado');
       END IF;
       IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(cTipoDocIdentAseg, cNumDocIdentAseg) = 'N' THEN
          OC_PROCESOS_MASIVOS.INSERT_DINAMICO(cCodPlantilla, 'PERSONA_NATURAL_JURIDICA', 1, X.RegDatosProc);
@@ -297,7 +295,7 @@ BEGIN
       nOrden    := 1;
       nOrdenInc := 0;
       IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia, X.CodEmpresa ,X.IdTipoSeg ,X.PlanCob)= 'N' THEN
-         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
+         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
       END IF;
       BEGIN
         SELECT Cod_Agente
@@ -358,7 +356,7 @@ BEGIN
       END IF;
 
       cExiste     := OC_POLIZAS.EXISTE_POLIZA(X.CodCia, X.CodEmpresa, nIdpoliza);
-      cDescPoliza := 'Activaci√≥n Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
+      cDescPoliza := 'ActivaciÛn Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
       cCodMoneda  := OC_PLAN_COBERTURAS.MONEDA_PLANCOB(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob);
       nPorcComis  := OC_CONFIG_COMISIONES.PORCENTAJE_COMISION(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
       IF cExiste = 'N' AND  NVL(X.IndColectiva,'N') = 'N' THEN
@@ -419,7 +417,7 @@ BEGIN
                   cExisteDet := 'N';
              END;
              IF NVL(cExisteDet,'N') = 'S' THEN
-                RAISE_APPLICATION_ERROR(-20225,'Ya existe un Certificado , NO P√≥liza es Colectiva: ');
+                RAISE_APPLICATION_ERROR(-20225,'Ya existe un Certificado , NO PÛliza es Colectiva: ');
              ELSE
                 nIDetPol    := OC_DETALLE_POLIZA.INSERTAR_DETALLE(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,
                                                                   nIdPoliza, nTasaCambio, nPorcComis, nCod_Asegurado,
@@ -445,12 +443,12 @@ BEGIN
             nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
             IF UPPER(I.NomCampo) = 'FECINIVIG' THEN
                IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')),'DD-MM-YYYY') NOT BETWEEN  dFecIniVig AND  dFecFinVig  THEN
-                  RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Certificado debe estar dentro dela  Vigencia de la P√≥liza');
+                  RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Certificado debe estar dentro dela  Vigencia de la PÛliza');
                END IF;
             END IF;
             IF UPPER(I.NomCampo) = 'FECFINVIG' THEN
                IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')),'DD-MM-YYYY') NOT BETWEEN  dFecIniVig AND  dFecFinVig  THEN
-                  RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Certificado debe estar dentro dela  Vigencia de la P√≥liza ');
+                  RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Certificado debe estar dentro dela  Vigencia de la PÛliza ');
                END IF;
             END IF;
             nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
@@ -621,7 +619,7 @@ BEGIN
       dFecNacimiento    := TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,13,',')),'DD/MM/RRRR');
 
       IF cSexo NOT IN ('M','F','N') THEN
-         RAISE_APPLICATION_ERROR(-20100,'C√≥digo de Sexo debe contener M, F o N. Favor de Corregir.');
+         RAISE_APPLICATION_ERROR(-20100,'CÛdigo de Sexo debe contener M, F o N. Favor de Corregir.');
       END IF;
 
       IF cCodPlanPago IS NULL THEN
@@ -678,7 +676,7 @@ BEGIN
       END IF;
 
       cExiste     := OC_POLIZAS.EXISTE_POLIZA(X.CodCia, X.CodEmpresa, nIdpoliza);
-      cDescPoliza := 'Activaci√≥n Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
+      cDescPoliza := 'ActivaciÛn Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
       cCodMoneda  := OC_PLAN_COBERTURAS.MONEDA_PLANCOB(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob);
       nPorcComis  := OC_CONFIG_COMISIONES.PORCENTAJE_COMISION(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
       IF cExiste = 'N' AND  NVL(X.IndColectiva,'N') = 'N' THEN
@@ -706,7 +704,7 @@ BEGIN
            OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate) ;
            nOrden := nOrden + 1;
          END LOOP;
-         -- Datos DEFAULT para Emisi√≥n WEB
+         -- Datos DEFAULT para EmisiÛn WEB
          UPDATE POLIZAS
             SET Caracteristica = '1',
                 FormaVenta     = '001',
@@ -750,7 +748,7 @@ BEGIN
       nOrdenInc := 0;
       IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia,
                                                       X.CodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
-         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
+         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
       END IF;
 
       cCodFormaCobro := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,78+5,','));
@@ -849,12 +847,12 @@ BEGIN
                   nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + 5 + nOrden;
                   IF UPPER(I.NomCampo) = 'FECINIVIG' THEN
                      IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')),'DD-MM-YYYY') NOT BETWEEN dFecIniVig AND dFecFinVig THEN
-                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Certificado debe estar dentro de la Vigencia de la P√≥liza');
+                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza');
                      END IF;
                   END IF;
                   IF UPPER(I.NomCampo) = 'FECFINVIG' THEN
                      IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')),'DD-MM-YYYY') NOT BETWEEN  dFecIniVig AND  dFecFinVig  THEN
-                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Certificado debe estar dentro de la Vigencia de la P√≥liza ');
+                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza ');
                      END IF;
                   END IF;
                   nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
@@ -946,7 +944,7 @@ BEGIN
                               OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(X.CodCia, nIdPoliza);
                            END IF;
                         WHEN OTHERS THEN
-                           RAISE_APPLICATION_ERROR(-20225,'Error en Distribuci√≥n de Agentes ' || SQLERRM);
+                           RAISE_APPLICATION_ERROR(-20225,'Error en DistribuciÛn de Agentes ' || SQLERRM);
                      END;
                   END IF;
                END IF;
@@ -960,7 +958,7 @@ BEGIN
                OC_POLIZAS.ACTUALIZA_VALORES(X.CodCia, nIdPoliza, 0);
             ELSE
                cMsjError := 'S';
-               RAISE_APPLICATION_ERROR(-20225,'P√≥liza:'||TRIM(TO_CHAR(X.NumPolUnico)||' Debe estar en Estado SOL'));
+               RAISE_APPLICATION_ERROR(-20225,'PÛliza:'||TRIM(TO_CHAR(X.NumPolUnico)||' Debe estar en Estado SOL'));
             END IF;
          EXCEPTION
             WHEN OTHERS THEN
@@ -976,7 +974,7 @@ BEGIN
                END IF;
             END IF;
          ELSE
-            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la P√≥liza: '||cMsjError);
+            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la PÛliza: '||cMsjError);
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          END IF;
       ELSE
@@ -985,7 +983,7 @@ BEGIN
    END LOOP;
 EXCEPTION
    WHEN OTHERS THEN
-      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la P√≥liza Final: '||SQLERRM);
+      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la PÛliza Final: '||SQLERRM);
       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
 END EMISION_WEB;
 
@@ -1089,7 +1087,7 @@ BEGIN
          SET UltValor = nIdProcMasivo
        WHERE CodCia   = cCodCia
          AND CodCampo = 'IDPROCMASIVO';
-		 
+
 	  COMMIT;
    END;
    RETURN (nIdProcMasivo);
@@ -1147,7 +1145,7 @@ BEGIN
    OC_DDL_OBJETOS.EJECUTAR_SQL(c_Sql);
 EXCEPTION
    WHEN OTHERS THEN
-      RAISE_APPLICATION_ERROR(-20225,'Error en el Insert Din√°mico'|| SQLERRM);
+      RAISE_APPLICATION_ERROR(-20225,'Error en el Insert Din·mico'|| SQLERRM);
 END INSERT_DINAMICO;
 
 FUNCTION VALOR_CAMPO(cCadena  VARCHAR2, nIndice NUMBER, cDelim VARCHAR2) RETURN VARCHAR2 IS
@@ -1353,7 +1351,7 @@ BEGIN
       nOrden    := 1;
       nOrdenInc := 0;
       IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia, X.CodEmpresa ,X.IdTipoSeg ,X.PlanCob)= 'N' THEN
-         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
+         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
       END IF;
       BEGIN
          SELECT Cod_Agente
@@ -1409,7 +1407,7 @@ BEGIN
           nIdPoliza := 0;
       END;
       cExiste     := OC_POLIZAS.EXISTE_POLIZA(X.CodCia, X.CodEmpresa, nIdpoliza);
-      cDescPoliza := 'Activaci√≥n Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
+      cDescPoliza := 'ActivaciÛn Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
       cCodMoneda  := OC_PLAN_COBERTURAS.MONEDA_PLANCOB(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob);
       nPorcComis  := OC_CONFIG_COMISIONES.PORCENTAJE_COMISION(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
       IF cExiste = 'N' AND  NVL(X.IndColectiva,'N') = 'N' THEN
@@ -1480,12 +1478,12 @@ BEGIN
                   nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
                   IF UPPER(I.NomCampo) = 'FECINIVIG' THEN
                      IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')),'DD-MM-YYYY') NOT BETWEEN  dFecIniVig AND  dFecFinVig  THEN
-                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Certificado debe estar dentro dela  Vigencia de la P√≥liza');
+                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Certificado debe estar dentro dela  Vigencia de la PÛliza');
                      END IF;
                   END IF;
                   IF UPPER(I.NomCampo) = 'FECFINVIG' THEN
                      IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')),'DD-MM-YYYY') NOT BETWEEN  dFecIniVig AND  dFecFinVig  THEN
-                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Certificado debe estar dentro dela  Vigencia de la P√≥liza ');
+                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Certificado debe estar dentro dela  Vigencia de la PÛliza ');
                      END IF;
                   END IF;
                   nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
@@ -1555,7 +1553,7 @@ BEGIN
                 OC_POLIZAS.EMITIR_POLIZA(X.CodCia, nIdPoliza, X.CodEmpresa);
              END IF;
          ELSE
-             OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la P√≥liza: '||cMsjError);
+             OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la PÛliza: '||cMsjError);
              OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          END IF;
       ELSE
@@ -1564,7 +1562,7 @@ BEGIN
    END LOOP;
 EXCEPTION
    WHEN OTHERS THEN
-      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la P√≥liza Final: '||SQLERRM);
+      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la PÛliza Final: '||SQLERRM);
       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
 END EMISION_COLECTIVA;
 
@@ -1611,7 +1609,7 @@ BEGIN
          END;
 
          IF dFecAnul >= dFecinivig AND dFecAnul <= dFecfinvig THEN
-            OC_procesos_masivos_log.Inserta_LOG(nIdProcMasivo,'CANCELACION','20225','Fecha dentro de la Vigencia de la P√≥liza');
+            OC_procesos_masivos_log.Inserta_LOG(nIdProcMasivo,'CANCELACION','20225','Fecha dentro de la Vigencia de la PÛliza');
          ELSE
             cContinuar:='N';
          END IF;
@@ -1634,13 +1632,13 @@ BEGIN
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          END IF;
       ELSE
-         OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'CANCELACION','20225','Motivo de Anulaci√≥n NO Existe en Cat√É¬°logo MOTIVANU');
+         OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'CANCELACION','20225','Motivo de AnulaciÛn NO Existe en Cat√°logo MOTIVANU');
          OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
       END IF;
    END LOOP;
 EXCEPTION
    WHEN OTHERS THEN
-      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'CANCELACION','20225','No se puede Anular la P√≥liza'||SQLERRM);
+      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'CANCELACION','20225','No se puede Anular la PÛliza'||SQLERRM);
       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
 END CANCELACION;
 
@@ -1648,7 +1646,7 @@ PROCEDURE COBRANZA(nIdProcMasivo NUMBER) IS
 cStsFact        FACTURAS.StsFact%TYPE := '';
 nMontoPago      FACTURAS.Monto_Fact_Local%TYPE := 0;
 nIdFactura      FACTURAS.IdFactura%TYPE := 0;
-cInddomiciliado FACTURAS.Inddomiciliado%TYPE;										   
+cInddomiciliado FACTURAS.Inddomiciliado%TYPE;
 cFormPago       FACTURAS.FormPago%TYPE := '';
 cNumReciboPago  FACTURAS.ReciboPago%TYPE := '';
 dFecPago        FACTURAS.FecPago%TYPE;
@@ -1678,9 +1676,9 @@ CURSOR Cobranza_Q IS
 BEGIN
    FOR X IN COBRANZA_Q LOOP
 	  cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);																																 cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
-      cTipoSeparador := OC_PROCESOS_MASIVOS.TIPO_SEPARADOR(cCodPlantilla);	   
+      cTipoSeparador := OC_PROCESOS_MASIVOS.TIPO_SEPARADOR(cCodPlantilla);
       nIdetpol          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,3,cTipoSeparador));
-      cIndManejaFondos  := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,cTipoSeparador));																					   
+      cIndManejaFondos  := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,cTipoSeparador));
       nNumCuota      	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,cTipoSeparador));
       cFormPago      	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,cTipoSeparador));
       cNumReciboPago 	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,8,cTipoSeparador));
@@ -1722,10 +1720,10 @@ BEGIN
          WHEN NO_DATA_FOUND THEN
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
             cContinuar:='N';
-			DescriError := 'Forma de Pago no existe'; 			
+			DescriError := 'Forma de Pago no existe';
       END;
 	  cDescEntPago := OC_ENTIDAD_FINANCIERA.DESCRIPCION(X.CodCia, cEntPago);
-      cTimbrado := OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(X.CodCia, X.CodEmpresa, cNumReciboPago,NULL, cStsFact);  
+      cTimbrado := OC_FACT_ELECT_DETALLE_TIMBRE.EXISTE_PROCESO(X.CodCia, X.CodEmpresa, cNumReciboPago,NULL, cStsFact);
       IF OC_GENERALES.FUN_DESCRIP_LVAL('FORMPAGO',cFormPago)!= 'VALOR NO VALIDO' AND cContinuar = 'S' THEN
          --OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          IF cStsFact IN ('EMI','ABO') THEN
@@ -1744,7 +1742,7 @@ BEGIN
             ELSIF cContinuar = 'S' THEN
                nIdTransaccion := OC_TRANSACCION.CREA(X.CodCia, X.CodEmpresa, 12, 'PAG');
                nPago          := OC_FACTURAS.PAGAR(nIdFactura,cNumReferen, dFecPago, nMontoPago, cFormPago, cEntPago, nIdTransaccion);
-            END IF;	   
+            END IF;
             -- Comentado Temporalmente porque ahora Necesita el IdTransaccion
             /*IF OC_FACTURAS.PAGAR(nIdFactura, cFormPago  ,cNumReciboPago , dFecPago ,nMontoPago,cFormPago,cEntPago )= 1 THEN
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'PROCE');
@@ -1771,15 +1769,15 @@ BEGIN
                OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR Entidad Financiera de Pago para Factura - NO EXISTE!!!');
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
             ELSIF nPago = 5 THEN
-               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR No es Posible Realizar la Aplicaci√≥n del Ingreso,El Recibo no Cuenta Con el Timbrado de Emisi√≥n');
+               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR No es Posible Realizar la AplicaciÛn del Ingreso,El Recibo no Cuenta Con el Timbrado de EmisiÛn');
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
             ELSIF nPago = 6 THEN
-               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR No es Posible Realizar la Aplicaci√≥n del Ingreso,El Monto del Pago es diferente al de la Factura');
+               OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR No es Posible Realizar la AplicaciÛn del Ingreso,El Monto del Pago es diferente al de la Factura');
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
-            END IF;	   
+            END IF;
          END IF;
       ELSE
-		BEGIN	  
+		BEGIN
             SELECT F.StsFact, F.IdFactura , F.Inddomiciliado
               INTO cStsFact, nIdFactura, cInddomiciliado
               FROM FACTURAS F
@@ -1797,7 +1795,7 @@ BEGIN
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          END;
 		IF cStsFact = 'ANU' THEN
-          OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','El recibo no puede ser aplicado debido a que est√° anulado');
+          OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','El recibo no puede ser aplicado debido a que est· anulado');
           OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          ELSIF cStsFact = 'PAG'THEN
           OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','El recibo no puede ser aplicado debido a que ya cuenta con estatus Aplicado');
@@ -1882,16 +1880,16 @@ BEGIN
          ELSIF dFecPago < dFecVenta THEN
            RAISE_APPLICATION_ERROR(-20100,'Fecha de Pago de la Tarjeta NO Puede Ser Menor a la Fecha de Venta');
          ELSIF cNumDepBancario IS NULL THEN
-           RAISE_APPLICATION_ERROR(-20100,'Debe Ingresar el No. de Boleta del Dep√≥sito Bancario');
+           RAISE_APPLICATION_ERROR(-20100,'Debe Ingresar el No. de Boleta del DepÛsito Bancario');
          ELSIF NVL(nMontoPago,0) = 0 THEN
-           RAISE_APPLICATION_ERROR(-20100,'Debe Ingresar el Monto de la Boleta del Dep√≥sito Bancario');
+           RAISE_APPLICATION_ERROR(-20100,'Debe Ingresar el Monto de la Boleta del DepÛsito Bancario');
          ELSIF   cStsTarjeta = 'VEND' THEN
             RAISE_APPLICATION_ERROR(-20100,'Tarjeta Ya ha sido Vendida y NO Activada '||nNumTarjeta);
          ELSIF   cStsTarjeta = 'ACTP' THEN
            RAISE_APPLICATION_ERROR(-20100,'Tarjeta Ya ha sido Vendida y Activada '||nNumTarjeta);
          ELSIF
             cIndVender = 'S' AND cNumReciboPago IS NULL THEN
-            RAISE_APPLICATION_ERROR(-20100,'NO Ingreso el No. de Recibo de Pago para las Tarjetas Emitidas.  No se Registrar√É¬° en los Pagos');
+            RAISE_APPLICATION_ERROR(-20100,'NO Ingreso el No. de Recibo de Pago para las Tarjetas Emitidas.  No se Registrar√° en los Pagos');
          END IF;
          BEGIN
             SELECT DISTINCT Cod_Moneda
@@ -2005,7 +2003,7 @@ BEGIN
          nOrden    := 1;
          nOrdenInc := 0;
          IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia, X.CodEmpresa ,X.IdTipoSeg ,X.PlanCob)= 'N' THEN
-            RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
+            RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
          END IF;
          BEGIN
             SELECT DISTINCT C.OrdenProceso
@@ -2017,19 +2015,19 @@ BEGIN
                AND C.CodCia       = X.CodCia;
          EXCEPTION
             WHEN NO_DATA_FOUND THEN
-               RAISE_APPLICATION_ERROR(-20100,'Debe Ingresar Configuraci√≥n de Plantilla para la tabla TARJETAS_PREPAGO');
+               RAISE_APPLICATION_ERROR(-20100,'Debe Ingresar ConfiguraciÛn de Plantilla para la tabla TARJETAS_PREPAGO');
          END;
          nOrdenInc     := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,nOrdenProceso) + 5 + nOrden;
          cTipoTarjeta  := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) ;
          nNumTarjeta   := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc + 1,',')) ;
          dFecIniVig    := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc + 3,',')) ;
          IF nNumTarjeta != X.NumPolUnico OR X.NumPolUnico != X.NumDetUnico OR  nNumTarjeta != X.NumDetUnico THEN
-           RAISE_APPLICATION_ERROR(-20100,'N√∫mero de P√≥liza no Coincide con la Tarjeta o con el N√∫mero de Certificado');
+           RAISE_APPLICATION_ERROR(-20100,'N˙mero de PÛliza no Coincide con la Tarjeta o con el N˙mero de Certificado');
          END IF;
          IF  dFecIniVig IS NULL THEN
             RAISE_APPLICATION_ERROR(-20100,'Debe Ingresar la Fecha de Inicio de la Tarjeta');
          ELSIF OC_PLAN_COBERTURAS.VALIDA_DIAS_RETROACTIVOS(nCodCia, nCodEmpresa, X.IdTipoSeg, X.PlanCob,dFecIniVig )  = 'N' THEN
-            RAISE_APPLICATION_ERROR(-20100,'La Fecha de Inicio de Vigencia NO esta dentro de los d√É¬≠as Retroactivos Configurados');
+            RAISE_APPLICATION_ERROR(-20100,'La Fecha de Inicio de Vigencia NO esta dentro de los d√≠as Retroactivos Configurados');
          ELSIF dFecIniVig > TRUNC(SYSDATE) THEN
             RAISE_APPLICATION_ERROR(-20100,'La Fecha de Inicio de Vigencia NO ser Mayor a la Fecha del Sistema');
          END IF;
@@ -2046,7 +2044,7 @@ BEGIN
                AND StsTarjeta != 'CANP';
          EXCEPTION
             WHEN NO_DATA_FOUND THEN
-               RAISE_APPLICATION_ERROR(-20100,'No Existe Tarjeta No:'||' '||nNumTarjeta||'  '||'Para Emitir P√≥liza');
+               RAISE_APPLICATION_ERROR(-20100,'No Existe Tarjeta No:'||' '||nNumTarjeta||'  '||'Para Emitir PÛliza');
          END;
          IF dFecVenta IS NOT NULL THEN
             IF dFecIniVig < dFecVenta THEN
@@ -2091,7 +2089,7 @@ BEGIN
          OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'PROCE');
       EXCEPTION
          WHEN OTHERS THEN
-            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'EMITAR','20225','No se puede realizar la Emisi√≥n de Tarjeta No. '||nNumTarjeta||' '||SQLERRM);
+            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'EMITAR','20225','No se puede realizar la EmisiÛn de Tarjeta No. '||nNumTarjeta||' '||SQLERRM);
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
       END;
    END LOOP;
@@ -2330,7 +2328,7 @@ BEGIN
        nOrden    := 1;
        nOrdenInc := 0;
        IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob)= 'N' THEN
-          RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
+          RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
        END IF;
        --
        nCodCliente := OC_CLIENTES.CODIGO_CLIENTE(cTipoDocIdentAseg, cNumDocIdentAseg);
@@ -2380,7 +2378,7 @@ BEGIN
        END;
        --
        cExiste     := OC_POLIZAS.EXISTE_POLIZA(X.CodCia, X.CodEmpresa, nIdpoliza);
-       cDescPoliza := 'Activaci√≥n Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
+       cDescPoliza := 'ActivaciÛn Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
        --
        IF cExiste = 'N' AND  NVL(X.IndColectiva,'N') = 'N' THEN
           IF dFecIniVig IS NULL THEN
@@ -2453,12 +2451,12 @@ BEGIN
                  nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + 5 + nOrden;
                  IF UPPER(I.NomCampo) = 'FECINIVIG' THEN
                     IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')), 'DD/MM/YYYY') NOT BETWEEN dFecIniVig AND dFecFinVig THEN
-                       RAISE_APPLICATION_ERROR(-20225, 'Fecha de Inicio de Vigencia del Certificado debe estar dentro de la Vigencia de la P√≥liza');
+                       RAISE_APPLICATION_ERROR(-20225, 'Fecha de Inicio de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza');
                     END IF;
                  END IF;
                  IF UPPER(I.NomCampo) = 'FECFINVIG' THEN
                     IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc, ',')), 'DD/MM/YYYY') NOT BETWEEN dFecIniVig AND dFecFinVig THEN
-                       RAISE_APPLICATION_ERROR(-20225, 'Fecha de Final de Vigencia del Certificado debe estar dentro de la Vigencia de la P√≥liza ');
+                       RAISE_APPLICATION_ERROR(-20225, 'Fecha de Final de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza ');
                     END IF;
                  END IF;
                  /*    nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
@@ -2505,7 +2503,7 @@ BEGIN
                       IF OC_ACTUALIZA_ASEGURADO.VALIDA_ST_ANALIZADO(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado) = 'S' THEN
                          cID_ACCION := OC_ACTUALIZA_ASEGURADO.EXTRAE_ACCION(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
                          IF cID_ACCION = 'NADA' THEN -- CONTINUA CON LOS MISMOS DATOS
-                            NULL; 
+                            NULL;
                             OC_ACTUALIZA_ASEGURADO.COLOCA_ST_PROCESADO(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
                          ELSIF cID_ACCION = 'ACTUA' THEN -- ACTUALIZA LOS DATOS
                             OC_ACTUALIZA_ASEGURADO.ACTUALIZA_DATOS(cNomArchivoCarga,  nIdpoliza, nIDetPol, nCod_Asegurado);
@@ -2520,14 +2518,14 @@ BEGIN
                          RAISE_APPLICATION_ERROR(-20225, 'Asegurado No. : ' || nCod_Asegurado || ' en espera de validacion');
                       END IF;
                    ELSE
-                      OC_ACTUALIZA_ASEGURADO.INSERTA(nCODCIA,            nCODEMPRESA,       cNOMARCHIVOCARGA, 
+                      OC_ACTUALIZA_ASEGURADO.INSERTA(nCODCIA,            nCODEMPRESA,       cNOMARCHIVOCARGA,
                                                      nIDPOLIZA,          nIDETPOL,          nCOD_ASEGURADO,
                                                      cTipoDocIdentAseg,  cNumDocIdentAseg,  X.REGDATOSPROC);
                       RAISE_APPLICATION_ERROR(-20225, 'Asegurado No. : ' || nCod_Asegurado || ' enviado a validacion');
                    END IF;
 -- ASEGVAL
               END IF;
-*/               
+*/
                 --
 --aqui modificar UPDATE
                 cUpdate := 'UPDATE ASEGURADO_CERTIFICADO SET ';
@@ -2562,7 +2560,7 @@ BEGIN
                      cIndCuotaPromedio := 'N';
                      cIndPrimaPromedio := 'N';
                 END;
-                /* Se quita temporalmente la carga de coberturas para agilizar el proceso de Emisi√≥n y solo se deja para Endosos*/
+                /* Se quita temporalmente la carga de coberturas para agilizar el proceso de EmisiÛn y solo se deja para Endosos*/
                 --IF NVL(nIdEndoso,0) != 0 THEN
                 IF cIndEdadPromedio = 'N' AND cIndCuotaPromedio = 'N' AND cIndPrimaPromedio = 'N' THEN
                    IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
@@ -2706,7 +2704,7 @@ BEGIN
                 OC_POLIZAS.EMITIR_POLIZA(X.CodCia, nIdPoliza, X.CodEmpresa);
              END IF;*/
           ELSE
-             OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la P√≥liza o Cargar el Asegurado: ' || cMsjError);
+             OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la PÛliza o Cargar el Asegurado: ' || cMsjError);
              OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
           END IF;
        ELSE
@@ -2715,7 +2713,7 @@ BEGIN
    END LOOP;
 EXCEPTION
 WHEN OTHERS THEN
-     OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la P√≥liza o Cargar el Asegurado: ' || SQLERRM);
+     OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la PÛliza o Cargar el Asegurado: ' || SQLERRM);
      OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
 END EMISION_COLECTIVA_ASEGURADO;
 
@@ -2918,13 +2916,13 @@ BEGIN
                            AND IdPoliza    = nIdpoliza
                            AND NumDetRef   = TRIM(TO_CHAR(x.NumDetUnico))
                            AND StsDetalle  = 'SOL';
-                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Certificado debe estar dentro de la Vigencia de la P√≥liza ' ||
-                                                ' o Fecha de Ingreso no Puede ser mayor a la Fecha de Facturaci√≥n');
+                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza ' ||
+                                                ' o Fecha de Ingreso no Puede ser mayor a la Fecha de FacturaciÛn');
                      END IF;
                   END IF;
                   IF UPPER(I.NomCampo) = 'FECFINVIG' THEN
                      IF TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')),'DD-MM-YYYY') NOT BETWEEN  dFecIniVig AND  dFecFinVig  THEN
-                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Certificado debe estar dentro de la Vigencia de la P√≥liza');
+                        RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Certificado debe estar dentro de la Vigencia de la PÛliza');
                      END IF;
                   END IF;
                   nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + 5 + nOrden;
@@ -2997,7 +2995,7 @@ BEGIN
                nPrimaEnd     := 0;
                nSumaEnd      := 0;
                nFactProrrata := 1;
-               -- Caracter√É¬≠sticas del Plan de Pago
+               -- Caracter√≠sticas del Plan de Pago
                BEGIN
                   SELECT FrecPagos
                     INTO nFrecPagos
@@ -3047,7 +3045,7 @@ BEGIN
                             I.Tasa, I.PlanCob);
                   EXCEPTION
                      WHEN OTHERS THEN
-                        RAISE_APPLICATION_ERROR(-20225,'COBERTURAS - Ocurri√≥ el siguiente error: '||SQLERRM);
+                        RAISE_APPLICATION_ERROR(-20225,'COBERTURAS - OcurriÛ el siguiente error: '||SQLERRM);
                   END;
                END LOOP;
                OC_ENDOSO.INSERTA(X.CodCia, X.CodEmpresa, nIdPoliza, nIdetPol, nIdEndoso, 'IND', X.NumDetUnico,
@@ -3055,7 +3053,7 @@ BEGIN
 --               OC_POLIZAS.INSERTA_REQUISITOS(X.CodCia, nIdPoliza);     --REQ
             ELSE
                cMsjError := 'S';
-               RAISE_APPLICATION_ERROR(-20225,'P√≥liza: '||TRIM(TO_CHAR(X.NumPolUnico)||' Debe estar en Estado EMI o NO es Colectiva'));
+               RAISE_APPLICATION_ERROR(-20225,'PÛliza: '||TRIM(TO_CHAR(X.NumPolUnico)||' Debe estar en Estado EMI o NO es Colectiva'));
             END IF;
          EXCEPTION
             WHEN OTHERS THEN
@@ -3212,7 +3210,7 @@ BEGIN
                        I.SumaAseg_Moneda, I.Prima_Local, I.Prima_Local, I.Tasa, I.PlanCob);
             EXCEPTION
                WHEN OTHERS THEN
-                  RAISE_APPLICATION_ERROR(-20225,'COBERTURAS - Ocurri√≥ el siguiente error: '||SQLERRM);
+                  RAISE_APPLICATION_ERROR(-20225,'COBERTURAS - OcurriÛ el siguiente error: '||SQLERRM);
             END;
          END LOOP;
 
@@ -3421,7 +3419,7 @@ BEGIN
                        nSumaNew, nSumaNew, nPrimaCobert, nPrimaCobert, I.Tasa, I.PlanCob);
             EXCEPTION
                WHEN OTHERS THEN
-                  RAISE_APPLICATION_ERROR(-20225,'COBERTURAS - Ocurri√≥ el siguiente error: '||SQLERRM);
+                  RAISE_APPLICATION_ERROR(-20225,'COBERTURAS - OcurriÛ el siguiente error: '||SQLERRM);
             END;
          END LOOP;
          OC_ENDOSO.INSERTA(X.Codcia, X.CodEmpresa, nIdPoliza, nIdetPol, nIdEndoso, 'AUM', X.NumDetUnico, dFecIni,
@@ -3500,7 +3498,7 @@ cExisteParEmi      VARCHAR2(1);
 cExiste            VARCHAR2(1);
 cExisteDet         VARCHAR2(1);
 cExisteTipoSeguro  VARCHAR2(2);
-cCadenaEspOrig     VARCHAR2(100) := '√°√©√≠√≥√∫√Ä√Å√Ç√É√Ñ√Ö√à√â√ä√ã√å√ç√é√è√í√ì√î√ï√ñ√ô√ö√õ√ú';
+cCadenaEspOrig     VARCHAR2(100) := '·ÈÌÛ˙¿¡¬√ƒ≈»… ÀÃÕŒœ“”‘’÷Ÿ⁄€‹';
 cCadenaNormal      VARCHAR2(100) := 'aeiouAAAAAAEEEEIIIIOOOOOUUUU';
 
 CURSOR EMI_Q IS
@@ -3551,14 +3549,14 @@ BEGIN
              WHERE Codigo_Postal = cCodPosRes;
          EXCEPTION
             WHEN NO_DATA_FOUND THEN
-               RAISE_APPLICATION_ERROR(-20100,'NO Existe C√≥digo Postal. Favor de Corregir.');
+               RAISE_APPLICATION_ERROR(-20100,'NO Existe CÛdigo Postal. Favor de Corregir.');
          END;
       ELSE
-         RAISE_APPLICATION_ERROR(-20100,'NO Existe C√≥digo Postal. Favor de Asignarlo.');
+         RAISE_APPLICATION_ERROR(-20100,'NO Existe CÛdigo Postal. Favor de Asignarlo.');
       END IF;
 
       IF cSexo NOT IN ('M','F','N') THEN
-         RAISE_APPLICATION_ERROR(-20100,'C√≥digo de Sexo debe contener M, F o N. Favor de Corregir.');
+         RAISE_APPLICATION_ERROR(-20100,'CÛdigo de Sexo debe contener M, F o N. Favor de Corregir.');
       END IF;
 
       IF cCodPlanPago IS NULL THEN
@@ -3677,11 +3675,11 @@ BEGIN
       END;
       --
       IF dFecNacimiento > dFecIniVig THEN
-         RAISE_APPLICATION_ERROR(-20225,'La Fecha de Nacimiento no puede ser Mayor a la Fecha de Inicio de Vigencia de la P√≥liza - NO Procede Crearlo');
+         RAISE_APPLICATION_ERROR(-20225,'La Fecha de Nacimiento no puede ser Mayor a la Fecha de Inicio de Vigencia de la PÛliza - NO Procede Crearlo');
       END IF;
       --
       cExiste     := OC_POLIZAS.EXISTE_POLIZA(X.CodCia, X.CodEmpresa, nIdpoliza);
-      cDescPoliza := 'Emisi√≥n Masiva QR del Registro No. ' || TRIM(TO_CHAR(nIdProcMasivo));
+      cDescPoliza := 'EmisiÛn Masiva QR del Registro No. ' || TRIM(TO_CHAR(nIdProcMasivo));
       cCodMoneda  := OC_PLAN_COBERTURAS.MONEDA_PLANCOB(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob);
       nPorcComis  := OC_CONFIG_COMISIONES.PORCENTAJE_COMISION(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
 
@@ -3694,7 +3692,7 @@ BEGIN
                                                    cIdGrupoTarj, dFecIniVig);
       END IF;
       IF NVL(X.IndColectiva,'N') = 'N' THEN
-         -- Datos DEFAULT para Emisi√≥n QR
+         -- Datos DEFAULT para EmisiÛn QR
          UPDATE POLIZAS
             SET Caracteristica = '1',
                 FormaVenta     = '006',
@@ -3707,7 +3705,7 @@ BEGIN
 
       IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia,
                                                       X.CodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
-         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
+         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
       END IF;
 
       nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(X.CodCia, X.CodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
@@ -3750,7 +3748,7 @@ BEGIN
                         cExisteDet := 'N';
                   END;
                   IF NVL(cExisteDet,'N') = 'S' THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Ya existe un Certificado, NO es P√≥liza Colectiva: ');
+                     RAISE_APPLICATION_ERROR(-20225,'Ya existe un Certificado, NO es PÛliza Colectiva: ');
                   ELSE
                      nIDetPol    := OC_DETALLE_POLIZA.INSERTAR_DETALLE(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, nIdPoliza,
                                                                        nTasaCambio, nPorcComis, nCod_Asegurado, cCodPlanPago,
@@ -3801,7 +3799,7 @@ BEGIN
                            OC_COMISIONES.DISTRIBUCION(X.CodCia, nIdPoliza, nCod_Agente, 100);
                            OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(X.CodCia, nIdPoliza);
                         WHEN OTHERS THEN
-                           RAISE_APPLICATION_ERROR(-20225,'Error en Distribuci√≥n de Agentes ' || SQLERRM);
+                           RAISE_APPLICATION_ERROR(-20225,'Error en DistribuciÛn de Agentes ' || SQLERRM);
                      END;
                   END IF;
                END IF;
@@ -3827,7 +3825,7 @@ BEGIN
                OC_POLIZAS.ACTUALIZA_VALORES(X.CodCia, nIdPoliza, 0);
             ELSE
                cMsjError := 'S';
-               RAISE_APPLICATION_ERROR(-20225,'P√≥liza:'||TRIM(TO_CHAR(X.NumPolUnico)||' Debe estar en Estado SOL'));
+               RAISE_APPLICATION_ERROR(-20225,'PÛliza:'||TRIM(TO_CHAR(X.NumPolUnico)||' Debe estar en Estado SOL'));
             END IF;
          EXCEPTION
             WHEN OTHERS THEN
@@ -3841,7 +3839,7 @@ BEGIN
                OC_POLIZAS.EMITIR_POLIZA(X.CodCia, nIdPoliza, X.CodEmpresa);
             END IF;
          ELSE
-            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la P√≥liza: '||cMsjError);
+            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la PÛliza: '||cMsjError);
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          END IF;
       ELSE
@@ -3850,7 +3848,7 @@ BEGIN
    END LOOP;
 EXCEPTION
    WHEN OTHERS THEN
-      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la P√≥liza Final: '||SQLERRM);
+      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'AUTOMATICO','20225','No se puede emitir la PÛliza Final: '||SQLERRM);
       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
 END EMISION_QR;
 
@@ -3920,7 +3918,7 @@ dFecFinVigPol      DATE;
 cExisteParEmi      VARCHAR2(1);
 cExiste            VARCHAR2(1);
 cExisteDet         VARCHAR2(1);
-cCadenaEspOrig     VARCHAR2(100) := '√°√©√≠√≥√∫√Ä√Å√Ç√É√Ñ√Ö√à√â√ä√ã√å√ç√é√è√í√ì√î√ï√ñ√ô√ö√õ√ú';
+cCadenaEspOrig     VARCHAR2(100) := '·ÈÌÛ˙¿¡¬√ƒ≈»… ÀÃÕŒœ“”‘’÷Ÿ⁄€‹';
 cCadenaNormal      VARCHAR2(100) := 'aeiouAAAAAAEEEEIIIIOOOOOUUUU';
 cTipoMovimiento    VARCHAR2(2);
 nPlazoCredito      NUMBER(5);
@@ -3998,7 +3996,7 @@ BEGIN
                AND StsPoliza   IN ('SOL','EMI');
          EXCEPTION
             WHEN NO_DATA_FOUND THEN
-               RAISE_APPLICATION_ERROR(-20100,'NO Existe la P√≥liza Unica No. '||X.NumPolUnico);
+               RAISE_APPLICATION_ERROR(-20100,'NO Existe la PÛliza Unica No. '||X.NumPolUnico);
          END;
          cApellidoPaterno   := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,6,','));
          cApellidoMaterno   := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,7,','));
@@ -4008,11 +4006,11 @@ BEGIN
          cSexo              := NVL(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,',')),'N');            --INFO1
 
          IF dFecNacimiento > dFecIniVigPol THEN
-            RAISE_APPLICATION_ERROR(-20225,'La Fecha de Nacimiento no puede ser Mayor a la Fecha de Inicio de Vigencia de la P√≥liza - NO Procede Crearlo');
+            RAISE_APPLICATION_ERROR(-20225,'La Fecha de Nacimiento no puede ser Mayor a la Fecha de Inicio de Vigencia de la PÛliza - NO Procede Crearlo');
          END IF;
 
          IF cSexo NOT IN ('M','F') THEN  --INFO1
-            RAISE_APPLICATION_ERROR(-20100,'C√≥digo de Sexo debe contener M o F . Favor de Corregir.');
+            RAISE_APPLICATION_ERROR(-20100,'CÛdigo de Sexo debe contener M o F . Favor de Corregir.');
          END IF;
 
          cTipoDocIdentAseg  := 'RFC'; -- Se Asigna Fijo 'RFC' porque Layout NO trae el campo
@@ -4024,7 +4022,7 @@ BEGIN
 
          nCod_Agente        := OC_PLAN_COBERTURAS.CODIGO_AGENTE(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob);
          IF nCod_Agente = 0 THEN
-            RAISE_APPLICATION_ERROR(-20100,'NO est√° Configurado el C√≥digo de Agente para el Tipo de Seguro ' || X.IdTipoSeg ||
+            RAISE_APPLICATION_ERROR(-20100,'NO est· Configurado el CÛdigo de Agente para el Tipo de Seguro ' || X.IdTipoSeg ||
                                     ' y Plan de Coberturas ' || X.PlanCob);
          END IF;
 
@@ -4033,15 +4031,15 @@ BEGIN
          IF nPlazoCredito > 0 THEN
             dFecFinVig      := ADD_MONTHS(dFecIniVig,nPlazoCredito);
          ELSE
-            RAISE_APPLICATION_ERROR(-20100,'NO se Indica el Plazo del Cr√©dito');
+            RAISE_APPLICATION_ERROR(-20100,'NO se Indica el Plazo del CrÈdito');
          END IF;
 
          IF dFecIniVig < dFecIniVigPol THEN
-            RAISE_APPLICATION_ERROR(-20100,'Inicio de Vigencia del Cr√©dito ' || TO_CHAR(dFecIniVig,'DD/MM/YYYY') ||
-                                    ' est√° Fuera del Inicio de Vigencia de la P√≥liza ' || TO_CHAR(dFecIniVigPol,'DD/MM/YYYY'));
+            RAISE_APPLICATION_ERROR(-20100,'Inicio de Vigencia del CrÈdito ' || TO_CHAR(dFecIniVig,'DD/MM/YYYY') ||
+                                    ' est· Fuera del Inicio de Vigencia de la PÛliza ' || TO_CHAR(dFecIniVigPol,'DD/MM/YYYY'));
          ELSIF dFecFinVig > dFecFinVigPol THEN
-            RAISE_APPLICATION_ERROR(-20100,'Fin de Vigencia del Cr√©dito ' || TO_CHAR(dFecFinVig,'DD/MM/YYYY') ||
-                                    ' est√° Fuera del Fin de Vigencia de la P√≥liza ' || TO_CHAR(dFecFinVigPol,'DD/MM/YYYY'));
+            RAISE_APPLICATION_ERROR(-20100,'Fin de Vigencia del CrÈdito ' || TO_CHAR(dFecFinVig,'DD/MM/YYYY') ||
+                                    ' est· Fuera del Fin de Vigencia de la PÛliza ' || TO_CHAR(dFecFinVigPol,'DD/MM/YYYY'));
          END IF;
          --
          cCodPlantilla     := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
@@ -4118,7 +4116,7 @@ BEGIN
                                      LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc, nOrdenInc,','))||''''||' '||
                                      'WHERE IdPoliza = '||nIdPoliza||' '||'AND IDetPol = '||nIDetPol||' '||'AND CodCia = '||X.CodCia;
                      ELSE
-                        -- Se Suman 3 Meses al Plazo del Cr√©dito para el C√°lculo de Prima
+                        -- Se Suman 3 Meses al Plazo del CrÈdito para el C·lculo de Prima
                         cUpdate   := 'UPDATE '||'DATOS_PART_EMISION'||' '||'SET'||' '||'CAMPO'||I.OrdenDatoPart||'='||''''||
                                      TRIM(TO_CHAR(nPlazoCredito+3))||''''||' '||
                                      'WHERE IdPoliza = '||nIdPoliza||' '||'AND IDetPol = '||nIDetPol||' '||'AND CodCia = '||X.CodCia;
@@ -4216,7 +4214,7 @@ BEGIN
 --                  OC_POLIZAS.ACTUALIZA_VALORES(X.CodCia, nIdPoliza, 0);
                ELSE
                   cMsjError := 'S';
-                  RAISE_APPLICATION_ERROR(-20225,'P√≥liza:'||TRIM(TO_CHAR(X.NumPolUnico)||' Debe estar en Estado SOL'));
+                  RAISE_APPLICATION_ERROR(-20225,'PÛliza:'||TRIM(TO_CHAR(X.NumPolUnico)||' Debe estar en Estado SOL'));
                END IF;
             EXCEPTION
                WHEN OTHERS THEN
@@ -4611,9 +4609,9 @@ BEGIN
         IF cStsPoliza = 'ANU' THEN
            dFec_Ocurrencia   := TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,15,',')),'YYYYMMDD');
            IF dFecAnul IS NOT NULL AND cMotivAnul != 'FPA' THEN
-              RAISE_APPLICATION_ERROR(-20225,'P√≥liza Anulada por Motivo diferente a Falta de Pago - NO Procede Crearlo');
+              RAISE_APPLICATION_ERROR(-20225,'PÛliza Anulada por Motivo diferente a Falta de Pago - NO Procede Crearlo');
            ELSIF dFec_Ocurrencia > dFecAnul AND cMotivAnul = 'FPA' THEN
-                 RAISE_APPLICATION_ERROR(-20225,'P√≥liza Anulada, la fecha de Ocurrencia es mayor a la Fecha de Anulacion - NO Procede Crearlo');
+                 RAISE_APPLICATION_ERROR(-20225,'PÛliza Anulada, la fecha de Ocurrencia es mayor a la Fecha de Anulacion - NO Procede Crearlo');
            END IF;
         END IF;
         -- Si el Asegurado no Existe.
@@ -4627,9 +4625,9 @@ BEGIN
            END IF;
            -- Valida si la Edad corrsponde con el Plan Contratado
            IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentif, cNumDocIdentif, X.CodCia, X.CodEmpresa ,X.IdTipoSeg ,X.PlanCob)= 'N' THEN
-              RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
+              RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
            END IF;
-           -- Obtiene el N√∫mero de Asegurado
+           -- Obtiene el N˙mero de Asegurado
            nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(X.CodCia, X.CodEmpresa, cTipoDocIdentif, cNumDocIdentif);
            -- Inserta el Asegurado.
            IF nCod_Asegurado = 0 THEN
@@ -4716,7 +4714,7 @@ BEGIN
              WHEN OTHERS THEN
                cMsjError := 'Error al actualizar las Coberturas. ' || SQLERRM;
            END;
-           -- Asignar C√≥digo de Asegurado al registro/Layout.
+           -- Asignar CÛdigo de Asegurado al registro/Layout.
            BEGIN
              SELECT DECODE(TRIM(TipoSeparador),'COM',',','PIPE','|')
                INTO cTipoSeparador
@@ -4738,11 +4736,11 @@ BEGIN
            END;
         ELSE
            IF OC_ASEGURADO.NOMBRE_ASEGURADO(X.CodCia,X.CodEmpresa,nCod_Asegurado) LIKE '%ASEGURADO%' THEN
-              RAISE_APPLICATION_ERROR(-20225,'El c√≥digo de Asegurado es de un Asegurado Modelo.');
+              RAISE_APPLICATION_ERROR(-20225,'El cÛdigo de Asegurado es de un Asegurado Modelo.');
            END IF;
         END IF;
      ELSE
-        cMsjError := 'No Existe la P√≥liza No. ' || X.NumPolUnico || ' con el Subgrupo ' || X.NumDetUnico;
+        cMsjError := 'No Existe la PÛliza No. ' || X.NumPolUnico || ' con el Subgrupo ' || X.NumDetUnico;
      END IF;
 
      IF cMsjError IS NULL THEN
@@ -4822,9 +4820,9 @@ BEGIN
            IF cStsPoliza = 'ANU' THEN
               dFec_Ocurrencia   := TO_DATE(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,15,',')),'YYYYMMDD');
               IF dFecAnul IS NOT NULL AND cMotivAnul != 'FPA' THEN
-                 RAISE_APPLICATION_ERROR(-20225,'P√≥liza Anulada por Motivo diferente a Falta de Pago - NO Procede la Emisi√≥n del Endoso');
+                 RAISE_APPLICATION_ERROR(-20225,'PÛliza Anulada por Motivo diferente a Falta de Pago - NO Procede la EmisiÛn del Endoso');
               ELSIF dFec_Ocurrencia > dFecAnul AND cMotivAnul = 'FPA' THEN
-                   RAISE_APPLICATION_ERROR(-20225,'P√≥liza Anulada, la fecha de Ocurrencia es mayor a la Fecha de Anulaci√≥n - NO Procede la Emisi√≥n del Endoso');
+                   RAISE_APPLICATION_ERROR(-20225,'PÛliza Anulada, la fecha de Ocurrencia es mayor a la Fecha de AnulaciÛn - NO Procede la EmisiÛn del Endoso');
               END IF;
            END IF;
            -- Obtiene el IdEndoso
@@ -4839,7 +4837,7 @@ BEGIN
            EXCEPTION
              WHEN OTHERS THEN
                nIdEndoso := 0;
-               --cMsjError := 'No Existe Asegurado Certificado para la P√≥liza No. ' || X.NumPolUnico || ' con el Subgrupo ' || X.NumDetUnico;
+               --cMsjError := 'No Existe Asegurado Certificado para la PÛliza No. ' || X.NumPolUnico || ' con el Subgrupo ' || X.NumDetUnico;
            END;
            -- Valida Estatus de ENDOSO
              IF NVL(nIdEndoso,0) > 0 THEN
@@ -4854,7 +4852,7 @@ BEGIN
                    AND IdEndoso   = nIdEndoso;
               EXCEPTION
                 WHEN OTHERS THEN
-                  cMsjError := 'No Existe Endoso para la P√≥liza No. ' || X.NumPolUnico || ' con el Subgrupo ' || X.NumDetUnico;
+                  cMsjError := 'No Existe Endoso para la PÛliza No. ' || X.NumPolUnico || ' con el Subgrupo ' || X.NumDetUnico;
               END;
               -- Actualiza Estatus de ENDOSO
               IF cStsEndoso = 'SOL' THEN
@@ -4862,7 +4860,7 @@ BEGIN
               END IF;
            END IF;
         ELSE
-           cMsjError := 'No Existe la P√≥liza No. ' || X.NumPolUnico || ' con el Subgrupo ' || X.NumDetUnico;
+           cMsjError := 'No Existe la PÛliza No. ' || X.NumPolUnico || ' con el Subgrupo ' || X.NumDetUnico;
         END IF;
 
         IF cMsjError IS NULL THEN
@@ -5122,32 +5120,32 @@ BEGIN
                  cTotSiniAseg := 0;
              END;
 
-             IF cTotSiniAseg > 0 AND NVL(cTipoPago,'P') != 'S' THEN -- Se adiciona el Tipo de Pago 'S' = Procede con la creaci√≥n del Siniestro
+             IF cTotSiniAseg > 0 AND NVL(cTipoPago,'P') != 'S' THEN -- Se adiciona el Tipo de Pago 'S' = Procede con la creaciÛn del Siniestro
                 RAISE_APPLICATION_ERROR(-20225,'El Asegurado tiene '||TO_CHAR(cTotSiniAseg)||' Siniestro(s) ya registrado(s) - NO Procede Crearlo');
              END IF;
              -- Valida la Fecha de Ocurrencia del Siniestro.
              IF dFec_Ocurrencia < dFecIniVig  OR dFec_Ocurrencia > dFecFinVig THEN
-                RAISE_APPLICATION_ERROR(-20225,'Fecha de Ocurrencia, esta fuera del rango de vigencia de la P√≥liza - NO Procede Crearlo');
+                RAISE_APPLICATION_ERROR(-20225,'Fecha de Ocurrencia, esta fuera del rango de vigencia de la PÛliza - NO Procede Crearlo');
              ELSIF dFecAnul IS NOT NULL AND cMotivAnul != 'FPA' THEN
-                RAISE_APPLICATION_ERROR(-20225,'P√≥liza Anulada por Motivo diferente a Falta de Pago - NO Procede Crearlo');
+                RAISE_APPLICATION_ERROR(-20225,'PÛliza Anulada por Motivo diferente a Falta de Pago - NO Procede Crearlo');
              ELSIF dFec_Ocurrencia > dFecAnul AND cMotivAnul = 'FPA' THEN
-                RAISE_APPLICATION_ERROR(-20225,'P√≥liza Anulada, la fecha de Ocurrencia es mayor a la Fecha de Anulacion - NO Procede Crearlo');
+                RAISE_APPLICATION_ERROR(-20225,'PÛliza Anulada, la fecha de Ocurrencia es mayor a la Fecha de Anulacion - NO Procede Crearlo');
              ELSIF dFec_Ocurrencia > TRUNC (SYSDATE) THEN
                 RAISE_APPLICATION_ERROR(-20225,'Fecha de Ocurrencia NO puede ser Mayor  a la Fecha de SISTEMA - NO Procede Crearlo');
              END IF;
-             -- Valida la Fecha de Notificaci√≥n del Siniestro.
+             -- Valida la Fecha de NotificaciÛn del Siniestro.
              IF dFec_Notificacion > ADD_MONTHS(dFec_Ocurrencia,60) THEN
-                RAISE_APPLICATION_ERROR(-20225,'Fecha de Notificaci√≥n, esta fuera de la Fecha permitida por Ley - NO Procede Crearlo');
+                RAISE_APPLICATION_ERROR(-20225,'Fecha de NotificaciÛn, esta fuera de la Fecha permitida por Ley - NO Procede Crearlo');
              ELSIF dFec_Notificacion > TRUNC (SYSDATE) THEN
-                RAISE_APPLICATION_ERROR(-20225,'Fecha de Notificaci√≥n, no puede ser Mayor a la fecha del SISTEMA - NO Procede Crearlo');
+                RAISE_APPLICATION_ERROR(-20225,'Fecha de NotificaciÛn, no puede ser Mayor a la fecha del SISTEMA - NO Procede Crearlo');
              ELSIF dFec_Notificacion < dFecIniVig THEN
-                RAISE_APPLICATION_ERROR(-20225,'Fecha de Notificaci√≥n, no puede ser Menor al Inicio de Vigencia - NO Procede Crearlo');
+                RAISE_APPLICATION_ERROR(-20225,'Fecha de NotificaciÛn, no puede ser Menor al Inicio de Vigencia - NO Procede Crearlo');
              ELSIF dFec_Notificacion < dFec_Ocurrencia THEN
-                RAISE_APPLICATION_ERROR(-20225,'Fecha de Notificaci√≥n, no puede ser Menor a la Fecha de Ocurrencia - NO Procede Crearlo');
+                RAISE_APPLICATION_ERROR(-20225,'Fecha de NotificaciÛn, no puede ser Menor a la Fecha de Ocurrencia - NO Procede Crearlo');
              END IF;
 
              nIdSiniestro := OC_SINIESTRO.INSERTA_SINIESTRO(X.CodCia, X.CodEmpresa, nIdPoliza, X.NumDetUnico, cNumSiniRef,dFec_Ocurrencia, dFec_Notificacion,
-                                                            'Carga Masiva de Estimaci√≥n de Siniestros realizada el ' ||TO_DATE(SYSDATE,'DD/MM/YYYY'),
+                                                            'Carga Masiva de EstimaciÛn de Siniestros realizada el ' ||TO_DATE(SYSDATE,'DD/MM/YYYY'),
                                                             cTipoSiniestro, cMotivSiniestro, cCodPaisOcurr, cCodProvOcurr);
              BEGIN
                UPDATE SINIESTRO
@@ -5161,7 +5159,7 @@ BEGIN
                                                              TO_CHAR(TRUNC(SYSDATE),'DD/MM/YYYY')||' Motivo: '||cDescSiniestro);
              EXCEPTION
                 WHEN OTHERS THEN
-                   RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n, Favor de validar la informaci√≥n, Error: '||SQLERRM);
+                   RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn, Favor de validar la informaciÛn, Error: '||SQLERRM);
              END;
 
              cCodPlantilla     := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
@@ -5219,7 +5217,7 @@ BEGIN
              IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(X.CodCia, nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
                 -- Valida que no exceda la Suma Asegurada.
                 IF OC_COBERTURA_SINIESTRO.VALIDA_SUMA_ASEGURADA(X.CodCia, nIdPoliza, nIDetPol,cCodCobert, cCodTransac, NVL(nEstimacionMoneda,0)) = 'N' THEN
-                   RAISE_APPLICATION_ERROR(-20225,'La Estimaci√≥n NO puede ser mayor a la Suma Asegurada (validacion) de la Cobertura ' ||cCodCobert||' - NO Procede Crearlo');
+                   RAISE_APPLICATION_ERROR(-20225,'La EstimaciÛn NO puede ser mayor a la Suma Asegurada (validacion) de la Cobertura ' ||cCodCobert||' - NO Procede Crearlo');
                 END IF;
 
                 BEGIN
@@ -5229,7 +5227,7 @@ BEGIN
                    VALUES(nIdSiniestro, nIdPoliza, 1, 0, 0, nEstimacionMoneda, nEstimacionLocal, cIdTipoSeg);
                 EXCEPTION
                    WHEN OTHERS THEN
-                      RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+                      RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
                 END;
 
                 BEGIN
@@ -5256,14 +5254,14 @@ BEGIN
                             'SOL', 1, cCodTransac, cCodCptoTransac, NULL, nEstimacionMoneda, 'D', TRUNC(dFechaCamb), nEstimacionLocal);
                    EXCEPTION
                      WHEN OTHERS THEN
-                       RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+                       RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
                    END;
                 END IF;
              ELSE
                 -- Valida que no exceda la Suma Asegurada.
                 IF OC_COBERTURA_SINIESTRO_ASEG.VALIDA_SUMA_ASEGURADA(X.CodCia, nIdPoliza, nIDetPol, cCodCobert, cCodTransac,
                                                                      nCod_Asegurado, NVL(nEstimacionMoneda,0)) = 'N' THEN
-                   RAISE_APPLICATION_ERROR(-20225,'La Estimaci√≥n NO puede ser mayor a la Suma Asegurada (validacion Aseg) de la Cobertura ' ||cCodCobert||' - NO Procede Crearlo');
+                   RAISE_APPLICATION_ERROR(-20225,'La EstimaciÛn NO puede ser mayor a la Suma Asegurada (validacion Aseg) de la Cobertura ' ||cCodCobert||' - NO Procede Crearlo');
                 END IF;
                 --
                 BEGIN
@@ -5273,7 +5271,7 @@ BEGIN
                   VALUES (nIdSiniestro, nIdPoliza, 1, nCod_Asegurado, 0, 0, nEstimacionMoneda, nEstimacionLocal, cIdTipoSeg);
                 EXCEPTION
                   WHEN OTHERS THEN
-                    RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO ASEG (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+                    RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO ASEG (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
                 END;
                 --
                 BEGIN
@@ -5300,7 +5298,7 @@ BEGIN
                          'SOL', 1, cCodTransac, cCodCptoTransac, NULL, nEstimacionMoneda, 'A', TRUNC(dFechaCamb), nEstimacionLocal);
                 EXCEPTION
                   WHEN OTHERS THEN
-                    RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO ASEG (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+                    RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO ASEG (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
                 END;
              END IF;
           END IF; -- Asegurado mayor a Cero
@@ -5370,9 +5368,9 @@ BEGIN
           ACUANTO_ES := OC_COBERT_ACT_ASEG.SUMA_ASEGURADA(X.CodCia, nIdPoliza, nIDetPol, nCod_Asegurado, cCodCobert);
 
           IF nEstimacionMoneda = 0 THEN
-             RAISE_APPLICATION_ERROR(-20225,'Estimaci√≥n del Siniestro en Ceros - NO Procede Crearlo');
+             RAISE_APPLICATION_ERROR(-20225,'EstimaciÛn del Siniestro en Ceros - NO Procede Crearlo');
           ELSIF nEstimacionMoneda > OC_COBERT_ACT_ASEG.SUMA_ASEGURADA(X.CodCia, nIdPoliza, nIDetPol, nCod_Asegurado, cCodCobert) THEN
-             RAISE_APPLICATION_ERROR(-20225,'La Estimaci√≥n NO puede ser mayor a la Suma Asegurada (Suma Aseg. Ajuste) de la Cobertura ' ||cCodCobert||' - NO Procede el Ajuste');
+             RAISE_APPLICATION_ERROR(-20225,'La EstimaciÛn NO puede ser mayor a la Suma Asegurada (Suma Aseg. Ajuste) de la Cobertura ' ||cCodCobert||' - NO Procede el Ajuste');
           END IF;
 
           IF nEstimacionMoneda > 0 THEN
@@ -5467,15 +5465,15 @@ BEGIN
           IF SumAseg1 > 0 THEN
              SumaAseguradoReal := (SumAseg1 - (nMontoRvaMoneda + TotPagado));
              IF nEstimacionLocal >  SumaAseguradoReal THEN
-                cMsjError := 'La Estimaci√≥n NO puede ser mayor a la Suma Asegurada.  Suma Asegurada Remanente:  ' ||SumaAseguradoReal ;
-                RAISE_APPLICATION_ERROR(-20225,'La Estimaci√≥n NO puede ser mayor a la Suma Asegurada.  Suma Asegurada Remanente:  ' ||SumaAseguradoReal);
+                cMsjError := 'La EstimaciÛn NO puede ser mayor a la Suma Asegurada.  Suma Asegurada Remanente:  ' ||SumaAseguradoReal ;
+                RAISE_APPLICATION_ERROR(-20225,'La EstimaciÛn NO puede ser mayor a la Suma Asegurada.  Suma Asegurada Remanente:  ' ||SumaAseguradoReal);
              END IF;
           END IF;
 
           IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(X.CodCia, nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
              -- Valida que no exceda la Suma Asegurada.
              IF OC_COBERTURA_SINIESTRO.VALIDA_SUMA_ASEGURADA(X.CodCia, nIdPoliza, nIDetPol, cCodCobert, cCodTransac, nEstimacionMoneda) = 'N' THEN
-                RAISE_APPLICATION_ERROR(-20225,'La Estimaci√≥n NO puede ser mayor a la Suma Asegurada (Validacion Ajuste) de la Cobertura ' ||cCodCobert||' - NO Procede Crearlo');
+                RAISE_APPLICATION_ERROR(-20225,'La EstimaciÛn NO puede ser mayor a la Suma Asegurada (Validacion Ajuste) de la Cobertura ' ||cCodCobert||' - NO Procede Crearlo');
              END IF;
 
              BEGIN
@@ -5496,7 +5494,7 @@ BEGIN
                        'SOL', nNumMod, cCodTransac, cCodCptoTransac, NULL, nEstimacionMoneda, 'D', dFecProceso, nEstimacionLocal);
              EXCEPTION
                 WHEN OTHERS THEN
-                   RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Ajuste) - Ocurri√≥ el siguiente error: '||SQLERRM);
+                   RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Ajuste) - OcurriÛ el siguiente error: '||SQLERRM);
              END;
 
              OC_COBERTURA_SINIESTRO.EMITE_RESERVA(X.CodCia, X.CodEmpresa, nIdSiniestro, nIdPoliza, 1, cCodCobert, nNumMod, NULL);
@@ -5513,7 +5511,7 @@ BEGIN
                       AND NumMod      = nNumMod;
                 EXCEPTION
                    WHEN OTHERS THEN
-                      RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - Al obtener la Transaccion ocurri√≥ el siguiente error: '||SQLERRM);
+                      RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - Al obtener la Transaccion ocurriÛ el siguiente error: '||SQLERRM);
                 END;
 
                 BEGIN
@@ -5533,13 +5531,13 @@ BEGIN
                     WHERE NumTransaccion = nIdTransaccion;
                 EXCEPTION
                    WHEN OTHERS THEN
-                      RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - Al obtener la Transaccion ocurri√≥ el siguiente error: '||SQLERRM);
+                      RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - Al obtener la Transaccion ocurriÛ el siguiente error: '||SQLERRM);
                 END;
              END IF;
           ELSE
              -- Valida que no exceda la Suma Asegurada.
              IF OC_COBERTURA_SINIESTRO_ASEG.VALIDA_SUMA_ASEGURADA(X.CodCia, nIdPoliza, nIDetPol, cCodCobert, cCodTransac, nCod_Asegurado, nEstimacionMoneda) = 'N' THEN
-                RAISE_APPLICATION_ERROR(-20225,'La Estimaci√≥n NO puede ser mayor a la Suma Asegurada (Validacion Aseg Ajuste) de la Cobertura ' ||cCodCobert||' - NO Procede Crearlo');
+                RAISE_APPLICATION_ERROR(-20225,'La EstimaciÛn NO puede ser mayor a la Suma Asegurada (Validacion Aseg Ajuste) de la Cobertura ' ||cCodCobert||' - NO Procede Crearlo');
              END IF;
 
              BEGIN
@@ -5561,7 +5559,7 @@ BEGIN
                        'SOL', nNumMod, cCodTransac, cCodCptoTransac, NULL, nEstimacionMoneda, 'D', dFecProceso, nEstimacionLocal);
              EXCEPTION
                 WHEN OTHERS THEN
-                   RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - Ocurri√≥ el siguiente error: '||SQLERRM);
+                   RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - OcurriÛ el siguiente error: '||SQLERRM);
              END;
 
              OC_COBERTURA_SINIESTRO_ASEG.EMITE_RESERVA(X.CodCia, X.CodEmpresa, nIdSiniestro, nIdPoliza, 1, nCod_Asegurado, cCodCobert, nNumMod, NULL);
@@ -5614,7 +5612,7 @@ BEGIN
                       AND NumMod      = nNumMod;
                 EXCEPTION
                    WHEN OTHERS THEN
-                      RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - Al obtener la Transaccion ocurri√≥ el siguiente error: '||SQLERRM);
+                      RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - Al obtener la Transaccion ocurriÛ el siguiente error: '||SQLERRM);
                 END;
 
                 BEGIN
@@ -5634,13 +5632,13 @@ BEGIN
                     WHERE NumTransaccion = nIdTransaccion;
                 EXCEPTION
                    WHEN OTHERS THEN
-                      RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - Al obtener la Transaccion ocurri√≥ el siguiente error: '||SQLERRM);
+                      RAISE_APPLICATION_ERROR(-20225,'COBERTURA_SINIESTRO_ASEG (Ajuste) - Al obtener la Transaccion ocurriÛ el siguiente error: '||SQLERRM);
                 END;
              END IF;
           END IF;
        END IF;
     ELSE
-       cMsjError := 'No Existe la P√≥liza No. ' || X.NumPolUnico;
+       cMsjError := 'No Existe la PÛliza No. ' || X.NumPolUnico;
     END IF;
 
     IF cMsjError IS NULL THEN
@@ -5680,7 +5678,7 @@ BEGIN
           WHEN OTHERS  THEN
              NULL;
        END;
-       ---  Actualizar√° los campos de Reserva de la Tabla COBERTURA_SINIESTRO_ASEG
+       ---  Actualizar· los campos de Reserva de la Tabla COBERTURA_SINIESTRO_ASEG
        BEGIN
           UPDATE COBERTURA_SINIESTRO_ASEG
              SET MONTO_RESERVADO_LOCAL  = MONTO_RESERVADO_MONEDA,
@@ -5946,7 +5944,7 @@ BEGIN
       IF OC_POLIZAS.EXISTE_POLIZA(X.CodCia, X.CodEmpresa, nIdPoliza) = 'S' THEN
          cNumSiniRef := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,','));
          IF cNumSiniRef IS NULL   THEN
-            RAISE_APPLICATION_ERROR(-20225,'  Error en LayOut: No hay Referencia de Siniestro, Favor de validar la informaci√≥n.');
+            RAISE_APPLICATION_ERROR(-20225,'  Error en LayOut: No hay Referencia de Siniestro, Favor de validar la informaciÛn.');
          END IF;
 
          BEGIN
@@ -5957,9 +5955,9 @@ BEGIN
                AND CodCia     = X.CodCia;
          EXCEPTION
             WHEN NO_DATA_FOUND  THEN
-               RAISE_APPLICATION_ERROR(-20225,'NDF Error No Encuentra Numero de Siniestro, Favor de validar la informaci√≥n.');
+               RAISE_APPLICATION_ERROR(-20225,'NDF Error No Encuentra Numero de Siniestro, Favor de validar la informaciÛn.');
             WHEN OTHERS THEN
-               RAISE_APPLICATION_ERROR(-20225,'OTHERS Error No Encuentra Numero de Siniestro, Favor de validar la informaci√≥n.');
+               RAISE_APPLICATION_ERROR(-20225,'OTHERS Error No Encuentra Numero de Siniestro, Favor de validar la informaciÛn.');
          END;
 
          IF nIdSiniestro != 0 THEN
@@ -5987,7 +5985,7 @@ BEGIN
                   nMtoPendPago  := 0;
             END;
             IF nMtoPendPago <= 0 THEN
-               RAISE_APPLICATION_ERROR(-20225,'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la informaci√≥n.');
+               RAISE_APPLICATION_ERROR(-20225,'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la informaciÛn.');
             END IF;
 
             cNumFactura       := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,','));
@@ -6024,11 +6022,11 @@ BEGIN
                      AND FecNacimiento         = nFechaNacimiento;
                EXCEPTION
                   WHEN NO_DATA_FOUND THEN
-                     RAISE_APPLICATION_ERROR(-20225,'NDF No se encontr√≥ al Asegurado por el nombre cargado');
+                     RAISE_APPLICATION_ERROR(-20225,'NDF No se encontrÛ al Asegurado por el nombre cargado');
                   WHEN TOO_MANY_ROWS THEN
                      RAISE_APPLICATION_ERROR(-20225,'2MANYROWS Se encontraron varios registros con el mismo Nombre del Asegurado');
                   WHEN OTHERS THEN
-                     RAISE_APPLICATION_ERROR(-20225,'OTHERS No se encontr√≥ al Asegurado por el nombre cargado');
+                     RAISE_APPLICATION_ERROR(-20225,'OTHERS No se encontrÛ al Asegurado por el nombre cargado');
                END;
 
                BEGIN
@@ -6039,11 +6037,11 @@ BEGIN
                      AND NUM_DOC_IDENTIFICACION   = NUMEROERREFESE;
                EXCEPTION
                   WHEN NO_DATA_FOUND THEN
-                     RAISE_APPLICATION_ERROR(-20225,'NDF No se encontr√≥ al Asegurado por el nombre cargado');
+                     RAISE_APPLICATION_ERROR(-20225,'NDF No se encontrÛ al Asegurado por el nombre cargado');
                   WHEN TOO_MANY_ROWS THEN
                      RAISE_APPLICATION_ERROR(-20225,'2MANYROWS Se encontraron varios registros con el mismo Nombre del Asegurado');
                   WHEN OTHERS THEN
-                     RAISE_APPLICATION_ERROR(-20225,'OTHERS No se encontr√≥ al Asegurado por el nombre cargado');
+                     RAISE_APPLICATION_ERROR(-20225,'OTHERS No se encontrÛ al Asegurado por el nombre cargado');
                END;
 
                IF COD_ASEG_CARGA != nCod_Asegurado THEN
@@ -6065,7 +6063,7 @@ BEGIN
                                                            TO_CHAR(TRUNC(SYSDATE),'DD/MM/YYYY')||' Motivo: '||cDescSiniestro);
             EXCEPTION
               WHEN OTHERS THEN
-                RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n, Favor de validar la informaci√≥n, Error: '||SQLERRM);
+                RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn, Favor de validar la informaciÛn, Error: '||SQLERRM);
             END;
 
             cCodPlantilla     := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
@@ -6085,7 +6083,7 @@ BEGIN
 
             FOR I IN C_CAMPOS_PART LOOP
                nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla, X.CodCia, X.CodEmpresa, I.OrdenProceso) + nOrden;
-               IF I.OrdenCampo != 9 THEN  -- Estimaci√≥n del Siniestro
+               IF I.OrdenCampo != 9 THEN  -- EstimaciÛn del Siniestro
                   cUpdate   := 'UPDATE '||'DATOS_PART_SINIESTROS' || ' ' ||
                                'SET'||' ' || 'CAMPO' || I.OrdenDatoPart || '=' || '''' ||
                                 LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,nOrdenInc,',')) || '''' || ' ' ||
@@ -6129,8 +6127,8 @@ BEGIN
             END LOOP;
 
             IF NVL(nMontoTotPago,0) < 0 THEN
-               cMsjError := 'El monto total a pagar es Negativo, favor de validar la informaci√≥n.';
-               RAISE_APPLICATION_ERROR(-20225,'El monto total a pagar es Negativo, favor de validar la informaci√≥n.');
+               cMsjError := 'El monto total a pagar es Negativo, favor de validar la informaciÛn.';
+               RAISE_APPLICATION_ERROR(-20225,'El monto total a pagar es Negativo, favor de validar la informaciÛn.');
             ELSIF NVL(nMontoTotPago,0) = 0 AND NVL(nMontoTotIVA,0) = 0 THEN
                cMsjError := 'Registro NO Trae Valores para Pago';
                RAISE_APPLICATION_ERROR(-20225,'Registro NO Trae Valores para Pago');
@@ -6294,7 +6292,7 @@ BEGIN
                         nMonto_Moneda, nIdSiniestro, cCodTransac, cCodCptoTransac);
                EXCEPTION
                   WHEN OTHERS THEN
-                     RAISE_APPLICATION_ERROR(-20225,'DETALLE APROBACION - Ocurri√≥ el siguiente error: '||SQLERRM);
+                     RAISE_APPLICATION_ERROR(-20225,'DETALLE APROBACION - OcurriÛ el siguiente error: '||SQLERRM);
                END;
             ELSE
                nNum_Aprobacion := OC_APROBACION_ASEG.INSERTA_APROBACION(nIdSiniestro, nIdPoliza, nCod_Asegurado,
@@ -6357,7 +6355,7 @@ BEGIN
                             nMonto_Moneda, nIdSiniestro, cCodTransac, cCodCptoTransac);
                   EXCEPTION
                      WHEN OTHERS THEN
-                        RAISE_APPLICATION_ERROR(-20225,'DETALLE APROBACION ASEG - Ocurri√≥ el siguiente error: '||SQLERRM);
+                        RAISE_APPLICATION_ERROR(-20225,'DETALLE APROBACION ASEG - OcurriÛ el siguiente error: '||SQLERRM);
                   END;
                ELSE
                   BEGIN
@@ -6368,7 +6366,7 @@ BEGIN
                             nMonto_Moneda, nIdSiniestro, cCodTransac, cCodCptoTransac);
                   EXCEPTION
                      WHEN OTHERS THEN
-                        RAISE_APPLICATION_ERROR(-20225,'DETALLE APROBACION ASEG - Ocurri√≥ el siguiente error: '||SQLERRM);
+                        RAISE_APPLICATION_ERROR(-20225,'DETALLE APROBACION ASEG - OcurriÛ el siguiente error: '||SQLERRM);
                   END;
                END IF;
             END IF;
@@ -6379,7 +6377,7 @@ BEGIN
             END IF;
 
             cNombreProveedor := OC_PERSONA_NATURAL_JURIDICA.NOMBRE_COMPLETO('RFC', cNumDocIdentAsist);
-            -- Se adiciona la condici√≥n de proveedor y numdoc no sean nulos.
+            -- Se adiciona la condiciÛn de proveedor y numdoc no sean nulos.
             IF cNombreProveedor IS NOT NULL THEN
                nBenef := OC_BENEF_SIN.INSERTA_BENEF_PROV(nIdSiniestro, nIdPoliza, nCod_Asegurado, 'RFC', cNumDocIdentAsist);
             ELSIF cTipoEvento = 'VIDA' THEN
@@ -6414,7 +6412,7 @@ BEGIN
                      AND IdPoliza       = nIdPoliza;
                EXCEPTION
                   WHEN OTHERS THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
+                     RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
                END;
 
                BEGIN
@@ -6422,7 +6420,7 @@ BEGIN
                                         nIdPoliza, 1);
                EXCEPTION
                   WHEN OTHERS THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Individual. Error al Pagar la Aprobaci√≥n del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
+                     RAISE_APPLICATION_ERROR(-20225,'Individual. Error al Pagar la AprobaciÛn del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
                END;
             ELSE
                BEGIN
@@ -6435,22 +6433,22 @@ BEGIN
                      AND Cod_Asegurado  = nCod_Asegurado;
                EXCEPTION
                   WHEN OTHERS THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
+                     RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
                END;
                BEGIN
                   OC_APROBACION_ASEG.PAGAR(X.CodCia, X.CodEmpresa, nNum_Aprobacion, nIdSiniestro,
                                            nIdPoliza, nCod_Asegurado, 1);
                EXCEPTION
                   WHEN OTHERS THEN
-                     RAISE_APPLICATION_ERROR(-20225,'Colectivos. Error al Pagar la Aprobaci√≥n del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
+                     RAISE_APPLICATION_ERROR(-20225,'Colectivos. Error al Pagar la AprobaciÛn del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
                END;
             END IF;
          ELSE
-            cMsjError := 'NO Existe la Estimaci√≥n del Siniestro No. ' || nIdSiniestro;
+            cMsjError := 'NO Existe la EstimaciÛn del Siniestro No. ' || nIdSiniestro;
             RAISE_APPLICATION_ERROR(-20225,'Error No se encuentra el Numero del Siniestro: ');
          END IF;
       ELSE
-         cMsjError := 'No Existe la P√≥liza No. ' || X.NumPolUnico;
+         cMsjError := 'No Existe la PÛliza No. ' || X.NumPolUnico;
       END IF;
 
       IF cMsjError IS NULL THEN
@@ -6561,7 +6559,7 @@ cCodPlantilla          CONFIG_PLANTILLAS_PLANCOB.CodPlantilla%TYPE;
 cNumSiniRef            SINIESTRO.NumSiniRef%TYPE;
 cMotivSiniestro        SINIESTRO.Motivo_de_Siniestro%TYPE;
 cCodPaisOcurr          SINIESTRO.CodPaisOcurr%TYPE := '001';
-cCodProvOcurr          SINIESTRO.CodProvOcurr%TYPE := '009'; -- No est√°n mandando la direccion del Trabajador, por lo que por default es D.F.
+cCodProvOcurr          SINIESTRO.CodProvOcurr%TYPE := '009'; -- No est·n mandando la direccion del Trabajador, por lo que por default es D.F.
 dFec_Ocurrencia        SINIESTRO.Fec_Ocurrencia%TYPE;
 dFec_Notificacion      SINIESTRO.Fec_Notificacion%TYPE;
 cDescSiniestro         OBSERVACION_SINIESTRO.Descripcion%TYPE;
@@ -6609,7 +6607,7 @@ dFecProceso            DATE;
 nIdTransaccion         TRANSACCION.IdTransaccion%TYPE;
 nCodError              NUMBER(2) := Null;
 cIdCredThona           VARCHAR2(30);
-cCadenaEspOrig         VARCHAR2(100) := '√°√©√≠√≥√∫√Ä√Å√Ç√É√Ñ√Ö√à√â√ä√ã√å√ç√é√è√í√ì√î√ï√ñ√ô√ö√õ√ú';
+cCadenaEspOrig         VARCHAR2(100) := '·ÈÌÛ˙¿¡¬√ƒ≈»… ÀÃÕŒœ“”‘’÷Ÿ⁄€‹';
 cCadenaNormal          VARCHAR2(100) := 'aeiouAAAAAAEEEEIIIIOOOOOUUUU';
 cTipoMovimiento        VARCHAR2(2);
 nPlazoCredito          NUMBER(5);
@@ -6696,8 +6694,8 @@ BEGIN
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
         nCodError    := 22;
-        cObservacion := 'Codigo Error 22: No est√° reportado en los listados.';
-        RAISE_APPLICATION_ERROR(-20225,'Codigo Error 22: No est√° reportado en los listados.');
+        cObservacion := 'Codigo Error 22: No est· reportado en los listados.';
+        RAISE_APPLICATION_ERROR(-20225,'Codigo Error 22: No est· reportado en los listados.');
     END;
     --
     BEGIN
@@ -6710,7 +6708,7 @@ BEGIN
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
         nCodError    := 22;
-        cObservacion := 'Codigo Error 22: No est√° reportado en los listados.';
+        cObservacion := 'Codigo Error 22: No est· reportado en los listados.';
         RAISE_APPLICATION_ERROR(-20225,cObservacion);
     END;
 
@@ -6759,8 +6757,8 @@ BEGIN
        cCodCptoTranPgo := 'PARVAD';
     ELSE
        nCodError := 29;
-       cObservacion := 'Error, el Tipo de Cobertura no es v√°lido.';
-       RAISE_APPLICATION_ERROR(-20225,'Error, el Tipo de Cobertura no es v√°lido.');
+       cObservacion := 'Error, el Tipo de Cobertura no es v·lido.';
+       RAISE_APPLICATION_ERROR(-20225,'Error, el Tipo de Cobertura no es v·lido.');
     END IF;
 
     -- VALIDA SI ES UN AJUSTE O NUEVO SINIESTRO
@@ -6794,8 +6792,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
            nCodError := 99;
-           cObservacion := 'Error al Insertar la Obervaci√≥n 1, Favor de validar la informaci√≥n.';
-           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n 2, Favor de validar la informaci√≥n, Error: '||SQLERRM);
+           cObservacion := 'Error al Insertar la ObervaciÛn 1, Favor de validar la informaciÛn.';
+           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn 2, Favor de validar la informaciÛn, Error: '||SQLERRM);
        END;
 
        cCodPlantilla     := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(nCodCia, nCodempresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
@@ -6841,7 +6839,7 @@ BEGIN
          WHEN OTHERS THEN
            nCodError := 99;
            cObservacion := 'Error DETALLE SINIESTRO (Cero Sini).';
-           RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+           RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
        END;
 
        BEGIN
@@ -6877,7 +6875,7 @@ BEGIN
             WHEN OTHERS THEN
               nCodError := 99;
               cObservacion := 'NO Existe COBERTURA SINIESTRO (Cero Sini).';
-              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
           END;
        END IF;
 
@@ -6891,8 +6889,8 @@ BEGIN
        EXCEPTION
           WHEN OTHERS THEN
              nCodError := 99;
-             cObservacion := 'Error al Insertar la Obervaci√≥n 3, Favor de validar la informaci√≥n.';
-             RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n 4, Favor de validar la informaci√≥n, Error: '||SQLERRM);
+             cObservacion := 'Error al Insertar la ObervaciÛn 3, Favor de validar la informaciÛn.';
+             RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn 4, Favor de validar la informaciÛn, Error: '||SQLERRM);
        END;
 
        BEGIN
@@ -6962,7 +6960,7 @@ BEGIN
             WHEN OTHERS THEN
               nCodError := 99;
               cObservacion := 'NO Existe COBERTURA SINIESTRO (Cero Sini).';
-              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
           END;
        END IF;
        OC_COBERTURA_SINIESTRO.EMITE_RESERVA(nCodCia, nCodEmpresa, nIdSiniestro, nIdPoliza, 1, cCodCobert, nNumMod, NULL);
@@ -6975,8 +6973,8 @@ BEGIN
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Error al Insertar la Obervaci√≥n 5, Favor de validar la informaci√≥n.';
-        RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n 6, Favor de validar la informaci√≥n, Error: '||SQLERRM);
+        cObservacion := 'Error al Insertar la ObervaciÛn 5, Favor de validar la informaciÛn.';
+        RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn 6, Favor de validar la informaciÛn, Error: '||SQLERRM);
     END;
     --
     BEGIN
@@ -6985,8 +6983,8 @@ BEGIN
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Error al Insertar la Aprobaci√≥n.';
-        RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Aprobaci√≥n: '|| nIdSiniestro || ' ' || SQLERRM);
+        cObservacion := 'Error al Insertar la AprobaciÛn.';
+        RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la AprobaciÛn: '|| nIdSiniestro || ' ' || SQLERRM);
     END;
     --
     BEGIN
@@ -6998,13 +6996,13 @@ BEGIN
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Insertar en DETALLE APROBACION - Ocurri√≥ el siguiente error.';
-        RAISE_APPLICATION_ERROR(-20225,'Insertar en DETALLE APROBACION - Ocurri√≥ el siguiente error: '||SQLERRM);
+        cObservacion := 'Insertar en DETALLE APROBACION - OcurriÛ el siguiente error.';
+        RAISE_APPLICATION_ERROR(-20225,'Insertar en DETALLE APROBACION - OcurriÛ el siguiente error: '||SQLERRM);
     END;
     --
     nBenef := 1;
 
-    -- ESTE QUERY ESTA EXTRA√ëO HAY QUE ANALIZAR SU TIEMPO DE CARGA
+    -- ESTE QUERY ESTA EXTRA—O HAY QUE ANALIZAR SU TIEMPO DE CARGA
     BEGIN
       SELECT TRIM(PNJ.Nombre), TRIM(PNJ.Apellido_Paterno), TRIM(PNJ.Apellido_Materno)
         INTO cNombreBenef, cApellPatBenef, cApellMatBenef
@@ -7054,8 +7052,8 @@ BEGIN
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario.';
-        RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
+        cObservacion := 'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario.';
+        RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
     END;
 
     BEGIN
@@ -7063,8 +7061,8 @@ BEGIN
     EXCEPTION
       WHEN OTHERS THEN
         nCodError := 99;
-        cObservacion := 'Error al Pagar la Aprobaci√≥n del Siniestro.';
-        RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la Aprobaci√≥n del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
+        cObservacion := 'Error al Pagar la AprobaciÛn del Siniestro.';
+        RAISE_APPLICATION_ERROR(-20225,'Error al Pagar la AprobaciÛn del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
     END;
 
     -- PROCESO DE PAGOS  FIN
@@ -7095,7 +7093,7 @@ cCodPlantilla          CONFIG_PLANTILLAS_PLANCOB.CodPlantilla%TYPE;
 cNumSiniRef            SINIESTRO.NumSiniRef%TYPE;
 cMotivSiniestro        SINIESTRO.Motivo_de_Siniestro%TYPE;
 cCodPaisOcurr          SINIESTRO.CodPaisOcurr%TYPE := '001';
-cCodProvOcurr          SINIESTRO.CodProvOcurr%TYPE := '009'; -- No est√°n mandando la direccion del Trabajador, por lo que por default es D.F.
+cCodProvOcurr          SINIESTRO.CodProvOcurr%TYPE := '009'; -- No est·n mandando la direccion del Trabajador, por lo que por default es D.F.
 dFec_Ocurrencia        SINIESTRO.Fec_Ocurrencia%TYPE;
 dFec_Notificacion      SINIESTRO.Fec_Notificacion%TYPE;
 cDescSiniestro         OBSERVACION_SINIESTRO.Descripcion%TYPE;
@@ -7143,7 +7141,7 @@ dFecProceso            DATE;
 nIdTransaccion         TRANSACCION.IdTransaccion%TYPE;
 nCodError              NUMBER(2) := Null;
 cIdCredThona           VARCHAR2(30);
-cCadenaEspOrig         VARCHAR2(100) := '√°√©√≠√≥√∫√Ä√Å√Ç√É√Ñ√Ö√à√â√ä√ã√å√ç√é√è√í√ì√î√ï√ñ√ô√ö√õ√ú';
+cCadenaEspOrig         VARCHAR2(100) := '·ÈÌÛ˙¿¡¬√ƒ≈»… ÀÃÕŒœ“”‘’÷Ÿ⁄€‹';
 cCadenaNormal          VARCHAR2(100) := 'aeiouAAAAAAEEEEIIIIOOOOOUUUU';
 cTipoMovimiento        VARCHAR2(2);
 nPlazoCredito          NUMBER(5);
@@ -7230,8 +7228,8 @@ BEGIN
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
         nCodError    := 22;
-        cObservacion := 'Codigo Error 22: No est√° reportado en los listados.';
-        RAISE_APPLICATION_ERROR(-20225,'Codigo Error 22: No est√° reportado en los listados.');
+        cObservacion := 'Codigo Error 22: No est· reportado en los listados.';
+        RAISE_APPLICATION_ERROR(-20225,'Codigo Error 22: No est· reportado en los listados.');
     END;
 
     BEGIN
@@ -7244,7 +7242,7 @@ BEGIN
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
         nCodError    := 22;
-        cObservacion := 'Codigo Error 22: No est√° reportado en los listados.';
+        cObservacion := 'Codigo Error 22: No est· reportado en los listados.';
         RAISE_APPLICATION_ERROR(-20225,cObservacion);
     END;
 
@@ -7287,8 +7285,8 @@ BEGIN
        cCodCptoTranPgo := 'PARVAD';
     ELSE
        nCodError := 29;
-       cObservacion := 'Error, el Tipo de Cobertura no es v√°lido.';
-       RAISE_APPLICATION_ERROR(-20225,'Error, el Tipo de Cobertura no es v√°lido.');
+       cObservacion := 'Error, el Tipo de Cobertura no es v·lido.';
+       RAISE_APPLICATION_ERROR(-20225,'Error, el Tipo de Cobertura no es v·lido.');
     END IF;
 
     -- VALIDA SI ES UN AJUSTE O NUEVO SINIESTRO
@@ -7322,8 +7320,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
            nCodError := 99;
-           cObservacion := 'Error al Insertar la Obervaci√≥n 1, Favor de validar la informaci√≥n.';
-           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n 2, Favor de validar la informaci√≥n, Error: '||SQLERRM);
+           cObservacion := 'Error al Insertar la ObervaciÛn 1, Favor de validar la informaciÛn.';
+           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn 2, Favor de validar la informaciÛn, Error: '||SQLERRM);
        END;
 
        cCodPlantilla     := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(nCodCia, nCodempresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
@@ -7369,7 +7367,7 @@ BEGIN
          WHEN OTHERS THEN
            nCodError := 99;
            cObservacion := 'Error DETALLE SINIESTRO (Cero Sini).';
-           RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+           RAISE_APPLICATION_ERROR(-20225,'DETALLE SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
        END;
 
        BEGIN
@@ -7405,7 +7403,7 @@ BEGIN
             WHEN OTHERS THEN
               nCodError := 99;
               cObservacion := 'NO Existe COBERTURA SINIESTRO (Cero Sini).';
-              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
           END;
        END IF;
 
@@ -7419,8 +7417,8 @@ BEGIN
        EXCEPTION
          WHEN OTHERS THEN
            nCodError := 99;
-           cObservacion := 'Error al Insertar la Obervaci√≥n 3, Favor de validar la informaci√≥n.';
-           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la Obervaci√≥n 4, Favor de validar la informaci√≥n, Error: '||SQLERRM);
+           cObservacion := 'Error al Insertar la ObervaciÛn 3, Favor de validar la informaciÛn.';
+           RAISE_APPLICATION_ERROR(-20225,'Error al Insertar la ObervaciÛn 4, Favor de validar la informaciÛn, Error: '||SQLERRM);
        END;
 
        BEGIN
@@ -7490,7 +7488,7 @@ BEGIN
             WHEN OTHERS THEN
               nCodError := 99;
               cObservacion := 'NO Existe COBERTURA SINIESTRO (Cero Sini).';
-              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - Ocurri√≥ el siguiente error: '||SQLERRM);
+              RAISE_APPLICATION_ERROR(-20225,'COBERTURA SINIESTRO (Cero Sini) - OcurriÛ el siguiente error: '||SQLERRM);
           END;
        END IF;
        OC_COBERTURA_SINIESTRO.EMITE_RESERVA(nCodCia, nCodEmpresa, nIdSiniestro, nIdPoliza, 1, cCodCobert, nNumMod, NULL);
@@ -7705,7 +7703,7 @@ BEGIN
               nOrdenInc := 0;
 
               IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia, X.CodEmpresa ,X.IdTipoSeg ,X.PlanCob)= 'N' THEN
-                 RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
+                 RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
               END IF;
               BEGIN
                  SELECT Cod_Agente
@@ -7782,13 +7780,13 @@ BEGIN
                            nOrdenInc := OC_PROCESOS_MASIVOS.VALOR_POSICION (cCodPlantilla ,X.CodCia, X.CodEmpresa ,I.OrdenProceso) + nOrden;
                            IF UPPER(I.NomCampo) = 'FECINIVIG' THEN
                               IF (TO_DATE(fFecEndIni,'DD/MM/YY') NOT BETWEEN  dFecIniVig AND  dFecFinVig) OR (TO_DATE(fFecEndIni,'DD/MM/YY') < TO_DATE(TRUNC(SYSDATE),'DD/MM/YY')) THEN
-                                  RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Endoso debe estar dentro de la Vigencia de la P√≥liza y debe ser posterior a la fecha actual.');
+                                  RAISE_APPLICATION_ERROR(-20225,'Fecha de Inicio de Vigencia del Endoso debe estar dentro de la Vigencia de la PÛliza y debe ser posterior a la fecha actual.');
                               END IF;
 
                            END IF;
                            IF UPPER(I.NomCampo) = 'FECFINVIG' THEN
                               IF (TO_DATE(fFecEndFin,'DD/MM/YY') NOT BETWEEN  dFecIniVig AND  dFecFinVig) OR (TO_DATE(fFecEndFin,'DD/MM/YY') < TO_DATE(TRUNC(SYSDATE),'DD/MM/YY')) THEN
-                                 RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Endoso debe estar dentro de la Vigencia de la P√≥liza y debe ser posterior a la fecha actual.');
+                                 RAISE_APPLICATION_ERROR(-20225,'Fecha de Final de Vigencia del Endoso debe estar dentro de la Vigencia de la PÛliza y debe ser posterior a la fecha actual.');
                               END IF;
                            END IF;
                           nOrden := nOrden + 1;
@@ -7863,7 +7861,7 @@ BEGIN
                           OC_DDL_OBJETOS.EJECUTAR_SQL(cUpdate);
                           nOrden := nOrden + 1;
                        END LOOP;
-                       --  Se quita temporalmente la carga de coberturas para agilizar el proceso de Emisi√≥n y solo se deja para Endosos
+                       --  Se quita temporalmente la carga de coberturas para agilizar el proceso de EmisiÛn y solo se deja para Endosos
                           IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA (X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,
                                                                  nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
                              IF NVL(cIndSinAseg,'N') = 'N' THEN
@@ -8056,7 +8054,7 @@ BEGIN
         OC_ENDOSO.EMITIR(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso, 'INA');
 
         IF FALSE THEN
-            -- Verifica si Gener√≥ Facturas y/o Notas de Cr√©dito
+            -- Verifica si GenerÛ Facturas y/o Notas de CrÈdito
             SELECT COUNT(*)
               INTO nExiste
               FROM FACTURAS
@@ -8251,7 +8249,7 @@ BEGIN
 
          ---  Validamos que el monto sea Positivo   ---
          IF nMonto < 0 THEN
-            RAISE_APPLICATION_ERROR(-20225,'DIRVAD Error El monto es Negativo y √©ste proceso es de Aumento de Reserva. ' );
+            RAISE_APPLICATION_ERROR(-20225,'DIRVAD Error El monto es Negativo y Èste proceso es de Aumento de Reserva. ' );
          END IF;
 
          BEGIN
@@ -8771,7 +8769,7 @@ BEGIN
          END IF;
          IF cMsjError IS NULL THEN
             IF nSaldoDeLaReserva = 0  THEN
-               cMsjError:=(' El Saldo de la Reserva es Cero y no puede quedar Negativa. No se Puede crear √©ste Ajuste     ');
+               cMsjError:=(' El Saldo de la Reserva es Cero y no puede quedar Negativa. No se Puede crear Èste Ajuste     ');
             END IF;
          END IF;
 
@@ -8780,7 +8778,7 @@ BEGIN
               INTO prueba_SaldoReserva
               FROM DUAL;
             IF prueba_SaldoReserva < 0  THEN
-               cMsjError:=('-20225   La Disminuci√≥n dejar√≠a el Saldo de la Reserva Negativa. No se Puede crear √©ste Ajuste  ' );
+               cMsjError:=('-20225   La DisminuciÛn dejarÌa el Saldo de la Reserva Negativa. No se Puede crear Èste Ajuste  ' );
             END IF;
          END IF;
 
@@ -8884,7 +8882,7 @@ BEGIN
                RAISE_APPLICATION_ERROR(-20225,' 1 Error en ACTUALIZA_STATUS UPDATE PROCESOS_MASIVOS_SEGUIMIENTO  '||SQLERRM);
          END;
 
-         ----  HACE MAGIA  PROCESA Y EMITE  √ì  MANDA A  PROCESO DE ERROR PROCESOS_MASIVOS_LOG --------
+         ----  HACE MAGIA  PROCESA Y EMITE  ”  MANDA A  PROCESO DE ERROR PROCESOS_MASIVOS_LOG --------
          IF cMsjError IS NULL THEN
             OC_PROCESOS_MASIVOS.INSERTA_PROCESO_MASIVO_PROC(nIdProcMasivo);
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'EMI');
@@ -9431,8 +9429,8 @@ BEGIN
                   RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar Procesos_Masivos_Seguimiento: '||SQLERRM);
             END;
          ELSIF HabemusPgoGG > 1 THEN
-            cMsjError := 'Error al cargar.El IDCarga: '||WnIDPROCMASIVO||' existe mas de 1 vez. Revisar con el equipo de Tecnolog√≠as de la Informaci√≥n. ';
-            RAISE_APPLICATION_ERROR(-20225,'Error al cargar.El IDCarga: '||WnIDPROCMASIVO||' existe mas de 1 vez. Revisar con el equipo de Tecnolog√≠as de la Informaci√≥n. ');
+            cMsjError := 'Error al cargar.El IDCarga: '||WnIDPROCMASIVO||' existe mas de 1 vez. Revisar con el equipo de TecnologÌas de la InformaciÛn. ';
+            RAISE_APPLICATION_ERROR(-20225,'Error al cargar.El IDCarga: '||WnIDPROCMASIVO||' existe mas de 1 vez. Revisar con el equipo de TecnologÌas de la InformaciÛn. ');
          ELSIF HabemusPgoGG = 0 THEN
             cMsjError := 'Error al cargar.El IDCarga: '||WnIDPROCMASIVO||' ya fue actualizado antes. No puede ser actualizado mas de Una Vez. ';
             RAISE_APPLICATION_ERROR(-20225,'Error al cargar.El IDCarga: '||WnIDPROCMASIVO||' ya fue actualizado antes. No puede ser actualizado mas de Una Vez. ');
@@ -9649,15 +9647,15 @@ BEGIN
    END IF;
    IF cMsjError IS NULL THEN
       IF nSaldoDeLaReserva = 0 THEN
-         cMsjError:=(' El Saldo de la Reserva es Cero y no puede quedar Negativa. No se Puede crear √©ste Ajuste');
+         cMsjError:=(' El Saldo de la Reserva es Cero y no puede quedar Negativa. No se Puede crear Èste Ajuste');
       END IF;
    END IF;
 
    IF  cMsjError IS NULL THEN
       Prueba_SaldoReserva := nSaldoDeLaReserva - wMntoPgo;
       IF Prueba_SaldoReserva < 0  THEN
-         cMsjError:=('-20225 La Disminuci√≥n dejar√≠a el Saldo de la Reserva Negativa. No se Puede crear √©ste Ajuste');
-         RAISE_APPLICATION_ERROR(-20225,'La Disminuci√≥n dejar√≠a el Saldo de la Reserva Negativa. No se Puede crear √©ste Ajuste');
+         cMsjError:=('-20225 La DisminuciÛn dejarÌa el Saldo de la Reserva Negativa. No se Puede crear Èste Ajuste');
+         RAISE_APPLICATION_ERROR(-20225,'La DisminuciÛn dejarÌa el Saldo de la Reserva Negativa. No se Puede crear Èste Ajuste');
       END IF;
    END IF;
 
@@ -9691,7 +9689,7 @@ BEGIN
                 WHERE IdSiniestro = wIdSiniestro;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
-                  RAISE_APPLICATION_ERROR(-202,'No existe compa√±ia:'||SQLERRM);
+                  RAISE_APPLICATION_ERROR(-202,'No existe compaÒia:'||SQLERRM);
             END;
 
             cIndFecEquivPro := OC_PROC_TAREA.INDICA_FEC_EQUIVALENTE_PRO(6);
@@ -10018,8 +10016,8 @@ BEGIN
    END IF;
 
    IF nSaldoDeLaReserva IS NULL THEN
-      cMsjError:=('AURVAD El Saldo de la Reserva es Nulo. No se Puede crear √©ste Ajuste     ');
-      RAISE_APPLICATION_ERROR(-20225,'AURVAD El Saldo de la Reserva es Nulo. No se Puede crear √©ste Ajuste     ');
+      cMsjError:=('AURVAD El Saldo de la Reserva es Nulo. No se Puede crear Èste Ajuste     ');
+      RAISE_APPLICATION_ERROR(-20225,'AURVAD El Saldo de la Reserva es Nulo. No se Puede crear Èste Ajuste     ');
    END IF;
 
    IF cMsjError IS NULL THEN
@@ -10058,7 +10056,7 @@ BEGIN
                 WHERE IdSiniestro = wIdSiniestro;
             EXCEPTION
                WHEN NO_DATA_FOUND THEN
-                  RAISE_APPLICATION_ERROR(-202,'No existe compa√±ia:'||SQLERRM);
+                  RAISE_APPLICATION_ERROR(-202,'No existe compaÒia:'||SQLERRM);
             END;
 
             cIndFecEquivPro := OC_PROC_TAREA.INDICA_FEC_EQUIVALENTE_PRO(6);
@@ -10405,7 +10403,7 @@ BEGIN
    SELECT  USER ,USERENV('TERMINAL')                   ---  SIGUECARGA
      INTO  USUSARIO , TERMINAL
      FROM  SYS.DUAL;
-	 
+
 	BEGIN --PST 27-11-2023 TODO EL QUERY
 		SELECT APEX_CUSTOM_AUTH.GET_USERNAME INTO USUSARIO FROM DUAL;
 		IF(USUSARIO IS NULL)THEN
@@ -10469,8 +10467,8 @@ end;
 cband:='1.3'||' - ('||LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,1,cSeparador))||')';
 
       IF nIdSiniestro IS NULL THEN
-        cMsjError := 'Error en LayOut: No Contiene N√∫mero de Siniestro, Favor de validar la informaci√≥n.';
-        RAISE_APPLICATION_ERROR(-20225,'Error en LayOut: No Contiene N√∫mero de Siniestro, Favor de validar la informaci√≥n.');
+        cMsjError := 'Error en LayOut: No Contiene N˙mero de Siniestro, Favor de validar la informaciÛn.';
+        RAISE_APPLICATION_ERROR(-20225,'Error en LayOut: No Contiene N˙mero de Siniestro, Favor de validar la informaciÛn.');
       END IF;
 cband:='dos';
 
@@ -10481,8 +10479,8 @@ cband:='dos';
          WHERE IdSiniestro = nIdSiniestro;
       EXCEPTION
         WHEN NO_DATA_FOUND THEN
-            cMsjError := 'No Es Posible Determinar El Siniestro Y Su Informaci√≥n De P√≥liza, Favor de validar la informaci√≥n.';
-            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar El Siniestro Y Su Informaci√≥n De P√≥liza, Favor de validar la informaci√≥n.');
+            cMsjError := 'No Es Posible Determinar El Siniestro Y Su InformaciÛn De PÛliza, Favor de validar la informaciÛn.';
+            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar El Siniestro Y Su InformaciÛn De PÛliza, Favor de validar la informaciÛn.');
       END;
 
       cNumAsist    := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,2,cSeparador));
@@ -10504,8 +10502,8 @@ cband:='dos';
                        WHERE IdSiniestro = nIdSiniestro;
                     EXCEPTION
                       WHEN NO_DATA_FOUND THEN
-                         cMsjError := 'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la informaci√≥n.';
-                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la informaci√≥n.');
+                         cMsjError := 'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la informaciÛn.';
+                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la informaciÛn.');
                     END;
                     BEGIN
                         SELECT DISTINCT CodCobert
@@ -10517,16 +10515,16 @@ cband:='dos';
                            AND Cod_Asegurado = nCodAsegurado;
                     EXCEPTION
                         WHEN NO_DATA_FOUND THEN
-                            cMsjError := 'No Es Posible Determinar Una Cobertura Para El Siniestro, Favor de validar la informaci√≥n.';
-                            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Una Cobertura Para El Siniestro, Favor de validar la informaci√≥n.');
+                            cMsjError := 'No Es Posible Determinar Una Cobertura Para El Siniestro, Favor de validar la informaciÛn.';
+                            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Una Cobertura Para El Siniestro, Favor de validar la informaciÛn.');
                         WHEN TOO_MANY_ROWS THEN
-                            cMsjError := 'Existe mas de uan cobertura para el siniestro. Favor de validar la informaci√≥n..';
-                            RAISE_APPLICATION_ERROR(-20225,'Existe mas de uan cobertura para el siniestro, Favor de validar la informaci√≥n.');
+                            cMsjError := 'Existe mas de uan cobertura para el siniestro. Favor de validar la informaciÛn..';
+                            RAISE_APPLICATION_ERROR(-20225,'Existe mas de uan cobertura para el siniestro, Favor de validar la informaciÛn.');
                     END;
                     IF OC_COBERTURA_SINIESTRO_ASEG.EXISTE_COBERTURA (nIdSiniestro, nIdPoliza, nIdDetSin, nCodAsegurado,
                                                                         cCodCobert) = 'N' THEN
-                        cMsjError := 'No Existe La Cobertura Para El Siniestro Asegurado, Favor de validar la informaci√≥n.';
-                        RAISE_APPLICATION_ERROR(-20225,'No Existe La Cobertura Para El Siniestro Asegurado, Favor de validar la informaci√≥n.');
+                        cMsjError := 'No Existe La Cobertura Para El Siniestro Asegurado, Favor de validar la informaciÛn.';
+                        RAISE_APPLICATION_ERROR(-20225,'No Existe La Cobertura Para El Siniestro Asegurado, Favor de validar la informaciÛn.');
                     ELSE
                         --BUSCA SALDO DE LA COBERTURA
                         OC_COBERTURA_SINIESTRO_ASEG.SALDO_RESERVA(nIdSiniestro, nIdPoliza, nIdDetSin, nCodAsegurado,
@@ -10553,8 +10551,8 @@ cband:='dos';
                        WHERE IdSiniestro = nIdSiniestro;
                     EXCEPTION
                       WHEN NO_DATA_FOUND THEN
-                         cMsjError := 'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la informaci√≥n.';
-                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la informaci√≥n.');
+                         cMsjError := 'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la informaciÛn.';
+                         RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Detalle Del Siniestro '||nIdSiniestro||' Para Validar Cobertura, Favor de validar la informaciÛn.');
                     END;
 cband:='tres';
                     BEGIN
@@ -10566,15 +10564,15 @@ cband:='tres';
                            AND IdPoliza     = nIdPoliza;
                     EXCEPTION
                         WHEN NO_DATA_FOUND THEN
-                            cMsjError := 'No Es Posible Determinar Una Cobertura Para El Siniestro, Favor de validar la informaci√≥n.';
-                            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Una Cobertura Para El Siniestro, Favor de validar la informaci√≥n.');
+                            cMsjError := 'No Es Posible Determinar Una Cobertura Para El Siniestro, Favor de validar la informaciÛn.';
+                            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Una Cobertura Para El Siniestro, Favor de validar la informaciÛn.');
                         WHEN TOO_MANY_ROWS THEN
-                            cMsjError := 'Existe mas de uan cobertura para el siniestro. Favor de validar la informaci√≥n..';
-                            RAISE_APPLICATION_ERROR(-20225,'Existe mas de uan cobertura para el siniestro, Favor de validar la informaci√≥n.');
+                            cMsjError := 'Existe mas de uan cobertura para el siniestro. Favor de validar la informaciÛn..';
+                            RAISE_APPLICATION_ERROR(-20225,'Existe mas de uan cobertura para el siniestro, Favor de validar la informaciÛn.');
                     END;
                     IF OC_COBERTURA_SINIESTRO.EXISTE_COBERTURA (nIdSiniestro, nIdPoliza, nIdDetSin, cCodCobert) = 'N' THEN
-                        cMsjError := 'No Existe La Cobertura Para El Siniestro, Favor de validar la informaci√≥n.';
-                        RAISE_APPLICATION_ERROR(-20225,'No Existe La Cobertura Para El Siniestro, Favor de validar la informaci√≥n.');
+                        cMsjError := 'No Existe La Cobertura Para El Siniestro, Favor de validar la informaciÛn.';
+                        RAISE_APPLICATION_ERROR(-20225,'No Existe La Cobertura Para El Siniestro, Favor de validar la informaciÛn.');
                     ELSE
                         --BUSCA SALDO DE LA COBERTURA
                         OC_COBERTURA_SINIESTRO.SALDO_RESERVA(nIdSiniestro, nIdPoliza, nIdDetSin, cCodCobert,
@@ -10594,8 +10592,8 @@ cband:='tres';
                     END IF;
                 END IF;
                 IF nSaldoRvaMoneda <= 0 THEN
-                   cMsjError := 'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la informaci√≥n.';
-                   RAISE_APPLICATION_ERROR(-20225,'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la informaci√≥n.');
+                   cMsjError := 'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la informaciÛn.';
+                   RAISE_APPLICATION_ERROR(-20225,'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la informaciÛn.');
                 END IF;
                 IF nMtoDeducible > nMtoDedPol THEN
                     cMsjError := 'Deducible Cargado Es Mayor Al Deducible De La Poliza.';
@@ -10652,7 +10650,7 @@ cband:='cuatro';
                         AND TRUNC(FE_ESTATUS) >= TRUNC(SYSDATE - nDiasautpld)
 ----------
                         AND NUMSINIESTRO = nIdSiniestro ;
-----------                        
+----------
                    EXCEPTION
                      WHEN NO_DATA_FOUND THEN
 -----------------
@@ -10691,7 +10689,7 @@ cband:='cinco';
                        AND  ST_RESOLUCION != 'APRO'
 ---------- JMMD24062020
                        AND NUMSINIESTRO = nIdSiniestro ;
----------- JMMD24062020                              
+---------- JMMD24062020
 
                     IF ncuantos > 0 THEN
                        cST_RESOLUCIO := 'PEND';
@@ -10774,8 +10772,8 @@ cband:='siete';
                         OC_CATALOGO_DE_CONCEPTOS.TIPO_CONCEPTO(X.CodCia, 'ISRSIN', cIndTipoConcepto, nPorcConcepto, nMontoConcepto);
                     IF nPorcConcepto = 0 THEN
                         cband:='7.2.1';
-                        cMsjError := 'Porcentaje De ISR Es Cero En La Configuraci√≥n Del Concepto, Por Favor Valide';
-                        RAISE_APPLICATION_ERROR(-20225,'Porcentaje De ISR Es Cero En La Configuraci√≥n Del Concepto, Por Favor Valide');
+                        cMsjError := 'Porcentaje De ISR Es Cero En La ConfiguraciÛn Del Concepto, Por Favor Valide';
+                        RAISE_APPLICATION_ERROR(-20225,'Porcentaje De ISR Es Cero En La ConfiguraciÛn Del Concepto, Por Favor Valide');
                     ELSE
                         cband:='7.2.2';
                         IF ROUND((nMtoHono + nMtoHosp + nMtoOtrosGtos) * (nPorcConcepto / 100),2) < nMtoIsr THEN
@@ -10790,8 +10788,8 @@ cband:='siete';
                     OC_CATALOGO_DE_CONCEPTOS.TIPO_CONCEPTO(X.CodCia, 'IMPLOC', cIndTipoConcepto, nPorcConcepto, nMontoConcepto);
                     cband:='7.3.1';
                     IF nPorcConcepto = 0 THEN
-                        cMsjError := 'Porcentaje De Impuesto Local (Cedular) Es Cero En La Configuraci√≥n Del Concepto, Por Favor Valide';
-                        RAISE_APPLICATION_ERROR(-20225,'Porcentaje De Impuesto Local (Cedular) Es Cero En La Configuraci√≥n Del Concepto, Por Favor Valide');
+                        cMsjError := 'Porcentaje De Impuesto Local (Cedular) Es Cero En La ConfiguraciÛn Del Concepto, Por Favor Valide';
+                        RAISE_APPLICATION_ERROR(-20225,'Porcentaje De Impuesto Local (Cedular) Es Cero En La ConfiguraciÛn Del Concepto, Por Favor Valide');
                     ELSE
                         IF (nMtoHono + nMtoHosp + nMtoOtrosGtos) * (nPorcConcepto / 100) <> nMtoRetImpCedular THEN
                             cMsjError := 'El Monto Del Gasto Mas El Porcentaje De Isr Configurado Es Diferente Al Monto De Iva Registrado En El Archivo, Por Favor Valide';
@@ -10804,8 +10802,8 @@ cband:='siete';
                     cband:='7.4.1';
                     IF nMtoIva <> 0 THEN
                         IF nPorcConcepto = 0 THEN
-                            cMsjError := 'Porcentaje De Retenci√≥n De IVA Es Cero En La Configuraci√≥n Del Concepto, Por Favor Valide';
-                            RAISE_APPLICATION_ERROR(-20225,'Porcentaje De Retenci√≥n De IVA Es Cero En La Configuraci√≥n Del Concepto, Por Favor Valide');
+                            cMsjError := 'Porcentaje De RetenciÛn De IVA Es Cero En La ConfiguraciÛn Del Concepto, Por Favor Valide';
+                            RAISE_APPLICATION_ERROR(-20225,'Porcentaje De RetenciÛn De IVA Es Cero En La ConfiguraciÛn Del Concepto, Por Favor Valide');
                         ELSE
                             IF (nMtoHono + nMtoHosp + nMtoOtrosGtos) * (nPorcConcepto / 100) <> nMtoRetIva THEN
                                 cMsjError := 'El Monto De Retencion De Iva No Es Igual Al Monto Registrado En El Archivo, Por Favor Valide';
@@ -10850,14 +10848,14 @@ cband:='siete';
                            AND A23.COD_ASEGURADO = nCodAsegurado;
                     EXCEPTION
                         WHEN NO_DATA_FOUND THEN
-                            cMsjError := 'No Es Posible Determinar Persona Natural Juridica Con El Nombre y C√≥digo de Asegurado De Carga';
-                            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Persona Natural Juridica Con El Nombre y C√≥digo de Asegurado De Carga');
+                            cMsjError := 'No Es Posible Determinar Persona Natural Juridica Con El Nombre y CÛdigo de Asegurado De Carga';
+                            RAISE_APPLICATION_ERROR(-20225,'No Es Posible Determinar Persona Natural Juridica Con El Nombre y CÛdigo de Asegurado De Carga');
                         WHEN TOO_MANY_ROWS THEN
                             cMsjError := 'Existe Mas De Un Registros Con El Nombre y Codigo de Asegurado En Persona Natural Juridica';
                             RAISE_APPLICATION_ERROR(-20225,'Existe Mas De Un Registros Con El Nombre y Codigo de Asegurado En Persona Natural Juridica');
                         WHEN OTHERS THEN
-                            cMsjError := 'Error Al Obtener La Persona Natural Jur√≠dica Por El Nombre Cargado, Por Favor Valide La Informaci√≥n';
-                            RAISE_APPLICATION_ERROR(-20225,'Error Al Obtener La Persona Natural Jur√≠dica Por El Nombre Cargado, Por Favor Valide La Informaci√≥n');
+                            cMsjError := 'Error Al Obtener La Persona Natural JurÌdica Por El Nombre Cargado, Por Favor Valide La InformaciÛn';
+                            RAISE_APPLICATION_ERROR(-20225,'Error Al Obtener La Persona Natural JurÌdica Por El Nombre Cargado, Por Favor Valide La InformaciÛn');
                     END;
 
                     --VALIDA DIFERENCIA ENTRE ASEGURADO DE CARGA Y ASEGURADO DEL SISTEMA
@@ -10896,11 +10894,11 @@ cband:='nueve';
                     WHEN NO_DATA_FOUND THEN
                         nIdeFactExt := 0;
                     WHEN TOO_MANY_ROWS THEN
-                        cMsjError := 'Existe m√°s de un registro para el UUID '||cFolioUUID||', por favor valide. Los numeros de siniestros son: ';
+                        cMsjError := 'Existe m·s de un registro para el UUID '||cFolioUUID||', por favor valide. Los numeros de siniestros son: ';
                         FOR J IN FACTEXTSIN_Q LOOP
                             cMsjError := cMsjError||J.IdSiniestro||',';
                         END LOOP;
-                        RAISE_APPLICATION_ERROR(-20225,'Existe m√°s de un registro para el UUID '||cFolioUUID||', por favor valide. Los numeros de siniestros son: ');
+                        RAISE_APPLICATION_ERROR(-20225,'Existe m·s de un registro para el UUID '||cFolioUUID||', por favor valide. Los numeros de siniestros son: ');
                         -- PARA EL LOG DEBERA TRAER TODOS LOS IDSINEISTRO DE LA TABLA FACTURA_EXTERNA SI ES QUE APLICA------------------------------
                 END;
 
@@ -10941,12 +10939,12 @@ cband:='diex';
                    nOrden := nOrden + 1;
                 END LOOP;
           ELSE
-            cMsjError := 'NO Existe la Estimaci√≥n del Siniestro No. ' || nIdSiniestro;
+            cMsjError := 'NO Existe la EstimaciÛn del Siniestro No. ' || nIdSiniestro;
             RAISE_APPLICATION_ERROR(-20225,'Error No se encuentra el Numero del Siniestro: ');
           END IF;
       ELSE
-         cMsjError := 'No Existe la P√≥liza No. ' || X.NumPolUnico;
-         RAISE_APPLICATION_ERROR(-20225,'No Existe la P√≥liza No. ' || X.NumPolUnico);
+         cMsjError := 'No Existe la PÛliza No. ' || X.NumPolUnico;
+         RAISE_APPLICATION_ERROR(-20225,'No Existe la PÛliza No. ' || X.NumPolUnico);
       END IF;
       /*+++++++++++++++++++++++++++ CONCLUYEN VALIDACIONES +++++++++++++++++++++++++++++++*/
       IF cMsjError IS NULL AND  nIndValida = 'S' THEN
@@ -10975,7 +10973,7 @@ cband:='diex';
                     WHEN NO_DATA_FOUND THEN
                         nExiste := 0;
                     WHEN TOO_MANY_ROWS THEN
-                        cMsjError := 'Existe m√°s de un Folio de Factura '||cNumFactura||', por favor valide';
+                        cMsjError := 'Existe m·s de un Folio de Factura '||cNumFactura||', por favor valide';
                         -- PARA EL LOG DEBERA TRAER TODOS LOS IDSINEISTRO DE LA TABLA FACTURA_EXTERNA SI ES QUE APLICA-----------------------------
                 END;
                 IF nExiste = 0 THEN
@@ -11312,7 +11310,7 @@ cband:='doce';
             END IF;
 cband:='trece';
 
-            -- Se adiciona la condici√≥n de proveedor y numdoc no sean nulos.
+            -- Se adiciona la condiciÛn de proveedor y numdoc no sean nulos.
             IF cNombProvBenef IS NOT NULL THEN
                nBenef := OC_BENEF_SIN.INSERTA_BENEF_PROV(nIdSiniestro, nIdPoliza, nCodAsegurado, 'RFC', cRFCBenef);
             ELSE
@@ -11332,7 +11330,7 @@ cband:='trece';
                     AND IdPoliza       = nIdPoliza;
                EXCEPTION
                  WHEN OTHERS THEN
-                   RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
+                   RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
                END;
 
                BEGIN
@@ -11340,7 +11338,7 @@ cband:='trece';
                                        nIdPoliza, 1);
                EXCEPTION
                  WHEN OTHERS THEN
-                RAISE_APPLICATION_ERROR(-20225,'Individual. Error al Pagar la Aprobaci√≥n del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
+                RAISE_APPLICATION_ERROR(-20225,'Individual. Error al Pagar la AprobaciÛn del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
                END;
             ELSE
                BEGIN
@@ -11354,14 +11352,14 @@ cband:='trece';
                     AND Cod_Asegurado  = nCodAsegurado;
                EXCEPTION
                  WHEN OTHERS THEN
-                   RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la Aprobaci√≥n Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
+                   RAISE_APPLICATION_ERROR(-20225,'Error al Actualizar la AprobaciÛn Aseg con el Beneficiario '|| cNumSiniRef || ' ' || SQLERRM);
                END;
                BEGIN
                   OC_APROBACION_ASEG.PAGAR(X.CodCia, X.CodEmpresa, nNumAprobacion, nIdSiniestro,
                                        nIdPoliza, nCodAsegurado, 1);
                EXCEPTION
                   WHEN OTHERS THEN
-                RAISE_APPLICATION_ERROR(-20225,'Colectivos. Error al Pagar la Aprobaci√≥n del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
+                RAISE_APPLICATION_ERROR(-20225,'Colectivos. Error al Pagar la AprobaciÛn del Siniestro: '|| nIdSiniestro || ' ' || SQLERRM);
                END;
 
             END IF;
@@ -11733,7 +11731,7 @@ BEGIN
                     dFecIngreso);
          EXCEPTION
             WHEN DUP_VAL_ON_INDEX THEN
-               RAISE_APPLICATION_ERROR(-20225,'Ya Existe Persona Natural Jur√≠dica con la Identificaci√≥n '|| cTipoDocIdentAseg ||
+               RAISE_APPLICATION_ERROR(-20225,'Ya Existe Persona Natural JurÌdica con la IdentificaciÛn '|| cTipoDocIdentAseg ||
                                        ' - ' || cNumDocIdentAseg);
          END;
       ELSE
@@ -11755,7 +11753,7 @@ BEGIN
       END IF;
 
       IF OC_PERSONA_NATURAL_JURIDICA.FUNC_VALIDA_EDAD(cTipoDocIdentAseg, cNumDocIdentAseg, X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob) = 'N' THEN
-         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de Aceptaci√≥n de Coberturas');
+         RAISE_APPLICATION_ERROR(-20225,'Edad del Asegurado Fuera del Rango de AceptaciÛn de Coberturas');
       END IF;
       BEGIN
          SELECT Cod_Agente
@@ -11817,7 +11815,7 @@ BEGIN
             nIdPoliza := 0;
       END;
       cExiste     := OC_POLIZAS.EXISTE_POLIZA(X.CodCia, X.CodEmpresa, nIdPoliza);
-      cDescPoliza := 'Activaci√≥n Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
+      cDescPoliza := 'ActivaciÛn Masiva No. ' || TRIM(TO_CHAR(nIdProcMasivo));
       cCodMoneda  := OC_PLAN_COBERTURAS.MONEDA_PLANCOB(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob);
       nPorcComis  := OC_CONFIG_COMISIONES.PORCENTAJE_COMISION(X.CodCia, X.CodEmpresa, X.IdTipoSeg);
       IF cExiste = 'N' AND  NVL(X.IndColectiva,'N') = 'N' THEN
@@ -11914,7 +11912,7 @@ BEGIN
                   AND IDetPol       = nIDetPol
                   AND Cod_Asegurado = nCod_Asegurado;
 
-               /* Se quita temporalmente la carga de coberturas para agilizar el proceso de Emisi√≥n y solo se deja para Endosos*/
+               /* Se quita temporalmente la carga de coberturas para agilizar el proceso de EmisiÛn y solo se deja para Endosos*/
                --IF NVL(nIdEndoso,0) != 0 THEN
                   IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA (X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob,
                                                          nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
@@ -11969,7 +11967,7 @@ BEGIN
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'PROCE');
          ELSE
             ROLLBACK;
-            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la P√≥liza o Cargar el Asegurado: '||cMsjError);
+            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la PÛliza o Cargar el Asegurado: '||cMsjError);
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
          END IF;
       ELSE
@@ -11979,7 +11977,7 @@ BEGIN
 EXCEPTION
    WHEN OTHERS THEN
       ROLLBACK;
-      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la P√≥liza o Cargar el Asegurado con Fondos: '||SQLERRM);
+      OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225', 'No se puede emitir la PÛliza o Cargar el Asegurado con Fondos: '||SQLERRM);
       OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
 END ASEGURADOS_CON_FONDOS;
 
@@ -12049,7 +12047,7 @@ BEGIN
             AND StsPoliza       = 'EMI';
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20225,'NO Existe Emitida la P√≥liza No. ' || W.NumPolUnico ||
+            RAISE_APPLICATION_ERROR(-20225,'NO Existe Emitida la PÛliza No. ' || W.NumPolUnico ||
                                     ' para Realizar la Cobranza de Aportes de Asegurados con Fondos');
       END;
 
@@ -12144,7 +12142,7 @@ BEGIN
                   AND StsFact    = 'PAG';
             END IF;
             IF NVL(nIdFactura,0) = 0 THEN
-               RAISE_APPLICATION_ERROR(-20225,'NO Existen Facturas Emitidas o Pagadas en la P√≥liza No. ' || nIdPoliza);
+               RAISE_APPLICATION_ERROR(-20225,'NO Existen Facturas Emitidas o Pagadas en la PÛliza No. ' || nIdPoliza);
             ELSE
                BEGIN
                   IF OC_SUB_PROCESO.INDICA_FEC_EQUIVALENTE_SUBPROC(12, 'PAG') = 'S' THEN
@@ -12165,7 +12163,7 @@ BEGIN
                         WHEN OTHERS THEN
                            ROLLBACK;
                            OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo, 'AUTOMATICO', '20225',
-                                                               'Error en Aportaci√≥n Colectiva del Contratante al Asegurado de la Referencia: ' ||
+                                                               'Error en AportaciÛn Colectiva del Contratante al Asegurado de la Referencia: ' ||
                                                                cReferenciaCobro);
                            OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo, 'ERROR');
                      END;
@@ -12183,7 +12181,7 @@ BEGIN
          END IF;
       ELSE
          RAISE_APPLICATION_ERROR(-20225,'Asegurado No. '|| TRIM(TO_CHAR(nCod_Asegurado)) ||
-                                 ' No Existe Emitido en P√≥liza No. ' || nIdPoliza);
+                                 ' No Existe Emitido en PÛliza No. ' || nIdPoliza);
       END IF;
    END LOOP;
 EXCEPTION
@@ -12237,7 +12235,7 @@ END COBRANZA_APORTES_ASEG_FONDOS;
              cSeparador    := OC_PROCESOS_MASIVOS.TIPO_SEPARADOR(cCodPlantilla);
           END IF;
           --
-          IF NVL(cIndCol, 'N') = 'S' AND cNumPolUnico IS NOT NULL THEN 
+          IF NVL(cIndCol, 'N') = 'S' AND cNumPolUnico IS NOT NULL THEN
              cNumPolUnicoFinal := TRIM(cNumPolUnico);
           ELSE
              cNumPolUnicoFinal := TRIM(x.Numpolunico);
@@ -12245,7 +12243,7 @@ END COBRANZA_APORTES_ASEG_FONDOS;
           --
           cNumDetUnico            := x.Subgrupo;
           nIdProcMasivo           := OC_PROCESOS_MASIVOS.CREAR(nCodCia, nCodEmpresa);
-          cNum_Doc_Identificacion := REPLACE(UPPER(TRIM(x.Num_Doc_Identificacion)), '√ë', 'N');
+          cNum_Doc_Identificacion := REPLACE(UPPER(TRIM(x.Num_Doc_Identificacion)), '—', 'N');
           --
           cRegDatosProc := x.CodEmpresa                                     || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.IdTipoSeg)))     || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.PlanCob)))                 || cSeparador ||
                            cNumPolUnicoFinal                                || cSeparador || x.SubGrupo                                  || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.Tipo_Doc_Identificacion))) || cSeparador ||
@@ -12254,8 +12252,8 @@ END COBRANZA_APORTES_ASEG_FONDOS;
                            UPPER(DEPURA_CADENA(TRIM(x.Tipo_Id_Tributaria))) || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.Numtributario))) || cSeparador || TO_CHAR(x.FecIngreso, 'DD/MM/YYYY')                   || cSeparador ||
                            TO_CHAR(x.FecStatus, 'DD/MM/YYYY')               || cSeparador || UPPER(DEPURA_CADENA(TRIM(x.DirecRes)))      || cSeparador || DEPURA_CADENA(TRIM(x.CodigoZip))                      || cSeparador ||
                            DEPURA_CADENA(TRIM(x.ClienteUnico))              || cSeparador || TO_CHAR(x.FecIniVig, 'DD/MM/YYYY')          || cSeparador || TO_CHAR(x.FecFinVig, 'DD/MM/YYYY')                    || cSeparador ||
-                           TO_CHAR(x.FecIniVig2, 'DD/MM/YYYY')              || cSeparador || TO_CHAR(x.FecFinVig2, 'DD/MM/YYYY')         || cSeparador || x.SumaAsegurada                                       || cSeparador || 
-                           x.Sueldo                                         || cSeparador || x.Nutra                                     || cSeparador || x.VecesSalario                                        || cSeparador || 
+                           TO_CHAR(x.FecIniVig2, 'DD/MM/YYYY')              || cSeparador || TO_CHAR(x.FecFinVig2, 'DD/MM/YYYY')         || cSeparador || x.SumaAsegurada                                       || cSeparador ||
+                           x.Sueldo                                         || cSeparador || x.Nutra                                     || cSeparador || x.VecesSalario                                        || cSeparador ||
                            x.CampoFlexible1                                 || cSeparador || x.CampoFlexible2                            || cSeparador || x.CampoFlexible3                                      || cSeparador ||
                            x.CampoFlexible4                                 || cSeparador || x.CampoFlexible5                            || cSeparador || x.CampoFlexible6;
           --
@@ -12277,10 +12275,11 @@ END COBRANZA_APORTES_ASEG_FONDOS;
 
    FUNCTION DEPURA_CADENA ( cCadenaEntrada  VARCHAR2 ) RETURN VARCHAR2 IS
       cCadenaSalida  VARCHAR2(500);
-      cCodigosMal    VARCHAR2(100) := '√°√†√¢√§√£√•√Å√Ä√Ç√Ñ√É√Ö√ß√á√©√®√™√´√â√à√ä√ã√≠√¨√Æ√Ø√ç√å√é√è¬•¬§√≥√≤√¥√∂√µ√∞√ì√í√î√ñ√ï√ê≈°≈†√∫√π√ª√º√ö√ô√õ√ú√Ω√ø√ù≈∏≈æ≈Ω.,:;/*+-()~';
-      cCodigosBien   VARCHAR2(100) := 'aaaaaaAAAAAAcCeeeeEEEEiiiiIIII√±√±ooooooOOOOOOsSuuuuUUUUyyYYzZ';
+      cCodigosMal    VARCHAR2(100) := '·‡‚‰„Â¡¿¬ƒ√≈Á«ÈËÍÎ…» ÀÌÏÓÔÕÃŒœ•§ÛÚÙˆı”“‘÷’–öä˙˘˚¸⁄Ÿ€‹˝ˇ›üûé.,:;/*+-()~| ';
+      cCodigosBien   VARCHAR2(100) := 'aaaaaaAAAAAAcCeeeeEEEEiiiiIIIIÒÒooooooOOOOOOsSuuuuUUUUyyYYzZ';
    BEGIN
-      cCadenaSalida :=  UPPER(TRANSLATE(LTRIM(cCadenaEntrada), cCodigosMal, cCodigosBien));
+      --MLJS 06/02/2025 SE CAMBIA LTRIM POR TRIM Y SE AGREGA EL ESPACIO EN BLANCO EN cCodigosMal
+      cCadenaSalida :=  UPPER(TRANSLATE(TRIM(cCadenaEntrada), cCodigosMal, cCodigosBien)); 
       --
       RETURN(cCadenaSalida);
    END DEPURA_CADENA;
@@ -12399,18 +12398,18 @@ END COBRANZA_APORTES_ASEG_FONDOS;
       UTL_FILE.FCLOSE(cCtlArchivo3);
       UTL_FILE.FCLOSE_ALL;
    END RECUPERA_LOG_CARGA;
-   
+
    PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia             NUMBER
                                  , nCodEmpresa         NUMBER
                                  , nIdPoliza           NUMBER
-                                 , nIDetPol            NUMBER 
+                                 , nIDetPol            NUMBER
                                  , nIdFactura          NUMBER
                                  , cIdTipoSeg          VARCHAR2
                                  , cPlanCob            VARCHAR2
                                  , cTipoProceso        VARCHAR2
                                  , cRegDatosProc       VARCHAR2
                                  , cNumPolUnico        VARCHAR2
-                                 , cNumDetUnico        VARCHAR2 
+                                 , cNumDetUnico        VARCHAR2
                                  , cIndColectiva       VARCHAR2
                                  , cIndAsegurado       VARCHAR2
                                  , cCodUsuario         VARCHAR2 ) IS
@@ -12437,8 +12436,8 @@ nIdProcMasivo       NUMBER;
 cConteoRegCarga     NUMBER(10) := 0;
 
 CURSOR COBRA_M IS
-       SELECT * 
-       FROM REGI_COBRANZA_MASIVA 
+       SELECT *
+       FROM REGI_COBRANZA_MASIVA
        WHERE STATUS = 'S'
        ORDER BY Idpoliza , Idetpol, IdFactura;
 
@@ -12450,15 +12449,15 @@ BEGIN
         nIdProcMasivo := OC_PROCESOS_MASIVOS.CREAR(X.CodCia, X.CodEmpresa);
         BEGIN
           INSERT INTO PROCESOS_MASIVOS
-                      (IdProcMasivo,                    CodCia,                     CodEmpresa, 
-                       IdTipoSeg,                       PlanCob,                    TipoProceso, 
-                       StsRegProceso,                   FecSts,                     RegDatosProc, 
-                       NumPolUnico,                     NumDetUnico,                IndColectiva, 
+                      (IdProcMasivo,                    CodCia,                     CodEmpresa,
+                       IdTipoSeg,                       PlanCob,                    TipoProceso,
+                       StsRegProceso,                   FecSts,                     RegDatosProc,
+                       NumPolUnico,                     NumDetUnico,                IndColectiva,
                        IndAsegurado,                    CodUsuario)
-                VALUES(nIdProcMasivo,                   X.CodCia,                   X.CodEmpresa, 
+                VALUES(nIdProcMasivo,                   X.CodCia,                   X.CodEmpresa,
                        X.IdTipoSeg,                     X.PlanCob,                  X.TipoProceso,
-                         'XPROC',                         SYSDATE,                  X.RegDatosProc, 
-                       X.NumPolUnico,                   X.NumDetUnico,              X.IndColectiva, 
+                         'XPROC',                         SYSDATE,                  X.RegDatosProc,
+                       X.NumPolUnico,                   X.NumDetUnico,              X.IndColectiva,
                        X.IndAsegurado,                  X.CodUsuario);
                EXCEPTION
                  WHEN OTHERS THEN
@@ -12480,3 +12479,4 @@ BEGIN
 END ACTUALIZA_REGIS_PROCESOMASIVO;
 
 END OC_PROCESOS_MASIVOS;
+/
