@@ -12275,11 +12275,12 @@ END COBRANZA_APORTES_ASEG_FONDOS;
 
    FUNCTION DEPURA_CADENA ( cCadenaEntrada  VARCHAR2 ) RETURN VARCHAR2 IS
       cCadenaSalida  VARCHAR2(500);
-      cCodigosMal    VARCHAR2(100) := 'áàâäãåÁÀÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏ¥¤óòôöõğÓÒÔÖÕĞšŠúùûüÚÙÛÜıÿİŸ.,:;/*+-()~| ';
+      cCodigosMal    VARCHAR2(100) := 'áàâäãåÁÀÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏ¥¤óòôöõğÓÒÔÖÕĞšŠúùûüÚÙÛÜıÿİŸ.,:;/*+-()~|';
       cCodigosBien   VARCHAR2(100) := 'aaaaaaAAAAAAcCeeeeEEEEiiiiIIIIññooooooOOOOOOsSuuuuUUUUyyYYzZ';
    BEGIN
       --MLJS 06/02/2025 SE CAMBIA LTRIM POR TRIM Y SE AGREGA EL ESPACIO EN BLANCO EN cCodigosMal
-      cCadenaSalida :=  UPPER(TRANSLATE(TRIM(cCadenaEntrada), cCodigosMal, cCodigosBien)); 
+      --11/02/2025 SE AGREGA LA ELIMINACION DE TAB Y SALTOS DE LINEA
+      cCadenaSalida := UPPER(TRANSLATE(TRIM(REPLACE(REPLACE(REPLACE(cCadenaEntrada,CHR(13),''),CHR(10),''),CHR(9),'')), cCodigosMal, cCodigosBien)); 
       --
       RETURN(cCadenaSalida);
    END DEPURA_CADENA;
