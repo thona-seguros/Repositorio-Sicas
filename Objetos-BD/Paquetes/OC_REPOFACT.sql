@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_REPOFACT IS
+create or replace PACKAGE OC_REPOFACT IS
     PROCEDURE INSERTA_ENCABEZADO( cFormato        VARCHAR2
                                , nCodCia         NUMBER
                                , nCodEmpresa     NUMBER
@@ -98,7 +98,7 @@ CREATE OR REPLACE PACKAGE OC_REPOFACT IS
     FUNCTION FUNC_MONTO_PRIMAS(NIDFACTURA IN NUMBER) RETURN NUMBER;
 END OC_REPOFACT;
 /
-CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
+create or replace PACKAGE BODY OC_REPOFACT IS
     --
 
     -- MLJS 18/01/2024 SE CREA FUNCION PARA OBTENER LA PRIMA NETA TOTAL DEL RECIBO
@@ -146,7 +146,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
       IF cFormato = 'TEXTO' THEN
          OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
       ELSE
-         --Obtiene N鷐ero de Columnas Totales
+         --Obtiene N煤mero de Columnas Totales
          nColsTotales := XLSX_BUILDER_PKG.EXCEL_CUENTA_COLUMNAS(cEncabez);
          --
          IF XLSX_BUILDER_PKG.EXCEL_CREAR_LIBRO(cNomDirectorio, cNomArchivo) THEN
@@ -241,13 +241,13 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                 FROM valores_de_listas
                 WHERE codlista = 'EMAILRBOEM');
             EXCEPTION WHEN OTHERS THEN
-                 RAISE_APPLICATION_ERROR(-20225, 'No se encontro buzones para el env韔 del correo con los reportes' );
+                 RAISE_APPLICATION_ERROR(-20225, 'No se encontro buzones para el env铆o del correo con los reportes' );
             END;
         END IF;
 
         cEmail       := OC_GENERALES.BUSCA_PARAMETRO(1,'021');
         cPwdEmail    := OC_GENERALES.BUSCA_PARAMETRO(1,'022');
-        cSubject      := 'Notificacion de la recepci髇 del reporte de "' || cReporte ||'"';
+        cSubject      := 'Notificacion de la recepci贸n del reporte de "' || cReporte ||'"';
         cTexto2       := '       Se ha enviado el archivo del reporte de "' || cReporte ||'".';
 
         --cEmail1      := 'cperez@thonaseguros.mx';
@@ -266,7 +266,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
         BEGIN
            OC_MAIL.SEND_EMAIL(cNomDirectorio,cMiMail,cEmail1,cEmail2,cEmail3,cSubject || '(' || W_ID_ENVIO || ')',cTextoEnv,cNomArchZip,NULL,NULL,NULL,cError);
         EXCEPTION WHEN OTHERS THEN
-            dbms_output.put_line('Error en el env韔 de notificacion '||cEmail1||' error '||SQLERRM);
+            dbms_output.put_line('Error en el env铆o de notificacion '||cEmail1||' error '||SQLERRM);
         END;
         dbms_output.put_line('cNomDirectorio: ' || cNomDirectorio);
         dbms_output.put_line('cNomArchZip: ' || cNomArchZip);
@@ -444,7 +444,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                           P.NumPolUnico,
                           P.NumPolRef,
                           DP.CodFilial,
-                          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                           F.IdEndoso,
                           F.IdFactura,
                           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
@@ -550,7 +550,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                           P.NumPolUnico,
                           P.NumPolRef,
                           DP.CodFilial,
-                          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                           F.IdEndoso,
                           F.IdFactura,
                           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
@@ -655,8 +655,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                           DISTINCT
                           P.IdPoliza,                    P.NumPolUnico,
                           P.NumPolRef,                   DP.CodFilial,
-                          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) ||
-                             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) ||
+                             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                           F.IdEndoso,                    F.IdFactura,
                           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                           TO_CHAR(F.FecVenc,'DD/MM/YYYY') FecVenc,
@@ -761,8 +761,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                           DISTINCT
                           P.IdPoliza,                   P.NumPolUnico,
                           P.NumPolRef,                  DP.CodFilial,
-                          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) ||
-                             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) ||
+                             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                           F.IdEndoso,                   F.IdFactura,
                           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                           TO_CHAR(F.FecVenc,'DD/MM/YYYY') FecVenc,
@@ -932,8 +932,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             CURSOR NC_Q IS
                SELECT P.IdPoliza,                  P.NumPolUnico,
                       P.NumPolRef,                 DP.CodFilial,
-                      OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                          OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                      REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                          OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                       N.IdEndoso,                  N.IdNcr,
                       TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                       TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,
@@ -1083,7 +1083,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   cTitulo1 := cNomCia;
                   cTitulo2 := 'REPORTE DE DEUDOR POR PRIMA HASTA ' || TO_CHAR(dFecHasta,'DD/MM/YYYY');
                   cTitulo4 := ' ';
-                  cEncabez := 'No. de P髄iza'||cLimitador||
+                  cEncabez := 'No. de P贸liza'||cLimitador||
                          'Consecutivo'||cLimitador||
                          'No. Referencia'||cLimitador||
                          'Sub-Grupo'||cLimitador||
@@ -1093,58 +1093,58 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                          'No. Recibo'||cLimitador||
                          'Estatus Recibo'||cLimitador||
                          'Forma de Pago'||cLimitador||
-                         'Fecha Emisi髇'||cLimitador||
+                         'Fecha Emisi贸n'||cLimitador||
                          'Inicio Vigencia'||cLimitador||
                          'Fin Vigencia'||cLimitador||
                          'Dias Antiguedad'||cLimitador||
                          'Antiguedad'||cLimitador||
                          'Prima Neta'||cLimitador||
-                         'Reducci髇 Prima'||cLimitador||
+                         'Reducci贸n Prima'||cLimitador||
                          'Recargos'||cLimitador||
                          'Derechos'||cLimitador||
                          'Impuesto'||cLimitador||
                          'Prima Total'||cLimitador||
-                         'Compensaci髇 Sobre Prima'||cLimitador||
-                         'Comisi髇 Persona Fisica'||cLimitador||
-                         'Comisi髇 Persona Moral'||cLimitador||
-                         'Honorarios Persona F韘ica'||cLimitador||
-                         'Impuesto Honorarios P. F韘ica'||cLimitador||
+                         'Compensaci贸n Sobre Prima'||cLimitador||
+                         'Comisi贸n Persona Fisica'||cLimitador||
+                         'Comisi贸n Persona Moral'||cLimitador||
+                         'Honorarios Persona F铆sica'||cLimitador||
+                         'Impuesto Honorarios P. F铆sica'||cLimitador||
                          'Honorarios Persona Moral'||cLimitador||
                          'Impuesto Honorarios P. Moral'||cLimitador||
                          'Otras Compensaciones Fisicas'||cLimitador||
-                         'Impuesto Otras Compensaciones P. F韘ica'||cLimitador||
+                         'Impuesto Otras Compensaciones P. F铆sica'||cLimitador||
                          'Otras Compensaciones Morales'||cLimitador||
                          'Impuesto Otras Compensaciones P. Moral'||cLimitador||
                          'Dif. en Comisiones'||cLimitador||
-                         'Comisi髇 Agente'||cLimitador||
+                         'Comisi贸n Agente'||cLimitador||
                          'Honorario Agente'||cLimitador||
                          'Agente'||cLimitador||
                          'Tipo Agente'||cLimitador||
-                         'Comisi髇 Promotor'||cLimitador||
+                         'Comisi贸n Promotor'||cLimitador||
                          'Honorario Promotor'||cLimitador||
                          'Promotor'||cLimitador||
                          'Tipo Promotor'||cLimitador||
-                         'Comisi髇 Direcci髇 Regional'||cLimitador||
-                         'Honorario Direcci髇 Regional'||cLimitador||
-                         'Direcci髇 Regional'||cLimitador||
-                         'Tipo Direcci髇 Regional'||cLimitador||
+                         'Comisi贸n Direcci贸n Regional'||cLimitador||
+                         'Honorario Direcci贸n Regional'||cLimitador||
+                         'Direcci贸n Regional'||cLimitador||
+                         'Tipo Direcci贸n Regional'||cLimitador||
                          'Tasa IVA'||cLimitador||
                          'Estado'||cLimitador||
                          'Moneda'||cLimitador||
                          'Tipo Cambio'||cLimitador||
                          'Tipo Seguro'||cLimitador||
                          'Plan Coberturas'||cLimitador||
-                         'C骴igo SubRamo'||cLimitador||
-                         'Descripci髇 SubRamo'||cLimitador||
+                         'C贸digo SubRamo'||cLimitador||
+                         'Descripci贸n SubRamo'||cLimitador||
                          'Tipo Vigencia'||cLimitador||
                          'No. Cuota'||cLimitador||
-                         'Inicio Vig. P髄iza'||cLimitador||
-                         'Fin Vig. P髄iza'||cLimitador||
+                         'Inicio Vig. P贸liza'||cLimitador||
+                         'Fin Vig. P贸liza'||cLimitador||
                          'No. Renovacion'||cLimitador||
                          'No. Comprobante'||cLimitador||
                          'Tiene Siniestro'||cLimitador||
                          'No. 1er. Siniestro'||cLimitador||
-                         'Folio Fact. Electr髇ica'||cLimitador ||
+                         'Folio Fact. Electr贸nica'||cLimitador ||
                        'Es Contributorio'||cLimitador ||
                        '% Contributorio'||cLimitador ||
                        'Giro de Negocio'||cLimitador ||
@@ -1214,7 +1214,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
           END IF;
 
           IF X.NumRenov = 0 THEN
-             cTipoVigencia := '1ER. A袿';
+             cTipoVigencia := '1ER. A脩O';
           ELSE
              cTipoVigencia := 'RENOVACION';
           END IF;
@@ -1675,7 +1675,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
           END IF;
 
           IF X.NumRenov = 0 THEN
-             cTipoVigencia := '1ER. A袿';
+             cTipoVigencia := '1ER. A脩O';
           ELSE
              cTipoVigencia := 'RENOVACION';
           END IF;
@@ -2128,8 +2128,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   'EMISION'                        PROCESO,
                   P.IDPOLIZA,                      P.NUMPOLUNICO,
                   P.NUMPOLREF,                     DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
-                  OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL) CONTRATANTE,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
+                  OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL),'|','') CONTRATANTE,
                   F.IDENDOSO,                      F.IDFACTURA,
                   TO_CHAR(T.FECHATRANSACCION,'DD/MM/YYYY') FECHATRANSACCION,
                   TO_CHAR(F.FECVENC,'DD/MM/YYYY')  FECVENC,
@@ -2265,8 +2265,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   'EMISION'                        PROCESO,
                   P.IDPOLIZA,                      P.NUMPOLUNICO,
                   P.NUMPOLREF,                     DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
-                  OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL) CONTRATANTE,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
+                  OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL),'|','') CONTRATANTE,
                   F.IDENDOSO,                      F.IDFACTURA,
                   TO_CHAR(T.FECHATRANSACCION,'DD/MM/YYYY') FECHATRANSACCION,                         -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
                   TO_CHAR(F.FECVENC,'DD/MM/YYYY')  FECVENC,                                          -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
@@ -2400,8 +2400,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                  'CANCELACION'                     PROCESO,
                   P.IdPoliza,                       P.NumPolUnico,
                   P.NumPolRef,                      DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                     OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                     OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                   F.IdEndoso,                       F.IdFactura,
                   TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,                      -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
                   TO_CHAR(F.FecVenc,'DD/MM/YYYY') FecVenc,                                        -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
@@ -2597,8 +2597,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
            SELECT 'EMISION'                  PROCESO,
                   P.IdPoliza,                P.NumPolUnico,
                   P.NumPolRef,               DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                     OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                     OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                   N.IdEndoso,                N.IdNcr,
                   TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,                   -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
                   TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,                                   -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
@@ -2675,8 +2675,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
            SELECT 'CANCELACION'                    PROCESO,
                   P.IdPoliza,                      P.NumPolUnico,
                   P.NumPolRef,                     DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                      OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                      OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                   N.IdEndoso,                      N.IdNcr,
                   TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,           -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
                   TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,                           -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
@@ -2770,8 +2770,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
            SELECT 'CANCELACION'                    PROCESO,
                   P.IdPoliza,                      P.NumPolUnico,
                   P.NumPolRef,                     DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                      OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                      OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                   N.IdEndoso,                      N.IdNcr,
                   TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,       -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
                   TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,                       -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA
@@ -2941,7 +2941,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
         cTitulo4 := ' ';
         --
         cEncabez     := 'Proceso'||cLimitador||
-                         'No. de P髄iza'||cLimitador||
+                         'No. de P贸liza'||cLimitador||
                          'Consecutivo'||cLimitador||
                          'No. Referencia'||cLimitador||
                          'Sub-Grupo'||cLimitador||
@@ -2950,53 +2950,53 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                          'Tipo'||cLimitador||
                          'No. Recibo'||cLimitador||
                          'Forma de Pago'||cLimitador||
-                         'Fecha Emisi髇'||cLimitador||
+                         'Fecha Emisi贸n'||cLimitador||
                          'Inicio Vigencia'||cLimitador||
                          'Fin Vigencia'||cLimitador||
-                         'Fecha de Anulaci髇'||cLimitador||
-                         'Motivo Anulaci髇'||cLimitador||
+                         'Fecha de Anulaci贸n'||cLimitador||
+                         'Motivo Anulaci贸n'||cLimitador||
                          'Prima Neta'||cLimitador||
-                         'Reducci髇 Prima'||cLimitador||
+                         'Reducci贸n Prima'||cLimitador||
                          'Recargos'||cLimitador||
                          'Derechos'||cLimitador||
                          'Impuesto'||cLimitador||
                          'Prima Total'||cLimitador||
-                         'Comisi髇 Sobre Prima'||cLimitador||
-                         'Comisi髇 Persona Fisica'||cLimitador||
-                         'Comisi髇 Persona Moral'||cLimitador||
+                         'Comisi贸n Sobre Prima'||cLimitador||
+                         'Comisi贸n Persona Fisica'||cLimitador||
+                         'Comisi贸n Persona Moral'||cLimitador||
                          'Honorarios Persona Fisica'||cLimitador||
                          'Honorarios Persona Moral'||cLimitador||
                          'UDIS Persona Fisica'||cLimitador||
                          'UDIS Persona Moral'||cLimitador||
                          'Dif. en Comisiones'||cLimitador||
-                         'Comisi髇 Agente'||cLimitador||
+                         'Comisi贸n Agente'||cLimitador||
                          'Honorario Agente'||cLimitador||
                          'Agente'||cLimitador||
                          'Tipo Agente'||cLimitador||
-                         'Comisi髇 Promotor'||cLimitador||
+                         'Comisi贸n Promotor'||cLimitador||
                          'Honorario Promotor'||cLimitador||
                          'Promotor'||cLimitador||
                          'Tipo Promotor'||cLimitador||
-                         'Comisi髇 Direcci髇 Regional'||cLimitador||
-                         'Honorario Direcci髇 Regional'||cLimitador||
-                         'Direcci髇 Regional'||cLimitador||
-                         'Tipo Direcci髇 Regional'||cLimitador||
+                         'Comisi贸n Direcci贸n Regional'||cLimitador||
+                         'Honorario Direcci贸n Regional'||cLimitador||
+                         'Direcci贸n Regional'||cLimitador||
+                         'Tipo Direcci贸n Regional'||cLimitador||
                          'Tasa IVA'||cLimitador||
                          'Estado'||cLimitador||
                          'Moneda'||cLimitador||
                          'Tipo Cambio'||cLimitador||
                          'Tipo Seguro'||cLimitador||
                          'Plan Coberturas'||cLimitador||
-                         'C骴igo SubRamo'||cLimitador||
-                         'Descripci髇 SubRamo'||cLimitador||
+                         'C贸digo SubRamo'||cLimitador||
+                         'Descripci贸n SubRamo'||cLimitador||
                          'Ramo'||cLimitador||
                          'Tipo Vigencia'||cLimitador||
                          'No. Cuota'||cLimitador||
-                         'Inicio Vig. P髄iza'||cLimitador ||
-                         'Fin Vig. P髄iza'||cLimitador ||
+                         'Inicio Vig. P贸liza'||cLimitador ||
+                         'Fin Vig. P贸liza'||cLimitador ||
                          'No. Renovacion'||cLimitador ||
                          'No. Comprobante'||cLimitador ||
-                         'Folio Fact. Electr髇ica'||cLimitador ||
+                         'Folio Fact. Electr贸nica'||cLimitador ||
                          'Folio Fiscal'||cLimitador ||
                          'Serie'||cLimitador ||
                                    'UUID'||cLimitador ||
@@ -3015,8 +3015,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                                    'Renovacion'||cLimitador||
                          'Prima de Retiro Moneda'||cLimitador||    --> JALV (+) 09/11/2021
                          'Prima de Retiro Local'||cLimitador||--> JALV (+) 09/11/2021
-                          'C骴igo Ramo'||cLimitador||
-                         'Descripci髇 Ramo';
+                          'C贸digo Ramo'||cLimitador||
+                         'Descripci贸n Ramo';
            --
            --dbms_output.put_line(cEncabez);
            --
@@ -3065,7 +3065,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
           END IF;
 
           IF X.NumRenov = 0 THEN
-             cTipoVigencia := '1ER. A袿';
+             cTipoVigencia := '1ER. A脩O';
              cRenovacion   := 'NUEVA';      --MLJS 22/09/2020
           ELSE
              cTipoVigencia := 'RENOVACION';
@@ -3497,7 +3497,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
           END IF;
 
           IF X.NumRenov = 0 THEN
-             cTipoVigencia := '1ER. A袿';
+             cTipoVigencia := '1ER. A脩O';
              cRenovacion   := 'NUEVA';
           ELSE
              cTipoVigencia := 'RENOVACION';
@@ -3951,8 +3951,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                 SELECT  /*+RULE*/
                   P.IdPoliza,                       P.NumPolUnico,
                   P.NumPolRef,                      DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                     OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                     OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                   F.IdEndoso,                       F.IdFactura,
                   TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                   TO_CHAR(F.FecVenc,'DD/MM/YYYY')   FecVenc,
@@ -4138,8 +4138,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                SELECT /*+ INDEX (NC NOTAS_DE_CREDITO_IDX_1)*/  -- MLJS 18/08/2020
                       P.IdPoliza,                      P.NumPolUnico,
                       P.NumPolRef,                     DP.IDETPOL,
-                      OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                      OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                      REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                      OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                       N.IdEndoso,                      N.IdNcr,
                       TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                       TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,
@@ -4228,8 +4228,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
              SELECT /*+ INDEX (NC NOTAS_DE_CREDITO_IDX_1)*/  -- MLJS 18/08/2020
                       P.IdPoliza,                      P.NumPolUnico,
                       P.NumPolRef,                     DP.IDETPOL,
-                      OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                      OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                      REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                      OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                       N.IdEndoso,                      N.IdNcr,
                       TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                       TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,
@@ -4394,7 +4394,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
         cTitulo2 := 'REPORTE DE RECIBOS ANULADOS DEL  '|| TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' AL ' || TO_CHAR(dFecHasta,'DD/MM/YYYY') || CHR(13);
         cTitulo4 := ' ';
         --
-        cEncabez := 'No. de P髄iza'||cLimitador||
+        cEncabez := 'No. de P贸liza'||cLimitador||
                     'Consecutivo'||cLimitador||
                     'No. Referencia'||cLimitador||
                     'Sub-Grupo'||cLimitador||
@@ -4404,56 +4404,56 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     'No. Recibo'||cLimitador||
                     'Estatus Recibo'||cLimitador||
                     'Forma de Pago'||cLimitador||
-                    'Fecha Emisi髇/Devol.'||cLimitador||
+                    'Fecha Emisi贸n/Devol.'||cLimitador||
                     'Inicio Vigencia'||cLimitador||
                     'Fin Vigencia'||cLimitador||
-                    'Fecha de Anulaci髇'||cLimitador||
-                    'Motivo Anulaci髇'||cLimitador||
+                    'Fecha de Anulaci贸n'||cLimitador||
+                    'Motivo Anulaci贸n'||cLimitador||
                     'Prima Neta'||cLimitador||
-                    'Reducci髇 Prima'||cLimitador||
+                    'Reducci贸n Prima'||cLimitador||
                     'Recargos'||cLimitador||
                     'Derechos'||cLimitador||
                     'Impuesto'||cLimitador||
                     'Prima Total'||cLimitador||
-                    'Compensaci髇 Sobre Prima'||cLimitador||
-                    'Comisi髇 Persona Fisica'||cLimitador||
-                    'Comisi髇 Persona Moral'||cLimitador||
+                    'Compensaci贸n Sobre Prima'||cLimitador||
+                    'Comisi贸n Persona Fisica'||cLimitador||
+                    'Comisi贸n Persona Moral'||cLimitador||
                     'Honorarios Persona Fisica'||cLimitador||
-                    'Impuesto Honorarios P. F韘ica'||cLimitador||
+                    'Impuesto Honorarios P. F铆sica'||cLimitador||
                     'Honorarios Persona Moral'||cLimitador||
                     'Impuesto Honorarios P. Moral'||cLimitador||
-                    'Otras Compensaciones F韘icas'||cLimitador||
-                    'Impuesto Otras Compensaciones P. F韘ica'||cLimitador||
+                    'Otras Compensaciones F铆sicas'||cLimitador||
+                    'Impuesto Otras Compensaciones P. F铆sica'||cLimitador||
                     'Otras Compensaciones Morales'||cLimitador||
                     'Impuesto Otras Compensaciones P. Moral'||cLimitador||
                     'Dif. en Comisiones'||cLimitador||
-                    'Comisi髇 Agente'||cLimitador||
+                    'Comisi贸n Agente'||cLimitador||
                     'Honorario Agente'||cLimitador||
                     'Agente'||cLimitador||
                     'Tipo Agente'||cLimitador||
-                    'Comisi髇 Promotor'||cLimitador||
+                    'Comisi贸n Promotor'||cLimitador||
                     'Honorario Promotor'||cLimitador||
                     'Promotor'||cLimitador||
                     'Tipo Promotor'||cLimitador||
-                    'Comisi髇 Direcci髇 Regional'||cLimitador||
-                    'Honorario Direcci髇 Regional'||cLimitador||
-                    'Direcci髇 Regional'||cLimitador||
-                    'Tipo Direcci髇 Regional'||cLimitador||
+                    'Comisi贸n Direcci贸n Regional'||cLimitador||
+                    'Honorario Direcci贸n Regional'||cLimitador||
+                    'Direcci贸n Regional'||cLimitador||
+                    'Tipo Direcci贸n Regional'||cLimitador||
                     'Tasa IVA'||cLimitador||
                     'Estado'||cLimitador||
                     'Moneda'||cLimitador||
                     'Tipo Cambio'||cLimitador||
                     'Tipo Seguro'||cLimitador||
                     'Plan Coberturas'||cLimitador||
-                    'C骴igo SubRamo'||cLimitador||
-                    'Descripci髇 SubRamo'||cLimitador||
+                    'C贸digo SubRamo'||cLimitador||
+                    'Descripci贸n SubRamo'||cLimitador||
                     'Tipo Vigencia'||cLimitador||
                     'No. Cuota'||cLimitador||
-                    'Inicio Vig. P髄iza'||cLimitador||
-                    'Fin Vig. P髄iza'||cLimitador||
+                    'Inicio Vig. P贸liza'||cLimitador||
+                    'Fin Vig. P贸liza'||cLimitador||
                     'No. Renovacion'||cLimitador||
                     'No. Comprobante'||cLimitador||
-                    'Folio Fact. Electr髇ica'||cLimitador||
+                    'Folio Fact. Electr贸nica'||cLimitador||
                     'Folio Fiscal'||cLimitador||
                     'Serie'||cLimitador||
                     'UUID'||cLimitador||
@@ -4468,13 +4468,13 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     'Paquete Comercial'||cLimitador ||
                     'Categoria'||cLimitador ||
                     'Canal de Venta' ||cLimitador ||
-                    'Estatus de P髄iza'        ||cLimitador ||
+                    'Estatus de P贸liza'        ||cLimitador ||
                     'Fecha Pagado Hasta'       ||cLimitador ||
                     'Fecha Cobertura' ||cLimitador||
                     'Prima de Retiro Moneda'||cLimitador||
                     'Prima de Retiro Local'||cLimitador||
-                    'C骴igo Ramo'||cLimitador||
-                    'Descripci髇 Ramo'
+                    'C贸digo Ramo'||cLimitador||
+                    'Descripci贸n Ramo'
                     ;
            --
            --dbms_output.put_line(cEncabez);
@@ -4511,7 +4511,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                 END IF;
 
                 IF X.NumRenov = 0 THEN
-                   cTipoVigencia := '1ER. A袿';
+                   cTipoVigencia := '1ER. A脩O';
                 ELSE
                     cTipoVigencia := 'RENOVACION';
                 END IF;
@@ -4967,7 +4967,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               END IF;
 
               IF X.NumRenov = 0 THEN
-                 cTipoVigencia := '1ER. A袿';
+                 cTipoVigencia := '1ER. A脩O';
               ELSE
                  cTipoVigencia := 'RENOVACION';
               END IF;
@@ -5452,8 +5452,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                    SELECT /*+RULE*/
                           P.IdPoliza,                      P.NumPolUnico,
                           P.NumPolRef,                     DP.IDetPol,
-                          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                          OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CODGRUPOEC, DP.CODFILIAL) CONTRATANTE,
+                          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                          OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CODGRUPOEC, DP.CODFILIAL),'|','') CONTRATANTE,
                           F.IdEndoso,                      F.IdFactura,
                           T.FECHATRANSACCION,
                           F.FECVENC,
@@ -5578,8 +5578,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                    SELECT /*+RULE*/
                           P.IdPoliza,                      P.NUMPOLUNICO,
                           P.NUMPOLREF,                     DP.IDETPOL,
-                          OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
-                          OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL) CONTRATANTE,
+                          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
+                          OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL),'|','') CONTRATANTE,
                           F.IDENDOSO,                      F.IDFACTURA,
                           T.FECHATRANSACCION,
                           F.FECVENC,
@@ -5771,7 +5771,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             CURSOR NC_Q IS
                SELECT P.IdPoliza,                P.NumPolUnico,
                       P.NumPolRef,               DP.IDETPOL,
-                      OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                      REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                       N.IdEndoso,                N.IdNcr,
                       TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                       TO_CHAR(N.FecDevol,'DD/MM/YYYY')         FecDevol,
@@ -5916,7 +5916,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   cTitulo1 := cNomCia;
                   cTitulo2 := 'REPORTE DE RECIBOS EMITIDOS DEL '|| TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' || TO_CHAR(dFecHasta,'DD/MM/YYYY');
                   cTitulo4 := ' ';
-                  cEncabez     := 'No. de P髄iza'||cLimitador||
+                  cEncabez     := 'No. de P贸liza'||cLimitador||
                                 'Consecutivo'||cLimitador||
                                 'No. Referencia'||cLimitador||
                                 'Sub-Grupo'||cLimitador||
@@ -5925,54 +5925,54 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                                 'Tipo'||cLimitador||
                                 'No. Recibo'||cLimitador||
                                 'Forma de Pago'||cLimitador||
-                                'Fecha Emisi髇'||cLimitador||
+                                'Fecha Emisi贸n'||cLimitador||
                                 'Inicio Vigencia'||cLimitador||
                                 'Fin Vigencia'||cLimitador||
                                 'Prima Neta'||cLimitador||
-                                'Reducci髇 Prima'||cLimitador||
+                                'Reducci贸n Prima'||cLimitador||
                                 'Recargos'||cLimitador||
                                 'Derechos'||cLimitador||
                                 'Impuesto'||cLimitador||
                                 'Prima Total'||cLimitador||
-                                'Compensaci髇 Sobre Prima'||cLimitador||
-                                'Comisi髇 Persona Fisica'||cLimitador||
-                                'Comisi髇 Persona Moral'||cLimitador||
+                                'Compensaci贸n Sobre Prima'||cLimitador||
+                                'Comisi贸n Persona Fisica'||cLimitador||
+                                'Comisi贸n Persona Moral'||cLimitador||
                                 'Honorarios Persona Fisica'||cLimitador||
-                                'Impuesto Honorarios P. F韘ica'||cLimitador||
+                                'Impuesto Honorarios P. F铆sica'||cLimitador||
                                 'Honorarios Persona Moral'||cLimitador||
                                 'Impuesto Honorarios P. Moral'||cLimitador||
-                                'Otras Compensaciones F韘icas'||cLimitador||
-                                'Impuesto Otras Compensaciones P. F韘ica'||cLimitador||
+                                'Otras Compensaciones F铆sicas'||cLimitador||
+                                'Impuesto Otras Compensaciones P. F铆sica'||cLimitador||
                                 'Otras compensaciones Morales'||cLimitador||
                                 'Impuesto Otras Compensaciones P. Moral'||cLimitador||
                                 'Dif. en Comisiones'||cLimitador||
-                                'Comisi髇 Agente'||cLimitador||
+                                'Comisi贸n Agente'||cLimitador||
                                 'Honorario Agente'||cLimitador||
                                 'Agente'||cLimitador||
                                 'Tipo Agente'||cLimitador||
-                                'Comisi髇 Promotor'||cLimitador||
+                                'Comisi贸n Promotor'||cLimitador||
                                 'Honorario Promotor'||cLimitador||
                                 'Promotor'||cLimitador||
                                 'Tipo Promotor'||cLimitador||
-                                'Comisi髇 Direcci髇 Regional'||cLimitador||
-                                'Honorario Direcci髇 Regional'||cLimitador||
-                                'Direcci髇 Regional'||cLimitador||
-                                'Tipo Direcci髇 Regional'||cLimitador||
+                                'Comisi贸n Direcci贸n Regional'||cLimitador||
+                                'Honorario Direcci贸n Regional'||cLimitador||
+                                'Direcci贸n Regional'||cLimitador||
+                                'Tipo Direcci贸n Regional'||cLimitador||
                                 'Tasa IVA'||cLimitador||
                                 'Estado'||cLimitador||
                                 'Moneda'||cLimitador||
                                 'Tipo Cambio'||cLimitador||
                                 'Tipo Seguro'||cLimitador||
                                 'Plan Coberturas'||cLimitador||
-                                'C骴igo SubRamo'||cLimitador||
-                                'Descripci髇 SubRamo'||cLimitador||
+                                'C贸digo SubRamo'||cLimitador||
+                                'Descripci贸n SubRamo'||cLimitador||
                                 'Tipo Vigencia'||cLimitador||
                                 'No. Cuota'||cLimitador||
-                                'Inicio Vig. P髄iza'||cLimitador ||
-                                'Fin Vig. P髄iza'||cLimitador ||
+                                'Inicio Vig. P贸liza'||cLimitador ||
+                                'Fin Vig. P贸liza'||cLimitador ||
                                 'No. Renovacion'||cLimitador ||
                                 'No. Comprobante'||cLimitador ||
-                                'Folio Fact. Electr髇ica'||cLimitador ||
+                                'Folio Fact. Electr贸nica'||cLimitador ||
                                 'Folio Fiscal'||cLimitador ||
                                 'Serie'||cLimitador ||
                                 'UUID'||cLimitador ||
@@ -5988,13 +5988,13 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                                 'Paquete Comercial'||cLimitador ||
                                 'Categoria'||cLimitador ||
                                 'Canal de Venta'                                        ||cLimitador||
-                                'Estatus de P髄iza'                                ||cLimitador ||
+                                'Estatus de P贸liza'                                ||cLimitador ||
                                 'Fecha Pagado Hasta'                                ||cLimitador ||
                                 'Fecha Cobertura'                                     ||cLimitador||
                                 'Prima de Retiro Moneda'||cLimitador||
                                 'Prima de Retiro Local'||cLimitador||
-                                'C骴igo Ramo'||cLimitador||
-                                'Descripci髇 Ramo';
+                                'C贸digo Ramo'||cLimitador||
+                                'Descripci贸n Ramo';
 
             --
             dbms_output.put_line(cEncabez);
@@ -6028,7 +6028,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                 END IF;
 
                 IF X.NumRenov = 0 THEN
-                   cTipoVigencia := '1ER. A袿';
+                   cTipoVigencia := '1ER. A脩O';
                 ELSE
                     cTipoVigencia := 'RENOVACION';
                 END IF;
@@ -6494,7 +6494,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               END IF;
 
               IF X.NumRenov = 0 THEN
-                 cTipoVigencia := '1ER. A袿';
+                 cTipoVigencia := '1ER. A脩O';
               ELSE
                  cTipoVigencia := 'RENOVACION';
               END IF;
@@ -6917,8 +6917,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
             SELECT
                   P.IdPoliza,                     P.NumPolUnico,
                   P.NumPolRef,                    DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente)|| ' ' ||
-                  OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente)|| ' ' ||
+                  OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                   F.IdEndoso,                     F.IdFactura IdRecibo,
                   TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                   TO_CHAR(F.FecVenc,'DD/MM/YYYY') FecVenc,
@@ -7037,8 +7037,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
            SELECT /*+RULE*/
                   P.IdPoliza,                     P.NumPolUnico,
                   P.NumPolRef,                    DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                     OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                     OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                   F.IdEndoso,                     F.IdFactura IdRecibo,
                   TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                   TO_CHAR(F.FecVenc,'DD/MM/YYYY') FecVenc,
@@ -7221,8 +7221,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
            SELECT  /*RULE*/
                   P.IdPoliza,                     P.NumPolUnico,
                   P.NumPolRef,                    DP.IDETPOL,
-                  OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-                  OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+                  REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+                  OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
                   N.IdEndoso,                     N.IdNcr,
                   TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
                   TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,
@@ -7376,7 +7376,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                   cTitulo1 := cNomCia;
                   cTitulo2 := 'REPORTE DE RECIBOS PAGADOS DEL '|| TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' || TO_CHAR(dFecHasta,'DD/MM/YYYY');
                   cTitulo4 := ' ';
-                 cEncabez  := 'No. de P髄iza'||cLimitador||
+                 cEncabez  := 'No. de P贸liza'||cLimitador||
                          'Consecutivo'||cLimitador||
                          'No. Referencia'||cLimitador||
                          'Sub-Grupo'||cLimitador||
@@ -7385,55 +7385,55 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                          'Tipo'||cLimitador||
                          'No. Recibo'||cLimitador||
                          'Forma de Pago'||cLimitador||
-                         'Fecha Emisi髇'||cLimitador||
+                         'Fecha Emisi贸n'||cLimitador||
                          'Inicio Vigencia'||cLimitador||
                          'Fin Vigencia'||cLimitador||
                          'Fecha Pago/Reverso'||cLimitador||
                          'Prima Neta'||cLimitador||
-                         'Reducci髇 Prima'||cLimitador||
+                         'Reducci贸n Prima'||cLimitador||
                          'Recargos'||cLimitador||
                          'Derechos'||cLimitador||
                          'Impuesto'||cLimitador||
                          'Prima Total'||cLimitador||
-                         'Compensaci髇 Sobre Prima'||cLimitador||
-                         'Comisi髇 Persona Fisica'||cLimitador||
-                         'Comisi髇 Persona Moral'||cLimitador||
+                         'Compensaci贸n Sobre Prima'||cLimitador||
+                         'Comisi贸n Persona Fisica'||cLimitador||
+                         'Comisi贸n Persona Moral'||cLimitador||
                          'Honorarios Persona Fisica'||cLimitador||
-                         'Impuesto Honorarios P. F韘ica'||cLimitador||
+                         'Impuesto Honorarios P. F铆sica'||cLimitador||
                          'Honorarios Persona Moral'||cLimitador||
                          'Impuesto Honorarios P. Moral'||cLimitador||
-                         'Otras Compensaciones F韘icas'||cLimitador||
-                         'Impuesto Otras Compensaciones P. F韘ica'||cLimitador||
+                         'Otras Compensaciones F铆sicas'||cLimitador||
+                         'Impuesto Otras Compensaciones P. F铆sica'||cLimitador||
                          'Otras Compensaciones Morales'||cLimitador||
                          'Impuesto Otras Compensaciones P. Morales'||cLimitador||
                          'Dif. en Comisiones'||cLimitador||
-                         'Comisi髇 Agente'||cLimitador||
+                         'Comisi贸n Agente'||cLimitador||
                          'Honorario Agente'||cLimitador||
                          'Agente'||cLimitador||
                          'Tipo Agente'||cLimitador||
-                         'Comisi髇 Promotor'||cLimitador||
+                         'Comisi贸n Promotor'||cLimitador||
                          'Honorario Promotor'||cLimitador||
                          'Promotor'||cLimitador||
                          'Tipo Promotor'||cLimitador||
-                         'Comisi髇 Direcci髇 Regional'||cLimitador||
-                         'Honorario Direcci髇 Regional'||cLimitador||
-                         'Direcci髇 Regional'||cLimitador||
-                         'Tipo Direcci髇 Regional'||cLimitador||
+                         'Comisi贸n Direcci贸n Regional'||cLimitador||
+                         'Honorario Direcci贸n Regional'||cLimitador||
+                         'Direcci贸n Regional'||cLimitador||
+                         'Tipo Direcci贸n Regional'||cLimitador||
                          'Tasa IVA'||cLimitador||
                          'Estado'||cLimitador||
                          'Moneda'||cLimitador||
                          'Tipo Cambio'||cLimitador||
                          'Tipo Seguro'||cLimitador||
                          'Plan Coberturas'||cLimitador||
-                         'C骴igo SubRamo'||cLimitador||
-                         'Descripci髇 SubRamo'||cLimitador||
+                         'C贸digo SubRamo'||cLimitador||
+                         'Descripci贸n SubRamo'||cLimitador||
                          'Tipo Vigencia'||cLimitador||
                          'No. Cuota'||cLimitador||
-                         'Inicio Vig. P髄iza'||cLimitador||
-                         'Fin Vig. P髄iza'||cLimitador||
+                         'Inicio Vig. P贸liza'||cLimitador||
+                         'Fin Vig. P贸liza'||cLimitador||
                          'No. Renovacion'||cLimitador||
                          'No. Comprobante'||cLimitador||
-                         'Folio Fact. Electr髇ica'||cLimitador||
+                         'Folio Fact. Electr贸nica'||cLimitador||
                          'Folio Fiscal'||cLimitador||
                          'Serie'||cLimitador||
                         'UUID'||cLimitador||
@@ -7450,8 +7450,8 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                         'Canal de Venta'||cLimitador||
                         'Prima de Retiro Moneda'||cLimitador||
                          'Prima de Retiro Local'||cLimitador||
-                         'C骴igo Ramo'||cLimitador||
-                         'Descripci髇 Ramo'||CHR(13);
+                         'C贸digo Ramo'||cLimitador||
+                         'Descripci贸n Ramo'||CHR(13);
             --
             dbms_output.put_line(cEncabez);
             --
@@ -7489,7 +7489,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               END IF;
 
               IF X.NumRenov = 0 THEN
-                 cTipoVigencia := '1ER. A袿';
+                 cTipoVigencia := '1ER. A脩O';
               ELSE
                  cTipoVigencia := 'RENOVACION';
               END IF;
@@ -7676,7 +7676,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                             ---- jmmd20190523Se incluyen los conceptos para HONORF y HONORM
                      ELSIF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA
                            --IF C.CodConcepto = 'HONORA' THEN                                                    --MLJS 18/01/2024
-	      	                 IF C.CodConcepto IN ('HONORA','HONACC','HONVDA') AND  C.CodTipoPlan = X.CodRamo THEN  --MLJS 18/01/2024 SE INCLUYERON LOS CONCEPTOS DE MULTIRAMO
+                           IF C.CodConcepto IN ('HONORA','HONACC','HONVDA') AND  C.CodTipoPlan = X.CodRamo THEN  --MLJS 18/01/2024 SE INCLUYERON LOS CONCEPTOS DE MULTIRAMO
                                    nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
                                   ELSIF C.CodConcepto = 'IVAHON' THEN
                                     nImpuestoHonoPFOC   := NVL(nImpuestoHonoPFOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios
@@ -7729,7 +7729,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
                     END IF;
 
                     --nPrimaTotalLocal    := OC_DETALLE_FACTURAS.MONTO_PRIMAS(X.IdTransaccion); --MLJS 18/01/2024
-                    nPrimaTotalLocal    := FUNC_MONTO_PRIMAS(X.IdRecibo);                       --MLJS 18/01/2024 FUNCI覰 NUEVA
+                    nPrimaTotalLocal    := FUNC_MONTO_PRIMAS(X.IdRecibo);                       --MLJS 18/01/2024 FUNCI脫N NUEVA
                     nFactorPrimaRamo    := OC_FACTURAR.FACTOR_PRORRATEO_RAMO(X.CodCia, X.IdPoliza, X.IDetPol, X.CodRamo, nPrimaTotalLocal);
                     nDifComis           := NVL(X.MtoComisi_Moneda,0) - NVL(nTotComisDist,0);
 
@@ -7904,7 +7904,7 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
               END IF;
 
               IF X.NumRenov = 0 THEN
-                 cTipoVigencia := '1ER. A袿';
+                 cTipoVigencia := '1ER. A脩O';
               ELSE
                  cTipoVigencia := 'RENOVACION';
               END IF;
@@ -8267,4 +8267,3 @@ CREATE OR REPLACE PACKAGE BODY OC_REPOFACT IS
     END DEVUELVE_CORREO_USUARIO;
     --
 END OC_REPOFACT;
-/

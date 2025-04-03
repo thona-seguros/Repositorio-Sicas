@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE ESTIMADOS_SINIESTROS  IS
+create or replace PROCEDURE ESTIMADOS_SINIESTROS  IS
 -- variables proceso --
 cLimitador      VARCHAR2(1) :='|';
 nLinea          NUMBER;
@@ -82,8 +82,8 @@ cEmail2                     CORREOS_ELECTRONICOS_PNJ.EMAIL%TYPE;
 cEmail3                     CORREOS_ELECTRONICOS_PNJ.EMAIL%TYPE;
 cTextoEnv                   ENDOSO_TXT_DET.TEXTO%TYPE;
 cSubject                    VARCHAR2(1000) := 'Notificacion Archivo de Estimaciones de Siniestros: ';
-cTexto1                     VARCHAR2(10000):= 'Apreciable Compañero ';
-cTexto2                     varchar2(1000)   := ' Envío archivo de Estimaciones de Siniestros generado de manera automática el día de hoy. ';
+cTexto1                     VARCHAR2(10000):= 'Apreciable CompaÃ±ero ';
+cTexto2                     varchar2(1000)   := ' EnvÃ­o archivo de Estimaciones de Siniestros generado de manera automÃ¡tica el dÃ­a de hoy. ';
 cTexto3                     varchar2(10)   := '  ';
 cTexto4                     varchar2(1000)   := ' Saludos. ';
 ----
@@ -117,7 +117,7 @@ SELECT SI.IDPOLIZA,
        SI.FEC_OCURRENCIA,
        SI.FEC_NOTIFICACION,
        CS.STSCOBERTURA,
-       OC_ASEGURADO.NOMBRE_ASEGURADO(PP.CODCIA,PP.CODEMPRESA,SI.COD_ASEGURADO) NOM_ASEG,
+       REPLACE(OC_ASEGURADO.NOMBRE_ASEGURADO(PP.CODCIA,PP.CODEMPRESA,SI.COD_ASEGURADO),'|','') NOM_ASEG,
        SI.COD_ASEGURADO  COD_ASEGURADO,
        SI.DESC_SINIESTRO DESC_SINI,
        DS.IDTIPOSEG TIPOSEGURO,
@@ -139,7 +139,7 @@ SELECT SI.IDPOLIZA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
        DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',PP.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',PP.FORMAVENTA)) CANALFORMAVENTA,
        --
-       OC_CLIENTES.NOMBRE_CLIENTE(PP.CODCLIENTE) NOMCONTRATANTE,
+       REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(PP.CODCLIENTE),'|','') NOMCONTRATANTE,
        SI.EMPRESA_LABORA,
        SI.IDETPOL CERTIFICADO,
        SI.IDCREDITO,
@@ -254,7 +254,7 @@ SELECT SI.IDPOLIZA,
        SI.FEC_OCURRENCIA,
        SI.FEC_NOTIFICACION,
        CS.STSCOBERTURA,
-       OC_ASEGURADO.NOMBRE_ASEGURADO(PP.CODCIA,PP.CODEMPRESA,SI.COD_ASEGURADO) NOM_ASEG,
+       REPLACE(OC_ASEGURADO.NOMBRE_ASEGURADO(PP.CODCIA,PP.CODEMPRESA,SI.COD_ASEGURADO),'|','') NOM_ASEG,
        SI.COD_ASEGURADO  COD_ASEGURADO,
        SI.DESC_SINIESTRO DESC_SINI,
        DS.IDTIPOSEG TIPOSEGURO,
@@ -276,7 +276,7 @@ SELECT SI.IDPOLIZA,
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
        DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',PP.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',PP.FORMAVENTA)) CANALFORMAVENTA,
        --
-       OC_CLIENTES.NOMBRE_CLIENTE(PP.CODCLIENTE) NOMCONTRATANTE,
+       REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(PP.CODCLIENTE),'|','') NOMCONTRATANTE,
        SI.EMPRESA_LABORA,
        SI.IDETPOL CERTIFICADO,
        SI.IDCREDITO,
@@ -391,7 +391,7 @@ SELECT SI.IDPOLIZA,
       IF cFormato = 'TEXTO' THEN
          SICAS_OC.OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
       ELSE
-         --Obtiene Número de Columnas Totales
+         --Obtiene NÃºmero de Columnas Totales
          nColsTotales := XLSX_BUILDER_PKG.EXCEL_CUENTA_COLUMNAS(cEncabez);
          --
          DBMS_OUTPUT.put_line('MLJS EN INSERTA ENCABEZADO nColsTotales '||nColsTotales);
@@ -478,7 +478,7 @@ END;
       OC_MAIL.SEND_EMAIL(cNomDirectorio,cMiMail,cEmail1,cEmail2,cEmail3,cSubject,cTextoEnv,cNomArchZip,NULL,NULL,NULL,cError);
    EXCEPTION
         WHEN OTHERS THEN
-             dbms_output.put_line('Error en el envío de notificacion!!! '||cEmail1||' error '||SQLERRM);
+             dbms_output.put_line('Error en el envÃ­o de notificacion!!! '||cEmail1||' error '||SQLERRM);
    END;
 
 
@@ -544,7 +544,7 @@ BEGIN
       WHERE CODCIA = NCODCIA;
    EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      CNOMCIA := 'COMPAÑIA - NO EXISTE!!!';
+      CNOMCIA := 'COMPAÃ‘IA - NO EXISTE!!!';
    END ;
 
    --dbms_output.put_line('dPrimerDia '||dFecDesde);
@@ -624,7 +624,7 @@ BEGIN
          --
    nLinea := 6;
 
-   --CARGA DE INFORMACIÓN
+   --CARGA DE INFORMACIÃ“N
    FOR X IN ESTIMADOS_Q LOOP
       nIdSiniestro := X.IdSiniestro;
      -- dbms_output.put_line('MLJS ENTRNADO A ESTIMADOS_Q '||nIdSiniestro);
@@ -684,7 +684,7 @@ BEGIN
          nMontoRvaLoc := NVL(X.MONTO_RESERVADO_LOCAL,0);
       END IF;
 
-      --MLJS 08/10/2020 SE OBTIENE LA PÓLIZA CONTABLE
+      --MLJS 08/10/2020 SE OBTIENE LA PÃ“LIZA CONTABLE
          BEGIN
                SELECT TIPODIARIO,NUMCOMPROBSC
                INTO   cTIPODIARIO, nNUMCOMPROBSC
@@ -785,4 +785,3 @@ EXCEPTION
       OC_ARCHIVO.Eliminar_Archivo(cCodUser);
    RAISE_APPLICATION_ERROR(-20000, 'Error en ESTIMASINIESTROS ' || SQLERRM);
 END;
-/

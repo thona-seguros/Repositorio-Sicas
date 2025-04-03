@@ -138,8 +138,8 @@ cEmail2                     CORREOS_ELECTRONICOS_PNJ.EMAIL%TYPE;
 cEmail3                     CORREOS_ELECTRONICOS_PNJ.EMAIL%TYPE;
 cTextoEnv                   ENDOSO_TXT_DET.TEXTO%TYPE;
 cSubject                    VARCHAR2(1000) := 'Notificacion Archivo de Deudor por primas: ';
-cTexto1                     VARCHAR2(10000):= 'Apreciable Compa馿ro ';
-cTexto2                     varchar2(1000)   := ' Env韔 archivo de Deudor por primas generado de manera autom醫ica el d韆 de hoy. ';
+cTexto1                     VARCHAR2(10000):= 'Apreciable Compa帽ero ';
+cTexto2                     varchar2(1000)   := ' Env铆o archivo de Deudor por primas generado de manera autom谩tica el d铆a de hoy. ';
 cTexto3                     varchar2(10)   := '  ';
 cTexto4                     varchar2(1000)   := ' Saludos. ';
 ----
@@ -147,8 +147,8 @@ cTexto4                     varchar2(1000)   := ' Saludos. ';
 CURSOR EMI_Q IS 
    SELECT P.IdPoliza,                     P.NumPolUnico,
           P.NumPolRef,                    DP.CodFilial,
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-            OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+            OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           F.IdEndoso,                     F.IdFactura,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
           TO_CHAR(F.FecVenc,'DD/MM/YYYY') FecVenc,
@@ -207,7 +207,7 @@ CURSOR EMI_Q IS
       AND P.CodEmpresa               = T.CodEmpresa
       AND F.IndContabilizada         = 'S'
       AND TRUNC(T.FechaTransaccion) <= dFecHasta
-      AND T.IdProceso               IN (7, 8, 14, 18) -- Emisi贸n, Endosos, Contabilizacion y Rehabilitaciones
+      AND T.IdProceso               IN (7, 8, 14, 18) -- Emisi脙鲁n, Endosos, Contabilizacion y Rehabilitaciones
       AND ((T.IdTransaccion          = F.IdTransaccion AND F.IdTransacContab IS NULL)
        OR  T.IdTransaccion           = F.IdTransacContab)
       AND T.CodEmpresa               = P.CodEmpresa
@@ -226,8 +226,8 @@ CURSOR EMI_Q IS
     UNION
    SELECT P.IdPoliza,                    P.NumPolUnico, 
           P.NumPolRef,                   DP.CodFilial,
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || 
-             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+            OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           F.IdEndoso,                    F.IdFactura,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
           TO_CHAR(F.FecVenc,'DD/MM/YYYY') FecVenc,
@@ -312,8 +312,8 @@ CURSOR EMI_Q IS
     UNION
    SELECT P.IdPoliza,                   P.NumPolUnico, 
           P.NumPolRef,                  DP.CodFilial,
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || 
-             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+            OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           F.IdEndoso,                   F.IdFactura,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
           TO_CHAR(F.FecVenc,'DD/MM/YYYY') FecVenc,
@@ -423,8 +423,8 @@ CURSOR DET_ConC (P_IdPoliza NUMBER, p_IdFactura NUMBER) IS
 CURSOR NC_Q IS
    SELECT P.IdPoliza,                  P.NumPolUnico, 
           P.NumPolRef,                 DP.CodFilial, 
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-              OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+            OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           N.IdEndoso,                  N.IdNcr, 
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,
           TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,
@@ -557,7 +557,7 @@ CURSOR DET_ConC_NCR (nIdPoliza NUMBER, nIdNcr NUMBER) IS
       IF cFormato = 'TEXTO' THEN
          OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
       ELSE
-         --Obtiene N鷐ero de Columnas Totales
+         --Obtiene N煤mero de Columnas Totales
          nColsTotales := XLSX_BUILDER_PKG.EXCEL_CUENTA_COLUMNAS(cEncabez);
          --
          DBMS_OUTPUT.put_line('JMMD EN INSERTA ENCABEZADO nColsTotales '||nColsTotales);
@@ -664,7 +664,7 @@ END;
       OC_MAIL.SEND_EMAIL(cNomDirectorio,cMiMail,cEmail1,cEmail2,cEmail3,cSubject,cTextoEnv,cNomArchZip,NULL,NULL,NULL,cError);
    EXCEPTION
         WHEN OTHERS THEN
-             dbms_output.put_line('Error en el env韔 de notificacion '||cEmail1||' error '||SQLERRM);
+             dbms_output.put_line('Error en el env铆o de notificacion '||cEmail1||' error '||SQLERRM);
    END;
 ------------
 
@@ -735,7 +735,7 @@ BEGIN
        WHERE CodCia = nCodCia;
    EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      cNomCia := 'COMPA袸A - NO EXISTE!!!';
+      cNomCia := 'COMPA脩IA - NO EXISTE!!!';
    END ;
 
   dbms_output.put_line('dPrimerDia '||dFecDesde);
@@ -749,7 +749,7 @@ BEGIN
       cTitulo2 := 'REPORTE DEL DEUDOR POR PRIMA DEL '|| TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' || TO_CHAR(dFecHasta,'DD/MM/YYYY');
       cTitulo4 := ' ';
 
-      cEncabez    := 'No. de P髄iza'||cLimitador||
+      cEncabez    := 'No. de P贸liza'||cLimitador||
                      'Consecutivo'||cLimitador||
                      'No. Referencia'||cLimitador||
                      'Sub-Grupo'||cLimitador||
@@ -759,58 +759,58 @@ BEGIN
                      'No. Recibo'||cLimitador||
                      'Status Recibo'||cLimitador||
                      'Forma de Pago'||cLimitador|| 
-                     'Fecha Emisi髇'||cLimitador||
+                     'Fecha Emisi贸n'||cLimitador||
                      'Inicio Vigencia'||cLimitador||
                      'Fin Vigencia'||cLimitador||
                      'Dias Antiguedad'||cLimitador||
                      'Antiguedad'||cLimitador||
                      'Prima Neta'||cLimitador||
-                     'Reducci髇 de Prima'||cLimitador||
+                     'Reducci贸n de Prima'||cLimitador||
                      'Recargos'||cLimitador||
                      'Derechos'||cLimitador||
                      'Impuesto'||cLimitador||
                      'Prima Total'||cLimitador||                          
-                     'Compensaci髇 Sobre Prima'||cLimitador||
-                     'Comisi髇 Persona Fisica'||cLimitador||
-                     'Comisi髇 Persona Moral'||cLimitador|| 
-                     'Honorarios Persona F韘ica'||cLimitador||
-                     'Impuesto Honorarios P. F韘ica'||cLimitador||                     
+                     'Compensaci贸n Sobre Prima'||cLimitador||
+                     'Comisi贸n Persona Fisica'||cLimitador||
+                     'Comisi贸n Persona Moral'||cLimitador|| 
+                     'Honorarios Persona F铆sica'||cLimitador||
+                     'Impuesto Honorarios P. F铆sica'||cLimitador||                     
                      'Honorarios Persona Moral'||cLimitador||
                      'Impuesto Honorarios P. Moral'||cLimitador||                                          
                      'Otras Compensaciones Fisicas'||cLimitador||
-                     'Impuesto Otras Compensaciones P. F韘ica'||cLimitador||                                          
+                     'Impuesto Otras Compensaciones P. F铆sica'||cLimitador||                                          
                      'Otras Compensaciones Morales'||cLimitador|| 
                      'Impuesto Otras Compensaciones P. Moral'||cLimitador||                                          
                      'Dif. en Comisiones'||cLimitador||
-                     'Comisi髇 Agente'||cLimitador||
+                     'Comisi贸n Agente'||cLimitador||
                      'Honorario Agente'||cLimitador||
                      'Agente'||cLimitador||
                      'Tipo Agente'||cLimitador||
-                     'Comisi髇 Promotor'||cLimitador||
+                     'Comisi贸n Promotor'||cLimitador||
                      'Honorario Promotor'||cLimitador||
                      'Promotor'||cLimitador||
                      'Tipo Promotor'||cLimitador||           
-                     'Comisi髇 Direcci髇 Regional'||cLimitador||
-                     'Honorario Direcci髇 Regional'||cLimitador||
-                     'Direcci髇 Regional'||cLimitador||
-                     'Tipo Direcci髇 Regional'||cLimitador||
+                     'Comisi贸n Direcci贸n Regional'||cLimitador||
+                     'Honorario Direcci贸n Regional'||cLimitador||
+                     'Direcci贸n Regional'||cLimitador||
+                     'Tipo Direcci贸n Regional'||cLimitador||
                      'Tasa Iva' ||cLimitador||
                      'Estado'||cLimitador||
                      'Moneda'||cLimitador||
                      'Tipo Cambio'||cLimitador||
                      'Tipo Seguro'||cLimitador||
                      'Plan Coberturas'||cLimitador||
-                     'C骴igo SubRamo'||cLimitador||
-                     'Descripci髇 SubRamo'||cLimitador||
+                     'C贸digo SubRamo'||cLimitador||
+                     'Descripci贸n SubRamo'||cLimitador||
                      'Tipo Vigencia'||cLimitador||
                      'No. Cuota'||cLimitador||
-                     'Inicio Vig. P髄iza'||cLimitador||
-                     'Fin Vig. P髄iza'||cLimitador||
+                     'Inicio Vig. P贸liza'||cLimitador||
+                     'Fin Vig. P贸liza'||cLimitador||
                      'No. Renovacion'||cLimitador||
                      'No. Comprobante'||cLimitador||                     
                      'Tiene Siniestro'||cLimitador||
                      'No. 1er. Siniestro'||cLimitador||
-                     'Folio Fact. Electr髇ica'||cLimitador ||
+                     'Folio Fact. Electr贸nica'||cLimitador ||
                                'Es Contributorio'||cLimitador ||
                                '% Contributorio'||cLimitador ||
                                'Giro de Negocio'||cLimitador ||
@@ -878,7 +878,7 @@ BEGIN
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A袿';
+         cTipoVigencia := '1ER. A脩O';
       ELSE
          cTipoVigencia := 'RENOVACION';
       END IF;
@@ -1073,7 +1073,7 @@ BEGIN
  --     cOrigenRecibo := ORIGEN_RECIBO(X.CodCia, X.CodEmpresa, X.IdPoliza, X.IDetPol, X.IdFactura);
 
 --      IF :BK_DATOS.Formato = 'TEXTO' THEN
-         cCadena := X.NumPolUnico                                  ||cLimitador||
+         cCadena := TO_CHAR(X.NumPolUnico)                                  ||cLimitador||
                     TO_CHAR(X.IdPoliza,'9999999999999')            ||cLimitador||
                     X.NumPolRef                                    ||cLimitador||
                     X.IDETPOL                                      ||cLimitador||
@@ -1197,7 +1197,7 @@ BEGIN
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A袿';
+         cTipoVigencia := '1ER. A脩O';
       ELSE
          cTipoVigencia := 'RENOVACION';
       END IF;
@@ -1378,7 +1378,7 @@ BEGIN
          nIdSiniestro    := 0;
       END IF;
 
-         cCadena := X.NumPolUnico                                  ||cLimitador||
+         cCadena := TO_CHAR(X.NumPolUnico)                                  ||cLimitador||
                     TO_CHAR(X.IdPoliza,'9999999999999')            ||cLimitador||
                     X.NumPolRef                                    ||cLimitador||
                     X.IDETPOL                                      ||cLimitador||

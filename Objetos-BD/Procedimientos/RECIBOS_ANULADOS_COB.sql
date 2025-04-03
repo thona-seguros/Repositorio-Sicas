@@ -1,11 +1,11 @@
 create or replace PROCEDURE RECIBOS_ANULADOS_COB  IS
 ----- SE ESTABA GRABANDO UN REGISTRO EN BLANCO Y SE CORRIGIO LA COMISION DEL AGENTE     ----- JMMD20210729
------ SE INCLUYO EL CONCEPTO DE IVAHON EN CURSOR                     ----- JMMD20210729
+----- SE INCLUYO EL CONCEPTO DE IVAHON EN CURSOR 					 ----- JMMD20210729
 cLimitador             VARCHAR2(1) :='|';
 nLinea                 NUMBER;
 nLineaimp              NUMBER := 1;
 cCadena                VARCHAR2(4000);
-cCadenaAux               VARCHAR2(4000);
+cCadenaAux      	     VARCHAR2(4000);
 cCadenaAux1            VARCHAR2(4000);
 cCodUser               VARCHAR2(30);
 nDummy                 NUMBER;
@@ -26,10 +26,10 @@ nHonorariosPEF         DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nUdisPEF               DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nComisionesPEM         DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nHonorariosPEM         DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-nImpuestoHonoPF              DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-nImpuestoHonoPM              DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-nImpuestoHonoPFOC                DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
-nImpuestoHonoPMOC                DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+nImpuestoHonoPF				 DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+nImpuestoHonoPM				 DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+nImpuestoHonoPFOC				 DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+nImpuestoHonoPMOC				 DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nUdisPEM               DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nTotComisDist          DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nDifComis              DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
@@ -47,27 +47,27 @@ dFecFinVig             ENDOSOS.FecFinVig%TYPE;
 nMonto_Det_Moneda      DETALLE_NOTAS_DE_CREDITO.Monto_Det_Moneda%TYPE;
 nMonto_Mon_Extranjera  DETALLE_COMISION.Monto_Mon_Extranjera%TYPE;
 ---
-nMtoComiAge             NUMBER(28,2);
-nMtoHonoAge             NUMBER(28,2);
-cTipoAge                AGENTES.CodTipo%TYPE;
-cCodAge                   AGENTES.Cod_Agente%TYPE;
+nMtoComiAge				NUMBER(28,2);
+nMtoHonoAge				NUMBER(28,2);
+cTipoAge			  	AGENTES.CodTipo%TYPE;
+cCodAge					  AGENTES.Cod_Agente%TYPE;
 
-nMtoComiProm            NUMBER(28,2);
-nMtoHonoProm            NUMBER(28,2);
-cTipoProm                 AGENTES.CodTipo%TYPE;
-cCodProm                  AGENTES.Cod_Agente%TYPE;
+nMtoComiProm			NUMBER(28,2);
+nMtoHonoProm			NUMBER(28,2);
+cTipoProm				  AGENTES.CodTipo%TYPE;
+cCodProm 				  AGENTES.Cod_Agente%TYPE;
 
-nMtoComiDR              NUMBER(28,2);
-nMtoHonoDR              NUMBER(28,2);
-cTipoDR                   AGENTES.CodTipo%TYPE;
-cCodDR                    AGENTES.Cod_Agente%TYPE;
+nMtoComiDR				NUMBER(28,2);
+nMtoHonoDR				NUMBER(28,2);
+cTipoDR					  AGENTES.CodTipo%TYPE;
+cCodDR 					  AGENTES.Cod_Agente%TYPE;
 
 -- ESA 20180620
-CFolioFiscal            FACT_ELECT_DETALLE_TIMBRE.FolioFiscal%TYPE;
-cSerie                    FACT_ELECT_DETALLE_TIMBRE.Serie%TYPE;
-cUUID                       FACT_ELECT_DETALLE_TIMBRE.UUID%TYPE;
-cFechaUUID              DATE;
-cVariosUUID             NUMBER;
+CFolioFiscal			FACT_ELECT_DETALLE_TIMBRE.FolioFiscal%TYPE;
+cSerie					  FACT_ELECT_DETALLE_TIMBRE.Serie%TYPE;
+cUUID					    FACT_ELECT_DETALLE_TIMBRE.UUID%TYPE;
+cFechaUUID				DATE;
+cVariosUUID				NUMBER;
 cOrigenRecibo     VARCHAR2(200);
 nOtrasCompPF      DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
 nOtrasCompPM      DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
@@ -82,14 +82,14 @@ cIdTipoSeg VARCHAR2(50) := '%';
 cPlanCob VARCHAR2(100) := '%';
 cCodMoneda VARCHAR2(5) := '%';
 cCodAgente VARCHAR2(25) := '%';
-dPagadoHasta    DATE;
+dPagadoHasta  	DATE;
 dCubiertoHasta  DATE;
-dFecIniVig        DATE;
-nCuantosEmi         NUMBER;
-nDiasGracia         NUMBER := 0;
-nCuantosPag         NUMBER := 0;
-nMinFactura         NUMBER := 0;
-cStatuspol          VARCHAR2(3);
+dFecIniVig		  DATE;
+nCuantosEmi			NUMBER;
+nDiasGracia			NUMBER := 0;
+nCuantosPag			NUMBER := 0;
+nMinFactura			NUMBER := 0;
+cStatuspol			VARCHAR2(3);
 ----
 dFecDesde DATE;
 dFecHasta DATE;
@@ -129,8 +129,8 @@ cEmail2                     CORREOS_ELECTRONICOS_PNJ.EMAIL%TYPE;
 cEmail3                     CORREOS_ELECTRONICOS_PNJ.EMAIL%TYPE;
 cTextoEnv                   ENDOSO_TXT_DET.TEXTO%TYPE;
 cSubject                    VARCHAR2(1000) := 'Notificacion Archivo de Recibos Anulados: ';
-cTexto1                     VARCHAR2(10000):= 'Apreciable Compa馿ro ';
-cTexto2                     varchar2(1000)   := ' Env韔 archivo de Recibos Anulados generado de manera autom醫ica el d韆 de hoy. ';
+cTexto1                     VARCHAR2(10000):= 'Apreciable Compa帽ero ';
+cTexto2                     varchar2(1000)   := ' Env铆o archivo de Recibos Anulados generado de manera autom谩tica el d铆a de hoy. ';
 cTexto3                     varchar2(10)   := '  ';
 cTexto4                     varchar2(1000)   := ' Saludos. ';
 ----
@@ -142,8 +142,8 @@ CURSOR ANU_Q IS
   SELECT  /*+RULE*/
           P.IdPoliza,                       P.NumPolUnico, 
           P.NumPolRef,                      DP.IDETPOL, 
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           F.IdEndoso,                       F.IdFactura,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,               
           TO_CHAR(F.FecVenc,'DD/MM/YYYY')   FecVenc,
@@ -183,7 +183,7 @@ CURSOR ANU_Q IS
           POLIZAS_TEXTO_COTIZACION  TXT,
           CATEGORIAS                CGO
     -- MLJS 28/05/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION      
-    -- SE ASEGURA LA OBTENCI覰 DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO      
+    -- SE ASEGURA LA OBTENCI脫N DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO      
     WHERE DT.IDTRANSACCION           = T.IDTRANSACCION
       AND DT.CODEMPRESA              = T.CODEMPRESA
       AND DT.CODCIA                  = T.CODCIA            
@@ -272,8 +272,8 @@ CURSOR NC_Q IS
    SELECT /*+ INDEX (NC NOTAS_DE_CREDITO_IDX_1)*/  -- MLJS 18/08/2020
           P.IdPoliza,                      P.NumPolUnico, 
           P.NumPolRef,                     DP.IDETPOL,
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-              OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+              OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           N.IdEndoso,                      N.IdNcr,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,              
           TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,
@@ -307,7 +307,7 @@ CURSOR NC_Q IS
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
           DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA  
      -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION      
-     -- SE ASEGURA LA OBTENCI覰 DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO
+     -- SE ASEGURA LA OBTENCI脫N DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO
      FROM TRANSACCION      T,              -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION  
           DETALLE_TRANSACCION DT,          -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION  
           NOTAS_DE_CREDITO N,            
@@ -380,8 +380,8 @@ UNION
  SELECT /*+ INDEX (NC NOTAS_DE_CREDITO_IDX_1)*/  -- MLJS 18/08/2020
           P.IdPoliza,                      P.NumPolUnico, 
           P.NumPolRef,                     DP.IDETPOL,
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-              OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+              OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           N.IdEndoso,                      N.IdNcr,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,              
           TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,
@@ -415,7 +415,7 @@ UNION
 --          P.FORMAVENTA                                              CODCANALFORMAVENTA,
           DECODE(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA),'Invalida','',OC_VALORES_DE_LISTAS.BUSCA_LVALOR('FORMVENT',P.FORMAVENTA)) CANALFORMAVENTA  
      -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION      
-     -- SE ASEGURA LA OBTENCI覰 DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO
+     -- SE ASEGURA LA OBTENCI脫N DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO
      FROM TRANSACCION      T,              -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION  
           DETALLE_TRANSACCION DT,          -- MLJS 02/06/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION  
           NOTAS_DE_CREDITO N,            
@@ -544,7 +544,7 @@ CURSOR DET_ConC_NCR (nIdPoliza NUMBER, nIdNcr NUMBER) IS
       IF cFormato = 'TEXTO' THEN
          OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
       ELSE
-         --Obtiene N鷐ero de Columnas Totales
+         --Obtiene N煤mero de Columnas Totales
          nColsTotales := XLSX_BUILDER_PKG.EXCEL_CUENTA_COLUMNAS(cEncabez);
          --
          DBMS_OUTPUT.put_line('JMMD EN INSERTA ENCABEZADO nColsTotales '||nColsTotales);
@@ -579,7 +579,7 @@ BEGIN
    IF GT_FAI_CONCENTRADORA_FONDO.ES_FACTURA_DE_FONDOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdFactura) = 'N' THEN
       cOrigenRecibo := 'PRIMAS';
    ELSE
-     cOrigenRecibo := NULL;
+   	 cOrigenRecibo := NULL;
       FOR W IN (SELECT DISTINCT GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(IdFondo) TipoFondo
                   FROM FAI_CONCENTRADORA_FONDO
                  WHERE CodCia           = nCodCia
@@ -655,7 +655,7 @@ END;
       OC_MAIL.SEND_EMAIL(cNomDirectorio,cMiMail,cEmail1,cEmail2,cEmail3,cSubject,cTextoEnv,cNomArchZip,NULL,NULL,NULL,cError);
    EXCEPTION
         WHEN OTHERS THEN
-             dbms_output.put_line('Error en el env韔 de notificacion '||cEmail1||' error '||SQLERRM);
+             dbms_output.put_line('Error en el env铆o de notificacion '||cEmail1||' error '||SQLERRM);
    END;
 ------------
 
@@ -742,7 +742,7 @@ BEGIN
       cTitulo1 := cNomCia;
       cTitulo2     := 'REPORTE DE RECIBOS ANULADOS DEL  '|| TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' AL ' || TO_CHAR(dFecHasta,'DD/MM/YYYY') || CHR(13);
       cTitulo4 := ' ';
-      cEncabez     := 'No. de P髄iza'||cLimitador||
+      cEncabez     := 'No. de P贸liza'||cLimitador||
                      'Consecutivo'||cLimitador||
                      'No. Referencia'||cLimitador||
                      'Sub-Grupo'||cLimitador||
@@ -752,76 +752,76 @@ BEGIN
                      'No. Recibo'||cLimitador||
                      'Status Recibo'||cLimitador||
                      'Forma de Pago'||cLimitador|| 
-                     'Fecha Emisi髇/Devol'||cLimitador||
+                     'Fecha Emisi贸n/Devol'||cLimitador||
                      'Inicio Vigencia'||cLimitador||
                      'Fin Vigencia'||cLimitador|| 
-                     'Fecha de Anulaci髇'||cLimitador||
-                     'Motivo Anulaci髇'||cLimitador||
+                     'Fecha de Anulaci贸n'||cLimitador||
+                     'Motivo Anulaci贸n'||cLimitador||
                      'Prima Neta'||cLimitador||
-                     'Reducci髇 de Prima'||cLimitador||
+                     'Reducci贸n de Prima'||cLimitador||
                      'Recargos'||cLimitador||
                      'Derechos'||cLimitador||
                      'Impuesto'||cLimitador||
                      'Prima Total'||cLimitador||                   
-                     'Compensaci髇 Sobre Prima'||cLimitador|| 
-                     'Comisi髇 Persona Fisica'||cLimitador||
-                     'Comisi髇 Persona Moral'||cLimitador|| 
+                     'Compensaci贸n Sobre Prima'||cLimitador|| 
+                     'Comisi贸n Persona Fisica'||cLimitador||
+                     'Comisi贸n Persona Moral'||cLimitador|| 
                      'Honorarios Persona Fisica'||cLimitador||
-                     'Impuesto Honorarios P. F韘ica'||cLimitador||                                                               
+                     'Impuesto Honorarios P. F铆sica'||cLimitador||                                                               
                      'Honorarios Persona Moral'||cLimitador||
                      'Impuesto Honorarios P. Moral'||cLimitador||                                                               
---                     'UDIS Persona Fisica'||cLimitador|| jmmd20190523 se cambia por Otras compensaciones F韘icas 
+--                     'UDIS Persona Fisica'||cLimitador|| jmmd20190523 se cambia por Otras compensaciones F铆sicas 
 --                     'UDIS Persona Moral'||cLimitador||  jmmd20190523 se cambia por Otras compensaciones MOrales
-                     'Otras Compensaciones F韘icas'||cLimitador||
-                     'Impuesto Otras Compensaciones P. F韘ica'||cLimitador||                                                                                    
+                     'Otras Compensaciones F铆sicas'||cLimitador||
+                     'Impuesto Otras Compensaciones P. F铆sica'||cLimitador||                                                                                    
                      'Otras Compensaciones Morales'||cLimitador|| 
                      'Impuesto Otras Compensaciones P. Moral'||cLimitador||                                                                                                          
                      'Dif. en Comisiones'||cLimitador||
-                     'Comisi髇 Agente'||cLimitador||
+                     'Comisi贸n Agente'||cLimitador||
                      'Honorario Agente'||cLimitador||
                      'Agente'||cLimitador||
                      'Tipo Agente'||cLimitador||
-                     'Comisi髇 Promotor'||cLimitador||
+                     'Comisi贸n Promotor'||cLimitador||
                      'Honorario Promotor'||cLimitador||                   
                      'Promotor'||cLimitador||
                      'Tipo Promotor'||cLimitador||
-                     'Comisi髇 Direcci髇 Regional'||cLimitador||
-                     'Honorario Direcci髇 Regional'||cLimitador||
-                     'Direcci髇 Regional'||cLimitador||
-                     'Tipo Direcci髇 Regional'||cLimitador||
+                     'Comisi贸n Direcci贸n Regional'||cLimitador||
+                     'Honorario Direcci贸n Regional'||cLimitador||
+                     'Direcci贸n Regional'||cLimitador||
+                     'Tipo Direcci贸n Regional'||cLimitador||
                      'Tasa IVA'||cLimitador||
                      'Estado'||cLimitador||
                      'Moneda'||cLimitador||
                      'Tipo Cambio'||cLimitador||
                      'Tipo Seguro'||cLimitador||
                      'Plan Coberturas'||cLimitador||
-                     'C骴igo SubRamo'||cLimitador||
-                     'Descripci髇 SubRamo'||cLimitador||
+                     'C贸digo SubRamo'||cLimitador||
+                     'Descripci贸n SubRamo'||cLimitador||
                      'Tipo Vigencia'||cLimitador||
                      'No. Cuota'||cLimitador||
-                     'Inicio Vig. P髄iza'||cLimitador||
-                     'Fin Vig. P髄iza'||cLimitador||
+                     'Inicio Vig. P贸liza'||cLimitador||
+                     'Fin Vig. P贸liza'||cLimitador||
                      'No. Renovacion'||cLimitador||
                      'No. Comprobante'||cLimitador||
-                     'Folio Fact. Electr髇ica'||cLimitador||
+                     'Folio Fact. Electr贸nica'||cLimitador||
                      'Folio Fiscal'||cLimitador||
                      'Serie'||cLimitador||
                      'UUID'||cLimitador||                        
                      'Fecha UUID'||cLimitador||
                      'Varios UUID' ||cLimitador|| 
                      'Origen del Recibo' || cLimitador||
-                               'Es Contributorio'||cLimitador ||
-                               '% Contributorio'||cLimitador ||
-                               'Giro de Negocio'||cLimitador ||
-                               'Tipo de Negocio'||cLimitador ||
-                               'Fuente de Recursos'||cLimitador ||
-                               'Paquete Comercial'||cLimitador ||
-                               'Categoria'||cLimitador ||
-                               'Canal de Venta' ||cLimitador ||
----- jmmd20200803 SE INCLUYE ESTATUS DE POLIZA SOLICITADO POR OCTAVIO                              
-                               'Estatus de P髄iza'                              ||cLimitador || 
-                               'Fecha Pagado Hasta'                             ||cLimitador || 
-                               'Fecha Cobertura' ;
+					           'Es Contributorio'||cLimitador ||
+					           '% Contributorio'||cLimitador ||
+					           'Giro de Negocio'||cLimitador ||
+					           'Tipo de Negocio'||cLimitador ||
+					           'Fuente de Recursos'||cLimitador ||
+					           'Paquete Comercial'||cLimitador ||
+					           'Categoria'||cLimitador ||
+					           'Canal de Venta' ||cLimitador ||
+---- jmmd20200803 SE INCLUYE ESTATUS DE POLIZA SOLICITADO POR OCTAVIO					           
+					           'Estatus de P贸liza'								||cLimitador || 
+					           'Fecha Pagado Hasta'								||cLimitador || 
+					           'Fecha Cobertura' ;
 
  --        INSERTA_REGISTROS;
 
@@ -834,8 +834,8 @@ BEGIN
 --     nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cEncabez, 1);
 
    FOR X IN ANU_Q LOOP
-      nIdFactura      := X.IdFactura;
-      cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
+   	  nIdFactura      := X.IdFactura;
+   	  cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
       cDescFormaPago  := OC_FACTURAS.FRECUENCIA_PAGO(X.CodCia, X.IdFactura);
       dFecFin         := X.FECFINVIG_FAC;
       cFecFin         := to_char(dFecFin,'dd/mm/yyyy');
@@ -851,94 +851,94 @@ BEGIN
             cDescEstado := NULL;
       END;
       IF cDescEstado = 'PROVINCIA NO EXISTE' THEN
-         cDescEstado := NULL;
+      	 cDescEstado := NULL;
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A袿';
+         cTipoVigencia := '1ER. A脩O';
       ELSE
          cTipoVigencia := 'RENOVACION';
       END IF;
 
-------- JMMD 20200803 SE INCLUYE BUSQUEDA DE ULTIMO RECIBO PAGADO Y FECHA DE COBERTURA DE LA P覮IZA SOLICITADOS POR OCTAVIO
---dPagadoHasta      DATE;
+------- JMMD 20200803 SE INCLUYE BUSQUEDA DE ULTIMO RECIBO PAGADO Y FECHA DE COBERTURA DE LA P脫LIZA SOLICITADOS POR OCTAVIO
+--dPagadoHasta  	DATE;
 --dCubiertoHasta  DATE;
 --nDiasGracia  
-             SELECT STSPOLIZA, FECINIVIG
-               INTO cStatuspol, dFecIniVig        
-               FROM POLIZAS
-              WHERE IDPOLIZA = X.IDPOLIZA;
+			 SELECT STSPOLIZA, FECINIVIG
+			   INTO cStatuspol, dFecIniVig		  
+			   FROM POLIZAS
+			  WHERE IDPOLIZA = X.IDPOLIZA;
 
 
-           BEGIN
-                    SELECT DIASCANCELACION
-                        INTO nDiasGracia
-                        FROM TIPOS_DE_SEGUROS
-                     WHERE IDTIPOSEG = X.IdTipoSeg;
-           EXCEPTION 
-             WHEN NO_DATA_FOUND THEN
-                        nDiasGracia := 45;
-             WHEN OTHERS THEN
-                      nDiasGracia := 45;
-           END;
+		   BEGIN
+					SELECT DIASCANCELACION
+						INTO nDiasGracia
+						FROM TIPOS_DE_SEGUROS
+					 WHERE IDTIPOSEG = X.IdTipoSeg;
+		   EXCEPTION 
+		   	 WHEN NO_DATA_FOUND THEN
+		   	 			nDiasGracia := 45;
+		   	 WHEN OTHERS THEN
+		   	 		  nDiasGracia := 45;
+		   END;
 
-           BEGIN
-                    SELECT MAX(FECFINVIG)
-                      INTO dPagadoHasta
-                        FROM FACTURAS
-                        WHERE IDPOLIZA = X.IdPoliza
-                        AND STSFACT = 'PAG';  
-           EXCEPTION 
-             WHEN NO_DATA_FOUND THEN
-                        dPagadoHasta := dFecIniVig;
-             WHEN OTHERS THEN
-                      dPagadoHasta := dFecIniVig;
-           END;
+		   BEGIN
+					SELECT MAX(FECFINVIG)
+					  INTO dPagadoHasta
+						FROM FACTURAS
+						WHERE IDPOLIZA = X.IdPoliza
+						AND STSFACT = 'PAG';  
+		   EXCEPTION 
+		   	 WHEN NO_DATA_FOUND THEN
+		   	 			dPagadoHasta := dFecIniVig;
+		   	 WHEN OTHERS THEN
+		   	 		  dPagadoHasta := dFecIniVig;
+		   END;
 ----
-             SELECT COUNT(*)
-               INTO nCuantosEmi
-               FROM FACTURAS
-                WHERE IDPOLIZA = X.IdPoliza
-                    AND STSFACT = 'EMI';  
+			 SELECT COUNT(*)
+			   INTO nCuantosEmi
+			   FROM FACTURAS
+				WHERE IDPOLIZA = X.IdPoliza
+					AND STSFACT = 'EMI';  
 
-             SELECT COUNT(*)
-               INTO nCuantosPag
-               FROM FACTURAS
-                WHERE IDPOLIZA = X.IdPoliza
-                    AND STSFACT = 'PAG';  
+			 SELECT COUNT(*)
+			   INTO nCuantosPag
+			   FROM FACTURAS
+				WHERE IDPOLIZA = X.IdPoliza
+					AND STSFACT = 'PAG';  
 
-             IF nCuantosEmi > 0 THEN        
-                    SELECT MIN(IDFACTURA)
-                      INTO nMinFactura
-                        FROM FACTURAS
-                        WHERE IDPOLIZA = X.IdPoliza
-                        AND STSFACT = 'EMI'; 
+			 IF nCuantosEmi > 0 THEN		
+					SELECT MIN(IDFACTURA)
+					  INTO nMinFactura
+						FROM FACTURAS
+						WHERE IDPOLIZA = X.IdPoliza
+						AND STSFACT = 'EMI'; 
 
-                    SELECT FECVENC + nDiasGracia
-                      INTO dCubiertoHasta
-                      FROM FACTURAS
-                     WHERE IDPOLIZA = X.IdPoliza
-                       AND IDFACTURA = nMinFactura;
+					SELECT FECVENC + nDiasGracia
+					  INTO dCubiertoHasta
+					  FROM FACTURAS
+					 WHERE IDPOLIZA = X.IdPoliza
+					   AND IDFACTURA = nMinFactura;
 
-             ELSIF nCuantosPag > 0 THEN
-                      SELECT MAX(IDFACTURA)
-                        INTO nMinFactura
-                          FROM FACTURAS
-                         WHERE IDPOLIZA = X.IdPoliza
-                           AND STSFACT = 'PAG';  
+			 ELSIF nCuantosPag > 0 THEN
+			 	 	  SELECT MAX(IDFACTURA)
+					    INTO nMinFactura
+						  FROM FACTURAS
+						 WHERE IDPOLIZA = X.IdPoliza
+						   AND STSFACT = 'PAG';  
 
-                        SELECT FECFINVIG + nDiasGracia
-                          INTO dCubiertoHasta
-                          FROM FACTURAS
-                         WHERE IDPOLIZA = X.IdPoliza
-                           AND IDFACTURA = nMinFactura;                        
-             ELSE
-                 SELECT dFecIniVig + nDiasGracia
-                      INTO dCubiertoHasta 
-                      FROM DUAL;
-               END IF;  
+						SELECT FECFINVIG + nDiasGracia
+						  INTO dCubiertoHasta
+						  FROM FACTURAS
+						 WHERE IDPOLIZA = X.IdPoliza
+						   AND IDFACTURA = nMinFactura;						   
+			 ELSE
+			 	 SELECT dFecIniVig + nDiasGracia
+			 	 	  INTO dCubiertoHasta 
+			 	 	  FROM DUAL;
+			   END IF;	
 
-------- JMMD 20200803 SE INCLUYE BUSQUEDA DE ULTIMO RECIBO PAGADO Y FECHA DE COBERTURA DE LA P覮IZA SOLICITADOS POR OCTAVIO FIN BUSQUEDA
+------- JMMD 20200803 SE INCLUYE BUSQUEDA DE ULTIMO RECIBO PAGADO Y FECHA DE COBERTURA DE LA P脫LIZA SOLICITADOS POR OCTAVIO FIN BUSQUEDA
 
       nPrimaNeta      := 0;
       nReducPrima     := 0;
@@ -970,8 +970,8 @@ BEGIN
       cCodProm        := 0;
       cTipoDR         := 0;
       cCodDR          := 0;
-            nOtrasCompPF    := 0;
-            nOtrasCompPM      := 0;
+			nOtrasCompPF    := 0;
+			nOtrasCompPM	  := 0;
       --
       FOR W IN DET_Q LOOP
          IF W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S' THEN
@@ -1011,119 +1011,119 @@ BEGIN
                nComisionesPEF  := NVL(nComisionesPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSIF C.CodConcepto = 'HONORA' THEN
                nHonorariosPEF  := NVL(nHonorariosPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'IVAHON' THEN
-                nImpuestoHonoPF   := NVL(nImpuestoHonoPF,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd201900603 nImpuestoHono Nuevo concepto para el proyecto de honorarios               
+       		ELSIF C.CodConcepto = 'IVAHON' THEN
+            	nImpuestoHonoPF   := NVL(nImpuestoHonoPF,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd201900603 nImpuestoHono Nuevo concepto para el proyecto de honorarios               
             ELSE
                NULL;
-            END IF;             
+            END IF; 			
          ELSIF C.CODTIPO = 'HONPM' THEN -- HONORARIOS PERSONA MORAL 
             IF C.CodConcepto IN ('COMISI','COMIPM') THEN
                nComisionesPEM  := NVL(nComisionesPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'HONORA' THEN
-                 nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'IVAHON' THEN
-                nImpuestoHonoPM   := NVL(nImpuestoHonoPM,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd201906003 nImpuestoHono Nuevo concepto para el proyecto de honorarios                 
+      	    ELSIF C.CodConcepto = 'HONORA' THEN
+      	 	     nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
+       		ELSIF C.CodConcepto = 'IVAHON' THEN
+            	nImpuestoHonoPM   := NVL(nImpuestoHonoPM,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd201906003 nImpuestoHono Nuevo concepto para el proyecto de honorarios      	 	     
             ELSE
                NULL;
-            END IF;                  
+            END IF; 	             
          ELSIF C.CodTipo = 'UDISPF' THEN -- UDIS PERSONA FISICA
             IF C.CodConcepto = 'UDI' THEN
 --               nUdisPEF        := NVL(nUdisPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
-                    nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
+      	 	        nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
                NULL;
             END IF;
          ELSIF C.CodTipo = 'UDISPM' THEN -- UDIS PERSONA MORAL 
             IF C.CodConcepto = 'UDI' THEN
 --               nUdisPEM        := NVL(nUdisPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
-                    nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
+      	 	        nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
                NULL;
             END IF;               
 ---- jmmd20190523Se incluyen los conceptos para HONORF y HONORM          
          ELSIF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA 
-                           IF C.CodConcepto = 'HONORA' THEN
-                    nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
-                     ELSIF C.CodConcepto = 'IVAHON' THEN
-                    nImpuestoHonoPFOC   := NVL(nImpuestoHonoPFOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios                     
+ 						   IF C.CodConcepto = 'HONORA' THEN
+      	 	        nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
+         			 ELSIF C.CodConcepto = 'IVAHON' THEN
+            		nImpuestoHonoPFOC   := NVL(nImpuestoHonoPFOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios      	 	        
                ELSE
                  NULL;
-               END IF;          
+               END IF; 			
          ELSIF C.CODTIPO = 'HONORM' THEN -- HONORARIOS PERSONA MORAL 
-               IF C.CodConcepto = 'HONORA' THEN
-                    nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
-                     ELSIF C.CodConcepto = 'IVAHON' THEN
-                    nImpuestoHonoPMOC   := NVL(nImpuestoHonoPMOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios                     
+      	       IF C.CodConcepto = 'HONORA' THEN
+      	 	        nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
+         			 ELSIF C.CodConcepto = 'IVAHON' THEN
+            		nImpuestoHonoPMOC   := NVL(nImpuestoHonoPMOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios      	 	        
                ELSE
                   NULL;
-               END IF;  
+               END IF; 	
 ----            
          END IF;           
          IF C.CodConcepto = 'IVAHON' THEN
-              NULL;
+         	  NULL;
          ELSE
-                nTotComisDist   := NVL(nTotComisDist,0) + NVL(C.Monto_Mon_Extranjera,0);
+         		nTotComisDist   := NVL(nTotComisDist,0) + NVL(C.Monto_Mon_Extranjera,0);
          END IF;
          --
          IF C.CodNivel = 3 THEN
-                        cTipoAge            := C.CodTipo;
-                        cCodAge             := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-              nMtoHonoAge       := NVL(C.Monto_Mon_Extranjera,0);
-                        ELSE
-              nMtoComiAge       := NVL(C.Monto_Mon_Extranjera,0);
-                        END IF;    -- ASI ESTABA SE CAMBIA POR EL DE ABAJO PARA DESGLOSAR MAS LOS CONCEPTOS
+						cTipoAge			:= C.CodTipo;
+						cCodAge				:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+              nMtoHonoAge		:= NVL(C.Monto_Mon_Extranjera,0);
+						ELSE
+              nMtoComiAge		:= NVL(C.Monto_Mon_Extranjera,0);
+						END IF;    -- ASI ESTABA SE CAMBIA POR EL DE ABAJO PARA DESGLOSAR MAS LOS CONCEPTOS
 
-/*                      IF C.CodTipo IN ('HONPM','HONPF') THEN 
-                             IF C.CodConcepto = 'HONORA' THEN
-                                    nMtoHonoAge := NVL(C.Monto_Mon_Extranjera,0);
-                             ELSE
-                                 IF C.CodConcepto LIKE 'COMI%' THEN
-                        nMtoComiAge  := NVL(C.Monto_Mon_Extranjera,0);
-                                 END IF;
-                             END IF;     
-                        END IF; */       
+/*						IF C.CodTipo IN ('HONPM','HONPF') THEN 
+							 IF C.CodConcepto = 'HONORA' THEN
+									nMtoHonoAge := NVL(C.Monto_Mon_Extranjera,0);
+							 ELSE
+							 	 IF C.CodConcepto LIKE 'COMI%' THEN
+              			nMtoComiAge  := NVL(C.Monto_Mon_Extranjera,0);
+							 	 END IF;
+							 END IF;	 
+						END IF; */       
 
-                 ELSIF C.CodNivel = 2 THEN
-                        cTipoProm           := C.CodTipo;
-                        cCodProm            := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-                            nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
-                        ELSE
-              nMtoComiProm  := NVL(C.Monto_Mon_Extranjera,0);
-                        END IF;   
+				 ELSIF C.CodNivel = 2 THEN
+						cTipoProm			:= C.CodTipo;
+						cCodProm 			:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+							nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
+						ELSE
+              nMtoComiProm	:= NVL(C.Monto_Mon_Extranjera,0);
+						END IF;   
 
-/*                      IF C.CodTipo IN ('HONPM','HONPF') THEN
-                             IF C.CodConcepto = 'HONORA' THEN
-                                    nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
-                             ELSE 
-                                 IF C.CodConcepto LIKE 'COMI%' THEN
-                        nMtoComiProm    := NVL(C.Monto_Mon_Extranjera,0);
-                                 END IF;
-                             END IF;     
-                        END IF; */                              
+/*						IF C.CodTipo IN ('HONPM','HONPF') THEN
+							 IF C.CodConcepto = 'HONORA' THEN
+									nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
+							 ELSE 
+							 	 IF C.CodConcepto LIKE 'COMI%' THEN
+              			nMtoComiProm	:= NVL(C.Monto_Mon_Extranjera,0);
+							 	 END IF;
+							 END IF;	 
+						END IF;	*/	    						
 
-         ELSIF C.CodNivel = 1 THEN
-                        cTipoDR             := C.CodTipo;
-                        cCodDR              := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-                            nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
+      	 ELSIF C.CodNivel = 1 THEN
+						cTipoDR				:= C.CodTipo;
+						cCodDR 				:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+							nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
             ELSE
-               nMtoComiDR       := NVL(C.Monto_Mon_Extranjera,0);
+               nMtoComiDR		:= NVL(C.Monto_Mon_Extranjera,0);
             END IF;    --JMMD asi estaba , se cambio por el de abajo para desglosar mas las validaciones
-/*                      IF C.CodTipo IN ('HONPM','HONPF') THEN
-                             IF C.CodConcepto = 'HONORA' THEN
-                                    nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
-                             ELSE
-                                 IF C.CodConcepto LIKE 'COMI%' THEN
-                        nMtoComiDR      := NVL(C.Monto_Mon_Extranjera,0);
-                                 ELSE
-                                    NULL;
-                                 END IF;
-                             END IF;      
-                        END IF;   */                        
+/*						IF C.CodTipo IN ('HONPM','HONPF') THEN
+							 IF C.CodConcepto = 'HONORA' THEN
+									nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
+							 ELSE
+							 	 IF C.CodConcepto LIKE 'COMI%' THEN
+               			nMtoComiDR		:= NVL(C.Monto_Mon_Extranjera,0);
+							 	 ELSE
+							 	 	NULL;
+							 	 END IF;
+							 END IF;	  
+						END IF;   */ 						
 ----            
-         END IF;
+      	 END IF;
       END LOOP;
 
       nDifComis := NVL(X.MtoComisi_Moneda,0) - NVL(nTotComisDist,0);
@@ -1134,7 +1134,7 @@ BEGIN
        WHERE CODCIA         = X.COD_CIA
          AND NumTransaccion = X.IdTransaccion;
 
-     --RECUPERA FOLIO FISCAL RECIBO FACTURA cuenta de uuids ESA20180620
+	 --RECUPERA FOLIO FISCAL RECIBO FACTURA cuenta de uuids ESA20180620
 
     BEGIN
      SELECT FE.FOLIOFISCAL, FE.SERIE, FE.UUIDCANCELADO, FE.FECHAUUID
@@ -1149,12 +1149,12 @@ BEGIN
             WHERE FE.IDFACTURA = X.IDFACTURA
               AND FE.codproceso = 'CAN'
               AND FE.codrespuestasat = '201');
-        EXCEPTION         
+     	EXCEPTION		  
          WHEN NO_DATA_FOUND THEN
             cFolioFiscal := NULL;
-                cSerie       := NULL;
-                  cUUID        := NULL;
-                  cFechaUUID   := NULL;
+		      	cSerie       := NULL;
+			      cUUID        := NULL;
+			      cFechaUUID   := NULL;
       END;          
 
    BEGIN
@@ -1166,7 +1166,7 @@ BEGIN
          AND FE.codrespuestasat = '201'
        GROUP BY FE.IDFACTURA;
    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
+    	WHEN NO_DATA_FOUND THEN
          cVariosUUID := NULL;
    END;         
 
@@ -1174,7 +1174,7 @@ BEGIN
    IF GT_FAI_CONCENTRADORA_FONDO.ES_FACTURA_DE_FONDOS(X.CodCia, X.CodEmpresa, X.IdPoliza, X.IDetPol, X.IdFactura) = 'N' THEN
       cOrigenRecibo := 'PRIMAS';
    ELSE
-     cOrigenRecibo := NULL;
+   	 cOrigenRecibo := NULL;
       FOR W IN (SELECT DISTINCT GT_FAI_FONDOS_DETALLE_POLIZA.TIPO_FONDO(IdFondo) TipoFondo
                   FROM FAI_CONCENTRADORA_FONDO
                  WHERE CodCia           = X.CodCia
@@ -1253,11 +1253,11 @@ BEGIN
                     X.FecFinVig                                    ||cLimitador||
                     TO_CHAR(X.NumRenov,'99990')                    ||cLimitador||
                     cNumComprob                                    ||cLimitador||
-                            X.FolioFactElec                                ||cLimitador||
-                              cFolioFiscal                                   ||cLimitador||
-                              cSerie                                         ||cLimitador||
-                    cUUID                                              ||cLimitador||             
-                    TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador||   -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA                                    
+				          	X.FolioFactElec                                ||cLimitador||
+					          cFolioFiscal                                   ||cLimitador||
+					          cSerie                                         ||cLimitador||
+                    cUUID	    	                                   ||cLimitador||             
+                    TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador||	-- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA	                    			
                     cVariosUUID                                    ||cLimitador||
                     cOrigenRecibo                                  ||cLimitador||
                     X.ESCONTRIBUTORIO                              ||cLimitador||
@@ -1268,10 +1268,10 @@ BEGIN
                     X.CODPAQCOMERCIAL                              ||cLimitador||
                     X.CATEGORIA                                    ||cLimitador||
                     X.CANALFORMAVENTA                              ||cLimitador||
----- jmmd20200803 SE INCLUYE ESTATUS DE POLIZA SOLICITADO POR OCTAVIO                                                  
-                    cStatuspol                                                                       ||cLimitador||
-                    TO_CHAR(dPagadoHasta,'DD/MM/YYYY')                   ||cLimitador|| -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
-                    TO_CHAR(dCubiertoHasta,'DD/MM/YYYY')                     ||CHR(13);     -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
+---- jmmd20200803 SE INCLUYE ESTATUS DE POLIZA SOLICITADO POR OCTAVIO					                               
+                    cStatuspol																		 ||cLimitador||
+                    TO_CHAR(dPagadoHasta,'DD/MM/YYYY')	    			 ||cLimitador|| -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
+                    TO_CHAR(dCubiertoHasta,'DD/MM/YYYY')					 ||CHR(13);     -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
           ----
          INSERTA_REGISTROS;
 --     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -1279,9 +1279,9 @@ BEGIN
      nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cCadena, 1);
    END LOOP;
    FOR X IN NC_Q LOOP
-      nIdNcr          := X.IdNcr;
-      cStsNcr         := X.StsNcr;
-      cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
+   	  nIdNcr          := X.IdNcr;
+   	  cStsNcr         := X.StsNcr;
+   	  cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
       cDescFormaPago  := 'DIRECTO';
       dFecFin         := X.FECFINVIG_NCR;
       cFecFin         := to_char(dFecFin,'dd/mm/yyyy');
@@ -1298,11 +1298,11 @@ BEGIN
             cDescEstado := NULL;
       END;     
       IF cDescEstado = 'PROVINCIA NO EXISTE' THEN
-         cDescEstado := NULL;
+      	 cDescEstado := NULL;
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A袿';
+         cTipoVigencia := '1ER. A脩O';
       ELSE
          cTipoVigencia := 'RENOVACION';
       END IF;
@@ -1342,10 +1342,10 @@ BEGIN
       --
 
       FOR W IN DET_NC_Q LOOP
-         IF X.IdTransaccionAnu = X.IdTransaccion THEN
-            nMonto_Det_Moneda := NVL(W.Monto_Det_Moneda,0) * -1;
+      	 IF X.IdTransaccionAnu = X.IdTransaccion THEN
+      	    nMonto_Det_Moneda := NVL(W.Monto_Det_Moneda,0) * -1;
          ELSE
-            nMonto_Det_Moneda := NVL(W.Monto_Det_Moneda,0);
+      	    nMonto_Det_Moneda := NVL(W.Monto_Det_Moneda,0);
          END IF;
          IF W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S' THEN
             nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(nMonto_Det_Moneda,0);
@@ -1364,27 +1364,27 @@ BEGIN
 
       FOR C IN DET_ConC_NCR (X.IdPoliza, X.IdNcr) LOOP
          IF X.IdTransaccionAnu = X.IdTransaccion THEN
-            nMonto_Mon_Extranjera := NVL(C.Monto_Mon_Extranjera,0) * -1;
+      	    nMonto_Mon_Extranjera := NVL(C.Monto_Mon_Extranjera,0) * -1;
          ELSE
-            nMonto_Mon_Extranjera := NVL(C.Monto_Mon_Extranjera,0);
+      	    nMonto_Mon_Extranjera := NVL(C.Monto_Mon_Extranjera,0);
          END IF;
-         IF C.CODTIPO = 'AGTEPF' THEN --AGENTE PERSONA FISICA
-            IF C.CodConcepto IN ('COMISI','COMIPF') THEN
+      	 IF C.CODTIPO = 'AGTEPF' THEN --AGENTE PERSONA FISICA
+          	IF C.CodConcepto IN ('COMISI','COMIPF') THEN
               nComisionesPEF  := NVL(nComisionesPEF,0) + NVL(nMonto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'HONORA' THEN
-                nHonorariosPEF  := NVL(nHonorariosPEF,0) + NVL(nMonto_Mon_Extranjera,0);
---              ELSIF C.CodConcepto = 'IVAHON' THEN
---              nImpuestoHonoPF   := NVL(nImpuestoHonoPF,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios                         
+      	    ELSIF C.CodConcepto = 'HONORA' THEN
+      	 	    nHonorariosPEF  := NVL(nHonorariosPEF,0) + NVL(nMonto_Mon_Extranjera,0);
+--       		ELSIF C.CodConcepto = 'IVAHON' THEN
+--            	nImpuestoHonoPF   := NVL(nImpuestoHonoPF,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios             	 	    
             ELSE
               NULL;
             END IF;             
          ELSIF C.CODTIPO = 'AGTEPM' THEN -- AGENTE PERSONA MORAL 
-            IF C.CodConcepto IN ('COMISI','COMIPM') THEN
+          	IF C.CodConcepto IN ('COMISI','COMIPM') THEN
                nComisionesPEM  := NVL(nComisionesPEM,0) + NVL(nMonto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'HONORA' THEN
-                 nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(nMonto_Mon_Extranjera,0);
---              ELSIF C.CodConcepto = 'IVAHON' THEN
---              nImpuestoHonoPM   := NVL(nImpuestoHonoPM,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios                          
+      	    ELSIF C.CodConcepto = 'HONORA' THEN
+      	 	     nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(nMonto_Mon_Extranjera,0);
+--         		ELSIF C.CodConcepto = 'IVAHON' THEN
+--            	nImpuestoHonoPM   := NVL(nImpuestoHonoPM,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios             	 	     
             ELSE
                NULL;
             END IF;
@@ -1392,34 +1392,34 @@ BEGIN
          ELSIF C.CODTIPO = 'HONPF' THEN -- HONORARIOS PERSONA FISICA 
             IF C.CodConcepto IN ('COMISI','COMIPF') THEN
                nComisionesPEF  := NVL(nComisionesPEF,0) + NVL(nMonto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'HONORA' THEN
-                nHonorariosPEF  := NVL(nHonorariosPEF,0) + NVL(nMonto_Mon_Extranjera,0);
-                ELSIF C.CodConcepto = 'IVAHON' THEN
-                nImpuestoHonoPF   := NVL(nImpuestoHonoPF,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios                 
+      	    ELSIF C.CodConcepto = 'HONORA' THEN
+      	 	    nHonorariosPEF  := NVL(nHonorariosPEF,0) + NVL(nMonto_Mon_Extranjera,0);
+       			ELSIF C.CodConcepto = 'IVAHON' THEN
+            	nImpuestoHonoPF   := NVL(nImpuestoHonoPF,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios      	 	    
             ELSE
                NULL;
-            END IF;             
+            END IF; 			
          ELSIF C.CODTIPO = 'HONPM' THEN -- HONORARIOS PERSONA MORAL 
             IF C.CodConcepto IN ('COMISI','COMIPM') THEN
                nComisionesPEM  := NVL(nComisionesPEM,0) + NVL(nMonto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'HONORA' THEN
-                 nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(nMonto_Mon_Extranjera,0);
-                ELSIF C.CodConcepto = 'IVAHON' THEN
-                nImpuestoHonoPM   := NVL(nImpuestoHonoPM,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios                  
+      	    ELSIF C.CodConcepto = 'HONORA' THEN
+      	 	     nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(nMonto_Mon_Extranjera,0);
+       			ELSIF C.CodConcepto = 'IVAHON' THEN
+            	nImpuestoHonoPM   := NVL(nImpuestoHonoPM,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios      	 	     
             ELSE
                NULL;
-            END IF;                 
+            END IF;              	
          ELSIF C.CodTipo = 'UDISPF' THEN -- UDIS PERSONA FISICA
             IF C.CodConcepto = 'UDI' THEN
 --               nUdisPEF        := NVL(nUdisPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
-                    nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
+      	 	        nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
                NULL;
             END IF;
          ELSIF C.CodTipo = 'UDISPM' THEN -- UDIS PERSONA MORAL 
             IF C.CodConcepto = 'UDI' THEN
 --               nUdisPEM        := NVL(nUdisPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
-                    nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
+      	 	        nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
                NULL;
             END IF;     
@@ -1427,92 +1427,92 @@ BEGIN
 ---- jmmd20190523Se incluyen los conceptos para HONORF y HONORM            
             --IF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA  --- MLJS 10/03/2021
          ELSIF C.CODTIPO = 'HONORF' THEN -- HONORARIOS PERSONA FISICA    --- MLJS 10/03/2021
-                           IF C.CodConcepto = 'HONORA' THEN
-                    nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
-                     ELSIF C.CodConcepto = 'IVAHON' THEN
-                        nImpuestoHonoPFOC   := NVL(nImpuestoHonoPFOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios                     
+ 						   IF C.CodConcepto = 'HONORA' THEN
+      	 	        nOtrasCompPF  := NVL(nOtrasCompPF,0) + NVL(C.Monto_Mon_Extranjera,0);
+         			 ELSIF C.CodConcepto = 'IVAHON' THEN
+             			nImpuestoHonoPFOC   := NVL(nImpuestoHonoPFOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190603 nImpuestoHono Nuevo concepto para el proyecto de honorarios      	 	        
                ELSE
                  NULL;
-               END IF;          
+               END IF; 			
             ELSIF C.CODTIPO = 'HONORM' THEN -- HONORARIOS PERSONA MORAL 
-               IF C.CodConcepto = 'HONORA' THEN
-                    nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
-                     ELSIF C.CodConcepto = 'IVAHON' THEN
-                        nImpuestoHonoPMOC   := NVL(nImpuestoHonoPMOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios                     
+      	       IF C.CodConcepto = 'HONORA' THEN
+      	 	        nOtrasCompPM  := NVL(nOtrasCompPM,0) + NVL(C.Monto_Mon_Extranjera,0);
+         			 ELSIF C.CodConcepto = 'IVAHON' THEN
+            			nImpuestoHonoPMOC   := NVL(nImpuestoHonoPMOC,0) + NVL(c.Monto_Mon_Extranjera,0);  ---- jmmd20190530 nImpuestoHono Nuevo concepto para el proyecto de honorarios      	 	        
                ELSE
                   NULL;
-               END IF;  
+               END IF; 	
 ----            
-            END IF; 
+            END IF;	
             IF C.CodConcepto = 'IVAHON' THEN
-                 NULL;
+            	 NULL;
             ELSE
-                    nTotComisDist   := NVL(nTotComisDist,0) + NVL(nMonto_Mon_Extranjera,0);
-              END IF;
+         			nTotComisDist   := NVL(nTotComisDist,0) + NVL(nMonto_Mon_Extranjera,0);
+         	  END IF;
 -------------------              
          --
 
          IF C.CodNivel = 3 THEN
-                        cTipoAge            := C.CodTipo;
-                        cCodAge             := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-              nMtoHonoAge       := NVL(C.Monto_Mon_Extranjera,0);
-                        ELSE
-              nMtoComiAge       := NVL(C.Monto_Mon_Extranjera,0);
-                        END IF;  --ASI ESTABA SE CAMBIO POR EL DE ABAJO PARA DESGLOSAR MAS LOS CONCEPTOS
-/*                      IF C.CodTipo IN ('HONPM','HONPF') THEN 
-                             IF C.CodConcepto = 'HONORA' THEN
-                                    nMtoHonoAge := NVL(C.Monto_Mon_Extranjera,0);
-                             ELSE
-                                 IF C.CodConcepto LIKE 'COMI%' THEN
-                        nMtoComiAge  := NVL(C.Monto_Mon_Extranjera,0);
-                                 END IF;
-                             END IF;     
-                        END IF;  */
+						cTipoAge			:= C.CodTipo;
+						cCodAge				:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+              nMtoHonoAge		:= NVL(C.Monto_Mon_Extranjera,0);
+						ELSE
+              nMtoComiAge		:= NVL(C.Monto_Mon_Extranjera,0);
+						END IF;  --ASI ESTABA SE CAMBIO POR EL DE ABAJO PARA DESGLOSAR MAS LOS CONCEPTOS
+/*						IF C.CodTipo IN ('HONPM','HONPF') THEN 
+							 IF C.CodConcepto = 'HONORA' THEN
+									nMtoHonoAge := NVL(C.Monto_Mon_Extranjera,0);
+							 ELSE
+							 	 IF C.CodConcepto LIKE 'COMI%' THEN
+              			nMtoComiAge  := NVL(C.Monto_Mon_Extranjera,0);
+							 	 END IF;
+							 END IF;	 
+						END IF;	 */
 
-----                    
-                 ELSIF C.CodNivel = 2 THEN
-                        cTipoProm           := C.CodTipo;
-                        cCodProm            := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-                            nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
-                        ELSE
-              nMtoComiProm  := NVL(C.Monto_Mon_Extranjera,0);
-                        END IF;     -- ASI ESTABA SE CAMBIA POR EL DE ABAJO PARA DESGLOSAR MEJOR LOS CONCEPTOS
-/*                      IF C.CodTipo IN ('HONPM','HONPF') THEN
-                             IF C.CodConcepto = 'HONORA' THEN
-                                    nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
-                             ELSE 
-                                 IF C.CodConcepto LIKE 'COMI%' THEN
-                        nMtoComiProm    := NVL(C.Monto_Mon_Extranjera,0);
-                                 END IF;
-                             END IF;     
-                        END IF;  */       
-----                    
+----					
+				 ELSIF C.CodNivel = 2 THEN
+						cTipoProm			:= C.CodTipo;
+						cCodProm 			:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+							nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
+						ELSE
+              nMtoComiProm	:= NVL(C.Monto_Mon_Extranjera,0);
+						END IF;     -- ASI ESTABA SE CAMBIA POR EL DE ABAJO PARA DESGLOSAR MEJOR LOS CONCEPTOS
+/*						IF C.CodTipo IN ('HONPM','HONPF') THEN
+							 IF C.CodConcepto = 'HONORA' THEN
+									nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
+							 ELSE 
+							 	 IF C.CodConcepto LIKE 'COMI%' THEN
+              			nMtoComiProm	:= NVL(C.Monto_Mon_Extranjera,0);
+							 	 END IF;
+							 END IF;	 
+						END IF;	 */       
+----					
 --------------------
-         ELSIF C.CodNivel = 1 THEN
-                        cTipoDR             := C.CodTipo;
-                        cCodDR              := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-                            nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
+      	 ELSIF C.CodNivel = 1 THEN
+						cTipoDR				:= C.CodTipo;
+						cCodDR 				:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+							nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
             ELSE
-               nMtoComiDR       := NVL(C.Monto_Mon_Extranjera,0);
+               nMtoComiDR		:= NVL(C.Monto_Mon_Extranjera,0);
             END IF;   -- ASI ESTABA SE CAMBIO POR EL DE ABAJO PARA DESGLOSAR MAS LOS CONCEPTOS
-/*                      IF C.CodTipo IN ('HONPM','HONPF') THEN
-                             IF C.CodConcepto = 'HONORA' THEN
-                                    nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
-                             ELSE
-                                 IF C.CodConcepto LIKE 'COMI%' THEN
-                        nMtoComiDR      := NVL(C.Monto_Mon_Extranjera,0);
-                                 END IF;
-                             END IF;     
+/*						IF C.CodTipo IN ('HONPM','HONPF') THEN
+							 IF C.CodConcepto = 'HONORA' THEN
+									nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
+							 ELSE
+							 	 IF C.CodConcepto LIKE 'COMI%' THEN
+               			nMtoComiDR		:= NVL(C.Monto_Mon_Extranjera,0);
+							 	 END IF;
+							 END IF;	 
             END IF;    */ 
 
           END IF;  
 ----            
-      --     END IF;  -- ESTA DE MAS MLJS 10/03/2021
+      --	 END IF;  -- ESTA DE MAS MLJS 10/03/2021
       END LOOP;
---------------------        
+--------------------		
 
       nDifComis := NVL(X.MtoComisi_Moneda,0) - NVL(nTotComisDist,0);
 
@@ -1538,9 +1538,9 @@ BEGIN
       EXCEPTION
          WHEN NO_DATA_FOUND THEN
             cFolioFiscal := NULL;
-                cSerie       := NULL;
-            cUUID        := NULL;
-              cFechaUUID   := NULL;       
+		        cSerie       := NULL;
+   	        cUUID        := NULL;
+	          cFechaUUID   := NULL;       
       END;   
       BEGIN
          SELECT count(FE.IDNCR) 
@@ -1597,15 +1597,15 @@ BEGIN
                     TO_CHAR(nMtoComiAge,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nMtoHonoAge,'99999999999990.00')       ||cLimitador||                 
                     LPAD(cCodAge,6,'0')                            ||cLimitador||
-                    cTipoAge                                                                         ||cLimitador||
+                    cTipoAge									   									 ||cLimitador||
                     TO_CHAR(nMtoComiProm,'99999999999990.00')      ||cLimitador||
                     TO_CHAR(nMtoHonoProm,'99999999999990.00')      ||cLimitador||
-                    LPAD(cCodProm,6,'0')                                                 ||cLimitador||
-                    cTipoProm                                                                        ||cLimitador||
+                    LPAD(cCodProm,6,'0')						   						 ||cLimitador||
+                    cTipoProm									   									 ||cLimitador||
                     TO_CHAR(nMtoComiDR,'99999999999990.00')        ||cLimitador||
                     TO_CHAR(nMtoHonoDR,'99999999999990.00')        ||cLimitador||
-                    LPAD(cCodDR,6,'0')                                                   ||cLimitador||
-                    cTipoDR                                                                        ||cLimitador||
+                    LPAD(cCodDR,6,'0')							   						 ||cLimitador||
+                    cTipoDR										   								   ||cLimitador||
                     TO_CHAR(nTasaIVA,'999990.00')                  ||cLimitador||
                     cDescEstado                                    ||cLimitador||
                     X.CodMoneda                                    ||cLimitador||
@@ -1621,11 +1621,11 @@ BEGIN
                     TO_CHAR(X.NumRenov,'99990')                    ||cLimitador||
                     cNumComprob                                    ||cLimitador||
                     X.FolioFactElec                                ||cLimitador||
-                                        cFolioFiscal                                   ||cLimitador||
-                                        cSerie                                         ||cLimitador||
-                                        cUUID                                          ||cLimitador||
-                                        TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador||   -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA                  
-                    cVariosUUID                                                    ||cLimitador||
+										cFolioFiscal                                   ||cLimitador||
+										cSerie                                         ||cLimitador||
+										cUUID                                          ||cLimitador||
+										TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador||	-- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA                  
+                    cVariosUUID									                   ||cLimitador||
                     cOrigenRecibo                                  ||cLimitador||
                     X.ESCONTRIBUTORIO                              ||cLimitador||
                     X.PORCENCONTRIBUTORIO                          ||cLimitador||
@@ -1637,8 +1637,8 @@ BEGIN
                     X.CANALFORMAVENTA                              ||cLimitador||
 ---- jmmd20200803 SE INCLUYE ESTATUS DE POLIZA SOLICITADO POR OCTAVIO                                         
                     cStatuspol                                     ||cLimitador||
-                    TO_CHAR(dPagadoHasta,'DD/MM/YYYY')                   ||cLimitador|| -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
-                    TO_CHAR(dCubiertoHasta,'DD/MM/YYYY')                     ||CHR(13);     -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
+                    TO_CHAR(dPagadoHasta,'DD/MM/YYYY')	    			 ||cLimitador|| -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
+                    TO_CHAR(dCubiertoHasta,'DD/MM/YYYY')					 ||CHR(13);     -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
           ----
      INSERTA_REGISTROS;
 --     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);

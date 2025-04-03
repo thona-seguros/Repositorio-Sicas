@@ -40,37 +40,37 @@ cTipoEndoso     ENDOSOS.TipoEndoso%TYPE;
 dFecFinVig      ENDOSOS.FecFinVig%TYPE;
 nIdNcr          NOTAS_DE_CREDITO.IdNcr%TYPE;
 ---
-nMtoHonoAge     NUMBER(28,2);
-nMtoComiAge     NUMBER(28,2);
-cTipoAge        AGENTES.CodTipo%TYPE;
-cCodAge           AGENTES.Cod_Agente%TYPE;
+nMtoHonoAge		NUMBER(28,2);
+nMtoComiAge		NUMBER(28,2);
+cTipoAge	  	AGENTES.CodTipo%TYPE;
+cCodAge			  AGENTES.Cod_Agente%TYPE;
 
-nMtoComiProm    NUMBER(28,2);
-nMtoHonoProm    NUMBER(28,2);
-cTipoProm       AGENTES.CodTipo%TYPE;
-cCodProm        AGENTES.Cod_Agente%TYPE;
+nMtoComiProm	NUMBER(28,2);
+nMtoHonoProm	NUMBER(28,2);
+cTipoProm	  	AGENTES.CodTipo%TYPE;
+cCodProm 	  	AGENTES.Cod_Agente%TYPE;
 
-nMtoComiDR      NUMBER(28,2);
-nMtoHonoDR      NUMBER(28,2);
-cTipoDR         AGENTES.CodTipo%TYPE;
-cCodDR          AGENTES.Cod_Agente%TYPE;
+nMtoComiDR		NUMBER(28,2);
+nMtoHonoDR		NUMBER(28,2);
+cTipoDR		  	AGENTES.CodTipo%TYPE;
+cCodDR 		  	AGENTES.Cod_Agente%TYPE;
 -- ESA 20180620
-CFolioFiscal    FACT_ELECT_DETALLE_TIMBRE.FolioFiscal%TYPE;
-cSerie            FACT_ELECT_DETALLE_TIMBRE.Serie%TYPE;
-cUUID               FACT_ELECT_DETALLE_TIMBRE.UUID%TYPE;
-cFechaUUID      DATE;
-cVariosUUID     NUMBER;
+CFolioFiscal	FACT_ELECT_DETALLE_TIMBRE.FolioFiscal%TYPE;
+cSerie			  FACT_ELECT_DETALLE_TIMBRE.Serie%TYPE;
+cUUID		    	FACT_ELECT_DETALLE_TIMBRE.UUID%TYPE;
+cFechaUUID		DATE;
+cVariosUUID		NUMBER;
 cOrigenRecibo VARCHAR2(200);
 
 ----
-dPagadoHasta    DATE;
+dPagadoHasta  	DATE;
 dCubiertoHasta  DATE;
-dFecIniVig        DATE;
-nCuantosEmi         NUMBER;
-nDiasGracia         NUMBER := 0;
-nCuantosPag         NUMBER := 0;
-nMinFactura         NUMBER := 0;
-cStatuspol          VARCHAR2(3);
+dFecIniVig		  DATE;
+nCuantosEmi			NUMBER;
+nDiasGracia			NUMBER := 0;
+nCuantosPag			NUMBER := 0;
+nMinFactura			NUMBER := 0;
+cStatuspol			VARCHAR2(3);
 --
 cRenovacion     VARCHAR2(15);
 cRamo           VARCHAR2(50);
@@ -107,7 +107,7 @@ dFecDesde DATE;
 dFecHasta DATE;
 nSPV             NUMBER := 0;
 ----------
---  ARCHIVO_SALIDA     CLIENT_TEXT_IO.FILE_TYPE;   -- SPEEDFILE RSR 22042016
+--	ARCHIVO_SALIDA     CLIENT_TEXT_IO.FILE_TYPE;   -- SPEEDFILE RSR 22042016
   LINEA_SALIDA       VARCHAR2(5000);             -- SPEEDFILE RSR 22042016
   WI_ARCHIVO_SALIDA  VARCHAR2(2000);             -- SPEEDFILE RSR 22042016
 ----------
@@ -135,8 +135,8 @@ cEmail2                     CORREOS_ELECTRONICOS_PNJ.EMAIL%TYPE;
 cEmail3                     CORREOS_ELECTRONICOS_PNJ.EMAIL%TYPE;
 cTextoEnv                   ENDOSO_TXT_DET.TEXTO%TYPE;
 cSubject                    VARCHAR2(1000) := 'Notificacion Archivo de Prima Neta: ';
-cTexto1                     VARCHAR2(10000):= 'Apreciable Compa馿ro ';
-cTexto2                     varchar2(1000)   := ' Env韔 archivo de Prima Neta generado de manera autom醫ica el d韆 de hoy. ';
+cTexto1                     VARCHAR2(10000):= 'Apreciable Compa帽ero ';
+cTexto2                     varchar2(1000)   := ' Env铆o archivo de Prima Neta generado de manera autom谩tica el d铆a de hoy. ';
 cTexto3                     varchar2(10)   := '  ';
 cTexto4                     varchar2(1000)   := ' Saludos. ';
 ----
@@ -145,8 +145,8 @@ CURSOR EMI_Q IS
           'EMISION'                        PROCESO,
           P.IDPOLIZA,                      P.NUMPOLUNICO, 
           P.NUMPOLREF,                     DP.IDETPOL, 
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
-          OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL) CONTRATANTE,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
+          OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL),'|','') CONTRATANTE,
           F.IDENDOSO,                      F.IDFACTURA, 
           TO_CHAR(T.FECHATRANSACCION,'DD/MM/YYYY') FECHATRANSACCION,                        -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA           
           TO_CHAR(F.FECVENC,'DD/MM/YYYY')  FECVENC,                                         -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA  
@@ -248,8 +248,8 @@ CURSOR EMI_Q IS
           'EMISION'                        PROCESO,
           P.IDPOLIZA,                      P.NUMPOLUNICO, 
           P.NUMPOLREF,                     DP.IDETPOL, 
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
-          OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL) CONTRATANTE,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CODCLIENTE) || ' ' ||
+          OC_FILIALES.NOMBRE_ADICIONAL(P.CODCIA, P.CODGRUPOEC, DP.CODFILIAL),'|','') CONTRATANTE,
           F.IDENDOSO,                      F.IDFACTURA, 
           TO_CHAR(T.FECHATRANSACCION,'DD/MM/YYYY') FECHATRANSACCION,                         -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA  
           TO_CHAR(F.FECVENC,'DD/MM/YYYY')  FECVENC,                                          -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA  
@@ -350,8 +350,8 @@ CURSOR EMI_Q IS
          'CANCELACION'                     PROCESO,
           P.IdPoliza,                       P.NumPolUnico, 
           P.NumPolRef,                      DP.IDETPOL, 
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           F.IdEndoso,                       F.IdFactura,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,                      -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA              
           TO_CHAR(F.FecVenc,'DD/MM/YYYY') FecVenc,                                        -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA  
@@ -392,7 +392,7 @@ CURSOR EMI_Q IS
           POLIZAS_TEXTO_COTIZACION  TXT,
           CATEGORIAS                CGO
     -- MLJS 28/05/2020 SE CAMBIARON LAS TABLAS INICIALES DEL EXTRACCION      
-    -- SE ASEGURA LA OBTENCI覰 DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO       
+    -- SE ASEGURA LA OBTENCI脫N DE LAS TRANSACCIONES DEL PERIODO ESPECIFICO       
     WHERE DT.IDTRANSACCION           = T.IDTRANSACCION
       AND DT.CODEMPRESA              = T.CODEMPRESA
       AND DT.CODCIA                  = T.CODCIA            
@@ -480,8 +480,8 @@ CURSOR NC_Q IS
    SELECT 'EMISION'                  PROCESO,
           P.IdPoliza,                P.NumPolUnico, 
           P.NumPolRef,               DP.IDETPOL, 
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+             OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           N.IdEndoso,                N.IdNcr,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,                   -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA  
           TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,                                   -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA  
@@ -559,8 +559,8 @@ CURSOR NC_Q IS
    SELECT 'CANCELACION'                    PROCESO,
           P.IdPoliza,                      P.NumPolUnico, 
           P.NumPolRef,                     DP.IDETPOL,
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-              OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+              OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           N.IdEndoso,                      N.IdNcr,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,           -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA  
           TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,                           -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA  
@@ -659,8 +659,8 @@ CURSOR NC_Q IS
    SELECT 'CANCELACION'                    PROCESO,
           P.IdPoliza,                      P.NumPolUnico, 
           P.NumPolRef,                     DP.IDETPOL,
-          OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
-              OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial) Contratante,
+          REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente) || ' ' ||
+              OC_FILIALES.NOMBRE_ADICIONAL(P.CodCia, P.CodGrupoEc, DP.CodFilial),'|','') Contratante,
           N.IdEndoso,                      N.IdNcr,
           TO_CHAR(T.FechaTransaccion,'DD/MM/YYYY') FechaTransaccion,       -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA         
           TO_CHAR(N.FecDevol,'DD/MM/YYYY') FecDevol,                       -- MLJS 12/04/2021 SE DIO FORMATO A LA FECHA  
@@ -816,7 +816,7 @@ CURSOR DET_ConC_NCR (nIdPoliza NUMBER, nIdNcr NUMBER) IS
       IF cFormato = 'TEXTO' THEN
          OC_REPORTES_THONA.INSERTAR_REGISTRO( nCodCia, nCodEmpresa, cCodReporte, cCodUser, cEncabez );
       ELSE
-         --Obtiene N鷐ero de Columnas Totales
+         --Obtiene N煤mero de Columnas Totales
          nColsTotales := XLSX_BUILDER_PKG.EXCEL_CUENTA_COLUMNAS(cEncabez);
          --
          DBMS_OUTPUT.put_line('JMMD EN INSERTA ENCABEZADO nColsTotales '||nColsTotales);
@@ -923,7 +923,7 @@ END;
       OC_MAIL.SEND_EMAIL(cNomDirectorio,cMiMail,cEmail1,cEmail2,cEmail3,cSubject,cTextoEnv,cNomArchZip,NULL,NULL,NULL,cError);
    EXCEPTION
         WHEN OTHERS THEN
-             dbms_output.put_line('Error en el env韔 de notificacion '||cEmail1||' error '||SQLERRM);
+             dbms_output.put_line('Error en el env铆o de notificacion '||cEmail1||' error '||SQLERRM);
    END;
 
     BEGIN
@@ -997,7 +997,7 @@ BEGIN
        WHERE CodCia = nCodCia;
    EXCEPTION
    WHEN NO_DATA_FOUND THEN
-      cNomCia := 'COMPA袸A - NO EXISTE!!!';
+      cNomCia := 'COMPA脩IA - NO EXISTE!!!';
    END ;
 
   dbms_output.put_line('dPrimerDia '||dFecDesde);
@@ -1011,7 +1011,7 @@ BEGIN
       cTitulo2 := 'REPORTE DE RECIBOS PRODUCCION NETA DEL '|| TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' || TO_CHAR(dFecHasta,'DD/MM/YYYY');
       cTitulo4 := ' ';
       cEncabez    := 'Proceso'||cLimitador||
-                     'No. de P髄iza'||cLimitador||
+                     'No. de P贸liza'||cLimitador||
                      'Consecutivo'||cLimitador||
                      'No. Referencia'||cLimitador||
                      'Sub-Grupo'||cLimitador||
@@ -1020,69 +1020,69 @@ BEGIN
                      'Tipo'||cLimitador||
                      'No. Recibo'||cLimitador||
                      'Forma de Pago'||cLimitador|| 
-                     'Fecha Emisi髇'||cLimitador||
+                     'Fecha Emisi贸n'||cLimitador||
                      'Inicio Vigencia'||cLimitador||
                      'Fin Vigencia'||cLimitador|| 
-                     'Fecha de Anulaci髇'||cLimitador|| 
-                     'Motivo Anulaci髇'||cLimitador|| 
+                     'Fecha de Anulaci贸n'||cLimitador|| 
+                     'Motivo Anulaci贸n'||cLimitador|| 
                      'Prima Neta'||cLimitador||
-                     'Reducci髇 de Prima'||cLimitador||
+                     'Reducci贸n de Prima'||cLimitador||
                      'Recargos'||cLimitador||
                      'Derechos'||cLimitador|| 
                      'Impuesto'||cLimitador||
                      'Prima Total'||cLimitador||
-                     'Comisi髇 Sobre Prima'||cLimitador||
-                     'Comisi髇 Persona Fisica'||cLimitador||
-                     'Comisi髇 Persona Moral'||cLimitador|| 
+                     'Comisi贸n Sobre Prima'||cLimitador||
+                     'Comisi贸n Persona Fisica'||cLimitador||
+                     'Comisi贸n Persona Moral'||cLimitador|| 
                      'Honorarios Persona Fisica'||cLimitador||
                      'Honorarios Persona Moral'||cLimitador|| 
                      'UDIS Persona Fisica'||cLimitador||
                      'UDIS Persona Moral'||cLimitador|| 
                      'Dif. en Comisiones'||cLimitador||
-                     'Comisi髇 Agente'||cLimitador||
+                     'Comisi贸n Agente'||cLimitador||
                      'Honorario Agente'||cLimitador||
                      'Agente'||cLimitador||
                      'Tipo Agente'||cLimitador||
-                     'Comisi髇 Promotor'||cLimitador||
+                     'Comisi贸n Promotor'||cLimitador||
                      'Honorario Promotor'||cLimitador||
                      'Promotor'||cLimitador||
                      'Tipo Promotor'||cLimitador||
-                     'Comisi髇 Direcci髇 Regional'||cLimitador||
-                     'Honorario Direcci髇 Regional'||cLimitador||
-                     'Direcci髇 Regional'||cLimitador||
-                     'Tipo Direcci髇 Regional'||cLimitador||
+                     'Comisi贸n Direcci贸n Regional'||cLimitador||
+                     'Honorario Direcci贸n Regional'||cLimitador||
+                     'Direcci贸n Regional'||cLimitador||
+                     'Tipo Direcci贸n Regional'||cLimitador||
                      'Tasa IVA'||cLimitador||
                      'Estado'||cLimitador||
                      'Moneda'||cLimitador||
                      'Tipo Cambio'||cLimitador||
                      'Tipo Seguro'||cLimitador||
                      'Plan Coberturas'||cLimitador||
-                     'C骴igo SubRamo'||cLimitador||
-                     'Descripci髇 SubRamo'||cLimitador||
+                     'C贸digo SubRamo'||cLimitador||
+                     'Descripci贸n SubRamo'||cLimitador||
                      'Ramo'||cLimitador||
                      'Tipo Vigencia'||cLimitador||
                      'No. Cuota'||cLimitador||
-                     'Inicio Vig. P髄iza'||cLimitador ||
-                     'Fin Vig. P髄iza'||cLimitador ||
+                     'Inicio Vig. P贸liza'||cLimitador ||
+                     'Fin Vig. P贸liza'||cLimitador ||
                      'No. Renovacion'||cLimitador ||
                      'No. Comprobante'||cLimitador ||
-                     'Folio Fact. Electr髇ica'||cLimitador ||
+                     'Folio Fact. Electr贸nica'||cLimitador ||
                      'Folio Fiscal'||cLimitador ||
                      'Serie'||cLimitador ||
-                             'UUID'||cLimitador ||
-                               'Fecha UUID'||cLimitador ||
-                               'Varios UUID'||cLimitador ||
-                               'Origen del Recibo'||cLimitador ||
-                               'Estatus'||cLimitador ||
-                               'Es Contributorio'||cLimitador ||
-                               '% Contributorio'||cLimitador ||
-                               'Giro de Negocio'||cLimitador ||
-                               'Tipo de Negocio'||cLimitador ||
-                               'Fuente de Recursos'||cLimitador ||
-                               'Paquete Comercial'||cLimitador ||
-                               'Categoria'||cLimitador ||
-                               'Canal de Venta'||cLimitador|| 
-                               'Renovacion'||cLimitador;
+				          	 'UUID'||cLimitador ||
+					           'Fecha UUID'||cLimitador ||
+					           'Varios UUID'||cLimitador ||
+					           'Origen del Recibo'||cLimitador ||
+					           'Estatus'||cLimitador ||
+					           'Es Contributorio'||cLimitador ||
+					           '% Contributorio'||cLimitador ||
+					           'Giro de Negocio'||cLimitador ||
+					           'Tipo de Negocio'||cLimitador ||
+					           'Fuente de Recursos'||cLimitador ||
+					           'Paquete Comercial'||cLimitador ||
+					           'Categoria'||cLimitador ||
+					           'Canal de Venta'||cLimitador|| 
+					           'Renovacion'||cLimitador;
          dbms_output.put_line('jmmd 1 NVO'||'  cCodReporte  '||cCodReporte||' cCodUser  '||cCodUser||'  cNomDirectorio  '||cNomDirectorio||' cNomArchivo  '||cNomArchivo  );
          dbms_output.put_line('jmmd 1 NVO'||cEncabez);
 --         INSERTA_REGISTROS;
@@ -1097,24 +1097,24 @@ BEGIN
  --    nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cEncabez, 1);
       dbms_output.put_line('jmmd X cCadena '||cCadena||' cCodUser  '||cCodUser||' nLinea '||nLinea );
    FOR X IN EMI_Q LOOP
-      nIdFactura      := X.IdFactura;
-      cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
+   	  nIdFactura      := X.IdFactura;
+   	  cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
       cDescFormaPago  := OC_FACTURAS.FRECUENCIA_PAGO(X.CodCia, X.IdFactura);
       dFecFin         := X.FECFINVIG_FAC;      
       cFecFin         := TO_CHAR(dFecFin,'DD/MM/YYYY');
 
-      --MLJS 14/09/2020 SE OBTIENE EL RAMO                        
-           BEGIN
-                    SELECT OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS', CODTIPOPLAN)
-                        INTO cRamo
-                        FROM TIPOS_DE_SEGUROS
-                     WHERE IDTIPOSEG = X.IdTipoSeg;
-           EXCEPTION 
-             WHEN NO_DATA_FOUND THEN
-                        cRamo := 'SIN DESCRIPCION';
-             WHEN OTHERS THEN
-                    cRamo := 'SIN DESCRIPCION';
-           END;
+      --MLJS 14/09/2020 SE OBTIENE EL RAMO			  			  
+		   BEGIN
+					SELECT OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS', CODTIPOPLAN)
+						INTO cRamo
+						FROM TIPOS_DE_SEGUROS
+					 WHERE IDTIPOSEG = X.IdTipoSeg;
+		   EXCEPTION 
+		   	 WHEN NO_DATA_FOUND THEN
+		   	 			cRamo := 'SIN DESCRIPCION';
+		   	 WHEN OTHERS THEN
+		   	 	  	cRamo := 'SIN DESCRIPCION';
+		   END;
 
 
       BEGIN
@@ -1129,11 +1129,11 @@ BEGIN
             cDescEstado := NULL;
       END;
       IF cDescEstado = 'PROVINCIA NO EXISTE' THEN
-         cDescEstado := NULL;
+      	 cDescEstado := NULL;
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A袿';
+         cTipoVigencia := '1ER. A脩O';
          cRenovacion   := 'NUEVA';      --MLJS 22/09/2020
       ELSE
          cTipoVigencia := 'RENOVACION';
@@ -1238,30 +1238,30 @@ BEGIN
          nTotComisDist   := NVL(nTotComisDist,0) + NVL(C.Monto_Mon_Extranjera,0);
          --
          IF C.CodNivel = 3 THEN
-                        cTipoAge            := C.CodTipo;
-                        cCodAge             := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-              nMtoHonoAge       := NVL(C.Monto_Mon_Extranjera,0);
-                        ELSE
-              nMtoComiAge       := NVL(C.Monto_Mon_Extranjera,0);
-                      END IF;
-                 ELSIF C.CodNivel = 2 THEN
-                        cTipoProm           := C.CodTipo;
-                        cCodProm            := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-                            nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
-                        ELSE
-              nMtoComiProm  := NVL(C.Monto_Mon_Extranjera,0);
-                      END IF;
-         ELSIF C.CodNivel = 1 THEN
-                        cTipoDR             := C.CodTipo;
-                        cCodDR              := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-                            nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
+						cTipoAge			:= C.CodTipo;
+						cCodAge				:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+              nMtoHonoAge		:= NVL(C.Monto_Mon_Extranjera,0);
+						ELSE
+              nMtoComiAge		:= NVL(C.Monto_Mon_Extranjera,0);
+					  END IF;
+				 ELSIF C.CodNivel = 2 THEN
+						cTipoProm			:= C.CodTipo;
+						cCodProm 			:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+							nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
+						ELSE
+              nMtoComiProm	:= NVL(C.Monto_Mon_Extranjera,0);
+					  END IF;
+      	 ELSIF C.CodNivel = 1 THEN
+						cTipoDR				:= C.CodTipo;
+						cCodDR 				:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+							nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
             ELSE
-               nMtoComiDR       := NVL(C.Monto_Mon_Extranjera,0);
-                      END IF;
-         END IF;
+               nMtoComiDR		:= NVL(C.Monto_Mon_Extranjera,0);
+					  END IF;
+      	 END IF;
       END LOOP;
 
       nDifComis := NVL(X.MtoComisi_Moneda,0) - NVL(nTotComisDist,0);
@@ -1289,12 +1289,12 @@ BEGIN
           WHERE FE.IDFACTURA = X.IDFACTURA
             AND FE.codproceso = 'EMI'
             AND FE.codrespuestasat = '201');
-      EXCEPTION       
+      EXCEPTION		  
          WHEN NO_DATA_FOUND THEN
             cFolioFiscal := NULL;
-                cSerie       := NULL;
-                  cUUID        := NULL;
-                  cFechaUUID   := NULL;
+		      	cSerie       := NULL;
+			      cUUID        := NULL;
+			      cFechaUUID   := NULL;
       END;          
 
 
@@ -1306,7 +1306,7 @@ BEGIN
             AND FE.codproceso = 'EMI'
             AND FE.codrespuestasat = '201'
           GROUP BY FE.IDFACTURA;
-      EXCEPTION
+   	  EXCEPTION
          WHEN NO_DATA_FOUND THEN
             cVariosUUID := NULL;
       END;           
@@ -1333,7 +1333,7 @@ BEGIN
          nMtoComiDR     := nMtoComiDR*-1;
          nMtoHonoDR     := nMtoHonoDR*-1;
       ELSE
-         nPrimaNeta     := nPrimaNeta;
+      	 nPrimaNeta     := nPrimaNeta;
          nReducPrima    := nReducPrima;
          nRecargos      := nRecargos;
          nDerechos      := nDerechos;
@@ -1389,7 +1389,7 @@ BEGIN
                     TO_CHAR(nMtoComiAge,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nMtoHonoAge,'99999999999990.00')       ||cLimitador||
                     LPAD(cCodAge,6,'0')                            ||cLimitador||
-                    cTipoAge                                                     ||cLimitador||                  
+                    cTipoAge							                         ||cLimitador||                  
                     TO_CHAR(nMtoComiProm,'99999999999990.00')      ||cLimitador||
                     TO_CHAR(nMtoHonoProm,'99999999999990.00')      ||cLimitador||                  
                     LPAD(cCodProm,6,'0')                           ||cLimitador||
@@ -1416,7 +1416,7 @@ BEGIN
                     X.FolioFactElec                                ||cLimitador||
                     cFolioFiscal                                   ||cLimitador||
                     cSerie                                         ||cLimitador||
-                    cUUID                                              ||cLimitador||
+                    cUUID		                                       ||cLimitador||
                     TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador|| -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
                     cVariosUUID                                    ||cLimitador||
                     cOrigenRecibo                                  ||cLimitador||
@@ -1429,36 +1429,36 @@ BEGIN
                     X.CODPAQCOMERCIAL                              ||cLimitador||
                     X.CATEGORIA                                    ||cLimitador||
                     X.CANALFORMAVENTA                              ||cLimitador||
-                    cRenovacion                                                                  ||CHR(13);
+                    cRenovacion   																 ||CHR(13);
 --                    DBMS_OUTPUT.put_line('JMMD ANTES DE INSERTA_REGISTRO '||cCadena);
          INSERTA_REGISTROS;
 
  --      nLinea := nLinea + 1;
 --      OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
      nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cCadena, 1);      
-      --CLIENT_TEXT_IO.PUTF(ARCHIVO_SALIDA, '%s\n',cCadena);SYNCHRONIZE;    
+      --CLIENT_TEXT_IO.PUTF(ARCHIVO_SALIDA, '%s\n',cCadena);SYNCHRONIZE;	
    END LOOP;
 
-   FOR X IN NC_Q LOOP         
-      nIdNcr          := X.IdNcr;
-      cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
+   FOR X IN NC_Q LOOP   	  
+   	  nIdNcr          := X.IdNcr;
+   	  cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
       cDescFormaPago  := 'DIRECTO';
       --dFecFin         := OC_NOTAS_DE_CREDITO.VIGENCIA_FINAL(X.CodCia, X.IdNcr);
       dFecFin         := X.FECFINVIG_NCR;      
       cFecFin         := TO_CHAR(dFecFin,'DD/MM/YYYY');
 
-      --MLJS 14/09/2020 SE OBTIENE EL RAMO                        
-           BEGIN
-                    SELECT OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS', CODTIPOPLAN)
-                        INTO cRamo
-                        FROM TIPOS_DE_SEGUROS
-                     WHERE IDTIPOSEG = X.IdTipoSeg;
-           EXCEPTION 
-             WHEN NO_DATA_FOUND THEN
-                        cRamo := 'SIN DESCRIPCION';
-             WHEN OTHERS THEN
-                    cRamo := 'SIN DESCRIPCION';
-           END;
+      --MLJS 14/09/2020 SE OBTIENE EL RAMO			  			  
+		   BEGIN
+					SELECT OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS', CODTIPOPLAN)
+						INTO cRamo
+						FROM TIPOS_DE_SEGUROS
+					 WHERE IDTIPOSEG = X.IdTipoSeg;
+		   EXCEPTION 
+		   	 WHEN NO_DATA_FOUND THEN
+		   	 			cRamo := 'SIN DESCRIPCION';
+		   	 WHEN OTHERS THEN
+		   	 	  	cRamo := 'SIN DESCRIPCION';
+		   END;
 
       BEGIN
          SELECT OC_PROVINCIA.NOMBRE_PROVINCIA(P.CodPaisRes, P.CodProvRes)
@@ -1473,11 +1473,11 @@ BEGIN
       END;           
 
       IF cDescEstado = 'PROVINCIA NO EXISTE' THEN
-         cDescEstado := NULL;
+      	 cDescEstado := NULL;
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A袿';
+         cTipoVigencia := '1ER. A脩O';
          cRenovacion   := 'NUEVA';       --MLJS 22/09/2020
       ELSE
          cTipoVigencia := 'RENOVACION';
@@ -1511,10 +1511,10 @@ BEGIN
       cTipoDR         := 0;
       cCodDR          := 0;
 
-      CFolioFiscal      := null;
-      cSerie              := null;
-      cUUID               := null;
-      cFechaUUID        := null;
+	  CFolioFiscal	    := null;
+      cSerie		      := null;
+      cUUID			      := null;
+      cFechaUUID	    := null;
       cVariosUUID     := null;
       --
       FOR W IN DET_NC_Q LOOP
@@ -1534,38 +1534,38 @@ BEGIN
       END LOOP;
 
       FOR C IN DET_ConC_NCR (X.IdPoliza, X.IdNcr) LOOP
-         IF C.CODTIPO = 'AGTEPF' THEN --AGENTE PERSONA FISICA
-            IF C.CodConcepto IN ('COMISI','COMIPF') THEN
+      	 IF C.CODTIPO = 'AGTEPF' THEN --AGENTE PERSONA FISICA
+          	IF C.CodConcepto IN ('COMISI','COMIPF') THEN
               nComisionesPEF  := NVL(nComisionesPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'HONORA' THEN
-                nHonorariosPEF  := NVL(nHonorariosPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
+      	    ELSIF C.CodConcepto = 'HONORA' THEN
+      	 	    nHonorariosPEF  := NVL(nHonorariosPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
               NULL;
             END IF;
          ELSIF C.CODTIPO = 'AGTEPM' THEN -- AGENTE PERSONA MORAL 
-            IF C.CodConcepto IN ('COMISI','COMIPM') THEN
+          	IF C.CodConcepto IN ('COMISI','COMIPM') THEN
                nComisionesPEM  := NVL(nComisionesPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'HONORA' THEN
-                 nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
+      	    ELSIF C.CodConcepto = 'HONORA' THEN
+      	 	     nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
                NULL;
             END IF;
          ELSIF C.CODTIPO = 'HONPF' THEN -- HONORARIOS PERSONA FISICA 
             IF C.CodConcepto IN ('COMISI','COMIPF') THEN
                nComisionesPEF  := NVL(nComisionesPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'HONORA' THEN
-                nHonorariosPEF  := NVL(nHonorariosPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
+      	    ELSIF C.CodConcepto = 'HONORA' THEN
+      	 	    nHonorariosPEF  := NVL(nHonorariosPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
                NULL;
-            END IF;             
+            END IF; 			
          ELSIF C.CODTIPO = 'HONPM' THEN -- HONORARIOS PERSONA MORAL 
             IF C.CodConcepto IN ('COMISI','COMIPM') THEN
                nComisionesPEM  := NVL(nComisionesPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
-            ELSIF C.CodConcepto = 'HONORA' THEN
-                 nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
+      	    ELSIF C.CodConcepto = 'HONORA' THEN
+      	 	     nHonorariosPEM  := NVL(nHonorariosPEM,0) + NVL(C.Monto_Mon_Extranjera,0);
             ELSE
                NULL;
-            END IF;     
+            END IF; 	
          ELSIF C.CodTipo = 'UDISPF' THEN -- UDIS PERSONA FISICA
             IF C.CodConcepto = 'UDI' THEN
                nUdisPEF        := NVL(nUdisPEF,0) + NVL(C.Monto_Mon_Extranjera,0);
@@ -1578,34 +1578,34 @@ BEGIN
             ELSE
                NULL;
             END IF;
-         END IF;    
+      	 END IF;	
          nTotComisDist   := NVL(nTotComisDist,0) + NVL(C.Monto_Mon_Extranjera,0);
          --
          IF C.CodNivel = 3 THEN
-                        cTipoAge            := C.CodTipo;
-                        cCodAge             := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-              nMtoHonoAge       := NVL(C.Monto_Mon_Extranjera,0);
-                        ELSE
-              nMtoComiAge       := NVL(C.Monto_Mon_Extranjera,0);
-                      END IF;
-                 ELSIF C.CodNivel = 2 THEN
-                        cTipoProm           := C.CodTipo;
-                        cCodProm            := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-                            nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
-                        ELSE
-              nMtoComiProm  := NVL(C.Monto_Mon_Extranjera,0);
-                      END IF;
-         ELSIF C.CodNivel = 1 THEN
-                        cTipoDR             := C.CodTipo;
-                        cCodDR              := C.Cod_Agente;
-                        IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
-                            nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
+						cTipoAge			:= C.CodTipo;
+						cCodAge				:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+              nMtoHonoAge		:= NVL(C.Monto_Mon_Extranjera,0);
+						ELSE
+              nMtoComiAge		:= NVL(C.Monto_Mon_Extranjera,0);
+					  END IF;
+				 ELSIF C.CodNivel = 2 THEN
+						cTipoProm			:= C.CodTipo;
+						cCodProm 			:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+							nMtoHonoProm := NVL(C.Monto_Mon_Extranjera,0);
+						ELSE
+              nMtoComiProm	:= NVL(C.Monto_Mon_Extranjera,0);
+					  END IF;
+      	 ELSIF C.CodNivel = 1 THEN
+						cTipoDR				:= C.CodTipo;
+						cCodDR 				:= C.Cod_Agente;
+						IF C.CodTipo IN ('HONPM','HONPF') AND C.CodConcepto = 'HONORA' THEN
+							nMtoHonoDR := NVL(C.Monto_Mon_Extranjera,0);
             ELSE
-               nMtoComiDR       := NVL(C.Monto_Mon_Extranjera,0);
-                      END IF;
-         END IF;
+               nMtoComiDR		:= NVL(C.Monto_Mon_Extranjera,0);
+					  END IF;
+      	 END IF;
       END LOOP;
 
       nDifComis := NVL(X.MtoComisi_Moneda,0) - NVL(nTotComisDist,0);
@@ -1632,12 +1632,12 @@ BEGIN
          WHERE FE.IDNCR = X.IDNCR
            AND FE.codproceso = 'CAN'
            AND FE.codrespuestasat = '201');
-      EXCEPTION       
+      EXCEPTION		  
          WHEN NO_DATA_FOUND THEN
             cFolioFiscal := NULL;
-                cSerie       := NULL;
-                  cUUID        := NULL;
-                  cFechaUUID   := NULL;
+		        cSerie       := NULL;
+			      cUUID        := NULL;
+			      cFechaUUID   := NULL;
       END;
 
       BEGIN
@@ -1649,7 +1649,7 @@ BEGIN
             AND FE.codrespuestasat = '201'
           GROUP BY FE.IDNCR;
       EXCEPTION
-        WHEN NO_DATA_FOUND THEN
+      	WHEN NO_DATA_FOUND THEN
             cVariosUUID := NULL;
       END;          
 --    ESA20180620  
@@ -1677,7 +1677,7 @@ BEGIN
          nMtoComiDR     := nMtoComiDR*-1;
          nMtoHonoDR     := nMtoHonoDR*-1;
       ELSE
-         nPrimaNeta     := nPrimaNeta;
+      	 nPrimaNeta     := nPrimaNeta;
          nReducPrima    := nReducPrima;
          nRecargos      := nRecargos;
          nDerechos      := nDerechos;
@@ -1747,7 +1747,7 @@ BEGIN
                     X.PlanCob                                      ||cLimitador||
                     X.CodTipoPlan                                  ||cLimitador||
                     X.DescSubRamo                                  ||cLimitador||
-                    cRamo                                            ||cLimitador||
+                    cRamo	                                         ||cLimitador||
                     cTipoVigencia                                  ||cLimitador||
                     TO_CHAR(X.NumCuota,'99990')                    ||cLimitador||
                     X.FecIniVig                                    ||cLimitador||
@@ -1759,7 +1759,7 @@ BEGIN
                     cSerie                                         ||cLimitador||
                     cUUID                                          ||cLimitador||
                     TO_CHAR(cFechaUUID,'DD/MM/YYYY')               ||cLimitador|| -- MLJS 06/04/2021 SE DIO FORMATO A LA FECHA
-                    cVariosUUID                                                    ||cLimitador||
+                    cVariosUUID									                   ||cLimitador||
                     cOrigenRecibo                                  ||cLimitador||
                     X.ESTATUS                                      ||cLimitador||
                     X.ESCONTRIBUTORIO                              ||cLimitador||
@@ -1770,12 +1770,12 @@ BEGIN
                     X.CODPAQCOMERCIAL                              ||cLimitador||
                     X.CATEGORIA                                    ||cLimitador||
                     X.CANALFORMAVENTA                              ||cLimitador||
-                    cRenovacion                                                                  ; --||CHR(13);
+                    cRenovacion   																 ; --||CHR(13);
                      DBMS_OUTPUT.put_line('JMMD ANTES DE INSERTA_REGISTRO ');
          INSERTA_REGISTROS;
 
      nLinea := XLSX_BUILDER_PKG.EXCEL_DETALLE(nLinea + 1, cCadena, 1);
---      OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);         
+--      OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);	      
    END LOOP;
 
    DBMS_OUTPUT.put_line('JMMD ANTES DE ZIPEAR EL ARCHIVO ');
