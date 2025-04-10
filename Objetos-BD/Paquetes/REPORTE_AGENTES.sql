@@ -1,4 +1,4 @@
-create or replace PACKAGE SICAS_OC.REPORTE_AGENTES AS
+CREATE OR REPLACE PACKAGE SICAS_OC.REPORTE_AGENTES AS
 /******************************************************************************
    NAME:       SICAS_OC.REPORTE_AGENTES
    PURPOSE:
@@ -54,10 +54,8 @@ PROCEDURE GENERAR_PAGOSXRAMO(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgen
                              dFecDesde DATE, dFecHasta DATE,cformato varchar2, nidreporte number);
 
 END REPORTE_AGENTES;
-
 /
-
-create or replace PACKAGE BODY SICAS_OC.REPORTE_AGENTES AS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.REPORTE_AGENTES AS
 PROCEDURE GENERAR_PAGOS(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgente VARCHAR2,
                         dFecDesde DATE, dFecHasta DATE,CFORMATO VARCHAR2,NIDREPORTE NUMBER) IS
 cLimitador        VARCHAR2(1) :='|';
@@ -132,20 +130,20 @@ BEGIN
     nLinea  := 1;
     cCadena := OC_EMPRESAS.NOMBRE_COMPANIA(1) || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := 'REPORTE DE PAGOS A AGENTES DEL ' ||
                TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' Al ' ||
                TO_CHAR(dFecHasta, 'DD/MM/YYYY') || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := ' ' || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
-    cCadena := 'No. Nota Cr茅dito' || cLimitador || 'Status NC' ||
-               cLimitador || 'C贸digo Agente' || cLimitador ||
+    cCadena := 'No. Nota Cr閐ito' || cLimitador || 'Status NC' ||
+               cLimitador || 'C骴igo Agente' || cLimitador ||
                'Nombre Agente' || cLimitador || 'Fecha de Pago' ||
                cLimitador || 'Moneda' || cLimitador || 'Monto del Pago' ||
                cLimitador || 'No. de Control' || cLimitador ||
@@ -153,8 +151,8 @@ BEGIN
                'Comision/Honorarios/UDIs' || cLimitador || 'Total IVA' ||
                cLimitador || 'Total IVAHON' || cLimitador || 'Ret. ISR' ||
                cLimitador || 'Ret. IVA' || cLimitador || 'No. Comprobante' ||
-               cLimitador || 'C贸digo Direc. Reg.' || cLimitador ||
-               'Nombre Direcci贸n Regional' || cLimitador || 'Nivel Agte.' ||
+               cLimitador || 'C骴igo Direc. Reg.' || cLimitador ||
+               'Nombre Direcci髇 Regional' || cLimitador || 'Nivel Agte.' ||
                cLimitador || 'Tipo Agte.' || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
   ELSE
@@ -176,41 +174,41 @@ BEGIN
                chr(10) || '    -->' || chr(10) ||
                ' </style><div id="libro">' || chr(10);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<table border = 0><tr><th>' ||
                OC_EMPRESAS.NOMBRE_COMPANIA(1) || '</th></tr>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<tr><th>REPORTE DE PAGOS A AGENTES  DEL ' ||
                TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' Al ' ||
                TO_CHAR(dFecHasta, 'DD/MM/YYYY') || '</th></tr>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<tr><th>  </th></tr></table>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
-    cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Nota Cr茅dito</font></th>' ||
+    cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Nota Cr閐ito</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status NC</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Agente</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Pago</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto del Pago</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Control</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cta. Liquidadora</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi贸n/Honorarios/UDIs</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi髇/Honorarios/UDIs</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total IVA</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total IVAHON</font></th>' || ----JMMD20200812              
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Ret. ISR</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Ret. IVA</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Factura Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Comprobante</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Direc. Reg.</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci贸n Regional</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Direc. Reg.</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci髇 Regional</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Agte.</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Typo Agte.</font></th>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -222,14 +220,14 @@ BEGIN
     nRetISR    := 0;
     nRetIVA    := 0;
     nMtoIvaHon := 0;
-  
+
     --     nDummy := ALERTA('JMMD CtaLiquidadora  '||X.CtaLiquidadora||' Cod_Agente '||X.Cod_Agente);
     IF X.CtaLiquidadora = '8602' THEN
       nConIvaHon := 0;
     ELSE
       nConIvaHon := 1;
     END IF;
-  
+
     BEGIN
       SELECT Cod_Agente_Distr,
              OC_AGENTES.NOMBRE_AGENTE(CodCia, Cod_Agente_Distr)
@@ -260,12 +258,12 @@ BEGIN
                                  AND D.IdNomina = X.IdNomina
                                  AND D.CodCia = X.CodCia)
              AND CodNivel = 1;
-        
+
           cNombreDirecReg := OC_AGENTES.NOMBRE_AGENTE(X.CodCia,
                                                       nCodDirecReg);
         END;
     END;
-  
+
     FOR W IN DET_NC_Q LOOP
       IF W.CodCpto = 'RETISR' THEN
         nRetISR := NVL(nRetISR, 0) + NVL(W.Monto_Det_Moneda, 0);
@@ -283,18 +281,18 @@ BEGIN
         nComision := NVL(nComision, 0) + NVL(W.Monto_Det_Moneda, 0);
       END IF;
     END LOOP;
-  
+
     SELECT NVL(MAX(NumFactExt), 'S/F')
       INTO cNumFactExt
       FROM NCR_FACTEXT N, FACTURA_EXTERNA F
      WHERE F.IdeFactExt = N.IdeFactExt
        AND N.IdNcr = nIdNcr;
-  
+
     SELECT NVL(MIN(NumComprob), '0')
       INTO cNumComprob
       FROM COMPROBANTES_CONTABLES
      WHERE NumTransaccion = X.IdTransaccion;
-  
+
     IF cFormato = 'TEXTO' THEN
       cCadena := TO_CHAR(X.IdNcr, '9999999999999') || cLimitador ||
                  X.StsNcr || cLimitador ||
@@ -535,32 +533,32 @@ BEGIN
     nLinea  := 1;
     cCadena := oc_empresas.NOMBRE_COMPANIA(1) || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := 'REPORTE DE COMISIONES ' || cDescStatus || ' DEL ' ||
                TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' Al ' ||
                TO_CHAR(dFecHasta, 'DD/MM/YYYY') || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := ' ' || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := 'Tipo' || cLimitador || 'No. Recibo' || cLimitador ||
-               'Status Recibo' || cLimitador || 'Consecutivo P贸liza' ||
+               'Status Recibo' || cLimitador || 'Consecutivo P髄iza' ||
                cLimitador || 'Detalle/Subgrupo' || cLimitador ||
-               'No. Endoso' || cLimitador || 'C贸digo Agente' || cLimitador ||
+               'No. Endoso' || cLimitador || 'C骴igo Agente' || cLimitador ||
                'Nombre Agente' || cLimitador || 'Moneda' || cLimitador ||
-               'Id. Comisi贸n' || cLimitador || 'Status' || cLimitador ||
+               'Id. Comisi髇' || cLimitador || 'Status' || cLimitador ||
                'Mto. Comis. Local' || cLimitador || 'Mto. Comis. Moneda' ||
                cLimitador || 'Tasa de Cambio' || cLimitador ||
                'Fecha Generada' || cLimitador || 'Fecha Pago Recibo' ||
-               cLimitador || 'Fecha Pago Recibo A帽o Mes' || cLimitador ||
-               'Fecha Liquidaci贸n' || cLimitador ||
-               'No. Control Liquidaci贸n' || cLimitador ||
-               'C贸digo Direc. Reg.' || cLimitador ||
-               'Nombre Direcci贸n Regional' || cLimitador || 'Nivel Agte.' ||
+               cLimitador || 'Fecha Pago Recibo A駉 Mes' || cLimitador ||
+               'Fecha Liquidaci髇' || cLimitador ||
+               'No. Control Liquidaci髇' || cLimitador ||
+               'C骴igo Direc. Reg.' || cLimitador ||
+               'Nombre Direcci髇 Regional' || cLimitador || 'Nivel Agte.' ||
                cLimitador || 'Tipo Agte.' || cLimitador || 'Direccion' ||
                cLimitador || 'RFC' || cLimitador || 'CURP' || cLimitador ||
                'IVA HONORARIOS' || CHR(13);
@@ -584,44 +582,44 @@ BEGIN
                chr(10) || '    -->' || chr(10) ||
                ' </style><div id="libro">' || chr(10);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<table border = 0><tr><th>' ||
                oc_empresas.NOMBRE_COMPANIA(1) || '</th></tr>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<tr><th>REPORTE DE COMISIONES ' || cDescStatus || ' DEL ' ||
                TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' Al ' ||
                TO_CHAR(dFecHasta, 'DD/MM/YYYY') || '</th></tr>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<tr><th>  </th></tr></table>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Recibo</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status Recibo</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo P贸liza</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo P髄iza</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Detalle/Subgrupo</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Endoso</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Agente</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Id. Comisi贸n</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Id. Comisi髇</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Mto. Comis. Local</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Mto. Comis. Moneda</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tasa de Cambio</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Generada</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Pago Recibo</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Pago Recibo A帽o Mes</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Liquidaci贸n</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Control Liquidaci贸n</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Direc. Reg.</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci贸n Regional</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Pago Recibo A駉 Mes</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Liquidaci髇</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Control Liquidaci髇</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Direc. Reg.</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci髇 Regional</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Agte.</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Agte.</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direccion</font></th>' ||
@@ -651,7 +649,7 @@ BEGIN
            WHERE CodCia = X.CodCia
              AND IdPoliza = X.IdPoliza
              AND CodNivel = 1;
-        
+
           cNombreDirecReg := OC_AGENTES.NOMBRE_AGENTE(X.CodCia,
                                                       nCodDirecReg);
         END;
@@ -907,34 +905,34 @@ BEGIN
     nLinea  := 1;
     cCadena := oc_empresas.NOMBRE_COMPANIA(1) || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := 'REPORTE DE COMISIONES TOTALES DEL ' ||
                TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' Al ' ||
                TO_CHAR(dFecHasta, 'DD/MM/YYYY') || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := ' ' || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := 'Tipo' || cLimitador || 'No. Recibo' || cLimitador ||
-               'Status Recibo' || cLimitador || 'Consecutivo P贸liza' ||
+               'Status Recibo' || cLimitador || 'Consecutivo P髄iza' ||
                cLimitador || 'Detalle/Subgrupo' || cLimitador ||
-               'No. Endoso' || cLimitador || 'C贸digo Agente' || cLimitador ||
+               'No. Endoso' || cLimitador || 'C骴igo Agente' || cLimitador ||
                'Nombre Agente' || cLimitador || 'Moneda' || cLimitador ||
-               'Id. Comisi贸n' || cLimitador || 'Status' || cLimitador ||
+               'Id. Comisi髇' || cLimitador || 'Status' || cLimitador ||
                'Mto. Comis. Local' || cLimitador || 'Mto. Comis. Moneda' ||
                cLimitador || 'Tasa de Cambio' || cLimitador ||
                'Fecha Generada' || cLimitador || 'Fecha Pago Recibo' ||
-               cLimitador || 'Fecha Liquidaci贸n' || cLimitador ||
-               'No. Control Liquidaci贸n' || cLimitador ||
-               'C贸digo Direc. Reg.' || cLimitador ||
-               'Nombre Direcci贸n Regional' || cLimitador || 'Nivel Agte.' ||
+               cLimitador || 'Fecha Liquidaci髇' || cLimitador ||
+               'No. Control Liquidaci髇' || cLimitador ||
+               'C骴igo Direc. Reg.' || cLimitador ||
+               'Nombre Direcci髇 Regional' || cLimitador || 'Nivel Agte.' ||
                cLimitador || 'Tipo Agte.' || cLimitador || 'Direccion' ||
                cLimitador || 'RFC' || cLimitador || 'CURP' || cLimitador ||
-              
+
                CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
   ELSE
@@ -956,43 +954,43 @@ BEGIN
                chr(10) || '    -->' || chr(10) ||
                ' </style><div id="libro">' || chr(10);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<table border = 0><tr><th>' ||
                oc_empresas.NOMBRE_COMPANIA(1) || '</th></tr>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<tr><th>REPORTE DE COMISIONES TOTALES DEL ' ||
                TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' Al ' ||
                TO_CHAR(dFecHasta, 'DD/MM/YYYY') || '</th></tr>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<tr><th>  </th></tr></table>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Recibo</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status Recibo</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo P贸liza</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo P髄iza</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Detalle/Subgrupo</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Endoso</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Agente</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Id. Comisi贸n</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Id. Comisi髇</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Mto. Comis. Local</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Mto. Comis. Moneda</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tasa de Cambio</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Generada</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Pago Recibo</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Liquidaci贸n</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Control Liquidaci贸n</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Direc. Reg.</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci贸n Regional</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Liquidaci髇</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Control Liquidaci髇</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Direc. Reg.</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci髇 Regional</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Agte.</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Agte.</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direccion</font></th>' ||
@@ -1021,7 +1019,7 @@ BEGIN
            WHERE CodCia = X.CodCia
              AND IdPoliza = X.IdPoliza
              AND CodNivel = 1;
-        
+
           cNombreDirecReg := OC_AGENTES.NOMBRE_AGENTE(X.CodCia,
                                                       nCodDirecReg);
         END;
@@ -1166,23 +1164,23 @@ BEGIN
    WHERE IDEXTRACCION = nIdReporte;
 
   cDescStatus := 'POR PAGAR';
-  --message('Par谩metros: ('||cNomArchivo||') ('||dFecDesde||') ('||dFecHasta||')');
+  --message('Par醡etros: ('||cNomArchivo||') ('||dFecDesde||') ('||dFecHasta||')');
 
   IF cFormato = 'TEXTO' THEN
     nLinea  := 1;
     cCadena := oc_empresas.NOMBRE_COMPANIA(1) || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := 'NUEVO REPORTE DE COMISIONES ' || cDescStatus || ' DEL ' ||
                TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' AL ' ||
                TO_CHAR(dFecHasta, 'DD/MM/YYYY') || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := ' ' || CHR(13);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := 'Cia' || cLimitador || 'Agente' || cLimitador ||
                'Fecha Fin Saldo' || cLimitador || 'Comision Mes' ||
@@ -1210,22 +1208,22 @@ BEGIN
                chr(10) || '    -->' || chr(10) ||
                ' </style><div id="libro">' || chr(10);
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<table border = 0><tr><th>' ||
                oc_empresas.NOMBRE_COMPANIA(1) || '</th></tr>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<tr><th>NUEVO REPORTE DE COMISIONES ' || cDescStatus ||
                ' DEL ' || TO_CHAR(dFecDesde, 'DD/MM/YYYY') || ' Al ' ||
                TO_CHAR(dFecHasta, 'DD/MM/YYYY') || '</th></tr>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<tr><th>  </th></tr></table>';
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-  
+
     nLinea  := nLinea + 1;
     cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cia</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Agente</font></th>' ||
@@ -1346,7 +1344,7 @@ PROCEDURE GENERAR_COMISIONES_HIST(cNomArchivo VARCHAR2, dFecDesde DATE, dFecHast
 		    nTotBruto      NUMBER(18,2) := 0;
 		    GTnTotNetos    NUMBER(18,2) := 0;
 		    GTnTotBruto    NUMBER(18,2) := 0;    
-		 
+
 		    CURSOR a (vCia    IN saldos_comisiones_detalle.cd_cia%TYPE   , 
 		              vAgente IN saldos_comisiones_detalle.cd_agente%TYPE) IS 
 		     SELECT codcia     cia, 
@@ -1354,7 +1352,7 @@ PROCEDURE GENERAR_COMISIONES_HIST(cNomArchivo VARCHAR2, dFecDesde DATE, dFecHast
 		       FROM agentes 
 		      WHERE codcia     = vCia
 		        AND cod_agente = DECODE(vAgente, 0, cod_agente, vAgente);--Agente;
-		  
+
 		   b a%ROWTYPE;
 
 BEGIN 
@@ -1455,7 +1453,7 @@ BEGIN
                  '<th align=center bgcolor = "#2E8839" colspan="12">Totales DESPUES DE IMPUESTOS</th>'||
                  '<th align=center bgcolor = "#CBE36C" colspan="2">Grandes TOTALES</th></tr></table>'; 
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);      
-      
+
       nLinea := nLinea + 1;
       cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Agente</font></th>'     ||	  
 									     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha</font></th>'      ||--Enero	  
@@ -1702,8 +1700,8 @@ BEGIN
 EXCEPTION 
    WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci贸n de Comisiones ' || cDescStatus || ' ' ||SQLERRM); 
-      
+      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci髇 de Comisiones ' || cDescStatus || ' ' ||SQLERRM); 
+
 END;
 
 PROCEDURE LISTAR_AGENTES(cNomArchivo VARCHAR2, CTIPOREP NUMBER, cformato varchar2, nidreporte number) IS cLimitador VARCHAR2(1) := '|';
@@ -1776,7 +1774,7 @@ CURSOR AGT_Q IS
          A.CodCia,
          A.Tipo_Doc_Identificacion,
          A.Num_Doc_Identificacion,
-         
+
          OC_AGENTES.EJECUTIVO_COMERCIAL(A.CodCia, A.Cod_Agente) CodEjecutivo,
          OC_EJECUTIVO_COMERCIAL.NOMBRE_EJECUTIVO(A.CodCia,
                                                  OC_AGENTES.EJECUTIVO_COMERCIAL(A.CodCia,
@@ -1884,78 +1882,78 @@ BEGIN
   nLinea := nLinea + 1;
 
   IF CTIPOREP = 1 THEN
-    cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo de Agente</font></th>' ||
+    cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo de Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Agente</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer谩rquico Agente</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n Nivel Jer谩rquico Agente</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer醨quico Agente</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 Nivel Jer醨quico Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Clase de Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo de Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Canal de Venta</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Clave de Promotor</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Promotor</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer谩rquico Promotor</font></th>' ||
-              --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n Nivel Jer谩rquico Promotor</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer醨quico Promotor</font></th>' ||
+              --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 Nivel Jer醨quico Promotor</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Clave D.R</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre  D.R</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer谩rquico D.R</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n Nivel Jer谩rquico D.R</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer醨quico D.R</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 Nivel Jer醨quico D.R</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Doc. Identificacion</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Doc. Identificacion</font></th>' ||
               --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Email</font></th>' ||                                    
-              --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci贸n</font></th>' ||                            
-              --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tel茅fono</font></th>' ||                             
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo de C茅dula</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de C茅dula</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento de C茅dula</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. P贸liza RC</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Aseguradora P贸liza RC</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento de P贸liza RC</font></th>' ||
+              --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci髇</font></th>' ||                            
+              --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tel閒ono</font></th>' ||                             
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo de C閐ula</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de C閐ula</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento de C閐ula</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. P髄iza RC</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Aseguradora P髄iza RC</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento de P髄iza RC</font></th>' ||
               --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Forma de Pago</font></th>' ||                        
               --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Entidad Financiera</font></th>' ||                   
               --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cuenta Bancaria</font></th>' ||                      
               --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cuenta CLABE</font></th>' || 
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Ejecutivo Comercial</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Ejecutivo Comercial</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Ejecutivo Comercial</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Alta del Agente </font></th>';
-  
+
     --MESSAGE('5555555');  
   ELSIF CTIPOREP = 2 THEN
-    cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo de Agente</font></th>' ||
+    cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo de Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Agente</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer谩rquico Agente</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n Nivel Jer谩rquico Agente</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer醨quico Agente</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 Nivel Jer醨quico Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Clase de Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo de Agente</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Canal de Venta</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Clave de Promotor</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Promotor</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer谩rquico Promotor</font></th>' ||
-              --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n Nivel Jer谩rquico Promotor</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer醨quico Promotor</font></th>' ||
+              --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 Nivel Jer醨quico Promotor</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Clave D.R</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre  D.R</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer谩rquico D.R</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n Nivel Jer谩rquico D.R</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Jer醨quico D.R</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 Nivel Jer醨quico D.R</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Doc. Identificacion</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Doc. Identificacion</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Email</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci贸n</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tel茅fono</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo de C茅dula</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de C茅dula</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento de C茅dula</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. P贸liza RC</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Aseguradora P贸liza RC</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento de P贸liza RC</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci髇</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tel閒ono</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo de C閐ula</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de C閐ula</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento de C閐ula</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. P髄iza RC</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Aseguradora P髄iza RC</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento de P髄iza RC</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Forma de Pago</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Entidad Financiera</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cuenta Bancaria</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cuenta CLABE</font></th>' ||
-               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Ejecutivo Comercial</font></th>' ||
+               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Ejecutivo Comercial</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Ejecutivo Comercial</font></th>' ||
                '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Alta del Agente</font></th>';
-  
+
     --MESSAGE('66666');
   END IF;
 
@@ -1963,7 +1961,7 @@ BEGIN
 
   --MESSAGE('7777777');
   FOR X IN AGT_Q LOOP
-  
+
     wAGENTE_PROMOTOR   := NULL;
     wNOMBRE_PROMOTOR   := NULL;
     wCODNIVEL_PROMOTOR := NULL;
@@ -1972,7 +1970,7 @@ BEGIN
     wDR_NOMBRE         := NULL;
     wDR_CODNIVEL       := NULL;
     wDR_NIVEL          := NULL;
-  
+
     --MESSAGE('1111111');
     BEGIN
       SELECT TipoCedula, NumCedula, FecVencimiento
@@ -2068,22 +2066,22 @@ BEGIN
         cNombreEntidad     := NULL;
         cDescFormaPago     := NULL;
     END;
-  
+
     ---MESSAGE('AGENTE  '||X.Cod_Agente||'      X.CODNIVEL_PROMOTOR   '||X.CODNIVEL_PROMOTOR);
     --- Clave de Promotor  X solo si su jefe es nivel 2
-  
+
     IF X.CODNIVEL_PROMOTOR in (1, 3, 4, 5) THEN
       ---wAGENTE_PROMOTOR   := X.AGENTE_PROMOTOR;              
       ---wNOMBRE_PROMOTOR   := X.NOMBRE_PROMOTOR;          
       ---wCODNIVEL_PROMOTOR := X.CODNIVEL_PROMOTOR;
-    
+
       wDR_CODIGO   := X.AGENTE_PROMOTOR;
       wDR_NOMBRE   := X.NOMBRE_PROMOTOR;
       wDR_CODNIVEL := X.CODNIVEL_PROMOTOR;
       wDR_NIVEL    := X.NIVEL_PROMOTOR;
-    
+
     ELSIF X.CODNIVEL_PROMOTOR = 2 THEN
-    
+
       wAGENTE_PROMOTOR   := X.AGENTE_PROMOTOR;
       wNOMBRE_PROMOTOR   := X.NOMBRE_PROMOTOR;
       wCODNIVEL_PROMOTOR := X.CODNIVEL_PROMOTOR;
@@ -2092,7 +2090,7 @@ BEGIN
       wDR_NOMBRE         := X.DR_NOMBRE;
       wDR_CODNIVEL       := X.DR_CODNIVEL;
       wDR_NIVEL          := X.DR_NIVEL;
-    
+
       --- solo si su jefe no es nivel 2
       ---MESSAGE('AGENTE   '||X.Cod_Agente||'      X.CODNIVEL_PROMOTOR   '||X.CODNIVEL_PROMOTOR||'      X.DR_CODNIVEL  '||X.DR_CODNIVEL);
       /*IF X.DR_CODNIVEL IN (1,3,4,5) THEN    
@@ -2106,9 +2104,9 @@ BEGIN
           wDR_CODNIVEL := NULL;
           wDR_NIVEL    := NULL; */
     END IF;
-  
+
     IF CTIPOREP = 1 THEN
-    
+
       cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.Cod_Agente,
                                                          '9999999999990'),
                                                  'C') ||
@@ -2146,7 +2144,7 @@ BEGIN
                                        'C') ||
                  OC_ARCHIVO.CAMPO_HTML(X.NombreEjecutivo, 'C') ||
                  OC_ARCHIVO.CAMPO_HTML(X.Fecha_Alta, 'D') || '</tr>';
-    
+
     ELSIF CTIPOREP = 2 THEN
       --MESSAGE('AAAAAAAA10');
       cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.Cod_Agente,
@@ -2191,7 +2189,7 @@ BEGIN
                  OC_ARCHIVO.CAMPO_HTML(X.NombreEjecutivo, 'C') ||
                  OC_ARCHIVO.CAMPO_HTML(X.Fecha_Alta, 'D') || '</tr>';
     END IF;
-  
+
     --  MESSAGE('BBBBBBB1111');
     nLinea := nLinea + 1;
     OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -2216,9 +2214,9 @@ EXCEPTION
   WHEN OTHERS THEN
     OC_ARCHIVO.Eliminar_Archivo(cCodUser);
     RAISE_APPLICATION_ERROR(-20102,
-                            'Error en Generaci贸n de Listado de Agente ' ||
+                            'Error en Generaci髇 de Listado de Agente ' ||
                             SQLERRM);
-  
+
 END;
 
 PROCEDURE LISTAR_AGENTES_SUS(cNomArchivo VARCHAR2, CTIPOREP NUMBER, dfecdesde date, dfechasta date, cformato varchar2, nidreporte number) IS
@@ -2275,16 +2273,16 @@ BEGIN
   OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
   nLinea  := nLinea + 1;
-  cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Agente</font></th>' ||
+  cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Agente</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Agente</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo de Agente</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel</font></th>' ||
-             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo C茅dula</font></th>' ||
-             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de C茅dula</font></th>' ||
-             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento C茅dula</font></th>' ||
-             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. P贸liza RC</font></th>' ||
-             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Aseguradora P贸liza RC</font></th>' ||
-             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento P贸liza RC</font></th>' ||
+             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo C閐ula</font></th>' ||
+             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de C閐ula</font></th>' ||
+             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento C閐ula</font></th>' ||
+             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. P髄iza RC</font></th>' ||
+             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Aseguradora P髄iza RC</font></th>' ||
+             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Vencimiento P髄iza RC</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Email</font></th>';
   OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
@@ -2348,7 +2346,7 @@ BEGIN
       FROM PERSONA_NATURAL_JURIDICA
      WHERE Tipo_Doc_Identificacion = cTipo_Doc_Identificacion
        AND Num_Doc_Identificacion = cNum_Doc_Identificacion ;
-  
+
     cCadena := '<tr>' ||
                OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.Cod_Agente, '999990'), 'C') ||
                OC_ARCHIVO.CAMPO_HTML(cNomAgente, 'C') ||
@@ -2383,9 +2381,9 @@ BEGIN
   WHEN OTHERS THEN
     OC_ARCHIVO.Eliminar_Archivo(cCodUser);
     RAISE_APPLICATION_ERROR(-20105,
-                            'Error en Generaci贸n de Listado de Agentes a Suspender ' ||
+                            'Error en Generaci髇 de Listado de Agentes a Suspender ' ||
                             SQLERRM);*/
-  
+
 END;
 
 PROCEDURE REPORTE_ERRORES_EMISION(cNomArchivo VARCHAR2, cformato varchar2, nidreporte number, CTIPOPROCESO VARCHAR2) IS
@@ -2415,7 +2413,7 @@ CURSOR EMI_Q IS
      AND P.StsRegProceso IN ('ERROR', 'ERRASE', 'ERREMI')
      AND P.CodUsuario    = CCODUSER;
      /*and p.IdProcMasivo in (select max(pp.IdProcMasivo) from PROCESOS_MASIVOS pp where pp.codusuario=ccoduser and pp.tipoproceso = ctipoproceso)*/ 
-     
+
 BEGIN
   SELECT CODUSR
     INTO cCodUser
@@ -2452,12 +2450,12 @@ BEGIN
   OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
   nLinea  := nLinea + 1;
-  cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P贸liza Unico</font></th>' ||
+  cCadena := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P髄iza Unico</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle/Sub-Grupo</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Producto</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Plan de Coberturas</font></th>' ||
-             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Doc. Identificaci贸n</font></th>' ||
-             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Doc. Identificaci贸n</font></th>' ||
+             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Doc. Identificaci髇</font></th>' ||
+             '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Doc. Identificaci髇</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombres</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Apellido Paterno</font></th>' ||
              '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Apellido Materno</font></th>' ||
@@ -2501,15 +2499,15 @@ EXCEPTION
   WHEN OTHERS THEN
     OC_ARCHIVO.Eliminar_Archivo(cCodUser);
     RAISE_APPLICATION_ERROR(-20102,
-                            'Error en Generaci贸n de Registros de Emisidn en Procesos Masivos con Error: ' ||
+                            'Error en Generaci髇 de Registros de Emisidn en Procesos Masivos con Error: ' ||
                             SQLERRM);
-  
+
 END;
 
 PROCEDURE GENERAR_EMITIDOS(cNomArchivo VARCHAR2, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                            cCodMoneda VARCHAR2, cCodAgente VARCHAR2, dFecDesde DATE,
                            dFecHasta DATE, cformato varchar2, nidreporte number) IS                         
-                           
+
 cLimitador      VARCHAR2(1) :='|';
 nLinea          NUMBER;
 cCadena         VARCHAR2(4000);
@@ -2569,7 +2567,7 @@ nCodNivelHn            AGENTES.CodNivel%TYPE;
 nPorcComisHn	         AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
 nMontoComisHn          COMISIONES.Comision_Moneda%TYPE;                               
 cEstatusComisHn        COMISIONES.Estado%TYPE; 
-                                       
+
 nCodUd                 COMISIONES.Cod_Agente%TYPE;
 nCodNivelUd            AGENTES.CodNivel%TYPE;
 nPorcComisUd	         AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
@@ -2608,7 +2606,7 @@ CURSOR EMI_Q IS
       AND F.IndContabilizada         = 'S'
       AND TRUNC(T.FechaTransaccion) >= dFecDesde
       AND TRUNC(T.FechaTransaccion) <= dFecHasta
-      AND T.IdProceso               IN (7, 8, 14,18) -- Emisi贸n, Endosos, Contabilizacion y Rehabilitaciones
+      AND T.IdProceso               IN (7, 8, 14,18) -- Emisi髇, Endosos, Contabilizacion y Rehabilitaciones
       AND ((T.IdTransaccion          = F.IdTransaccion AND F.IdTransacContab IS NULL)
        OR  T.IdTransaccion           = F.IdTransacContab)
     ORDER BY F.IdFactura;
@@ -2696,7 +2694,7 @@ CURSOR DET_Comision_Q IS --(nIdPoliza NUMBER, nIdFactura Number ) IS
 	    AND C.COD_AGENTE   = ADP.COD_AGENTE_DISTR
 	    AND ADP.IDPOLIZA   = nIdPoliza 
 	    AND C.IdFactura    = nIdFactura;  	    
-  
+
 CURSOR DET_Comision_NTC IS --(nIdPoliza NUMBER) IS
  SELECT   CodNivel                Tipo
           ,Porc_Com_Proporcional  Comision
@@ -2711,9 +2709,9 @@ CURSOR DET_Comision_NTC IS --(nIdPoliza NUMBER) IS
 	    AND C.COD_AGENTE   = ADP.COD_AGENTE_DISTR
       AND C.IdNcr        = N.IdNcr
       AND ADP.IDPOLIZA   =  nIdPoliza ;
-      
-      
-            
+
+
+
 BEGIN 
   SELECT CODUSR
     INTO cCodUser
@@ -2734,10 +2732,10 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
 
       nLinea := nLinea + 1;
-      cCadena     := 'No. de P贸liza'||cLimitador||'Consecutivo'||cLimitador||'No. Referencia'||cLimitador||
+      cCadena     := 'No. de P髄iza'||cLimitador||'Consecutivo'||cLimitador||'No. Referencia'||cLimitador||
                      'Sub-Grupo'||cLimitador||'Contratante'||cLimitador||'No. de Endoso'||cLimitador||
                      'Tipo Seguro'||cLimitador||'No. Recibo'||cLimitador||'Forma de Pago'||cLimitador||                                         
-                     'Fecha Movimiento'||cLimitador||'Estado'||cLimitador||'Inicio Vig. P贸liza'||cLimitador||'Fin Vig. P贸liza'||cLimitador||                     
+                     'Fecha Movimiento'||cLimitador||'Estado'||cLimitador||'Inicio Vig. P髄iza'||cLimitador||'Fin Vig. P髄iza'||cLimitador||                     
                      'Prima Neta'||cLimitador||
                      'Agente'||cLimitador||'Tipo Agente'||cLimitador||'%Comision Agente'||cLimitador||'Estatus Agente'||cLimitador||
                      'Promotor'||cLimitador||'Tipo Promotor'||cLimitador||'%Comision Promotor'||cLimitador||'Estatus Promotor'||cLimitador||
@@ -2745,8 +2743,8 @@ BEGIN
                      'Honorarios'||cLimitador||'Tipo Honorario'||cLimitador||'%Comision Honorario'||cLimitador||'Estatus Honorario'||cLimitador||
                      'UDIS'||cLimitador||'Tipo UDIS'||cLimitador||'%Comision UDIS'||cLimitador||'Estatus UDIS'||cLimitador||  
                      'Comision Total'||cLimitador||                                        
-                     'C贸digo SubRamo'||cLimitador||'Descripci贸n SubRamo'||cLimitador||'No. Cuota'||cLimitador||
-                     'No. Comprobante'||cLimitador||'Folio Fact. Electr贸nica'||cLimitador||CHR(13); 
+                     'C骴igo SubRamo'||cLimitador||'Descripci髇 SubRamo'||cLimitador||'No. Cuota'||cLimitador||
+                     'No. Comprobante'||cLimitador||'Folio Fact. Electr髇ica'||cLimitador||CHR(13); 
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    ELSIF CFormato = 'EXCEL' THEN
       nLinea := 1;
@@ -2781,7 +2779,7 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
       nLinea := nLinea + 1;
-      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P贸liza</font></th>' ||
+      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P髄iza</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Referencia</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Sub-Grupo</font></th>' ||
@@ -2792,8 +2790,8 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Forma de Pago</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Movimiento</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Estado</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vig. P贸liza</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vig. P贸liza</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vig. P髄iza</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vig. P髄iza</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Prima Neta</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Agente</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Agente</font></th>' ||
@@ -2820,23 +2818,23 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">%Comision UDIS</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto UDIS</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Estatus UDIS</font></th>' ||                                          
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi贸n Total</font></th>'||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi髇 Total</font></th>'||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Plan Coberturas</font></th>'||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo SubRamo</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n SubRamo</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo SubRamo</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 SubRamo</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Cuota</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Comprobante</font></th>'||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Folio Fact. Electr贸nica</font></th>'--</tr>'
-                     
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Folio Fact. Electr髇ica</font></th>'--</tr>'
+
                      ;
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    END IF;
-   
-   
+
+
    FOR X IN EMI_Q LOOP
    	  nIdFactura      := X.IdFactura;
    	  nIdPoliza       := X.IdPoliza;
-   	  
+
    	  cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
       cDescFormaPago  := OC_FACTURAS.FRECUENCIA_PAGO(X.CodCia, X.IdFactura);
       dFecFin         := NULL; --OC_FACTURAS.VIGENCIA_FINAL(X.CodCia, X.IdFactura);
@@ -2857,7 +2855,7 @@ BEGIN
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A脩O';
+         cTipoVigencia := '1ER. A袿';
       ELSE
          cTipoVigencia := 'RENOVACION';
       END IF;
@@ -2875,37 +2873,37 @@ BEGIN
       nHonorariosPEM  := 0;
       nUdisPEM        := 0;
       nTotComisDist   := 0;
-      
+
       nCodRg           := 0;
       nCodNivelRg      := 0;
 			nPorcComisRg	   := 0;
 			nMontoComisRg    := 0;			
 			cEstatusComisRg  := '';
-			
+
 			nCodPrm          := 0;
 			nCodNivelPrm     := 0;
 			nPorcComisPrm	   := 0;
 			nMontoComisPrm   := 0;			
 			cEstatusComisPrm := '';
-			
+
 			nCodAg           := 0;
 			nCodNivelAg      := 0;
 			nPorcComisAg	   := 0;
 			nMontoComisAg    := 0;
 			cEstatusComisAg  := '';
-			
+
 			nCodHn           := 0;
 			nCodNivelHn      := 0;
 			nPorcComisHn	   := 0;
 			nMontoComisHn    := 0;
 			cEstatusComisHn  := '';
-			
+
 			nCodUd           := 0;
 			nCodNivelUd      := 0;
 			nPorcComisUd	   := 0;
 			nMontoComisUd    := 0;
 			cEstatusComisUd  := '';
-			
+
 
       FOR W IN DET_Q LOOP
          IF W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S' THEN
@@ -2978,7 +2976,7 @@ BEGIN
         INTO cNumComprob
         FROM COMPROBANTES_CONTABLES
        WHERE NumTransaccion = X.IdTransaccion;
-		  
+
 		  SELECT COUNT(*)
 		    INTO nCantReg_Q
 	      FROM COMISIONES              C
@@ -2987,7 +2985,7 @@ BEGIN
 	       AND C.COD_AGENTE   = ADP.COD_AGENTE_DISTR
 	       AND ADP.IDPOLIZA   = X.IdPoliza 
 	       AND C.IdFactura    = X.IdFactura; 
-	    
+
 	    IF nCantReg_Q > 0 THEN	    
 						-- Detalle de las Comisiones %,Montos
 				    FOR DC IN DET_Comision_Q LOOP --(X.IdPoliza,X.IdFactura) LOOP
@@ -3030,7 +3028,7 @@ BEGIN
 			         END IF;
 				    END LOOP;
 	    END IF;
-	    
+
       -- rmerida FIN --
       IF CFormato = 'TEXTO' THEN
          cCadena := X.NumPolUnico                                  ||cLimitador||
@@ -3077,9 +3075,9 @@ BEGIN
                     TO_CHAR(nPorcComisUd,'99999999999990.00')      ||cLimitador||
                     TO_CHAR(nMontoComisUd,'99999999999990.00')     ||cLimitador||                  
                     cEstatusComisUd                                ||cLimitador||
-                    
+
                     TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00')||cLimitador||
-                    
+
                     X.PlanCob                                      ||cLimitador||
                     X.CodTipoPlan                                  ||cLimitador||
                     X.DescSubRamo                                  ||cLimitador||
@@ -3088,7 +3086,7 @@ BEGIN
                     X.FolioFactElec                                ||CHR(13);
       ELSIF CFormato = 'EXCEL' THEN
       	--  cCadena := '<tr>'||OC_ARCHIVO.CAMPO_HTML('DEMO','C')||' </tr>';
-      	  
+
          cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(X.NumPolUnico,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.IdPoliza,'9999999999990'),'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.NumPolRef,'C') ||
@@ -3133,21 +3131,21 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nPorcComisUd,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nMontoComisUd,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(cEstatusComisUd, 'C') ||
-                    
-                    
+
+
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00'),'N') ||
-                    
-                    
-                    
+
+
+
                     OC_ARCHIVO.CAMPO_HTML(X.PlanCob, 'C')||
                     OC_ARCHIVO.CAMPO_HTML(X.CodTipoPlan,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.DescSubRamo,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.NumCuota,'99990'),'C') ||
                     OC_ARCHIVO.CAMPO_HTML(cNumComprob,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.FolioFactElec,'C') || 
-                    
-                    
-                    
+
+
+
                     '</tr>';
                     /*OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nComisionesPEF,'99999999999990.00'),'N') ||
@@ -3159,13 +3157,13 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nDifComis,'99999999999990.00'),'N') ||
                     */
       END IF;
-      
+
       nLinea := nLinea + 1;
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    END LOOP;
-   
-   
-   
+
+
+
    FOR X IN NC_Q LOOP
    	  nIdNcr          := X.IdNcr;
    	  cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
@@ -3188,7 +3186,7 @@ BEGIN
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A脩O';
+         cTipoVigencia := '1ER. A袿';
       ELSE
          cTipoVigencia := 'RENOVACION';
       END IF;
@@ -3206,38 +3204,38 @@ BEGIN
       nHonorariosPEM  := 0;
       nUdisPEM        := 0;
       nTotComisDist   := 0;
-      
+
       nCodRg           := 0;
       nCodNivelRg      := 0;
 			nPorcComisRg	   := 0;
 			nMontoComisRg    := 0;			
 			cEstatusComisRg  := '';
-			
+
 			nCodPrm          := 0;
 			nCodNivelPrm     := 0;
 			nPorcComisPrm	   := 0;
 			nMontoComisPrm   := 0;			
 			cEstatusComisPrm := '';
-			
+
 			nCodAg           := 0;
 			nCodNivelAg      := 0;
 			nPorcComisAg	   := 0;
 			nMontoComisAg    := 0;
 			cEstatusComisAg  := '';
-			
+
 			nCodHn           := 0;
 			nCodNivelHn      := 0;
 			nPorcComisHn	   := 0;
 			nMontoComisHn    := 0;
 			cEstatusComisHn  := '';
-			
+
 			nCodUd           := 0;
 			nCodNivelUd      := 0;
 			nPorcComisUd	   := 0;
 			nMontoComisUd    := 0;
 			cEstatusComisUd  := '';
 
-			
+
 
       FOR W IN DET_NC_Q LOOP
          IF W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S' THEN
@@ -3310,7 +3308,7 @@ BEGIN
         INTO cNumComprob
         FROM COMPROBANTES_CONTABLES
        WHERE NumTransaccion = X.IdTransaccion;
-      
+
       -- Detalle de las Comisiones %,Montos
 	    FOR DC IN DET_Comision_NTC LOOP -- (X.IdPoliza) LOOP 
           IF DC.Tipo = 1 THEN 
@@ -3350,8 +3348,8 @@ BEGIN
          	 cEstatusComisUd := DC.Estatus_com;
          END IF;
 	    END LOOP;
-	    
-	     
+
+
       IF CFormato = 'TEXTO' THEN
          cCadena :=  X.NumPolUnico                                  ||cLimitador||
                     TO_CHAR(X.IdPoliza,'9999999999999')            ||cLimitador||
@@ -3396,11 +3394,11 @@ BEGIN
                     TO_CHAR(X.NumCuota,'99990')                    ||cLimitador||
                     cNumComprob                                    ||cLimitador||
                     X.FolioFactElec                                ||CHR(13);
-                    
-                   
+
+
       ELSIF CFormato = 'EXCEL' THEN
         -- cCadena := '<tr>'||OC_ARCHIVO.CAMPO_HTML('DEMO','C')||' </tr>';
-        
+
          cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(X.NumPolUnico,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.IdPoliza,'9999999999990'),'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.NumPolRef,'C') ||
@@ -3453,7 +3451,7 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(cNumComprob,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.FolioFactElec,'C') ||
                     '</tr>'
-                                        
+
                     ;
                      /*
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00'),'N') ||
@@ -3464,14 +3462,14 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nUdisPEF,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nUdisPEM,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nDifComis,'99999999999990.00'),'N') ||
-                    
+
                     */
-                    
+
       END IF;
       nLinea := nLinea + 1;
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    END LOOP;
-      
+
    IF CFormato = 'EXCEL' THEN
       OC_ARCHIVO.Escribir_Linea('</table></div></html>', ccodUSER, 9999);
    END IF;
@@ -3496,7 +3494,7 @@ BEGIN
 EXCEPTION 
    WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci贸n de Conciliacion de Comisiones Emitidas: '||nIdFactura || ' ' ||SQLERRM); 
+      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci髇 de Conciliacion de Comisiones Emitidas: '||nIdFactura || ' ' ||SQLERRM); 
 END;
 
 PROCEDURE GENERAR_ANULADOS(cNomArchivo VARCHAR2, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
@@ -3563,7 +3561,7 @@ nCodNivelHn            AGENTES.CodNivel%TYPE;
 nPorcComisHn	         AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
 nMontoComisHn          COMISIONES.Comision_Moneda%TYPE;                               
 cEstatusComisHn        COMISIONES.Estado%TYPE; 
-                                       
+
 nCodUd                 COMISIONES.Cod_Agente%TYPE;
 nCodNivelUd            AGENTES.CodNivel%TYPE;
 nPorcComisUd	         AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
@@ -3604,7 +3602,7 @@ CURSOR ANU_Q IS
       AND F.IndContabilizada         = 'S'
       AND TRUNC(T.FechaTransaccion) >= dFecDesde
       AND TRUNC(T.FechaTransaccion) <= dFecHasta
-      --AND T.IdProceso                = 11 -- Cancelaci贸n
+      --AND T.IdProceso                = 11 -- Cancelaci髇
       --AND F.FecAnul                 >= dFecDesde
       --AND F.FecAnul                 <= dFecHasta
       AND F.StsFact                  = 'ANU'
@@ -3690,7 +3688,7 @@ CURSOR DET_Comision_Q (nIdPoliza NUMBER, nIdFactura Number ) IS
 	    AND C.COD_AGENTE   = ADP.COD_AGENTE_DISTR
 	    AND ADP.IDPOLIZA   = nIdPoliza 
 	    AND C.IdFactura  = nIdFactura;  	    
-  
+
 CURSOR DET_Comision_NTC (nIdPoliza NUMBER) IS
  SELECT   CodNivel   Tipo
           ,Porc_Com_Proporcional  Comision
@@ -3705,8 +3703,8 @@ CURSOR DET_Comision_NTC (nIdPoliza NUMBER) IS
 	    AND C.COD_AGENTE   = ADP.COD_AGENTE_DISTR
       AND C.IdNcr        = N.IdNcr
       AND ADP.IDPOLIZA   =  nIdPoliza ;
-      
-            
+
+
 BEGIN 
   SELECT CODUSR
     INTO cCodUser
@@ -3727,7 +3725,7 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
 
       nLinea := nLinea + 1;
-      cCadena     := 'No. de P贸liza'||cLimitador||
+      cCadena     := 'No. de P髄iza'||cLimitador||
                      'Consecutivo'||cLimitador||
                      'No. Referencia'||cLimitador||
                      'Sub-Grupo'||cLimitador||
@@ -3736,10 +3734,10 @@ BEGIN
                      'Tipo'||cLimitador||
                      'No. Recibo'||cLimitador||
                      'Forma de Pago'||cLimitador|| 
-                     'Fecha Emisi贸n/Devol'||cLimitador||
+                     'Fecha Emisi髇/Devol'||cLimitador||
                      'Estado'||cLimitador||
-                     'Inicio Vig. P贸liza'||cLimitador||
-                     'Fin Vig. P贸liza'||cLimitador||
+                     'Inicio Vig. P髄iza'||cLimitador||
+                     'Fin Vig. P髄iza'||cLimitador||
                      'Prima Neta'||cLimitador||                                          
                      'Agente'||cLimitador||                     
                      'Tipo Agente'||cLimitador||
@@ -3766,24 +3764,24 @@ BEGIN
                      '%Comision UDIS'||cLimitador||
                      'Monto UDIS'||cLimitador||
                      'Estatus UDIS'||cLimitador||
-                                          
+
                      'Total Comision'||cLimitador||
-                     
-                     'Fecha de Anulaci贸n'||cLimitador||
-                     'Motivo Anulaci贸n'||cLimitador||
-                     
+
+                     'Fecha de Anulaci髇'||cLimitador||
+                     'Motivo Anulaci髇'||cLimitador||
+
                      'Plan Coberturas'||cLimitador||
-                     'C贸digo SubRamo'||cLimitador||
-                     'Descripci贸n SubRamo'||cLimitador||
+                     'C骴igo SubRamo'||cLimitador||
+                     'Descripci髇 SubRamo'||cLimitador||
                      'No. Cuota'||cLimitador||
                      'No. Comprobante'||cLimitador||
-                     'Folio Fact. Electr贸nica'||
+                     'Folio Fact. Electr髇ica'||
                      CHR(13);
-                     
+
                      /*
-                     'Comisi贸n Sobre Prima'||cLimitador|| 
-                     'Comisi贸n Persona Fisica'||cLimitador||
-                     'Comisi贸n Persona Moral'||cLimitador|| 
+                     'Comisi髇 Sobre Prima'||cLimitador|| 
+                     'Comisi髇 Persona Fisica'||cLimitador||
+                     'Comisi髇 Persona Moral'||cLimitador|| 
                      'Honorarios Persona Fisica'||cLimitador||
                      'Honorarios Persona Moral'||cLimitador||
                      'UDIS Persona Fisica'||cLimitador||
@@ -3791,11 +3789,11 @@ BEGIN
                      'Dif. en Comisiones'||cLimitador||  
                      'Tipo Seguro'||cLimitador||
                      'Tipo Vigencia'||cLimitador||
-                                        
+
                      'Tasa IVA'||cLimitador||||'Moneda'||cLimitador||                    
                      'No. Renovacion'||cLimitador||*/
-                     
-                        
+
+
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    ELSIF CFormato = 'EXCEL' THEN
       nLinea := 1;
@@ -3830,7 +3828,7 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
       nLinea := nLinea + 1;
-      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P贸liza</font></th>' ||
+      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P髄iza</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Referencia</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Sub-Grupo</font></th>' ||
@@ -3839,10 +3837,10 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Recibo</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Forma de Pago</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Emisi贸n/Devol.</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Emisi髇/Devol.</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Estado</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vig. P贸liza</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vig. P贸liza</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vig. P髄iza</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vig. P髄iza</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Prima Neta</font></th>' ||                     
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Agente</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Agente</font></th>' ||
@@ -3864,29 +3862,29 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">%Comision Honorario</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto Honorario</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Estatus Honorario</font></th>' ||
-                     
+
                      --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">UDIS.</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo UDIS</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">%Comision UDIS</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto UDIS</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Estatus UDIS</font></th>' ||                     
-                     
+
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total Comision</font></th>' ||  
-                     
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Anulaci贸n</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Motivo Anulaci贸n</font></th>' ||
-                     
+
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Anulaci髇</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Motivo Anulaci髇</font></th>' ||
+
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Plan Coberturas</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo SubRamo</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n SubRamo</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo SubRamo</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 SubRamo</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Cuota</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Comprobante</font></th>'||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Folio Fact. Electr贸nica</font></th>'
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Folio Fact. Electr髇ica</font></th>'
                     ;
-                     
-                     /*'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi贸n Sobre Prima</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi贸n Persona Fisica</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi贸n Persona Moral</font></th>' ||
+
+                     /*'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi髇 Sobre Prima</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi髇 Persona Fisica</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi髇 Persona Moral</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Honorarios Persona Fisica</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Honorarios Persona Moral</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">UDIS Persona Fisica</font></th>' ||
@@ -3898,9 +3896,9 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Renovacion</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Vigencia</font></th>' ||
                       ||
-                     
+
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tasa IVA</font></th>' ||
-                     
+
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>' ||
                      */
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -3927,7 +3925,7 @@ BEGIN
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A脩O';
+         cTipoVigencia := '1ER. A袿';
       ELSE
          cTipoVigencia := 'RENOVACION';
       END IF;
@@ -3945,38 +3943,38 @@ BEGIN
       nHonorariosPEM  := 0;
       nUdisPEM        := 0;
       nTotComisDist   := 0;
-      
+
       nCodRg           := 0;
       nCodNivelRg      := 0;
 			nPorcComisRg	   := 0;
 			nMontoComisRg    := 0;			
 			cEstatusComisRg  := '';
-			
+
 			nCodPrm          := 0;
 			nCodNivelPrm     := 0;
 			nPorcComisPrm	   := 0;
 			nMontoComisPrm   := 0;			
 			cEstatusComisPrm := '';
-			
+
 			nCodAg           := 0;
 			nCodNivelAg      := 0;
 			nPorcComisAg	   := 0;
 			nMontoComisAg    := 0;
 			cEstatusComisAg  := '';
-			
+
 			nCodHn           := 0;
 			nCodNivelHn      := 0;
 			nPorcComisHn	   := 0;
 			nMontoComisHn    := 0;
 			cEstatusComisHn  := '';
-			
+
 			nCodUd           := 0;
 			nCodNivelUd      := 0;
 			nPorcComisUd	   := 0;
 			nMontoComisUd    := 0;
 			cEstatusComisUd  := '';
-			
-			
+
+
       FOR W IN DET_Q LOOP
          IF W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S' THEN
             nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(W.Monto_Det_Moneda,0);
@@ -4089,7 +4087,7 @@ BEGIN
          	 cEstatusComisUd := DC.Estatus_com;
          END IF;
 	    END LOOP;
-	    
+
       -- rmerida FIN --
       IF CFormato = 'TEXTO' THEN
          cCadena := X.NumPolUnico                                  ||cLimitador||
@@ -4130,27 +4128,27 @@ BEGIN
                     TO_CHAR(nPorcComisHn,'99999999999990.00')      ||cLimitador||
                     TO_CHAR(nMontoComisHn,'99999999999990.00')     ||cLimitador||                   
                     cEstatusComisHn                                ||cLimitador||                                        
-                    
+
                     --LPAD(nCodUd,6,'0')                             ||cLimitador||
                     TO_CHAR(nCodNivelUd,'99999999999990.00')       ||cLimitador||
                     TO_CHAR(nPorcComisUd,'99999999999990.00')      ||cLimitador||
                     TO_CHAR(nMontoComisUd,'99999999999990.00')     ||cLimitador||                  
                     cEstatusComisUd                                ||cLimitador||
-                    
+
                     TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00')||cLimitador||
-                    
+
                     TO_CHAR(X.FecAnul,'DD/MM/RRRR')                ||cLimitador||
                     X.MotivAnul                                    ||cLimitador||
-                    
+
                     X.PlanCob                                      ||cLimitador||
                     X.CodTipoPlan                                  ||cLimitador||
                     X.DescSubRamo                                  ||cLimitador||
                     TO_CHAR(X.NumCuota,'99990')                    ||cLimitador||
                     cNumComprob                                    ||cLimitador||
                     X.FolioFactElec                                ||CHR(13);
-                    
-                    
-                    
+
+
+
                     /*cLimitador||X.IdTipoSeg                                    ||cLimitador||
                     TO_CHAR(nComisionesPEF,'99999999999990.00')    ||cLimitador||
                     TO_CHAR(nComisionesPEM,'99999999999990.00')    ||cLimitador||
@@ -4159,18 +4157,18 @@ BEGIN
                     TO_CHAR(nUdisPEF,'99999999999990.00')          ||cLimitador||
                     TO_CHAR(nUdisPEM,'99999999999990.00')          ||cLimitador||
                     TO_CHAR(nDifComis,'99999999999990.00')         ||cLimitador||
-                    
+
                     --TO_CHAR(X.FecVenc,'DD/MM/RRRR')                ||cLimitador||
                     --TO_CHAR(dFecFin,'DD/MM/RRRR')                  ||cLimitador||
                     TO_CHAR(nTasaIVA,'999990.00')                  ||cLimitador||
-                    
+
                     X.Cod_Moneda                                   ||cLimitador||
                     cTipoVigencia                                  ||cLimitador||
-                    
+
                     TO_CHAR(X.NumRenov,'99990')                    ||cLimitador||
-                    
-                    
-                    
+
+
+
                     */
       ELSIF CFormato = 'EXCEL' THEN
          cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(X.NumPolUnico,'C') ||
@@ -4216,12 +4214,12 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nPorcComisUd,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nMontoComisUd,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(cEstatusComisUd, 'C') || 
-                                       
+
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00'),'N') ||
-                    
+
                     OC_ARCHIVO.CAMPO_HTML(X.FecAnul,'D') ||
                     OC_ARCHIVO.CAMPO_HTML(X.MotivAnul,'C') ||
-                    
+
                     OC_ARCHIVO.CAMPO_HTML(X.PlanCob,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.CodTipoPlan,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.DescSubRamo,'C') ||
@@ -4229,8 +4227,8 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(cNumComprob,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.FolioFactElec,'C') ||'</tr>'
                     ;
-   
-   
+
+
                     /*OC_ARCHIVO.CAMPO_HTML(X.IdTipoSeg,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nComisionesPEF,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nComisionesPEM,'99999999999990.00'),'N') ||
@@ -4241,20 +4239,20 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nDifComis,'99999999999990.00'),'N') 
                     --OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nTasaIVA,'999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(X.Cod_Moneda,'C') ||
-                    
+
                     OC_ARCHIVO.CAMPO_HTML(cTipoVigencia,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.NumRenov,'99990'),'C') ||     
                     OC_ARCHIVO.CAMPO_HTML(X.FecVenc,'D') ||
                     OC_ARCHIVO.CAMPO_HTML(dFecFin,'D') ||
-                    
+
                      */              
-                    
+
       END IF;
       nLinea := nLinea + 1;
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    END LOOP;
-   
-   
+
+
    FOR X IN NC_Q LOOP
    	  nIdNcr          := X.IdNcr;
    	  cStsNcr         := X.StsNcr;
@@ -4278,7 +4276,7 @@ BEGIN
       END IF;
 
       IF X.NumRenov = 0 THEN
-         cTipoVigencia := '1ER. A脩O';
+         cTipoVigencia := '1ER. A袿';
       ELSE
          cTipoVigencia := 'RENOVACION';
       END IF;
@@ -4296,7 +4294,7 @@ BEGIN
       nHonorariosPEM  := 0;
       nUdisPEM        := 0;
       nTotComisDist   := 0;
-      
+
       nCodRg           := 0;
       nCodNivelRg      := 0;
 			nPorcComisRg	   := 0;
@@ -4317,7 +4315,7 @@ BEGIN
 			nPorcComisHn	   := 0;
 			nMontoComisHn    := 0;
 			cEstatusComisHn  := '';
-			
+
 			nCodUd           := 0;
 			nCodNivelUd      := 0;
 			nPorcComisUd	   := 0;
@@ -4405,7 +4403,7 @@ BEGIN
         INTO cNumComprob
         FROM COMPROBANTES_CONTABLES
        WHERE NumTransaccion = X.IdTransaccion;
-      
+
       	-- Detalle de las Comisiones %,Montos
 	    FOR DC IN DET_Comision_NTC(X.IdPoliza) LOOP
           IF DC.Tipo = 1 THEN 
@@ -4445,8 +4443,8 @@ BEGIN
          	 cEstatusComisUd := DC.Estatus_com;
          END IF;
 	    END LOOP; 
-      
-       
+
+
 
       IF CFormato = 'TEXTO' THEN
          cCadena := X.NumPolUnico                                  ||cLimitador||
@@ -4491,17 +4489,17 @@ BEGIN
                     cEstatusComisUd       
                                              ||cLimitador||                    
                     TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00')||cLimitador||
-                    
+
                     TO_CHAR(X.FecDevol,'DD/MM/RRRR')               ||cLimitador||
                     X.MotivAnul                                    ||cLimitador||
-                    
+
                     X.PlanCob                                      ||cLimitador||
                     X.CodTipoPlan                                  ||cLimitador||
                     X.DescSubRamo                                  ||cLimitador||
                     TO_CHAR(X.NumCuota,'99990')                    ||cLimitador||
                     cNumComprob                                    ||cLimitador||
                     X.FolioFactElec                                ||CHR(13)
-                    
+
                     ;
                     /*
                   --   cLimitador||
@@ -4514,16 +4512,16 @@ BEGIN
                     TO_CHAR(nDifComis,'99999999999990.00')         ||cLimitador||
                     TO_CHAR(X.FecDevol,'DD/MM/RRRR')               ||cLimitador||                    
                   --  TO_CHAR(dFecFin,'DD/MM/RRRR')                  ||cLimitador||
-                    
+
                     TO_CHAR(nTasaIVA,'999990.00')                  ||cLimitador||
                    X.CodMoneda                                    ||cLimitador||
                     cTipoVigencia                                  ||cLimitador||                    
                     TO_CHAR(X.NumRenov,'99990')                    ||cLimitador||
                     X.IdTipoSeg                                    ||cLimitador||
-                   
-                    
+
+
                     */                    
-                    
+
       ELSIF CFormato = 'EXCEL' THEN
          cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(X.NumPolUnico,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.IdPoliza,'9999999999990'),'C') ||
@@ -4568,12 +4566,12 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nPorcComisUd,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nMontoComisUd,'99999999999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(cEstatusComisUd, 'C') ||
-                    
+
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.MtoComisi_Moneda,'99999999999990.00'),'N') ||
-                    
+
                     OC_ARCHIVO.CAMPO_HTML(X.FecAnul,'D') ||
                     OC_ARCHIVO.CAMPO_HTML(X.MotivAnul,'C') ||
-                    
+
                     OC_ARCHIVO.CAMPO_HTML(X.PlanCob,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.CodTipoPlan,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.DescSubRamo,'C') ||
@@ -4581,7 +4579,7 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(cNumComprob,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.FolioFactElec,'C') ||'</tr>'
                      ;
-                    
+
                     /*
                     --OC_ARCHIVO.CAMPO_HTML(X.IdTipoSeg,'C') ||
                      OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nComisionesPEF,'99999999999990.00'),'N') ||
@@ -4593,19 +4591,19 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nDifComis,'99999999999990.00'),'N') 
                   OC_ARCHIVO.CAMPO_HTML(X.FecDevol,'D') ||                    
                     OC_ARCHIVO.CAMPO_HTML(dFecFin,'D') ||
-                    
+
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(nTasaIVA,'999990.00'),'N') ||
                     OC_ARCHIVO.CAMPO_HTML(X.CodMoneda,'C') ||
-                    
+
                     OC_ARCHIVO.CAMPO_HTML(cTipoVigencia,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.NumRenov,'99990'),'C') ||                     
                     */
-                    
+
       END IF;
       nLinea := nLinea + 1;
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    END LOOP;
-  
+
    IF CFormato = 'EXCEL' THEN
       OC_ARCHIVO.Escribir_Linea('</table></div></html>', ccodUSER, 9999);
    END IF;
@@ -4629,13 +4627,13 @@ BEGIN
 EXCEPTION 
    WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci贸n de Conciliacion de Comisiones Anuladas: '||nIdFactura || ' ' ||SQLERRM); 
+      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci髇 de Conciliacion de Comisiones Anuladas: '||nIdFactura || ' ' ||SQLERRM); 
 END;
 
 PROCEDURE GENERAR_PAGADOS(cNomArchivo VARCHAR2, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,
                           cCodMoneda VARCHAR2, cCodAgente VARCHAR2, dFecDesde DATE,
                           dFecHasta DATE, cformato varchar2, nidreporte number) IS
-                          
+
 cLimitador             VARCHAR2(1) :='|';
 nLinea                 NUMBER;
 cCadena                VARCHAR2(8000);
@@ -4872,7 +4870,7 @@ CURSOR DET_ConC_NCR (nIdPoliza NUMBER, nIdNcr NUMBER) IS
       AND AGE.Cod_Agente = COM.Cod_Agente
       AND COM.IdPoliza   = nIdPoliza
       AND COM.IdNcr      = nIdNcr;
-      
+
 CURSOR DET_Comision_Q (nIdPoliz NUMBER, nIdFactur Number ) IS
   	SELECT CodNivel   Tipo
           ,Porc_Com_Proporcional  Comision
@@ -4886,7 +4884,7 @@ CURSOR DET_Comision_Q (nIdPoliz NUMBER, nIdFactur Number ) IS
 	    AND C.COD_AGENTE   = ADP.COD_AGENTE_DISTR
 	    AND ADP.IDPOLIZA   = nIdPoliz 
 	    AND C.IdFactura    = nIdFactur;  	    
-  
+
 CURSOR DET_Comision_NTC (nIdPolza NUMBER) IS
  SELECT   CodNivel   Tipo
           ,Porc_Com_Proporcional  Comision
@@ -4901,9 +4899,9 @@ CURSOR DET_Comision_NTC (nIdPolza NUMBER) IS
 	    AND C.COD_AGENTE   = ADP.COD_AGENTE_DISTR
       AND C.IdNcr        = N.IdNcr
       AND ADP.IDPOLIZA   = nIdPolza ;
-      
 
-      
+
+
 BEGIN 
   SELECT CODUSR
     INTO cCodUser
@@ -4924,7 +4922,7 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
 
       nLinea := nLinea + 1;
-      cCadena     := 'No. de P贸liza'||cLimitador||
+      cCadena     := 'No. de P髄iza'||cLimitador||
                      'Consecutivo'||cLimitador||
                      'No. Referencia'||cLimitador||
                      'Sub-Grupo'||cLimitador||
@@ -4935,8 +4933,8 @@ BEGIN
                      'Forma de Pago'||cLimitador||                                         
                      'Fecha Movimiento'||cLimitador||
                      'Estado'||cLimitador||
-                     'Inicio Vig. P贸liza'||cLimitador||
-                     'Fin Vig. P贸liza'||cLimitador||                     
+                     'Inicio Vig. P髄iza'||cLimitador||
+                     'Fin Vig. P髄iza'||cLimitador||                     
                      'Prima Neta'||cLimitador||
                      'Agente'||cLimitador||
                      'Tipo Agente'||cLimitador||
@@ -4980,11 +4978,11 @@ BEGIN
                      'RET IVA UDIS'||cLimitador||
                      'RET ISR UDIS'||cLimitador||  
                      'Plan Coberturas'||cLimitador||                   
-                     'C贸digo SubRamo'||cLimitador||
-                     'Descripci贸n SubRamo'||cLimitador||
+                     'C骴igo SubRamo'||cLimitador||
+                     'Descripci髇 SubRamo'||cLimitador||
                      'No. Cuota'||cLimitador||
                      'No. Comprobante'||cLimitador||
-                     'Folio Fact. Electr贸nica'||cLimitador||CHR(13); 
+                     'Folio Fact. Electr髇ica'||cLimitador||CHR(13); 
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       cPaso := 'cadena txt';
    ELSE
@@ -5006,7 +5004,7 @@ BEGIN
                        ' </style><div id="libro">'||chr(10);
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
       cPaso := 'cadena xls ini';
-       
+
       nLinea := nLinea + 1;
       cCadena     := '<table border = 0><tr><th>' || OC_EMPRESAS.NOMBRE_COMPANIA(1) || '</th></tr>'; 
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -5015,7 +5013,7 @@ BEGIN
       cCadena     := '<tr><th>REPORTE DE CONCIL DE COMISIONES PAGADAS DEL '|| TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' ||
                       TO_CHAR(dFecHasta,'DD/MM/YYYY') || '</th></tr>'; 
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-      
+
       cPaso := 'cadena xls ini 3.';
       nLinea := nLinea + 1;
       cCadena     := '<tr><th>  </th></tr></table>'; 
@@ -5023,7 +5021,7 @@ BEGIN
       nLinea := nLinea + 1;
       cPaso := 'cadena xls ini 4.';
       cCadena := '';      
-      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P贸liza</font></th>' ||
+      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P髄iza</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Consecutivo</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Referencia</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Sub-Grupo</font></th>' ||
@@ -5034,8 +5032,8 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Forma de Pago</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Movimiento</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Estado</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vig. P贸liza</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vig. P贸liza</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Inicio Vig. P髄iza</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fin Vig. P髄iza</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Prima Neta</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Agente</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Agente</font></th>' ||
@@ -5062,7 +5060,7 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">%Comis. UDIS</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto UDIS</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Estatus UDIS</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi贸n Total</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi髇 Total</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">IVA Agente</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">RET IVA Agente</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">RET ISR Agente</font></th>' ||
@@ -5070,7 +5068,7 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">RET IVA Promotor</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">RET ISR Promotor</font></th>';
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-                     
+
       cCadena     := '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">IVA Regional</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">RET IVA Regional</font></th>'||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">RET ISR Regional</font></th>'||
@@ -5081,15 +5079,15 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">RET IVA UDIS</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">RET ISR UDIS</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Plan Coberturas</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo SubRamo</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo SubRamo</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descrip. SubRamo</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No.Cuota</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No.Comprobante</font></th>'||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Folio Fact. Electr贸nica</font></th></tr>';
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Folio Fact. Electr髇ica</font></th></tr>';
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    END IF;
    cPaso := 'cadena xls fin';
-   
+
    FOR X IN PAG_Q LOOP
    	  cPaso  := 'PAG_Q Entra' ;
    	  cTipoTran       := X.TipoTran;
@@ -5097,7 +5095,7 @@ BEGIN
    	  cCodGenerador   := OC_AGENTE_POLIZA.AGENTE_PRINCIPAL(X.CodCia, X.IdPoliza);
       cDescFormaPago  := OC_FACTURAS.FRECUENCIA_PAGO(X.CodCia, X.IdRecibo);
       dFecFin         := NULL; --OC_FACTURAS.VIGENCIA_FINAL(X.CodCia, nIdFactura);      
-      
+
       BEGIN
          SELECT OC_PROVINCIA.NOMBRE_PROVINCIA(P.CodPaisRes, P.CodProvRes)
            INTO cDescEstado
@@ -5154,15 +5152,15 @@ BEGIN
 			nRetIsrAg        := 0;
 			nRetIsrHn        := 0;
 			nRetIsrUd        := 0;
-			
-			
+
+
       FOR W IN DET_Q LOOP
          IF W.IndCptoPrima = 'S' OR W.IndCptoServicio = 'S' THEN
          	  cPaso  := 'DET_Q Entra' ;
             nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(W.Monto_Det_Moneda,0);          
          END IF;         
       END LOOP;      
-		
+
       FOR C IN DET_ConC (X.IdPoliza, X.IdRecibo) LOOP
          cPaso  := 'DET_ConC entra'||C.CODNIVEL;      	
          IF C.CODNIVEL = 1 THEN -- REGIONAL
@@ -5227,7 +5225,7 @@ BEGIN
         INTO cNumComprob
         FROM COMPROBANTES_CONTABLES
        WHERE NumTransaccion = X.IdTransaccion;
-    
+
 	    -- Detalle de las Comisiones %,Montos
 	    FOR DC IN DET_Comision_Q(X.IdPoliza,X.IdRecibo) LOOP
 	    	  cPaso  := 'DET_Comision_Q entra' ;      	
@@ -5328,7 +5326,7 @@ BEGIN
                     TO_CHAR(X.NumCuota,'99990')                    ||cLimitador||
                     cNumComprob                                    ||cLimitador||
                     X.FolioFactElec                                ||CHR(13);
-                    
+
       ELSE
       	 cPaso  := '1 TEXTO entra' ;
          cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(X.NumPolUnico,'C') ||
@@ -5393,11 +5391,11 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(cNumComprob,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.FolioFactElec,'C') || '</tr>';                   
       END IF;
-      
+
       nLinea := nLinea + 1;
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    END LOOP;
-   
+
    FOR X IN NC_Q LOOP
       cPaso  := 'NC_Q entra' ;
    	  nIdNcr          := X.IdNcr;
@@ -5420,10 +5418,10 @@ BEGIN
       IF cDescEstado = 'PROVINCIA NO EXISTE' THEN
       	 cDescEstado := NULL;
       END IF;
- 
+
 
       nPrimaNeta      := 0;
-       
+
       nCodRg           := 0;
       nCodNivelRg      := 0;
 			nPorcComisRg	   := 0;
@@ -5464,7 +5462,7 @@ BEGIN
 			nRetIsrAg        := 0;
 			nRetIsrHn        := 0;
 			nRetIsrUd        := 0;
-			
+
 
       FOR W IN DET_NC_Q LOOP
       	 cPaso  := 'DET_NC_Q entra' ;
@@ -5472,7 +5470,7 @@ BEGIN
             nPrimaNeta  := NVL(nPrimaNeta,0) + NVL(W.Monto_Det_Moneda,0);         
          END IF; 
       END LOOP;
-      
+
       FOR C IN DET_ConC_NCR (X.IdPoliza, X.IdNcr) LOOP
          cPaso  := 'DET_ConC_NCR entra' ;
          IF C.CODNIVEL = 1 THEN -- REGIONAL
@@ -5525,7 +5523,7 @@ BEGIN
             ELSE
                NULL;
             END IF;
-             
+
          END IF;
          -- nTotComisDist   := NVL(nTotComisDist,0) + NVL(C.Monto_Mon_Extranjera,0);
       END LOOP;
@@ -5637,9 +5635,9 @@ BEGIN
                     TO_CHAR(X.NumCuota,'99990')                    ||cLimitador||
                     cNumComprob                                    ||cLimitador||
                     X.FolioFactElec                                ||CHR(13);
-                    
-                    
-                   
+
+
+
       ELSE
       	 cPaso  := '2 EXCEL entra' ;	 
          cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(X.NumPolUnico,'C') ||
@@ -5703,9 +5701,9 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.NumCuota,'99990'),'C') ||
                     OC_ARCHIVO.CAMPO_HTML(cNumComprob,'C') ||
                     OC_ARCHIVO.CAMPO_HTML(X.FolioFactElec,'C') || '</tr>';
-                    
-                   
-                    
+
+
+
       END IF;
       nLinea := nLinea + 1;
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -5731,7 +5729,7 @@ BEGIN
 EXCEPTION 
    WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci贸n de Conciliacion de Comisiones Pagados: '||cPaso||' - '||nIdFactura || ' :: ' ||SQLERRM); 
+      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci髇 de Conciliacion de Comisiones Pagados: '||cPaso||' - '||nIdFactura || ' :: ' ||SQLERRM); 
 END;
 
 PROCEDURE REPORTE_ERRORES_SINIESTRO(cNomArchivo VARCHAR2,cformato varchar2,nidreporte number,CTIPOPROCESO VARCHAR2) IS
@@ -5791,11 +5789,11 @@ BEGIN
 
    nLinea := nLinea + 1;
    cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Siniestro</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P贸liza Unico</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de P髄iza Unico</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Detalle/Sub-Grupo</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Producto</font></th>' || 
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Plan de Coberturas</font></th>' ||
-                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Asegurado</font></th>' ||
+                  '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Asegurado</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Asegurado</font></th>' ||
                   '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Log de Error</font></th>'; 
    OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -5833,7 +5831,7 @@ BEGIN
 EXCEPTION 
    WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci贸n de Registros de Siniestros Procesos Masivos con Error: ' || SQLERRM); 
+      RAISE_APPLICATION_ERROR(-20105,'Error en Generaci髇 de Registros de Siniestros Procesos Masivos con Error: ' || SQLERRM); 
 END;
 
 
@@ -5844,7 +5842,7 @@ PROCEDURE PROC_LST_PROYECCION (nidreporte number,nIdCalculoProy number,nIdBonoVe
 	nLinea		NUMBER;
 	dFecha		DATE;	
 	cCopy     BOOLEAN;
-	
+
 	CURSOR PROY_Q IS
 		SELECT CodCia, CodEmpresa, IdCalculoProy, IdBonoVentas, 
 		       CodNivel, CodAgente, FecIniCalcBono, FecFincalcBono, 
@@ -5914,8 +5912,8 @@ BEGIN
      FROM DUAL;
 
   dFecha := TRUNC(SYSDATE);
-   
-   
+
+
 	nLinea := 1;
 	cCadena  := '<html xmlns:o="urn:schemas-microsoft-com:office:office"'||chr(10)||
 	                 ' xmlns:x="urn:schemas-microsoft-com:office:excel"' ||chr(10)||
@@ -5933,32 +5931,32 @@ BEGIN
 	                 '    -->'                                           ||chr(10)||
 	                 ' </style><div id="libro">'||chr(10);
 	OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-	
+
 	nLinea := nLinea + 1;
 	cCadena     := '<table border = 0><tr><th>' || oc_empresas.NOMBRE_COMPANIA(1) || '</th></tr>'; 
 	OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-	
+
 	nLinea := nLinea + 1;
-	cCadena     := '<tr><th>Listado de Poryecciones de Agentes del D铆a '|| TO_CHAR(dFecha,'DD/MM/YYYY') || '</th></tr>'; 
+	cCadena     := '<tr><th>Listado de Poryecciones de Agentes del D韆 '|| TO_CHAR(dFecha,'DD/MM/YYYY') || '</th></tr>'; 
 	OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-	
+
 	nLinea := nLinea + 1;
 	cCadena     := '<tr><th>  </th></tr></table>'; 
 	OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-	
+
 	nLinea := nLinea + 1;
 	cCadena     := '<table border = 1><tr>'																																																					||
-								 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Bono</font></th>' 																						||
+								 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Bono</font></th>' 																						||
 								 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Bono</font></th>' 																										||
 								 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel de Agentes del Bono</font></th>' 															||
-								 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Agente</font></th>'                   												||
+								 '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Agente</font></th>'                   												||
 	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Agente</font></th>'                   																||
 	               --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Promotor</font></th>'                																||
-	               --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci贸n Regional</font></th>'                											||
-	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Producci贸n Prima Neta</font></th>'                       						||
+	               --'<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Direcci髇 Regional</font></th>'                											||
+	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Producci髇 Prima Neta</font></th>'                       						||
 	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Siniestralidad</font></th>'                     										||
 	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Messes Producidos</font></th>'                   										|| 
-	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cantidad P贸lizas</font></th>'                 												||
+	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cantidad P髄izas</font></th>'                 												||
 	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cantidad Agentes Productivos</font></th>'                   					||
 	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">% Bono Actual Alcanzado</font></th>'                       					||
 	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Calculo</font></th>'                    										||
@@ -5968,7 +5966,7 @@ BEGIN
 	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Mto Bono Nivel 4 Alcanzado/Por Alcanzar</font></th>'            			||
 	               '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Mto Bono Niveles Superiores Alcanzados/Por Alcanzar</font></th></tr>';
 	OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
-	
+
 	FOR X IN PROY_Q LOOP
 		cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(X.CodigoBono,'C')                    							||
 			                   OC_ARCHIVO.CAMPO_HTML(X.DescBono,'C')                                 		|| 
@@ -6012,7 +6010,7 @@ BEGIN
 EXCEPTION 
    WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      raise_application_error(-20102,'Error en Generaci贸n de Listado de Proyecciones'|| ' ' ||SQLERRM); 
+      raise_application_error(-20102,'Error en Generaci髇 de Listado de Proyecciones'|| ' ' ||SQLERRM); 
 END;
 
 PROCEDURE GENERAR_PAGOS_DESGLOSE(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgente VARCHAR2,
@@ -6126,9 +6124,9 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
 
       nLinea := nLinea + 1;
-      cCadena     := 'No. Nota Cr茅dito'||cLimitador||
+      cCadena     := 'No. Nota Cr閐ito'||cLimitador||
 --      							 'Status NC'||cLimitador||
-      							 'C贸digo Agente'||cLimitador||
+      							 'C骴igo Agente'||cLimitador||
                      'Nombre Agente'||cLimitador||'Fecha de Pago'||cLimitador|| 
                      'Moneda'||cLimitador||
 --                     'Monto del Pago'||cLimitador||
@@ -6137,11 +6135,11 @@ BEGIN
 --                     'Comision/Honorarios/UDIs'||cLimitador||'Total IVA'||cLimitador||'Total IVAHON'||cLimitador||
 --                     'Ret. ISR'||cLimitador||'Ret. IVA'||cLimitador|| 
                      'No. Comprobante'||cLimitador||
---                     'C贸digo Direc. Reg.'||cLimitador|| 'Nombre Direcci贸n Regional'||cLimitador||
+--                     'C骴igo Direc. Reg.'||cLimitador|| 'Nombre Direcci髇 Regional'||cLimitador||
 --                     'Nivel Agte.'||cLimitador||
                      'Tipo Agte.'||
                      'Num. Comision'||'Num. Poliza'||'Detalle Poliza'||'Concepto'||'Monto'||'Tipo Seguro'||'Num. Recibo'|| ---- jmmd20200812
-                     'Total por Comisi贸n'||'Total por Tipo de Seguro'||
+                     'Total por Comisi髇'||'Total por Tipo de Seguro'||
                      CHR(13); 
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
    ELSE
@@ -6177,24 +6175,24 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
       nLinea := nLinea + 1;
-      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Nota Cr茅dito</font></th>' ||
+      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Nota Cr閐ito</font></th>' ||
 --                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status NC</font></th>' ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Agente</font></th>' ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Agente</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Agente</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Pago</font></th>' || 
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>' ||
 --                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto del Pago</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Id Nomina</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cta. Liquidadora</font></th>' ||
---                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi贸n/Honorarios/UDIs</font></th>' ||
+--                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Comisi髇/Honorarios/UDIs</font></th>' ||
 --                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total IVA</font></th>' ||
 --                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total IVAHON</font></th>' ||       ----JMMD20200812              
 --                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Ret. ISR</font></th>' ||
 --                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Ret. IVA</font></th>' ||
 --                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Factura Agente</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Comprobante</font></th>' ||
---                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Direc. Reg.</font></th>' ||
---                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci贸n Regional</font></th>'||
+--                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Direc. Reg.</font></th>' ||
+--                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci髇 Regional</font></th>'||
 --                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Agte.</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Agte.</font></th>'	||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Num. Comision</font></th>'	||
@@ -6204,7 +6202,7 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto</font></th>'	||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Seguro</font></th>'	||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Num. Recibo</font></th>'	||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total por Comisi贸n</font></th>'  ||	                                                                                                                                                                        
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total por Comisi髇</font></th>'  ||	                                                                                                                                                                        
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Total por Tipo de Seguro</font></th>'	                                                                                                                                                                                                                  	                                                                                                                                                                        
                      ; 
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -6231,7 +6229,7 @@ BEGIN
 						      AND DC.IDCOMISION             = C.IDCOMISION
 						      AND DC.CODCONCEPTO            = 'IVAHON'
 						 ) A;
-						 
+
 						SELECT SUM(B.MONTO_MON_EXTRANJERA)
 						  INTO nMtoTotSeg
 						FROM (
@@ -6346,7 +6344,7 @@ BEGIN
 						      AND DC.IDCOMISION             = C.IDCOMISION
 						      AND DC.CODCONCEPTO            = 'IVAHON'
 						 ) A;
-						 
+
 						SELECT SUM(B.MONTO_MON_EXTRANJERA)
 						  INTO nMtoTotSeg
 						FROM (
@@ -6374,7 +6372,7 @@ BEGIN
 						      AND DP.IDPOLIZA               = C.IDPOLIZA
 						      AND DP.IDETPOL                = C.IDETPOL   
 						      AND DP.IDTIPOSEG              = X.IDTIPOSEG  )B  ;    						 
-						 	
+
 					END IF;
 			  END IF;
 
@@ -6536,7 +6534,7 @@ BEGIN
 EXCEPTION 
    WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      raise_application_error(-20105,'Error en Generaci贸n de Listado de Pago de Agentes ' || SQLERRM); 
+      raise_application_error(-20105,'Error en Generaci髇 de Listado de Pago de Agentes ' || SQLERRM); 
 END;
 
 PROCEDURE saldos_mes_anio(pNomArchivo VARCHAR2, pCodMoneda VARCHAR2, pCodAgente VARCHAR2,
@@ -6719,9 +6717,9 @@ BEGIN
        INSERT INTO T_SALDOS_COMISIONES_ANIOMES --(CODCIA, COD_AGENTE, FE_INI_SALDO, COD_MONEDA, MONTO_SALDO_SINAL)
        VALUES(1,P_COD_AGENTE,P_FE_INI_SALDO,P_COD_MONEDA,P_MONTO_SALDO_FINAL);
        nLineaimp := nLineaimp +1;
-       
+
        commit;  
-          
+
 END INSERTA_REGISTROS;
 -------------------------------
 
@@ -6736,9 +6734,9 @@ BEGIN
       INTO W_ID_TERMINAL,
            W_ID_USER
       FROM DUAL;
-      
+
     IF pCodMoneda = '%' THEN
- 		     raise_application_error(-20105,'En Listado de Saldos de Agentes por Mes y A帽o, no se puede usar % para la selecci贸n de moneda, escoja alguna de la lista' ); 
+ 		     raise_application_error(-20105,'En Listado de Saldos de Agentes por Mes y A駉, no se puede usar % para la selecci髇 de moneda, escoja alguna de la lista' ); 
 	END IF;  	 
 
      --
@@ -6776,7 +6774,7 @@ BEGIN
         INTO  cCodtipo1 
         FROM AGENTES A
         WHERE A.COD_AGENTE = X.AGENTE;
-        
+
    EXCEPTION WHEN OTHERS THEN
       cCodtipo1        := NULL;
    END;     
@@ -6829,7 +6827,7 @@ BEGIN
          cCadena := cCadena ||Y.FE_INI_SALDO||cLimitador ;
        end if;   
    END LOOP; 
-   
+
 --   	    nDummy := ALERTA('JMMD DESPUES FOR Y IN ENCABEZADOS_Q LOOP cCadena   '||cCadena||'  nLinea  '||nLinea);   
 
    	    cCadena := cCadena || CHR(13);
@@ -6838,7 +6836,7 @@ BEGIN
       nLinea := nLinea + 1;   	        				
 
    cCadena := '';
-   
+
    nspv := 0;
  ------------------
 -- nDummy := ALERTA('JMMD EN FOR w IN DETALLES_AGENTES_Q LOOP nspv   '||nspv);           
@@ -6848,19 +6846,19 @@ BEGIN
                 INTO  cCodtipo , cNombreAgente
                 FROM AGENTES A
                 WHERE A.COD_AGENTE = W.COD_AGENTE;
-                
+
            EXCEPTION WHEN OTHERS THEN
               cCodtipo        := NULL;
               cNombreAgente   := NULL;
            END;     
-	    
+
        FOR Z IN ENCABEZADOS_Q LOOP  
 ---------------
 			    select  to_date('01/'|| to_char(Z.FE_INI_SALDO, 'MM') ||'/' ||to_char(Z.FE_INI_SALDO, 'YYYY'), 'dd/mm/yyyy') first 
 			    into dFecprimerdia 
 			    from dual;
  --   nDummy := ALERTA('JMMD EN primer dia dFecprimerdia '||dFecprimerdia); 
-    
+
 /*    select sum(mt_comision_mes)
     INTO nMONTO_SALDO_FINAL
 			from saldos_comisiones_mes
@@ -6869,7 +6867,7 @@ BEGIN
 			and cd_moneda = pCodmoneda;
 */			
 					cmoneda := pCodmoneda;
-			
+
 ---------------
             BEGIN
               SELECT T.MONTO_SALDO_FINAL, T.COD_MONEDA
@@ -6881,10 +6879,10 @@ BEGIN
                 nMONTO_SALDO_FINAL := 0;
                 cmoneda := pCodmoneda;
             END;   
- 
-          
+
+
            IF nspv = 0 then   
-            
+
               nAgenteAnt := W.COD_AGENTE;     
               nspv := 1;
              cCadena := W.COD_AGENTE                                 ||cLimitador||
@@ -6902,7 +6900,7 @@ BEGIN
                TO_CHAR(nMONTO_SALDO_FINAL,'99999999999990.00')        ||cLimitador;
              END IF;
            end if;
-   	      
+
             ----
         END LOOP;
       cCadena := cCadena || CHR(13);
@@ -6911,7 +6909,7 @@ BEGIN
       nLinea := nLinea + 1; 
    END LOOP;
  --	    nDummy := ALERTA('JMMD EN despues del LOOP   ');
- 	    
+
  ------------------  
    OC_ARCHIVO.Escribir_Linea('EOF', cCodUser, 0); 
   INSERT INTO SICAS_OC.EXTRACCION_DE_REPORTES
@@ -6927,18 +6925,18 @@ BEGIN
        AND B.IDEXTRACCION = nIdReporte;
   DELETE SICAS_OC.EXTRACCION_DE_REPORTES WHERE IDEXTRACCION = nIdReporte;
   OC_ARCHIVO.Eliminar_Archivo(cCodUser);
-   
+
 EXCEPTION
    WHEN OTHERS THEN
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      raise_application_error(-20105,'Error en Generaci贸n de Listado de Saldos de Agentes por Mes y A帽o' || SQLERRM); 
+      raise_application_error(-20105,'Error en Generaci髇 de Listado de Saldos de Agentes por Mes y A駉' || SQLERRM); 
 END;
 
 
 
 PROCEDURE PAGOS_AGENTES(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgente VARCHAR2, dFecDesde DATE,
                              dFecHasta DATE,cformato varchar2, nidreporte number) IS
-                
+
 cLimitador        VARCHAR2(1) :='|';
 nLinea            NUMBER;
 cCadena           VARCHAR2(4000);
@@ -6951,7 +6949,7 @@ cNombreDirecReg   VARCHAR2(500);
 nIVAHON						DETALLE_COMISION.MONTO_MON_LOCAL%TYPE := 0;
 
 CURSOR PAGOS_Q IS 
-SELECT NC.CodCia COMPA脩IA, NC.Cod_Agente AGENTE, PNJ.NOMBRE||' '||PNJ.APELLIDO_PATERNO||' '||PNJ.APELLIDO_MATERNO NOMBRE_AGENTE, 
+SELECT NC.CodCia COMPA袸A, NC.Cod_Agente AGENTE, PNJ.NOMBRE||' '||PNJ.APELLIDO_PATERNO||' '||PNJ.APELLIDO_MATERNO NOMBRE_AGENTE, 
       NC.IDNCR, NC.IdNomina, NC.Monto_NCR_Local MONTO_LOCAL, 
                NC.Monto_NCR_Moneda MONTO_MONEDA, TO_CHAR(TRUNC(NC.FecDevol),'DD/MM/YYYY') FechaSolicitud,
                NC.CodMoneda MONEDA, OC_MONEDA.DESCRIPCION_MONEDA(CodMoneda) DescMoneda,  NC.CTALIQUIDADORA CUENTA_LIQUIDADORA,
@@ -6992,7 +6990,7 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
 
       nLinea := nLinea + 1;
-      cCadena     := 'RELACI脫N DE PAGOS A AGENTES DEL D脥A ' ||  TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' || TO_CHAR(dFecHasta,'DD/MM/YYYY') || CHR(13);
+      cCadena     := 'RELACI覰 DE PAGOS A AGENTES DEL D虯 ' ||  TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' || TO_CHAR(dFecHasta,'DD/MM/YYYY') || CHR(13);
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
 
       nLinea := nLinea + 1;
@@ -7000,15 +6998,15 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
 
       nLinea := nLinea + 1;
-      cCadena     := 'Compa帽ia'                 ||cLimitador||'Agente'                ||cLimitador||
+      cCadena     := 'Compa駃a'                 ||cLimitador||'Agente'                ||cLimitador||
                      'Nombre Agente'        ||cLimitador||'Nota de Credito'        ||cLimitador||
                      'Id Nomina'     ||cLimitador||'Monto Local'                ||cLimitador||
                      'Monto Moneda'        ||cLimitador||'Fecha Solicitud'             ||cLimitador||
-                     'Moneda'               ||cLimitador||'Descripci贸n Moneda'              ||cLimitador||
-                     'Cuenta liquidadora'               ||cLimitador||'Descripci贸n Cuenta'         ||cLimitador||
-                     'Tipo Identificaci贸n'   ||cLimitador||'N煤mero de Identificaci贸n'            ||cLimitador||
+                     'Moneda'               ||cLimitador||'Descripci髇 Moneda'              ||cLimitador||
+                     'Cuenta liquidadora'               ||cLimitador||'Descripci髇 Cuenta'         ||cLimitador||
+                     'Tipo Identificaci髇'   ||cLimitador||'N鷐ero de Identificaci髇'            ||cLimitador||
                      'Cuenta Bancaria'       ||cLimitador||'Cuenta Clabe'         ||cLimitador||
-                     'C贸digo Entidad'    ||cLimitador||'Descripci贸n Banco'   ||cLimitador||
+                     'C骴igo Entidad'    ||cLimitador||'Descripci髇 Banco'   ||cLimitador||
                      'Cuenta Principal'   ||
                      CHR(13);  
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -7036,7 +7034,7 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
       nLinea := nLinea + 1;
-      cCadena     := '<tr><th>RELACI脫N DE PAGOS A AGENTES DEL D脥A  ' ||  TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' ||
+      cCadena     := '<tr><th>RELACI覰 DE PAGOS A AGENTES DEL D虯  ' ||  TO_CHAR(dFecDesde,'DD/MM/YYYY') || ' Al ' ||
                       TO_CHAR(dFecHasta,'DD/MM/YYYY') || '</th></tr>'; 
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
@@ -7045,7 +7043,7 @@ BEGIN
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
       nLinea := nLinea + 1;
-      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Compa帽ia</font></th>' ||
+      cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Compa駃a</font></th>' ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Agente</font></th>'                 ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Agente</font></th>'              ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nota de Credito</font></th>'         ||
@@ -7054,15 +7052,15 @@ BEGIN
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Monto Moneda</font></th>'              ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha Solicitud</font></th>'              ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Moneda</font></th>'                     ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n Moneda</font></th>'               ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 Moneda</font></th>'               ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cuenta liquidadora</font></th>'                     ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n Cuenta</font></th>'          ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Identificaci贸n</font></th>'         ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">N煤mero de Identificaci贸n</font></th>'             ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 Cuenta</font></th>'          ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Identificaci髇</font></th>'         ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">N鷐ero de Identificaci髇</font></th>'             ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cuenta Bancaria</font></th>'             ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cuenta Clabe</font></th>'          ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Entidad</font></th>'          ||
-                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci贸n Banco</font></th>'    ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Entidad</font></th>'          ||
+                     '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Descripci髇 Banco</font></th>'    ||
                      '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cuenta Principal</font></th>'                                                             
                      ;
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
@@ -7071,7 +7069,7 @@ BEGIN
    FOR X IN PAGOS_Q LOOP
 
       IF cFormato = 'TEXTO' THEN
-         cCadena := X.COMPA脩IA                                     ||cLimitador||
+         cCadena := X.COMPA袸A                                     ||cLimitador||
                     TO_CHAR(X.AGENTE,'9999999999999')              ||cLimitador||
                     X.NOMBRE_AGENTE                                ||cLimitador||
                     TO_CHAR(X.IDNCR,'9999999999999')               ||cLimitador||
@@ -7092,7 +7090,7 @@ BEGIN
                     X.CUENTAPRINCIPAL           									 ||cLimitador||
                     CHR(13); 
       ELSE
-         cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(X.COMPA脩IA,'C')                               ||
+         cCadena := '<tr>' || OC_ARCHIVO.CAMPO_HTML(X.COMPA袸A,'C')                               ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.AGENTE,'9999999999990'),'C')              ||
                     OC_ARCHIVO.CAMPO_HTML(X.NOMBRE_AGENTE,'C')                                       ||
                     OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.IDNCR,'9999999999990'),'C')            ||                    
@@ -7113,10 +7111,10 @@ BEGIN
                     OC_ARCHIVO.CAMPO_HTML(X.CUENTAPRINCIPAL ,'C')                                       ||                                                                                                    
                     '</tr>';
       END IF;
- 
+
       nLinea := nLinea + 1;
       OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
- 
+
    END LOOP;
    IF cFormato = 'EXCEL' THEN
       OC_ARCHIVO.Escribir_Linea('</table></div></html>', ccodUser, 9999);
@@ -7138,12 +7136,12 @@ BEGIN
 EXCEPTION 
    WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      raise_application_error(-20105,'Error en Generaci贸n de Comisiones ' || cDescStatus || ' ' ||SQLERRM); 
+      raise_application_error(-20105,'Error en Generaci髇 de Comisiones ' || cDescStatus || ' ' ||SQLERRM); 
 END;
 
 PROCEDURE COMPARA_COMIS_SALDOS(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgente VARCHAR2, dFecDesde DATE,
                              dFecHasta DATE,cformato varchar2, nidreporte number) IS
-                
+
 cLimitador        VARCHAR2(1) :='|';
 nLinea            NUMBER;
 cCadena           VARCHAR2(4000);
@@ -7193,7 +7191,7 @@ BEGIN
    WHERE IDEXTRACCION = nIdReporte;
 
       IF cCodMoneda = '%' THEN
- 		   raise_application_error(-20105,'En Listado de Comparaci贸n de comisiones vs saldos, no se puede usar % para la selecci贸n de moneda, escoja alguna de la lista' ); 
+ 		   raise_application_error(-20105,'En Listado de Comparaci髇 de comisiones vs saldos, no se puede usar % para la selecci髇 de moneda, escoja alguna de la lista' ); 
    		END IF;  	 
 
    IF cFormato = 'TEXTO' THEN
@@ -7273,7 +7271,7 @@ BEGIN
 		                    OC_ARCHIVO.CAMPO_HTML(TO_CHAR(X.DIFERENCIA,'9999999999990.00'),'N')          ||
 		                    '</tr>';
 		      END IF;
- 
+
 		      nLinea := nLinea + 1;
 		      OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
  			END IF;
@@ -7298,7 +7296,7 @@ BEGIN
 EXCEPTION 
    WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      raise_application_error(-20105,'Error en Generaci贸n de Comisiones VS saldos de arrastre  ' || cDescStatus || ' ' ||SQLERRM); 
+      raise_application_error(-20105,'Error en Generaci髇 de Comisiones VS saldos de arrastre  ' || cDescStatus || ' ' ||SQLERRM); 
 END;
 
 PROCEDURE GENERAR_PAGOSXRAMO(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgente VARCHAR2,
@@ -7385,7 +7383,8 @@ PROCEDURE GENERAR_PAGOSXRAMO(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgen
                            SAL.FechaTransaccion AS fecha_liquida,
                            SAL.CtaLiquidadora,
                            SAL.Codmoneda,
-                           CASE WHEN SAL.CONCEPTO NOT IN ('HONORA', 'COMVDA', 'COMACC', 'IVASIN','RETISR','RETIVA','IVAHON') THEN
+                            --MLJS 28/03/2025 SE AGREGAN LOS CONCEPTOS HONVDA, HONACC
+                           CASE WHEN SAL.CONCEPTO NOT IN ('HONORA', 'COMVDA', 'COMACC', 'IVASIN','RETISR','RETIVA','IVAHON','HONVDA', 'HONACC') THEN
                                 SAL.CONCEPTO 
                            ELSE
                                 'COMISI'
@@ -7396,7 +7395,8 @@ PROCEDURE GENERAR_PAGOSXRAMO(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgen
                            SUM(DECODE(SAL.concepto, 'RETISR', NVL(SAL.monto_mon_local, 0), 0)) RETISR, 
                            SUM(DECODE(SAL.concepto, 'RETIVA', NVL(SAL.monto_mon_local, 0), 0)) RETIVA, 
                            SUM(DECODE(SAL.concepto, 'COMISI', 0, 'IVASIN', 0,  'RETISR', 0, 'RETIVA', 0, 'IVAHON', 0, NVL(SAL.monto_mon_local, 0))) OTRO, 
-                           SUM(case when SAL.concepto in('COMISI', 'HONORA', 'COMVDA', 'COMACC') then  NVL(SAL.monto_mon_local, 0) else  0 end) COMISI, 
+                           --MLJS 28/03/2025 SE AGREGAN LOS CONCEPTOS HONVDA, HONACC
+                           SUM(case when SAL.concepto in('COMISI', 'HONORA', 'COMVDA', 'COMACC','HONVDA', 'HONACC') then  NVL(SAL.monto_mon_local, 0) else  0 end) COMISI, 
                            sum(SAL.monto_mon_local)      MTOMONLOCAL,
                            sum(SAL.monto_mon_extranjera) MTOMONEXTRANJERA,
                            sum(SAL.comisionlocal)        COMISLOCAL,
@@ -7491,7 +7491,8 @@ PROCEDURE GENERAR_PAGOSXRAMO(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgen
                                 SAL.NumComprob,                
                                 --Cod_Agente_Distr,
                                 --DIR_REG,                                          
-                                CASE WHEN SAL.CONCEPTO NOT IN ('HONORA', 'COMVDA', 'COMACC', 'IVASIN','RETISR','RETIVA','IVAHON') THEN
+                                --MLJS 28/03/2025 SE AGREGAN LOS CONCEPTOS HONVDA, HONACC                                         
+                                CASE WHEN SAL.CONCEPTO NOT IN ('HONORA', 'COMVDA', 'COMACC', 'IVASIN','RETISR','RETIVA','IVAHON','HONVDA', 'HONACC') THEN
                                     SAL.CONCEPTO 
                                 ELSE
                                     'COMISI'
@@ -7533,16 +7534,16 @@ PROCEDURE GENERAR_PAGOSXRAMO(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgen
          OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea); 
 
          nLinea := nLinea + 1;
-         cCadena     := 'No. Nota Cr茅dito'            ||cLimitador||
+         cCadena     := 'No. Nota Cr閐ito'            ||cLimitador||
                         'Status NC'                   ||cLimitador||
                         'No. de Control'              ||cLimitador|| 
                         'Cta. Liquidadora'            ||cLimitador||
-                        'C贸digo Agente'               ||cLimitador||
+                        'C骴igo Agente'               ||cLimitador||
                         'Nombre Agente'               ||cLimitador||
                         'RFC Agente'                  ||cLimitador||
                         'No. Comprobante'             ||cLimitador||
-                        'C贸digo Direc. Reg.'          ||cLimitador|| 
-                        'Nombre Direcci贸n Regional'   ||cLimitador||
+                        'C骴igo Direc. Reg.'          ||cLimitador|| 
+                        'Nombre Direcci髇 Regional'   ||cLimitador||
                         'Nivel Agte.'                 ||cLimitador||
                         'Tipo Agte.'                  ||cLimitador||
                         'Fecha de Pago'               ||cLimitador|| 
@@ -7595,16 +7596,16 @@ PROCEDURE GENERAR_PAGOSXRAMO(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgen
          OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
 
          nLinea := nLinea + 1;
-         cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Nota Cr茅dito</font></th>' ||
+         cCadena     := '<table border = 1><tr><th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Nota Cr閐ito</font></th>' ||
                         '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Status NC</font></th>'                  ||
                         '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. de Control</font></th>'             ||
                         '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Cta. Liquidadora</font></th>'           ||
-                        '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Agente</font></th>'              || 
+                        '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Agente</font></th>'              || 
                         '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Agente</font></th>'              ||
                         '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">RFC Agente</font></th>'                 ||
                         '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">No. Comprobante</font></th>'            ||
-                        '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C贸digo Direc. Reg.</font></th>'         ||
-                        '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci贸n Regional</font></th>'  ||
+                        '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">C骴igo Direc. Reg.</font></th>'         ||
+                        '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nombre Direcci髇 Regional</font></th>'  ||
                         '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Nivel Agte.</font></th>'                ||
                         '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Tipo Agte.</font></th>'                 ||
                         '<th align=center bgcolor = "#0B2161"><font color="#FFFFFF">Fecha de Pago</font></th>'              ||    
@@ -7657,7 +7658,7 @@ PROCEDURE GENERAR_PAGOSXRAMO(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgen
 
             NRETISR     := CASE WHEN nvl(si_resico, 0) = 1 THEN 0 ELSE X.RETISR END;
             NISR_RESICO := CASE WHEN nvl(si_resico, 0) = 1 THEN X.RETISR ELSE 0 END;
-            
+
             LDEBUG := '4.2';
 
             BEGIN
@@ -7781,16 +7782,9 @@ PROCEDURE GENERAR_PAGOSXRAMO(cNomArchivo VARCHAR2, cCodMoneda VARCHAR2, cCodAgen
   OC_ARCHIVO.Eliminar_Archivo(cCodUser);
 EXCEPTION  WHEN OTHERS THEN 
       OC_ARCHIVO.Eliminar_Archivo(cCodUser); 
-      raise_application_error(-20105,'Error en Generaci贸n de Listado de Pago de Agentes' || ' ' ||SQLERRM); 
+      raise_application_error(-20105,'Error en Generaci髇 de Listado de Pago de Agentes' || ' ' ||SQLERRM); 
 
 END;
-                        
+
 END REPORTE_AGENTES;
-
 /
-
-GRANT EXECUTE ON SICAS_OC.REPORTE_AGENTES TO PUBLIC;
-
-/
-
-CREATE PUBLIC SYNONYM REPORTE_AGENTES FOR SICAS_OC.REPORTE_AGENTES;
