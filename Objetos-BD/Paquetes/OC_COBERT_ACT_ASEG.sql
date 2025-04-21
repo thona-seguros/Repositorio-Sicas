@@ -66,6 +66,9 @@ PROCEDURE CARGAR_COBERTURAS_COTIZACION(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTi
                             nIdPoliza NUMBER, nIDetPol NUMBER, nCodAsegurado NUMBER, nFranquiciaingresado NUMBER);
 
 PROCEDURE COPIAR_REN(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPolOrig NUMBER, nIdPolizaDest NUMBER, nIDetPolDest NUMBER);
+---ARH SE CREA EL PROCEDIMIENTO HEREDA_COBERTURAS_AJUSTEANUAL PARA LA PRIMA AJUSTE ANUAL 26/03/2025
+PROCEDURE HEREDA_COBERTURAS_AJUSTEANUAL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER,
+                                        nCod_Asegurado NUMBER,  cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2,nIdEndoso NUMBER);
 
 END OC_COBERT_ACT_ASEG;
 /
@@ -2070,5 +2073,101 @@ BEGIN
    END IF;
 
 END COPIAR_REN;
+
+PROCEDURE HEREDA_COBERTURAS_AJUSTEANUAL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER,
+                                        nCod_Asegurado NUMBER, cIdTipoSeg VARCHAR2, cPlanCob VARCHAR2, nIdEndoso NUMBER) IS
+nSumAsegLocal  NUMBER;
+nSumAsegMoneda NUMBER;
+nPrimaMoneda   NUMBER;
+nPrimaLocal    NUMBER;
+nTasa          NUMBER;
+
+CURSOR COB_Q IS
+   SELECT TipoRef, NumRef, CodCobert, SumaAseg_Local, SumaAseg_Moneda,
+          Tasa, Prima_Moneda, Prima_Local, IdEndoso, Cod_Moneda,
+          Deducible_Local, Deducible_Moneda, PrimaNivMoneda, PrimaNivLocal,
+          SalarioMensual, VecesSalario, SumaAsegCalculada, Edad_Minima,
+          Edad_Maxima, Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima,
+          PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,
+          NVL(IDRAMOREAL, OC_COBERTURAS_DE_SEGUROS.COBERTURA_IDRAMOREAL(CodCia, CODEMPRESA, IdTipoSeg, PlanCob, CodCobert)) IDRAMOREAL,
+          Franquiciaingresado, MontoDiario, Dias_Cal  
+     FROM COBERT_ACT_ASEG
+    WHERE CodCia        = nCodCia
+      AND CodEmpresa    = nCodEmpresa
+      AND IdPoliza      = nIdPoliza
+      AND IDetPol       = nIDetPol
+      AND Cod_Asegurado = nCod_Asegurado
+      AND IdTipoSeg     = cIdTipoSeg
+      AND PlanCob       = cPlanCob;
+CURSOR ASEG_Q IS
+   SELECT Cod_Asegurado, Estado, IdEndoso, Campo1, Campo2
+     FROM ASEGURADO_CERTIFICADO
+    WHERE CodCia         = nCodCia
+      AND IdPoliza       = nIdPoliza
+      AND IDetPol        = nIDetPol
+      AND IdEndoso       = nIdEndoso
+      AND Cod_Asegurado != nCod_Asegurado
+      AND Estado        IN ('SOL','XRE');
+BEGIN
+   OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIdetPol, nCod_Asegurado);
+   FOR W IN ASEG_Q LOOP
+      DELETE COBERT_ACT_ASEG
+       WHERE CodCia        = nCodCia
+         AND CodEmpresa    = nCodEmpresa
+         AND IdPoliza      = nIdPoliza
+         AND IdetPol       = nIDetPol
+         AND StsCobertura IN ('SOL','XRE')
+         AND Cod_Asegurado = W.Cod_Asegurado;
+      
+      FOR Z IN COB_Q LOOP
+         IF W.Campo1 = 1 THEN
+            nSumAsegLocal:=  W.Campo2;
+            nSumAsegMoneda:= W.Campo2;
+            nPrimaMoneda:=   0;
+            nPrimaLocal:=    0;
+            nTasa:=          0;
+         ELSE
+            nSumAsegLocal:=  Z.SumaAseg_Local;
+            nSumAsegMoneda:= Z.SumaAseg_Moneda;
+            nPrimaMoneda:=   Z.Prima_Moneda;
+            nPrimaLocal:=    Z.Prima_Local;
+            nTasa:=          Z.Tasa;
+         END IF;
+         BEGIN
+            INSERT INTO COBERT_ACT_ASEG
+                  (IdPoliza, IDetPol, CodEmpresa, IdTipoSeg, CodCia,
+                   CodCobert, StsCobertura, SumaAseg_Local, SumaAseg_Moneda,
+                   Prima_Local, Prima_Moneda, Tasa, IdEndoso, TipoRef,
+                   NumRef, PlanCob, Cod_Moneda, Deducible_Local, Deducible_Moneda,
+                   Cod_Asegurado, PrimaNivMoneda, PrimaNivLocal, SalarioMensual,
+                   VecesSalario, SumaAsegCalculada, Edad_Minima, Edad_Maxima,
+                   Edad_Exclusion, SumaAseg_Minima, SumaAseg_Maxima, PorcExtraPrimaDet,
+                   MontoExtraPrimaDet, SumaIngresada, IDRAMOREAL, Franquiciaingresado, MontoDiario, Dias_Cal)
+            VALUES(nIdPoliza, nIDetPol, nCodEmpresa, cIdTipoSeg, nCodCia,
+                   Z.CodCobert, W.Estado, nSumAsegLocal, nSumAsegMoneda,
+                   nPrimaLocal, nPrimaMoneda, nTasa, nIdEndoso, Z.TipoRef,
+                   Z.NumRef, cPlanCob, Z.Cod_Moneda, Z.Deducible_Local, Z.Deducible_Moneda,
+                   W.Cod_Asegurado, Z.PrimaNivMoneda, Z.PrimaNivLocal, Z.SalarioMensual,
+                   Z.VecesSalario, Z.SumaAsegCalculada, Z.Edad_Minima, Z.Edad_Maxima,
+                   Z.Edad_Exclusion, Z.SumaAseg_Minima, Z.SumaAseg_Maxima, Z.PorcExtraPrimaDet,
+                   Z.MontoExtraPrimaDet, Z.SumaIngresada, Z.IDRAMOREAL, Z.Franquiciaingresado, Z.MontoDiario, Z.Dias_Cal);
+         EXCEPTION
+            WHEN DUP_VAL_ON_INDEX THEN
+               RAISE_APPLICATION_ERROR(-20225,'Existen Coberturas Duplicadas para Detalle de la Póliza: '||
+                                      TRIM(TO_CHAR(nIdPoliza))||' - '||TO_CHAR(nIDetPol));
+         END;
+      END LOOP;
+        OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIdetPol, W.Cod_Asegurado);
+        OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIdetPol, W.Cod_Asegurado);
+   END LOOP;
+
+   IF nIdEndoso = 0 THEN
+      OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, 0);
+      OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);
+   ELSE
+      OC_ENDOSO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso);
+   END IF;
+   COMMIT;
+END HEREDA_COBERTURAS_AJUSTEANUAL;
 
 END OC_COBERT_ACT_ASEG;

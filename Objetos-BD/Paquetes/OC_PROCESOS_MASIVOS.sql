@@ -5,6 +5,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_PROCESOS_MASIVOS IS
 -- 16/01/2023 SE AGREGA RUTINA PARA EL MANEJO DE LA ACTUALIZACION DE ASEGURADOS                   -- JICO ASEGVAL 20220410
 -- 2023/03/07 SE AGREGO CAMPO DE BENEFICIARIO A INSERT  ALERTA
 -- 05/07/2024 SE AGREGA RUTINA PARA INSERTA_COBRANZA_MASIVA
+-- 24/02/2025 SE AGREGA FUNCION PARA VALIDAR LAS FECHAS DE NACIMIENTO VS LA DEL RFC               --ARH 20250224
 PROCEDURE PROCESO_REGISTRO(nIdProcMasivo NUMBER, cTipoProceso VARCHAR2);
 PROCEDURE ACTUALIZA_STATUS(nIdProcMasivo NUMBER, cStsRegProceso VARCHAR2);
 PROCEDURE EMISION(nIdProcMasivo NUMBER);
@@ -90,6 +91,8 @@ PROCEDURE INSERTA_COBRANZA_MASIVA( nCodCia            NUMBER
                                  , cIndAsegurado       VARCHAR2
                                  , cCodUsuario         VARCHAR2 );
 FUNCTION ACTUALIZA_REGIS_PROCESOMASIVO(cCargaRegistro VARCHAR2)RETURN NUMBER;
+
+FUNCTION VALIDA_FECHANAC_NTRIBUTARIO(dFecNacimiento DATE ,cNumTributario VARCHAR2) RETURN VARCHAR2;
 
 END OC_PROCESOS_MASIVOS;
 /
@@ -12478,6 +12481,57 @@ BEGIN
    END IF;
    RETURN (cConteoRegCarga);
 END ACTUALIZA_REGIS_PROCESOMASIVO;
+--
+FUNCTION VALIDA_FECHANAC_NTRIBUTARIO(dFecNacimiento DATE ,cNumTributario VARCHAR2) RETURN VARCHAR2 IS
+ 
+nFecNacDia NUMBER;
+nFecNacMes NUMBER;
+nFecNacAño NUMBER;
+nFecrfcDia NUMBER;
+nFecrfcMes NUMBER;
+nFecrfcAño NUMBER;
+cFecTributaria VARCHAR2(10);
+cDatoFecha VARCHAR2(2):='N';
+
+BEGIN
+
+   SELECT TO_CHAR(dFecNacimiento,'DD')
+   INTO nFecNacDia
+   FROM DUAL;
+   
+   SELECT TO_CHAR(dFecNacimiento,'MM')
+   INTO nFecNacMes
+   FROM DUAL;
+   
+   SELECT TO_CHAR(dFecNacimiento,'YY')
+   INTO nFecNacAño
+   FROM DUAL;
+   
+   SELECT REGEXP_SUBSTR(cNumTributario,'[0-9]{6}') 
+   INTO  cFecTributaria
+   FROM DUAL;
+   
+   SELECT SUBSTR(cFecTributaria,1,2)
+   INTO  nFecrfcAño
+   FROM DUAL;
+   
+   SELECT SUBSTR(cFecTributaria,3,2)
+   INTO  nFecrfcMes
+   FROM DUAL;
+   
+   SELECT SUBSTR(cFecTributaria,5,2)
+   INTO  nFecrfcDia
+   FROM DUAL;
+
+   IF nFecNacDia = nFecrfcDia THEN
+      IF nFecNacMes = nFecrfcMes THEN
+         IF nFecNacAño = nFecrfcAño THEN
+            cDatoFecha := 'S';
+         END IF;
+      END IF;
+   END IF;
+   RETURN (cDatoFecha);
+END VALIDA_FECHANAC_NTRIBUTARIO;
 
 END OC_PROCESOS_MASIVOS;
 /
