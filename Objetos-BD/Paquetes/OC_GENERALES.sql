@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_GENERALES IS
+create or replace PACKAGE  SICAS_OC.OC_GENERALES IS
 --
 
     FUNCTION FUN_NOMBRECLIENTE (p_CodCliente IN NUMBER) RETURN VARCHAR2;
@@ -55,14 +55,16 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_GENERALES IS
 
    --Funcion para convertir texto a base64 con codificación UTF8
     FUNCTION CONVERSION_B64_UTF8(TEXTO IN VARCHAR2) RETURN VARCHAR2;
-    
+
     FUNCTION CONVERTIR_TEXTO_UTF8(cTexto VARCHAR2) RETURN VARCHAR2;
 
-END OC_GENERALES;
+    --Funcion para validar CLABE BANCARIA
+    FUNCTION valida_clabe(cClabe IN VARCHAR2) RETURN BOOLEAN;
 
+END OC_GENERALES;
 /
 
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_GENERALES IS
+create or replace PACKAGE BODY  SICAS_OC.OC_GENERALES IS
 
 FUNCTION fun_nombrecliente(p_codcliente IN NUMBER) RETURN VARCHAR2 IS
 cnombrecliente  VARCHAR2(2000);
@@ -451,7 +453,7 @@ BEGIN
         WHEN NO_DATA_FOUND THEN 
             RAISE_APPLICATION_ERROR (-20100,'No Existe Usuario: '||p_CodUsuario );
         WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR (-20100,'Error Al Obtener El Codigo De La Compa�ia Para El Usuario: '||p_CodUsuario);
+            RAISE_APPLICATION_ERROR (-20100,'Error Al Obtener El Codigo De La Compa¿ia Para El Usuario: '||p_CodUsuario);
     END;
     RETURN nCodCia;
 END CODCIA_USUARIO;
@@ -530,10 +532,55 @@ END CODCIA_USUARIO;
    RETURN UTL_ENCODE.TEXT_ENCODE(TEXTO,'AL32UTF8',UTL_ENCODE.BASE64);
    END CONVERSION_B64_UTF8;
     --     
-    
+
    FUNCTION CONVERTIR_TEXTO_UTF8(cTexto VARCHAR2) RETURN VARCHAR2 IS
    BEGIN
       RETURN UTL_RAW.CAST_TO_VARCHAR2(UTL_I18N.STRING_TO_RAW(cTexto, 'AL32UTF8'));
    END CONVERTIR_TEXTO_UTF8;    
+   --
    
+       FUNCTION valida_clabe(cClabe IN VARCHAR2) RETURN BOOLEAN IS
+        nTotal                NUMBER := 0;
+        nDigito               NUMBER;
+        nPeso                 NUMBER;
+        nModulo               NUMBER;
+        nVerificadorCalculado NUMBER;
+        nVerificadorReal      NUMBER;
+      BEGIN
+        -- Validar longitud
+       IF LENGTH(TRIM(TO_CHAR(cClabe))) != 18 THEN
+          RETURN FALSE;
+       END IF;
+       
+        FOR i IN 1 .. LENGTH(cClabe) LOOP
+            IF SUBSTR(cClabe, i, 1) NOT BETWEEN '0' AND '9' THEN
+                RETURN FALSE;
+            END IF;
+        END LOOP;
+
+        -- Calcular el dígito verificador
+        FOR i IN 1 .. 17 LOOP
+          nDigito := TO_NUMBER(SUBSTR(cClabe, i, 1));
+          DBMS_OUTPUT.PUT_LINE('nDigito:'||nDigito);
+          CASE MOD(i - 1, 3)
+            WHEN 0 THEN nPeso := 3;
+            WHEN 1 THEN nPeso := 7;
+            WHEN 2 THEN nPeso := 1;
+          END CASE;
+          nTotal := nTotal + MOD(nDigito * nPeso, 10);
+        END LOOP;
+        
+        nModulo := MOD(10 - MOD(nTotal, 10), 10);
+        nVerificadorCalculado := nModulo;
+        
+        -- Obtener el dígito verificador real
+        nVerificadorReal := TO_NUMBER(SUBSTR(cClabe, 18, 1));
+        RETURN nVerificadorCalculado = nVerificadorReal;
+        
+      EXCEPTION
+        WHEN OTHERS THEN
+          RETURN FALSE;
+      END valida_clabe;
+
 END OC_GENERALES;
+/
