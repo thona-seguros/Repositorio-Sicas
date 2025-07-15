@@ -1,0 +1,70 @@
+-- ============================================================================
+--  TRIGGER: ARCHIVOS_POLIZAS_HIS
+-- ============================================================================
+--  Descripción :   Inserta un registro en la tabla ARCHIVOS_POLIZAS_AUD
+--                  cada vez que se realiza una inserción o cambio en algun
+--                  registro de la tabla ARCHIVOS_POLIZAS.
+-- ============================================================================
+
+CREATE OR REPLACE TRIGGER SICAS_OC.ARCHIVOS_POLIZAS_HIS
+    AFTER INSERT OR UPDATE 
+    ON SICAS_OC.ARCHIVOS_POLIZAS
+    FOR EACH ROW
+DECLARE
+    ACCION VARCHAR2(20);
+    VERS_ACT NUMBER;
+
+    ARCHIVO_BLOB BLOB := NULL;
+    NOMBRE_ARCHIVO  VARCHAR2(255);
+    FILE_MIME_TYPE  VARCHAR2(255);
+    FILE_CHARSET    VARCHAR2(255);
+    COMENTARIOS     VARCHAR2(4000);
+
+BEGIN
+
+   COMENTARIOS := :NEW.COMENTARIOS;
+
+    IF INSERTING THEN
+        ACCION := 'INGRESO DE REGISTRO';
+        VERS_ACT := 1;
+    END IF;
+
+    IF UPDATING THEN
+
+        SELECT NVL(MAX(VERSION)+1,1)
+        INTO VERS_ACT
+        FROM ARCHIVOS_POLIZAS_AUD
+        WHERE IDARCHIVO_POLIZA = :NEW.ID
+        AND IDPOLIZA = :NEW.IDPOLIZA;
+
+        IF :OLD.ESTATUS_BORRADO = 'N' AND :NEW.ESTATUS_BORRADO = 'S' THEN
+            ACCION := 'BORRADO';
+        ELSIF :OLD.ESTATUS_BORRADO = 'S' AND :NEW.ESTATUS_BORRADO = 'N' THEN
+            ACCION := 'RESTAURADO';
+        ELSIF dbms_lob.compare(:OLD.ARCHIVO_BLOB, :NEW.ARCHIVO_BLOB) <> 0 THEN
+            ACCION := 'ACT. DE ARCHIVO';
+            ARCHIVO_BLOB := :OLD.ARCHIVO_BLOB;
+            FILE_MIME_TYPE := :OLD.FILE_MIME_TYPE;
+            FILE_CHARSET := :OLD.FILE_CHARSET;
+            COMENTARIOS := '[Archivo anterior: '||:OLD.NOMBRE_ARCHIVO||']. '||chr(10)||COMENTARIOS;
+
+        ELSE
+            ACCION := 'ACT. DE INFORMACIÓN';
+        END IF;
+
+    END IF;
+
+    INSERT INTO SICAS_OC.ARCHIVOS_POLIZAS_AUD
+    (IDARCHIVO_POLIZA,IDPOLIZA,VERSION,ACCION,CLV_DOCUMENTO_GRUPO,CLV_DOCUMENTO,COMENTARIOS,
+    ARCHIVO_BLOB,NOMBRE_ARCHIVO,FILE_MIME_TYPE,FILE_CHARSET)
+    VALUES
+    (:NEW.ID,:NEW.IDPOLIZA,VERS_ACT,ACCION,:NEW.CLV_DOCUMENTO_GRUPO,:NEW.CLV_DOCUMENTO,COMENTARIOS,
+    ARCHIVO_BLOB,:NEW.NOMBRE_ARCHIVO,FILE_MIME_TYPE,FILE_CHARSET);
+    
+    
+END ARCHIVOS_POLIZAS_HIS;
+/
+
+-- HABILITAR TRIGGER
+ALTER TRIGGER SICAS_OC.ARCHIVOS_POLIZAS_HIS ENABLE;
+/
