@@ -1678,7 +1678,7 @@ CURSOR Cobranza_Q IS
     WHERE IdProcMasivo   = nIdProcMasivo;
 BEGIN
    FOR X IN COBRANZA_Q LOOP
-	  cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);																																 cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
+      cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);																																 cCodPlantilla  := OC_CONFIG_PLANTILLAS_PLANCOB.CODIGO_PLANTILLA(X.CodCia, X.CodEmpresa, X.IdTipoSeg, X.PlanCob, X.TipoProceso);
       cTipoSeparador := OC_PROCESOS_MASIVOS.TIPO_SEPARADOR(cCodPlantilla);
       nIdetpol          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,3,cTipoSeparador));
       cIndManejaFondos  := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,5,cTipoSeparador));
@@ -1688,7 +1688,7 @@ BEGIN
       dFecPago       	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,9,cTipoSeparador));
       cEntPago       	:= LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,cTipoSeparador));
       nMontoPago     	:= TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,11,cTipoSeparador)),'9999999.999999') ;
-	cPrufecha1  := TO_CHAR(dFecPago, 'DD');
+    cPrufecha1  := TO_CHAR(dFecPago, 'DD');
     cPrufecha2  := TO_CHAR(dFecPago, 'MM');
     cPrufecha3  := TO_CHAR(dFecPago, 'YYYY');
     cNumReferen := (cPrufecha1||cPrufecha2||cPrufecha3);
@@ -1756,7 +1756,7 @@ BEGIN
                OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','ERROR al pagar o abonar Factura');
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
             END IF;*/
-			IF nPago = 1 THEN
+            IF nPago = 1 THEN
                OC_COMPROBANTES_CONTABLES.CONTABILIZAR(X.CodCia, nIdTransaccion, 'C');
                OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'PROCE');
             ELSIF nPago = 2 THEN
@@ -1780,7 +1780,7 @@ BEGIN
             END IF;
          END IF;
       ELSE
-		BEGIN
+        BEGIN
             SELECT F.StsFact, F.IdFactura , F.Inddomiciliado
               INTO cStsFact, nIdFactura, cInddomiciliado
               FROM FACTURAS F
@@ -1797,7 +1797,7 @@ BEGIN
            WHEN NO_DATA_FOUND THEN
             OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          END;
-		IF cStsFact = 'ANU' THEN
+         IF cStsFact = 'ANU' THEN
           OC_PROCESOS_MASIVOS_LOG.INSERTA_LOG(nIdProcMasivo,'COBRANZA','20225','El recibo no puede ser aplicado debido a que está anulado');
           OC_PROCESOS_MASIVOS.ACTUALIZA_STATUS(nIdProcMasivo,'ERROR');
          ELSIF cStsFact = 'PAG'THEN
@@ -10336,6 +10336,7 @@ nIndValida          VARCHAR2(1) := 'N';
 nMtoBruto           NUMBER(28,2);
 nMtoImpto           NUMBER(28,2);
 nMtoIVACalc         NUMBER(28,2);
+NMONTOAPAGAR        NUMBER(28,2);   --MLJS 15/07/2025
 nPosInicio          NUMBER;
 nPosFin             NUMBER;
 cSeparador          VARCHAR2(1) := '|';
@@ -10495,7 +10496,18 @@ cband:='dos';
                 nCodAsegurado    := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,4,cSeparador)));
 
                 nMtoDeducible     := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,17,cSeparador));
-
+                
+             -- MLJS 15/07/2025 VALIDACIONES DE RESERVA
+             IF OC_PROCESOS_MAS_SINI.FN_VALIDARESERVA_SOL(nIdSiniestro) = 'S' THEN
+                cMsjError := 'El siniestro '||nIdSiniestro||' tiene reservas en SOLICITUD. Favor de validar la información.';
+                RAISE_APPLICATION_ERROR(-20225,'El Siniestro '||nIdSiniestro||'  tiene reservas en SOLICITUD. Favor de validar la información.');
+             END IF;
+             
+             IF OC_PROCESOS_MAS_SINI.FN_VALIDARESERVA_EMI(nIdSiniestro) = 'S' THEN
+                cMsjError := 'El siniestro '||nIdSiniestro||' tiene reservas no contabilizadas. Favor de validar la información.';
+                RAISE_APPLICATION_ERROR(-20225,'El siniestro '||nIdSiniestro||' tiene reservas no contabilizadas. Favor de validar la información.');
+             END IF;  
+             -- MLJS 15/07/2025 VALIDACIONES DE RESERVA
                 IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(X.CodCia, nIdPoliza, nIDetPol, nCodAsegurado) = 'S' THEN
                     --COLECTIVO
                     BEGIN
@@ -10594,6 +10606,8 @@ cband:='tres';
                                                                 nMtoPagadoMoneda, nMtoPagadoLocal);
                     END IF;
                 END IF;
+                
+                
                 IF nSaldoRvaMoneda <= 0 THEN
                    cMsjError := 'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la información.';
                    RAISE_APPLICATION_ERROR(-20225,'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la información.');
@@ -10601,6 +10615,12 @@ cband:='tres';
                 IF nMtoDeducible > nMtoDedPol THEN
                     cMsjError := 'Deducible Cargado Es Mayor Al Deducible De La Poliza.';
                     RAISE_APPLICATION_ERROR(-20225,'Deducible Cargado Es Mayor Al Deducible De La Poliza.');
+                END IF;
+                
+                NMONTOAPAGAR          := TRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,22,cSeparador));
+                IF NMONTOAPAGAR > nSaldoRvaMoneda THEN
+                   cMsjError    := 'El Monto a Pagar es mayor a la Reserva del siniestro '||nIdSiniestro||'. Favor de validar la información.';
+                   RAISE_APPLICATION_ERROR(-20225,'El Monto a Pagar es mayor a la Reserva del siniestro '||nIdSiniestro||'. Favor de validar la información.');
                 END IF;
 
                 cRFCProv          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,cSeparador));
@@ -12483,7 +12503,7 @@ BEGIN
 END ACTUALIZA_REGIS_PROCESOMASIVO;
 --
 FUNCTION VALIDA_FECHANAC_NTRIBUTARIO(dFecNacimiento DATE ,cNumTributario VARCHAR2) RETURN VARCHAR2 IS
- 
+
 nFecNacDia NUMBER;
 nFecNacMes NUMBER;
 nFecNacAño NUMBER;
@@ -12498,27 +12518,27 @@ BEGIN
    SELECT TO_CHAR(dFecNacimiento,'DD')
    INTO nFecNacDia
    FROM DUAL;
-   
+
    SELECT TO_CHAR(dFecNacimiento,'MM')
    INTO nFecNacMes
    FROM DUAL;
-   
+
    SELECT TO_CHAR(dFecNacimiento,'YY')
    INTO nFecNacAño
    FROM DUAL;
-   
+
    SELECT REGEXP_SUBSTR(cNumTributario,'[0-9]{6}') 
    INTO  cFecTributaria
    FROM DUAL;
-   
+
    SELECT SUBSTR(cFecTributaria,1,2)
    INTO  nFecrfcAño
    FROM DUAL;
-   
+
    SELECT SUBSTR(cFecTributaria,3,2)
    INTO  nFecrfcMes
    FROM DUAL;
-   
+
    SELECT SUBSTR(cFecTributaria,5,2)
    INTO  nFecrfcDia
    FROM DUAL;
