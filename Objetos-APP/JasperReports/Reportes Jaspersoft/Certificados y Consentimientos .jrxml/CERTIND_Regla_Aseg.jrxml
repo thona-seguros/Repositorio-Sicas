@@ -1,0 +1,1495 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="CERTIND_Regla" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="374774ca-fcac-4fdf-a687-96636a76ad84">
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="DataSource SICASPRD PROD"/>
+	<property name="ireport.jasperserver.url" value="http://150.136.137.171:8081/jasperserver/"/>
+	<property name="ireport.jasperserver.user" value="jasperadmin"/>
+	<property name="ireport.jasperserver.report.resource" value="/reports/Certificado_Ind_Regla_Aseg_v6_files/main_jrxml"/>
+	<property name="ireport.jasperserver.reportUnit" value="/reports/Certificado_Ind_Regla_Aseg_v6"/>
+	<style name="Style1"/>
+	<style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#06559B"/>
+			<topPen lineWidth="0.5" lineColor="#06559B"/>
+			<leftPen lineWidth="0.5" lineColor="#06559B"/>
+			<bottomPen lineWidth="0.5" lineColor="#06559B"/>
+			<rightPen lineWidth="0.5" lineColor="#06559B"/>
+		</box>
+	</style>
+	<style name="Table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#06559B"/>
+			<topPen lineWidth="0.5" lineColor="#06559B"/>
+			<leftPen lineWidth="0.5" lineColor="#06559B"/>
+			<bottomPen lineWidth="0.5" lineColor="#06559B"/>
+			<rightPen lineWidth="0.5" lineColor="#06559B"/>
+		</box>
+	</style>
+	<style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#06559B"/>
+			<topPen lineWidth="0.5" lineColor="#06559B"/>
+			<leftPen lineWidth="0.5" lineColor="#06559B"/>
+			<bottomPen lineWidth="0.5" lineColor="#06559B"/>
+			<rightPen lineWidth="0.5" lineColor="#06559B"/>
+		</box>
+	</style>
+	<subDataset name="ASEGURADOS" uuid="9eb30b86-7e10-442d-b5c7-733ffcdee41d">
+		<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="DataSource SICASPRD PROD"/>
+		<parameter name="IDPOLIZA" class="java.lang.String"/>
+		<parameter name="CODCIA" class="java.lang.String"/>
+		<parameter name="IDETPOL" class="java.lang.String"/>
+		<parameter name="COD_ASEGURADO" class="java.lang.String"/>
+		<queryString language="SQL">
+			<![CDATA[SELECT CBA.CODCIA, CBA.COD_ASEGURADO, CBA.CODEMPRESA, CBA.IDPOLIZA, CBA.IDETPOL, CBA.CODCOBERT, CBA.PLANCOB, CBA.IDTIPOSEG, 
+RSA.TEXTO SUMAASEG_MONEDA,
+RSA.TEXTO AS SUMAASEG_LOCAL,
+CBA.PRIMA_MONEDA, CBA.PRIMA_LOCAL, DEDUCIBLE_LOCAL,
+OC_COBERTURAS_DE_SEGUROS.DESCRIPCION_COBERTURA(CBA.CODCIA, CBA.CODEMPRESA, CBA.IDTIPOSEG, CBA.PLANCOB, CBA.CODCOBERT) NOMBRECOBERTURA, ORDENIMPRESION
+FROM COBERT_ACT_ASEG CBA
+INNER JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCOBERT = CBA.CODCOBERT
+INNER JOIN REGLA_SA_COBER RSA ON RSA.CODCOBERT= CBA.CODCOBERT AND RSA.IDPOLIZA = CBA.IDPOLIZA AND RSA.IDETPOL = CBA.IDETPOL
+AND CS.PLANCOB = CBA.PLANCOB
+AND CS.IDTIPOSEG = CBA.IDTIPOSEG
+AND CS.CODEMPRESA = CBA.CODEMPRESA
+AND CS.CODCIA = CBA.CODCIA
+AND CBA.CODCIA = $P{CODCIA} 
+AND CBA.IDPOLIZA = $P{IDPOLIZA} 
+AND CBA.IDETPOL = $P{IDETPOL} 
+AND CBA.COD_ASEGURADO = $P{COD_ASEGURADO} 
+UNION
+SELECT CBA.CODCIA, CBA.COD_ASEGURADO, CBA.CODEMPRESA, CBA.IDPOLIZA, CBA.IDETPOL, CBA.CODCOBERT, CBA.PLANCOB, CBA.IDTIPOSEG, 
+RSA.TEXTO SUMAASEG_MONEDA,
+RSA.TEXTO AS SUMAASEG_LOCAL,
+CBA.PRIMA_MONEDA, CBA.PRIMA_LOCAL, DEDUCIBLE_LOCAL,
+OC_COBERTURAS_DE_SEGUROS.DESCRIPCION_COBERTURA(CBA.CODCIA, CBA.CODEMPRESA, CBA.IDTIPOSEG, CBA.PLANCOB, CBA.CODCOBERT) NOMBRECOBERTURA, ORDENIMPRESION
+FROM COBERT_ACT CBA 
+INNER JOIN COBERTURAS_DE_SEGUROS CS ON CS.CODCOBERT = CBA.CODCOBERT
+INNER JOIN REGLA_SA_COBER RSA ON RSA.CODCOBERT= CBA.CODCOBERT AND RSA.IDPOLIZA = CBA.IDPOLIZA AND RSA.IDETPOL = CBA.IDETPOL
+AND CS.PLANCOB = CBA.PLANCOB
+AND CS.IDTIPOSEG = CBA.IDTIPOSEG
+AND CS.CODEMPRESA = CBA.CODEMPRESA
+AND CS.CODCIA = CBA.CODCIA
+AND CBA.CODCIA = $P{CODCIA} 
+AND CBA.IDPOLIZA = $P{IDPOLIZA} 
+AND CBA.IDETPOL = $P{IDETPOL} 
+AND CBA.COD_ASEGURADO = $P{COD_ASEGURADO} 
+ORDER BY ORDENIMPRESION]]>
+		</queryString>
+		<field name="CODCIA" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="CODCIA"/>
+			<property name="com.jaspersoft.studio.field.label" value="CODCIA"/>
+		</field>
+		<field name="COD_ASEGURADO" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="COD_ASEGURADO"/>
+			<property name="com.jaspersoft.studio.field.label" value="COD_ASEGURADO"/>
+		</field>
+		<field name="CODEMPRESA" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="CODEMPRESA"/>
+			<property name="com.jaspersoft.studio.field.label" value="CODEMPRESA"/>
+		</field>
+		<field name="IDPOLIZA" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="IDPOLIZA"/>
+			<property name="com.jaspersoft.studio.field.label" value="IDPOLIZA"/>
+		</field>
+		<field name="IDETPOL" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="IDETPOL"/>
+			<property name="com.jaspersoft.studio.field.label" value="IDETPOL"/>
+		</field>
+		<field name="CODCOBERT" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="CODCOBERT"/>
+			<property name="com.jaspersoft.studio.field.label" value="CODCOBERT"/>
+		</field>
+		<field name="PLANCOB" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="PLANCOB"/>
+			<property name="com.jaspersoft.studio.field.label" value="PLANCOB"/>
+		</field>
+		<field name="IDTIPOSEG" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="IDTIPOSEG"/>
+			<property name="com.jaspersoft.studio.field.label" value="IDTIPOSEG"/>
+		</field>
+		<field name="SUMAASEG_MONEDA" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="SUMAASEG_MONEDA"/>
+			<property name="com.jaspersoft.studio.field.label" value="SUMAASEG_MONEDA"/>
+		</field>
+		<field name="SUMAASEG_LOCAL" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="SUMAASEG_LOCAL"/>
+			<property name="com.jaspersoft.studio.field.label" value="SUMAASEG_LOCAL"/>
+		</field>
+		<field name="PRIMA_MONEDA" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="PRIMA_MONEDA"/>
+			<property name="com.jaspersoft.studio.field.label" value="PRIMA_MONEDA"/>
+		</field>
+		<field name="PRIMA_LOCAL" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="PRIMA_LOCAL"/>
+			<property name="com.jaspersoft.studio.field.label" value="PRIMA_LOCAL"/>
+		</field>
+		<field name="DEDUCIBLE_LOCAL" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="DEDUCIBLE_LOCAL"/>
+			<property name="com.jaspersoft.studio.field.label" value="DEDUCIBLE_LOCAL"/>
+		</field>
+		<field name="NOMBRECOBERTURA" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="NOMBRECOBERTURA"/>
+			<property name="com.jaspersoft.studio.field.label" value="NOMBRECOBERTURA"/>
+		</field>
+		<field name="ORDENIMPRESION" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="ORDENIMPRESION"/>
+			<property name="com.jaspersoft.studio.field.label" value="ORDENIMPRESION"/>
+		</field>
+		<group name="CODCIA">
+			<groupExpression><![CDATA[$F{CODCIA}]]></groupExpression>
+		</group>
+		<group name="COD_ASEGURADO">
+			<groupExpression><![CDATA[$F{COD_ASEGURADO}]]></groupExpression>
+		</group>
+		<group name="CODEMPRESA">
+			<groupExpression><![CDATA[$F{CODEMPRESA}]]></groupExpression>
+		</group>
+		<group name="IDPOLIZA">
+			<groupExpression><![CDATA[$F{IDPOLIZA}]]></groupExpression>
+		</group>
+		<group name="IDETPOL">
+			<groupExpression><![CDATA[$F{IDETPOL}]]></groupExpression>
+		</group>
+		<group name="CODCOBERT">
+			<groupExpression><![CDATA[$F{CODCOBERT}]]></groupExpression>
+		</group>
+		<group name="PLANCOB">
+			<groupExpression><![CDATA[$F{PLANCOB}]]></groupExpression>
+		</group>
+		<group name="IDTIPOSEG">
+			<groupExpression><![CDATA[$F{IDTIPOSEG}]]></groupExpression>
+		</group>
+		<group name="SUMAASEG_MONEDA">
+			<groupExpression><![CDATA[$F{SUMAASEG_MONEDA}]]></groupExpression>
+		</group>
+		<group name="SUMAASEG_LOCAL">
+			<groupExpression><![CDATA[$F{SUMAASEG_LOCAL}]]></groupExpression>
+		</group>
+		<group name="PRIMA_MONEDA">
+			<groupExpression><![CDATA[$F{PRIMA_MONEDA}]]></groupExpression>
+		</group>
+		<group name="PRIMA_LOCAL">
+			<groupExpression><![CDATA[$F{PRIMA_LOCAL}]]></groupExpression>
+		</group>
+		<group name="DEDUCIBLE_LOCAL">
+			<groupExpression><![CDATA[$F{DEDUCIBLE_LOCAL}]]></groupExpression>
+		</group>
+		<group name="NOMBRECOBERTURA">
+			<groupExpression><![CDATA[$F{NOMBRECOBERTURA}]]></groupExpression>
+		</group>
+		<group name="ORDENIMPRESION">
+			<groupExpression><![CDATA[$F{ORDENIMPRESION}]]></groupExpression>
+		</group>
+	</subDataset>
+	<parameter name="IDPOLIZA" class="java.lang.String"/>
+	<parameter name="IDETPOLINI" class="java.lang.String"/>
+	<parameter name="IDETPOLFIN" class="java.lang.String"/>
+	<parameter name="CODASEG" class="java.lang.String"/>
+	<queryString language="SQL">
+		<![CDATA[--CERTIFICADO
+SELECT
+    PO.CODAGRUPADOR,
+    TO_CHAR(PN.FECINGRESO,'DD/MM/YYYY') AS FECINGRESO,
+    (PO.FECFINVIG - PO.FECINIVIG) DIAS_VIGENCIA,
+    DECODE(PO.INDFACTURAPOL,'N',
+           OC_ASEGURADO.NOMBRE_ASEGURADO(DP.CODCIA, DP.CODEMPRESA, DP.COD_ASEGURADO),
+           OC_CLIENTES.NOMBRE_CLIENTE(PO.CODCLIENTE)) NOM_CLIENTE, 
+    PN.NUM_DOC_IDENTIFICACION,
+    PO.HORAVIGINI,
+    PO.HORAVIGFIN,
+    OC_ASEGURADO.DIRECCION_ASEGURADO(DP.CODCIA, DP.CODEMPRESA, DP.COD_ASEGURADO) DIR_CLIENTE,
+    PO.CODCIA,
+    PO.CODEMPRESA,
+    LPAD(PO.CODCLIENTE,10,'0') CODCLIENTE, 
+    PO.IDPOLIZA,
+    TO_CHAR(PO.FECINIVIG,'DD/MM/YYYY') AS FECINIVIG,
+    TO_CHAR(PO.FECFINVIG,'DD/MM/YYYY') AS FECFINVIG,
+    PO.CODPLANPAGO,
+    PO.NUMPOLUNICO,
+     TO_CHAR(PO.FECEMISION,'DD/MM/YYYY') AS FECEMISION,
+    OC_MONEDA.MONEDA_ALTERNA(PO.COD_MONEDA) MONEDA,
+    PO.NUMPOLREF,
+    PN.TIPO_ID_TRIBUTARIA,
+    --PN.NUM_TRIBUTARIO,
+    OC_CLIENTES.NUM_DOC_IDENTIFICACION(PO.CODCLIENTE) AS NUM_TRIBUTARIO,
+    OC_REGISTRO_TIPSEG_AUTORIDAD.NUMERO_AUTORIZACION(DP.IDTIPOSEG, 1,1, PO.FECINIVIG, PO.FECFINVIG) AS NUMERO_AUTORIZACION,
+    TO_CHAR(PN.FECINGRESO,'DD/MM/YYYY') AS FECINGRESO,
+    OC_REGISTRO_TIPSEG_AUTORIDAD.NUMERO_AUTORIZACION(DP.IDTIPOSEG, 1,1, PO.FECINIVIG, PO.FECFINVIG) AS NUMERO_AUTORIZACION,
+    DP.IDETPOL,
+    ASE.COD_ASEGURADO,
+    ASEG.CAMPO3,
+    TO_CHAR(PN.FECINGRESO,'DD/MM/YYYY') AS FECINGRESO,              
+    OC_ASEGURADO.EDAD_ASEGURADO(DP.CODCIA, DP.CODEMPRESA, ASEG.COD_ASEGURADO, TRUNC(SYSDATE)) EDAD,
+    TO_CHAR(PN.FECNACIMIENTO,'DD/MM/YYYY') AS FECNACIMIENTO,
+    PN.SEXO, 
+    OC_PERSONA_NATURAL_JURIDICA.NOMBRE_PERSONA(ASEG.COD_ASEGURADO) NOMASEG,
+    DP.CODPLANPAGO,
+    DP.FECINIVIG,
+    DP.FECFINVIG, 
+    DP.IDTIPOSEG, 
+    OC_TIPOS_DE_SEGUROS.TIPO_DE_SEGURO(DP.CODCIA, DP.CODEMPRESA, DP.IDTIPOSEG) TIPO_SEGURO,
+    DP.PLANCOB,
+    DP.TASA_CAMBIO,
+    DP.PORCCOMIS, 
+    ASEG.IDENDOSO,
+    CLAUSULAS.DESC_CLAU,
+    OC_VALORES_DE_LISTAS.BUSCA_LVALOR('CODRAMOS', TS.CODTIPOPLAN) AS RAMO, --AGREGADO
+       OC_VALORES_DE_LISTAS.BUSCA_LVALOR('SUBRAMOS', PC.CODTIPOPLAN) AS SUB_RAMO, --AGREGADO
+       AG.COD_AGENTE AS AGENTE, --AGREGADO
+       PG.DESCPLAN AS FORMA_PAGO, --AGREGADO
+       TO_CHAR(PO.FECEMISION,'DD/MM/YYYY') AS FECHA_ALTA, --AGREGADO
+       TO_CHAR(OC_REGISTRO_TIPSEG_AUTORIDAD.FECHA_AUTORIZACION(DP.IDTIPOSEG, 1,1, PO.FECINIVIG, PO.FECFINVIG), 'DD') || ' de ' || 
+	    INITCAP(RTRIM(TO_CHAR(OC_REGISTRO_TIPSEG_AUTORIDAD.FECHA_AUTORIZACION(DP.IDTIPOSEG, 1,1, PO.FECINIVIG, PO.FECFINVIG), 'Month', 'NLS_DATE_LANGUAGE=SPANISH'))) || ' de ' || 
+		TO_CHAR(OC_REGISTRO_TIPSEG_AUTORIDAD.FECHA_AUTORIZACION(DP.IDTIPOSEG, 1,1, PO.FECINIVIG, PO.FECFINVIG), 'YYYY') AS FECHA_AUTORIZACION,
+		CASE WHEN TS.CODTIPOPLAN = '010' THEN ' ' ELSE 'THONA SEGUROS, S. A. de C. V., cubre al asegurado citado y lo protege de acuerdo a las condiciones generales y endosos de este contrato, conforme las coberturas
+enumeradas y sumas aseguradas respectivas, siempre que el accidente se manifieste dentro de la vigencia de la póliza y no esté excluido en las estipulaciones del contrato.'
+END AS LEYENDA_AP,   
+    (SELECT OC_ADICIONALES_EMPRESA.TEXTO_PIE_PAGINA(1) 
+    FROM DUAL) PIE_PAGINA
+FROM ASEGURADO_CERTIFICADO ASEG
+INNER JOIN ASEGURADO ASE ON ASEG.COD_ASEGURADO = ASE.COD_ASEGURADO
+INNER JOIN DETALLE_POLIZA DP ON ASEG.IDPOLIZA = DP.IDPOLIZA 
+    AND ASEG.IDETPOL = DP.IDETPOL 
+    AND ASEG.CODCIA = DP.CODCIA
+INNER JOIN TIPOS_DE_SEGUROS TS ON DP.IDTIPOSEG = TS.IDTIPOSEG --AGREGADO
+INNER JOIN PLAN_COBERTURAS PC ON PC.IDTIPOSEG = DP.IDTIPOSEG AND PC.PLANCOB = DP.PLANCOB
+INNER JOIN AGENTE_POLIZA AG ON DP.IDPOLIZA = AG.IDPOLIZA --AGREGADO
+INNER JOIN AGENTES_DETALLES_POLIZAS ADP ON DP.IDPOLIZA = ADP.IDPOLIZA --AGREGADO
+    AND AG.COD_AGENTE = ADP.COD_AGENTE AND ASEG.IDETPOL = ADP.IDETPOL 
+INNER JOIN POLIZAS PO ON DP.IDPOLIZA = PO.IDPOLIZA 
+    AND DP.CODCIA = PO.CODCIA
+INNER JOIN PLAN_DE_PAGOS PG ON PO.CODPLANPAGO = PG.CODPLANPAGO --AGREGADO
+INNER JOIN PERSONA_NATURAL_JURIDICA PN ON ASE.TIPO_DOC_IDENTIFICACION = PN.TIPO_DOC_IDENTIFICACION 
+    AND ASE.NUM_DOC_IDENTIFICACION = PN.NUM_DOC_IDENTIFICACION
+LEFT JOIN (
+    SELECT MAX(DescClau) DESC_CLAU
+    FROM (
+        SELECT DISTINCT SYS.STRAGG(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('TIPCLAUS', CD.Tipo_Clausula) || ' - ') DescClau
+        FROM CLAUSULAS_DETALLE CD
+        JOIN POLIZAS PO ON CD.IdPoliza = PO.IdPoliza
+        WHERE PO.CodCia = 1 AND PO.IdPoliza = $P{IDPOLIZA} 
+        UNION
+        SELECT DISTINCT SYS.STRAGG(OC_VALORES_DE_LISTAS.BUSCA_LVALOR('TIPCLAUS', CD.Tipo_Clausula) || ' - ') DescClau
+        FROM CLAUSULAS_POLIZA CD
+        JOIN POLIZAS PO ON CD.IdPoliza = PO.IdPoliza
+        WHERE PO.CodCia = 1 AND PO.IdPoliza = $P{IDPOLIZA}      
+    )
+) CLAUSULAS ON 1 = 1
+WHERE  DP.IDetPol >= $P{IDETPOLINI} 
+  AND DP.IDetPol <= $P{IDETPOLFIN} 
+  AND PO.IDPOLIZA = $P{IDPOLIZA} 
+  AND ADP.IND_PRINCIPAL = 'S'
+  AND ASE.COD_ASEGURADO = $P{CODASEG} 
+  ORDER BY DP.IDETPOL, ASE.COD_ASEGURADO]]>
+	</queryString>
+	<field name="CODAGRUPADOR" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CODAGRUPADOR"/>
+		<property name="com.jaspersoft.studio.field.label" value="CODAGRUPADOR"/>
+	</field>
+	<field name="FECINGRESO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FECINGRESO"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECINGRESO"/>
+	</field>
+	<field name="DIAS_VIGENCIA" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="DIAS_VIGENCIA"/>
+		<property name="com.jaspersoft.studio.field.label" value="DIAS_VIGENCIA"/>
+	</field>
+	<field name="NOM_CLIENTE" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NOM_CLIENTE"/>
+		<property name="com.jaspersoft.studio.field.label" value="NOM_CLIENTE"/>
+	</field>
+	<field name="NUM_DOC_IDENTIFICACION" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NUM_DOC_IDENTIFICACION"/>
+		<property name="com.jaspersoft.studio.field.label" value="NUM_DOC_IDENTIFICACION"/>
+	</field>
+	<field name="HORAVIGINI" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="HORAVIGINI"/>
+		<property name="com.jaspersoft.studio.field.label" value="HORAVIGINI"/>
+	</field>
+	<field name="HORAVIGFIN" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="HORAVIGFIN"/>
+		<property name="com.jaspersoft.studio.field.label" value="HORAVIGFIN"/>
+	</field>
+	<field name="DIR_CLIENTE" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="DIR_CLIENTE"/>
+		<property name="com.jaspersoft.studio.field.label" value="DIR_CLIENTE"/>
+	</field>
+	<field name="CODCIA" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="CODCIA"/>
+		<property name="com.jaspersoft.studio.field.label" value="CODCIA"/>
+	</field>
+	<field name="CODEMPRESA" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="CODEMPRESA"/>
+		<property name="com.jaspersoft.studio.field.label" value="CODEMPRESA"/>
+	</field>
+	<field name="CODCLIENTE" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CODCLIENTE"/>
+		<property name="com.jaspersoft.studio.field.label" value="CODCLIENTE"/>
+	</field>
+	<field name="IDPOLIZA" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="IDPOLIZA"/>
+		<property name="com.jaspersoft.studio.field.label" value="IDPOLIZA"/>
+	</field>
+	<field name="FECINIVIG" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FECINIVIG"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECINIVIG"/>
+	</field>
+	<field name="FECFINVIG" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FECFINVIG"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECFINVIG"/>
+	</field>
+	<field name="CODPLANPAGO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CODPLANPAGO"/>
+		<property name="com.jaspersoft.studio.field.label" value="CODPLANPAGO"/>
+	</field>
+	<field name="NUMPOLUNICO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NUMPOLUNICO"/>
+		<property name="com.jaspersoft.studio.field.label" value="NUMPOLUNICO"/>
+	</field>
+	<field name="FECEMISION" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FECEMISION"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECEMISION"/>
+	</field>
+	<field name="MONEDA" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="MONEDA"/>
+		<property name="com.jaspersoft.studio.field.label" value="MONEDA"/>
+	</field>
+	<field name="NUMPOLREF" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NUMPOLREF"/>
+		<property name="com.jaspersoft.studio.field.label" value="NUMPOLREF"/>
+	</field>
+	<field name="TIPO_ID_TRIBUTARIA" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="TIPO_ID_TRIBUTARIA"/>
+		<property name="com.jaspersoft.studio.field.label" value="TIPO_ID_TRIBUTARIA"/>
+	</field>
+	<field name="NUM_TRIBUTARIO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NUM_TRIBUTARIO"/>
+		<property name="com.jaspersoft.studio.field.label" value="NUM_TRIBUTARIO"/>
+	</field>
+	<field name="NUMERO_AUTORIZACION" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NUMERO_AUTORIZACION"/>
+		<property name="com.jaspersoft.studio.field.label" value="NUMERO_AUTORIZACION"/>
+	</field>
+	<field name="COLUMN_23" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FECINGRESO"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECINGRESO"/>
+	</field>
+	<field name="COLUMN_24" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NUMERO_AUTORIZACION"/>
+		<property name="com.jaspersoft.studio.field.label" value="NUMERO_AUTORIZACION"/>
+	</field>
+	<field name="IDETPOL" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="IDETPOL"/>
+		<property name="com.jaspersoft.studio.field.label" value="IDETPOL"/>
+	</field>
+	<field name="COD_ASEGURADO" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="COD_ASEGURADO"/>
+		<property name="com.jaspersoft.studio.field.label" value="COD_ASEGURADO"/>
+	</field>
+	<field name="CAMPO3" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CAMPO3"/>
+		<property name="com.jaspersoft.studio.field.label" value="CAMPO3"/>
+	</field>
+	<field name="COLUMN_28" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FECINGRESO"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECINGRESO"/>
+	</field>
+	<field name="EDAD" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="EDAD"/>
+		<property name="com.jaspersoft.studio.field.label" value="EDAD"/>
+	</field>
+	<field name="FECNACIMIENTO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FECNACIMIENTO"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECNACIMIENTO"/>
+	</field>
+	<field name="SEXO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="SEXO"/>
+		<property name="com.jaspersoft.studio.field.label" value="SEXO"/>
+	</field>
+	<field name="NOMASEG" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NOMASEG"/>
+		<property name="com.jaspersoft.studio.field.label" value="NOMASEG"/>
+	</field>
+	<field name="COLUMN_33" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CODPLANPAGO"/>
+		<property name="com.jaspersoft.studio.field.label" value="CODPLANPAGO"/>
+	</field>
+	<field name="COLUMN_34" class="java.sql.Timestamp">
+		<property name="com.jaspersoft.studio.field.name" value="FECINIVIG"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECINIVIG"/>
+	</field>
+	<field name="COLUMN_35" class="java.sql.Timestamp">
+		<property name="com.jaspersoft.studio.field.name" value="FECFINVIG"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECFINVIG"/>
+	</field>
+	<field name="IDTIPOSEG" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="IDTIPOSEG"/>
+		<property name="com.jaspersoft.studio.field.label" value="IDTIPOSEG"/>
+	</field>
+	<field name="TIPO_SEGURO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="TIPO_SEGURO"/>
+		<property name="com.jaspersoft.studio.field.label" value="TIPO_SEGURO"/>
+	</field>
+	<field name="PLANCOB" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="PLANCOB"/>
+		<property name="com.jaspersoft.studio.field.label" value="PLANCOB"/>
+	</field>
+	<field name="TASA_CAMBIO" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="TASA_CAMBIO"/>
+		<property name="com.jaspersoft.studio.field.label" value="TASA_CAMBIO"/>
+	</field>
+	<field name="PORCCOMIS" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="PORCCOMIS"/>
+		<property name="com.jaspersoft.studio.field.label" value="PORCCOMIS"/>
+	</field>
+	<field name="IDENDOSO" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="IDENDOSO"/>
+		<property name="com.jaspersoft.studio.field.label" value="IDENDOSO"/>
+	</field>
+	<field name="DESC_CLAU" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="DESC_CLAU"/>
+		<property name="com.jaspersoft.studio.field.label" value="DESC_CLAU"/>
+	</field>
+	<field name="RAMO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="RAMO"/>
+		<property name="com.jaspersoft.studio.field.label" value="RAMO"/>
+	</field>
+	<field name="SUB_RAMO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="SUB_RAMO"/>
+		<property name="com.jaspersoft.studio.field.label" value="SUB_RAMO"/>
+	</field>
+	<field name="AGENTE" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="AGENTE"/>
+		<property name="com.jaspersoft.studio.field.label" value="AGENTE"/>
+	</field>
+	<field name="FORMA_PAGO" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FORMA_PAGO"/>
+		<property name="com.jaspersoft.studio.field.label" value="FORMA_PAGO"/>
+	</field>
+	<field name="FECHA_ALTA" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FECHA_ALTA"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECHA_ALTA"/>
+	</field>
+	<field name="FECHA_AUTORIZACION" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="FECHA_AUTORIZACION"/>
+		<property name="com.jaspersoft.studio.field.label" value="FECHA_AUTORIZACION"/>
+	</field>
+	<field name="LEYENDA_AP" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="LEYENDA_AP"/>
+		<property name="com.jaspersoft.studio.field.label" value="LEYENDA_AP"/>
+	</field>
+	<field name="PIE_PAGINA" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="PIE_PAGINA"/>
+		<property name="com.jaspersoft.studio.field.label" value="PIE_PAGINA"/>
+	</field>
+	<group name="CODAGRUPADOR">
+		<groupExpression><![CDATA[$F{CODAGRUPADOR}]]></groupExpression>
+	</group>
+	<group name="FECINGRESO">
+		<groupExpression><![CDATA[$F{FECINGRESO}]]></groupExpression>
+	</group>
+	<group name="DIAS_VIGENCIA">
+		<groupExpression><![CDATA[$F{DIAS_VIGENCIA}]]></groupExpression>
+	</group>
+	<group name="NOM_CLIENTE">
+		<groupExpression><![CDATA[$F{NOM_CLIENTE}]]></groupExpression>
+	</group>
+	<group name="NUM_DOC_IDENTIFICACION">
+		<groupExpression><![CDATA[$F{NUM_DOC_IDENTIFICACION}]]></groupExpression>
+	</group>
+	<group name="HORAVIGINI">
+		<groupExpression><![CDATA[$F{HORAVIGINI}]]></groupExpression>
+	</group>
+	<group name="HORAVIGFIN">
+		<groupExpression><![CDATA[$F{HORAVIGFIN}]]></groupExpression>
+	</group>
+	<group name="DIR_CLIENTE">
+		<groupExpression><![CDATA[$F{DIR_CLIENTE}]]></groupExpression>
+	</group>
+	<group name="CODCIA">
+		<groupExpression><![CDATA[$F{CODCIA}]]></groupExpression>
+	</group>
+	<group name="CODEMPRESA">
+		<groupExpression><![CDATA[$F{CODEMPRESA}]]></groupExpression>
+	</group>
+	<group name="CODCLIENTE">
+		<groupExpression><![CDATA[$F{CODCLIENTE}]]></groupExpression>
+	</group>
+	<group name="IDPOLIZA">
+		<groupExpression><![CDATA[$F{IDPOLIZA}]]></groupExpression>
+	</group>
+	<group name="FECINIVIG">
+		<groupExpression><![CDATA[$F{FECINIVIG}]]></groupExpression>
+	</group>
+	<group name="FECFINVIG">
+		<groupExpression><![CDATA[$F{FECFINVIG}]]></groupExpression>
+	</group>
+	<group name="CODPLANPAGO">
+		<groupExpression><![CDATA[$F{CODPLANPAGO}]]></groupExpression>
+	</group>
+	<group name="NUMPOLUNICO">
+		<groupExpression><![CDATA[$F{NUMPOLUNICO}]]></groupExpression>
+	</group>
+	<group name="FECEMISION">
+		<groupExpression><![CDATA[$F{FECEMISION}]]></groupExpression>
+	</group>
+	<group name="MONEDA">
+		<groupExpression><![CDATA[$F{MONEDA}]]></groupExpression>
+	</group>
+	<group name="NUMPOLREF">
+		<groupExpression><![CDATA[$F{NUMPOLREF}]]></groupExpression>
+	</group>
+	<group name="TIPO_ID_TRIBUTARIA">
+		<groupExpression><![CDATA[$F{TIPO_ID_TRIBUTARIA}]]></groupExpression>
+	</group>
+	<group name="NUM_TRIBUTARIO">
+		<groupExpression><![CDATA[$F{NUM_TRIBUTARIO}]]></groupExpression>
+	</group>
+	<group name="NUMERO_AUTORIZACION">
+		<groupExpression><![CDATA[$F{NUMERO_AUTORIZACION}]]></groupExpression>
+	</group>
+	<group name="COLUMN_23">
+		<groupExpression><![CDATA[$F{COLUMN_23}]]></groupExpression>
+	</group>
+	<group name="COLUMN_24">
+		<groupExpression><![CDATA[$F{COLUMN_24}]]></groupExpression>
+	</group>
+	<group name="IDETPOL">
+		<groupExpression><![CDATA[$F{IDETPOL}]]></groupExpression>
+	</group>
+	<group name="COD_ASEGURADO">
+		<groupExpression><![CDATA[$F{COD_ASEGURADO}]]></groupExpression>
+	</group>
+	<group name="CAMPO3">
+		<groupExpression><![CDATA[$F{CAMPO3}]]></groupExpression>
+	</group>
+	<group name="COLUMN_28">
+		<groupExpression><![CDATA[$F{COLUMN_28}]]></groupExpression>
+	</group>
+	<group name="EDAD">
+		<groupExpression><![CDATA[$F{EDAD}]]></groupExpression>
+	</group>
+	<group name="FECNACIMIENTO">
+		<groupExpression><![CDATA[$F{FECNACIMIENTO}]]></groupExpression>
+	</group>
+	<group name="SEXO">
+		<groupExpression><![CDATA[$F{SEXO}]]></groupExpression>
+	</group>
+	<group name="NOMASEG">
+		<groupExpression><![CDATA[$F{NOMASEG}]]></groupExpression>
+	</group>
+	<group name="COLUMN_33">
+		<groupExpression><![CDATA[$F{COLUMN_33}]]></groupExpression>
+	</group>
+	<group name="COLUMN_34">
+		<groupExpression><![CDATA[$F{COLUMN_34}]]></groupExpression>
+	</group>
+	<group name="COLUMN_35">
+		<groupExpression><![CDATA[$F{COLUMN_35}]]></groupExpression>
+	</group>
+	<group name="IDTIPOSEG">
+		<groupExpression><![CDATA[$F{IDTIPOSEG}]]></groupExpression>
+	</group>
+	<group name="TIPO_SEGURO">
+		<groupExpression><![CDATA[$F{TIPO_SEGURO}]]></groupExpression>
+	</group>
+	<group name="PLANCOB">
+		<groupExpression><![CDATA[$F{PLANCOB}]]></groupExpression>
+	</group>
+	<group name="TASA_CAMBIO">
+		<groupExpression><![CDATA[$F{TASA_CAMBIO}]]></groupExpression>
+	</group>
+	<group name="PORCCOMIS">
+		<groupExpression><![CDATA[$F{PORCCOMIS}]]></groupExpression>
+	</group>
+	<group name="IDENDOSO">
+		<groupExpression><![CDATA[$F{IDENDOSO}]]></groupExpression>
+	</group>
+	<group name="DESC_CLAU">
+		<groupExpression><![CDATA[$F{DESC_CLAU}]]></groupExpression>
+	</group>
+	<group name="RAMO">
+		<groupExpression><![CDATA[$F{RAMO}]]></groupExpression>
+	</group>
+	<group name="SUB_RAMO">
+		<groupExpression><![CDATA[$F{SUB_RAMO}]]></groupExpression>
+	</group>
+	<group name="AGENTE">
+		<groupExpression><![CDATA[$F{AGENTE}]]></groupExpression>
+	</group>
+	<group name="FORMA_PAGO">
+		<groupExpression><![CDATA[$F{FORMA_PAGO}]]></groupExpression>
+	</group>
+	<group name="FECHA_ALTA">
+		<groupExpression><![CDATA[$F{FECHA_ALTA}]]></groupExpression>
+	</group>
+	<group name="FECHA_AUTORIZACION">
+		<groupExpression><![CDATA[$F{FECHA_AUTORIZACION}]]></groupExpression>
+	</group>
+	<group name="LEYENDA_AP">
+		<groupExpression><![CDATA[$F{LEYENDA_AP}]]></groupExpression>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="65" splitType="Stretch">
+			<staticText>
+				<reportElement x="152" y="4" width="210" height="48" uuid="cad0cd49-fe63-4e2e-accc-16c9cede4573"/>
+				<textElement>
+					<font size="7" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Unidad Especializada de Atención a Clientes de Thona Seguros: Av. Insurgentes Sur 1605, piso 22. Col: San José Insurgentes. Alc: Benito Juárez, C.P. 03900. CDMX. México, Telefono : 55 4433 8900, Email: atencionaclientes@thonaseguros.mx, Horario : lunes a jueves de 9:00 a 18:00 horas y viernes de 9:00 a 15:00 horas. ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="372" y="5" width="182" height="16" uuid="5aaca13b-f88a-4c25-a79c-6ac34d72c82b"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[CERTIFICADO INDIVIDUAL DE]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="372" y="20" width="182" height="44" uuid="a8b886fb-fe8c-49fb-8df6-5e133e26b3ff">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{TIPO_SEGURO}]]></textFieldExpression>
+			</textField>
+			<image>
+				<reportElement x="4" y="0" width="144" height="55" uuid="9c87fc70-3c35-49da-99a0-6e55d681dbf9">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA["repo:/images/LOGO_THONA2.png"]]></imageExpression>
+			</image>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="595" splitType="Stretch">
+			<staticText>
+				<reportElement x="3" y="2" width="163" height="16" uuid="7d690c0b-81c5-4936-b1c2-0435d6a5fd9c">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[NOMBRE DEL CONTRATANTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="224" y="1" width="36" height="18" uuid="354b8931-509c-4a84-8dfe-b90877525231">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[RAMO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="374" y="1" width="60" height="16" uuid="f1020f2c-1c6e-488c-a797-d8fe7e1e11aa"/>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[SUBRAMO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="224" y="30" width="50" height="18" uuid="37154966-93a9-4e4a-b261-47df126f0fa1">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[AGENTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="368" y="30" width="40" height="18" uuid="63e2a8e0-519f-40d7-bcb8-1af5026db173">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PÓLIZA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="368" y="49" width="50" height="18" uuid="0158aef9-28c2-4a27-805d-648bcf2ff0e8">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[OFICINA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="449" y="49" width="78" height="20" uuid="96832612-af6c-40e3-8624-da30baf2b92a">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[CONSECUTIVO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="368" y="68" width="50" height="18" uuid="e834a128-ba26-432f-ad40-034c24f2298e">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[MONEDA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="224" y="49" width="70" height="18" uuid="e8592f14-fe6a-4061-b44e-1e48fe4205eb">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[AGRUPADOR]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="224" y="68" width="60" height="18" uuid="5fd388c2-b438-4c17-990a-0fca877c8ca1">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ID CLIENTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="3" y="68" width="175" height="22" uuid="68b4f91c-6d13-4a7c-ac5f-a716b283df30"/>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DOMICILIO DEL CONTRATANTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="3" y="50" width="39" height="18" uuid="8a92f19b-b8ac-46e5-8e5a-9f92c8c1bf00">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[RFC]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="224" y="87" width="70" height="20" uuid="ba724312-3844-4891-8ec0-f8b59b801a1c">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[FORMA PAGO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="409" y="87" width="80" height="20" uuid="2ec5be58-b487-4177-ab03-ebfae3f7bf98"/>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DÍAS VIGENCIA]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="3" y="18" width="218" height="30" uuid="7024f14f-8700-4eb6-bd32-838cbebea9ad">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NOM_CLIENTE}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="257" y="1" width="114" height="30" uuid="769b5585-a09f-4313-8764-41f481255f34"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{RAMO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="425" y="1" width="132" height="28" uuid="9bd77553-594e-4f98-b653-1e40ec0551a9">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{SUB_RAMO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="273" y="30" width="90" height="19" uuid="d3814601-9507-4715-b80d-e211ebdb1699">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{AGENTE}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="410" y="30" width="100" height="20" uuid="992cdb8c-4c11-4ddd-9c6b-504476f53bf2">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NUMPOLUNICO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="273" y="49" width="90" height="19" uuid="9e015d38-8368-45b4-8e02-8b5f77f2c689">
+					<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CODAGRUPADOR}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="520" y="49" width="36" height="18" uuid="40ac92b5-42ee-4086-a5f7-fcf0bc12432d">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{IDPOLIZA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="410" y="68" width="92" height="18" uuid="8db85174-218f-4f14-83b6-48961aa2cc90"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{MONEDA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="273" y="68" width="90" height="19" uuid="b37c96f6-1010-47db-93a9-85e85dd79a64">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CODCLIENTE}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="288" y="87" width="104" height="32" uuid="8c43fc30-b1e6-4d16-89f8-bfd79fea23a2">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{FORMA_PAGO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="482" y="87" width="64" height="20" uuid="cc87006d-e055-411b-bde1-de08226c236b"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{DIAS_VIGENCIA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="3" y="84" width="218" height="45" uuid="d5883801-c799-403f-8037-c28825adadfa">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{DIR_CLIENTE}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="24" y="50" width="180" height="18" uuid="f778475a-dce8-4306-9b96-08eb1be73a92"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NUM_TRIBUTARIO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="410" y="49" width="43" height="18" uuid="e5b35e28-b7d1-42c0-954d-4b18414fa34c">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[MATRIZ]]></text>
+			</staticText>
+			<line>
+				<reportElement x="-4" y="0" width="563" height="1" uuid="4644ca33-364c-4896-adae-eb06a1c2591d"/>
+				<graphicElement>
+					<pen lineStyle="Solid" lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement stretchType="RelativeToTallestObject" x="-4" y="0" width="1" height="594" uuid="006f1e35-f98f-480c-b2c5-0808dc4a5863"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="-4" y="133" width="563" height="1" uuid="b7dafc0d-c167-487f-aab9-4d12462753f1"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement stretchType="RelativeToTallestObject" x="558" y="0" width="1" height="595" uuid="bd4ce709-e0d1-4916-b396-9288fdb4b074"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="-3" y="216" width="562" height="1" uuid="242bcf0b-157c-4f68-89cd-456d6e758450"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="-3" y="286" width="562" height="1" uuid="0bda04b1-2adc-4c68-b670-27f0012eb683"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="-3" y="346" width="562" height="1" uuid="af000df0-4efe-408a-a63a-7f7b2863fed9"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="41" y="135" width="120" height="20" uuid="a34db234-11c5-4f09-a8be-b2c47f1bfe67"/>
+				<textElement>
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PERIODO DE VIGENCIA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="240" y="135" width="100" height="20" uuid="9791faef-3d8e-4507-89de-28f5e87b5b45"/>
+				<textElement>
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[FECHA DE EMISIÓN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="430" y="135" width="36" height="18" uuid="c06e1a97-541c-468a-bdfa-f032d617c0d1">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PLAN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="11" y="147" width="36" height="18" uuid="bf92b244-3b14-4be3-ab3b-ad70af767555">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DESDE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="63" y="147" width="36" height="18" uuid="11388728-980f-47e6-b4d3-81d81ba2a270"/>
+				<textElement>
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[HRS.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="114" y="147" width="36" height="18" uuid="5be58766-7c9b-4eff-8134-f7609a40700e"/>
+				<textElement>
+					<font size="8" isBold="true" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[HASTA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="170" y="147" width="36" height="18" uuid="b213553a-3866-49b8-932e-9df4e839c8dc"/>
+				<textElement>
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[HRS.]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="6" y="167" width="45" height="15" uuid="27da5b5e-b97e-4f13-9119-2d0164a94ef7">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{FECINIVIG}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="61" y="167" width="45" height="15" uuid="78af38cb-af3d-4bd3-8afb-296942c8608f">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{HORAVIGINI}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="111" y="167" width="45" height="15" uuid="3d4ae09e-6fbb-401a-a606-e5af90d67267">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{FECFINVIG}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="169" y="167" width="45" height="15" uuid="05a27375-8d7d-48ba-a718-488d07a098c5">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{HORAVIGFIN}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="263" y="152" width="46" height="20" uuid="c8868817-a2e2-4884-a68b-b7d81f27b89f"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{FECEMISION}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="396" y="147" width="156" height="34" uuid="fa7e6a98-4340-4b10-98a8-47346aa9d33e">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{TIPO_SEGURO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement positionType="FixRelativeToBottom" x="6" y="190" width="546" height="22" uuid="f9decc37-b419-4a7f-8753-866c468d8f8e"/>
+				<textElement textAlignment="Justified" verticalAlignment="Bottom">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{LEYENDA_AP}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="207" y="217" width="132" height="20" uuid="4f2bc9e6-4de9-4619-aae0-08595d57fb8a"/>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DATOS DEL ASEGURADO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="70" y="233" width="48" height="18" uuid="e98580d8-0718-4dba-9545-db5a0cb05d46"/>
+				<textElement>
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[NOMBRE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="220" y="233" width="40" height="18" uuid="78404de8-c100-47a0-aafc-4f813e3ac087"/>
+				<textElement>
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[NUTRA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="280" y="233" width="60" height="18" uuid="b72d5aef-6edb-4509-8bad-d067600e642a"/>
+				<textElement>
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[NUM. ASEG.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="365" y="233" width="40" height="18" uuid="14535aaf-e98d-4b0d-96dd-553facdc07e9"/>
+				<textElement>
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[F. NAC.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="233" width="70" height="18" uuid="3bdb0b17-f6e4-4435-9068-d192db09a3e0"/>
+				<textElement>
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[FECHA ALTA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="510" y="233" width="33" height="18" uuid="df4f93fd-e84d-4fa7-8b45-932b012a9587"/>
+				<textElement>
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[EDAD]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="17" y="256" width="190" height="32" uuid="2ed37b92-787c-4ff4-8e3e-821a2b7dd5bd">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NOMASEG}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="288" y="256" width="53" height="20" uuid="abf3a1b9-dbbb-4385-a7a4-a265e59cd5c3"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{COD_ASEGURADO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="365" y="256" width="48" height="20" uuid="8194f2d2-8ed5-42b5-b9da-5fd75c337346">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{FECNACIMIENTO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="427" y="256" width="52" height="20" uuid="49b3d46f-a261-4cd7-8bab-71cccfbd3fc0">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{FECHA_ALTA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="519" y="256" width="44" height="13" uuid="0ef84df6-e061-4835-94de-87900d1f0aca">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{EDAD}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="194" y="287" width="164" height="20" uuid="54071134-f629-4e67-b1bd-86695f840271"/>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DESIGNACIÓN DE BENEFICIARIO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="540" y="300" width="9" height="20" uuid="90039e4a-ce18-4d3c-af42-68e912a324ef"/>
+				<textElement>
+					<font size="6"/>
+				</textElement>
+				<text><![CDATA[%]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="223" y="347" width="118" height="20" uuid="dc765b77-fc10-4e0b-ad1e-ae84ac903e85"/>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DETALLE DEL SEGURO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="253" y="489" width="53" height="20" uuid="2d203606-f646-49ed-8d00-7a9c8cc5aba5"/>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ENDOSOS]]></text>
+			</staticText>
+			<line>
+				<reportElement positionType="Float" x="-3" y="503" width="561" height="1" uuid="b96c9bc7-06f0-47b5-95eb-56cb3fb95091"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement positionType="Float" x="-3" y="487" width="561" height="1" uuid="18da3aca-f1f8-4f17-9911-faa0a7ee5412"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<textField>
+				<reportElement positionType="Float" x="0" y="505" width="554" height="90" uuid="2fa3e5fc-a9f5-4860-8004-cefb8a57b9e1">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="6" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{DESC_CLAU}]]></textFieldExpression>
+			</textField>
+			<componentElement>
+				<reportElement style="Table_CH" stretchType="RelativeToTallestObject" mode="Transparent" x="2" y="363" width="550" height="122" forecolor="#06559B" backcolor="#FFFFFF" uuid="2657dc5f-0475-4945-806c-ba81b9032c61">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="Table_TH"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="Table_CH"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="Table_TD"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="ASEGURADOS" uuid="34e1ee3f-97c1-456c-8fd5-4ff0e76a9109">
+						<datasetParameter name="CODCIA">
+							<datasetParameterExpression><![CDATA[$F{CODCIA}]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="COD_ASEGURADO">
+							<datasetParameterExpression><![CDATA[$F{COD_ASEGURADO}]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="IDETPOL">
+							<datasetParameterExpression><![CDATA[$F{IDETPOL}]]></datasetParameterExpression>
+						</datasetParameter>
+						<datasetParameter name="IDPOLIZA">
+							<datasetParameterExpression><![CDATA[$F{IDPOLIZA}]]></datasetParameterExpression>
+						</datasetParameter>
+						<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					</datasetRun>
+					<jr:column width="280" uuid="48a11fcb-9d3a-4150-82a5-9ba1d0e18142">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+						<jr:columnHeader style="Table_CH" height="20" rowSpan="1">
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<box>
+								<pen lineColor="#06559B"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+							</box>
+							<textField>
+								<reportElement style="Table_CH" x="0" y="0" width="280" height="20" forecolor="#050505" backcolor="#FFFFFF" uuid="92e17054-3787-428a-afa1-ef39d3fb4b50"/>
+								<box>
+									<pen lineWidth="1.0" lineColor="#06559B"/>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								</box>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["COBERTURAS"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="15">
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<box>
+								<pen lineColor="#06559B"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+							</box>
+							<textField>
+								<reportElement style="Table_CH" x="0" y="0" width="280" height="15" backcolor="#FFFFFF" uuid="0c2b9abc-64b7-4305-a6bd-4e3fc54a1b79">
+									<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+								</reportElement>
+								<box>
+									<pen lineWidth="1.0" lineColor="#06559B"/>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{NOMBRECOBERTURA}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="270" uuid="4060bcbe-986e-4c1e-8edb-0303ed36bdb9">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+						<jr:columnHeader style="Table_CH" height="20" rowSpan="1">
+							<box>
+								<pen lineColor="#06559B"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+							</box>
+							<textField>
+								<reportElement style="Table_CH" x="0" y="0" width="270" height="20" backcolor="#FFFFFF" uuid="52d4be45-4ed5-4e35-ae49-889730a20cd9"/>
+								<box>
+									<pen lineColor="#06559B"/>
+									<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#06559B"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#06559B"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								</box>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9" isBold="true"/>
+								</textElement>
+								<textFieldExpression><![CDATA["SUMA ASEGURADA"]]></textFieldExpression>
+							</textField>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="15">
+							<box>
+								<pen lineColor="#06559B"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+							</box>
+							<textField>
+								<reportElement x="0" y="0" width="270" height="15" uuid="c46f3b4e-9663-4ec0-8d7f-74e9ca254262"/>
+								<box>
+									<pen lineWidth="1.0" lineColor="#06559B"/>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#06559B"/>
+								</box>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{SUMAASEG_MONEDA}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="142" splitType="Stretch">
+			<line>
+				<reportElement positionType="Float" stretchType="ContainerHeight" x="-3" y="1" width="561" height="1" isPrintWhenDetailOverflows="true" uuid="e099977b-76f8-416d-bc74-ac69857cd31c"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement stretchType="ElementGroupHeight" x="-4" y="-2" width="1" height="143" uuid="a22f070c-010b-4873-9fc2-c4e1d24b85fa"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="-4" y="141" width="563" height="1" uuid="3e705094-f6d3-4f9d-a33d-35624e563cb7"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement stretchType="ElementGroupHeight" x="558" y="-1" width="1" height="143" uuid="f911623a-0042-4cad-b1b3-b1e942d17ea5"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement stretchType="ElementGroupHeight" x="-4" y="-2" width="1" height="143" uuid="aff6c6d3-6a5c-4374-9dc4-69beebe7d7ac"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="-4" y="141" width="563" height="1" uuid="aeb713da-ad3b-4ffd-a39e-7e487dc0e615"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement stretchType="ElementGroupHeight" x="558" y="-1" width="1" height="143" uuid="d6c384f1-1590-4d98-a867-bebc8909dfdf"/>
+				<graphicElement>
+					<pen lineColor="#06559B"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="4" y="2" width="548" height="66" uuid="8bc971b5-28a3-40fe-a5d2-c8cd03181660"/>
+				<textElement>
+					<font size="11"/>
+				</textElement>
+				<text><![CDATA[En cumplimiento a lo dispuesto en el artículo 202 de la Ley de Instituciones de Seguros y de Fianzas, la documentación contractual y la nota técnica que integran este producto de seguro, quedaron registradas ante la Comisión Nacional de Seguros y Fianzas, a partir del día                                                                                     con el número]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="284" y="29" width="150" height="14" uuid="d20a95a4-233b-4d89-87d1-9e6f3bc35943"/>
+				<textElement>
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{FECHA_AUTORIZACION}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="76" y="43" width="410" height="18" uuid="0257206b-a1c3-4800-8308-08f1c293f8ba"/>
+				<textElement>
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NUMERO_AUTORIZACION}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="3" y="58" width="339" height="22" uuid="ba850938-884d-44b6-996a-97c349e34130">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Usted puede consultar las coberturas, exclusiones y restricciones de la póliza en las condiciones generales que le serán entregadas con su póliza o bien en la página"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="3" y="79" width="338" height="14" uuid="2f930b7a-f6a2-4a83-aeb7-312e44902b4f">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["www.thonaseguros.mx/conocenuestrosproductos o llamando al (55) 44338900."]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="3" y="95" width="60" height="14" uuid="6bd267d9-bb61-4e66-8be4-ddf724d1712a">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["CONDUSEF"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="52" y="96" width="349" height="18" uuid="8ed21672-e6eb-4d9c-9d15-06b149abb919">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[": Avenida Insurgentes Sur Colonia del Valle C.P. 03100, Ciudad de México"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="3" y="106" width="288" height="18" uuid="cf6cf6fb-7160-4260-be0d-07b4eb12695e">
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Teléfonos: (55) 53400999 y (01800) 9998080 www.condusef.gob.mx/oficinas."]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="392" y="95" width="150" height="1" uuid="08559f2d-88ea-4ea9-9ad0-45e442856e22"/>
+			</line>
+			<textField>
+				<reportElement x="402" y="96" width="140" height="20" uuid="2a85736f-036a-4907-b880-12334837aff3"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA["FUNCIONARIO AUTORIZADO"]]></textFieldExpression>
+			</textField>
+			<image>
+				<reportElement x="414" y="48" width="103" height="50" uuid="64bb1f63-b63a-4b5a-a860-960b53357c02">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA["repo:/images/FIRMA_PRUEBA.png"]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="3" y="122" width="551" height="20" uuid="4c77e86e-1224-4755-b195-8249f700a408"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PIE_PAGINA}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>
