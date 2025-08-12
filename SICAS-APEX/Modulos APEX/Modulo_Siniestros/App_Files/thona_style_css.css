@@ -1,0 +1,48 @@
+/*Ampliar classic report a ancho del modal*/
+.full-width-report table {
+  width: 100% !important;
+  table-layout: fixed;
+}
+
+/*Color cabecera clasic report*/
+table.t-Report-report thead tr th.t-Report-colHead{ 
+    background-color: #06559b;
+    color: white;
+}
+
+.title-thona{
+  font-size: 1.125rem;
+  color: #cb3333;
+  font-weight: bold;
+  padding: 0px 10px;
+}
+
+.style-input{
+  background-color: #06559b;
+  color: white;
+  padding: 12px 24px;
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 600;
+
+  /* Redondeado extremo (medio círculo) */
+  border-top-right-radius: 9999px;    
+  border-bottom-right-radius: 9999px;
+
+  /* Transición suave si se cambia el tamaño */
+  transition: all 0.3s ease-in-out;
+  width: 100%;
+}
+
+.desc-thona{
+  background-color: #06559b;
+  color: white;
+  padding: 5px 10px;
+  display: inline-block;
+  font-size: 1.125rem;
+  font-weight: 600;
+
+  /* Redondeado extremo (medio círculo) */
+  border-top-right-radius: 9999px;    
+  border-bottom-right-radius: 9999px;
+}
