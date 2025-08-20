@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE OC_SINIESTRO IS
+create or replace PACKAGE OC_SINIESTRO IS
 
 FUNCTION INSERTA_SINIESTRO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, cNumSiniRef VARCHAR2, 
                            dFec_Ocurrencia DATE, dFec_Notificacion DATE, cDesc_Siniestro VARCHAR2, cTipo_Siniestro VARCHAR2,
@@ -27,11 +27,17 @@ FUNCTION MONEDA_SINIESTRO(nCodCia NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nId
 
 FUNCTION F_GET_SIN ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER;
 
-END OC_SINIESTRO;
+FUNCTION BUSCAR_SINIESTROS_RELACIONADOS ( p_id_poliza IN NUMBER, p_tipo_busqueda IN VARCHAR2, p_valor_busqueda IN VARCHAR2) RETURN VARCHAR2;
 
+FUNCTION LISTAR_SINIESTROS_RELACIONADOS (nIdPoliza NUMBER, nCodAsegurado NUMBER DEFAULT NULL, nCurp VARCHAR2 DEFAULT NULL, nRfc VARCHAR2 DEFAULT NULL, nfecha_corte DATE DEFAULT SYSDATE) RETURN VARCHAR2;
+
+FUNCTION NUMERO_COINCIDENCIAS_FONETICA_ASEGURADO (nCodCia NUMBER, nCodEmpresa NUMBER, nPoliza NUMBER, nCodAsegurado number) RETURN NUMBER;
+
+END OC_SINIESTRO;
 /
 
-CREATE OR REPLACE PACKAGE BODY OC_SINIESTRO IS
+----------------------------------------------------------------------------------------------------------
+create or replace PACKAGE BODY OC_SINIESTRO IS
 --
 -- CONTROL DE CAMBIO
 --
@@ -657,4 +663,195 @@ END MONEDA_SINIESTRO;
          return 0;
  END F_GET_SIN;
 
+---------------------------------------------------------------------------------- 
+-- Funcion para obtener siniestros anteriares a un determinado asegurado        --
+---------------------------------------------------------------------------------- 
+FUNCTION BUSCAR_SINIESTROS_RELACIONADOS (
+    p_id_poliza       IN NUMBER,
+    p_tipo_busqueda   IN VARCHAR2, -- 'COD_ASEGURADO', 'CURP', 'RFC'
+    p_valor_busqueda  IN VARCHAR2
+) RETURN VARCHAR2 IS
+    v_resultado VARCHAR2(4000);
+BEGIN
+    IF p_tipo_busqueda = 'COD_ASEGURADO' THEN
+        SELECT 
+            LISTAGG(TO_CHAR(A.IdSiniestro), ',') 
+                WITHIN GROUP (ORDER BY A.IdSiniestro)
+        INTO v_resultado
+        FROM 
+            SINIESTRO A
+        
+        WHERE 
+            A.IdPoliza = p_id_poliza
+            AND A.Cod_Asegurado = TO_NUMBER(p_valor_busqueda)
+            AND A.STS_SINIESTRO IN ('EMI','PGP','PGT')
+            AND A.FEC_OCURRENCIA >= ADD_MONTHS(SYSDATE, -60);
+
+        RETURN v_resultado;
+
+    ELSIF p_tipo_busqueda = 'CURP' THEN
+        SELECT 
+            LISTAGG(S.IDSINIESTRO, ',') 
+                WITHIN GROUP (ORDER BY S.IDSINIESTRO)
+        INTO v_resultado
+        FROM 
+            SINIESTRO S
+        JOIN 
+            ASEGURADO A 
+            ON A.COD_ASEGURADO = S.COD_ASEGURADO
+        JOIN 
+            PERSONA_NATURAL_JURIDICA PNJ 
+            ON PNJ.TIPO_DOC_IDENTIFICACION = A.TIPO_DOC_IDENTIFICACION
+            AND PNJ.NUM_DOC_IDENTIFICACION = A.NUM_DOC_IDENTIFICACION
+        WHERE 
+            PNJ.CURP LIKE '%' || p_valor_busqueda || '%'
+            AND S.STS_SINIESTRO IN ('EMI','PGP','PGT')
+            AND S.IDPOLIZA = p_id_poliza
+            AND S.FEC_OCURRENCIA >= ADD_MONTHS(SYSDATE, -60);
+        RETURN v_resultado;
+
+    ELSIF p_tipo_busqueda = 'RFC' THEN
+        SELECT 
+            LISTAGG(S.IDSINIESTRO, ',') 
+                WITHIN GROUP (ORDER BY S.IDSINIESTRO)
+        INTO v_resultado
+        FROM 
+            SINIESTRO S
+        JOIN 
+            ASEGURADO A 
+            ON A.COD_ASEGURADO = S.COD_ASEGURADO
+        JOIN 
+            PERSONA_NATURAL_JURIDICA PNJ 
+            ON PNJ.TIPO_DOC_IDENTIFICACION = A.TIPO_DOC_IDENTIFICACION
+            AND PNJ.NUM_DOC_IDENTIFICACION = A.NUM_DOC_IDENTIFICACION
+        WHERE 
+            PNJ.NUM_TRIBUTARIO LIKE '%' || p_valor_busqueda || '%'
+            AND S.STS_SINIESTRO IN ('EMI','PGP','PGT')
+            AND S.IDPOLIZA = p_id_poliza
+            AND S.FEC_OCURRENCIA >= ADD_MONTHS(SYSDATE, -60);
+        RETURN v_resultado;
+
+    ELSE
+        RETURN NULL;
+    END IF;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL;
+    WHEN OTHERS THEN
+        RETURN 'ERROR: ' || SQLERRM;
+END BUSCAR_SINIESTROS_RELACIONADOS;
+
+---------------------------------------------------------------------------------- 
+-- Funcion para obtener siniestros anteriares al asegurado, curp y RFC          --
+---------------------------------------------------------------------------------- 
+FUNCTION LISTAR_SINIESTROS_RELACIONADOS (
+    nIdPoliza       IN NUMBER,
+    nCodAsegurado   IN NUMBER   DEFAULT NULL,
+    nCurp           IN VARCHAR2 DEFAULT NULL,
+    nRfc            IN VARCHAR2 DEFAULT NULL,
+    nfecha_corte    IN DATE DEFAULT SYSDATE
+
+) RETURN VARCHAR2 IS
+    v_resultado   VARCHAR2(4000);
+    l_curp        VARCHAR2(100);
+    l_rfc         VARCHAR2(100);
+BEGIN
+    l_curp := NULLIF(TRIM(nCurp), '');
+    l_rfc  := NULLIF(TRIM(nRfc),  '');
+
+    SELECT
+        LISTAGG(TO_CHAR(idsiniestro), ',')
+            WITHIN GROUP (ORDER BY idsiniestro)
+    INTO v_resultado
+    FROM (
+        SELECT DISTINCT idsiniestro
+        FROM (
+            /* ==================== Búsqueda por COD_ASEGURADO ==================== */
+            SELECT S.IdSiniestro AS idsiniestro
+            FROM SINIESTRO S
+            WHERE S.IdPoliza = nIdPoliza
+                AND S.STS_SINIESTRO IN ('EMI','PGP','PGT')
+                AND S.COD_ASEGURADO = nCodAsegurado
+                --AND (nfecha_corte IS NULL OR s.FEC_OCURRENCIA <= nfecha_corte)
+                AND S.FEC_OCURRENCIA >= ADD_MONTHS(SYSDATE, -60)
+            UNION
+            /* ==================== Búsqueda por CURP ==================== */
+            SELECT S.IdSiniestro AS idsiniestro
+            FROM SINIESTRO S
+            JOIN ASEGURADO A
+                ON A.COD_ASEGURADO = S.COD_ASEGURADO
+            JOIN PERSONA_NATURAL_JURIDICA PNJ
+                ON PNJ.TIPO_DOC_IDENTIFICACION = A.TIPO_DOC_IDENTIFICACION
+                AND PNJ.NUM_DOC_IDENTIFICACION  = A.NUM_DOC_IDENTIFICACION
+            WHERE S.IdPoliza = nIdPoliza
+                AND S.STS_SINIESTRO IN ('EMI','PGP','PGT')
+                AND l_curp IS NOT NULL
+                AND UPPER(PNJ.CURP) = UPPER(l_curp)
+                --AND (nfecha_corte IS NULL OR s.FEC_OCURRENCIA <= nfecha_corte)
+                AND S.FEC_OCURRENCIA >= ADD_MONTHS(SYSDATE, -60) 
+
+            UNION
+            /* ==================== Búsqueda por RFC (NUM_TRIBUTARIO) ==================== */
+            SELECT S.IdSiniestro AS idsiniestro
+            FROM SINIESTRO S
+            JOIN ASEGURADO A
+                ON A.COD_ASEGURADO = S.COD_ASEGURADO
+            JOIN PERSONA_NATURAL_JURIDICA PNJ
+                ON PNJ.TIPO_DOC_IDENTIFICACION = A.TIPO_DOC_IDENTIFICACION
+                AND PNJ.NUM_DOC_IDENTIFICACION  = A.NUM_DOC_IDENTIFICACION
+            WHERE S.IdPoliza = nIdPoliza
+                AND l_rfc IS NOT NULL
+                AND S.STS_SINIESTRO IN ('EMI','PGP','PGT')
+                AND UPPER(PNJ.NUM_TRIBUTARIO) =  UPPER(l_rfc) 
+                --AND (nfecha_corte IS NULL OR s.FEC_OCURRENCIA <= nfecha_corte)
+                AND S.FEC_OCURRENCIA >= ADD_MONTHS(SYSDATE, -60)
+        )
+    );
+
+    RETURN v_resultado;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL;
+    WHEN OTHERS THEN
+        RETURN 'ERROR: ' || SQLERRM;
+END LISTAR_SINIESTROS_RELACIONADOS;
+
+---------------------------------------------------------------------------------- 
+-- Funcion para obtener siniestros anteriares por coincidencia fonética         --
+---------------------------------------------------------------------------------- 
+
+FUNCTION NUMERO_COINCIDENCIAS_FONETICA_ASEGURADO (
+    nCodCia         NUMBER,
+    nCodEmpresa     NUMBER,
+    nPoliza         NUMBER,
+    nCodAsegurado   NUMBER
+) RETURN NUMBER IS
+    nCount  NUMBER;
+    cNombre VARCHAR2(100) := OC_ASEGURADO.NOMBRE_ASEGURADO(nCodCia, nCodEmpresa, nCodAsegurado);
+    cFecnac PERSONA_NATURAL_JURIDICA.FecNacimiento%TYPE := OC_ASEGURADO.FECHA_NACIMIENTO(nCodCia, nCodEmpresa, nCodAsegurado);
+BEGIN
+    SELECT COUNT(*)
+    INTO nCount
+    FROM SINIESTRO S
+    JOIN ASEGURADO A
+        ON A.COD_ASEGURADO = S.COD_ASEGURADO
+    JOIN PERSONA_NATURAL_JURIDICA PNJ
+        ON PNJ.TIPO_DOC_IDENTIFICACION = A.TIPO_DOC_IDENTIFICACION
+        AND PNJ.NUM_DOC_IDENTIFICACION = A.NUM_DOC_IDENTIFICACION
+    WHERE UTL_MATCH.JARO_WINKLER_SIMILARITY(
+                cNombre,
+                PNJ.NOMBRE || ' ' || PNJ.APELLIDO_PATERNO || ' ' || PNJ.APELLIDO_MATERNO
+            ) >= 80
+        AND PNJ.FECNACIMIENTO = cFecnac
+        AND S.STS_SINIESTRO IN ('EMI', 'PGP', 'PGT')
+        AND S.IDPOLIZA = nPoliza
+        AND A.COD_ASEGURADO != nCodAsegurado;
+
+    RETURN nCount;
+END NUMERO_COINCIDENCIAS_FONETICA_ASEGURADO;
+
+
 END OC_SINIESTRO;
+/
