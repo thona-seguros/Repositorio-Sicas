@@ -10336,7 +10336,6 @@ nIndValida          VARCHAR2(1) := 'N';
 nMtoBruto           NUMBER(28,2);
 nMtoImpto           NUMBER(28,2);
 nMtoIVACalc         NUMBER(28,2);
-NMONTOAPAGAR        NUMBER(28,2);   --MLJS 15/07/2025
 nPosInicio          NUMBER;
 nPosFin             NUMBER;
 cSeparador          VARCHAR2(1) := '|';
@@ -10496,18 +10495,7 @@ cband:='dos';
                 nCodAsegurado    := TO_NUMBER(LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,4,cSeparador)));
 
                 nMtoDeducible     := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,17,cSeparador));
-                
-             -- MLJS 15/07/2025 VALIDACIONES DE RESERVA
-             IF OC_PROCESOS_MAS_SINI.FN_VALIDARESERVA_SOL(nIdSiniestro) = 'S' THEN
-                cMsjError := 'El siniestro '||nIdSiniestro||' tiene reservas en SOLICITUD. Favor de validar la información.';
-                RAISE_APPLICATION_ERROR(-20225,'El Siniestro '||nIdSiniestro||'  tiene reservas en SOLICITUD. Favor de validar la información.');
-             END IF;
-             
-             IF OC_PROCESOS_MAS_SINI.FN_VALIDARESERVA_EMI(nIdSiniestro) = 'S' THEN
-                cMsjError := 'El siniestro '||nIdSiniestro||' tiene reservas no contabilizadas. Favor de validar la información.';
-                RAISE_APPLICATION_ERROR(-20225,'El siniestro '||nIdSiniestro||' tiene reservas no contabilizadas. Favor de validar la información.');
-             END IF;  
-             -- MLJS 15/07/2025 VALIDACIONES DE RESERVA
+
                 IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(X.CodCia, nIdPoliza, nIDetPol, nCodAsegurado) = 'S' THEN
                     --COLECTIVO
                     BEGIN
@@ -10606,8 +10594,6 @@ cband:='tres';
                                                                 nMtoPagadoMoneda, nMtoPagadoLocal);
                     END IF;
                 END IF;
-                
-                
                 IF nSaldoRvaMoneda <= 0 THEN
                    cMsjError := 'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la información.';
                    RAISE_APPLICATION_ERROR(-20225,'El Saldo Pendiente de Pago es menor o igual a Cero, Favor de validar la información.');
@@ -10615,12 +10601,6 @@ cband:='tres';
                 IF nMtoDeducible > nMtoDedPol THEN
                     cMsjError := 'Deducible Cargado Es Mayor Al Deducible De La Poliza.';
                     RAISE_APPLICATION_ERROR(-20225,'Deducible Cargado Es Mayor Al Deducible De La Poliza.');
-                END IF;
-                
-                NMONTOAPAGAR          := TRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,22,cSeparador));
-                IF NMONTOAPAGAR > nSaldoRvaMoneda THEN
-                   cMsjError    := 'El Monto a Pagar es mayor a la Reserva del siniestro '||nIdSiniestro||'. Favor de validar la información.';
-                   RAISE_APPLICATION_ERROR(-20225,'El Monto a Pagar es mayor a la Reserva del siniestro '||nIdSiniestro||'. Favor de validar la información.');
                 END IF;
 
                 cRFCProv          := LTRIM(OC_PROCESOS_MASIVOS.VALOR_CAMPO(X.RegDatosProc,10,cSeparador));
@@ -12503,7 +12483,7 @@ BEGIN
 END ACTUALIZA_REGIS_PROCESOMASIVO;
 --
 FUNCTION VALIDA_FECHANAC_NTRIBUTARIO(dFecNacimiento DATE ,cNumTributario VARCHAR2) RETURN VARCHAR2 IS
-
+ 
 nFecNacDia NUMBER;
 nFecNacMes NUMBER;
 nFecNacAño NUMBER;
@@ -12518,27 +12498,27 @@ BEGIN
    SELECT TO_CHAR(dFecNacimiento,'DD')
    INTO nFecNacDia
    FROM DUAL;
-
+   
    SELECT TO_CHAR(dFecNacimiento,'MM')
    INTO nFecNacMes
    FROM DUAL;
-
+   
    SELECT TO_CHAR(dFecNacimiento,'YY')
    INTO nFecNacAño
    FROM DUAL;
-
+   
    SELECT REGEXP_SUBSTR(cNumTributario,'[0-9]{6}') 
    INTO  cFecTributaria
    FROM DUAL;
-
+   
    SELECT SUBSTR(cFecTributaria,1,2)
    INTO  nFecrfcAño
    FROM DUAL;
-
+   
    SELECT SUBSTR(cFecTributaria,3,2)
    INTO  nFecrfcMes
    FROM DUAL;
-
+   
    SELECT SUBSTR(cFecTributaria,5,2)
    INTO  nFecrfcDia
    FROM DUAL;

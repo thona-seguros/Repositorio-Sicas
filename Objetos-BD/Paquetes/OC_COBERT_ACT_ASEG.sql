@@ -2081,6 +2081,18 @@ nSumAsegMoneda NUMBER;
 nPrimaMoneda   NUMBER;
 nPrimaLocal    NUMBER;
 nTasa          NUMBER;
+cCodUser       VARCHAR2(20);
+TYPE tCobertura IS TABLE OF VARCHAR2(30) INDEX BY BINARY_INTEGER;
+TYPE tSumaAseg IS TABLE OF NUMBER       INDEX BY BINARY_INTEGER;
+
+cCodCobertura tCobertura;
+nSumaAseg     tSumaAseg;
+cAsegModelo   VARCHAR2(2):= 'N';
+nTotalAseg    NUMBER;
+--cCodCobertura  VARCHAR2(50);
+--nSumaAseg      NUMBER;
+--cSqlCobert     VARCHAR2(100);
+--cSqlSuma       VARCHAR2(100);
 
 CURSOR COB_Q IS
    SELECT TipoRef, NumRef, CodCobert, SumaAseg_Local, SumaAseg_Moneda,
@@ -2099,6 +2111,7 @@ CURSOR COB_Q IS
       AND Cod_Asegurado = nCod_Asegurado
       AND IdTipoSeg     = cIdTipoSeg
       AND PlanCob       = cPlanCob;
+	  
 CURSOR ASEG_Q IS
    SELECT Cod_Asegurado, Estado, IdEndoso, Campo1, Campo2
      FROM ASEGURADO_CERTIFICADO
@@ -2108,8 +2121,21 @@ CURSOR ASEG_Q IS
       AND IdEndoso       = nIdEndoso
       AND Cod_Asegurado != nCod_Asegurado
       AND Estado        IN ('SOL','XRE');
+
+CURSOR ASEGCOB_Q IS
+   SELECT IDetPol, Cod_Asegurado, CodCobert1, SumaAseg_1, CodCobert2, SumaAseg_2,CodCobert3, SumaAseg_3,CodCobert4, SumaAseg_4,CodCobert5, SumaAseg_5,CodCobert6, SumaAseg_6,CodCobert7, SumaAseg_7,CodCobert8, SumaAseg_8
+     FROM ASEG_AJUSTEANUAL
+    WHERE CodEmpresa     = nCodEmpresa
+      AND IdPoliza       = nIdPoliza
+      AND CodUsuario     = cCodUser
+      AND Cod_Asegurado IS NOT NULL;
 BEGIN
    OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIdetPol, nCod_Asegurado);
+   
+   SELECT USER
+   INTO cCodUser
+   FROM SYS.DUAL;
+   
    FOR W IN ASEG_Q LOOP
       DELETE COBERT_ACT_ASEG
        WHERE CodCia        = nCodCia
@@ -2120,12 +2146,39 @@ BEGIN
          AND Cod_Asegurado = W.Cod_Asegurado;
       
       FOR Z IN COB_Q LOOP
+         BEGIN
+           SELECT 'S'
+           INTO  cAsegModelo
+           FROM DETALLE_POLIZA
+             WHERE IDPOLIZA = nIdPoliza
+             AND INDASEGMODELO = 'S';
+         EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                 cAsegModelo := 'N';
+            WHEN TOO_MANY_ROWS THEN
+                 cAsegModelo := 'S';
+         END;
          IF W.Campo1 = 1 THEN
             nSumAsegLocal:=  W.Campo2;
             nSumAsegMoneda:= W.Campo2;
             nPrimaMoneda:=   0;
             nPrimaLocal:=    0;
             nTasa:=          0;
+         ELSIF cAsegModelo = 'S' THEN
+            nTotalAseg:= OC_DETALLE_POLIZA.TOTAL_ASEGURADOS( nCodCia, nCodEmpresa, nIdPoliza, nIDetPol);
+            IF nTotalAseg != 0 THEN
+               nSumAsegLocal:=  Z.SumaAseg_Local;
+               nSumAsegMoneda:= Z.SumaAseg_Moneda;
+               nPrimaMoneda:=   Z.Prima_Moneda / nTotalAseg;
+               nPrimaLocal:=    Z.Prima_Local / nTotalAseg;
+               nTasa:=          Z.Tasa;
+            ELSE
+               nSumAsegLocal:=  Z.SumaAseg_Local;
+               nSumAsegMoneda:= Z.SumaAseg_Moneda;
+               nPrimaMoneda:=   Z.Prima_Moneda;
+               nPrimaLocal:=    Z.Prima_Local;
+               nTasa:=          Z.Tasa;
+            END IF;
          ELSE
             nSumAsegLocal:=  Z.SumaAseg_Local;
             nSumAsegMoneda:= Z.SumaAseg_Moneda;
@@ -2133,6 +2186,7 @@ BEGIN
             nPrimaLocal:=    Z.Prima_Local;
             nTasa:=          Z.Tasa;
          END IF;
+                         
          BEGIN
             INSERT INTO COBERT_ACT_ASEG
                   (IdPoliza, IDetPol, CodEmpresa, IdTipoSeg, CodCia,
@@ -2160,7 +2214,45 @@ BEGIN
         OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIdetPol, W.Cod_Asegurado);
         OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIdetPol, W.Cod_Asegurado);
    END LOOP;
+   --
+   FOR X IN ASEGCOB_Q LOOP
+     -- Asignamos las coberturas y sumas
+     cCodCobertura(1) := X.CodCobert1; nSumaAseg(1) := X.SumaAseg_1;
+     cCodCobertura(2) := X.CodCobert2; nSumaAseg(2) := X.SumaAseg_2;
+     cCodCobertura(3) := X.CodCobert3; nSumaAseg(3) := X.SumaAseg_3;
+     cCodCobertura(4) := X.CodCobert4; nSumaAseg(4) := X.SumaAseg_4;
+     cCodCobertura(5) := X.CodCobert5; nSumaAseg(5) := X.SumaAseg_5;
+     cCodCobertura(6) := X.CodCobert6; nSumaAseg(6) := X.SumaAseg_6;
+     cCodCobertura(7) := X.CodCobert7; nSumaAseg(7) := X.SumaAseg_7;
+     cCodCobertura(8) := X.CodCobert8; nSumaAseg(8) := X.SumaAseg_8;
 
+     FOR i IN 1 .. 8 LOOP
+       IF cCodCobertura(i) IS NOT NULL AND cCodCobertura(i) != 'NA' THEN
+         BEGIN
+           UPDATE COBERT_ACT_ASEG 
+           SET    SUMAASEG_LOCAL  = nSumaAseg(i),
+                  SUMAASEG_MONEDA = nSumaAseg(i),
+                  TASA            = 0,
+                  PRIMA_MONEDA    = 0,
+                  PRIMA_LOCAL     = 0
+           WHERE  CodCia          = nCodCia
+           AND    CodEmpresa      = nCodEmpresa
+           AND    IdPoliza        = nIdPoliza
+           AND    IdetPol         = X.IDetPol
+           AND    CodCobert       = cCodCobertura(i)
+           AND    Cod_Asegurado   = X.Cod_Asegurado;
+         EXCEPTION
+           WHEN OTHERS THEN
+             RAISE_APPLICATION_ERROR(-20225, 'Error al actualizar cobertura ' || cCodCobertura(i) || ' de póliza ' || nIdPoliza || ' - ' || X.IDetPol);
+         END;
+       END IF;
+     END LOOP;
+
+     -- Llamadas a procedimientos después de actualizar
+     OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, X.IDetPol, X.Cod_Asegurado);
+     OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, X.IDetPol, X.Cod_Asegurado);
+   END LOOP;
+   --
    IF nIdEndoso = 0 THEN
       OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, 0);
       OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);
