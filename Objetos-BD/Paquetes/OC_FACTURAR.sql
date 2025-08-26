@@ -1861,10 +1861,13 @@ END PROC_EMITE_FACT_POL;
       nMtoPagoSubs             NUMBER(18,2);
       nIDetPolQuery            NUMBER;
       cIndFacturaPol           POLIZAS.IndFacturaPol%TYPE;
+      nFacturaOrig             ADM_RECIBOS_PROV.IdFactura%TYPE;
+      cStsFact                 FACTURAS.StsFact%TYPE;
+      cMotivoEndoso            ENDOSOS.Motivo_Endoso%TYPE;
       --
       CURSOR ENDOSO_Q IS
              SELECT E.Prima_Neta_Local PrimaLocal, E.Prima_Neta_Moneda PrimaMoneda, E.CodPlanPago, E.PorcComis,
-                    E.FecIniVig, E.FecFinVig, E.FecEmision, E.IDetPol, D.IdTipoSeg, E.TipoEndoso, E.IndCalcDerechoEmis, 
+                    E.FecIniVig, E.FecFinVig, E.FecEmision, E.IDetPol, D.IdTipoSeg, E.TipoEndoso, E.Motivo_Endoso, E.IndCalcDerechoEmis, 
                     TRUNC(E.FecFinVig) - TRUNC(E.FecIniVig) DiasRestantes, E.Prima_Neta_Local / (TRUNC(E.FecFinVig) - TRUNC(E.FecIniVig)) FactorPorDia
              FROM   DETALLE_POLIZA D, ENDOSOS E
              WHERE  D.IdPoliza          = E.IdPoliza
@@ -2020,6 +2023,7 @@ END PROC_EMITE_FACT_POL;
           cTipoEndoso  := X.TipoEndoso;
           nPrimaLocal  := X.PrimaLocal;
           nPrimaMoneda := X.PrimaMoneda;
+          cMotivoEndoso := X.Motivo_Endoso;
           --
           IF cTipoEndoso NOT IN ('RSS', 'EAD') THEN
              OC_DETALLE_TRANSACCION.CREA (nTransa, nCodCia, nCodEmpresa, 8, 'CER', 'DETALLE_POLIZA', nIdPoliza, X.IDetPol, NULL, NULL, X.PrimaLocal);
@@ -2599,6 +2603,29 @@ END PROC_EMITE_FACT_POL;
           --
           OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdFactura,'IVASIN');
       END LOOP;
+      --
+      IF cTipoEndoso = 'EAD' AND cMotivoEndoso = '032'THEN
+         BEGIN
+           SELECT IdFacturaorig
+           INTO nFacturaOrig
+           FROM TEMP_RECIBOS_PROV
+           WHERE IdPoliza   = nIdPoliza;
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              RAISE_APPLICATION_ERROR (-20100,'No Existe Factura para crearle un Recibo provisional '||nIdPoliza);
+         END;
+         BEGIN
+             SELECT StsFact
+             INTO   cStsFact
+             FROM   FACTURAS
+             WHERE  IdFactura     = nIdFactura
+             AND    IdPoliza      = nIdPoliza
+             AND    IdTransaccion = nTransa;
+         END;
+         OC_ENDOSO.ENDOSO_RECIBO_PROVISIONAL(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso,
+                                             nFacturaOrig, nTransa, nIdFactura, nMtoT, Null, NULL, NULL, cStsFact);
+      END IF;
+
       --
       BEGIN
          SELECT Contabilidad_Automatica

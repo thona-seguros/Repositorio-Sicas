@@ -1,5 +1,5 @@
 --
--- OC_NOTAS_DE_CREDITO  (Package) 
+-- OC_NOTAS_DE_CREDITO  (Package)
 --
 --  Dependencies: 
 --   STANDARD (Package)
@@ -112,7 +112,11 @@ PROCEDURE REVERTIR_APLICACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdnCR NUMBER)
 FUNCTION FACTURA_ELECTRONICA(nIdNcr    NUMBER,   nCodCia       NUMBER,   nCodEmpresa  NUMBER, 
                              cTipoCfdi VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL) RETURN VARCHAR2;
                              
-FUNCTION MONTO_BASE_IMPUESTO(nCodCia       NUMBER, nIdNcr  NUMBER)  RETURN NUMBER;                             
+FUNCTION MONTO_BASE_IMPUESTO(nCodCia       NUMBER, nIdNcr  NUMBER)  RETURN NUMBER;
+
+---ARH 06/06/2025 procedicimento para insertar datos temporales de los recibos provisionales
+PROCEDURE INSERT_TEMP_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNcr NUMBER, nIdPoliza NUMBER);
+    --                         
 
 END OC_NOTAS_DE_CREDITO;
 /
@@ -334,6 +338,15 @@ BEGIN
       AND CodCia  = nCodCia;
 
    OC_COMISIONES.REVERSA_DEVOLUCION(nCodCia, nIdNcr);
+   
+   IF cMotivAnul IN ('REEX', 'CAFP')THEN
+      UPDATE ADM_RECIBOS_PROV
+      SET Sts                  = 'ANU',
+          FechaTransaccion     = TRUNC(SYSDATE),                 
+          Usuariogenero        = cCodUsuarioEnvFactAnu
+      WHERE CodCia  = nCodCia 
+        AND IdNcr   = nIdNcr;
+   END IF;
 END ANULAR;
 
 PROCEDURE EMITIR_NOTA_CREDITO(nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER, nIdTransaccion NUMBER) IS
@@ -373,6 +386,7 @@ nAsistRestLocal          ASISTENCIAS_DETALLE_POLIZA.MontoAsistLocal%TYPE;
 nAsistRestMoneda         ASISTENCIAS_DETALLE_POLIZA.MontoAsistMoneda%TYPE;
 nTotPrimaMonedaAseg      ASEGURADO_CERTIFICADO.PrimaNeta_Moneda%TYPE;
 cTipoEndoso              ENDOSOS.TipoEndoso%TYPE;
+cTpEndoso                ENDOSOS.TipoEndoso%TYPE;
 cIndFactElectronica      POLIZAS.IndFactElectronica%TYPE;
 Dummy                    NUMBER(5);
 dFecPago                 DATE;
@@ -383,11 +397,14 @@ dFecHoy                  DATE;
 cGraba                   VARCHAR2(1);
 nFactor                  NUMBER (14,8);
 fFecfinvig               FACTURAS.FECFINVIG%TYPE;      -- ICOFINVIG
+nFacturaOrig             ADM_RECIBOS_PROV.IdFactura%TYPE;
+cStsNcr                  NOTAS_DE_CREDITO.StsNcr%TYPE;
+cMotivoEndoso            ENDOSOS.Motivo_Endoso%TYPE;
 
 CURSOR ENDOSO_Q IS
    SELECT E.Prima_Neta_Local PrimaLocal, E.Prima_Neta_Moneda PrimaMoneda, E.CodPlanPago, E.PorcComis,
           E.FecIniVig, E.FecFinVig, E.FecEmision, E.IDetPol, D.IdTipoSeg, A.Cod_Agente, A.Porc_Comision, E.FecExc,
-          D.Prima_Local, D.Prima_Moneda, E.TipoEndoso
+          D.Prima_Local, D.Prima_Moneda, E.TipoEndoso, E.Motivo_Endoso
      FROM DETALLE_POLIZA D, ENDOSOS E, AGENTES_DETALLES_POLIZAS A
     WHERE D.IdPoliza  = E.IdPoliza
       AND D.IDetPol   = E.IDetPol
@@ -448,7 +465,7 @@ CURSOR CPTO_PRIMAS_Q IS
       AND D.IDetPol           = nIDetPol
       AND D.IdPoliza          = nIdPoliza
       AND D.CodCia            = nCodCia
-      AND cTipoEndoso         = 'NSS'
+      AND cTpEndoso           = 'NSS'
     GROUP BY CS.CodCpto;
 CURSOR CPTO_ASIST_Q IS
    SELECT T.CodCptoServicio, SUM(A.MontoAsistLocal) MontoAsistLocal,
@@ -510,6 +527,12 @@ BEGIN
       cTipoEndoso  := X.TipoEndoso;
       nPrimaLocal  := X.PrimaLocal;
       nPrimaMoneda := X.PrimaMoneda;
+      cMotivoEndoso := X.Motivo_Endoso;
+      IF X.TipoEndoso = 'EAD' THEN
+         cTpEndoso    := 'NSS';
+      ELSE
+         cTpEndoso    := X.TipoEndoso;
+      END IF;
       IF  X.FecExc IS NOT NULL THEN
          nPrimaLocal  := OC_NOTAS_DE_CREDITO.FUNC_CALCULO_PRORRATA (X.FecIniVig, X.FecFinVig, X.FecExc, nPrimaLocal);
          nPrimaMoneda := OC_NOTAS_DE_CREDITO.FUNC_CALCULO_PRORRATA (X.FecIniVig, X.FecFinVig, X.FecExc, nPrimaMoneda);
@@ -581,7 +604,7 @@ BEGIN
 
          FOR W IN CPTO_PRIMAS_Q LOOP
             IF nIdEndoso != 0 THEN
-               IF X.TipoEndoso NOT IN ('EXA','NSS') THEN
+               IF cTpEndoso NOT IN ('EXA','NSS') THEN
                   nFactor :=   W.Prima_Moneda / X.Prima_Moneda;-- NVL(nMtoPago,0);
                ELSE
                   nFactor :=   W.Prima_Moneda / X.PrimaMoneda;-- NVL(nMtoPago,0);
@@ -654,6 +677,27 @@ BEGIN
       OC_DETALLE_TRANSACCION.CREA (nIdTransaccion, nCodCia, nCodEmpresa, 8, 'NCR', 'NOTAS_DE_CREDITO',
                                    nIdPoliza, nIDetPol, nIdEndoso, nIdNcr, nMtoTotalMoneda);
    END LOOP;
+   IF cTipoEndoso = 'EAD' AND cMotivoEndoso = '033' THEN
+         BEGIN
+           SELECT IdFacturaorig
+           INTO nFacturaOrig
+           FROM TEMP_RECIBOS_PROV
+           WHERE IdPoliza   = nIdPoliza;
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              RAISE_APPLICATION_ERROR (-20200,'No Existe Factura para crearle una Nota de Credito provisional '||nIdPoliza);
+         END;
+         BEGIN
+             SELECT StsNcr
+             INTO   cStsNcr
+             FROM   NOTAS_DE_CREDITO
+             WHERE  IdNcr         = nIdNcr
+             AND    IdPoliza      = nIdPoliza
+             AND    IdTransaccion = nIdTransaccion;
+         END;
+         OC_ENDOSO.ENDOSO_RECIBO_PROVISIONAL(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso,
+                                             nFacturaOrig, nIdTransaccion, NULL, NULL, nIdNcr, nMtoTotalMoneda, NULL, cStsNcr);
+      END IF;
 END EMITIR_NOTA_CREDITO;
 
 FUNCTION FUNC_CALCULO_PRORRATA (dFecIniVig DATE ,dFecFinVig DATE ,dFecExc DATE,nPrimaA NUMBER) RETURN NUMBER IS
@@ -1430,6 +1474,9 @@ END CODIGO_PLAN_PAGOS;
 
 PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNcrAnu NUMBER, nIdTransaccion NUMBER) IS
 nIdNcr    NOTAS_DE_CREDITO.IdNcr%TYPE;
+cIndicador VARCHAR2(2);
+nFacturaOrig ADM_RECIBOS_PROV.IdFactura%TYPE;
+cStsNcr   NOTAS_DE_CREDITO.StsNcr%TYPE;
 
 
 CURSOR NCR_Q IS
@@ -1487,7 +1534,26 @@ BEGIN
         WHEN OTHERS THEN
              RAISE_APPLICATION_ERROR (-20100,'Problemas en la Nota de Credito Anulada No. ' || nIdNcrAnu);
       END;
-      --      
+      --  
+      BEGIN
+        SELECT 'S'
+          INTO cIndicador
+          FROM TEMP_RECIBOS_PROV
+        WHERE IdPoliza      = W.IdPoliza
+          AND IdNcrInicial  = nIdNcrAnu;
+      EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+           cIndicador := 'N';
+      WHEN TOO_MANY_ROWS THEN
+           cIndicador := 'S';
+      END;
+      IF cIndicador = 'S' THEN
+        UPDATE TEMP_RECIBOS_PROV
+        SET IdNcr1  = nIdNcr
+        WHERE IdPoliza      = W.IdPoliza
+        AND   IdNcrInicial  = nIdNcrAnu;
+         --
+      END IF;  
    END LOOP;
 END REHABILITACION;
 
@@ -1628,6 +1694,46 @@ BEGIN
       AND OC_CATALOGO_DE_CONCEPTOS.INDICADOR_CONCEPTO(nCodCia, CodCpto, 'IMPUESTO') != 'S';
    RETURN nMontoBase;
 END MONTO_BASE_IMPUESTO;
+
+PROCEDURE INSERT_TEMP_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNcr NUMBER, nIdPoliza NUMBER) IS
+    cIndicador    VARCHAR2(2);
+	cExiste       VARCHAR2(2);
+    CURSOR RECB1_Q IS
+       SELECT *
+         FROM ADM_RECIBOS_PROV
+        WHERE CodCia        = nCodCia
+          AND CodEmpresa    = nCodEmpresa
+          AND IdPoliza      = nIdPoliza
+          AND IdNcr         = nIdNcr
+          AND Sts           = 'ANU'
+        ORDER BY IdTransaccion, IdEndoso;
+    BEGIN
+       BEGIN
+         SELECT 'S'
+         INTO cExiste
+         FROM TEMP_RECIBOS_PROV
+         WHERE IdPoliza      = nIdPoliza
+          AND  IdNcrInicial  = nIdNcr;
+       EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+               cExiste := 'N';
+          WHEN TOO_MANY_ROWS  THEN
+               cExiste := 'S';
+       END;
+      
+      IF cExiste != 'S' THEN
+         FOR X IN RECB1_Q LOOP
+           BEGIN
+               INSERT INTO TEMP_RECIBOS_PROV (IdPoliza, IdetPol, IdFacturaOrig, IdFacturaIni, IdNcrInicial, IdFactura1, IdFactura2, IdNcr1) 
+               VALUES (nIdPoliza, X.IdetPol, X.IdFactura, X.IdFactura2, X.IdNcr, NULL, NULL, NULL);		   
+             EXCEPTION
+             WHEN OTHERS THEN
+               RAISE_APPLICATION_ERROR(-20225,' NO SE PUDO INSERTAR EL REGISTRO LA NOTA DE CREDITO EN LA TABLA TEMPORAL: ' || TRIM(TO_CHAR(nIdpoliza)));
+           END;
+         END LOOP;
+      END IF;
+    END INSERT_TEMP_RECIBOS_PROV;
+    --
 
 END OC_NOTAS_DE_CREDITO;
 /

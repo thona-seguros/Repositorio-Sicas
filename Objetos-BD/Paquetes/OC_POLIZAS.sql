@@ -100,7 +100,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
     FUNCTION F_OBT_NUMPOLUNICO_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN VARCHAR2;              --08/05/2024            
     FUNCTION F_OBT_NUMRENOV_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN NUMBER;                   --17/05/2024
     FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RETURN NUMBER; --17/05/2024
-
+    PROCEDURE REHABILITA_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);--09/06/2025 ARH
 
 
 END OC_POLIZAS;
@@ -3300,6 +3300,8 @@ END RENOVAR;
    nIdTransacNc          TRANSACCION.IdTransaccion%TYPE;
    nIdTransacNcRehab     TRANSACCION.IdTransaccion%TYPE;
    nTotNotaCredCanc      DETALLE_NOTAS_DE_CREDITO.Monto_Det_Moneda%TYPE;
+   cIndicador            VARCHAR2(2);
+
 
    CURSOR ASEG_Q IS
       SELECT IDetPol, Cod_Asegurado
@@ -3356,7 +3358,7 @@ END RENOVAR;
 
          OC_DETALLE_TRANSACCION.CREA (nIdTransaccion, nCodCia,  nCodEmpresa, 18, 'REHAB', 'POLIZAS',
                   nIdPoliza, NULL, NULL, NULL, nPrimaNeta_Moneda);
-
+                     
          FOR W IN DET_Q LOOP
        OC_DETALLE_TRANSACCION.CREA(nIdTransaccion, nCodCia,  nCodEmpresa, 18, 'REHAB', 'DETALLE_POLIZA',
                      nIdPoliza, W.IDetPol, NULL, NULL, W.Prima_Moneda);
@@ -3395,7 +3397,8 @@ END RENOVAR;
        AND T.IdProceso          = 2;
 
          FOR W IN FACT_Q LOOP
-       OC_FACTURAS.REHABILITACION(nCodCia, nCodEmpresa, W.IdFactura, nIdTransaccion);
+        OC_FACTURAS.INSERT_TEMP_RECIBOS_PROV(nCodCia, nCodEmpresa, W.IdFactura, nIdPoliza);
+        OC_FACTURAS.REHABILITACION(nCodCia, nCodEmpresa, W.IdFactura, nIdTransaccion);
          END LOOP;
 
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccion, '100');
@@ -3416,7 +3419,7 @@ END RENOVAR;
        IF NVL(nIdTransacNcRehab,0) = 0 THEN
           nIdTransacNcRehab := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 18, 'REHNCR');
        END IF;
-
+       OC_NOTAS_DE_CREDITO.INSERT_TEMP_RECIBOS_PROV(nCodCia, nCodEmpresa, W.IdNcr, nIdPoliza);
        OC_NOTAS_DE_CREDITO.REHABILITACION(nCodCia, nCodEmpresa, W.IdNcr, nIdTransacNcRehab);
          END LOOP;
 
@@ -3462,6 +3465,22 @@ END RENOVAR;
          END IF;
          --
          OC_ENDOSO.ENDOSO_REHABILITACION(nCodCia, nCodEmpresa , nIdPoliza);  --ENDCAN
+         --
+         BEGIN
+            SELECT 'S'
+            INTO cIndicador
+            FROM TEMP_RECIBOS_PROV
+            WHERE IdPoliza   = nIdPoliza;
+         EXCEPTION
+           WHEN NO_DATA_FOUND THEN
+                cIndicador := 'N';
+           WHEN TOO_MANY_ROWS THEN
+                cIndicador := 'S';
+         END;
+            
+         IF cIndicador = 'S' THEN
+            OC_POLIZAS.REHABILITA_RECIBOS_PROV(nCodCia, nCodEmpresa , nIdPoliza);
+         END IF;
          --
       ELSE
          RAISE_APPLICATION_ERROR(-20225,'La Póliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' NO está Anulada para Rehabilitarse');
@@ -5517,6 +5536,218 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
         RETURN (1);
        END IF;
    END COPIAR_REN;
- -- PROCESOS GENERADOS PARA LA RENOVACION ESPECIAL MLJS CAGR ---  
+ -- PROCESOS GENERADOS PARA LA RENOVACION ESPECIAL MLJS CAGR ---
+   PROCEDURE REHABILITA_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) IS
+   
+   nFactOrgReha    NUMBER;
+   nFactProvReha   NUMBER;
+   nNtcProvReha    NUMBER;
+   nIDetPol        FACTURAS.IDetPol%TYPE;
+   nIdEndoso       ENDOSOS.IdEndoso%TYPE;
+   nNumCuotaIni    FACTURAS.Numcuota%TYPE;
+   nTransa         FACTURAS.Idtransaccion%TYPE;
+   nMtoT           FACTURAS.Monto_Fact_Local%TYPE;
+   cStsFact        FACTURAS.Stsfact%TYPE;
+   nIdTransaccion  NOTAS_DE_CREDITO.Idtransaccion%TYPE;
+   nMtoNcrMoneda   NOTAS_DE_CREDITO.Monto_Ncr_Moneda%TYPE;
+   cStsNcr         NOTAS_DE_CREDITO.StsNcr%TYPE;
+   cIdTipoSeg      DETALLE_POLIZA.IdTipoSeg%TYPE;
+   nMontoMoneda    FACTURAS.Monto_Fact_Moneda%TYPE;
+   dFecIniVig      FACTURAS.FECVENC%TYPE;
+   dFecFinVig      FACTURAS.FECFINVIG%TYPE;
+   nMontoTotal     ADM_RECIBOS_PROV.Montototalmoneda%TYPE;
+   nPrimaNeta      NUMBER;
+   nIva            NUMBER;
+   cUsuario        VARCHAR2(20);
+   cRamo           TIPOS_DE_SEGUROS.CodTipoPlan%TYPE;
+   cExiste         VARCHAR2(2);
+   nValidTransa    FACTURAS.Idtransaccion%TYPE;
+      
+   CURSOR RECIBOS IS
+      SELECT *
+        FROM TEMP_RECIBOS_PROV 
+       WHERE IdPoliza = nIdPoliza
+       ORDER BY Idconsecutivo;
+   BEGIN
+     SELECT USER
+     INTO cUsuario
+     FROM SYS.DUAL;
+     --
+     BEGIN
+        SELECT IdTipoSeg
+        INTO cIdTipoSeg
+        FROM DETALLE_POLIZA
+        WHERE CodCia   = nCodCia
+        AND CodEmpresa = nCodEmpresa
+        AND IdPoliza   = nIdPoliza
+        AND ROWNUM     = 1;
+     EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+          RAISE_APPLICATION_ERROR(-20226,' NO EXISTE TIPO DE SEGURO PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+     WHEN TOO_MANY_ROWS  THEN
+          RAISE_APPLICATION_ERROR(-20226,' EXISTE MAS DE UN TIPO DE SEGURO PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+     END;
+     BEGIN
+        SELECT IdEndoso
+        INTO nIdEndoso
+        FROM ENDOSOS
+        WHERE CodCia   = nCodCia
+        AND CodEmpresa = nCodEmpresa
+        AND IdPoliza   = nIdPoliza
+        AND TipoEndoso = 'REHAP';
+     EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+          RAISE_APPLICATION_ERROR(-20226,' NO EXISTE ENDOSO DE REHABILITACION PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+     WHEN TOO_MANY_ROWS  THEN
+          RAISE_APPLICATION_ERROR(-20226,' EXISTE MAS DE UN ENDOSO DE REHABILITACION PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+     END;
+     cRamo:= OC_TIPOS_DE_SEGUROS.CODIGO_RAMO(nCodCia, nCodEmpresa, cIdTipoSeg);
+        
+     FOR X IN RECIBOS LOOP
+       nFactOrgReha  := X.IdFactura1;
+       nFactProvReha := X.IdFactura2;
+       nNtcProvReha  := X.IdNcr1;
+       BEGIN
+         SELECT IDetPol, Numcuota, Monto_Fact_Moneda, FecVenc, FecFinVig
+         INTO nIDetPol, nNumCuotaIni, nMontoMoneda, dFecIniVig, dFecFinVig
+         FROM FACTURAS
+         WHERE CodCia    = nCodCia
+          AND IdPoliza  = nIdPoliza
+          AND IdFactura = nFactOrgReha;
+       EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              RAISE_APPLICATION_ERROR(-20226,' NO EXISTE FACTURA PROVISIONALES PARA REHABILITAR ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+         WHEN TOO_MANY_ROWS THEN
+             RAISE_APPLICATION_ERROR(-20226,' NO EXISTE FACTURA PROVISIONALES PARA REHABILITAR ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+       END;
+       IF nFactProvReha IS NOT NULL THEN
+          BEGIN
+            SELECT Idtransaccion, Monto_Fact_Moneda, Stsfact
+            INTO nTransa, nMtoT, cStsFact
+            FROM FACTURAS
+            WHERE CodCia   = nCodCia
+             AND IdPoliza  = nIdPoliza
+             AND IdFactura = nFactProvReha;
+          EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                 RAISE_APPLICATION_ERROR(-20226,' NO EXISTE FACTURA PROVISIONALES PARA REHABILITAR ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+            WHEN TOO_MANY_ROWS THEN
+                 RAISE_APPLICATION_ERROR(-20226,' NO EXISTE FACTURA PROVISIONALES PARA REHABILITAR ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+          END;
+
+          BEGIN
+             SELECT 'S'
+             INTO cExiste
+             FROM ADM_RECIBOS_PROV
+             WHERE CodCia        = nCodCia
+              AND CodEmpresa     = nCodEmpresa
+              AND IdPoliza       = nIdPoliza
+              AND Idtransaccion  = nTransa;
+          EXCEPTION
+             WHEN NO_DATA_FOUND THEN
+                  cExiste := 'N';
+             WHEN TOO_MANY_ROWS  THEN
+                  cExiste := 'S';
+          END;
+                       
+          IF cExiste = 'S' THEN
+             SELECT MAX(Idtransaccion)
+             INTO  nValidTransa
+             FROM ADM_RECIBOS_PROV
+             WHERE CodCia        = nCodCia
+              AND CodEmpresa     = nCodEmpresa
+              AND IdPoliza       = nIdPoliza;
+                         
+             nTransa := nValidTransa + 1;
+          END IF;
+          nMontoTotal := nMontoMoneda + nMtoT;
+                 
+          IF cRamo = '010' THEN
+             nPrimaNeta := nMontoTotal;
+             nIva := 0;
+          ELSIF cRamo = '030' THEN
+             nPrimaNeta := nMontoTotal / 1.16;
+             nIva := nPrimaNeta * 0.16;
+          END IF; 
+          --
+          BEGIN
+                INSERT INTO ADM_RECIBOS_PROV
+                   ( CodCia, CodEmpresa, IdPoliza, IdEndoso, IDetPol , IdTransaccion, IdFactura, Monto_Fact_Moneda, IdFactura2, Monto_Fact_Moneda2,
+                     IdNcr,  Monto_Ncr_Moneda, NumCuota , FecFinVig , FecVenc, Montototalmoneda, Ivasin, PrimaNeta, sts, FechaTransaccion, Usuariogenero)
+                VALUES( nCodCia, nCodEmpresa, nIdPoliza , nIdEndoso, nIDetPol, nTransa, nFactOrgReha, nMontoMoneda, nFactProvReha, nMtoT,
+                        NULL, NULL, nNumCuotaIni, dFecIniVig, dFecFinVig, nMontoTotal, nIva, nPrimaNeta, cStsFact, TRUNC(SYSDATE),  cUsuario);
+          EXCEPTION
+            WHEN OTHERS THEN
+              RAISE_APPLICATION_ERROR(-20226,' NO SE PUDO INSERTAR EL REGISTRO EN RECIBOS PROVISIONALES: ' || TRIM(TO_CHAR(nIdpoliza)));
+          END;
+       ELSIF nNtcProvReha IS NOT NULL THEN
+          BEGIN
+            SELECT  Idtransaccion, StsNcr, Monto_Ncr_Moneda
+             INTO  nIdTransaccion, cStsNcr, nMtoNcrMoneda
+             FROM  NOTAS_DE_CREDITO
+             WHERE  IdNcr         = nNtcProvReha
+              AND   IdPoliza      = nIdPoliza;
+          EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                 RAISE_APPLICATION_ERROR(-20226,' NO EXISTE NOTA DE CREDITO PROVISIONALES PARA REHABILITAR ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+            WHEN TOO_MANY_ROWS THEN
+                 RAISE_APPLICATION_ERROR(-20226,' NO EXISTE NOTA DE CREDITO PROVISIONALES PARA REHABILITAR ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+          END;
+          --
+          BEGIN
+             SELECT 'S'
+             INTO cExiste
+             FROM ADM_RECIBOS_PROV
+             WHERE CodCia        = nCodCia
+              AND CodEmpresa     = nCodEmpresa
+              AND IdPoliza       = nIdPoliza
+              AND Idtransaccion  = nIdTransaccion;
+          EXCEPTION
+             WHEN NO_DATA_FOUND THEN
+                  cExiste := 'N';
+             WHEN TOO_MANY_ROWS  THEN
+                  cExiste := 'S';
+          END;
+                       
+          IF cExiste = 'S' THEN
+             SELECT MAX(Idtransaccion)
+             INTO  nValidTransa
+             FROM ADM_RECIBOS_PROV
+             WHERE CodCia        = nCodCia
+              AND CodEmpresa     = nCodEmpresa
+              AND IdPoliza       = nIdPoliza;
+                         
+             nIdTransaccion := nValidTransa + 1;
+          END IF;
+          --
+          nMontoTotal := nMontoMoneda - nMtoNcrMoneda;
+          IF cRamo = '010' THEN
+             nPrimaNeta := nMontoTotal;
+             nIva := 0;
+          ELSIF cRamo = '030' THEN
+             nPrimaNeta := nMontoTotal / 1.16;
+             nIva := nPrimaNeta * 0.16;
+          END IF;
+          --
+          BEGIN
+                INSERT INTO ADM_RECIBOS_PROV
+                   ( CodCia, CodEmpresa, IdPoliza, IdEndoso, IDetPol , IdTransaccion, IdFactura, Monto_Fact_Moneda, IdFactura2, Monto_Fact_Moneda2,
+                     IdNcr,  Monto_Ncr_Moneda, NumCuota , FecFinVig , FecVenc, Montototalmoneda, Ivasin, PrimaNeta, sts, FechaTransaccion, Usuariogenero)
+                VALUES( nCodCia, nCodEmpresa, nIdPoliza , nIdEndoso, nIDetPol, nIdTransaccion, nFactOrgReha, nMontoMoneda, NULL, NULL,
+                        nNtcProvReha, nMtoNcrMoneda, nNumCuotaIni, dFecIniVig, dFecFinVig, nMontoTotal, nIva, nPrimaNeta, cStsNcr, TRUNC(SYSDATE), cUsuario);
+          EXCEPTION
+            WHEN OTHERS THEN
+              RAISE_APPLICATION_ERROR(-20226,' NO SE PUDO INSERTAR EL REGISTRO DE NOTA DE CREDITO PROVISIONALES: ' || TRIM(TO_CHAR(nIdpoliza)));
+          END;
+       END IF;
+     END LOOP;
+     --
+     DELETE FROM TEMP_RECIBOS_PROV
+     WHERE IdPoliza  = nIdPoliza;
+     --
+   EXCEPTION
+      WHEN OTHERS THEN
+         RAISE_APPLICATION_ERROR(-20226,'Error al Rehabilitar la de Póliza y sus Recibos provicionales : '||nIdPoliza||sqlerrm);
+   END REHABILITA_RECIBOS_PROV;
 END OC_POLIZAS;
 /

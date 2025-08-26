@@ -37,13 +37,13 @@ create or replace PACKAGE SICAS_OC.OC_ENDOSO IS
    PROCEDURE ENDOSO_REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);
    FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN VARCHAR2;
 
-	--JIBARRA_09-11-2022 <SE CREA PROCESO PARA LA ACTUALIZACION DE LAS FECHAS DE VIGENCIA DE ENDOSO, CERTIFICADO, POLIZA, FACTRUAS O NOTAS DE CREDITO
-	--						SEGUN COMO CORRESPONDE A LA NECESIDAD DEL USURAIO>
-	PROCEDURE ACTUALIZA_FECHAS_VIG(nCodCia IN NUMBER, nIdPoliza IN NUMBER, nIDetPol IN NUMBER, nIdEndoso IN NUMBER, nNumError OUT NUMBER, cMsjError OUT VARCHAR2);
-	--ARH_21-02-2025 <SE CREA PROCESO PARA LA VALIDACION DE DATOS EN LA CARGA DE INCLUISON DE ASEGURADOS PARA LA PRIMA DE AJUSTE ANUAL
-	PROCEDURE VALIDA_DATOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cNumPolUnico VARCHAR2, cCodUser VARCHAR2, cValidado OUT VARCHAR2);
-	--ARH_26-02-2025 <SE CREA PROCESO PARA LA CARGA DE INCLUISON DE ASEGURADOS PARA LA PRIMA DE AJUSTE ANUAL Y ENDOSOS NOTA DE CREDITO O RECIBO
-	PROCEDURE CALCULA_PRIMA_AJUSTEANUAL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cCodUser VARCHAR2, cMsjvalor OUT VARCHAR2);
+   --JIBARRA_09-11-2022 <SE CREA PROCESO PARA LA ACTUALIZACION DE LAS FECHAS DE VIGENCIA DE ENDOSO, CERTIFICADO, POLIZA, FACTRUAS O NOTAS DE CREDITO
+   --                   SEGUN COMO CORRESPONDE A LA NECESIDAD DEL USURAIO>
+    PROCEDURE ACTUALIZA_FECHAS_VIG(nCodCia IN NUMBER, nIdPoliza IN NUMBER, nIDetPol IN NUMBER, nIdEndoso IN NUMBER, nNumError OUT NUMBER, cMsjError OUT VARCHAR2);
+    --ARH_07-05-2025 <SE CREA PROCESO PARA INSERTAR RECIBOS O NOTAS DE CREDITO PROVISIONALES DE OTRO RECIBO PARA EL ENDOSOS DE DECLARACION
+    PROCEDURE ENDOSO_RECIBO_PROVISIONAL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER, nIdFactura NUMBER,
+                                        nIdTransaccion NUMBER, nIdFactura2 NUMBER, nMonto_Fact_Moneda2 NUMBER, nIdNcr NUMBER, nMonto_Ncr_Moneda NUMBER,
+                                        nNumCuotaIni  NUMBER, csts VARCHAR2);
 
 END OC_ENDOSO;
 
@@ -334,6 +334,7 @@ PROCEDURE EMITIR(nCodcia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIdetPol 
 	nMtoAporteIniLocal   FAI_FONDOS_DETALLE_POLIZA.MtoAporteIniLocal%TYPE;
 	nCodAsegurado        DETALLE_POLIZA.Cod_Asegurado%TYPE;
 	cCodMoneda           POLIZAS.Cod_Moneda%TYPE;
+    nMotivoEndoso        ENDOSOS.Motivo_Endoso%TYPE;
 
 
 	CURSOR COBERT_Q IS
@@ -443,11 +444,13 @@ BEGIN
 			,FecIniVig
 			,CodPlanPago
 			,NVL(MontoAporteFondo,0)
+            ,Motivo_Endoso
 		INTO nSuma_Aseg_Moneda
 			,nPrima_Moneda
 			,dFecIniVig
 			,cCodPlanPago
 			,nMontoAporteFondo
+            ,nMotivoEndoso
 		FROM ENDOSOS
 		WHERE CodCia   = nCodCia
 		AND IdPoliza = nIdPoliza
@@ -493,8 +496,9 @@ BEGIN
 		END IF;
 	END IF;
 	nControl := 9;
+	
 	cNaturalidad := OC_ENDOSO.NATURALIDAD(cTipoEndoso);
-
+	
 	IF cNaturalidad = '-' THEN
 		nControl := 10;
 		nNaturalidad := -1;
@@ -558,16 +562,24 @@ BEGIN
 		nIdTrn := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, cTipoEndoso);
 		OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, cTipoEndoso, 'ENDOSOS',
 									nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Moneda);
-		IF NVL(cIndFactPeriodo,'N') = 'N' THEN
+		IF cTipoEndoso = 'EAD' AND nMotivoEndoso IN ('032','033') THEN
+		   IF nMotivoEndoso = '032' AND nPrima_Moneda != 0 THEN
+	         OC_FACTURAR.PROC_EMITE_FACT_END (nIdPoliza, nIDetPol, nIdEndoso, nIdTrn);
+	      ELSIF nMotivoEndoso = '033' AND nPrima_Moneda != 0 THEN
+	         OC_NOTAS_DE_CREDITO.EMITIR_NOTA_CREDITO(nIdPoliza, nIDetPol, nIdEndoso, nIdTrn);
+	      END IF;
+		ELSE
+		  IF NVL(cIndFactPeriodo,'N') = 'N' THEN
 			IF cNaturalidad = '+' AND nPrima_Moneda != 0 THEN
 				OC_FACTURAR.PROC_EMITE_FACT_END (nIdPoliza, nIDetPol, nIdEndoso, nIdTrn);
 			ELSIF cNaturalidad = '-' AND nPrima_Moneda != 0 THEN
 				OC_NOTAS_DE_CREDITO.EMITIR_NOTA_CREDITO(nIdPoliza, nIDetPol, nIdEndoso, nIdTrn);
 			END IF;
-		ELSE
+		  ELSE
 			IF cNaturalidad = '+' AND nPrima_Moneda != 0 THEN
 				OC_FACTURAR.PROC_EMITE_FACT_ENDO_PERIODO(nIdPoliza, 0, nCodCia, nIdTrn, 1);
 			END IF;
+		  END IF;
 		END IF;
 		OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTrn, 'C');
 	ELSIF cTipoEndoso IN ('EAAF') THEN
@@ -842,6 +854,7 @@ END EMITIR;
   W_ACTIVA_PLD       SAI_CAT_GENERAL.CAGE_VALOR_CORTO%TYPE;  --LAVDIN
   cIdTipoSeg         DETALLE_POLIZA.IdTipoSeg%TYPE;
   cPlanCob           DETALLE_POLIZA.PlanCob%TYPE;
+  cMotEndoso         varchar2(10);
 
   CURSOR ASEG_Q IS
      SELECT AC.IDetPol, AC.Cod_Asegurado, D.CodEmpresa,
@@ -1092,6 +1105,19 @@ END EMITIR;
                     END IF;
                     */
                     nEdad   := OC_ASEGURADO.EDAD_ASEGURADO(nCodCia, W.CodEmpresa, W.Cod_Asegurado, dFecIniVig);
+                       
+                    --CONSULTA PARA QUE ENTRE VALIDACION SAMI EDADES
+                    BEGIN 
+                      SELECT MOTIVO_ENDOSO 
+                      INTO   cMotEndoso
+                      FROM ENDOSOS
+                      WHERE IDPOLIZA = nIdPoliza  
+                      AND IDENDOSO = nIdEndoso 
+                      AND TIPOENDOSO = 'INA';
+                    EXCEPTION
+                      WHEN NO_DATA_FOUND THEN
+                           cMotEndoso := 'N';
+                    END;
 
                     SELECT COUNT(*)
                     INTO nRegis
@@ -1108,9 +1134,11 @@ END EMITIR;
                     AND C.Cod_Asegurado = W.Cod_Asegurado
                     AND C.CodCia        = nCodCia;
 
-                    IF nRegis != 0 THEN
-                        RAISE_APPLICATION_ERROR(-20200,'El Asegurado No. ' || W.Cod_Asegurado || ' del Certificado No. ' || W.IDetPol ||
-                                                ' en el Endoso ' || nIdEndoso || ' Posee Coberturas fuera el Rango de Aceptación para la Edad ' || nEdad);
+                    IF cTipoEndoso != 'INA' AND cMotEndoso != '010' THEN
+                       IF nRegis != 0 THEN
+                          RAISE_APPLICATION_ERROR(-20200,'El Asegurado No. ' || W.Cod_Asegurado || ' del Certificado No. ' || W.IDetPol ||
+                                                  ' en el Endoso ' || nIdEndoso || ' Posee Coberturas fuera el Rango de Aceptación para la Edad ' || nEdad);
+                       END IF;
                     END IF;
 
                     SELECT NVL(SUM(SumaAseg_Moneda),0)--, NVL(SUM(Prima_Moneda),0)
@@ -1160,6 +1188,8 @@ END EMITIR;
   cExiste             VARCHAR2(1);
   nExisteSini         NUMBER(10);
   nAsegNoEmitidos     NUMBER(10);
+  nMotivoEndoso       ENDOSOS.Motivo_Endoso%TYPE;
+  cCodCobrador        FACTURAS.CodCobrador%TYPE;
 
   CURSOR COBERT_Q IS
      SELECT IDetPol, CodCobert, Suma_Asegurada_Local, Suma_Asegurada_Moneda,
@@ -1198,7 +1228,37 @@ END EMITIR;
         AND IdPoliza  = nIdPoliza
         AND IdEndoso  = nIdEndoso
         AND Estado    = 'EMI';
+  CURSOR FACTPROV_Q IS
+     SELECT IdFactura2, Monto_Fact_Moneda2
+       FROM ADM_RECIBOS_PROV
+      WHERE CodCia    = nCodCia
+        AND IdPoliza  = nIdPoliza
+        AND IDetPol   = nIDetPol
+        AND IdEndoso  = nIdEndoso
+        AND IdFactura2 IS NOT NULL
+        AND Sts      IN ('EMI');
+  CURSOR NCRPROV_Q IS
+     SELECT IdNcr, Monto_Ncr_Moneda
+       FROM ADM_RECIBOS_PROV
+      WHERE CodCia    = nCodCia
+        AND IdPoliza  = nIdPoliza
+        AND IDetPol   = nIDetPol
+        AND IdEndoso  = nIdEndoso
+        AND IdNcr     IS NOT NULL
+        AND Sts      IN ('EMI');
+		
   BEGIN
+     BEGIN
+        SELECT Motivo_Endoso
+        INTO nMotivoEndoso
+        FROM ENDOSOS
+        WHERE CodCia = nCodCia
+        AND IdPoliza = nIdPoliza
+        AND IDetPol  = nIDetPol
+        AND IdEndoso = nIdEndoso;
+     EXCEPTION WHEN OTHERS THEN
+        nMotivoEndoso := 'N';
+     END;
      nIdTrn := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, cTipoEndoso);
 
      cNaturalidad := OC_ENDOSO.NATURALIDAD(cTipoEndoso);
@@ -1251,18 +1311,56 @@ END EMITIR;
      OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, cSubProceso, 'ENDOSOS',
                nIdPoliza, nIDetPol, nIdEndoso, NULL, nPrima_Neta_Moneda);
 
-     FOR W IN FACT_Q LOOP
-        OC_FACTURAS.ANULAR(nCodCia, W.IdFactura, dFecAnul, cMotivAnul, W.CodCobrador, nIdTrn);
-        OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, 'FAC', 'FACTURAS',
-            nIdPoliza, nIDetPol, nIdEndoso, W.IdFactura, W.Monto_Fact_Moneda);
-     END LOOP;
-
-     FOR X IN NCR_Q LOOP
-        OC_NOTAS_DE_CREDITO.ANULAR(X.IdNcr, dFecAnul, cMotivAnul, nIdTrn);
-        OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, 'NCR', 'NOTAS_DE_CREDITO',
-            nIdPoliza, nIDetPol, nIdEndoso, X.IdNcr, X.Monto_Ncr_Moneda);
-     END LOOP;
-
+     IF nMotivoEndoso = '032' THEN
+        FOR Z IN FACTPROV_Q LOOP
+          SELECT CodCobrador
+          INTO   cCodCobrador
+          FROM FACTURAS
+           WHERE CodCia  = nCodCia
+           AND IdPoliza  = nIdPoliza
+           AND IdFactura = Z.IdFactura2
+           AND StsFact   IN ('EMI','XEM');
+                      
+          OC_FACTURAS.ANULAR(nCodCia, Z.IdFactura2, dFecAnul, cMotivAnul, cCodCobrador, nIdTrn);
+          OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, 'FAC', 'FACTURAS',
+          nIdPoliza, nIDetPol, nIdEndoso, Z.IdFactura2, Z.Monto_Fact_Moneda2);
+                
+          UPDATE ADM_RECIBOS_PROV
+          SET Sts                  = 'ANU',
+              FechaTransaccion     = TRUNC(SYSDATE)
+          WHERE CodCia      = nCodCia
+          AND 	IdPoliza    = nIdPoliza	  
+          AND   IdFactura2  = Z.IdFactura2;
+        END LOOP;
+     ELSE
+        FOR W IN FACT_Q LOOP
+          OC_FACTURAS.ANULAR(nCodCia, W.IdFactura, dFecAnul, cMotivAnul, W.CodCobrador, nIdTrn);
+          OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, 'FAC', 'FACTURAS',
+          nIdPoliza, nIDetPol, nIdEndoso, W.IdFactura, W.Monto_Fact_Moneda);
+        END LOOP;
+     END IF;
+                            
+     IF nMotivoEndoso = '033' THEN
+        FOR Y IN NCRPROV_Q LOOP
+           OC_NOTAS_DE_CREDITO.ANULAR(Y.IdNcr, dFecAnul, cMotivAnul, nIdTrn);
+           OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, 'NCR', 'NOTAS_DE_CREDITO',
+           nIdPoliza, nIDetPol, nIdEndoso, Y.IdNcr, Y.Monto_Ncr_Moneda);
+           --
+           UPDATE ADM_RECIBOS_PROV
+           SET Sts           = 'ANU',
+           FechaTransaccion  = TRUNC(SYSDATE)
+           WHERE CodCia    = nCodCia
+           AND 	 IdPoliza  = nIdPoliza
+           AND   IdNcr     = Y.IdNcr;
+        END LOOP;
+     ELSE
+        FOR X IN NCR_Q LOOP
+          OC_NOTAS_DE_CREDITO.ANULAR(X.IdNcr, dFecAnul, cMotivAnul, nIdTrn);
+          OC_DETALLE_TRANSACCION.CREA(nIdTrn, nCodCia, nCodEmpresa, 8, 'NCR', 'NOTAS_DE_CREDITO',
+          nIdPoliza, nIDetPol, nIdEndoso, X.IdNcr, X.Monto_Ncr_Moneda);
+        END LOOP;
+     END IF;
+	 
      IF cTipoEndoso = 'EXA' THEN
         -- Deja Emitidas las Coberturas, Asistencias y Asegurados
         UPDATE COBERT_ACT_ASEG
@@ -2456,6 +2554,13 @@ END EMITIR;
     --
     OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdendoso, CLINEA_T);
     --
+    UPDATE ADM_RECIBOS_PROV
+       SET IDENDOSO = nIdendoso
+     WHERE CODCIA = nCodCia
+       AND CODEMPRESA = nCodEmpresa
+       AND IDPOLIZA = nIdPoliza
+       AND IDENDOSO = 0;
+	   
   END ENDOSO_REHABILITACION;
   --
   FUNCTION MONEDA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER) RETURN VARCHAR2 IS
@@ -2658,585 +2763,101 @@ END EMITIR;
 			cMsjError := SQLERRM;
 			cMsjError := 'ERROR_GENERAL SICAS_OC.OC_ENDOSO.ACTUALIZA_FECHAS_VIG [' || nControl || '] <' || cMsjError || '>';
 	END ACTUALIZA_FECHAS_VIG;
-
-  PROCEDURE VALIDA_DATOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cNumPolUnico VARCHAR2, cCodUser VARCHAR2, cValidado OUT VARCHAR2) IS
-    ---cValidado        VARCHAR2(200);
-    nIdpoliza2       POLIZAS.IdPoliza%TYPE;
-    nRegsErroneos    NUMBER := 0;
-    cMsjError        VARCHAR2(200);
-    cMsjError2       VARCHAR2(200);
-    nContador        NUMBER :=0;
-    cExisTpIden      VARCHAR2(2);
-    nCaracteres      VARCHAR2(100);
-    cExisSubGrup     VARCHAR2(2);
-	nRegistros       NUMBER := 0;
-    --
-    CURSOR cRegistros IS
-             SELECT *
-             FROM   INCLU_ASEGURADOS_EXT
-			 Where  Numpolunico = cNumPolUnico
-             ORDER BY Numpolunico, IdetPol;
-              
-    CURSOR Q_SUBGRUP IS
-             SELECT IdetPol
-             FROM   INCLU_ASEGURADOS_EXT
-			 Where  Numpolunico = cNumPolUnico
-             GROUP BY IdetPol;
+  --
+  PROCEDURE ENDOSO_RECIBO_PROVISIONAL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER, nIdFactura NUMBER,
+                                      nIdTransaccion NUMBER, nIdFactura2 NUMBER, nMonto_Fact_Moneda2 NUMBER, nIdNcr NUMBER, nMonto_Ncr_Moneda NUMBER,
+                                      nNumCuotaIni  NUMBER, csts VARCHAR2) IS
+                                               
+    nMontoMoneda FACTURAS.Monto_Fact_Moneda%TYPE;
+    dFecIniVig   FACTURAS.FECVENC%TYPE;
+    dFecFinVig   FACTURAS.FECFINVIG%TYPE;
+    cUsuario     VARCHAR2(20);
+    cExiste      VARCHAR2(2);
+    nMontFact    ADM_RECIBOS_PROV.Monto_Fact_Moneda%TYPE;
+    nMontoTotal  ADM_RECIBOS_PROV.Montototalmoneda%TYPE;
+    cIdTipoSeg   DETALLE_POLIZA.IdTipoSeg%TYPE;
+    cRamo        TIPOS_DE_SEGUROS.CodTipoPlan%TYPE;
+    nPrimaNeta   NUMBER;
+    nIva         NUMBER;
+    nNumCuotIni  FACTURAS.Numcuota%TYPE;
+           
   BEGIN
-      FOR Z IN Q_SUBGRUP LOOP
-          BEGIN
-             SELECT 'S'
-             INTO   cExisSubGrup
-             FROM   DETALLE_POLIZA
-             WHERE  IdPoliza    = nIdPoliza
-             AND    CodCia      = nCodCia
-             AND    CodEmpresa  = nCodEmpresa
-             AND    IdetPol     = Z.IdetPol;
-          EXCEPTION
-          WHEN NO_DATA_FOUND THEN
-                 cExisSubGrup := 'N';
-                 cMsjError2 := 'En el archivo Existe mas SubGrupo de los que contiene la Poliza';
-                 nContador := 2;
-                 nRegsErroneos := nRegsErroneos + 1;
-          END;
-      END LOOP;
-      IF nContador = 0 THEN
-         FOR x IN cRegistros LOOP
-           BEGIN
-               SELECT IdPoliza
-               INTO   nIdpoliza2
-               FROM   POLIZAS
-               WHERE  Numpolunico = x.NumPolUnico
-               AND  CodCia        = nCodCia
-               AND  CodEmpresa    = nCodEmpresa
-               AND  StsPoliza     = 'EMI';
-            EXCEPTION
+     SELECT USER
+      INTO cUsuario
+      FROM SYS.DUAL;
+     --
+     BEGIN
+        SELECT 'S'
+        INTO cExiste
+        FROM ADM_RECIBOS_PROV
+        WHERE CodCia   = nCodCia
+        AND CodEmpresa = nCodEmpresa
+        AND IdPoliza   = nIdPoliza
+        AND IdEndoso   = nIdEndoso
+        AND IdetPol    = nIdetPol
+        AND IdFactura  = nIdFactura;
+     EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+          cExiste := 'N';
+     WHEN TOO_MANY_ROWS  THEN
+          cExiste := 'S';
+     END;
+     BEGIN
+        SELECT IdTipoSeg
+        INTO cIdTipoSeg
+        FROM DETALLE_POLIZA
+        WHERE CodCia   = nCodCia
+        AND CodEmpresa = nCodEmpresa
+        AND IdPoliza   = nIdPoliza
+        AND IdetPol    = nIdetPol
+        AND ROWNUM     = 1;
+     EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+          RAISE_APPLICATION_ERROR(-20225,' NO EXISTE TIPO DE SEGURO PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+     WHEN TOO_MANY_ROWS  THEN
+          RAISE_APPLICATION_ERROR(-20225,' EXISTE MAS DE UN TIPO DE SEGURO PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+     END;
+          
+     cRamo:= OC_TIPOS_DE_SEGUROS.CODIGO_RAMO(nCodCia, nCodEmpresa, cIdTipoSeg);
+     --  
+     IF cExiste = 'N' THEN
+        BEGIN
+            SELECT Monto_Fact_Moneda, FecVenc, FecFinVig,Numcuota
+            INTO   nMontoMoneda, dFecIniVig, dFecFinVig, nNumCuotIni
+            FROM   FACTURAS
+            WHERE IdFactura    = nIdFactura
+            AND IdPoliza       = nIdPoliza 
+            AND IdetPol        = nIDetPol
+            AND StsFact        IN ('EMI', 'PAG');
+        EXCEPTION
             WHEN NO_DATA_FOUND THEN
-                 nIdPoliza2 := 0;
-            WHEN TOO_MANY_ROWS THEN
-                  cMsjError := 'Existe mas de una poliza para este numero de poliza Unico favor de VALIDAR';
-            WHEN OTHERS THEN
-                 cMsjError := 'Este numero de poliza contiene un error favor de Validar';
-           END;
-           --
-           IF x.NumPolUnico IS NOT NULL THEN
-              IF nIdPoliza = nIdpoliza2 THEN
-                 IF x.IdetPol IS NULL THEN
-                    cMsjError := 'ERROR_COLUMNA VACIA';
-                    nContador := 3;
-                 ELSIF x.Tipo_Doc_Identificacion IS NULL THEN
-                       cMsjError := 'ERROR_COLUMNA VACIA';
-                       nContador := 3;
-                 ELSIF x.Num_Doc_IDentificacion IS NULL THEN
-                       cMsjError := 'ERROR_COLUMNA VACIA';
-                       nContador := 3;
-                 ELSIF x.Nombre IS NULL THEN
-                       cMsjError := 'ERROR_COLUMNA VACIA';
-                       nContador := 3;
-                 ELSIF x.Apellido_Paterno IS NULL THEN
-                       cMsjError := 'ERROR_COLUMNA VACIA';
-                       nContador := 3;
-                 ELSIF x.Sexo IS NULL THEN
-                       cMsjError := 'ERROR_COLUMNA VACIA';
-                       nContador := 3;
-                 ELSIF x.Fecnacimiento IS NULL THEN
-                       cMsjError := 'ERROR_COLUMNA VACIA';
-                       nContador := 3;
-                 ELSIF x.CodCliente IS NULL THEN
-                       cMsjError := 'ERROR_COLUMNA VACIA';
-                       nContador := 3;
-                 ELSIF x.SumaAseg IS NULL THEN
-                       cMsjError := 'ERROR_COLUMNA VACIA';
-                       nContador := 3;
-                 ELSIF x.Sueldo IS NULL THEN
-                       cMsjError := 'ERROR_COLUMNA VACIA';
-                       nContador := 3; 
-                 END IF;
-              ELSE
-               cMsjError2 := 'ERROR_NUMERO DE POLIZA DIFERENTE';
-               nContador := 2;
-			   nRegsErroneos := nRegsErroneos + 1;
-              END IF;
-           ELSE
-            nContador := 3;
-            cMsjError := 'ERROR_COLUMNA VACIA';
-           END IF;
-           IF nContador = 0 THEN
-              BEGIN
-                  SELECT 'S'
-                  INTO cExisTpIden
-                  FROM VALORES_DE_LISTAS
-                  WHERE CodLista = 'TIPODOCU'
-                  AND CodValor = x.Tipo_Doc_Identificacion;
-              EXCEPTION
-              WHEN NO_DATA_FOUND THEN
-                   cExisTpIden := 'N';
-                   cMsjError2 := 'NO Existen Tipo de Documento de Identificación Definido';
-                   nContador := 2;
-              WHEN TOO_MANY_ROWS THEN
-                   cExisTpIden := 'S';
-              END;
-            
-              IF cExisTpIden = 'S' THEN
-                 SELECT LENGTH(x.Num_Doc_IDentificacion) 
-                 INTO nCaracteres 
-                 FROM Dual;
-                 IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(x.Tipo_Doc_Identificacion, x.Num_Doc_IDentificacion) = 'N' THEN
-                    IF nCaracteres < 12 OR nCaracteres > 13 THEN
-                       cMsjError2 :='El campo del Numero de Documento de Identificación no contiene el numero de pociones para un RFC Valido';
-                       nContador := 2;
-                    ELSIF OC_PROCESOS_MASIVOS.VALIDA_FECHANAC_NTRIBUTARIO(x.Fecnacimiento,x.Num_Doc_IDentificacion) = 'N' THEN
-                          cMsjError2 := 'El campo del FECHA NACIMIENTO/es diferente al del RFC Favor de validar las fechas';
-                          nContador := 2;
-                    END IF;
-                 END IF; 
-              END IF;
-           END IF;
-           IF nContador != 0 THEN
-              nRegsErroneos := nRegsErroneos + 1;
-              nContador := 0;
-           ELSE
-             BEGIN
-                nRegistros := nRegistros + 1;
-                INSERT INTO ASEG_AJUSTEANUAL
-                   ( CodEmpresa, IdRegistro, IdPoliza , CodUsuario , NumPolunico , IDetPol , Tipo_Doc_Identificacion , Num_Doc_Identificacion,
-                     Nombre , Apellido_Paterno , Apellido_Materno , Sexo , FecNacimiento , Direcres , CodPosres, FecInvig , FecFinVig , SumaAseg , Sueldo , Nutra)
-                VALUES( nCodEmpresa , nRegistros , nIdPoliza , cCodUser , x.NumPolUnico  , x.IdetPol, x.Tipo_Doc_Identificacion , x.Num_Doc_IDentificacion ,
-                        x.Nombre, x.Apellido_Paterno, x.Apellido_Materno, x.Sexo, x.Fecnacimiento , x.Direcres , x.CodPosres , x.FecInivig , x.FecFinvig, x.SumaAseg , x.Sueldo , x.Nutra);
+                 RAISE_APPLICATION_ERROR(-20225,' NO EXISTE FACTURAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+        END;
+        IF nIdFactura2  IS NOT NULL THEN
+           nMontoTotal := nMontoMoneda + nMonto_Fact_Moneda2;
+        ELSIF nIdNcr IS NOT NULL THEN
+           nMontoTotal := nMontoMoneda - nMonto_Ncr_Moneda;
+        END IF;
+        --
+        IF cRamo = '010' THEN
+           nPrimaNeta := nMontoTotal;
+           nIva := 0;
+        ELSIF cRamo = '030' THEN
+           nPrimaNeta := nMontoTotal / 1.16;
+           nIva := nPrimaNeta * 0.16;
+        END IF; 
+        --
+        BEGIN
+                INSERT INTO ADM_RECIBOS_PROV
+                   ( CodCia, CodEmpresa, IdPoliza, IdEndoso, IDetPol , IdTransaccion, IdFactura, Monto_Fact_Moneda, IdFactura2, Monto_Fact_Moneda2,
+                     IdNcr,  Monto_Ncr_Moneda, NumCuota , FecFinVig , FecVenc, Montototalmoneda, Ivasin, PrimaNeta, sts, FechaTransaccion, Usuariogenero)
+                VALUES( nCodCia, nCodEmpresa, nIdPoliza , nIdEndoso, nIDetPol, nIdTransaccion, nIdFactura, nMontoMoneda, nIdFactura2, nMonto_Fact_Moneda2,
+                        nIdNcr, nMonto_Ncr_Moneda, nNumCuotIni, dFecIniVig, dFecFinVig, nMontoTotal, nIva, nPrimaNeta, csts, TRUNC(SYSDATE),  cUsuario);
              EXCEPTION
              WHEN OTHERS THEN
-               nRegsErroneos := nRegsErroneos + 1;
-             END;
-           END IF;               
-         END LOOP;
-      END IF;
-      
-      IF nRegsErroneos != 0 THEN
-         cValidado := 'NUMERO DE REGISTROS ERRONEOS. ' || nRegsErroneos || ' - ' || cMsjError2 || ' - ' || cMsjError;
-          --
-         DELETE ASEG_AJUSTEANUAL
-         WHERE CodEmpresa   = nCodEmpresa
-           AND IdPoliza     = nIdPoliza
-           AND CodUsuario   = cCodUser;
-      ELSE
-         cValidado := 'S';
-      END IF;  
-  END VALIDA_DATOS;
-  --
-  PROCEDURE CALCULA_PRIMA_AJUSTEANUAL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cCodUser VARCHAR2, cMsjvalor OUT VARCHAR2) IS
-    nCod_Asegurado   ASEGURADO.Cod_Asegurado%TYPE;
-    nIdEndoso        ENDOSOS.IdEndoso%TYPE;
-    cMsjError        VARCHAR2(400);
-    nSmAsegf         ASEGURADO_CERTIFICADO.SumaAseg%TYPE;
-    nNumAsegIncl     NUMBER := 0;
-    cTpEndoso        ENDOSOS.TipoEndoso%TYPE;
-    nSubgrupo        ASEGURADO_CERTIFICADO.IdetPol%TYPE;
-    nValor           NUMBER := 0;
-    nIDetPol         ASEGURADO_CERTIFICADO.IdetPol%TYPE;
-    dFecIniVig       POLIZAS.FecIniVig%TYPE;
-    dFecFinVig       POLIZAS.FecFinVig%TYPE;
-    cCodPlanPago     POLIZAS.CodPlanPago%TYPE;
-    nPMA_I           ASEGURADO_CERTIFICADO.PrimaNeta%TYPE; -- Prima Anual Inicial
-    nSA_I            ASEGURADO_CERTIFICADO.SumaAseg%TYPE; -- Suma Asegurada Inicial
-    nSA_f            ENDOSOS.SUMA_ASEG_LOCAL%TYPE; -- Suma Asegurada Final
-    n_DDVIG          NUMBER := 365; -- Días de Vigencia
-    n_PmaAj          ENDOSOS.PRIMA_NETA_LOCAL%TYPE; -- Prima de Ajuste
-    cNPolUnico       INCLU_ASEGURADOS_EXT.Numpolunico%TYPE;
-    n_Signo          NUMBER; -- Almacena el signo del resultado
-    dIniVig          DATE;
-    cDescEndoso      ENDOSOS.DescEndoso%TYPE;
-    nNumAsegExist    NUMBER := 0;
-    nSmAsegPol       ASEGURADO_CERTIFICADO.SumaAseg_Moneda%TYPE;
-    nPrimaAsg        ASEGURADO_CERTIFICADO.PrimaNeta_Moneda%TYPE;
-    nCodAsegCobe     ASEGURADO_CERTIFICADO.Cod_Asegurado%TYPE;
-    cIdTipoSeg       DETALLE_POLIZA.IdTipoSeg%TYPE;
-    cPlanCob         DETALLE_POLIZA.PlanCob%TYPE;
-    cCAMPOVAL        VARCHAR2(100);
-  
-    CURSOR Regi_Q IS
-             SELECT *
-             FROM   ASEG_AJUSTEANUAL
-             WHERE CodEmpresa   = nCodEmpresa
-             AND IdPoliza       = nIdPoliza
-             AND CodUsuario     = cCodUser  
-             ORDER BY IdRegistro, Numpolunico, IdetPol;
-    --
-
-  BEGIN
-     SELECT NVL(MAX(IdEndoso), 0)
-     INTO   nIdEndoso
-     FROM   ENDOSOS
-     WHERE  CodCia    = nCodCia
-     AND  IdPoliza  = nIdPoliza
-     AND  StsEndoso = 'SOL';
-                   
-     BEGIN
-         SELECT A.FecIniVig , A.FecFinVig, A.CodPlanPago, B.IdTipoSeg, B.PlanCob
-         INTO   dFecIniVig, dFecFinVig, cCodPlanPago, cIdTipoSeg, cPlanCob
-         FROM   POLIZAS A, DETALLE_POLIZA B
-         WHERE  A.CodCia   = nCodCia
-         AND    A.CodEmpresa = nCodEmpresa
-         AND    A.IdPoliza   = nIdpoliza
-         AND    B.IdPoliza   = A.IdPoliza
-         AND    ROWNUM = 1;
-     EXCEPTION
-         WHEN NO_DATA_FOUND THEN
-              RAISE_APPLICATION_ERROR(-20225,'DETALLE POLIZA NO EXISTE: ' || TRIM(TO_CHAR(nIdpoliza)));
-     END;
-     
-     IF NVL(nIdEndoso,0) != 0 THEN
-        cMsjError := 'EXISTEN ENDOSOS EN SOLICITUD, QUE NO PERMITEN GENERAR LOS ENDOSOS DE CÁLCULO DE PRIMA DE AJUSTE FAVOR DE VALIDAR.';
-     ELSE
-       nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
-       nSubgrupo := 1;
-       cMsjvalor := 'N';
-       FOR X IN Regi_Q LOOP
-         nValor := 0;
-         cNPolUnico := X.Numpolunico;
-         IF X.IdetPol != nSubgrupo THEN
-            nSubgrupo := X.IdetPol;
-            IF nNumAsegIncl != 0 THEN
-               OC_ENDOSO.INSERTA (nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'ESV', 'ENDO-AJUSTE ANUAL' ,dFecIniVig, dFecFinVig, cCodPlanPago, 0, 0, 0, '037', NULL);
-               OC_COBERT_ACT_ASEG.HEREDA_COBERTURAS_AJUSTEANUAL(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegCobe, cIdTipoSeg, cPlanCob, nIdEndoso);
-               OC_ENDOSO.EMITIR(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'ESV');
-               cDescEndoso:= 'Por medio del presente endoso se hace constar la realización del ajuste anual correspondiente a la póliza autoadministrada ' || cNPolUnico;
-                BEGIN
-                   UPDATE ENDOSOS 
-                   SET    DESCENDOSO = cDescEndoso
-                   WHERE  IdPoliza   = nIdPoliza
-                   AND    IdEndoso   = nIdEndoso;
-                EXCEPTION
-                WHEN OTHERS THEN
-                    cMsjError := SQLERRM;
-                END;
-            END IF;
-            IF nNumAsegIncl != 0 OR nNumAsegExist != 0 THEN
-                 BEGIN
-                    SELECT SUM(SUMAASEG), SUM(PRIMANETA)
-                    INTO   nSA_I, nPMA_I
-                    FROM   ASEGURADO_CERTIFICADO
-                    WHERE  CodCia    = nCodCia
-                    AND    IdPoliza  = nIdpoliza
-                    AND    IdetPol   = nIDetPol
-                    AND    Estado    = 'EMI'
-                    AND    IdEndoso  <> nIdEndoso;
-                EXCEPTION
-                WHEN NO_DATA_FOUND THEN
-                     RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-                END;
-                --
-                BEGIN
-                    SELECT SUM(SUMAASEG)
-                    INTO   nSA_f
-                    FROM   ASEG_AJUSTEANUAL
-                    WHERE CodEmpresa   = nCodEmpresa
-                    AND IdPoliza       = nIdPoliza
-                    AND CodUsuario     = cCodUser 
-                    AND IdetPol        = nIDetPol;
-                EXCEPTION
-                WHEN NO_DATA_FOUND THEN
-                     RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-                END;
-                --
-                n_DDVIG:= dFecFinVig - dFecIniVig;
-                -- Cálculo de la Prima de Ajuste (PmaAj)
-                n_PmaAj := (nPMA_I / nSA_I) * ((nSA_f - nSA_I) / 2) * (n_DDVIG / 365);
-                -- Extraer el signo usando la función SIGN
-                n_Signo := SIGN(n_PmaAj);
-                --
-                dIniVig := dFecFinVig -1;
-                nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
-                IF n_PmaAj != 0 THEN
-                   IF n_Signo = -1 THEN
-                      n_PmaAj := abs(n_PmaAj);
-                      OC_ENDOSO.INSERTA(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'NSS', 'ENDO-AJUSTE ANUAL' ,dIniVig, dFecFinVig, cCodPlanPago, 0, n_PmaAj, 0, '037', NULL);
-                      OC_ENDOSO.EMITIR(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'NSS');
-                   ELSE
-                      OC_ENDOSO.INSERTA(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'RSS', 'ENDO-AJUSTE ANUAL' ,dIniVig, dFecFinVig, cCodPlanPago, 0, n_PmaAj, 0, '037', NULL);
-                      OC_ENDOSO.EMITIR(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'RSS');
-                   END IF;
-                      cDescEndoso:= 'Por medio del presente endoso se hace constar la realización del ajuste anual correspondiente a la póliza autoadministrada ' || cNPolUnico;
-                   BEGIN
-                      UPDATE ENDOSOS 
-                      SET    DESCENDOSO = cDescEndoso
-                      WHERE  IdPoliza   = nIdPoliza
-                      AND    IdEndoso   = nIdEndoso;
-                   EXCEPTION
-                   WHEN OTHERS THEN
-                        cMsjError := SQLERRM;
-                   END;
-                   OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdendoso, cDescEndoso);
-                   nValor := 1;
-                   nNumAsegIncl := 0;
-                ELSE
-                 cCAMPOVAL := cCAMPOVAL||nIDetPol||',';
-                 cMsjvalor := 'EL PROCESO HA FINALIZADO. NO SE DETECTARON MODIFICACIONES EN LOS LISTADOS DE ASEGURADOS DE LOS SUBGRUPOS' || cCAMPOVAL|| 'NO SE GENERAR ENDOSOS';
-                END IF;
-            END IF;
-         END IF;
-         nIDetPol:= X.IDetPol;
-         IF nValor = 1 THEN
-            nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
-         END IF;
-         IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(X.Tipo_Doc_Identificacion, X.Num_Doc_IDentificacion) = 'N' THEN
-            nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, X.Tipo_Doc_Identificacion, X.Num_Doc_IDentificacion);
-            IF nCod_Asegurado = 0 THEN
-               OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA(X.Tipo_Doc_Identificacion, X.Num_Doc_IDentificacion, X.Nombre, X.Apellido_Paterno,
-                                                            X.Apellido_Materno, NULL, X.Sexo, NULL, X.FecNacimiento, X.Direcres,
-                                                            NULL, NULL, X.CodPosRes, NULL, NULL, NULL, X.CodPosRes, NULL, NULL, NULL, NULL);
-                nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, X.Tipo_Doc_Identificacion, X.Num_Doc_IDentificacion);
-                OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, X.IDetPol, nCod_Asegurado, nIdEndoso);
-                  ---  
-                   BEGIN
-                      SELECT Cod_Asegurado, SumaAseg_Moneda, PrimaNeta_Moneda
-                      INTO   nCodAsegCobe, nSmAsegPol, nPrimaAsg
-                      FROM   ASEGURADO_CERTIFICADO
-                      WHERE  CodCia    = nCodCia
-                      AND    IdPoliza  = nIdpoliza
-                      AND    IdetPol   = X.IDetPol
-                      AND    Estado    = 'EMI'
-                      AND    IdEndoso  = 0
-                      AND    ROWNUM = 1;
-                   EXCEPTION
-                   WHEN NO_DATA_FOUND THEN
-                        RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-                   END;
-                   ---
-                   IF X.SUELDO != 0 THEN
-                      BEGIN
-                        UPDATE ASEGURADO_CERTIFICADO 
-                        SET  SUMAASEG         = X.SUMAASEG 
-                            ,PRIMANETA        = 0
-                            ,SumaAseg_Moneda  = X.SUMAASEG 
-                            ,PrimaNeta_Moneda = 0
-                            ,CAMPO1           = 1
-                            ,CAMPO2           = X.SUELDO
-                        WHERE IdPoliza = nIdPoliza
-                        AND IDetPol = X.IDetPol
-                        AND CodCia = nCodCia
-                        AND Cod_Asegurado = nCod_Asegurado;
-                      EXCEPTION
-                      WHEN OTHERS THEN
-                           cMsjError := SQLERRM;
-                      END;
-                   ELSE
-                      BEGIN
-                        UPDATE ASEGURADO_CERTIFICADO 
-                        SET  SUMAASEG         = nSmAsegPol
-                            ,PRIMANETA        = nPrimaAsg
-                            ,SumaAseg_Moneda  = nSmAsegPol
-                            ,PrimaNeta_Moneda = nPrimaAsg
-                        WHERE IdPoliza = nIdPoliza
-                        AND IDetPol = X.IDetPol
-                        AND CodCia = nCodCia
-                        AND Cod_Asegurado = nCod_Asegurado;
-                        EXCEPTION
-                      WHEN OTHERS THEN
-                           cMsjError := SQLERRM;
-                      END;
-                   END IF;
-                   nNumAsegIncl := nNumAsegIncl + 1;
-            END IF;
-         ELSE
-            nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, X.Tipo_Doc_Identificacion, X.Num_Doc_IDentificacion);
-            IF nCod_Asegurado = 0 THEN
-               nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa, X.Tipo_Doc_Identificacion, X.Num_Doc_IDentificacion);
-               IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(nCodCia, nIdpoliza, X.IDetPol, nCod_Asegurado) = 'N' THEN
-                   OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, X.IDetPol, nCod_Asegurado, nIdEndoso);   
-                   --
-                   BEGIN
-                      SELECT Cod_Asegurado, SumaAseg_Moneda, PrimaNeta_Moneda
-                      INTO   nCodAsegCobe, nSmAsegPol, nPrimaAsg
-                      FROM   ASEGURADO_CERTIFICADO
-                      WHERE  CodCia    = nCodCia
-                      AND    IdPoliza  = nIdpoliza
-                      AND    IdetPol   = X.IDetPol
-                      AND    Estado    = 'EMI'
-                      AND    IdEndoso  = 0
-                      AND    ROWNUM = 1;
-                   EXCEPTION
-                   WHEN NO_DATA_FOUND THEN
-                        RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-                   END;
-                   ---
-                   IF X.SUELDO != 0 THEN
-                      BEGIN
-                        UPDATE ASEGURADO_CERTIFICADO 
-                        SET  SUMAASEG         = X.SUMAASEG 
-                            ,PRIMANETA        = 0
-                            ,SumaAseg_Moneda  = X.SUMAASEG 
-                            ,PrimaNeta_Moneda = 0
-                            ,CAMPO1           = 1
-                            ,CAMPO2           = X.SUELDO
-                        WHERE IdPoliza = nIdPoliza
-                        AND IDetPol = X.IDetPol
-                        AND CodCia = nCodCia
-                        AND Cod_Asegurado = nCod_Asegurado;
-                      EXCEPTION
-                      WHEN OTHERS THEN
-                           cMsjError := SQLERRM;
-                      END;
-                   ELSE
-                      BEGIN
-                        UPDATE ASEGURADO_CERTIFICADO 
-                        SET  SUMAASEG         = nSmAsegPol
-                            ,PRIMANETA        = nPrimaAsg
-                            ,SumaAseg_Moneda  = nSmAsegPol
-                            ,PrimaNeta_Moneda = nPrimaAsg
-                        WHERE IdPoliza = nIdPoliza
-                        AND IDetPol = X.IDetPol
-                        AND CodCia = nCodCia
-                        AND Cod_Asegurado = nCod_Asegurado;
-                        EXCEPTION
-                      WHEN OTHERS THEN
-                           cMsjError := SQLERRM;
-                      END;
-                   END IF;
-                   nNumAsegIncl := nNumAsegIncl + 1;
-               END IF;
-            ELSIF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO_CP(nCodCia, nIdpoliza, X.IDetPol, nCod_Asegurado, 0) = 'N' THEN
-                  IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(nCodCia, nIdpoliza, X.IDetPol, nCod_Asegurado) = 'N' THEN
-                     OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, X.IDetPol, nCod_Asegurado, nIdEndoso);
-                     --
-                     BEGIN
-                        SELECT Cod_Asegurado, SumaAseg_Moneda, PrimaNeta_Moneda
-                        INTO   nCodAsegCobe, nSmAsegPol, nPrimaAsg
-                        FROM   ASEGURADO_CERTIFICADO
-                        WHERE  CodCia    = nCodCia
-                        AND    IdPoliza  = nIdpoliza
-                        AND    IdetPol   = X.IDetPol
-                        AND    Estado    = 'EMI'
-                        AND    IdEndoso  = 0
-                        AND    ROWNUM = 1;
-                     EXCEPTION
-                     WHEN NO_DATA_FOUND THEN
-                          RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-                     END;
-                     ---
-                     IF X.SUELDO != 0 THEN
-                        BEGIN
-                          UPDATE ASEGURADO_CERTIFICADO 
-                          SET  SUMAASEG         = X.SUMAASEG 
-                              ,PRIMANETA        = 0
-                              ,SumaAseg_Moneda  = X.SUMAASEG 
-                              ,PrimaNeta_Moneda = 0
-                              ,CAMPO1           = 1
-                              ,CAMPO2           = X.SUELDO
-                          WHERE IdPoliza = nIdPoliza
-                          AND IDetPol = X.IDetPol
-                          AND CodCia = nCodCia
-                          AND Cod_Asegurado = nCod_Asegurado;
-                        EXCEPTION
-                        WHEN OTHERS THEN
-                             cMsjError := SQLERRM;
-                        END;
-                     ELSE
-                        BEGIN
-                          UPDATE ASEGURADO_CERTIFICADO 
-                          SET  SUMAASEG         = nSmAsegPol
-                              ,PRIMANETA        = nPrimaAsg
-                              ,SumaAseg_Moneda  = nSmAsegPol
-                              ,PrimaNeta_Moneda = nPrimaAsg
-                          WHERE IdPoliza = nIdPoliza
-                          AND IDetPol = X.IDetPol
-                          AND CodCia = nCodCia
-                          AND Cod_Asegurado = nCod_Asegurado;
-                        EXCEPTION
-                        WHEN OTHERS THEN
-                             cMsjError := SQLERRM;
-                        END;
-                     END IF;
-                     nNumAsegIncl := nNumAsegIncl + 1;
-                  END IF;
-            ELSE
-             nNumAsegExist:= nNumAsegExist + 1;
-            END IF;  
-         END IF;
-       END LOOP;
-     END IF;
-     IF nNumAsegIncl != 0 THEN 
-        OC_ENDOSO.INSERTA (nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'ESV', 'ENDO-AJUSTE ANUAL' ,dFecIniVig, dFecFinVig, cCodPlanPago, 0, 0, 0, '037', NULL);
-        OC_COBERT_ACT_ASEG.HEREDA_COBERTURAS_AJUSTEANUAL(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegCobe, cIdTipoSeg, cPlanCob, nIdEndoso);
-        OC_ENDOSO.EMITIR(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'ESV');
-        cDescEndoso:= 'Por medio del presente endoso se hace constar la realización del ajuste anual correspondiente a la póliza autoadministrada ' || cNPolUnico;
-        BEGIN
-           UPDATE ENDOSOS 
-           SET    DESCENDOSO = cDescEndoso
-           WHERE  IdPoliza   = nIdPoliza
-           AND    IdEndoso   = nIdEndoso;
-        EXCEPTION
-        WHEN OTHERS THEN
-          cMsjError := SQLERRM;
+               RAISE_APPLICATION_ERROR(-20225,' NO SE PUDO INSERTAR EL REGISTRO EN RECIBOS PROVISIONALES: ' || TRIM(TO_CHAR(nIdpoliza)));
         END;
-        --
      END IF;
-     IF nNumAsegIncl != 0 OR nNumAsegExist != 0 THEN
-        BEGIN
-            SELECT SUM(SUMAASEG), SUM(PRIMANETA)
-            INTO   nSA_I, nPMA_I
-            FROM   ASEGURADO_CERTIFICADO
-            WHERE  CodCia    = nCodCia
-            AND    IdPoliza  = nIdpoliza
-            AND    IdetPol   = nIDetPol
-            AND    Estado    = 'EMI'
-            AND    IdEndoso  <> nIdEndoso;
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                 RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-        END;
-        --
-        BEGIN
-            SELECT SUM(SUMAASEG)
-            INTO   nSA_f
-            FROM   ASEG_AJUSTEANUAL
-            WHERE CodEmpresa   = nCodEmpresa
-            AND IdPoliza       = nIdPoliza
-            AND CodUsuario     = cCodUser 
-            AND IdetPol        = nIDetPol;
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                 RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-        END;
-        --
-        n_DDVIG:= dFecFinVig - dFecIniVig;
-        -- Cálculo de la Prima de Ajuste (PmaAj)
-        n_PmaAj := (nPMA_I / nSA_I) * ((nSA_f - nSA_I) / 2) * (n_DDVIG / 365);
-        -- Extraer el signo usando la función SIGN
-        n_Signo := SIGN(n_PmaAj);
-        --
-        dIniVig := dFecFinVig -1;
-        nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
-        IF n_PmaAj != 0 THEN
-           IF n_Signo = -1 THEN
-              n_PmaAj := abs(n_PmaAj);
-              OC_ENDOSO.INSERTA(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'NSS', 'ENDO-AJUSTE ANUAL' ,dIniVig, dFecFinVig, cCodPlanPago, 0, n_PmaAj, 0, '037', NULL);
-              OC_ENDOSO.EMITIR(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'NSS');
-           ELSE
-              OC_ENDOSO.INSERTA(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'RSS', 'ENDO-AJUSTE ANUAL' ,dIniVig, dFecFinVig, cCodPlanPago, 0, n_PmaAj, 0, '037', NULL);
-              OC_ENDOSO.EMITIR(nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'RSS');
-           END IF;
-           cDescEndoso:= 'Por medio del presente endoso se hace constar la realización del ajuste anual correspondiente a la póliza autoadministrada ' || cNPolUnico;
-           BEGIN
-              UPDATE ENDOSOS 
-              SET    DESCENDOSO = cDescEndoso
-              WHERE  IdPoliza   = nIdPoliza
-              AND    IdEndoso   = nIdEndoso;
-           EXCEPTION
-           WHEN OTHERS THEN
-              cMsjError := SQLERRM;
-           END;
-           OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdendoso, cDescEndoso);
-        ELSE
-		cCAMPOVAL := cCAMPOVAL||nIDetPol||',';
-        cMsjvalor := 'EL PROCESO HA FINALIZADO. NO SE DETECTARON MODIFICACIONES EN LOS LISTADOS DE ASEGURADOS DE LOS SUBGRUPOS' || cCAMPOVAL|| '.NO SE GENERAR ENDOSOS';
-        END IF;
-        
-     END IF;
-  EXCEPTION
-        WHEN OTHERS THEN
-            ROLLBACK;
-            cMsjError := SQLERRM;
-            cMsjError := 'ERROR_GENERAL SICAS_OC.OC_ENDOSO.CALCULA_PRIMA_AJUSTEANUAL.' || cMsjError ;	 
-  END CALCULA_PRIMA_AJUSTEANUAL;
+  END ENDOSO_RECIBO_PROVISIONAL;
 
 END OC_ENDOSO;

@@ -1,4 +1,4 @@
-create or replace PACKAGE OC_FACTURAS IS
+create or replace PACKAGE SICAS_OC.OC_FACTURAS IS
     -- FACTELECT VIFLEX                     20230426 CAPELE
 	-- SE AGREGO LAS FUNCIONES GENERA_VALOR_CONCEPTO ARH 17/10/2023
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
@@ -7,7 +7,6 @@ create or replace PACKAGE OC_FACTURAS IS
     PROCEDURE PAGAR_CON_NOTA_DE_CREDITO(nIdFactura NUMBER, nIdNcr NUMBER, cNumReciboPago VARCHAR2,
                                         dFecPago DATE, cNumDepBancario VARCHAR2, nIdTransaccion NUMBER);
 
-	--MASP 24/07/2024 --> Prorrateo													
     FUNCTION INSERTAR(nIdPoliza NUMBER, nIDetPol NUMBER, nCodCliente NUMBER, dFecPago DATE,
                       nMtoPagoLocal NUMBER, nMtoPagoMoneda NUMBER, nIdEndoso NUMBER,
                       nMtoComisiLocal NUMBER, nMtoComisiMoneda NUMBER, nNumPago NUMBER,
@@ -42,7 +41,6 @@ create or replace PACKAGE OC_FACTURAS IS
                             dFecReversion DATE, nCodCobrador NUMBER, nIdTransaccion NUMBER);
     PROCEDURE CAMBIO_COMISIONES(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cStsFact VARCHAR2, dfeinivig DATE);  --COMI --ICOCOMI
 
-	--MASP 24/07/2024 --> Prorrateo													
     FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoliza      NUMBER,
                             nIdFactura     NUMBER,   nIdEndoso      NUMBER,  dFecIniVigFact DATE,
                             dFecFinVigPol  DATE,     nNUMCUOTA      NUMBER,  cCodPlanPagos  VARCHAR2) RETURN DATE;   -- INICIA FINVIG  LARPLA
@@ -67,7 +65,7 @@ create or replace PACKAGE OC_FACTURAS IS
 
     PROCEDURE MARCA_INTENTOS_CUMPLIDOS (nIdFactura  NUMBER, nCodCia  NUMBER);
 
-    FUNCTION CALCULA_AÑO_POLIZA(nIdPoliza NUMBER, nFechaproceso  DATE) RETURN NUMBER;
+    FUNCTION CALCULA_AÃ‘O_POLIZA(nIdPoliza NUMBER, nFechaproceso  DATE) RETURN NUMBER;
 
     FUNCTION PRIMA_COMPLEMENTARIA (nCodCia NUMBER, nIdPoliza NUMBER, nIdFactura NUMBER) RETURN NUMBER;
 
@@ -101,15 +99,20 @@ create or replace PACKAGE OC_FACTURAS IS
                                      dFecPago IN DATE ) RETURN VARCHAR2;
 
 	--
+    ---ARH 06/06/2025 procedicimento para insertar datos temporales de los recibos provisionales
+    PROCEDURE INSERT_TEMP_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFacturaAnu NUMBER, nIdPoliza NUMBER);
+    --
 END OC_FACTURAS;
+
 /
-create or replace PACKAGE BODY OC_FACTURAS IS
+
+create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
     --
     -- MODIFICACIONES
     -- INSERCION DE FECHAS A COMISIONES                                       2018/03/06  ICO COMI
     -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO   2018/03/09  ICO FINVIG
     -- FORMAS DE PAGO                                                         2018/11/05  ICO FREPAG
-    -- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                   2019/03/27  ICO LARPLA
+    -- CALCULO DEL AÃ‘O POLIZA DE RECIBOS Y NOTAS DE CREDITO                   2019/03/27  ICO LARPLA
     -- SE AGREGO LAS FUNCIONES GENERA_VALOR_CONCEPTO                      17/10/2023  ARH
     --
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
@@ -175,7 +178,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
            WHERE IdPrimaDeposito = nIdPrimaDeposito;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'No Existe Prima en Depósito x Aplicar '||nIdPrimaDeposito);
+             RAISE_APPLICATION_ERROR (-20100,'No Existe Prima en DepÃ³sito x Aplicar '||nIdPrimaDeposito);
        END;
 
        nIdRecibo := OC_PAGOS.CORRELATIVO_PAGO(nCodCia, nCodEmpresa);
@@ -230,12 +233,12 @@ create or replace PACKAGE BODY OC_FACTURAS IS
           ACTUALIZA_FACTURA_STS(nIdFactura);
           OC_COMISIONES.PAGA_ABONA_COMISION(nIdFactura, cNumReciboPago, TRUNC(SYSDATE), nPorcApl, cIndPago);
           /*Paga o abona Prima Deposito*/
-          -- Se cambia la aplicación y contabilidad a la forma mantfact o los procesos que pagan con Prima en Depósito - EC - 24-Oct-2014
+          -- Se cambia la aplicaciÃ³n y contabilidad a la forma mantfact o los procesos que pagan con Prima en DepÃ³sito - EC - 24-Oct-2014
           --OC_PRIMAS_DEPOSITO.APLICAR(nCodCia, nCodEmpresa, nIdPrimaDeposito, dFecPago, cNumReciboPago,
           --                           nSaldo_MonedaPD, nSaldo_LocalPD, nSldoFactM, nSldoFactL);
           --OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransac, 'C');
        ELSE
-          RAISE_APPLICATION_ERROR (-20100,'Prima en Depósito '||nIdPrimaDeposito|| ' No tiene Saldo por Aplicar');
+          RAISE_APPLICATION_ERROR (-20100,'Prima en DepÃ³sito '||nIdPrimaDeposito|| ' No tiene Saldo por Aplicar');
        END IF;
     END PAGAR_CON_PRIMA_DEPOSITO;
 
@@ -298,7 +301,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
            WHERE IdNcr = nIdNcr;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR (-20100,'No Existe Nota de Crédito x Aplicar '||nIdNcr);
+             RAISE_APPLICATION_ERROR (-20100,'No Existe Nota de CrÃ©dito x Aplicar '||nIdNcr);
        END;
 
        nIdRecibo := OC_PAGOS.CORRELATIVO_PAGO(nCodCia, nCodEmpresa);
@@ -353,11 +356,10 @@ create or replace PACKAGE BODY OC_FACTURAS IS
           ACTUALIZA_FACTURA_STS(nIdFactura);
           OC_COMISIONES.PAGA_ABONA_COMISION(nIdFactura, cNumReciboPago, TRUNC(SYSDATE), nPorcApl, cIndPago);
        ELSE
-          RAISE_APPLICATION_ERROR (-20100,'Nota de Crédito '||nIdNcr|| ' No tiene Saldo por Aplicar');
+          RAISE_APPLICATION_ERROR (-20100,'Nota de CrÃ©dito '||nIdNcr|| ' No tiene Saldo por Aplicar');
        END IF;
     END PAGAR_CON_NOTA_DE_CREDITO;
 
-	--MASP 24/07/2024 --> Prorrateo													
     FUNCTION INSERTAR(nIdPoliza     NUMBER,    nIDetPol        NUMBER,   nCodCliente         NUMBER,
                       dFecPago      DATE,      nMtoPagoLocal   NUMBER,   nMtoPagoMoneda      NUMBER,
                       nIdEndoso     NUMBER,    nMtoComisiLocal NUMBER,   nMtoComisiMoneda    NUMBER,
@@ -367,7 +369,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                       ) RETURN NUMBER IS
        nIdFactura      FACTURAS.IDFACTURA%TYPE;
        P_Msg_Regreso   VARCHAR2(50);
-       nId_Año_Poliza  FACTURAS.Id_Año_Poliza%TYPE;
+       nId_AÃ±o_Poliza  FACTURAS.Id_AÃ±o_Poliza%TYPE;
        dFecFinVigFact  FACTURAS.FecFinVig%TYPE;
        dFecFinVigPol   POLIZAS.FecFinVig%TYPE;
        nCodEmpresa     POLIZAS.CodEmpresa%TYPE;
@@ -375,9 +377,6 @@ create or replace PACKAGE BODY OC_FACTURAS IS
        nIDetPolQuery   NUMBER;
        cIndFacturaPol  POLIZAS.IndFacturaPol%TYPE;
        cTipoEndoso     ENDOSOS.TipoEndoso%TYPE;
-       --
-       nFrecPagos      PLAN_DE_PAGOS.FrecPagos%TYPE;
-       nDia            NUMBER;
     BEGIN
       BEGIN
         SELECT P.FecFinVig,   P.CodEmpresa,   P.CodPlanPago, P.IndFacturaPol
@@ -402,58 +401,61 @@ create or replace PACKAGE BODY OC_FACTURAS IS
              cIndFacturaPol := '';
       END;
       --
-      SELECT EXTRACT(DAY FROM FecIniVig)
-      INTO   nDia
-      FROM   DETALLE_POLIZA
-      WHERE  IdPoliza = nIdPoliza
-        AND  IDetPol  = nIDetPol;
-      --
       nIdFactura     := OC_FACTURAS.F_GET_FACT(P_Msg_Regreso);  -- Cambio a secuencia XDS
-      nId_Año_Poliza := OC_FACTURAS.CALCULA_AÑO_POLIZA(nIdPoliza, dFecPago);
       --
-      IF nIdEndoso > 0 THEN
-         SELECT CodPlanPago, TipoEndoso
-         INTO   cCodPlanPago, cTipoEndoso
+      nId_AÃ±o_Poliza := OC_FACTURAS.CALCULA_AÃ‘O_POLIZA(nIdPoliza, dFecPago);
+      --
+      IF nIdEndoso > 0 AND nNumPago = 1 THEN
+         IF NVL(cIndFacturaPol, 'N') = 'S' THEN
+            nIDetPolQuery := 1;
+         ELSE
+            nIDetPolQuery := nIDetPol;
+         END IF;
+         --
+         SELECT TipoEndoso
+         INTO   cTipoEndoso
          FROM   ENDOSOS
          WHERE  CodCia     = nCodCia
            AND  CodEmpresa = nCodEmpresa
            AND  IdPoliza   = nIdPoliza
-           AND  IDetPol    = nIDetPol
            AND  IdEndoso   = nIdEndoso;
-        --
-         nFrecPagos     := OC_PLAN_DE_PAGOS.FRECUENCIA_PAGOS(nCodCia, nCodEmpresa, cCodPlanPago);
-         IF nNumPago = 1 THEN
-            IF NVL(cIndFacturaPol, 'N') = 'S' THEN
-               nIDetPolQuery := 1;
-            ELSE
-               nIDetPolQuery := nIDetPol;
-            END IF;
-            --
-            IF cTipoEndoso = 'CFP' THEN
-               dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
-                                                             dFecPago, dFecFinVigPol, nNumPago , cCodPlanPago );
-            ELSE
-                  IF nDia IN (28, 29, 30) THEN
-                     IF EXTRACT(MONTH FROM ADD_MONTHS(dFecPago, nFrecPagos)) = 2 THEN
-                        dFecFinVigFact := ADD_MONTHS(dFecPago, nFrecPagos);
-                     ELSE
-                        dFecFinVigFact := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecPago, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
-                     END IF;
-                  ELSE
-                     dFecFinVigFact := ADD_MONTHS(dFecPago, nFrecPagos);
-                  END IF;
-                  --dFecFinVigFact := ADD_MONTHS(TRUNC(dFecPago),nFrecPagos);
-            END IF;
+         --
+         IF cTipoEndoso = 'CFP' THEN
+            dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
+                                                          dFecPago, dFecFinVigPol, nNumPago , cCodPlanPago );
          ELSE
-            IF nDia IN (28, 29, 30) THEN
-               IF EXTRACT(MONTH FROM ADD_MONTHS(dFecPago, nFrecPagos)) = 2 THEN
-                  dFecFinVigFact := ADD_MONTHS(dFecPago, nFrecPagos);
-               ELSE
-                  dFecFinVigFact := TO_DATE(nDia || TO_CHAR(ADD_MONTHS(dFecPago, nFrecPagos), 'MMYYYY'), 'DDMMYYYY') ;
-               END IF;
-            ELSE
-               dFecFinVigFact := ADD_MONTHS(dFecPago, nFrecPagos);
-            END IF;
+            --Query para determinar la fecha de vencimiento del primer recibo en caso de que se trate de un endoso
+            BEGIN
+               SELECT FecFinVig
+               INTO   dFecFinVigFact
+               FROM   FACTURAS
+               WHERE  CodCia   = nCodCia
+                 AND  IdPoliza = nIdPoliza
+                 AND  IDetPol  = nIDetPolQuery
+                 AND  IdEndoso = 0
+                 AND  TRUNC(dFecPago) BETWEEN TRUNC(FecVenc) AND TRUNC(FecFinVig)
+                 AND  IdFactura = ( SELECT MAX(A.IdFactura)
+                                    FROM   FACTURAS A
+                                    WHERE  A.CodCia   = nCodCia
+                                      AND  A.IdPoliza = nIdPoliza
+                                      AND  A.IDetPol  = nIDetPolQuery
+                                      AND  A.IdEndoso = 0
+                                      AND  TRUNC(dFecPago) BETWEEN TRUNC(A.FecVenc) AND TRUNC(A.FecFinVig));
+            EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                 IF NVL(nIdEndoso, 0) <> 0 THEN
+                    SELECT FecFinVig
+                    INTO   dFecFinVigFact
+                    FROM   ENDOSOS
+                    WHERE  CodCia     = nCodCia
+                      AND  CodEmpresa = nCodEmpresa
+                      AND  IdPoliza   = nIdPoliza
+                      AND  IdEndoso   = nIdEndoso;
+                 ELSE
+                    dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
+                                                                  dFecPago, dFecFinVigPol, nNumPago , cCodPlanPago );
+                 END IF;
+            END;
          END IF;
       ELSE
          dFecFinVigFact := OC_FACTURAS.VIGENCIA_FINAL( nCodCia , nCodEmpresa  , nIdPoliza, nIdFactura, nIdEndoso,
@@ -469,7 +471,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                CodCia,               Saldo_Local,        Saldo_Moneda,         Cod_Moneda,
                CodResPago,           IdTransaccion,      IndContabilizada,     FecContabilizada,
                IndFactElectronica,   IndGenAviCob,       FecGenAviCob,         FecFinVig,
-               CodPlanPago,          Id_Año_Poliza,      MontoPrimaCompLocal,  MontoPrimaCompMoneda)
+               CodPlanPago,          Id_AÃ±o_Poliza,      MontoPrimaCompLocal,  MontoPrimaCompMoneda)
       VALUES  (nIdFactura,           nIdPoliza,          nIDetPol,             nCodCliente,
                NULL,                 dFecPago,           nMtoPagoLocal,        nMtoPagoMoneda,
                'EMI',                TRUNC(SYSDATE),     NULL,                 NULL,
@@ -478,7 +480,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                nCodCia,              nMtoPagoLocal,      nMtoPagoMoneda,       cCodMoneda,
                nCodResPago,          nIdTransaccion,     'N',                  NULL,
                cIndFactElectronica,  'N',                NULL,                 dFecFinVigFact,
-               cCodPlanPago,         nId_Año_Poliza,     0,                    0);
+               cCodPlanPago,         nId_AÃ±o_Poliza,     0,                    0);
       --
       RETURN(nIdFactura);
       --
@@ -505,12 +507,12 @@ create or replace PACKAGE BODY OC_FACTURAS IS
         WHERE IdFactura = nIdFactura;
 
        UPDATE FACTURAS
-          SET Monto_Fact_Local  = nvl(nMtoTotalLocal,0),
-              Monto_Fact_Moneda = nvl(nMtoTotalMoneda,0),
-              Saldo_Local       = nvl(nMtoTotalLocal,0),
-              Saldo_Moneda      = nvl(nMtoTotalMoneda,0),
-              MtoComisi_Local   = nvl(nComision_Local,0),
-              MtoComisi_Moneda  = nvl(nComision_Moneda,0)
+          SET Monto_Fact_Local  = nMtoTotalLocal,
+              Monto_Fact_Moneda = nMtoTotalMoneda,
+              Saldo_Local       = nMtoTotalLocal,
+              Saldo_Moneda      = nMtoTotalMoneda,
+              MtoComisi_Local   = nComision_Local,
+              MtoComisi_Moneda  = nComision_Moneda
         WHERE IdFactura = nIdFactura;
     END ACTUALIZA_FACTURA;
 
@@ -814,7 +816,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
 
           IF NVL(nMontoPago,0) < (NVL(nSldoFactM,0) + NVL(nPrimaNivelada,0) + NVL(nMontoAporteFondo,0)) AND
              nNumCuota = 1 THEN
-             RAISE_APPLICATION_ERROR (-20100,'Para Pólizas con Manejo de Fondos, debe Cubrir Completo el 1er. Pago para Activarla.  ' ||
+             RAISE_APPLICATION_ERROR (-20100,'Para PÃ³lizas con Manejo de Fondos, debe Cubrir Completo el 1er. Pago para Activarla.  ' ||
                                       ' NO puede Realizar la Cobranza de la Factura No. '||nIdFactura);
           END IF;
        ELSE
@@ -852,12 +854,12 @@ create or replace PACKAGE BODY OC_FACTURAS IS
 
        cCobroFactura    := 'N';
 
-       -- Se realiza el Cobro de la Factura con Prima en Depósito
+       -- Se realiza el Cobro de la Factura con Prima en DepÃ³sito
        IF NVL(nSaldoPorAplicar,0) >= NVL(nSldoFactM,0) OR
           GT_FAI_TIPOS_FONDOS_PRODUCTOS.FONDOS_COLECTIVOS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob) = 'S' THEN
           IF cFormPago != 'PRD' THEN
              IF cIndTipoAporte = 'R' THEN
-                cObservaciones     := 'Primas para Pago en Póliza con Fondos de Ahorro de Factura No. ' || nIdFactura ||
+                cObservaciones     := 'Primas para Pago en PÃ³liza con Fondos de Ahorro de Factura No. ' || nIdFactura ||
                                       ' con Valor de ' || NVL(nMonto_Fact_Moneda,0);
              ELSE
                 cObservaciones := 'Aporte Adicional con Valor de '||nvl(nSaldoPorAplicar,0);
@@ -883,8 +885,8 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                 AND NumPolUnico  = cNumPolUnico;
 
              IF NVL(nIdPolizaAnu,0) = 0 THEN
-                RAISE_APPLICATION_ERROR (-20100,'Solo puede Realizar Cobranza con Primas en Depósito por Reexpedición de Póliza ' ||
-                                         ' y NO existe una Póliza Anulada con el No. ' || cNumPolUnico);
+                RAISE_APPLICATION_ERROR (-20100,'Solo puede Realizar Cobranza con Primas en DepÃ³sito por ReexpediciÃ³n de PÃ³liza ' ||
+                                         ' y NO existe una PÃ³liza Anulada con el No. ' || cNumPolUnico);
              ELSE
                 SELECT NVL(MIN(IdPrimaDeposito),0)
                   INTO nIdPrimaDeposito
@@ -896,8 +898,8 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                    AND Estado        = 'PAF'; -- Por Aplicar en Fondo;
 
                 IF NVL(nIdPrimaDeposito,0) = 0 THEN
-                   RAISE_APPLICATION_ERROR (-20100,'No Existe Primas en Depósito Con Saldo en Póliza Anulada No. ' || nIdPolizaAnu ||
-                                            ' y No. de Póliza Unico ' || cNumPolUnico ||
+                   RAISE_APPLICATION_ERROR (-20100,'No Existe Primas en DepÃ³sito Con Saldo en PÃ³liza Anulada No. ' || nIdPolizaAnu ||
+                                            ' y No. de PÃ³liza Unico ' || cNumPolUnico ||
                                             ' por un Monto Mayor o Igual al Saldo de la Factura de ' || nSldoFactM);
                 END IF;
              END IF;
@@ -930,12 +932,12 @@ create or replace PACKAGE BODY OC_FACTURAS IS
           END IF;
        END IF;
 
-       -- Se Crea Prima en Depósito por lo Ingresado que NO Cubre la Factura
+       -- Se Crea Prima en DepÃ³sito por lo Ingresado que NO Cubre la Factura
        IF cIndTipoAporte = 'R' THEN
           nMontoPrimaDepMon     := NVL(nSaldoPorAplicar,0);
           nMontoPrimaDepLoc     := NVL(nMontoPrimaDepMon,0) * nTasaCambioMov;
           IF cCobroFactura = 'N' THEN
-             cObservaciones   := 'Primas no Alcanzan para Pago en Póliza y Aportes al Fondo de Factura No. ' || nIdFactura ||
+             cObservaciones   := 'Primas no Alcanzan para Pago en PÃ³liza y Aportes al Fondo de Factura No. ' || nIdFactura ||
                                  ' con Valor de ' || NVL(nMonto_Fact_Moneda,0) ||
                                  ' con Prima Nivelada de ' || NVL(nPrimaNivelada,0) ||
                                  ' y un Aporte a Fondos de ' || NVL(nMontoAporteFondo,0);
@@ -944,7 +946,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                                                cObservaciones, nIdPoliza, nIDetPol);
              OC_PRIMAS_DEPOSITO.EMITIR(nCodCia, nCodEmpresa, nIdPrimaDeposito, dFecPago, cNumReciboPago);
           ELSIF cFormPago != 'PRD' THEN
-             -- Se Crea Prima en Depósito Por la Prima Nivelada y Aportes al Fondo
+             -- Se Crea Prima en DepÃ³sito Por la Prima Nivelada y Aportes al Fondo
              cObservaciones   := 'Primas para Aportes al Fondo de Factura No. ' || nIdFactura ||
                                  ' con Prima Nivelada de ' || NVL(nPrimaNivelada,0) ||
                                  ' y un Aporte a Fondos de ' || NVL(nMontoAporteFondo,0);
@@ -963,8 +965,8 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                 AND Estado        = 'PAF'; -- Por Aplicar en Fondo
 
              IF NVL(nIdPrimaDeposito,0) = 0 THEN
-                RAISE_APPLICATION_ERROR (-20100,'No Existen Primas en Depósito Con Saldo Mayor o Igual a la Prima Nivelada en Póliza Anulada No. ' ||
-                                         nIdPolizaAnu || ' y No. de Póliza Unico ' || cNumPolUnico);
+                RAISE_APPLICATION_ERROR (-20100,'No Existen Primas en DepÃ³sito Con Saldo Mayor o Igual a la Prima Nivelada en PÃ³liza Anulada No. ' ||
+                                         nIdPolizaAnu || ' y No. de PÃ³liza Unico ' || cNumPolUnico);
              END IF;
           END IF;
        END IF;
@@ -1023,7 +1025,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                                                      'D', nTasaCambioMov, TRUNC(dFecPago), TRUNC(dFecPago),
                                                                      OC_CATALOGO_DE_CONCEPTOS.DESCRIPCION_CONCEPTO(nCodCia, cCodCptoMov));
 
-                -- Generación de Factura por Movimiento de Prima Nivelada
+                -- GeneraciÃ³n de Factura por Movimiento de Prima Nivelada
                 nIdTransaccionFact := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'FACFON');
 
                 nMtoComisiMoneda := NVL(nMontoMovMoneda,0) * nPorcComis / 100;
@@ -1130,11 +1132,11 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                 AND Estado        = 'PAF'; -- Por Aplicar en Fondo
 
              IF NVL(nIdPrimaDeposito,0) = 0 THEN
-                RAISE_APPLICATION_ERROR (-20100,'No Existen Primas en Depósito Con Saldo Mayor o Igual a los Aportes al Fondo en Póliza Anulada No. ' ||
-                                         nIdPolizaAnu || ' y No. de Póliza Unico ' || cNumPolUnico);
+                RAISE_APPLICATION_ERROR (-20100,'No Existen Primas en DepÃ³sito Con Saldo Mayor o Igual a los Aportes al Fondo en PÃ³liza Anulada No. ' ||
+                                         nIdPolizaAnu || ' y No. de PÃ³liza Unico ' || cNumPolUnico);
              END IF;
           END IF;
-          -- Generación de Factura por Movimiento de Aportes Iniciales al Fondo
+          -- GeneraciÃ³n de Factura por Movimiento de Aportes Iniciales al Fondo
           nIdTransaccionFact := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'FACFON');
 
           --nMtoComisiMoneda := NVL(nSaldoPorAplicar,0) * nPorcComis / 100;
@@ -1150,7 +1152,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
 
        END IF;
 
-       -- Fondos para Ahorro o Jubilación NO Exclusivos para Pago de Primas
+       -- Fondos para Ahorro o JubilaciÃ³n NO Exclusivos para Pago de Primas
        cFondoPagoPrimas := 'N';
        nSaldoRestante   := NVL(nSaldoPorAplicar,0);
        FOR W IN FOND_Q LOOP
@@ -1162,7 +1164,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                             nIdPoliza, nIDetPol, Y.IdFondo, Y.CodCptoMov, NVL(Y.MontoMovMoneda,0));
 
                 -- Se Aplica el Saldo Proporcional a los Fondos y se Actualiza el Valor de Cada Aporte Inicial
-                -- Por si el Asegurado paga más en el primer pago de lo esperado.
+                -- Por si el Asegurado paga mÃ¡s en el primer pago de lo esperado.
                 nMontoMovMoneda   := NVL(nSaldoRestante,0) * W.PorcFondo / 100;
                 nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
 
@@ -1213,7 +1215,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                                         nIdTransaccionMov);
           GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol,
                                                              nCodAsegurado, W.IdFondo, nIdTransaccionMov);
-          -- Para Movimientos que NO tienen Transacción
+          -- Para Movimientos que NO tienen TransacciÃ³n
           GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
                                                         0);
           GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol,
@@ -1604,7 +1606,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                         FROM ENDOSOS
                                        WHERE IdPoliza    = W.IdPoliza
                                          AND IdEndoso    = W.IdEndoso);
-             ELSE -- Endoso a Declaración
+             ELSE -- Endoso a DeclaraciÃ³n
                 SELECT COUNT(*)
                   INTO nTotFacturas
                   FROM FACTURAS
@@ -1631,7 +1633,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                 AND P.IdPoliza  = W.IdPoliza;
           EXCEPTION
              WHEN NO_DATA_FOUND THEN
-                RAISE_APPLICATION_ERROR (-20100,'NO Existe Póliza No. Consecutivo '|| W.IdPoliza || ' ' || SQLERRM);
+                RAISE_APPLICATION_ERROR (-20100,'NO Existe PÃ³liza No. Consecutivo '|| W.IdPoliza || ' ' || SQLERRM);
           END;
 
           IF cIndFacturaPol = 'S' THEN
@@ -1653,7 +1655,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                    RAISE_APPLICATION_ERROR(-20225,'No Existe Asegurado: '||TRIM(TO_CHAR(nCod_Asegurado)) || ' en Persona Natural Juridica');
              END;
              IF cNum_TributarioCli IS NULL THEN
-                RAISE_APPLICATION_ERROR(-20225,'Asegurado: '||TRIM(TO_CHAR(nCod_Asegurado)) || ' No Posee Identificación Tributaria');
+                RAISE_APPLICATION_ERROR(-20225,'Asegurado: '||TRIM(TO_CHAR(nCod_Asegurado)) || ' No Posee IdentificaciÃ³n Tributaria');
              END IF;
              nCodigoCliente     := TO_NUMBER('99999' || LPAD(TO_CHAR(nCod_Asegurado),9,'0'));
           END IF;
@@ -1706,7 +1708,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                      TO_CHAR(NVL(nMtoIVA,0),'99999999990.00')       || cSeparador ||
                      '0.00'                                         || cSeparador || -- Descuento
                      'NO APLICA'                                    || cSeparador || -- Unidad de Medida
-                     '1'                                            || cSeparador || CHR(13);   -- No. de Artículo
+                     '1'                                            || cSeparador || CHR(13);   -- No. de ArtÃ­culo
           OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
           nLinea  := NVL(nLinea,0) + 1;
 
@@ -1733,11 +1735,11 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                      TO_CHAR(NVL(nMtoIVA,0),'99999999990.00')       || cSeparador ||
                      '0.00'                                         || cSeparador || -- Descuento
                      'NO APLICA'                                    || cSeparador || -- Unidad de Medida
-                     '1'                                            || cSeparador || CHR(13);   -- No. de Artículo
+                     '1'                                            || cSeparador || CHR(13);   -- No. de ArtÃ­culo
           OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
           nLinea  := NVL(nLinea,0) + 1;
 
-          -- Derechos de Póliza o Gastos de Expedición
+          -- Derechos de PÃ³liza o Gastos de ExpediciÃ³n
           cDescripcion    := 'GASTOS DE EXPEDICION';
           nMtoIVA         := NVL(NVL(nDerechos,0) * nTasaIVA / 100,0);
 
@@ -1760,7 +1762,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                      TO_CHAR(NVL(nMtoIVA,0),'99999999990.00')       || cSeparador ||
                      '0.00'                                         || cSeparador || -- Descuento
                      'NO APLICA'                                    || cSeparador || -- Unidad de Medida
-                     '1'                                            || cSeparador || CHR(13);   -- No. de Artículo
+                     '1'                                            || cSeparador || CHR(13);   -- No. de ArtÃ­culo
           OC_ARCHIVO.Escribir_Linea(cCadena, cCodUser, nLinea);
           nLinea  := NVL(nLinea,0) + 1;
        END LOOP;
@@ -1832,7 +1834,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                 AND P.IdPoliza  = W.IdPoliza;
           EXCEPTION
              WHEN NO_DATA_FOUND THEN
-                RAISE_APPLICATION_ERROR (-20100,'NO Existe Póliza No. Consecutivo '|| W.IdPoliza || ' ' || SQLERRM);
+                RAISE_APPLICATION_ERROR (-20100,'NO Existe PÃ³liza No. Consecutivo '|| W.IdPoliza || ' ' || SQLERRM);
           END;
 
           IF cIndFacturaPol = 'S' THEN
@@ -1854,7 +1856,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                    RAISE_APPLICATION_ERROR(-20225,'No Existe Asegurado: '||TRIM(TO_CHAR(nCod_Asegurado)) || ' en Persona Natural Juridica');
              END;
              IF cNum_TributarioCli IS NULL THEN
-                RAISE_APPLICATION_ERROR(-20225,'Asegurado: '||TRIM(TO_CHAR(nCod_Asegurado)) || ' No Posee Identificación Tributaria');
+                RAISE_APPLICATION_ERROR(-20225,'Asegurado: '||TRIM(TO_CHAR(nCod_Asegurado)) || ' No Posee IdentificaciÃ³n Tributaria');
              END IF;
              nCodigoCliente     := TO_NUMBER('99999' || LPAD(TO_CHAR(nCod_Asegurado),9,'0'));
           END IF;
@@ -2118,15 +2120,25 @@ create or replace PACKAGE BODY OC_FACTURAS IS
               CodUsuarioEnvFactAnu = cCodUsuarioEnvFactAnu
         WHERE IdFactura  = nIdFactura
           AND CodCia     = nCodCia;
-
+       --
        OC_COMISION_COBRADOR.ANULAR_COMISION(nIdFactura, nCodCobrador );
-
+       --
+       IF cMotivAnul IN ('REEX', 'CAFP')THEN
+          UPDATE ADM_RECIBOS_PROV
+          SET Sts                  = 'ANU',
+              FechaTransaccion     = TRUNC(SYSDATE),
+              Usuariogenero        = cCodUsuarioEnvFactAnu
+          WHERE CodCia      = nCodCia 
+          AND  (IdFactura  = nIdFactura OR IdFactura2 = nIdFactura);
+       END IF;
     END ANULAR;
 
     PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFacturaAnu NUMBER, nIdTransaccion NUMBER) IS
     nIdFactura    FACTURAS.IdFactura%TYPE;
     fFecFinVig    FACTURAS.FecFinVig%TYPE;      -- ICOFINVIG
-
+    nFacturaOrig  ADM_RECIBOS_PROV.IdFactura%TYPE;
+    cIndicador    VARCHAR2(2);
+	
     CURSOR FACT_Q IS
        SELECT IdPoliza, IDetPol, CodCliente, FecVenc, Monto_Fact_Local, Monto_Fact_Moneda, IdEndoso,
               MtoComisi_Local, MtoComisi_Moneda, NumCuota, Tasa_Cambio, CodGenerador, CodTipoDoc,
@@ -2185,6 +2197,37 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                                   Y.Origen, Y.IdTipoSeg);
           END LOOP;
           OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdFactura,'IVASIN');
+          --
+		  SELECT 
+              CASE 
+                  WHEN EXISTS (
+                     SELECT 1 FROM TEMP_RECIBOS_PROV
+                     WHERE IdPoliza       = W.IdPoliza
+                       AND IdFacturaOrig  = nIdFacturaAnu
+                  ) THEN 'S'
+                  WHEN EXISTS (
+                       SELECT 1 FROM TEMP_RECIBOS_PROV
+                       WHERE IdPoliza       = W.IdPoliza
+                         AND IdFacturaIni   = nIdFacturaAnu
+                  ) THEN 'S2'
+                  ELSE NULL
+              END AS INDICADOR
+          INTO cIndicador
+          FROM DUAL;
+                
+               
+          IF cIndicador= 'S' THEN
+             UPDATE TEMP_RECIBOS_PROV
+             SET IdFactura1 = nIdFactura
+             WHERE IdPoliza       = W.IdPoliza
+             AND   IdFacturaOrig  = nIdFacturaAnu;
+			 
+          ELSIF cIndicador= 'S2' THEN
+             UPDATE TEMP_RECIBOS_PROV
+             SET IdFactura2 = nIdFactura
+             WHERE IdPoliza       = W.IdPoliza
+             AND   IdFacturaIni  = nIdFacturaAnu;
+          END IF;
        END LOOP;
     END REHABILITACION;
 
@@ -2464,14 +2507,14 @@ create or replace PACKAGE BODY OC_FACTURAS IS
               WHERE IdPoliza = nIdPoliza
                 AND CodCia   = nCodCia;
              nIdPrimaDeposito := OC_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, nTotPagos, cCod_Moneda,
-                                                             'Prima en Depósito por Reverso de Pagos realizados a la ' ||
-                                                             'Póliza No. ' || nIdPoliza || ' Por Cambio de la Estructura ' ||
-                                                             'de Comisiones para Agentes, Promotores y Dirección Regional',
+                                                             'Prima en DepÃ³sito por Reverso de Pagos realizados a la ' ||
+                                                             'PÃ³liza No. ' || nIdPoliza || ' Por Cambio de la Estructura ' ||
+                                                             'de Comisiones para Agentes, Promotores y DirecciÃ³n Regional',
                                                              nIdPoliza, nIDetPol);
              OC_PRIMAS_DEPOSITO.EMITIR(nCodCia, nCodEmpresa, nIdPrimaDeposito, TRUNC(SYSDATE), NULL);
           END IF;
        END IF;
-       -- Anulación de Facturas Emitidas
+       -- AnulaciÃ³n de Facturas Emitidas
        nIdTransacAnul := 0;
        FOR W IN FACT_Q LOOP
           IF NVL(nIdTransacAnul,0) = 0 THEN
@@ -2485,7 +2528,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
           OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacAnul, 'C');
        END IF;
 
-       -- Anulación de Notas de Crédito
+       -- AnulaciÃ³n de Notas de CrÃ©dito
        nIdTransacAnulNC := 0;
        FOR W IN NCR_Q LOOP
           IF NVL(nIdTransacAnulNC,0) = 0 THEN
@@ -2511,7 +2554,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
           OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacAnulNC, 'C');
        END IF;
 
-       -- Cambia Distribución de Comisiones
+       -- Cambia DistribuciÃ³n de Comisiones
        OC_AGENTE_POLIZA_T.CAMBIAR_DISTRIBUCION(nCodCia, nIdPoliza);
 
        SELECT MAX(Cod_Agente)
@@ -2643,7 +2686,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
           OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacEmis, 'C');
        END IF;
 
-       -- Reemite las Notas de Crédito Anulada por el Cambio de Comisiones
+       -- Reemite las Notas de CrÃ©dito Anulada por el Cambio de Comisiones
        IF NVL(nIdTransacAnulNC,0) > 0 THEN
           FOR W IN NCR_ANU_Q LOOP
              IF NVL(nIdTransacEmisNC,0) = 0 THEN
@@ -2677,7 +2720,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
        END IF;
 
        IF cStsFact = 'TODOS' AND nIdPrimaDeposito != 0 AND NVL(nIdTransacPagos,0) > 0 THEN
-          -- Aplica Pagos con la Prima en Depósito Generada.
+          -- Aplica Pagos con la Prima en DepÃ³sito Generada.
           nIdTransacAplic := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 12, 'PAG');
           BEGIN
              SELECT Saldo_Moneda, Saldo_Local
@@ -2686,7 +2729,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
               WHERE IdPrimaDeposito = nIdPrimaDeposito;
           EXCEPTION
              WHEN NO_DATA_FOUND THEN
-                RAISE_APPLICATION_ERROR (-20100,'No Existe Prima en Depósito x Aplicar '||nIdPrimaDeposito);
+                RAISE_APPLICATION_ERROR (-20100,'No Existe Prima en DepÃ³sito x Aplicar '||nIdPrimaDeposito);
           END;
 
           nTotAplicadoLocal  := 0;
@@ -2714,7 +2757,6 @@ create or replace PACKAGE BODY OC_FACTURAS IS
        END IF;
     END CAMBIO_COMISIONES;
 
-	--MASP 24/07/2024 --> Prorrateo													
     FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoliza      NUMBER,
                             nIdFactura     NUMBER,   nIdEndoso      NUMBER,  dFecIniVigFact DATE,
                             dFecFinVigPol  DATE,     nNUMCUOTA      NUMBER,  cCodPlanPagos  VARCHAR2) RETURN DATE IS   -- INICIA FINVIG  LARPLA
@@ -2748,9 +2790,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
          cTipoEndoso := NULL;
       END IF;
       --
-	  -- MASP 24/07/2024 --> Prorrateo													
-         --Se quita del IN el tipo de endoso RSS para que calcule las fechas finales correspondientes (solicitud del área operativa)
-      IF cTipoEndoso IN ('EAD') THEN
+      IF cTipoEndoso IN ('RSS','EAD') THEN
          dFecFinVigFact  := dFecFinVig;
       ELSE
          IF nFrecPagos = 15 THEN
@@ -2769,7 +2809,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
             dFecFinVigFact := ADD_MONTHS(dFecIniVigFact, nFrecPagos);
          END IF;
        --
-         IF TRUNC(dFecFinVigFact) > TRUNC(dFecFinVigPol) THEN
+         IF dFecFinVigFact > dFecFinVigPol THEN
             dFecFinVigFact := dFecFinVigPol;
          END IF;
        --
@@ -2857,7 +2897,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
              WHERE IdFactura = nIdFactura;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
-                RAISE_APPLICATION_ERROR (-20100,'No Es Posible Determinar La Factura '||nIdFactura||' Para Facturar Electrónicamente, Por Favor Valide Que Existe La Factura');
+                RAISE_APPLICATION_ERROR (-20100,'No Es Posible Determinar La Factura '||nIdFactura||' Para Facturar ElectrÃ³nicamente, Por Favor Valide Que Existe La Factura');
         END;
         IF cStsFact = 'ANU' THEN
             cProceso := 'CAN';
@@ -2915,7 +2955,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                AND IdFactura          = nIdFactura;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
-                RAISE_APPLICATION_ERROR (-20100,'Error al Determinar Número de Cuota de Recibo: '||nIdFactura);
+                RAISE_APPLICATION_ERROR (-20100,'Error al Determinar NÃºmero de Cuota de Recibo: '||nIdFactura);
         END;
 
         cCodPlanPagos      := OC_FACTURAS.CODIGO_PLAN_PAGOS(nCodCia, nIdFactura);
@@ -2942,7 +2982,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                         FROM ENDOSOS
                                        WHERE IdPoliza    = nIdPoliza
                                          AND IdEndoso    = nIdEndoso);
-            ELSE -- Endoso a Declaración
+            ELSE -- Endoso a DeclaraciÃ³n
                 SELECT COUNT(*)
                   INTO nTotFacturas
                   FROM FACTURAS
@@ -2981,7 +3021,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
         RETURN cIndFactCteRFCGenerico;
     EXCEPTION
         WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR (-20100,'Error al Determinar Indicador de RFC Genérico');
+            RAISE_APPLICATION_ERROR (-20100,'Error al Determinar Indicador de RFC GenÃ©rico');
     END IND_RFC_GENERICO_FACT_ELECT;
 
     FUNCTION CTE_RFC_GENERICO_FACT_ELECT(nIdFactura  NUMBER, nCodCia  NUMBER) RETURN NUMBER IS
@@ -2996,7 +3036,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
         RETURN nCodCliRFCGenerico;
     EXCEPTION
         WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR (-20100,'Error al Determinar Cliente de RFC Genérico');
+            RAISE_APPLICATION_ERROR (-20100,'Error al Determinar Cliente de RFC GenÃ©rico');
     END CTE_RFC_GENERICO_FACT_ELECT;
 
     FUNCTION NUM_INTENTOS_COBRA_REALIZADOS (nIdFactura  NUMBER, nCodCia  NUMBER) RETURN NUMBER IS
@@ -3039,7 +3079,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
            AND CodCia    = nCodCia;
     EXCEPTION
         WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR (-20100,'Error al Actualizar Número de Intentos de Cobranza Para el Aviso de Cobro '||nIdFactura);
+            RAISE_APPLICATION_ERROR (-20100,'Error al Actualizar NÃºmero de Intentos de Cobranza Para el Aviso de Cobro '||nIdFactura);
     END ACTUALIZA_NUMERO_INTENTOS;
 
     PROCEDURE MARCA_INTENTOS_CUMPLIDOS (nIdFactura  NUMBER, nCodCia  NUMBER) IS
@@ -3053,23 +3093,23 @@ create or replace PACKAGE BODY OC_FACTURAS IS
             RAISE_APPLICATION_ERROR (-20100,'Error al Actualizar el Aviso de Cobro '||nIdFactura||' como Intentos de Cobro Cumplidos');
     END MARCA_INTENTOS_CUMPLIDOS;
 
-    FUNCTION CALCULA_AÑO_POLIZA(nIdPoliza NUMBER, nFechaproceso DATE) RETURN NUMBER IS --LARPLA
-    nAño_Poliza FACTURAS.Id_Año_Poliza%TYPE;
+    FUNCTION CALCULA_AÃ‘O_POLIZA(nIdPoliza NUMBER, nFechaproceso DATE) RETURN NUMBER IS --LARPLA
+    nAÃ±o_Poliza FACTURAS.Id_AÃ±o_Poliza%TYPE;
     BEGIN
        BEGIN
           SELECT TRUNC(ABS((P.FecIniVig - nFechaproceso))/365) + 1
-            INTO nAño_Poliza
+            INTO nAÃ±o_Poliza
             FROM POLIZAS P
            WHERE P.IdPoliza = nIdPoliza;
            --
         EXCEPTION
           WHEN NO_DATA_FOUND THEN
-             nAño_Poliza := 1;
+             nAÃ±o_Poliza := 1;
           WHEN OTHERS THEN
-             nAño_Poliza := 1;
+             nAÃ±o_Poliza := 1;
        END;
-       RETURN nAño_Poliza;
-    END CALCULA_AÑO_POLIZA;
+       RETURN nAÃ±o_Poliza;
+    END CALCULA_AÃ‘O_POLIZA;
 
     FUNCTION PRIMA_COMPLEMENTARIA (nCodCia NUMBER, nIdPoliza NUMBER, nIdFactura NUMBER) RETURN NUMBER IS
     nMontoPrimaCompMoneda FACTURAS.MontoPrimaCompMoneda%TYPE;
@@ -3224,7 +3264,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
        END IF;
 
        IF NVL(nMontoPago,0) < (NVL(nSldoFactM,0) + NVL(nMontoPrimaCompMoneda,0) + NVL(nMontoAporteFondo,0)) THEN
-          RAISE_APPLICATION_ERROR (-20100,'Para Pólizas con Manejo de Fondos, debe Cubrir Completo el Pago.  ' ||
+          RAISE_APPLICATION_ERROR (-20100,'Para PÃ³lizas con Manejo de Fondos, debe Cubrir Completo el Pago.  ' ||
                                    ' NO puede Realizar la Cobranza de la Factura No. '||nIdFactura);
        END IF;
 
@@ -3261,9 +3301,9 @@ create or replace PACKAGE BODY OC_FACTURAS IS
           OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccionRetiro, 'C');
        END LOOP;
 
-       -- Se realiza el Cobro de la Factura con Prima en Depósito, se agregan Primas en Deposito para el saldo de la factura menos prima complementaria
+       -- Se realiza el Cobro de la Factura con Prima en DepÃ³sito, se agregan Primas en Deposito para el saldo de la factura menos prima complementaria
        IF cFormPago != 'PRD' THEN
-          cObservaciones    := 'Primas para Pago en Póliza con Fondos de Ahorro de Factura No. ' || nIdFactura || ' con Valor de ' || NVL(nMonto_Fact_Moneda,0);
+          cObservaciones    := 'Primas para Pago en PÃ³liza con Fondos de Ahorro de Factura No. ' || nIdFactura || ' con Valor de ' || NVL(nMonto_Fact_Moneda,0);
           nIdPrimaDeposito  := OC_PRIMAS_DEPOSITO.INSERTAR(nCodCliente, NVL(nSldoFactM,0), cCodMoneda,
                                                            cObservaciones, nIdPoliza, nIDetPol);
           OC_PRIMAS_DEPOSITO.EMITIR(nCodCia, nCodEmpresa, nIdPrimaDeposito, dFecPago, cNumReciboPago);
@@ -3284,8 +3324,8 @@ create or replace PACKAGE BODY OC_FACTURAS IS
              AND NumPolUnico  = cNumPolUnico;
 
           IF NVL(nIdPolizaAnu,0) = 0 THEN
-             RAISE_APPLICATION_ERROR (-20100, 'Solo puede Realizar Cobranza con Primas en Depósito por Reexpedición de Póliza '||
-                                              ' y NO existe una Póliza Anulada con el No. '                                    || cNumPolUnico);
+             RAISE_APPLICATION_ERROR (-20100, 'Solo puede Realizar Cobranza con Primas en DepÃ³sito por ReexpediciÃ³n de PÃ³liza '||
+                                              ' y NO existe una PÃ³liza Anulada con el No. '                                    || cNumPolUnico);
           ELSE
              SELECT NVL(MIN(IdPrimaDeposito),0)
                INTO nIdPrimaDeposito
@@ -3297,8 +3337,8 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                 AND Estado        = 'PAF'; -- Por Aplicar en Fondo;
 
              IF NVL(nIdPrimaDeposito,0) = 0 THEN
-                RAISE_APPLICATION_ERROR (-20100, 'No Existe Primas en Depósito Con Saldo en Póliza Anulada No. '|| nIdPolizaAnu ||
-                                                 ' y No. de Póliza Unico '                                      || cNumPolUnico ||
+                RAISE_APPLICATION_ERROR (-20100, 'No Existe Primas en DepÃ³sito Con Saldo en PÃ³liza Anulada No. '|| nIdPolizaAnu ||
+                                                 ' y No. de PÃ³liza Unico '                                      || cNumPolUnico ||
                                                  ' por un Monto Mayor o Igual al Saldo de la Factura de '       || nSldoFactM);
              END IF;
           END IF;
@@ -3371,7 +3411,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
        IF NVL(nSaldoPorAplicar,0) > 0 THEN
           nMontoPrimaDepMon  := NVL(nSaldoPorAplicar,0);
           nMontoPrimaDepLoc  := NVL(nMontoPrimaDepMon,0) * nTasaCambioMov;
-          -- Generación de Factura por Movimiento de Aportes Iniciales al Fondo
+          -- GeneraciÃ³n de Factura por Movimiento de Aportes Iniciales al Fondo
           nIdTransaccionFact := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 21, 'FACFON');
 
           nMtoComisiMoneda := 0;
@@ -3383,7 +3423,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                                     nIdTransaccionFact,      cIndFactElectronica);
 
           IF cFormPago != 'PRD' THEN
-             -- Se Crea Prima en Depósito Por la Prima Nivelada y Aportes al Fondo
+             -- Se Crea Prima en DepÃ³sito Por la Prima Nivelada y Aportes al Fondo
              cObservaciones   := 'Primas para Aportes al Fondo de Factura No. ' || nIdFacturaAportes ||
                                  ' con un Aporte a Fondos de ' || NVL(nMontoAporteFondo,0);
 
@@ -3401,7 +3441,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                 AND Estado        = 'PAF'; -- Por Aplicar en Fondo
 
              IF NVL(nIdPrimaDeposito,0) = 0 THEN
-                RAISE_APPLICATION_ERROR (-20100,'No Existen Primas en Depósito Con Saldo Mayor o Igual al Aporte al Fondo en Póliza No. ' || nIdPoliza );
+                RAISE_APPLICATION_ERROR (-20100,'No Existen Primas en DepÃ³sito Con Saldo Mayor o Igual al Aporte al Fondo en PÃ³liza No. ' || nIdPoliza );
              END IF;
           END IF;
        END IF;
@@ -3417,7 +3457,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                             nIdPoliza, nIDetPol, Y.IdFondo, Y.CodCptoMov, NVL(Y.MontoMovMoneda,0));
 
                 -- Se Aplica el Saldo Proporcional a los Fondos y se Actualiza el Valor de Cada Aporte Inicial
-                -- Por si el Asegurado paga más en el primer pago de lo esperado.
+                -- Por si el Asegurado paga mÃ¡s en el primer pago de lo esperado.
                 nMontoMovMoneda   := NVL(nSaldoRestante,0) * W.PorcFondo / 100;
                 nMontoMovLocal    := NVL(nMontoMovMoneda,0) * nTasaCambioMov;
 
@@ -3463,7 +3503,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                                         nIdTransaccionMov);
           GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol,
                                                              nCodAsegurado, W.IdFondo, nIdTransaccionMov);
-          -- Para Movimientos que NO tienen Transacción
+          -- Para Movimientos que NO tienen TransacciÃ³n
           GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOVIMIENTOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegurado, W.IdFondo,
                                                         0);
           GT_FAI_CONCENTRADORA_FONDO.ACTIVA_MOV_INFORMATIVOS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol,
@@ -3534,7 +3574,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
             IF NVL(P_IDFACTURA, 0) = 0           THEN P_IDFACTURA := NULL; END IF;
             IF NVL(P_IDNCR, 0) = 0               THEN P_IDNCR     := NULL; END IF;
             IF P_IDNCR IS NULL AND P_IDFACTURA IS NULL THEN
-                RAISE_APPLICATION_ERROR(-20200,'El numero de IDFACTURA o de IDNCR no es válido: '||P_IDNCR ||P_IDFACTURA);
+                RAISE_APPLICATION_ERROR(-20200,'El numero de IDFACTURA o de IDNCR no es vÃ¡lido: '||P_IDNCR ||P_IDFACTURA);
             END IF;
 
             BEGIN
@@ -3544,7 +3584,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                  WHERE M.CODCIA = P_CODCIA
                    AND M.CVEMOTIVCANCFACT = P_CVE_MOTIVCANCFACT;
             EXCEPTION WHEN OTHERS THEN
-                 RAISE_APPLICATION_ERROR(-20200,'No existe el motivo de cancelación del CFDI o no es válido: '||P_CVE_MOTIVCANCFACT);
+                 RAISE_APPLICATION_ERROR(-20200,'No existe el motivo de cancelaciÃ³n del CFDI o no es vÃ¡lido: '||P_CVE_MOTIVCANCFACT);
             END;
 
             --
@@ -3622,9 +3662,9 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                               AND FX.FECFINVIG = F.FECFINVIG)) LOOP
 
                             cLin := GT_WEB_SERVICES.Ejecuta_WS(1,1,4000, -4000, cResultado,':nCodCia='  || 1 ||
-                                                                                    ',:Wuuid='   || '¨' || ENT.UUID_CANCELAR     || '¨' ||
-                                                                                    ',:Wmotivo=' || '¨' || ENT.CVE_MOTIVCANCFACT || '¨' ||
-                                                                                    ',:WuuNuevo='|| '¨' || ENT.UUID_SUSTITUYE    || '¨'
+                                                                                    ',:Wuuid='   || 'Â¨' || ENT.UUID_CANCELAR     || 'Â¨' ||
+                                                                                    ',:Wmotivo=' || 'Â¨' || ENT.CVE_MOTIVCANCFACT || 'Â¨' ||
+                                                                                    ',:WuuNuevo='|| 'Â¨' || ENT.UUID_SUSTITUYE    || 'Â¨'
                                                                       ).getClobVal;
                             --
                             --dbms_output.put_line('Respuesta-->Codigo: ' || GT_WEB_SERVICES.ExtraStr ('codigo xsi:type="xsd:string"', cLin) || '-' ||
@@ -3690,9 +3730,9 @@ create or replace PACKAGE BODY OC_FACTURAS IS
                                 ) LOOP
                         --
                         cLin := GT_WEB_SERVICES.Ejecuta_WS(1,1,4000, -4000, cResultado,':nCodCia='  || 1 ||
-                                                                ',:Wuuid='   || '¨' || ENT.UUID_CANCELAR     || '¨' ||
-                                                                ',:Wmotivo=' || '¨' || ENT.CVE_MOTIVCANCFACT || '¨' ||
-                                                                ',:WuuNuevo='|| '¨' || NULL    || '¨'
+                                                                ',:Wuuid='   || 'Â¨' || ENT.UUID_CANCELAR     || 'Â¨' ||
+                                                                ',:Wmotivo=' || 'Â¨' || ENT.CVE_MOTIVCANCFACT || 'Â¨' ||
+                                                                ',:WuuNuevo='|| 'Â¨' || NULL    || 'Â¨'
                                                   ).getClobVal;
                         --
                         --dbms_output.put_line('Respuesta-->Codigo: ' || GT_WEB_SERVICES.ExtraStr ('codigo xsi:type="xsd:string"', cLin) || '-' ||
@@ -3742,8 +3782,8 @@ create or replace PACKAGE BODY OC_FACTURAS IS
             RETURN cCodigoResp;
 
     EXCEPTION WHEN OTHERS THEN
-                OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(1, 1, P_IDNCR || P_IDFACTURA, PIDNCR,'CAN', '501', '<<Error en la cancelacion del CFDI del Recibo o NCR No.: '|| P_IDNCR || P_IDFACTURA || ', motivo cancelación: ' || P_CVE_MOTIVCANCFACT || '>>' || chr(10), sqlerrm);
-               RETURN '<<Error en la cancelacion del CFDI del Recibo o NCR No.: '|| P_IDNCR || P_IDFACTURA || ', motivo cancelación: ' || P_CVE_MOTIVCANCFACT || '>>' || chr(10) || sqlerrm;
+                OC_FACT_ELECT_CONF_DOCTO.ENVIA_CORREO(1, 1, P_IDNCR || P_IDFACTURA, PIDNCR,'CAN', '501', '<<Error en la cancelacion del CFDI del Recibo o NCR No.: '|| P_IDNCR || P_IDFACTURA || ', motivo cancelaciÃ³n: ' || P_CVE_MOTIVCANCFACT || '>>' || chr(10), sqlerrm);
+               RETURN '<<Error en la cancelacion del CFDI del Recibo o NCR No.: '|| P_IDNCR || P_IDFACTURA || ', motivo cancelaciÃ³n: ' || P_CVE_MOTIVCANCFACT || '>>' || chr(10) || sqlerrm;
     END FACTURA_ELECTRONICA_SAT40;
     --
     FUNCTION FACTURA_RELACIONADA_UUID_CANC(P_CODCIA     NUMBER,
@@ -3995,7 +4035,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
       END;
       --
       IF cNum_Tributario = 'X' THEN
-         RAISE_APPLICATION_ERROR(-20200,'Cliente '||OC_CLIENTES.NOMBRE_CLIENTE(nCodCliente)||' NO posee un RFC para facturación, por favor valide la configuración de la persona');
+         RAISE_APPLICATION_ERROR(-20200,'Cliente '||OC_CLIENTES.NOMBRE_CLIENTE(nCodCliente)||' NO posee un RFC para facturaciÃ³n, por favor valide la configuraciÃ³n de la persona');
       ELSIF cNum_Tributario IN ('XAXX010101000', 'XEXX010101000') THEN
          cIndVentaPublicoGen := 'S';
       ELSE
@@ -4114,7 +4154,7 @@ create or replace PACKAGE BODY OC_FACTURAS IS
          ELSIF F.CodCpto = 'RECFIN' THEN
             cValor3 := cValorAtributo;
          END IF;
-      END LOOP;	  
+      END LOOP;   
 
       cValorDescrCpto := ' '||cValor1||' '||cValor2||' '||cValor3;
 
@@ -4122,6 +4162,89 @@ create or replace PACKAGE BODY OC_FACTURAS IS
 
     END GENERA_VALOR_CONCEPTO;
     --
+    PROCEDURE INSERT_TEMP_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdFacturaAnu NUMBER, nIdPoliza NUMBER) IS
+    cIndicador    VARCHAR2(2);
+    cExiste       VARCHAR2(2);
+    CURSOR RECB1_Q IS
+       SELECT *
+         FROM ADM_RECIBOS_PROV
+        WHERE CodCia        = nCodCia
+          AND CodEmpresa    = nCodEmpresa
+          AND IdPoliza      = nIdPoliza
+          AND IdFactura     = nIdFacturaAnu
+          AND Sts           = 'ANU'
+        ORDER BY IdTransaccion, IdEndoso;
+                                 
+    CURSOR RECB2_Q IS
+       SELECT *
+         FROM ADM_RECIBOS_PROV
+        WHERE CodCia        = nCodCia
+          AND CodEmpresa    = nCodEmpresa
+          AND IdPoliza      = nIdPoliza
+          AND IdFactura2    = nIdFacturaAnu
+          AND Sts           = 'ANU'
+        ORDER BY IdTransaccion, IdEndoso;
+    BEGIN
+      BEGIN
+            SELECT 
+              CASE 
+                  WHEN EXISTS (
+                     SELECT 1 FROM ADM_RECIBOS_PROV
+                     WHERE IdPoliza   = nIdPoliza
+                       AND CodCia     = nCodCia
+                       AND CodEmpresa = nCodEmpresa
+                       AND IdFactura  = nIdFacturaAnu
+                       AND Sts        = 'ANU'
+                  ) THEN 'S'
+                  WHEN EXISTS (
+                       SELECT 1 FROM ADM_RECIBOS_PROV
+                       WHERE IdPoliza   = nIdPoliza
+                         AND CodCia     = nCodCia
+                         AND CodEmpresa = nCodEmpresa
+                         AND IdFactura2 = nIdFacturaAnu
+                         AND Sts        = 'ANU'
+                  ) THEN 'S2'
+                  ELSE NULL
+              END AS INDICADOR
+          INTO cIndicador
+          FROM DUAL;
+      END;
+      IF cIndicador = 'S' THEN
+         FOR X IN RECB1_Q LOOP
+           BEGIN
+               INSERT INTO TEMP_RECIBOS_PROV (IdPoliza, IdetPol, IdFacturaOrig, IdFacturaIni, IdNcrInicial, IdFactura1, IdFactura2, IdNcr1) 
+               VALUES (nIdPoliza, X.IdetPol, X.IdFactura, X.IdFactura2, X.IdNcr, NULL, NULL, NULL);		   
+             EXCEPTION
+             WHEN OTHERS THEN
+               RAISE_APPLICATION_ERROR(-20225,' NO SE PUDO INSERTAR EL REGISTRO EN RECIBOS EN LA TABLA TEMPORAL: ' || TRIM(TO_CHAR(nIdpoliza)));
+           END;
+         END LOOP;
+      ELSIF cIndicador = 'S2' THEN
+        BEGIN
+           SELECT 'S'
+           INTO cExiste
+           FROM TEMP_RECIBOS_PROV
+           WHERE IdPoliza      = nIdPoliza
+            AND  IdFacturaIni  = nIdFacturaAnu;
+        EXCEPTION
+           WHEN NO_DATA_FOUND THEN
+               cExiste := 'N';
+           WHEN TOO_MANY_ROWS  THEN
+               cExiste := 'S';
+        END;
+        IF cExiste != 'S' THEN
+           FOR Z IN RECB2_Q LOOP
+              BEGIN
+                 INSERT INTO TEMP_RECIBOS_PROV (IdPoliza, IdetPol, IdFacturaOrig, IdFacturaIni, IdNcrInicial, IdFactura1, IdFactura2, IdNcr1) 
+                 VALUES (nIdPoliza, Z.IdetPol, Z.IdFactura, Z.IdFactura2, Z.IdNcr, NULL, NULL, NULL);		   
+               EXCEPTION
+               WHEN OTHERS THEN
+                  RAISE_APPLICATION_ERROR(-20225,' NO SE PUDO INSERTAR EL REGISTRO EN RECIBOS EN LA TABLA TEMPORAL: ' || TRIM(TO_CHAR(nIdpoliza)));
+              END;
+           END LOOP;
+        END IF;
+      END IF;
+    END INSERT_TEMP_RECIBOS_PROV;
+    --
 
 END OC_FACTURAS;
-/
