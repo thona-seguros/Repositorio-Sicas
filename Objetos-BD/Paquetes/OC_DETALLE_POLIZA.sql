@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE          OC_DETALLE_POLIZA IS
+create or replace PACKAGE          OC_DETALLE_POLIZA IS
 
   FUNCTION INSERTAR_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
                             cPlanCob VARCHAR2, nIdPoliza NUMBER, nTasaCambio NUMBER,
@@ -37,7 +37,9 @@ CREATE OR REPLACE PACKAGE          OC_DETALLE_POLIZA IS
 
 END OC_DETALLE_POLIZA;
 
+
 /
+
 
 create or replace PACKAGE BODY          OC_DETALLE_POLIZA IS
 --
@@ -75,7 +77,7 @@ BEGIN
              0, cNumDetRef, 'SOL', NULL, NULL, cCodPromotor, 0);
    EXCEPTION
       WHEN DUP_VAL_ON_INDEX THEN
-         RAISE_APPLICATION_ERROR(-20225,'Ya Existe el Detalle de PÛliza: '||TRIM(TO_CHAR(nIdPoliza))||
+         RAISE_APPLICATION_ERROR(-20225,'Ya Existe el Detalle de P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))||
                                  '-'||TRIM(TO_CHAR(nIDetPol)));
    END;
    RETURN(nIDetPol);
@@ -135,7 +137,7 @@ BEGIN
       AND IDetPol         = nIDetPol
       AND StsAsistencia NOT IN ('EXCLUI');
 
-   IF NVL(nMontoPrimaCompMoneda,0) > 0 THEN --- SOLO SE DEBER¡ ACTUALIZAR EL MONTO DE RETIRO CUANDO LA PRIMA COMPLEMENTARIA SEA <= 0 (ALTURA CERO DE LA P”LIZA)
+   IF NVL(nMontoPrimaCompMoneda,0) > 0 THEN --- SOLO SE DEBER√Å ACTUALIZAR EL MONTO DE RETIRO CUANDO LA PRIMA COMPLEMENTARIA SEA <= 0 (ALTURA CERO DE LA P√ìLIZA)
       nMontoPrimaCompMoneda   := 0;
       nMontoPrimaCompLocal    := 0;
    END IF;
@@ -190,6 +192,8 @@ nFactor              NUMBER (14,8);
 nDiasAno             NUMBER(6) := 365;
 nDiasPagados         NUMBER(6);
 cContabiliza         VARCHAR2(1);
+
+cIndMultiRamo        VARCHAR2(1); --MLJS 08/08/2025
 
 CURSOR PRIMA_Q IS
    SELECT F.StsFact, F.IdFactura, NVL(D.Monto_Det_Moneda,0) Monto_Det_Moneda,
@@ -277,9 +281,11 @@ CURSOR ASEG_Q IS
    SELECT IDetPol, Cod_Asegurado
      FROM ASEGURADO_CERTIFICADO
     WHERE IdPoliza = nIdPoliza
-      AND nIDetPol = nIDetPol
+      AND IDetPol = nIDetPol
       AND CodCia   = nCodCia
       AND Estado   = 'EMI';
+      
+      
 
 CURSOR FONDOS_Q IS -- GTC - 17-12-2018
    SELECT CodAsegurado, IdFondo
@@ -300,11 +306,14 @@ BEGIN
       AND D.IdPoliza      = nIdPoliza
       AND D.CodCia        = nCodCia;
 
-   -- Calcula Fecha de AnulaciÛn para NO Devolver Prima
+   -- Calcula Fecha de Anulaci√≥n para NO Devolver Prima
    nDiasAno      := TRUNC(dFecFinVig) - TRUNC(dFecIniVig);
 
    nTotPrimaPag  := 0;
    nTotPrimaEmit := 0;
+   
+   --MLJS 08/08/2025 INDICADOR MULTIRAMO
+   cIndMultiRamo := OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(nCodCia,nCodEmpresa,cIdTipoSeg);
 
    FOR W IN PRIMA_Q LOOP
       nTotPrimaEmit    := NVL(nTotPrimaEmit,0) + W.Monto_Det_Moneda;
@@ -325,7 +334,7 @@ BEGIN
    nPrimaCanc     := nTotPrimaEmit * nFactProrrata;
 
    IF NVL(nTotPrimaPag,0) = 0 THEN
-      -- Anula Notas de CrÈdito
+      -- Anula Notas de Cr√©dito
       FOR X IN NCR_Q LOOP
          IF NVL(nIdTransacNc,0) = 0 THEN
             nIdTransacNc := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, 'ANUNCR');
@@ -426,9 +435,12 @@ BEGIN
          OC_DETALLE_NOTAS_DE_CREDITO.APLICAR_RETENCION(nCodCia, nCodEmpresa, cIdTipoSeg, dFecAnulReal,
                                                        nDiasAnul, cMotivAnul, nIdNcr, K.CodCptoServicio);
       END LOOP;
-
+       --MLJS 08/08/2025 MODIFICACIONES VIFLEX
       OC_DETALLE_NOTAS_DE_CREDITO.GENERA_CONCEPTOS(nCodCia, nCodEmpresa, cCodPlanPago, cIdTipoSeg,
                                                    nIdNcr, nTasaCambio);
+    /*  OC_DETALLE_NOTAS_DE_CREDITO.SP_GENERA_CONCEPTOS(nCodCia, nCodEmpresa, cCodPlanPago, 0,  nIdNcr, cIdTipoSeg,'N',
+                                                      cIndMultiRamo,  1, 1, nTasaCambio, nMtoNcrLocal,nIdTransacEmiNc); */
+      --MLJS 08/08/2025 MODIFICACIONES VIFLEX
       OC_NOTAS_DE_CREDITO.ACTUALIZA_NOTA(nIdNcr);
       OC_NOTAS_DE_CREDITO.EMITIR(nIdNcr, NULL);
       OC_COMISIONES.INSERTA_COMISION_NC(nIdNcr);
@@ -484,7 +496,7 @@ BEGIN
    END LOOP;
 EXCEPTION
    WHEN OTHERS THEN
-      RAISE_APPLICATION_ERROR(-20225,'Error al Anular Detalle de PÛliza: '||TRIM(TO_CHAR(nIdPoliza))||
+      RAISE_APPLICATION_ERROR(-20225,'Error al Anular Detalle de P√≥liza: '||TRIM(TO_CHAR(nIdPoliza))||
                                  '-'||TRIM(TO_CHAR(nIDetPol))|| ' ' ||SQLERRM);
 END ANULAR_DETALLE;
 
@@ -794,7 +806,7 @@ BEGIN
          END IF;
       EXCEPTION
          WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nuevo Detalle de PÛliza ' ||SQLERRM);
+            RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nuevo Detalle de P√≥liza ' ||SQLERRM);
       END;
 
       FOR J IN AGENTES_Q LOOP
@@ -1024,7 +1036,7 @@ BEGIN
 
       OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccion, 'C');
 
-      -- Rehabilita Notas de CrÈdito Anuladas
+      -- Rehabilita Notas de Cr√©dito Anuladas
       SELECT MAX(T.IdTransaccion)
         INTO nIdTransaccionAnuNc
         FROM TRANSACCION T, DETALLE_TRANSACCION D
@@ -1048,7 +1060,7 @@ BEGIN
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacNcRehab, 'C');
       END IF;
 
-      -- Anula Notas de CrÈdito de la AnulaciÛn
+      -- Anula Notas de Cr√©dito de la Anulaci√≥n
       SELECT MAX(T.IdTransaccion)
         INTO nIdTransaccionEmiNc
         FROM TRANSACCION T, DETALLE_TRANSACCION D
@@ -1087,7 +1099,7 @@ BEGIN
       END IF;
    ELSE
       RAISE_APPLICATION_ERROR(-20225,'El Certificado/Subgrupo No. ' || TRIM(TO_CHAR(nIDetPol)) ||
-                              ' de la PÛliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' NO est· Anulado para Rehabilitarse');
+                              ' de la P√≥liza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' NO est√° Anulado para Rehabilitarse');
    END IF;
 END REHABILITACION;
 
