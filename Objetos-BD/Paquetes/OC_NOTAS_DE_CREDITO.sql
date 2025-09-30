@@ -1,75 +1,7 @@
---
--- OC_NOTAS_DE_CREDITO  (Package)
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   DBMS_OUTPUT (Synonym)
---   DBMS_STANDARD (Package)
---   VALORES_DE_LISTAS (Table)
---   NOTAS_DE_CREDITO (Table)
---   OC_AGENTES (Package)
---   OC_ARCHIVO (Package)
---   SUB_PROCESO (Table)
---   PLAN_DE_PAGOS (Table)
---   POLIZAS (Table)
---   PROC_TAREA (Table)
---   OC_DETALLE_TRANSACCION (Package)
---   OC_DISTRITO (Package)
---   OC_EJECUTIVO_COMERCIAL (Package)
---   OC_EMPRESAS (Package)
---   OC_FACTURAS (Package)
---   OC_FACT_ELECT_CONF_DOCTO (Package)
---   OC_FACT_ELECT_DETALLE_TIMBRE (Package)
---   CONCEPTOS_PLAN_DE_PAGOS (Table)
---   CORREOS_ELECTRONICOS_PNJ (Table)
---   DETALLE_FACTURAS (Table)
---   DETALLE_NOTAS_DE_CREDITO (Table)
---   OC_TRANSACCION (Package)
---   PARAMETROS_EMISION (Table)
---   PARAMETROS_ENUM_NOT_CRE (Table)
---   PARAMETROS_GLOBALES (Table)
---   PERSONA_NATURAL_JURIDICA (Table)
---   AGENTES (Table)
---   AGENTES_DETALLES_POLIZAS (Table)
---   ASEGURADO (Table)
---   ASEGURADO_CERTIFICADO (Table)
---   ASISTENCIAS (Table)
---   ASISTENCIAS_ASEGURADO (Table)
---   ASISTENCIAS_DETALLE_POLIZA (Table)
---   PROVINCIA (Table)
---   OC_CORREOS_ELECTRONICOS_PNJ (Package)
---   OC_DETALLE_NOTAS_DE_CREDITO (Package)
---   CATALOGO_DE_CONCEPTOS (Table)
---   CLIENTES (Table)
---   COBERTURAS (Table)
---   COBERTURAS_DE_SEGUROS (Table)
---   COBERTURA_ASEG (Table)
---   COBERT_ACT (Table)
---   COLONIA (Table)
---   COMISIONES (Table)
---   OC_GENERALES (Package)
---   OC_MONEDA (Package)
---   OC_PLAN_DE_PAGOS (Package)
---   OC_CLIENTES (Package)
---   OC_COLONIA (Package)
---   OC_COMISIONES (Package)
---   OC_COMPROBANTES_CONTABLES (Package)
---   OC_CONCEPTOS_PLAN_DE_PAGOS (Package)
---   DETALLE_POLIZA (Table)
---   DIRECCIONES_PNJ (Table)
---   DISTRITO (Table)
---   EMPRESAS (Table)
---   ENDOSOS (Table)
---   FACTURAS (Table)
---   OC_PROVINCIA (Package)
---   TIPO_DE_DOCUMENTO (Table)
---   TRANSACCION (Table)
---
 CREATE OR REPLACE PACKAGE SICAS_OC.OC_NOTAS_DE_CREDITO IS
 
 FUNCTION F_GET_NTCRE ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER; --SEQ XDS 20160727
-  
+
 FUNCTION INSERTA_NOTA_CREDITO(nCodCia         NUMBER,    nIdPoliza      NUMBER,    nIDetPol            NUMBER, 
                               nIdEndoso       NUMBER,    nCodCliente    NUMBER,    dFecNcr             DATE, 
                               nMtoNcrLocal    NUMBER,    nMtoNcrMoneda  NUMBER,    nMtoComisLocal      NUMBER, 
@@ -108,10 +40,10 @@ FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoli
                         cCodPlanPago   VARCHAR2) RETURN DATE;
 
 PROCEDURE REVERTIR_APLICACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdnCR NUMBER);
-  
+
 FUNCTION FACTURA_ELECTRONICA(nIdNcr    NUMBER,   nCodCia       NUMBER,   nCodEmpresa  NUMBER, 
                              cTipoCfdi VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL) RETURN VARCHAR2;
-                             
+
 FUNCTION MONTO_BASE_IMPUESTO(nCodCia       NUMBER, nIdNcr  NUMBER)  RETURN NUMBER;
 
 ---ARH 06/06/2025 procedicimento para insertar datos temporales de los recibos provisionales
@@ -120,13 +52,6 @@ PROCEDURE INSERT_TEMP_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNcr NU
 
 END OC_NOTAS_DE_CREDITO;
 /
-
---
--- OC_NOTAS_DE_CREDITO  (Package Body) 
---
---  Dependencies: 
---   OC_NOTAS_DE_CREDITO (Package)
---
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_NOTAS_DE_CREDITO IS
 --
 -- MODIFICACIONES
@@ -138,13 +63,13 @@ p_msg_regreso varchar2(50);----var XDS
   --- Funcion para buscar el proximo numero de Nota de Credito ---
 --------------------------------------------------------------------
  FUNCTION F_GET_NTCRE ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER AS
-  
-    
+
+
       vNumNTCRE       parametros_enum_not_cre.paen_cont_fin%type;
       vNombreTabla    varchar2(30);
       vIdProducto     number(6); 
-      
-   
+
+
    BEGIN
     -- Buscar el nombre de la tabla de la cual se obtendra por la descripcion y la bandera
       select pa.pame_ds_numerador,
@@ -157,7 +82,7 @@ p_msg_regreso varchar2(50);----var XDS
          and pa.paem_flag          =  1;
 
     -- Obtener el numero de nota de credito
-   
+
      select pnt.paen_cont_fin
        into vNumNTCRE
        from parametros_enum_not_cre pnt
@@ -168,14 +93,14 @@ p_msg_regreso varchar2(50);----var XDS
       update parametros_enum_not_cre pntc
          set pntc.paen_cont_fin = vNumNTCRE +1
        where pntc.paen_id_nc  = vIdProducto; 
-      
- 
+
+
     -- Hacer permanentes los cambios para evitar bloqueo de la tabla
 --       commit;
-   
-  
+
+
      return vNumNTCRE;
-   
+
  EXCEPTION
       when no_data_found then
          p_msg_regreso := '.:: No se ha dado de alta '|| vNombreTabla ||' en PARAMETROS_EMISION ::.'||sqlerrm;
@@ -338,7 +263,7 @@ BEGIN
       AND CodCia  = nCodCia;
 
    OC_COMISIONES.REVERSA_DEVOLUCION(nCodCia, nIdNcr);
-   
+
    IF cMotivAnul IN ('REEX', 'CAFP')THEN
       UPDATE ADM_RECIBOS_PROV
       SET Sts                  = 'ANU',
@@ -401,19 +326,28 @@ nFacturaOrig             ADM_RECIBOS_PROV.IdFactura%TYPE;
 cStsNcr                  NOTAS_DE_CREDITO.StsNcr%TYPE;
 cMotivoEndoso            ENDOSOS.Motivo_Endoso%TYPE;
 
+nCod_Agente              AGENTES_DETALLES_POLIZAS.COD_AGENTE%TYPE;    --MLJS 03/09/2025
+nPorc_Comision           AGENTES_DETALLES_POLIZAS.PORC_COMISION%TYPE; --MLJS 03/09/2025
+
+cIndMultiRamo           VARCHAR2(1); --MLJS 05/08/2025
+
 CURSOR ENDOSO_Q IS
+   --MLJS 03/09/2025 SE CORRIGE DUPLICIDAD DE NOTAS DE CREDITO
    SELECT E.Prima_Neta_Local PrimaLocal, E.Prima_Neta_Moneda PrimaMoneda, E.CodPlanPago, E.PorcComis,
-          E.FecIniVig, E.FecFinVig, E.FecEmision, E.IDetPol, D.IdTipoSeg, A.Cod_Agente, A.Porc_Comision, E.FecExc,
-          D.Prima_Local, D.Prima_Moneda, E.TipoEndoso, E.Motivo_Endoso
-     FROM DETALLE_POLIZA D, ENDOSOS E, AGENTES_DETALLES_POLIZAS A
+          E.FecIniVig, E.FecFinVig, E.FecEmision, E.IDetPol, D.IdTipoSeg, --A.Cod_Agente, A.Porc_Comision, 
+          E.FecExc, D.Prima_Local, D.Prima_Moneda, E.TipoEndoso, E.Motivo_Endoso
+         ,E.INDCALCDERECHOEMIS  --MLSJ 05/08/2025
+     FROM DETALLE_POLIZA D, ENDOSOS E--, AGENTES_DETALLES_POLIZAS A  --MLJS 03/09/2025
     WHERE D.IdPoliza  = E.IdPoliza
       AND D.IDetPol   = E.IDetPol
       AND E.IdPoliza  = nIdPoliza
       AND E.IdEndoso  = nIdEndoso
-      AND A.idpoliza  = E.IdPoliza
-      AND A.idetpol   = E.IDetPol;
+      --AND A.idpoliza  = E.IdPoliza  --MLJS 03/09/2025
+      --AND A.idetpol   = E.IDetPol   --MLJS 03/09/2025
+      ;
 
 CURSOR CPTO_PRIMAS_Q IS
+   --MLJS 04/08/2025 adecuaciones multiramo, se agregó el ramo real
    SELECT CS.CodCpto, SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
      FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
     WHERE CS.CodCobert  = C.CodCobert
@@ -467,6 +401,7 @@ CURSOR CPTO_PRIMAS_Q IS
       AND D.CodCia            = nCodCia
       AND cTpEndoso           = 'NSS'
     GROUP BY CS.CodCpto;
+    
 CURSOR CPTO_ASIST_Q IS
    SELECT T.CodCptoServicio, SUM(A.MontoAsistLocal) MontoAsistLocal,
           SUM(A.MontoAsistMoneda) MontoAsistMoneda
@@ -576,14 +511,33 @@ BEGIN
          nMtoPago       := NVL(nPrimaLocal,0) / nNumPagos;
          nMtoPagoMoneda := NVL(nPrimaMoneda,0) /nNumPagos;
       END IF;
-
+      
+      --MLJS 03/09/2025 SE OBTIENEN LOS DATOS DEL AGENTE
+      BEGIN
+        SELECT ADP.Cod_Agente, ADP.Porc_Comision
+        INTO   nCod_Agente, nPorc_Comision
+        FROM   AGENTES_DETALLES_POLIZAS ADP
+        WHERE  IdPoliza      = nIdPoliza
+          AND  IdetPol       = X.IdetPol
+          AND  IdTipoSeg     = X.IdTipoSeg
+          AND  Ind_Principal = 'S';
+      EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR (-20100,'No Existe un Agente Definido para el Tipo de Seguro '||X.IdTipoSeg);
+         WHEN TOO_MANY_ROWS THEN
+            RAISE_APPLICATION_ERROR (-20100,'Existe Mas de un Agente Definido como Principal');
+         WHEN OTHERS THEN
+            RAISE_APPLICATION_ERROR (-20100,'Existe un error de otros');
+      END;
+      --MLJS 03/09/2025 SE OBTIENEN LOS DATOS DEL AGENTE
+      
       nPrimaRest := NVL(nPrimaLocal,0) - NVL(nMtoPago,0);
-      nMtoComisi := (nMtoPago * X.PorcComis / 100) * (X.Porc_Comision/100);
+      nMtoComisi := (nMtoPago * X.PorcComis / 100) * (nPorc_Comision/100);
       nTotPrimas := NVL(nTotPrimas,0) + NVL(nMtoPago,0);
 
       -- Cambio Multimoneda Ref. F. Ortiz 24/01/2007
       nPrimaRestMoneda := NVL(nPrimaMoneda,0) - NVL(nMtoPagoMoneda,0);
-      nMtoComisiMoneda := (nMtoPagoMoneda * X.PorcComis / 100) * (X.Porc_Comision/100);
+      nMtoComisiMoneda := (nMtoPagoMoneda * X.PorcComis / 100) * (nPorc_Comision/100);
       nTotPrimasMoneda := NVL(nTotPrimasMoneda,0) + NVL(nMtoPagoMoneda,0);
 
       FOR NP IN 1..nNumPagos LOOP
@@ -594,12 +548,12 @@ BEGIN
             dFecPago         := ADD_MONTHS(dFecPago,nFrecPagos);
             nMtoPagoMoneda   := NVL(nPrimaRestMoneda,0) / (nNumPagos - 1);
             nTotPrimasMoneda := NVL(nTotPrimasMoneda,0) + NVL(nMtoPagoMoneda,0);
-            nMtoComisiMoneda := (nMtoPagoMoneda * X.PorcComis / 100) * (X.porc_comision/100);
+            nMtoComisiMoneda := (nMtoPagoMoneda * X.PorcComis / 100) * (nPorc_comision/100);
          END IF;
 --       LARPLA
          nIdNcr := OC_NOTAS_DE_CREDITO.INSERTA_NOTA_CREDITO(nCodCia,       nIdPoliza,         X.IDetPol,     nIdEndoso, 
                                                             nCodCliente,   dFecPago,          nMtoPago,      nMtoPagoMoneda, 
-                                                            nMtoComisi,    nMtoComisiMoneda,  X.Cod_Agente,  cCodMoneda, 
+                                                            nMtoComisi,    nMtoComisiMoneda,  nCod_Agente,  cCodMoneda, 
                                                             nTasaCambio,   nIdTransaccion,    cIndFactElectronica);
 
          FOR W IN CPTO_PRIMAS_Q LOOP
@@ -666,9 +620,9 @@ BEGIN
          OC_DETALLE_NOTAS_DE_CREDITO.ACTUALIZA_DIFERENCIA(nIdNcr, nDifer, nDiferMoneda);
          OC_NOTAS_DE_CREDITO.ACTUALIZA_NOTA(nIdNcr);
       END IF;
-      
+
       OC_DETALLE_NOTAS_DE_CREDITO.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdNcr,'IVASIN');
-      
+
       SELECT SUM(Monto_Det_Moneda)
         INTO nMtoTotalMoneda
         FROM DETALLE_NOTAS_DE_CREDITO
@@ -868,7 +822,7 @@ CURSOR CLI_Q IS
       AND N.IndFactElectronica      = 'S'
       AND N.CodUsuarioEnvFact       = 'XENVIAR'
       AND N.FecEnvFactElec         IS NULL;
-      
+
 CURSOR AGT_Q IS
    SELECT DISTINCT CO.Cod_Agente, A.Tipo_Doc_Identificacion,
           A.Num_Doc_Identificacion, A.CodTipo, A.CodNivel, NVL(A.idcuentacorreo,0) CtaMail -- AEVS 14062017
@@ -902,12 +856,12 @@ BEGIN
       cAsignoEjec := 'N';
 
       FOR W IN AGT_Q LOOP
-      
+
          IF OC_AGENTES.EJECUTIVO_COMERCIAL(nCodCia, W.Cod_Agente) != 0 AND cAsignoEjec = 'N' THEN
             cEmailAgteDirec := OC_EJECUTIVO_COMERCIAL.EMAIL_EJECUTIVO(nCodCia, OC_AGENTES.EJECUTIVO_COMERCIAL(nCodCia, W.Cod_Agente));
             cAsignoEjec     := 'S';
          ELSE
-        
+
            ----  validamos que si el Tipo de Documento No es RFC, busque en el campo Tipo ID Tributaria. Si esta nulo, deja el  Documento original  AEVS 14072017
            IF W.Tipo_Doc_Identificacion NOT IN ('RFC') THEN
             BEGIN 
@@ -927,7 +881,7 @@ BEGIN
             END; 
             IF w1TIPO_ID_TRIBUTARIA IS NULL THEN  w1TIPO_ID_TRIBUTARIA := W.Tipo_Doc_Identificacion;  w1NUM_TRIBUTARIO := W.Num_Doc_Identificacion; END IF;
            END IF;
-      
+
             --- Buscamos si tiene un Correo Especifico. De no tenerlo, buscamos el Principal  AEVS 14062017
             IF W.CtaMail <> 0 THEN 
                   cEmailAgteDirec := OC_CORREOS_ELECTRONICOS_PNJ.EMAIL_ESPECIFICO(w1TIPO_ID_TRIBUTARIA, w1NUM_TRIBUTARIO, W.CtaMail);--W.Tipo_Doc_Identificacion, W.Num_Doc_Identificacion, W.CtaMail);
@@ -948,8 +902,8 @@ BEGIN
                   END IF;
                END IF;
       END LOOP;
-      
-      
+
+
       IF X.IdDirecAviCob = 0 THEN
                cDescColonia := OC_COLONIA.DESCRIPCION_COLONIA(X.CodPaisRes, X.CodProvRes, X.CodDistRes, X.CodCorrRes,
                                                               X.CodPosRes, X.CodColRes);
@@ -1498,7 +1452,7 @@ BEGIN
                                                          W.FecDevol,  W.Monto_Ncr_Local, W.Monto_Ncr_Moneda, W.MtoComisi_Local,
                                                          W.MtoComisi_Moneda, W.Cod_Agente, W.CodMoneda, W.Tasa_Cambio,
                                                          nIdTransaccion, W.IndFactElectronica);
- 
+
       -- ICOFINVIG
       UPDATE NOTAS_DE_CREDITO f
          SET Fecfinvig     = W.FECFINVIG,     
@@ -1720,7 +1674,7 @@ PROCEDURE INSERT_TEMP_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNcr NU
           WHEN TOO_MANY_ROWS  THEN
                cExiste := 'S';
        END;
-      
+
       IF cExiste != 'S' THEN
          FOR X IN RECB1_Q LOOP
            BEGIN
@@ -1736,17 +1690,4 @@ PROCEDURE INSERT_TEMP_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNcr NU
     --
 
 END OC_NOTAS_DE_CREDITO;
-/
-
---
--- OC_NOTAS_DE_CREDITO  (Synonym) 
---
---  Dependencies: 
---   OC_NOTAS_DE_CREDITO (Package)
---
-CREATE OR REPLACE PUBLIC SYNONYM OC_NOTAS_DE_CREDITO FOR SICAS_OC.OC_NOTAS_DE_CREDITO
-/
-
-
-GRANT EXECUTE ON SICAS_OC.OC_NOTAS_DE_CREDITO TO PUBLIC
 /
