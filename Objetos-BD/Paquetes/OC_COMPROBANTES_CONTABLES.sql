@@ -1309,13 +1309,29 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                   ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN
                      nMtoMovCuenta := ABS(W.MtoComisCuenta);
                      --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
-                     IF cCodProceso = 700 THEN
-                        IF W.MtoComisCuenta < 0 THEN
-                          IF X.RegDebCred = 'C' THEN
-                            cRegDebCred := 'D'; 
-                          ELSE
-                            cRegDebCred := 'C';
-                          END IF;
+                     IF W.MtoComisCuenta < 0 THEN
+                        IF W.REG IN (8) THEN 
+                           IF cCodProceso = 700 and W.CODCPTO NOT IN ('RETISR','RETIVA') THEN
+                              IF X.RegDebCred = 'C' THEN
+                                 cRegDebCred := 'D'; 
+                              ELSE
+                                 cRegDebCred := 'C';
+                              END IF;
+                           END IF;
+                        
+                        ELSE
+                           cRegDebCred := X.RegDebCred;
+                       
+                        END IF;
+                     ELSE
+                        IF  W.REG IN (12) and W.CODCPTO IN ('TRIVHO') THEN
+                           IF X.RegDebCred = 'C' THEN
+                              cRegDebCred := 'D'; 
+                           ELSE
+                              cRegDebCred := 'C';
+                           END IF;
+                        ELSE
+                           cRegDebCred := X.RegDebCred;
                         END IF;
                      END IF;
                      --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
@@ -1576,26 +1592,42 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                IF X.TipoRegistro = 'MO' THEN
                   IF X.TipoAgente IS NULL THEN
                      nMtoMovCuenta := ABS(W.MtoMovCuenta);
-                    
+
                   ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN  --
         ----- jmmd20220531  asi estaba                     nMtoMovCuenta := ABS(W.MtoMovCuenta);
                      nMtoMovCuenta := ABS(W.MtoComisCuenta);
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
-                  
-                   --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
-                     IF cCodProceso = 700 THEN
-                        IF W.MtoComisCuenta < 0 THEN
-                          IF X.RegDebCred = 'C' THEN
-                            cRegDebCred := 'D'; 
-                          ELSE
-                            cRegDebCred := 'C';
-                          END IF;
-                        END IF;
-                     END IF;
-                     --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
+
+                    --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
+                   IF W.MtoComisCuenta < 0 THEN
+                      IF W.REG IN (8) THEN 
+                         IF cCodProceso = 700 and W.CODCPTO NOT IN ('RETISR','RETIVA') THEN
+                            IF X.RegDebCred = 'C' THEN
+                               cRegDebCred := 'D'; 
+                            ELSE
+                               cRegDebCred := 'C';
+                            END IF;
+                         END IF;
+                      
+                      ELSE
+                         cRegDebCred := X.RegDebCred;
                      
+                      END IF;
+                   ELSE
+                      IF  W.REG IN (12) and W.CODCPTO IN ('TRIVHO') THEN
+                         IF X.RegDebCred = 'C' THEN
+                            cRegDebCred := 'D'; 
+                         ELSE
+                            cRegDebCred := 'C';
+                         END IF;
+                      ELSE
+                         cRegDebCred := X.RegDebCred;
+                      END IF;
+                   END IF;
+                   --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
+
                ELSE --aqui
                   IF ABS(W.MtoComisCuenta) != 0 THEN
         --------------------- JMMD20191015 IVAHON
@@ -2258,10 +2290,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
     FUNCTION COM_TIPO_ADICIONALES_PAGOS(nCodCia NUMBER, nIdTransaccion NUMBER, cIdTipoSeg VARCHAR2,
                        cTipoPersona VARCHAR2, cTipoAgente VARCHAR2, CCodCpto VARCHAR2,
                        nCodAgente  NUMBER DEFAULT NULL) RETURN NUMBER IS  -- MLJS 11/12/2023 SE AGREGA EL AGENTE
-    nComision_Moneda      COMISIONES.Comision_Moneda%TYPE;
+    nComision_Moneda   COMISIONES.Comision_Moneda%TYPE;
+    nMontoComisionF    COMISIONES.Comision_Moneda%TYPE;
+    nMontoComisionNC   COMISIONES.Comision_Moneda%TYPE;
     BEGIN
        SELECT NVL(SUM(DC.MONTO_MON_EXTRANJERA),0)
-         INTO nComision_Moneda
+         INTO nMontoComisionF
          FROM COMISIONES C, FACTURAS F, DETALLE_TRANSACCION D, TRANSACCION T, 
               DETALLE_POLIZA DP, AGENTES A, PAGOS PA , 
               PERSONA_NATURAL_JURIDICA PNJ, DETALLE_COMISION DC
@@ -2293,7 +2327,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
 
     --MLJS 02/09/2025 SE AGREGAN LAS NOTAS DE CREDTITO PORQUE NO SE ESTAN CONTABILIZANDO     
        SELECT NVL(SUM(DC.MONTO_MON_EXTRANJERA),0)
-         INTO nComision_Moneda
+         INTO nMontoComisionNC
          FROM TRANSACCION T, DETALLE_TRANSACCION D, NOTAS_DE_CREDITO NC,
               COMISIONES C, DETALLE_COMISION DC, DETALLE_POLIZA DP,
               AGENTES A, PERSONA_NATURAL_JURIDICA PNJ
@@ -2303,7 +2337,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
           AND D.Correlativo               = 1
           AND (NC.IdTransaccion           = D.IdTransaccion
            OR NC.IdTransaccionAnu         = D.IdTransaccion
-           OR  NC.IdTransacaPLIC          = D.IdTransaccion)
+           OR NC.IdTransacaPLIC           = D.IdTransaccion)
           AND C.IdNCR                     = NC.IDNCR
           AND C.IDPOLIZA                  = NC.IDPOLIZA
           AND DC.CODCIA                   = C.CODCIA
@@ -2324,6 +2358,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
           AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'DEVENG')
            OR   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(1, D.CodEmpresa, DP.IdTipoSeg) = 'ANTICI');
 
+          IF    nMontoComisionF  != 0 THEN
+            nComision_Moneda := nMontoComisionF;
+          ELSIF nMontoComisionNC != 0 THEN
+            nComision_Moneda := nMontoComisionNC;
+          END IF;
        RETURN(nComision_Moneda);
     END COM_TIPO_ADICIONALES_PAGOS;
     ------------------
