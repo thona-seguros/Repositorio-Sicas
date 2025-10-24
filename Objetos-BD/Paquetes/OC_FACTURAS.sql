@@ -1,4 +1,4 @@
-create or replace PACKAGE SICAS_OC.OC_FACTURAS IS
+create or replace PACKAGE          OC_FACTURAS IS
     -- FACTELECT VIFLEX                     20230426 CAPELE
 	-- SE AGREGO LAS FUNCIONES GENERA_VALOR_CONCEPTO ARH 17/10/2023
     PROCEDURE PAGAR_CON_PRIMA_DEPOSITO(nIdFactura NUMBER, nIdPrimaDeposito NUMBER, cNumReciboPago VARCHAR2,
@@ -106,7 +106,7 @@ END OC_FACTURAS;
 
 /
 
-create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
+create or replace PACKAGE BODY          OC_FACTURAS IS
     --
     -- MODIFICACIONES
     -- INSERCION DE FECHAS A COMISIONES                                       2018/03/06  ICO COMI
@@ -2128,7 +2128,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
           SET Sts                  = 'ANU',
               FechaTransaccion     = TRUNC(SYSDATE),
               Usuariogenero        = cCodUsuarioEnvFactAnu
-          WHERE CodCia      = nCodCia 
+          WHERE CodCia      = nCodCia
           AND  (IdFactura  = nIdFactura OR IdFactura2 = nIdFactura);
        END IF;
     END ANULAR;
@@ -2138,7 +2138,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
     fFecFinVig    FACTURAS.FecFinVig%TYPE;      -- ICOFINVIG
     nFacturaOrig  ADM_RECIBOS_PROV.IdFactura%TYPE;
     cIndicador    VARCHAR2(2);
-	
+
     CURSOR FACT_Q IS
        SELECT IdPoliza, IDetPol, CodCliente, FecVenc, Monto_Fact_Local, Monto_Fact_Moneda, IdEndoso,
               MtoComisi_Local, MtoComisi_Moneda, NumCuota, Tasa_Cambio, CodGenerador, CodTipoDoc,
@@ -2198,8 +2198,8 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
           END LOOP;
           OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdFactura,'IVASIN');
           --
-		  SELECT 
-              CASE 
+          SELECT
+              CASE
                   WHEN EXISTS (
                      SELECT 1 FROM TEMP_RECIBOS_PROV
                      WHERE IdPoliza       = W.IdPoliza
@@ -2214,14 +2214,14 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
               END AS INDICADOR
           INTO cIndicador
           FROM DUAL;
-                
-               
+
+
           IF cIndicador= 'S' THEN
              UPDATE TEMP_RECIBOS_PROV
              SET IdFactura1 = nIdFactura
              WHERE IdPoliza       = W.IdPoliza
              AND   IdFacturaOrig  = nIdFacturaAnu;
-			 
+
           ELSIF cIndicador= 'S2' THEN
              UPDATE TEMP_RECIBOS_PROV
              SET IdFactura2 = nIdFactura
@@ -2597,6 +2597,8 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                         Z.MtoOrigDetLocal, Z.MtoOrigDetMoneda, Z.IndPagoServicio,
                         Z.FecPagoServicio, Z.CodProveedor);
              END LOOP;
+             
+             OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia, nIdFactura, 'IVASIN'); --JJG 23/10/25
 
              SELECT NVL(SUM(Monto_Det_Moneda),0), NVL(SUM(Monto_Det_Moneda),0)
                INTO nMonto_Det_Moneda, nMonto_Det_Local
@@ -2683,7 +2685,10 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                     MtoComisi_Moneda = nComision_Moneda
               WHERE IdFactura = nIdFactura;
           END LOOP;
+          --
+          
           OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacEmis, 'C');
+                    
        END IF;
 
        -- Reemite las Notas de Crédito Anulada por el Cambio de Comisiones
@@ -2709,11 +2714,14 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                 VALUES (nIdNcr, Z.CodCpto, Z.Monto_Det_Local, Z.Monto_Det_Moneda,
                         Z.IndCptoPrima, Z.MtoOrigDetLocal, Z.MtoOrigDetMoneda);
              END LOOP;
-
+              
+             OC_DETALLE_NOTAS_DE_CREDITO.GENERA_IMPUESTO_FACT_ELECT(nCodCia, nIdNcr, 'IVASIN'); --JJG 23/10/25
              OC_NOTAS_DE_CREDITO.ACTUALIZA_NOTA(nIdNcr);
              OC_COMISIONES.INSERTA_COMISION_NC(nIdNcr);
              OC_NOTAS_DE_CREDITO.EMITIR(nIdNcr, NULL);
           END LOOP;
+          
+
           IF NVL(nIdTransacEmisNC,0) != 0 THEN
              OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacEmisNC, 'C');
           END IF;
@@ -4087,7 +4095,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
                                                                                 AND CS.CODCPTO    = DF.CODCPTO
                                                                                 AND CS.IDTIPOSEG  = DP.IDTIPOSEG
                                                                                 AND CS.PLANCOB    = DP.PLANCOB
-                   WHERE DF.IdFactura            = nIdFactura                         
+                   WHERE DF.IdFactura            = nIdFactura
                    AND NVL(CC.IndEsImpuesto,'N') = 'N'
                    AND DF.MONTO_DET_MONEDA > 0
                    AND DECODE(CS.CODCOBERT, NULL, 'X', CS.CODCOBERT) = NVL((SELECT MAX(CODCOBERT) FROM COBERTURAS_DE_SEGUROS S
@@ -4154,7 +4162,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
          ELSIF F.CodCpto = 'RECFIN' THEN
             cValor3 := cValorAtributo;
          END IF;
-      END LOOP;   
+      END LOOP;
 
       cValorDescrCpto := ' '||cValor1||' '||cValor2||' '||cValor3;
 
@@ -4174,7 +4182,7 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
           AND IdFactura     = nIdFacturaAnu
           AND Sts           = 'ANU'
         ORDER BY IdTransaccion, IdEndoso;
-                                 
+
     CURSOR RECB2_Q IS
        SELECT *
          FROM ADM_RECIBOS_PROV
@@ -4186,8 +4194,8 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
         ORDER BY IdTransaccion, IdEndoso;
     BEGIN
       BEGIN
-            SELECT 
-              CASE 
+            SELECT
+              CASE
                   WHEN EXISTS (
                      SELECT 1 FROM ADM_RECIBOS_PROV
                      WHERE IdPoliza   = nIdPoliza
@@ -4212,8 +4220,8 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
       IF cIndicador = 'S' THEN
          FOR X IN RECB1_Q LOOP
            BEGIN
-               INSERT INTO TEMP_RECIBOS_PROV (IdPoliza, IdetPol, IdFacturaOrig, IdFacturaIni, IdNcrInicial, IdFactura1, IdFactura2, IdNcr1) 
-               VALUES (nIdPoliza, X.IdetPol, X.IdFactura, X.IdFactura2, X.IdNcr, NULL, NULL, NULL);		   
+               INSERT INTO TEMP_RECIBOS_PROV (IdPoliza, IdetPol, IdFacturaOrig, IdFacturaIni, IdNcrInicial, IdFactura1, IdFactura2, IdNcr1)
+               VALUES (nIdPoliza, X.IdetPol, X.IdFactura, X.IdFactura2, X.IdNcr, NULL, NULL, NULL);
              EXCEPTION
              WHEN OTHERS THEN
                RAISE_APPLICATION_ERROR(-20225,' NO SE PUDO INSERTAR EL REGISTRO EN RECIBOS EN LA TABLA TEMPORAL: ' || TRIM(TO_CHAR(nIdpoliza)));
@@ -4235,8 +4243,8 @@ create or replace PACKAGE BODY SICAS_OC.OC_FACTURAS IS
         IF cExiste != 'S' THEN
            FOR Z IN RECB2_Q LOOP
               BEGIN
-                 INSERT INTO TEMP_RECIBOS_PROV (IdPoliza, IdetPol, IdFacturaOrig, IdFacturaIni, IdNcrInicial, IdFactura1, IdFactura2, IdNcr1) 
-                 VALUES (nIdPoliza, Z.IdetPol, Z.IdFactura, Z.IdFactura2, Z.IdNcr, NULL, NULL, NULL);		   
+                 INSERT INTO TEMP_RECIBOS_PROV (IdPoliza, IdetPol, IdFacturaOrig, IdFacturaIni, IdNcrInicial, IdFactura1, IdFactura2, IdNcr1)
+                 VALUES (nIdPoliza, Z.IdetPol, Z.IdFactura, Z.IdFactura2, Z.IdNcr, NULL, NULL, NULL);
                EXCEPTION
                WHEN OTHERS THEN
                   RAISE_APPLICATION_ERROR(-20225,' NO SE PUDO INSERTAR EL REGISTRO EN RECIBOS EN LA TABLA TEMPORAL: ' || TRIM(TO_CHAR(nIdpoliza)));
