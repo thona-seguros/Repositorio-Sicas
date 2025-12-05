@@ -1189,6 +1189,12 @@ END RENOVAR;          --01/12/2019  RENOV
                         AND  a.CodCia   = d.CodCia
                         AND  d.IdPoliza = p.IdPoliza
                         AND  d.CodCia   = p.CodCia )
+        --MLJS 04/12/2025 SE AGREGA CONDICION PARA EXCLUIR POLIZAS CARGADAS PREVIAMENTE
+        AND  NOT EXISTS ( SELECT *
+                          FROM   RENOVACIONES R
+                          WHERE  R.IDPOLIZA = P.IDPOLIZA
+                        )
+        --MLJS 04/12/2025 SE AGREGA CONDICION PARA EXCLUIR POLIZAS CARGADAS PREVIAMENTE
       ORDER BY p.FecRenovacion;
    EXCEPTION
    WHEN OTHERS THEN
@@ -1334,7 +1340,7 @@ END RENOVAR;          --01/12/2019  RENOV
           SET    NUMRENOV = nNumRenovRen
           WHERE  IDPOLIZA  = nIdPolizaRen;
         END;
-        
+
       END IF;
    EXCEPTION
    WHEN OTHERS THEN
@@ -1470,6 +1476,8 @@ END RENOVAR;          --01/12/2019  RENOV
            AND  IdPoliza   = x.IdPoliza
            AND  IDetPol    = nIDetPol;
          --
+         --DBMS_OUTPUT.PUT_LINE('ENTRE HASTA AQUÍ');
+         --BEGIN
          SELECT pc.DescPaquete, p.CodPaqComercial
          INTO   cDescPaquete  , nCodPaquete
          FROM   POLIZAS            p
@@ -1483,6 +1491,9 @@ END RENOVAR;          --01/12/2019  RENOV
            AND  pc.CodPaquete(+) = p.CodPaqComercial
            AND  pc.IdTipoSeg(+)  = nIdTipoSeg
            AND  pc.PlanCob(+)    = cPlanCob;
+           --EXCEPTION WHEN OTHERS THEN
+            --    RAISE_APPLICATION_ERROR(-20100,'ERROR EN LA PÓLIZA; ' || x.IdPoliza || 'ERROR EN EL NUMRENOV; ' || x.NumRenov  || 'ERROR EN EL nIdTipoSeg; ' || nIdTipoSeg  || 'ERROR EN EL cPlanCob; ' || cPlanCob );
+           --END;
          --
          IF cContinuo = 'S' THEN
             OPEN c_TipoSeguro( nIdTipoSeg );
@@ -2301,7 +2312,7 @@ END RENOVAR;          --01/12/2019  RENOV
    WHEN OTHERS THEN
         RETURN xResultado;
    END LISTADO_FECPROCESO;
- 
+
 --MLJS 11/11/2024 SE AGREGA FUNCION PARA OBTENER EL NÚMERO DE RENOVAVIÓN.
    FUNCTION F_OBT_NUMRENOV_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN NUMBER IS
       nNumrenov  POLIZAS.NUMRENOV%TYPE;

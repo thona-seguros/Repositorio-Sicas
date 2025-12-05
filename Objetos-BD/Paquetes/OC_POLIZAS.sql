@@ -97,7 +97,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
     FUNCTION ALTURA_CERO(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER) RETURN VARCHAR2;
 
     -- PROCESOS GENERADOS PARA LA RENOVACION ESPECIAL MLJS CAGR ---
-    FUNCTION F_OBT_NUMPOLUNICO_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN VARCHAR2;              --08/05/2024            
+    FUNCTION F_OBT_NUMPOLUNICO_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN VARCHAR2;              --08/05/2024
     FUNCTION F_OBT_NUMRENOV_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN NUMBER;                   --17/05/2024
     FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RETURN NUMBER; --17/05/2024
     PROCEDURE REHABILITA_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);--09/06/2025 ARH
@@ -105,9 +105,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
 
 
 END OC_POLIZAS;
-
 /
-
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
    --
    -- BITACORA DE CAMBIO
@@ -397,7 +395,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
          AND C.CodCia      = nCodCia
          --MLJS 14/11/2024 ERROR DE LIBERACION SE AGREGA CONDICION PARA ELOMINAR EL
          -- PRODUCTO CARTESINAO
-         AND C.COD_ASEGURADO = nCodAsegurado;  
+         AND C.COD_ASEGURADO = nCodAsegurado;
    BEGIN
       nEmite := 'N';
 
@@ -468,10 +466,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
          'NO tiene C digo de Cliente o Contratante - NO Puede Emitir la P liza');
       END IF;*/
 
-	  IF NVL(nCodCliente,0) = 0 THEN
-	    RAISE_APPLICATION_ERROR(-20200,'P liza No. ' || nIdPoliza ||
+    IF NVL(nCodCliente,0) = 0 THEN
+      RAISE_APPLICATION_ERROR(-20200,'P liza No. ' || nIdPoliza ||
          'NO tiene C digo de Cliente o Contratante - NO Puede Emitir la P liza');
-	  END IF;
+    END IF;
       --FIN LAVDIN
       --
       --INICIA INCIAGE
@@ -698,7 +696,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_POLIZAS IS
 
       FOR W IN ASEG_Q LOOP
         nCodAsegurado := W.Cod_Asegurado; --MLJS 14/11/2024
-        FOR X IN COBERT_Q LOOP  
+        FOR X IN COBERT_Q LOOP
             IF X.CodCobert = 'GF<12' THEN
                cCobertura := X.CodCobert;
             END IF;
@@ -1421,7 +1419,7 @@ CURSOR POL_REN_Q IS
           IndExtraPrima, AsegAdheridosPor, PorcenContributorio,
           FuenteRecursosPrima, IdFormaCobro, DiaCobroAutomatico, IndManejaFondos
           --MLJS 06/08/2024 SE AGREGAN LOS SIGUIENTES CAMPOS
-          ,CodTipoNegocio, CodPaqComercial,CodCatego, codobjetoimp, codusocfdi 
+          ,CodTipoNegocio, CodPaqComercial,CodCatego, codobjetoimp, codusocfdi
      FROM POLIZAS
     WHERE IdPoliza = nIdPolizaRen
       AND CodCia   = nCodCia;
@@ -1600,7 +1598,7 @@ CURSOR COBASEGCERT_Q IS
      SumaAsegCalculada, SalarioMensual, VecesSalario, Edad_Minima,
      Edad_Maxima, Edad_Exclusion, SumaAseg_Maxima, SumaAseg_Minima,
      PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada,Franquiciaingresado,
-     MontoDiario,Dias_cal 
+     MontoDiario,Dias_cal
      FROM COBERT_ACT_ASEG
     WHERE IdPoliza = nIdPolizaRen
       AND CodCia   = nCodCia;
@@ -1710,26 +1708,30 @@ BEGIN
             --DBMS_OUTPUT.PUT_LINE(nPorcComisTot);
             UPDATE AGENTES_DISTRIBUCION_POLIZA
                SET Porc_Com_Distribuida  = nPorcComisNiv1,
-                   Porc_Com_Proporcional = TRUNC(ROUND((nPorcComisNiv1 * 100) / nPorcComisTot, 2), 2),
+                   --Porc_Com_Proporcional = TRUNC(ROUND((nPorcComisNiv1 * 100) / nPorcComisTot, 2), 2),  --MLJS 04/12/2025
+                   Porc_Com_Proporcional = TRUNC(ROUND((nPorcComisNiv1 * 100) / (CASE WHEN nPorcComisTot = 0 THEN 0.01 ELSE nPorcComisTot END), 2), 2), --MLJS 04/12/2025
                    Porc_Com_Poliza       = nPorcComisTot
              WHERE IdPoliza = nIdPoliza
                AND CodCia   = nCodCia
                AND CodNivel = 1;
 
             IF SQL%ROWCOUNT > 0 THEN
-               nPorcComPropT := nPorcComPropT + TRUNC(ROUND((nPorcComisNiv1 * 100) / nPorcComisTot, 2), 2);
+               --nPorcComPropT := nPorcComPropT + TRUNC(ROUND((nPorcComisNiv1 * 100) / nPorcComisTot, 2), 2); --MLJS 04/12/2025
+               nPorcComPropT := nPorcComPropT + TRUNC(ROUND((nPorcComisNiv1 * 100) / (CASE WHEN nPorcComisTot = 0 THEN 0.01 ELSE nPorcComisTot END), 2), 2); --MLJS 04/12/2025
             END IF;
 
             UPDATE AGENTES_DISTRIBUCION_POLIZA
                SET Porc_Com_Distribuida  = nPorcComisNiv2,
-                   Porc_Com_Proporcional = TRUNC(ROUND((nPorcComisNiv2 * 100) / nPorcComisTot, 2), 2),
+                   --Porc_Com_Proporcional = TRUNC(ROUND((nPorcComisNiv2 * 100) / nPorcComisTot, 2), 2), --MLJS 04/12/2025
+                   Porc_Com_Proporcional = TRUNC(ROUND((nPorcComisNiv2 * 100) / (CASE WHEN nPorcComisTot = 0 THEN 0.01 ELSE nPorcComisTot END), 2), 2), --MLJS 04/12/2025
                    Porc_Com_Poliza       = nPorcComisTot
             WHERE IdPoliza = nIdPoliza
               AND CodCia   = nCodCia
               AND CodNivel = 2;
 
             IF SQL%ROWCOUNT > 0 THEN
-               nPorcComPropT := nPorcComPropT + TRUNC(ROUND((nPorcComisNiv2 * 100) / nPorcComisTot, 2), 2);
+               --nPorcComPropT := nPorcComPropT + TRUNC(ROUND((nPorcComisNiv2 * 100) / nPorcComisTot, 2), 2); --MLJS 04/12/2025
+               nPorcComPropT := nPorcComPropT + TRUNC(ROUND((nPorcComisNiv2 * 100) / (CASE WHEN nPorcComisTot = 0 THEN 0.01 ELSE nPorcComisTot END), 2), 2); --MLJS 04/12/2025
             END IF;
 
             IF OC_AGENTES.ES_AGENTE_DIRECTO(nCodCia, X.Cod_Agente) != 'S' THEN
@@ -1738,7 +1740,7 @@ BEGIN
             END IF;
 
             BEGIN
-               SELECT TRUNC(ROUND((nPorcComisNiv3 * 100) / nPorcComisTot, 2), 2)
+               SELECT TRUNC(ROUND((nPorcComisNiv3 * 100) / (CASE WHEN nPorcComisTot = 0 THEN 0.01 ELSE nPorcComisTot END), 2), 2) --MLJS 04/12/2025
                  INTO nPorcComProporcional
                  FROM DUAL;
             EXCEPTION
@@ -1880,7 +1882,7 @@ BEGIN
              dFecIni, dFecFin, dFecHoy, dFecHoy, 'XRE', dFecHoy,
              NULL, NULL, X.SumaAseg_Moneda * nTasaCambio, X.SumaAseg_Moneda,
              X.PrimaNeta_Moneda * nTasaCambio, X.PrimaNeta_Moneda, X.DescPoliza,
-             X.PorcComis, dFecFin, nNumRenov, --MLJS 07/08/2024 NVL(X.NumRenov,0)+1, 
+             X.PorcComis, dFecFin, nNumRenov, --MLJS 07/08/2024 NVL(X.NumRenov,0)+1,
              X.IndExaInsp, X.CodCia,
              X.Cod_Moneda, X.CodGrupoEc, X.IndPolCol, X.Cod_Agente, X.CodPlanPago,
              X.Medio_Pago, cNumPolUnico, X.IndProcFact, X.Caracteristica,
@@ -1891,7 +1893,7 @@ BEGIN
              X.PorcGtoAdmin, X.PorcGtoAdqui, X.PorcUtilidad, X.FactorAjuste, X.MontoDeducible,
              X.FactFormulaDeduc, X.CodRiesgoRea, X.CodTipoBono, X.HorasVig, X.DiasVig,
              X.IndExtraPrima, X.AsegAdheridosPor, X.PorcenContributorio,
-             X.FuenteRecursosPrima, X.IdFormaCobro, X.DiaCobroAutomatico, X.IndManejaFondos 
+             X.FuenteRecursosPrima, X.IdFormaCobro, X.DiaCobroAutomatico, X.IndManejaFondos
              --MLJS 06/08/2024 SE AGREGAN LOS SIGUIENTES CAMPOS
              ,X.CodTipoNegocio, X.CodPaqComercial,X.CodCatego, X.codobjetoimp, X.codusocfdi);
 
@@ -1928,7 +1930,7 @@ BEGIN
                IndFactElectronica, IndAsegModelo, CantAsegModelo, MontoComisH, PorcComisH,
                IdDirecAviCob, IdFormaCobro, MontoAporteFondo
                ,codobjetoimp, codusocfdi  --MLJS 06/08/2024 SE AGREGAN)
-               ,NUMDETREF)                --MLJS 30/08/2024 
+               ,NUMDETREF)                --MLJS 30/08/2024
             VALUES
                (nIdPoliza, X.IDetPol, X.CodCia, X.Cod_Asegurado, X.CodEmpresa, X.CodPlanPago,
                X.Suma_Aseg_Moneda * nTasaCambio, X.Suma_Aseg_Moneda, X.Prima_Moneda * nTasaCambio, X.Prima_Moneda,
@@ -1937,7 +1939,7 @@ BEGIN
                X.IndFactElectronica, X.IndAsegModelo, X.CantAsegModelo, X.MontoComisH, X.PorcComisH,
                X.IdDirecAviCob, X.IdFormaCobro, X.MontoAporteFondo
                ,X.codobjetoimp, X.codusocfdi  --MLJS 06/08/2024 SE AGREGAN
-               ,X.NUMDETREF);                 --MLJS 30/08/2024 
+               ,X.NUMDETREF);                 --MLJS 30/08/2024
 
           /*OC_DETALLE_TRANSACCION.CREA (nIdTransac, nCodCia, X.CodEmpresa, 3, 'CER', 'DETALLE_POLIZA',
                    nIdPoliza, NULL, NULL, NULL, nPrima);*/
@@ -2340,7 +2342,7 @@ END RENOVAR;
              AND D.IdPoliza   = P.IdPoliza
              AND P.CodEmpresa = nCodEmpresa
              AND P.CodCia     = nCodCia
-             AND P.IdPoliza   = nIdPoliza; 
+             AND P.IdPoliza   = nIdPoliza;
 
           SELECT NVL(SUM(CantAsegModelo),0)
           INTO   nCantAsegModelo
@@ -2928,7 +2930,7 @@ END RENOVAR;
         IndDeclara, IndSinAseg, CodFilial, CodCategoria, IndFactElectronica,
         IndAsegModelo, CantAsegModelo, MontoComisH, PorcComisH, IdDirecAviCob,
         IdFormaCobro, MontoAporteFondo
-        ,codobjetoimp, codusocfdi  --MLJS 07/08/2024 SE AGREGAN 
+        ,codobjetoimp, codusocfdi  --MLJS 07/08/2024 SE AGREGAN
         FROM DETALLE_POLIZA
        WHERE IdPoliza = nIdPolizaOrig
          AND CodCia   = nCodCia
@@ -3075,7 +3077,7 @@ END RENOVAR;
          ,X.codobjetoimp, X.codusocfdi, X.IndPriMin);  --MLJS 07/08/2024 SE AGREGAN  -- ARH 26/12/2024 X.IndPriMin
          EXCEPTION
        WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nueva PÃ³liza ' ||SQLERRM);
+            RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nueva Póliza ' ||SQLERRM);
          END;
 
         --IF  X.Num_Cotizacion > 0 THEN
@@ -3678,7 +3680,7 @@ END RENOVAR;
          AND IdPoliza      = nIdPoliza
          AND CodCia        = nCodCia;
    BEGIN
-    --MLJS 23/01/2025 SE VALIDA SITUACION DE LA P LIZA 
+    --MLJS 23/01/2025 SE VALIDA SITUACION DE LA P LIZA
     SELECT P.STSPOLIZA
     INTO   CSTSPOLIZA
     FROM   POLIZAS P
@@ -4889,13 +4891,13 @@ BEGIN
       AND CodEmpresa = nCodEmpresa
       AND IdPoliza   = nIdPoliza;
 
-   IF NVL(nMontoPrimaCompMoneda,0) < 0 THEN 
+   IF NVL(nMontoPrimaCompMoneda,0) < 0 THEN
       cAlturaCero := 'S';
    ELSE
       cAlturaCero := 'N';
    END IF;
    RETURN cAlturaCero;
-END ALTURA_CERO;  
+END ALTURA_CERO;
 
 -- PROCESOS GENERADOS PARA LA RENOVACION ESPECIAL MLJS CAGR ---
 --17/05/2024
@@ -4906,7 +4908,7 @@ FUNCTION F_OBT_NUMPOLUNICO_REN (CNUMPOLUNICOORIG IN VARCHAR2) RETURN VARCHAR2 IS
 BEGIN
     nNumrenov := TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2)) + 1;
     --cCadena   := SUBSTR(CNUMPOLUNICOORIG,1,INSTR(CNUMPOLUNICOORIG,'-'))||LPAD(TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2)) + 1,2,0);
-    cCadena   := SUBSTR(CNUMPOLUNICOORIG,1,LENGTH(CNUMPOLUNICOORIG)-LENGTH(SUBSTR(CNUMPOLUNICOORIG,-2)))||LPAD(TO_CHAR(TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2))+1),2,0);	
+    cCadena   := SUBSTR(CNUMPOLUNICOORIG,1,LENGTH(CNUMPOLUNICOORIG)-LENGTH(SUBSTR(CNUMPOLUNICOORIG,-2)))||LPAD(TO_CHAR(TO_NUMBER(SUBSTR(CNUMPOLUNICOORIG,-2))+1),2,0);
     RETURN (cCadena);
 
 EXCEPTION
@@ -4949,7 +4951,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
    cTIENEASEGS       VARCHAR2(1);
    NHAYCERTS         NUMBER;
    NCERTPOSFINI      NUMBER;
-   bContinua         BOOLEAN;     
+   bContinua         BOOLEAN;
    DFECINIVIGP       POLIZAS.FECINIVIG%TYPE;
    DFECINIVIGDP      DETALLE_POLIZA.FECINIVIG%TYPE;
    NUMASEGS          NUMBER;
@@ -5084,7 +5086,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
 
    CURSOR ASEGSEND IS
      SELECT IDPOLIZA,IDETPOL, IDENDOSO, COUNT(*) TOTASEGS
-     FROM   ASEGURADO_CERTIFICADO 
+     FROM   ASEGURADO_CERTIFICADO
      WHERE  CODCIA   = nCodCia
      AND    IDPOLIZA = nIdPolizaOrig
      AND    IDENDOSO > 0
@@ -5114,7 +5116,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
         FROM DUAL;
       FOR X IN POL_Q LOOP
          DBMS_OUTPUT.PUT_LINE('ENTRA FOR '||nIdPolizaOrig);
-        -- SE AGREGAN FECHA DE VIGENCIA CORRECTAS Y NUMPOUNICO 
+        -- SE AGREGAN FECHA DE VIGENCIA CORRECTAS Y NUMPOUNICO
          SELECT SYSDATE, CodEmpresa, FecRenovacion, ADD_MONTHS(FecRenovacion,12)--, IndPolCol --FecFinVig + (FecFinVig - FecIniVig)
           INTO dFecha, nCodEmpresa, dFecHoy, dFecFin --, cIndPolCol
           FROM POLIZAS
@@ -5132,7 +5134,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
           bContinua := TRUE;
           FOR I IN VALENDOS LOOP
             BEGIN
-              SELECT COUNT(*) 
+              SELECT COUNT(*)
               INTO   NUMASEGS
               FROM   ASEGURADO_CERTIFICADO
               WHERE  IDPOLIZA = nIdPolizaOrig
@@ -5140,20 +5142,20 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
               AND    IDENDOSO = 0;
             EXCEPTION
               WHEN OTHERS THEN
-                 NUMASEGS := 0; 
-            END;     
+                 NUMASEGS := 0;
+            END;
 
              IF NUMASEGS > 0 THEN
                bContinua := TRUE;
              ELSE
-               bContinua := FALSE; 
+               bContinua := FALSE;
                return 1;
                EXIT;
              END IF;
-           END LOOP;    
-            -- DBMS_OUTPUT.PUT_LINE('bContinua '||bContinua);   
-            /* IF NCERTPOSFINI > 0 THEN    
-                FOR T IN DETPOL_Q LOOP  
+           END LOOP;
+            -- DBMS_OUTPUT.PUT_LINE('bContinua '||bContinua);
+            /* IF NCERTPOSFINI > 0 THEN
+                FOR T IN DETPOL_Q LOOP
                   SELECT P.FECEMISION, E.FECEMISION
                   INTO   DFECINIVIGP, DFECINIVIGDP
                   FROM   POLIZAS P, ENDOSOS E
@@ -5162,7 +5164,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
                   AND    P.FECEMISION != E.FECEMISION
                   AND    P.IDPOLIZA   = nIdPolizaOrig
                   AND    E.IDETPOL   = T.IDETPOL
-                  ORDER BY P.IDPOLIZA DESC; 
+                  ORDER BY P.IDPOLIZA DESC;
 
                   IF DFECINIVIGDP > DFECINIVIGP THEN
                     nLinea := nLinea + 1;
@@ -5200,18 +5202,18 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
                 IF nValida = 1 THEN
                    bContinua := FALSE;
                  ELSE
-                   bContinua := TRUE; 
+                   bContinua := TRUE;
                  END IF;
              END LOOP;*/
 
          -- EXCEPTION
           --   WHEN OTHERS THEN
          --      NULL;
-               --RAISE_APPLICATION_ERROR(-20226,'Error al Emitir Renovaci n de P liza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);    
+               --RAISE_APPLICATION_ERROR(-20226,'Error al Emitir Renovaci n de P liza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
           --END;
 
-          IF bContinua = TRUE THEN 
-           -- MLJS 17/05/2024   
+          IF bContinua = TRUE THEN
+           -- MLJS 17/05/2024
             nIdPoliza :=OC_POLIZAS.F_GET_NUMPOL(p_msg_regreso);
 
             BEGIN
@@ -5450,13 +5452,13 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
                       A.SumaAseg_Local, A.SumaAseg_Moneda,  A.PrimaNeta_Local, A.PrimaNeta_Moneda);
                  END LOOP;
              END IF;
-          END IF;     
+          END IF;
       END LOOP;
 
-      IF bContinua = TRUE THEN       
+      IF bContinua = TRUE THEN
           BEGIN
 
-             OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);  
+             OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);
              OC_POLIZAS.EMITIR_POLIZA(nCodCia, nIdPoliza, nCodCia);
 
             UPDATE POLIZAS
@@ -5518,7 +5520,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
 
           EXCEPTION
               WHEN RERROR THEN
-                RAISE_APPLICATION_ERROR(-20226,'Certificado(s) dado de alta posterior a emisi n de P liza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm); 
+                RAISE_APPLICATION_ERROR(-20226,'Certificado(s) dado de alta posterior a emisi n de P liza: '||TRIM(TO_CHAR(nIdPolizaOrig))|| ' Error raised in: '|| $$plsql_unit ||' at line ' || $$plsql_line || ' - '||sqlerrm);
 
              WHEN OTHERS THEN
 
@@ -5533,7 +5535,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
                END IF;
 
 
-          END;          
+          END;
 
           RETURN (nIdPoliza);
        ELSE
@@ -5570,7 +5572,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
 
    CURSOR RECIBOS IS
       SELECT *
-        FROM TEMP_RECIBOS_PROV 
+        FROM TEMP_RECIBOS_PROV
        WHERE IdPoliza = nIdPoliza
        ORDER BY Idconsecutivo;
    BEGIN
@@ -5673,7 +5675,7 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
           ELSIF cRamo = '030' THEN
              nPrimaNeta := nMontoTotal / 1.16;
              nIva := nPrimaNeta * 0.16;
-          END IF; 
+          END IF;
           --
           BEGIN
                 INSERT INTO ADM_RECIBOS_PROV
@@ -5758,8 +5760,8 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
 
     PROCEDURE COPIAR_RSA(nCodCia NUMBER, nIdPolizaOrig NUMBER, nIdPolizaNew NUMBER, nIdetPol NUMBER, vUSER VARCHAR2) IS
 
-	CURSOR RSA_Q IS
-         SELECT CODCIA, CODEMPRESA, IDPOLIZA, IDETPOL, CODCOBERT, TEXTO, STREGLA, USUARIO, FECHA_ULT_MOVTO 
+  CURSOR RSA_Q IS
+         SELECT CODCIA, CODEMPRESA, IDPOLIZA, IDETPOL, CODCOBERT, TEXTO, STREGLA, USUARIO, FECHA_ULT_MOVTO
          FROM REGLA_SA_COBER
          WHERE IDPOLIZA = nIdPolizaOrig
          AND IDETPOL = nIdetPol;
@@ -5778,4 +5780,4 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
     END COPIAR_RSA;
 
 END OC_POLIZAS;
-
+/
