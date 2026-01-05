@@ -25,17 +25,18 @@ nPrimaMoneda            DETALLE_POLIZA.PRIMA_MONEDA%TYPE;
 nComision_Local         COMISIONES.COMISION_LOCAL%TYPE;
 nComision_Moneda        COMISIONES.COMISION_MONEDA%TYPE;
 nIdetpol                DETALLE_POLIZA.IDETPOL%TYPE;
-nFactorComision     NUMBER;
+nFactorComision         NUMBER;
 nFactorComisionAP       NUMBER;
 cTiporamo               VARCHAR2(6);
 
 ---MLJS/CAGR 01/08/2024 MULTIRAMO
 nIdFactura              FACTURAS.IDFACTURA%TYPE := 0;
 nIdNcr                  NOTAS_DE_CREDITO.IDNCR%TYPE := 0;
+cCodtipo                RAMO_CONCEPTO_COMISION.CODTIPO%TYPE;
 
 -----
 CURSOR  Oc_Detalle_Com IS
-   SELECT CO.CodCia CodCia, CO.IdComision IdComision, CC.CodConcepto CodConcepto, CO.IdFactura, CO.IdNcr,
+   SELECT CO.CodCia CodCia, CO.IdComision IdComision, CC.CodConcepto CodConcepto, CO.IdFactura, CO.IdNcr, AG.CODTIPO,
           DECODE(CDC.Signo_Concepto,'+',((CO.Comision_Local*CC.PorcCpto)/100)*1,((CO.Comision_Local*CC.PorcCpto)/100)*-1) Monto_Mon_Local,
           DECODE(CDC.Signo_Concepto,'+',((CO.Comision_Moneda*CC.PorcCpto)/100)*1,((CO.Comision_Moneda*CC.PorcCpto)/100)*-1) Monto_Mon_Extranjera
      FROM COMISIONES CO, AGENTES AG, CONCEPTO_COMISION CC,
@@ -257,6 +258,7 @@ AND RCC.CODCONCEPTO = 'RETIVA'
 AND RCC.CODTIPO IN('HONPF','HONORF') --,'HONPM')--MLJS 21/02/2024 SE AGREGO EL TIPO HONORF
 AND RCC.ORIGEN = C.ORIGEN
 AND RCC.CODTIPOPLAN = '099'
+AND RCC.CODTIPO = cCodtipo      --MLJS 11/09/2025 SE AGREGA EL TIPO DE AGENTE
 GROUP BY  C.CodCia , C.IdComision , C.IDFACTURA, C.IDNCR, C.ORIGEN, C.COD_MONEDA, C.COD_AGENTE, A.CODTIPO , --DC.CODCONCEPTO,
  RCC.CodConcepto
 UNION
@@ -310,14 +312,14 @@ AND RCC.ORIGEN = cOrigen
 AND RCC.CODTIPOPLAN = cCodTipoPlan;
 
 CURSOR P_COB_RAMOS IS
-SELECT DISTINCT C.IDRAMOREAL
+SELECT DISTINCT C.IDRAMOREAL--, C.IDENDOSO
   FROM   COBERT_ACT C
   WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
     AND  C.IDetPol       = nIdetPol
     AND  C.IdPoliza      = nIdPoliza
     AND  C.CodCia        = cCodCia
   UNION ALL
-  SELECT DISTINCT C.IDRAMOREAL
+  SELECT DISTINCT C.IDRAMOREAL--, C.IDENDOSO
   FROM   COBERT_ACT_ASEG C
   WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
     AND  C.IDetPol       = nIdetPol
@@ -337,13 +339,21 @@ BEGIN
       WHEN TOO_MANY_ROWS THEN
          nExiste:= 1;
    END;
-   
+
 ----- JMMD20220107
-   SELECT NVL(INDMULTIRAMO,'N'), CODTIPOPLAN
-     INTO cEsmultiramo, cCodTipoPlan
-     FROM TIPOS_DE_SEGUROS TS
-    WHERE TS.CODCIA = cCodCia
-      AND TS.IDTIPOSEG = cIdTipoSeg;
+   BEGIN
+     SELECT NVL(INDMULTIRAMO,'N'), CODTIPOPLAN
+       INTO cEsmultiramo, cCodTipoPlan
+       FROM TIPOS_DE_SEGUROS TS
+      WHERE TS.CODCIA = cCodCia
+        AND TS.IDTIPOSEG = cIdTipoSeg;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         cEsmultiramo := 'N'; cCodTipoPlan := NULL;
+      WHEN TOO_MANY_ROWS THEN
+         cEsmultiramo := 'N';
+         cCodTipoPlan := NULL;
+   END;
 ----- JMMD20220107
    IF nExiste = 0 THEN
 ----- JMMD20220107
@@ -365,7 +375,7 @@ BEGIN
       END LOOP;
 ----- JMMD20220107
     ELSE
-
+         DBMS_OUTPUT.PUT_LINE('cCodtipo -'||cCodtipo);
 ----- JMMD20220113
          SELECT IDETPOL
            INTO nIdetpol
@@ -385,22 +395,24 @@ BEGIN
         FOR PCR IN P_COB_RAMOS LOOP
           nFactorComision := OC_FACTURAR.FACTOR_PRORRATEO_RAMO( cCodCia, nIdPoliza, nIDetPol, PCR.IdRamoReal , nPrimaMoneda );
           cCodTipoPlan := PCR.IDRAMOREAL;
-
+           DBMS_OUTPUT.PUT_LINE('2 cCodtipo -'||cCodtipo);
            FOR I IN OC_DETALLE_COMISION_CONCEPTOS LOOP
+             DBMS_OUTPUT.PUT_LINE('3 cCodtipo -'||cCodtipo);
     ----- JMMD 20220113  MULTIRAMO
               SELECT SUBSTR(i.CodConcepto,4,3)
                 INTO ctiporamo
                 from dual;
              -- SE OBTIENE EL DOCUMENTO
-              SELECT NVL(IDFACTURA,0), NVL(IDNCR,0)
-              INTO   nIdFactura, nIdNcr
-              FROM   COMISIONES 
-              WHERE  IDPOLIZA = nIdPoliza
-              AND    CODCIA   =  cCodCia
-              AND    CODEMPRESA = cCodCia
-              AND    IDETPOL    = nIdetpol
-              AND    IDCOMISION =  nIdComision;
-             
+              SELECT NVL(C.IDFACTURA,0), NVL(C.IDNCR,0),
+                     OC_AGENTES.TIPO_AGENTE(C.CODCIA, C.COD_AGENTE) TIPO  --MLJS 11/09/2025 VIFLEX SE AGREGA EL TIPO DE AGENTE
+              INTO   nIdFactura, nIdNcr, cCodtipo                         --MLJS 11/09/2025 VIFLEX SE AGREGA EL TIPO DE AGENTE
+              FROM   COMISIONES C
+              WHERE  C.IDPOLIZA = nIdPoliza
+              AND    C.CODCIA   =  cCodCia
+              AND    C.CODEMPRESA = cCodCia
+              AND    C.IDETPOL    = nIdetpol
+              AND    C.IDCOMISION =  nIdComision;
+
              BEGIN
                SELECT ODCV.COMISION_LOCAL, ODCV.COMISION_MONEDA
                 INTO nComision_Local, nComision_Moneda
@@ -452,7 +464,7 @@ BEGIN
     END IF;
 ----- JMMD20220107
    ELSE
-      RAISE_APPLICATION_ERROR(-20100, 'Intenta Crear de Forma Automática un Nuevo Detalle de Comisión, pero ya Existen Registros');
+      RAISE_APPLICATION_ERROR(-20100, 'Intenta Crear de Forma Autom tica un Nuevo Detalle de Comisi n, pero ya Existen Registros');
    END IF;
 END INSERTA_DETALLE_COMISION;
 

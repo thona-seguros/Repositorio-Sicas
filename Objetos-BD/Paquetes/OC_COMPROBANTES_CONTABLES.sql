@@ -76,6 +76,15 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_COMPROBANTES_CONTABLES IS
 
     FUNCTION ENVIADO_SISTEMA_CONTABLE(nCodCia NUMBER, nIdTransaccion NUMBER) RETURN VARCHAR2;
 
+    --MLJS 27/11/2025 AJUSTES MULTIRAMO
+    FUNCTION FN_COMISION_TIPO_PERSONA_MR( pnCodCia         TRANSACCION.CODCIA%TYPE
+                                        , pnIdTransaccion  TRANSACCION.IDTRANSACCION%TYPE
+                                        , pcIdTipoSeg      DETALLE_POLIZA.IDTIPOSEG%TYPE
+                                        , pcTipoPersona    PERSONA_NATURAL_JURIDICA.TIPO_PERSONA%TYPE
+                                        , pcTipoAgente     AGENTES.TIPO_AGENTE%TYPE 
+                                        , pnCodAgente      AGENTES.COD_AGENTE%TYPE 
+                                        , pCodCpto         PLANTILLAS_CONTABLES.CODCPTO%TYPE) RETURN NUMBER;
+
 END OC_COMPROBANTES_CONTABLES;
 /
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
@@ -1175,6 +1184,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
        cTipoAgente        AGENTES.Tipo_Agente%TYPE;
        nIdRegFisSAT       NUMBER;     -- RESICO
        cRegDebCred        COMPROBANTES_DETALLE.MOVDEBCRED%TYPE;
+       cIndMultiramo      TIPOS_DE_SEGUROS.INDMULTIRAMO%TYPE; --28/11/2025 MLJS
        --
        --Opt:07082019  Optimizacion
        --Se agrega CodEmpresa para entrar por la llave de la tabla Detalle_Transaccion en diversas consultas
@@ -1242,7 +1252,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
          WHEN NO_DATA_FOUND THEN
             RAISE_APPLICATION_ERROR (-20100,'No de Transaccion '||nIdTransaccion||' NO Encuentra el SubProceso '||Z.CodSubProceso);
          WHEN TOO_MANY_ROWS THEN
-            RAISE_APPLICATION_ERROR (-20100,'No de Transaccion '||nIdTransaccion||' Posee Más de un Proceso');
+            RAISE_APPLICATION_ERROR (-20100,'No de Transaccion '||nIdTransaccion||' Posee M s de un Proceso');
           END;
           --
 
@@ -1274,6 +1284,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
             cCodCpto    := W.CodCpto;
             cTipoAgente := W.TipoAgente;
             nIdRegFisSAT:= OC_CAT_REGIMEN_FISCAL.FUN_AGENTE_IDREGFISSAT(nCodCia, nCodEmpresa, W.COD_AGENTE);     -- RESICO
+            cIndMultiramo:=OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(nCodCia, nCodEmpresa,W.IDTIPOSEG);     -- MLJS 28/11/2025 MULTIRAMO
             --
             IF W.CodMoneda IS NOT NULL AND cCodMoneda IS NULL THEN
                cCodMoneda := W.CodMoneda;
@@ -1308,25 +1319,34 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                      nMtoMovCuenta := ABS(W.MtoMovCuenta);
                   ELSIF OC_COMPROBANTES_CONTABLES.APLICA_TIPO_AGENTE(nCodCia, nIdTransaccion, cIdTipoSeg, X.TipoAgente) = 'S' THEN
                      nMtoMovCuenta := ABS(W.MtoComisCuenta);
-                     --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
+                     --MLJS 04/09/2025 SE AGREGA VALIDACI N PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
                      IF W.MtoComisCuenta < 0 THEN
-                        IF W.REG IN (8) THEN 
+                        IF W.REG IN (8) THEN
                            IF cCodProceso = 700 and W.CODCPTO NOT IN ('RETISR','RETIVA') THEN
                               IF X.RegDebCred = 'C' THEN
-                                 cRegDebCred := 'D'; 
+                                 cRegDebCred := 'D';
                               ELSE
                                  cRegDebCred := 'C';
                               END IF;
                            END IF;
-                        
+
                         ELSE
                            cRegDebCred := X.RegDebCred;
-                       
                         END IF;
                      ELSE
-                        IF  W.REG IN (12) and W.CODCPTO IN ('TRIVHO') THEN
+                         --MLJS 21/10/2025 SE AGREGA VALIDACI N PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
+                         IF W.REG IN (8) THEN 
+                             IF cCodProceso = 700 and W.CODCPTO IN ('RETISR','RETIVA') THEN
+                                IF X.RegDebCred = 'D' THEN
+                                   cRegDebCred := 'C'; 
+                                ELSE
+                                   cRegDebCred := 'D';
+                                END IF;
+                             END IF;
+                         --MLJS 21/10/2025 
+                         ELSIF  W.REG IN (12) and W.CODCPTO IN ('TRIVHO') THEN
                            IF X.RegDebCred = 'C' THEN
-                              cRegDebCred := 'D'; 
+                              cRegDebCred := 'D';
                            ELSE
                               cRegDebCred := 'C';
                            END IF;
@@ -1334,7 +1354,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                            cRegDebCred := X.RegDebCred;
                         END IF;
                      END IF;
-                     --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
+                     --MLJS 04/09/2025 SE AGREGA VALIDACI N PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
                   ELSE
                      nMtoMovCuenta := 0;
                   END IF;
@@ -1363,17 +1383,22 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                         ELSIF cCodProceso IN( 300,310,320,330) THEN
                             nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_PAGOS(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                              X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
-                        ELSIF cCodProceso IN(900) THEN   
-                           -- MLJS 02/07/2024 SE AGREGA EL PROCEDIMIENTO SIGUIENTE PARA IDENTIFICAR EL IMPORTE POR AGENTE                     
+                        ELSIF cCodProceso IN(900) THEN
+                           -- MLJS 02/07/2024 SE AGREGA EL PROCEDIMIENTO SIGUIENTE PARA IDENTIFICAR EL IMPORTE POR AGENTE
                             nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                            X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE));
                         ELSIF cCodProceso IN( 700) THEN
                            nMtoMovCuenta := W.MtoComisCuenta;
                         END IF;
                      ELSE             ------- JMMD20191015
-
-                        nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
-                                                       X.TipoPersona, X.TipoAgente)); --, W.COD_AGENTE)); --11/12/2023 se agrega Cod_Agente
+                        --MLJS 28/118/2025 ADECUACIONES MULTIRAMO
+                        IF cIndMultiramo = 'S' THEN
+                           nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.FN_COMISION_TIPO_PERSONA_MR(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                           X.TipoPersona, X.TipoAgente, W.COD_AGENTE, W.CodCpto ));
+                        ELSE
+                           nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                           X.TipoPersona, X.TipoAgente)); --, W.COD_AGENTE)); --11/12/2023 se agrega Cod_Agente
+                        END IF;
                      END IF;   ---- JMMD20191015
                   ELSE
                      nMtoMovCuenta := 0;
@@ -1452,6 +1477,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
     cTipoAgente        AGENTES.Tipo_Agente%TYPE;     -- RESICO
     nIdRegFisSAT       NUMBER;     -- RESICO
     cRegDebCred        COMPROBANTES_DETALLE.MOVDEBCRED%TYPE;
+
+    cIndMultiramo      TIPOS_DE_SEGUROS.INDMULTIRAMO%TYPE; --MLJS 28/11/2025 MULTIRAMO
+
        CURSOR PLANT_Q IS
           SELECT NivelCta1, NivelCta2, NivelCta3, NivelCta4, NivelCta5,
              NivelCta6, NivelCta7, NivelAux, RegDebCred, TipoRegistro,
@@ -1552,6 +1580,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
             cCodCpto       := W.CodCpto;
             cTipoAgente    := W.TipoAgente;  --MLJS 13/07/2023
             nIdRegFisSAT   := OC_CAT_REGIMEN_FISCAL.FUN_AGENTE_IDREGFISSAT(nCodCia, nCodEmpresa, W.COD_AGENTE);     -- RESICO
+            cIndMultiramo  := OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(nCodCia, nCodEmpresa, W.IDTIPOSEG);
             --
             DBMS_OUTPUT.PUT_LINE('cConceptoAdicional -> '||cConceptoAdicional||'  W.CodCpto  '||W.CodCpto|| ' cCodProceso --> '||cCodProceso );
             IF W.CodMoneda IS NOT NULL AND cCodMoneda IS NULL THEN
@@ -1600,25 +1629,35 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                      nMtoMovCuenta := 0;
                   END IF;
 
-                    --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
+                    --MLJS 04/09/2025 SE AGREGA VALIDACI N PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
                    IF W.MtoComisCuenta < 0 THEN
-                      IF W.REG IN (8) THEN 
+                      IF W.REG IN (8) THEN
                          IF cCodProceso = 700 and W.CODCPTO NOT IN ('RETISR','RETIVA') THEN
                             IF X.RegDebCred = 'C' THEN
-                               cRegDebCred := 'D'; 
+                               cRegDebCred := 'D';
                             ELSE
                                cRegDebCred := 'C';
                             END IF;
                          END IF;
-                      
+
                       ELSE
                          cRegDebCred := X.RegDebCred;
-                     
+
                       END IF;
                    ELSE
-                      IF  W.REG IN (12) and W.CODCPTO IN ('TRIVHO') THEN
+                      --MLJS 21/10/2025 SE AGREGA VALIDACI N PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
+                         IF W.REG IN (8) THEN 
+                             IF cCodProceso = 700 and W.CODCPTO IN ('RETISR','RETIVA') THEN
+                                IF X.RegDebCred = 'D' THEN
+                                   cRegDebCred := 'C'; 
+                                ELSE
+                                   cRegDebCred := 'D';
+                                END IF;
+                             END IF;
+                         --MLJS 21/10/2025 
+                         ELSIF  W.REG IN (12) and W.CODCPTO IN ('TRIVHO') THEN
                          IF X.RegDebCred = 'C' THEN
-                            cRegDebCred := 'D'; 
+                            cRegDebCred := 'D';
                          ELSE
                             cRegDebCred := 'C';
                          END IF;
@@ -1626,7 +1665,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                          cRegDebCred := X.RegDebCred;
                       END IF;
                    END IF;
-                   --MLJS 04/09/2025 SE AGREGA VALIDACIÓN PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
+                   --MLJS 04/09/2025 SE AGREGA VALIDACI N PARA IMPORTES DE NOTAS DE CREDITO EN PROCESO 700
 
                ELSE --aqui
                   IF ABS(W.MtoComisCuenta) != 0 THEN
@@ -1654,8 +1693,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                             DBMS_OUTPUT.PUT_LINE('cCodProceso 300,310,320,330 -> '||cCodProceso||' W.UEN --> '||W.UEN );
                             nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_PAGOS(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                              X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE)); --MLJS 11/12/2023 SE AGREGA AGENTE
-                        ELSIF cCodProceso IN(900) THEN   
-                           -- MLJS 02/07/2024 SE AGREGA EL PROCEDIMIENTO SIGUIENTE PARA IDENTIFICAR EL IMPORTE POR AGENTE                     
+                        ELSIF cCodProceso IN(900) THEN
+                           -- MLJS 02/07/2024 SE AGREGA EL PROCEDIMIENTO SIGUIENTE PARA IDENTIFICAR EL IMPORTE POR AGENTE
                             nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COM_TIPO_ADICIONALES_CANC(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                            X.TipoPersona, X.TipoAgente, W.CodCpto, W.COD_AGENTE));
                         ELSIF cCodProceso IN( 700) THEN
@@ -1665,8 +1704,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
                            --END IF;
                          END IF;
                      ELSE             ------- JMMD20191015
-                        nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
+                        --MLJS 28/118/2025 ADECUACIONES MULTIRAMO
+                        IF cIndMultiramo = 'S' THEN
+                           nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.FN_COMISION_TIPO_PERSONA_MR(nCodCia, nIdTransaccion, cIdTipoSeg,
+                                                           X.TipoPersona, X.TipoAgente, W.COD_AGENTE, W.CodCpto ));
+                        ELSE
+                           nMtoMovCuenta := ABS(OC_COMPROBANTES_CONTABLES.COMISION_TIPO_PERSONA(nCodCia, nIdTransaccion, cIdTipoSeg,
                                                       X.TipoPersona, X.TipoAgente)); --, W.Cod_Agente)); --11/12/2023 se agrega Cod_Agente
+                        END IF;
                      END IF;
                   ELSE
                      nMtoMovCuenta := 0;
@@ -2296,8 +2341,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
     BEGIN
        SELECT NVL(SUM(DC.MONTO_MON_EXTRANJERA),0)
          INTO nMontoComisionF
-         FROM COMISIONES C, FACTURAS F, DETALLE_TRANSACCION D, TRANSACCION T, 
-              DETALLE_POLIZA DP, AGENTES A, PAGOS PA , 
+         FROM COMISIONES C, FACTURAS F, DETALLE_TRANSACCION D, TRANSACCION T,
+              DETALLE_POLIZA DP, AGENTES A, PAGOS PA ,
               PERSONA_NATURAL_JURIDICA PNJ, DETALLE_COMISION DC
         WHERE PNJ.Tipo_Persona            = cTipoPersona
           AND PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
@@ -2325,7 +2370,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
           AND D.IdTransaccion             = nIdTransaccion
           AND D.CodCia                    = nCodCia;
 
-    --MLJS 02/09/2025 SE AGREGAN LAS NOTAS DE CREDTITO PORQUE NO SE ESTAN CONTABILIZANDO     
+    --MLJS 02/09/2025 SE AGREGAN LAS NOTAS DE CREDTITO PORQUE NO SE ESTAN CONTABILIZANDO
        SELECT NVL(SUM(DC.MONTO_MON_EXTRANJERA),0)
          INTO nMontoComisionNC
          FROM TRANSACCION T, DETALLE_TRANSACCION D, NOTAS_DE_CREDITO NC,
@@ -2906,7 +2951,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
          AND NumComprob = nNumComprob;
        EXCEPTION
           WHEN NO_DATA_FOUND THEN
-         RAISE_APPLICATION_ERROR(-20000,'No Existe Comprobante No. '||nNumComprob || ' de Companía ' || nCodCia);
+         RAISE_APPLICATION_ERROR(-20000,'No Existe Comprobante No. '||nNumComprob || ' de Compan a ' || nCodCia);
        END;
        RETURN(cStsComprob);
     END STATUS_COMPROBANTE;
@@ -2948,5 +2993,130 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_COMPROBANTES_CONTABLES IS
        RETURN(cEnviado);
     END ENVIADO_SISTEMA_CONTABLE;
 
+--MLJS 27/11/2025 AJUSTES MULTIRAMO
+FUNCTION FN_COMISION_TIPO_PERSONA_MR( pnCodCia         TRANSACCION.CODCIA%TYPE
+                                    , pnIdTransaccion  TRANSACCION.IDTRANSACCION%TYPE
+                                    , pcIdTipoSeg      DETALLE_POLIZA.IDTIPOSEG%TYPE
+                                    , pcTipoPersona    PERSONA_NATURAL_JURIDICA.TIPO_PERSONA%TYPE
+                                    , pcTipoAgente     AGENTES.TIPO_AGENTE%TYPE 
+                                    , pnCodAgente      AGENTES.COD_AGENTE%TYPE 
+                                    , pCodCpto         PLANTILLAS_CONTABLES.CODCPTO%TYPE) RETURN NUMBER IS
+       nComision_Moneda  COMISIONES.Comision_Moneda%TYPE;
+
+       nCodEmpresa TRANSACCION.CODEMPRESA%TYPE;
+       nIdPoliza   DETALLE_TRANSACCION.VALOR1%TYPE;
+       nIDetPol    DETALLE_TRANSACCION.VALOR2%TYPE;
+       --
+    BEGIN
+       SELECT A.CODEMPRESA
+       INTO   nCodEmpresa
+       FROM   TRANSACCION A
+       WHERE  A.IdTransaccion = pnIdTransaccion
+         AND  A.CodCia        = pnCodCia;
+       --
+       --SE OBTIENEN LAS COMISIONES DE LOS RECIBOS EN LA EMISION/CANCELACION
+       SELECT NVL(SUM(DC.MONTO_MON_LOCAL),0)
+         INTO nComision_Moneda
+         FROM COMISIONES             C INNER JOIN DETALLE_COMISION    DC ON (DC.IDCOMISION      = C.IDCOMISION)
+                                       INNER JOIN FACTURAS            F  ON (C.IdFactura        = F.IdFactura  AND
+                                                                             F.IndContabilizada = 'S')
+                                       INNER JOIN DETALLE_TRANSACCION D  ON (D.Correlativo   = 1 AND
+                                                                            (D.IDTRANSACCION = F.IDTRANSACCION    OR
+                                                                            (D.IdTransaccion = F.IdTransaccionAnu OR
+                                                                             D.IdTransaccion = F.IdTransacContab ) ))
+                                       INNER JOIN TRANSACCION         T  ON (T.IdTransaccion = D.IdTransaccion)
+                                       INNER JOIN DETALLE_POLIZA      DP ON (DP.IdPoliza     = F.IdPoliza                AND 
+                                                                             DP.IDetPol      = NVL(F.IDetPol, DP.IDetPol) AND 
+                                                                             DP.CodCia       = D.CodCia)
+                                       INNER JOIN AGENTES             A  ON (A.Cod_Agente    = C.Cod_Agente  AND 
+                                                                             A.CodCia        = C.CodCia)
+                                       INNER JOIN PERSONA_NATURAL_JURIDICA PNJ ON (PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion  AND 
+                                                                                   PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion)
+        WHERE PNJ.Tipo_Persona            = pcTipoPersona
+          AND A.CodTipo                   = pcTipoAgente
+          AND DP.IdTipoSeg                = pcIdTipoSeg
+          AND ( ( TRUNC(F.FecVenc) <= TRUNC(T.FechaTransaccion)
+          AND   OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(pnCodCia, D.CodEmpresa, DP.IdTipoSeg) = 'DEVENG' )
+          OR    OC_TIPOS_DE_SEGUROS.TIPO_CONTABILIDAD(pnCodCia, D.CodEmpresa, DP.IdTipoSeg) = 'ANTICI' )
+          AND D.IdTransaccion             = pnIdTransaccion 
+          AND D.CodEmpresa                = nCodEmpresa
+          AND D.CodCia                    = pnCodCia
+          AND DC.CODCONCEPTO              = pCodCpto
+          AND C.COD_AGENTE                = pnCodAgente;
+
+       --SE OBTIENEN LAS COMISIONES DE LOS NOTAS DE CREDITO EN LA EMISION/CANCELACION/PAGOS
+       SELECT NVL(nComision_Moneda,0) + NVL(SUM(DC.MONTO_MON_LOCAL),0)
+         INTO nComision_Moneda
+         FROM COMISIONES    C  INNER JOIN DETALLE_COMISION    DC ON (DC.IDCOMISION = C.IDCOMISION)
+                               INNER JOIN NOTAS_DE_CREDITO    N  ON (C.IdNcr          = N.IdNcr)
+                               INNER JOIN DETALLE_TRANSACCION D  ON (D.Correlativo               = 1  AND
+                                                                     D.IdTransaccion  = N.IdTransaccion    OR
+                                                                     D.IdTransaccion  = N.IdTransaccionAnu OR
+                                                                     D.IdTransaccion  = N.IdTransacAplic   OR
+                                                                     D.IdTransaccion  = N.IdTransacRevAplic )
+                               INNER JOIN DETALLE_POLIZA      DP ON (DP.IdPoliza      = N.IdPoliza                 AND 
+                                                                     DP.IDetPol       = NVL(N.IDetPol, DP.IDetPol) AND 
+                                                                     DP.CodCia        = D.CodCia)
+                               INNER JOIN AGENTES             A  ON (A.Cod_Agente     = C.Cod_Agente  AND 
+                                                                     A.CodCia         = C.CodCia)
+                               INNER JOIN PERSONA_NATURAL_JURIDICA PNJ ON (PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion  AND 
+                                                                           PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion )
+        WHERE PNJ.Tipo_Persona            = pcTipoPersona
+          AND A.CodTipo                   = pcTipoAgente
+          AND DP.IdTipoSeg                = pcIdTipoSeg
+          AND D.IdTransaccion             = pnIdTransaccion
+          AND D.CodCia                    = pnCodCia
+          AND D.CodEmpresa                = nCodEmpresa
+          AND DC.CODCONCEPTO              = pCodCpto
+          AND C.COD_AGENTE                = pnCodAgente;
+
+       --
+       -- REVISAR ESA CONSULTA PARA IDENTIFICAR SU FUNCIONALIDAD
+ /*      SELECT NVL(nComision_Moneda,0) + NVL(SUM(N.MtoComisi_Moneda),0)
+         INTO nComision_Moneda
+         FROM NOTAS_DE_CREDITO           N
+        , DETALLE_TRANSACCION        D
+        , AGENTES                    A
+        , PERSONA_NATURAL_JURIDICA PNJ
+        WHERE PNJ.Tipo_Persona            = pcTipoPersona
+          AND PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion
+          AND PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion
+          AND A.CodTipo                   = pcTipoAgente
+          AND A.Cod_Agente                = N.Cod_Agente
+          AND A.CodCia                    = D.CodCia
+          AND N.IdTransaccion             = D.IdTransaccion
+          AND N.IdPoliza                 IS NULL
+          AND D.IdTransaccion             = pnIdTransaccion
+          AND D.CodCia                    = pnCodCia
+          AND D.CodEmpresa                = nCodEmpresa
+          AND D.Correlativo               = 1;
+*/
+       --
+       SELECT NVL(nComision_Moneda,0) + NVL(SUM(DC.MONTO_MON_LOCAL),0)
+         INTO nComision_Moneda
+         FROM COMISIONES  C INNER JOIN DETALLE_COMISION DC ON (DC.IDCOMISION  = C.IDCOMISION)
+                            INNER JOIN FACTURAS         F  ON (C.IdFactura     = F.IdFactura)
+                            INNER JOIN PAGOS            P  ON (F.IdFactura = P.IdFactura)
+                            INNER JOIN DETALLE_TRANSACCION  D ON (D.Correlativo               = 1   AND
+                                                                  D.IdTransaccion = P.IdTransaccion OR
+                                                                  D.IdTransaccion = P.IdTransaccionAnu)
+                            INNER JOIN DETALLE_POLIZA   DP ON (DP.IdPoliza                 = F.IdPoliza AND 
+                                                               DP.IDetPol                  = NVL(F.IDetPol, DP.IDetPol) AND
+                                                               DP.CodCia                   = D.CodCia)
+                            INNER JOIN AGENTES          A  ON (A.Cod_Agente                = C.Cod_Agente AND 
+                                                               A.CodCia                    = C.CodCia)
+                            INNER JOIN PERSONA_NATURAL_JURIDICA PNJ ON (PNJ.Num_Doc_Identificacion  = A.Num_Doc_Identificacion AND 
+                                                                        PNJ.Tipo_Doc_Identificacion = A.Tipo_Doc_Identificacion)
+        WHERE PNJ.Tipo_Persona            = pcTipoPersona
+          AND A.CodTipo                   = pcTipoAgente
+          AND DP.IdTipoSeg                = pcIdTipoSeg
+          AND D.IdTransaccion             = pnIdTransaccion
+          AND D.CodCia                    = pnCodCia
+          AND D.CodEmpresa                = nCodEmpresa
+          AND DC.CODCONCEPTO              = pCodCpto
+          AND C.COD_AGENTE                = pnCodAgente;
+
+       RETURN(nComision_Moneda);
+    END FN_COMISION_TIPO_PERSONA_MR;
 END OC_COMPROBANTES_CONTABLES;
 /

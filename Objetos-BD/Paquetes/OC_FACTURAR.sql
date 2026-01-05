@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_FACTURAR IS
+CREATE OR REPLACE PACKAGE SICAS_OC.OC_FACTURAR IS
 
 -- CALCULO DE COMISIONES PARA RAMOS PAQUETE                                  2022/01/22  JMMD
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
@@ -30,7 +30,7 @@ create or replace PACKAGE          OC_FACTURAR IS
                                  , nIdPoliza         COBERT_ACT.IdPoliza%TYPE
                                  , nIDetPol          COBERT_ACT.IDetPol%TYPE
                                  , cIdRamoReal       COBERT_ACT.IdRamoReal%TYPE
-                                 , nPrimaTotalLocal  NUMBER ) RETURN NUMBER;
+                                 , nPrimaTotalLocal  NUMBER) RETURN NUMBER;
    --
    PROCEDURE GENERA_CONCEPTOS_PAGO( nCodCia                   CONCEPTOS_PLAN_DE_PAGOS.CodCia%TYPE
                                   , nCodEmpresa               CONCEPTOS_PLAN_DE_PAGOS.CodEmpresa%TYPE
@@ -55,16 +55,47 @@ create or replace PACKAGE          OC_FACTURAR IS
                                   , nMtoPagoMonedaRec IN OUT  DETALLE_FACTURAS.Monto_Det_Moneda%TYPE );
    PROCEDURE PROC_COMISIONPOL_MULTIRAMO(nIdPoliza NUMBER ,nIdetPol NUMBER,nCodCia NUMBER,nCodEmpresa NUMBER,cIdTipoSeg VARCHAR2 ,cCodMoneda VARCHAR2,nIdFactura NUMBER,nmontodetlocal  NUMBER,nmontodetmoneda  NUMBER,nTasaCambio NUMBER);
 
-END OC_FACTURAR;
+   PROCEDURE PROC_AJUSTE_CENTAVOS(P_IDPOLIZA NUMBER, P_IDENDOSO NUMBER, P_TOTAL_A_PRORRATEAR NUMBER);
 
+   PROCEDURE GENERA_CONCEPTOS_PAGO2( nCodCia                   CONCEPTOS_PLAN_DE_PAGOS.CodCia%TYPE
+                                  , nCodEmpresa               CONCEPTOS_PLAN_DE_PAGOS.CodEmpresa%TYPE
+                                  , cCodPlanPago              CONCEPTOS_PLAN_DE_PAGOS.CodPlanPago%TYPE
+                                  , cIdTipoSeg                TIPOS_DE_SEGUROS.IdTipoSeg%TYPE
+                                  , cIndMultiRamo             TIPOS_DE_SEGUROS.IndMultiRamo%TYPE
+                                  , nIdPoliza                 POLIZAS.IdPoliza%TYPE
+                                  , cIndCalcDerechoEmis       POLIZAS.IndCalcDerechoEmis%TYPE
+                                  , nIdEndoso                 NUMBER
+                                  , nTransa                   NUMBER
+                                  , nIDetPol                  DETALLE_POLIZA.IDetPol%TYPE
+                                  , nTotPrimas                DETALLE_FACTURAS.Monto_Det_Local%TYPE
+                                  , nNumPagos                 PLAN_DE_PAGOS.NumPagos%TYPE
+                                  , nTasaCambio               DETALLE_POLIZA.Tasa_Cambio%TYPE
+                                  , nIdFactura                FACTURAS.IdFactura%TYPE
+                                  , nNP                       NUMBER
+                                  , nMtoPago          IN OUT  NUMBER
+                                  , nMtoPagoMoneda    IN OUT  FACTURAS.Monto_Fact_Moneda%TYPE
+                                  , nMtoT             IN OUT  FACTURAS.Monto_Fact_Local%TYPE
+                                  , nMtoDet           IN OUT  DETALLE_FACTURAS.Monto_Det_Local%TYPE
+                                  , nMtoPagoRec       IN OUT  DETALLE_FACTURAS.Monto_Det_Local%TYPE
+                                  , nMtoPagoMonedaRec IN OUT  DETALLE_FACTURAS.Monto_Det_Moneda%TYPE );
+   /*FUNCTION FUN_FACT_PRORRATEO(  nCodCia           COBERT_ACT.CodCia%TYPE
+                               , nIdPoliza         COBERT_ACT.IdPoliza%TYPE
+                               , nIDetPol          COBERT_ACT.IDetPol%TYPE
+                               , cIdRamoReal       COBERT_ACT.IdRamoReal%TYPE) RETURN NUMBER;*/
+   FUNCTION FN_FACT_PRORRATEO_RAMO( pnCodCia           COBERT_ACT.CodCia%TYPE
+                                  , pnIdPoliza         COBERT_ACT.IdPoliza%TYPE
+                                  , pnIDetPol          COBERT_ACT.IDetPol%TYPE
+                                  , pcIdRamoReal       COBERT_ACT.IdRamoReal%TYPE) RETURN NUMBER;
+
+END OC_FACTURAR;
 /
-create or replace PACKAGE BODY          OC_FACTURAR IS
+CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_FACTURAR IS
 --
 -- MODIFICACIONES
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO      2018/03/09  ICOFINVIG
--- CALCULO DEL AÃ‘O POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
+-- CALCULO DEL AÑO POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 -- CORRECCION DEL TIPO DE CAMBIO PARA COMPONENTES                            2019/06/12  ICO LARPLA1
--- CAMBIO DE VIGENCIA POR AÃ‘OS SUBSECUENTES                                  2019/08/21  ICO LARPLA2
+-- CAMBIO DE VIGENCIA POR AÑOS SUBSECUENTES                                  2019/08/21  ICO LARPLA2
 -- PLAN DE PAGOS CATORCENAL                                                  2021/12/03  JMMD 20211203
 -- CALCULO DE COMISIONES PARA RAMOS PAQUETE                                  2022/01/22  JMMD
 -- HOMOLOGACION VIFLEX                                                       2022/03/01  JMMD
@@ -1865,6 +1896,9 @@ END PROC_EMITE_FACT_POL;
       cStsFact                 FACTURAS.StsFact%TYPE;
       cMotivoEndoso            ENDOSOS.Motivo_Endoso%TYPE;
       --
+      nMtoPagoRec              DETALLE_FACTURAS.Monto_Det_Local%TYPE  := NULL;
+      nMtoPagoMonedaRec        DETALLE_FACTURAS.Monto_Det_Moneda%TYPE := NULL;
+      --
       CURSOR ENDOSO_Q IS
              SELECT E.Prima_Neta_Local PrimaLocal, E.Prima_Neta_Moneda PrimaMoneda, E.CodPlanPago, E.PorcComis,
                     E.FecIniVig, E.FecFinVig, E.FecEmision, E.IDetPol, D.IdTipoSeg, E.TipoEndoso, E.Motivo_Endoso, E.IndCalcDerechoEmis, 
@@ -1934,7 +1968,7 @@ END PROC_EMITE_FACT_POL;
                AND  C.CodCia         = nCodCia
              GROUP BY CS.CodCpto
              UNION
-             SELECT MAX(CS.CodCpto) CodCpto, nPrimaLocal Prima_Local, nPrimaMoneda Prima_Moneda
+             /*SELECT MAX(CS.CodCpto) CodCpto, nPrimaLocal Prima_Local, nPrimaMoneda Prima_Moneda
              FROM   DETALLE_POLIZA D, COBERTURAS_DE_SEGUROS CS
              WHERE  CS.Cobertura_Basica = 'S'
                AND  CS.PlanCob          = D.PlanCob
@@ -1945,6 +1979,36 @@ END PROC_EMITE_FACT_POL;
                AND  D.IdPoliza          = nIdPoliza
                AND  D.CodCia            = nCodCia
                AND  cTipoEndoso        IN ('RSS', 'EAD', 'AUM','CFP')
+             GROUP BY CS.CodCpto;*/
+             --MLJS 04/08/2025 CONSULTAS PARA MULTIRAMO
+             SELECT MAX(CS.CodCpto) CodCpto, nPrimaLocal Prima_Local, nPrimaMoneda Prima_Moneda--, C.IDRAMOREAL
+             FROM   DETALLE_POLIZA D, COBERTURAS_DE_SEGUROS CS, COBERT_ACT_ASEG C
+             WHERE  CS.PlanCob          = D.PlanCob
+               AND  CS.IdTipoSeg        = D.IdTipoSeg
+               AND  CS.CodEmpresa       = D.CodEmpresa
+               AND  CS.CodCia           = D.CodCia
+               AND  CS.CODCOBERT        = C.CODCOBERT
+               AND  D.IdPoliza          = C.IdPoliza
+               AND  D.IDetPol           = nIDetPol
+               AND  D.IdPoliza          = nIdPoliza
+               AND  D.CodCia            = nCodCia
+               AND  cTipoEndoso         IN ('RSS', 'EAD', 'AUM','CFP')
+               --AND  OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(D.CODCIA, D.CODEMPRESA, D.IDTIPOSEG) = 'S'
+             GROUP BY CS.CodCpto
+             UNION
+             SELECT MAX(CS.CodCpto) CodCpto, nPrimaLocal Prima_Local, nPrimaMoneda Prima_Moneda--, C.IDRAMOREAL
+             FROM   DETALLE_POLIZA D, COBERTURAS_DE_SEGUROS CS, COBERT_ACT C
+             WHERE  CS.PlanCob          = D.PlanCob
+               AND  CS.IdTipoSeg        = D.IdTipoSeg
+               AND  CS.CodEmpresa       = D.CodEmpresa
+               AND  CS.CodCia           = D.CodCia
+               AND  CS.CODCOBERT        = C.CODCOBERT
+               AND  D.IdPoliza          = C.IdPoliza
+               AND  D.IDetPol           = nIDetPol
+               AND  D.IdPoliza          = nIdPoliza
+               AND  D.CodCia            = nCodCia
+               AND  cTipoEndoso        IN ('RSS', 'EAD', 'AUM','CFP')
+               --AND  OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(D.CODCIA, D.CODEMPRESA, D.IDTIPOSEG) = 'S'
              GROUP BY CS.CodCpto;
       --
       CURSOR CPTO_ASIST_Q IS
@@ -2123,6 +2187,10 @@ END PROC_EMITE_FACT_POL;
                 dFecIniVig1erRecibo := x.FecIniVig;
                 dFecFinVig1erRecibo := x.FecIniVig + nFrecPagos;
                 nMto1erRecibo       := nMtoPago;
+             ELSIF x.TipoEndoso IN ('RSS', 'EAD') THEN
+                dFecIniVig1erRecibo := x.FecIniVig;
+                dFecFinVig1erRecibo := x.FecFinVig;
+                nMto1erRecibo       := nMtoPago;   
              ELSE
                 --Query para determinar la parte a cobrar del primer recibo
                 BEGIN
@@ -2191,9 +2259,15 @@ END PROC_EMITE_FACT_POL;
                                                      NP       , nTasaCambio, nCod_Agente, nCodTipoDoc, nCodCia , cCodMoneda    , NULL      , nTransa   , cIndFactElectronica );
                  --
                  FOR W IN CPTO_PRIMAS_Q LOOP
-                     nFactor := W.Prima_Local / NVL(X.PrimaLocal,0);
-                     OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
-                     OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
+                    IF x.TipoEndoso IN ('RSS','EAD') THEN
+                      nFactor := OC_DETALLE_POLIZA.FN_PRORRATEO_CPTO_RAMO(nCodCia, nCodEmpresa, nIdPoliza, X.IDetPol, W.CodCpto)/100;
+                      OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
+                      OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
+                    ELSE
+                       nFactor := W.Prima_Local / NVL(X.PrimaLocal,0);
+                       OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
+                       OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFactura, W.CodCpto, 'S', nMtoPago * nFactor, nMtoPagoMoneda * nFactor);
+                    END IF;
                  END LOOP;
                  --
                  nTotAsistLocal  := 0;
@@ -2222,9 +2296,21 @@ END PROC_EMITE_FACT_POL;
                  END LOOP;
                  --
                  nMtoT := nMtoT + nMtoPago;-- + NVL(nTotAsistLocal,0);
-                 -- Genera comisiones por agente por certificado
-                 PROC_ENDO_COMI (nIdPoliza, X.IdetPol, nIdEndoso, nCodCia, nCodEmpresa, X.IdTipoSeg, cCodMoneda, nIdFactura, nMtoPago, nMtoPagoMoneda, nTasaCambio);
-                 --
+                 -- Genera comisiones por agente por certificado                 
+                 cIndMultiRamo := OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(nCodCia, nCodEmpresa, X.IdTipoSeg);
+                 DBMS_OUTPUT.PUT_LINE(' ANTES DE PROC_ENDO_COMI nMtoPago '||nMtoPago);
+                 /*IF cIndMultiRamo = 'S' THEN
+                    PROC_COMISIONPOL_MULTIRAMO(nIdPoliza, X.IdetPol, nCodCia, nCodEmpresa,X.IdTipoSeg,cCodMoneda,
+                           nIdFactura, nMtoPago, nMtoPagoMoneda,nTasaCambio);
+                 ELSE  */        
+                    PROC_ENDO_COMI (nIdPoliza, X.IdetPol, nIdEndoso, nCodCia, nCodEmpresa, X.IdTipoSeg, cCodMoneda, nIdFactura, nMtoPago, nMtoPagoMoneda, nTasaCambio);
+                 --END IF;
+                 GENERA_CONCEPTOS_PAGO2( nCodCia        , nCodEmpresa, cCodPlanPago, cIdTipoSeg , cIndMultiRamo    , nIdPoliza,  X.IndCalcDerechoEmis, nIdEndoso 
+                                       ,nTransa        , nIDetPol   , nTotPrimas  , nNumPagos  , nTasaCambio      , nIdFactura, NP                 , nMtoPago
+                                       , nMtoPagoMoneda, nMtoT      , nMtoDet     , nMtoPagoRec, nMtoPagoMonedaRec);
+
+
+                /*
                  FOR Y IN CPTO_PLAN_Q LOOP
                      BEGIN
                         SELECT 'S'
@@ -2244,7 +2330,7 @@ END PROC_EMITE_FACT_POL;
                      --
                      IF cGraba = 'S' THEN
                         IF Y.IndRangosTipseg = 'S' THEN
-                           -- No Calcula Derechos de EmisiÃ³n en Endosos
+                           -- No Calcula Derechos de Emisión en Endosos
                            nMtoCpto  := 0;
                            nPorcCpto := 0;
                            OC_CATALOGO_CONCEPTOS_RANGOS.VALOR_CONCEPTO(nCodCia, nCodEmpresa, Y.CodCpto, X.IdTipoSeg, nIdPoliza, X.IdetPol, nIdEndoso, nMtoCpto, nPorcCpto);
@@ -2302,11 +2388,15 @@ END PROC_EMITE_FACT_POL;
                      END IF;
                      nMtoT := nMtoT + nMtoDet;
                  END LOOP;
+                 */
                  --
                  OC_FACTURAS.ACTUALIZA_FACTURA(nIdFactura);
                  OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdFactura,'IVASIN');
                  --*****************************************************************************************
              END LOOP;
+             --MLJS 16/11/2025
+             PROC_AJUSTE_CENTAVOS (nIdPoliza, nIdEndoso, X.PrimaLocal);
+             OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdFactura,'IVASIN');
              --
              IF (NVL(X.PrimaLocal,0)) <> NVL(nTotPrimas,0) THEN
                 nDifer       := (NVL(X.PrimaLocal,0)) - NVL(nTotPrimas,0);
@@ -2385,6 +2475,10 @@ END PROC_EMITE_FACT_POL;
                     dFecIniVig1erRecibo := x.FecIniVig;
                     dFecFinVig1erRecibo := x.FecIniVig + nFrecPagos;
                     nMto1erRecibo       := nMtoPago;
+                 ELSIF x.TipoEndoso IN ('RSS', 'EAD') THEN
+                    dFecIniVig1erRecibo := x.FecIniVig;
+                    dFecFinVig1erRecibo := x.FecFinVig;
+                    nMto1erRecibo       := nMtoPago;   
                  ELSE
                     --Query para determinar la parte a cobrar del primer recibo
                     SELECT FecVenc, FecFinVig, x.FactorPorDia * (TRUNC(FecFinVig) - TRUNC(dFecPago))
@@ -2478,8 +2572,15 @@ END PROC_EMITE_FACT_POL;
                      --
                      nMtoT := nMtoT + nMtoPago;-- + NVL(nTotAsistLocal,0);
                      -- Genera comisiones por agente por certificado
+                     --MLJS 05/11/2025 MULTIRAMO
+                     cIndMultiRamo := OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(nCodCia, nCodEmpresa, X.IdTipoSeg);
+                     -- Genera comisiones por agente por certificado
                      PROC_ENDO_COMI (nIdPoliza, X.IdetPol, nIdEndoso, nCodCia, nCodEmpresa, X.IdTipoSeg, cCodMoneda, nIdFactura, nMtoPago, nMtoPagoMoneda, nTasaCambio);
-                     --
+                     GENERA_CONCEPTOS_PAGO2( nCodCia        , nCodEmpresa, cCodPlanPago, cIdTipoSeg , cIndMultiRamo    , nIdPoliza,  X.IndCalcDerechoEmis, nIdEndoso 
+                                           ,nTransa        , nIDetPol   , nTotPrimas  , nNumPagos  , nTasaCambio      , nIdFactura, NP                 , nMtoPago
+                                           ,nMtoPagoMoneda, nMtoT      , nMtoDet     , nMtoPagoRec, nMtoPagoMonedaRec);
+                      --
+                     /*
                      FOR Y IN CPTO_PLAN_Q LOOP
                          BEGIN
                             SELECT 'S'
@@ -2499,7 +2600,7 @@ END PROC_EMITE_FACT_POL;
                          --
                          IF cGraba = 'S' THEN
                             IF Y.IndRangosTipseg = 'S' THEN
-                               -- No Calcula Derechos de EmisiÃ³n en Endosos
+                               -- No Calcula Derechos de Emisión en Endosos
                                nMtoCpto  := 0;
                                nPorcCpto := 0;
                                OC_CATALOGO_CONCEPTOS_RANGOS.VALOR_CONCEPTO(nCodCia, nCodEmpresa, Y.CodCpto, X.IdTipoSeg, nIdPoliza, X.IdetPol, nIdEndoso, nMtoCpto, nPorcCpto);
@@ -2558,9 +2659,13 @@ END PROC_EMITE_FACT_POL;
                          END IF;
                      END LOOP;
                      --
+                     */
                      OC_FACTURAS.ACTUALIZA_FACTURA(nIdFactura);
                      OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdFactura,'IVASIN');
                  END LOOP;
+                 --MLJS 16/11/2025
+                 PROC_AJUSTE_CENTAVOS (nIdPoliza, nIdEndoso, X.PrimaLocal);
+                 OC_DETALLE_FACTURAS.GENERA_IMPUESTO_FACT_ELECT(nCodCia,nIdFactura,'IVASIN');
                  --
                  IF NVL(X.PrimaLocal,0) <> NVL(nTotPrimas,0) THEN
                      nDifer       := (NVL(X.PrimaLocal,0)) - NVL(nTotPrimas,0);
@@ -3631,7 +3736,7 @@ BEGIN
 
           END;
           nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
-          -- CaracterÃ­sticas del Plan de Pago
+          -- Características del Plan de Pago
           BEGIN
              SELECT NumPagos, FrecPagos, PorcInicial
                INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -3953,7 +4058,7 @@ BEGIN
                     RAISE_APPLICATION_ERROR (-20100,'Existe un error de otros');
               END;
               nTasaCambio := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
-              -- CaracterÃ­sticas del Plan de Pago
+              -- Características del Plan de Pago
               BEGIN
                  SELECT NumPagos, FrecPagos, PorcInicial
                    INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -4737,13 +4842,30 @@ nCantPagosReal           NUMBER(5);
 dFecIniVig               POLIZAS.FecIniVig%TYPE;
 dFecFinVig               POLIZAS.FecFinVig%TYPE;
 
+--MLJS VIFLEX 18/11/2025
+cIndMultiramo              TIPOS_DE_SEGUROS.INDMULTIRAMO%TYPE;  
+cCODTIPO                   AGENTES.CODTIPO%TYPE; 
+nPorc_com_distribuida_HON  AGENTES_DISTRIBUCION_COMISION.PORC_COM_DISTRIBUIDA%TYPE := 0;
+nPorc_com_distribuida_COM  AGENTES_DISTRIBUCION_COMISION.PORC_COM_DISTRIBUIDA%TYPE := 0;
+nMtoComisi_Local           COMISIONES.Comision_Local%TYPE  := 0;
+nMtoComisi_Moneda          COMISIONES.Comision_Moneda%TYPE := 0;
+nMontoComiLocal_Hon        COMISIONES.Comision_Local%TYPE  := 0;
+nMontoComiMoneda_Hon       COMISIONES.Comision_Moneda%TYPE := 0;
+nMontoComiLocal_Com        COMISIONES.Comision_Local%TYPE  := 0;
+nMontoComiMoneda_Com       COMISIONES.Comision_Moneda%TYPE := 0;
+nPrimaLocal_Vida           COMISIONES.Comision_Local%TYPE  := 0;
+nPrimaMoneda_Vida          COMISIONES.Comision_Moneda%TYPE := 0;
+nPrimaLocal_AP             COMISIONES.Comision_Local%TYPE := 0;
+nPrimaMoneda_AP            COMISIONES.Comision_Moneda%TYPE := 0;
+nFactorComisionVida        NUMBER;
+nFactorComisionAP          NUMBER;
+
 CURSOR C_Agentes IS
   SELECT Cod_Agente, Porc_Comision, IdetPol, IdTipoSeg
     FROM AGENTES_DETALLES_POLIZAS
    WHERE IdPoliza  = nIdPoliza
      AND IDetPol   = nIdetPol
      AND IdTipoSeg = cIdTipoSeg;
-
 
 CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
   SELECT Cod_Agente_Distr Cod_Agente, Porc_Com_Proporcional Porc_Comision,
@@ -4755,6 +4877,22 @@ CURSOR C_AGENTES_D(nCod_Agente NUMBER) IS
      --AND Porc_Com_Proporcional   > 0
      --AND Porc_Com_Distribuida    > 0    --MLJS 20/05/2022
      ;
+
+CURSOR P_COB_RAMOS IS
+SELECT DISTINCT C.IDRAMOREAL
+  FROM   COBERT_ACT C
+  WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
+    AND  C.IDetPol       = nIdetPol
+    AND  C.IdPoliza      = nIdPoliza
+    AND  C.CodCia        = nCodCia
+  UNION ALL
+  SELECT DISTINCT C.IDRAMOREAL
+  FROM   COBERT_ACT_ASEG C
+  WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
+    AND  C.IDetPol       = nIdetPol
+    AND  C.IdPoliza      = nIdPoliza
+    AND  C.CodCia        = nCodCia     ;
+
 BEGIN
    SELECT NumPagos, FrecPagos
      INTO nNumPagos, nFrecPagos
@@ -4797,14 +4935,60 @@ BEGIN
             AND IDETPOL   = I.IDETPOL
             AND CodCia    = nCodCia
             AND IdEndoso  = nIdEndoso;
+         --MLJS VIFLEX 18/11/2025 
+         cIndMultiramo := OC_TIPOS_DE_SEGUROS.INDMULTIRAMO(nCodCia, nCodEmpresa, cIdTipoSeg);
+         IF cIndMultiramo = 'S' THEN         
+            nFactorComisionVida := 0;
+            nFactorComisionAP := 0;
+           /* FOR PCR IN P_COB_RAMOS LOOP
+               IF PCR.IDRAMOREAL = '010' THEN
+                  nFactorComisionVida := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '010', nPrimaMoneda );
+               ELSE
+                  nFactorComisionAP := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '030', nPrimaMoneda );
+               END IF;
+            END LOOP;*/
+            ------
+            SELECT CODTIPO
+              INTO cCODTIPO
+              FROM AGENTES
+             WHERE COD_AGENTE = R_Agentes.Cod_Agente;
 
-         IF NVL(NMONTOCOMISIONES,0) = 0 THEN
-              nMontoComiLocal  := (nPrimaLocal*(R_Agentes.Porc_com_distribuida/100)/nNumPagos);
-              nMontoComiMoneda := (nPrimaMoneda*R_Agentes.Porc_com_distribuida/100)/nNumPagos;
-         ELSE
-            nMontoComiLocal  := nMontoComisiones * (R_Agentes.Porc_Comision/100) * (I.Porc_Comision/100);
-            nMontoComiMoneda := nMontoComiMoneda / nTasaCambio * (R_AGENTES.Porc_Comision/100) * (I.Porc_Comision/100);
+            IF cCODTIPO IN('HONPF', 'HONPM', 'HONORF', 'HONORM') AND R_Agentes.Cod_Agente != 1019 THEN
+               nPorc_com_distribuida_HON := R_Agentes.Porc_com_distribuida / 1.16;
+               nPorc_com_distribuida_COM := 0;
+               DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorc_com_distribuida_HON  '||nPorc_com_distribuida_HON);
+            ELSE
+              nPorc_com_distribuida_COM := R_Agentes.Porc_com_distribuida;
+              nPorc_com_distribuida_HON := 0;
+               DBMS_OUTPUT.put_line('JMMD EN PROC_COMISIONPOL_MULTIRAMO nPorc_com_distribuida_COM  '||nPorc_com_distribuida_COM);
+            END IF;
+
+
+            IF NVL(nMontoComisiones,0) = 0 THEN
+               nMontoComiLocal_Hon  := (nMontoDetLocal * (nPorc_com_distribuida_HON/100)/nNumPagos);
+               nMontoComiMoneda_Hon := (nMontoDetMoneda * (nPorc_com_distribuida_HON/100)/nNumPagos);
+
+               nMontoComiLocal_Com    := (nMontoDetLocal * (nPorc_com_distribuida_COM/100)/nNumPagos);
+               nMontoComiMoneda_Com   := (nMontoDetMoneda * (nPorc_com_distribuida_COM/100)/nNumPagos);
+
+               nMontoComiLocal       := nMontoComiLocal_Hon + nMontoComiLocal_Com;
+               nMontoComiMoneda      := nMontoComiMoneda_Hon + nMontoComiMoneda_Com;
+            ELSE
+               nMontoComiLocal  := nMontoComisiones * (R_Agentes.Porc_Comision/100) * (I.Porc_Comision/100);
+               nMontoComiMoneda := nMontoComisiones / nTasaCambio * (R_AGENTES.Porc_Comision/100) * (I.Porc_Comision/100);
+            END IF;
+
+         ELSE          
+          -----       
+            IF NVL(NMONTOCOMISIONES,0) = 0 THEN
+               nMontoComiLocal  := (nPrimaLocal*(R_Agentes.Porc_com_distribuida/100)/nNumPagos);
+               nMontoComiMoneda := (nPrimaMoneda*R_Agentes.Porc_com_distribuida/100)/nNumPagos;
+            ELSE
+               nMontoComiLocal  := nMontoComisiones * (R_Agentes.Porc_Comision/100) * (I.Porc_Comision/100);
+               nMontoComiMoneda := nMontoComiMoneda / nTasaCambio * (R_AGENTES.Porc_Comision/100) * (I.Porc_Comision/100);
+            END IF;
          END IF;
+
          BEGIN
             SELECT 'S'
               INTO cExiste
@@ -5092,7 +5276,7 @@ BEGIN
          nMtoDesc_Local  := 0;
          nMtoDesc_Moneda := 0;
    END;
-   -- CaracterÃ­sticas del Plan de Pago
+   -- Características del Plan de Pago
    BEGIN
       SELECT NumPagos, FrecPagos, PorcInicial
         INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -6003,7 +6187,7 @@ BEGIN
          nMtoDesc_Local  := 0;
          nMtoDesc_Moneda := 0;
    END;
-   -- CaracterÃ­sticas del Plan de Pago
+   -- Características del Plan de Pago
    BEGIN
       SELECT NumPagos, FrecPagos, PorcInicial
         INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -6973,7 +7157,7 @@ BEGIN
          nMtoDesc_Local  := 0;
          nMtoDesc_Moneda := 0;
    END;
-   -- CaracterÃ­sticas del Plan de Pago
+   -- Características del Plan de Pago
    BEGIN
       SELECT NumPagos, FrecPagos, PorcInicial
         INTO nNumPagos, nFrecPagos, nPorcInicial
@@ -7696,7 +7880,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                                  , nIdPoliza         COBERT_ACT.IdPoliza%TYPE
                                  , nIDetPol          COBERT_ACT.IDetPol%TYPE
                                  , cIdRamoReal       COBERT_ACT.IdRamoReal%TYPE
-                                 , nPrimaTotalLocal  NUMBER ) RETURN NUMBER IS
+                                 , nPrimaTotalLocal  NUMBER) RETURN NUMBER IS
       nPorcentaje  NUMBER;
    BEGIN
       IF cIdRamoReal IS NULL THEN
@@ -7713,7 +7897,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                        AND  CS.IdTipoSeg    = C.IdTipoSeg
                        AND  CS.CodEmpresa   = C.CodEmpresa
                        AND  CS.CodCia       = C.CodCia
-                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÃ“N ANU
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
                        AND  C.IDetPol       = nIDetPol
                        AND  C.IdPoliza      = nIdPoliza
                        AND  C.CodCia        = nCodCia
@@ -7728,7 +7912,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                        AND  CS.IdTipoSeg    = C.IdTipoSeg
                        AND  CS.CodEmpresa   = C.CodEmpresa
                        AND  CS.CodCia       = C.CodCia
-                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÃ“N ANU
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
                        AND  C.IDetPol       = nIDetPol
                        AND  C.IdPoliza      = nIdPoliza
                        AND  C.CodCia        = nCodCia
@@ -7784,6 +7968,8 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
       nMtoMonedaSinIVA         DETALLE_FACTURAS.Monto_Det_Moneda%TYPE := 0;
       cIdRamoReal              RAMOS_CONCEPTOS_PLAN.CodTipoPlan%TYPE  := 0;
       nFactorProrrateo         NUMBER := 0;
+      vControl                  VARCHAR2(1000);
+      cTipoEndoso              ENDOSOS.TIPOENDOSO%TYPE;
       --
       CURSOR CPTO_PLAN_Q IS
          SELECT CP.CodCpto, CP.PorcCpto, CP.Aplica, CP.MtoCpto, CP.RutinaCalculo, CC.IndRangosTipseg, CC.IndGeneraIVA, CP.Prioridad
@@ -7835,7 +8021,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
            AND  CS.IdTipoSeg              = C.IdTipoSeg
            AND  CS.CodEmpresa             = C.CodEmpresa
            AND  CS.CodCia                 = C.CodCia
-           AND  C.StsCobertura           IN ('EMI','SOL','XRE')
+           AND  C.StsCobertura           IN ('EMI','SOL','XRE','REN')
            AND  C.IdPoliza                = nIdPoliza
            AND  C.CodCia                  = nCodCia
            AND  CS.CodCpto                = CC.CodConcepto
@@ -7848,11 +8034,11 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
            AND  CS.IdTipoSeg              = C.IdTipoSeg
            AND  CS.CodEmpresa             = C.CodEmpresa
            AND  CS.CodCia                 = C.CodCia
-           AND  C.StsCobertura           IN ('EMI','SOL','XRE')
+           AND  C.StsCobertura           IN ('EMI','SOL','XRE','REN')
            AND  C.IdPoliza                = nIdPoliza
            AND  C.CodCia                  = nCodCia
            AND  CS.CodCpto                = CC.CodConcepto
-           AND  NVL(CC.IndGeneraIVA, 'N') = 'N';
+           AND  NVL(CC.IndGeneraIVA, 'N') = 'N';           
    BEGIN
       FOR Y IN CPTO_PLAN_Q LOOP
           BEGIN
@@ -7867,7 +8053,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                              FROM   DETALLE_POLIZA D, POLIZAS P
                              WHERE  D.IdPoliza   = P.IdPoliza
                                AND  D.IdTipoSeg  = R.IdTipoSeg
-                               AND  P.StsPoliza IN ('SOL','XRE')
+                               AND  P.StsPoliza IN ('SOL','XRE','EMI','REN')--MLJS SE AGREGA LA SITUACION EMI Y REN
                                AND  P.IdPoliza   = nIdPoliza);
           EXCEPTION
           WHEN NO_DATA_FOUND THEN
@@ -7877,17 +8063,35 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                cGraba      := 'S';
                cIdRamoReal := NULL;
           END;
+          vControl := '1_nIdEndoso:: ' || nIdEndoso;
           --
+          -- SE OBTIENE EL TIPO DE ENDOSO
+          IF(nIdEndoso > 0)THEN
+              SELECT TIPOENDOSO
+              INTO   cTipoEndoso
+              FROM   ENDOSOS
+              WHERE  IDPOLIZA = nIdPoliza
+              AND    IDENDOSO = nIdEndoso;
+          END IF;
+
+          vControl := '2_cTipoEndoso:: ' || cTipoEndoso;
+
           IF cGraba = 'S' THEN
+            vControl := '3.0';
              IF Y.IndRangosTipseg = 'S' THEN
+                vControl := '4.0';
                 IF cIndCalcDerechoEmis = 'S' THEN
+                    vControl := '5.0';
                    OC_CATALOGO_CONCEPTOS_RANGOS.VALOR_CONCEPTO(nCodCia, nCodEmpresa, Y.CodCpto, cIdTipoSeg, nIdPoliza, 0, nIdEndoso, nMtoCpto, nPorcCpto);
+                   vControl := '5.1';
                    IF OC_DETALLE_FACTURAS.EXISTE_CONCEPTO(nCodCia, nIdPoliza, nTransa, Y.CodCpto) = 'N' THEN
+                    vControl := '6.0';
                       IF NVL(nMtoCpto, 0) = 0 AND NVL(nPorcCpto, 0) = 0 THEN
                          nMtoCpto  := Y.MtoCpto;
                          nPorcCpto := Y.PorcCpto;
                       END IF;
                    ELSE
+                        vControl := '7.0';
                       nMtoCpto  := 0;
                       nPorcCpto := 0;
                    END IF;
@@ -7900,8 +8104,9 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                  nPorcCpto := Y.PorcCpto;
              END IF;
              --
+             vControl := '10.0';
              IF Y.Aplica = 'P' THEN
-                nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nTotPrimas * nNumPagos) );
+                nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nTotPrimas * nNumPagos));
                 --
                 IF NVL(nMtoCpto,0) <> 0 AND nNP = 1 THEN
                    nMtoDet       := NVL(nMtoCpto , 0) * nFactorProrrateo;
@@ -7920,7 +8125,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                 END IF;
                 --
              ELSIF Y.Aplica = 'T' THEN
-                nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nTotPrimas * nNumPagos) );
+                nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nTotPrimas * nNumPagos));
                 --
                 IF NVL(nMtoCpto,0) <> 0 THEN
                    nMtoDet       := NVL(nMtoCpto, 0) * nFactorProrrateo;
@@ -7944,7 +8149,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
                                nMtoPagoMonedaRec := nMtoPagoMoneda;
                             END IF;
                             --
-                            nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nMtoPagoRec * nNumPagos) );
+                            nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nMtoPagoRec * nNumPagos));
                             nMtoDet          := (NVL(nMtoPagoRec      , 0) * (nPorcCpto / 100)) * nFactorProrrateo;
                             nMtoDetMoneda    := (NVL(nMtoPagoMonedaRec, 0) * (nPorcCpto / 100)) * nFactorProrrateo;
                          ELSE
@@ -7976,7 +8181,7 @@ END ACTUALIZA_VALORES_ALTURA_CERO;
       END LOOP;
    EXCEPTION
    WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR (-20100, ' Existe un error en OC_FACTURAR.GENERA_CONCEPTOS_PAGO');
+        RAISE_APPLICATION_ERROR (-20100, '<' || vControl || '> Existe un error en OC_FACTURAR.GENERA_CONCEPTOS_PAGO');
    END GENERA_CONCEPTOS_PAGO;
 
 ----- JMMD 20220113 MULTIRAMO
@@ -8016,7 +8221,7 @@ nPrimaLocal_Vida       COMISIONES.Comision_Local%TYPE := 0;
 nPrimaMoneda_Vida      COMISIONES.Comision_Moneda%TYPE := 0;
 nPrimaLocal_AP         COMISIONES.Comision_Local%TYPE := 0;
 nPrimaMoneda_AP        COMISIONES.Comision_Moneda%TYPE := 0;
------ JMMD 20220113  MULTIRAMO
+----- JMMD 20220113  MULTIRAMO3
 
 CURSOR C_Agentes IS
   SELECT Cod_Agente, Porc_Comision, IdetPol, IdTipoSeg
@@ -8104,9 +8309,9 @@ BEGIN
 
             IF PCR.IDRAMOREAL = '010' THEN
 -------JMMD20220121
-               nFactorComisionVida := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '010', nPrimaMoneda );
+               nFactorComisionVida := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '010', nPrimaMoneda);
             ELSE
-              nFactorComisionAP := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '030', nPrimaMoneda );
+              nFactorComisionAP := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, '030', nPrimaMoneda);
             END IF;
         END LOOP;
 
@@ -8148,7 +8353,7 @@ BEGIN
             nMontoComiMoneda_AP   := (nPrimaMoneda_AP * (nPorc_com_distribuida_AP/100)/nNumPagos);
 
 
-            INSERT INTO T_OC_DETALLE_COMISION_VIFLEX(COD_AGENTE, IDPOLIZA, NUMDOCTO, IDETPOL , COD_MONEDA,
+         /*   INSERT INTO T_OC_DETALLE_COMISION_VIFLEX(COD_AGENTE, IDPOLIZA, NUMDOCTO, IDETPOL , COD_MONEDA,
             COMISION_LOCAL, COMISION_MONEDA, TIPORAMO)
             VALUES(R_Agentes.Cod_Agente, nIdPoliza, nIdFactura, nIDetPol, cCodMoneda, nMontoComiLocal_Vida,
             nMontoComiMoneda_Vida,'VDA');
@@ -8156,7 +8361,7 @@ BEGIN
             INSERT INTO T_OC_DETALLE_COMISION_VIFLEX(COD_AGENTE, IDPOLIZA, NUMDOCTO, IDETPOL , COD_MONEDA,
             COMISION_LOCAL, COMISION_MONEDA, TIPORAMO)
             VALUES(R_Agentes.Cod_Agente, nIdPoliza, nIdFactura, nIDetPol, cCodMoneda, nMontoComiLocal_AP,
-            nMontoComiMoneda_AP,'ACC');
+            nMontoComiMoneda_AP,'ACC');*/
 ----- JMMD 20220114  MULTIRAMO
             nMontoComiLocal       := nMontoComiLocal_Vida + nMontoComiLocal_AP;
             nMontoComiMoneda      := nMontoComiMoneda_Vida + nMontoComiMoneda_AP;
@@ -8222,4 +8427,728 @@ BEGIN
 ----- jmmd20220114
 END PROC_COMISIONPOL_MULTIRAMO;
 
+--MLJS 16/11/2025 PROCEDIMIENTO PARA AJUSTAR LA PRIMA
+
+/*FUNCTION FACTOR_PRORRATEO_RAMO_2( nCodCia           COBERT_ACT.CodCia%TYPE
+                                 , nIdPoliza         COBERT_ACT.IdPoliza%TYPE
+                                 , nIDetPol          COBERT_ACT.IDetPol%TYPE 
+                                 , nIdEndoso         COBERT_ACT.IdEndoso%TYPE 
+                                 , cIdRamoReal       COBERT_ACT.IdRamoReal%TYPE
+                                 , nPrimaTotalLocal  NUMBER) RETURN NUMBER IS
+      nPorcentaje  NUMBER;
+   BEGIN
+      IF cIdRamoReal IS NULL THEN
+         nPorcentaje := 1;
+      ELSE
+         BEGIN
+            SELECT Porcentaje / 100
+            INTO   nPorcentaje
+            FROM   ( SELECT ((SUM(C.Prima_Local) * 100) / nPrimaTotalLocal)  Porcentaje
+                     FROM   COBERT_ACT             C
+                        ,   COBERTURAS_DE_SEGUROS  CS
+                     WHERE  CS.CodCobert    = C.CodCobert
+                       AND  CS.PlanCob      = C.PlanCob
+                       AND  CS.IdTipoSeg    = C.IdTipoSeg
+                       AND  CS.CodEmpresa   = C.CodEmpresa
+                       AND  CS.CodCia       = C.CodCia
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
+                       AND  C.IDetPol       = nIDetPol
+                       AND  C.IdPoliza      = nIdPoliza
+                       AND  C.CodCia        = nCodCia
+                       AND  C.IdRamoReal    = cIdRamoReal
+                       AND  C.IDENDOSO      = nIdEndoso  --
+                     GROUP BY C.IdRamoReal
+                     UNION ALL
+                     SELECT ((SUM(C.Prima_Local) * 100) / nPrimaTotalLocal)  Porcentaje
+                     FROM   COBERT_ACT_ASEG         C
+                        ,   COBERTURAS_DE_SEGUROS  CS
+                     WHERE  CS.CodCobert    = C.CodCobert
+                       AND  CS.PlanCob      = C.PlanCob
+                       AND  CS.IdTipoSeg    = C.IdTipoSeg
+                       AND  CS.CodEmpresa   = C.CodEmpresa
+                       AND  CS.CodCia       = C.CodCia
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
+                       AND  C.IDetPol       = nIDetPol
+                       AND  C.IdPoliza      = nIdPoliza
+                       AND  C.CodCia        = nCodCia
+                       AND  C.IdRamoReal    = cIdRamoReal
+                       AND  C.IDENDOSO      = nIdEndoso  --
+                     GROUP BY C.IdRamoReal );
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              nPorcentaje := 1;
+         END;
+      END IF;
+      --
+      RETURN nPorcentaje;
+   EXCEPTION
+   WHEN OTHERS THEN
+        nPorcentaje := 0;
+        RETURN nPorcentaje;
+   END FACTOR_PRORRATEO_RAMO_2;
+*/
+PROCEDURE GENERA_CONCEPTOS_PAGO2( nCodCia                   CONCEPTOS_PLAN_DE_PAGOS.CodCia%TYPE
+                                  , nCodEmpresa               CONCEPTOS_PLAN_DE_PAGOS.CodEmpresa%TYPE
+                                  , cCodPlanPago              CONCEPTOS_PLAN_DE_PAGOS.CodPlanPago%TYPE
+                                  , cIdTipoSeg                TIPOS_DE_SEGUROS.IdTipoSeg%TYPE
+                                  , cIndMultiRamo             TIPOS_DE_SEGUROS.IndMultiRamo%TYPE
+                                  , nIdPoliza                 POLIZAS.IdPoliza%TYPE
+                                  , cIndCalcDerechoEmis       POLIZAS.IndCalcDerechoEmis%TYPE
+                                  , nIdEndoso                 NUMBER
+                                  , nTransa                   NUMBER
+                                  , nIDetPol                  DETALLE_POLIZA.IDetPol%TYPE
+                                  , nTotPrimas                DETALLE_FACTURAS.Monto_Det_Local%TYPE
+                                  , nNumPagos                 PLAN_DE_PAGOS.NumPagos%TYPE
+                                  , nTasaCambio               DETALLE_POLIZA.Tasa_Cambio%TYPE
+                                  , nIdFactura                FACTURAS.IdFactura%TYPE
+                                  , nNP                       NUMBER
+                                  , nMtoPago          IN OUT  NUMBER
+                                  , nMtoPagoMoneda    IN OUT  FACTURAS.Monto_Fact_Moneda%TYPE
+                                  , nMtoT             IN OUT  FACTURAS.Monto_Fact_Local%TYPE
+                                  , nMtoDet           IN OUT  DETALLE_FACTURAS.Monto_Det_Local%TYPE
+                                  , nMtoPagoRec       IN OUT  DETALLE_FACTURAS.Monto_Det_Local%TYPE
+                                  , nMtoPagoMonedaRec IN OUT  DETALLE_FACTURAS.Monto_Det_Moneda%TYPE ) IS
+      nMtoDetMoneda            DETALLE_FACTURAS.Monto_Det_Moneda%TYPE;
+      nMtoCpto                 CONCEPTOS_PLAN_DE_PAGOS.MtoCpto%TYPE;
+      nPorcCpto                CONCEPTOS_PLAN_DE_PAGOS.PorcCpto%TYPE;
+      cGraba                   VARCHAR2(1);
+      nMtoPrimaSinIVA          DETALLE_FACTURAS.Monto_Det_Local%TYPE  := 0;
+      nMtoPrimaMonedaSinIVA    DETALLE_FACTURAS.Monto_Det_Moneda%TYPE := 0;
+      nMtoDerechoSinIVA        DETALLE_FACTURAS.Monto_Det_Local%TYPE  := 0;
+      nMtoDerechoMonedaSinIVA  DETALLE_FACTURAS.Monto_Det_Moneda%TYPE := 0;
+      nMtoRecargoSinIVA        DETALLE_FACTURAS.Monto_Det_Local%TYPE  := 0;
+      nMtoRecargoMonedaSinIVA  DETALLE_FACTURAS.Monto_Det_Moneda%TYPE := 0;
+      nMtoTotalSinIVA          DETALLE_FACTURAS.Monto_Det_Local%TYPE  := 0;
+      nMtoTotalMonedaSinIVA    DETALLE_FACTURAS.Monto_Det_Moneda%TYPE := 0;
+      nMtoSinIVA               DETALLE_FACTURAS.Monto_Det_Local%TYPE  := 0;
+      nMtoMonedaSinIVA         DETALLE_FACTURAS.Monto_Det_Moneda%TYPE := 0;
+      cIdRamoReal              RAMOS_CONCEPTOS_PLAN.CodTipoPlan%TYPE  := 0;
+      nFactorProrrateo         NUMBER := 0;
+
+      cTipoEndoso              ENDOSOS.TIPOENDOSO%TYPE;
+      nPrimaLocal              ENDOSOS.PRIMA_NETA_LOCAL%TYPE;
+      nPrimaMoneda             ENDOSOS.PRIMA_NETA_MONEDA%TYPE;
+      nTotPmaLocal             ENDOSOS.PRIMA_NETA_LOCAL%TYPE;   
+      nMtoPrimaLocalConIVA     ENDOSOS.PRIMA_NETA_LOCAL%TYPE;
+      nMtoPrimaMonedaConIVA    ENDOSOS.PRIMA_NETA_LOCAL%TYPE;
+      nMtoTotalConIVA          DETALLE_FACTURAS.Monto_Det_Local%TYPE  := 0;
+      nMtoTotalMonedaConIVA    DETALLE_FACTURAS.Monto_Det_Moneda%TYPE := 0;
+      --
+      CURSOR CPTO_PLAN_Q IS
+         SELECT CP.CodCpto, CP.PorcCpto, CP.Aplica, CP.MtoCpto, CP.RutinaCalculo, CC.IndRangosTipseg, CC.IndGeneraIVA, CP.Prioridad
+         FROM   CONCEPTOS_PLAN_DE_PAGOS CP, CATALOGO_DE_CONCEPTOS CC
+         WHERE  CC.IndCptoAjuste = 'N'
+           AND  CC.IndCptoPrimas = 'N'
+           AND  CC.CodConcepto   = CP.CodCpto
+           AND  CC.CodCia        = CP.CodCia
+           AND  CP.CodCia        = nCodCia
+           AND  CP.CodEmpresa    = nCodEmpresa
+           AND  CP.CodPlanPago   = cCodPlanPago
+           AND  EXISTS ( SELECT 'S'
+                         FROM   RAMOS_CONCEPTOS_PLAN
+                         WHERE  CodCia      = CP.CodCia
+                           AND  CodEmpresa  = CP.CodEmpresa
+                           AND  IdTipoSeg   = cIdTipoSeg
+                           AND  CodCpto     = CP.CodCpto
+                           AND  CodPlanPago = CP.CodPlanPago
+                           AND ( ( cIndMultiRamo = 'S' AND ( ( CodTipoPlan IN ( SELECT C.IDRAMOREAL
+                                                                                FROM   COBERT_ACT C
+                                                                                WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
+                                                                                  AND  C.IDetPol       = nIDetPol
+                                                                                  AND  C.IdPoliza      = nIdPoliza
+                                                                                  AND  C.CodCia        = nCodCia
+                                                                                UNION ALL
+                                                                                SELECT C.IDRAMOREAL
+                                                                                FROM   COBERT_ACT_ASEG C
+                                                                                WHERE  C.StsCobertura IN ('EMI','SOL','XRE')
+                                                                                  AND  C.IDetPol       = nIDetPol
+                                                                                  AND  C.IdPoliza      = nIdPoliza
+                                                                                  AND  C.CodCia        = nCodCia
+                                                                              )
+                                                             )
+                                                             OR
+                                                             ( CodTipoPlan = '099' )
+                                                           )
+                                 )
+                                 OR
+                                 ( cIndMultiRamo = 'N' AND ( CodTipoPlan IS NULL OR CodTipoPlan = '099' ) )
+                               )
+                        )
+         ORDER BY CP.Prioridad;
+      --
+      CURSOR CPRIM_SINIVA_Q IS
+         SELECT SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
+         FROM   COBERT_ACT C, COBERTURAS_DE_SEGUROS CS, CATALOGO_DE_CONCEPTOS CC
+         WHERE  CS.CodCobert              = C.CodCobert
+           AND  CS.PlanCob                = C.PlanCob
+           AND  CS.IdTipoSeg              = C.IdTipoSeg
+           AND  CS.CodEmpresa             = C.CodEmpresa
+           AND  CS.CodCia                 = C.CodCia
+           AND  C.StsCobertura           IN ('EMI','SOL','XRE','REN')
+           AND  C.IdPoliza                = nIdPoliza
+           AND  C.CodCia                  = nCodCia
+           AND  CS.CodCpto                = CC.CodConcepto
+           AND  NVL(CC.IndGeneraIVA, 'N') = 'N'
+         UNION ALL
+         SELECT SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
+         FROM   COBERT_ACT_ASEG C, COBERTURAS_DE_SEGUROS CS, CATALOGO_DE_CONCEPTOS CC
+         WHERE  CS.CodCobert              = C.CodCobert
+           AND  CS.PlanCob                = C.PlanCob
+           AND  CS.IdTipoSeg              = C.IdTipoSeg
+           AND  CS.CodEmpresa             = C.CodEmpresa
+           AND  CS.CodCia                 = C.CodCia
+           AND  C.StsCobertura           IN ('EMI','SOL','XRE','REN')
+           AND  C.IdPoliza                = nIdPoliza
+           AND  C.CodCia                  = nCodCia
+           AND  CS.CodCpto                = CC.CodConcepto
+           AND  NVL(CC.IndGeneraIVA, 'N') = 'N';
+
+      CURSOR CPRIM_SINIVA_QE IS       
+         SELECT DF.MONTO_DET_LOCAL Prima_Local, DF.MONTO_DET_MONEDA Prima_Moneda
+         FROM   DETALLE_FACTURAS DF INNER JOIN CATALOGO_DE_CONCEPTOS CC ON (DF.CODCPTO = CC.CODCONCEPTO  AND
+                                                                   NVL(CC.IndGeneraIVA, 'N') = 'N')
+         WHERE  IDFACTURA = nIdFactura;
+
+   BEGIN
+      FOR Y IN CPTO_PLAN_Q LOOP
+          BEGIN
+             SELECT 'S'   , CodTipoPlan
+             INTO   cGraba, cIdRamoReal
+             FROM   RAMOS_CONCEPTOS_PLAN R
+             WHERE  R.CodPlanPago = cCodPlanPago
+               AND  R.CodCpto     = Y.CodCpto
+               AND  R.CodCia      = nCodCia
+               AND  R.CodEmpresa  = nCodEmpresa
+               AND  EXISTS ( SELECT 1
+                             FROM   DETALLE_POLIZA D, POLIZAS P
+                             WHERE  D.IdPoliza   = P.IdPoliza
+                               AND  D.IdTipoSeg  = R.IdTipoSeg
+                               AND  P.StsPoliza IN ('SOL','XRE','EMI','REN')--MLJS SE AGREGA LA SITUACION EMI Y REN
+                               AND  P.IdPoliza   = nIdPoliza);
+          EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+               cGraba      := 'N';
+               cIdRamoReal := NULL;
+          WHEN TOO_MANY_ROWS THEN
+               cGraba      := 'S';
+               cIdRamoReal := NULL;
+          END;
+          --
+          -- SE OBTIENE EL TIPO DE ENDOSO
+          SELECT TIPOENDOSO
+          INTO   cTipoEndoso
+          FROM   ENDOSOS
+          WHERE  IDPOLIZA = nIdPoliza
+          AND    IDENDOSO = nIdEndoso;
+
+          IF cGraba = 'S' THEN
+             IF Y.IndRangosTipseg = 'S' THEN
+                IF cIndCalcDerechoEmis = 'S' THEN
+                   OC_CATALOGO_CONCEPTOS_RANGOS.VALOR_CONCEPTO(nCodCia, nCodEmpresa, Y.CodCpto, cIdTipoSeg, nIdPoliza, 0, nIdEndoso, nMtoCpto, nPorcCpto);
+                   IF OC_DETALLE_FACTURAS.EXISTE_CONCEPTO(nCodCia, nIdPoliza, nTransa, Y.CodCpto) = 'N' THEN
+                      IF NVL(nMtoCpto, 0) = 0 AND NVL(nPorcCpto, 0) = 0 THEN
+                         nMtoCpto  := Y.MtoCpto;
+                         nPorcCpto := Y.PorcCpto;
+                      END IF;
+                   ELSE
+                      nMtoCpto  := 0;
+                      nPorcCpto := 0;
+                   END IF;
+                ELSE
+                   nMtoCpto  := 0;
+                   nPorcCpto := 0;
+                END IF;
+             ELSE
+                 nMtoCpto  := Y.MtoCpto;
+                 nPorcCpto := Y.PorcCpto;
+             END IF;
+             --
+             IF Y.Aplica = 'P' THEN
+                nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nTotPrimas * nNumPagos));
+                --
+                IF NVL(nMtoCpto,0) <> 0 AND nNP = 1 THEN
+                   nMtoDet       := NVL(nMtoCpto , 0) * nFactorProrrateo;
+                   nMtoDetMoneda := (NVL(nMtoCpto, 0) / nTasaCambio) * nFactorProrrateo;    --LARPLA1
+                ELSIF nNP = 1 THEN
+                   nMtoDet       := (NVL(nMtoPago      , 0) * (nPorcCpto / 100)) * nFactorProrrateo;
+                   nMtoDetMoneda := (NVL(nMtoPagoMoneda, 0) * (nPorcCpto / 100)) * nFactorProrrateo;
+                ELSE
+                   nMtoDet       := 0;
+                   nMtoDetMoneda := 0;
+                END IF;
+                --
+                IF cIndMultiRamo = 'S' AND Y.IndGeneraIVA = 'N' THEN
+                   nMtoDerechoSinIVA       := NVL(nMtoDerechoSinIVA      , 0) + nMtoDet;
+                   nMtoDerechoMonedaSinIVA := NVL(nMtoDerechoMonedaSinIVA, 0) + nMtoDetMoneda;
+                END IF;
+                --
+             ELSIF Y.Aplica = 'T' THEN
+                nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nTotPrimas * nNumPagos) );
+                --
+                IF NVL(nMtoCpto,0) <> 0 THEN
+                   nMtoDet       := NVL(nMtoCpto, 0) * nFactorProrrateo;
+                   nMtoDetMoneda := (NVL(nMtoCpto, 0) / nTasaCambio) * nFactorProrrateo;    --LARPLA1
+                ELSE
+                   IF cIndMultiRamo = 'S' THEN
+                      IF Y.CodCpto = 'IVASIN' THEN
+                         IF nIdEndoso = 0 THEN
+
+                            FOR z IN CPRIM_SINIVA_Q LOOP
+                               nMtoPrimaSinIVA       := NVL(nMtoPrimaSinIVA      , 0) + (NVL(z.Prima_Local , 0) / nNumPagos);
+                               nMtoPrimaMonedaSinIVA := NVL(nMtoPrimaMonedaSinIVA, 0) + (NVL(z.Prima_Moneda, 0) / nNumPagos);
+                            END LOOP;
+                         ELSE
+                            IF cTipoEndoso IN ('RSS') THEN
+                               SELECT SUM(CA.PRIMA_LOCAL)
+                               INTO   nTotPmaLocal
+                               FROM   COBERT_ACT_ASEG CA
+                               WHERE  CODCIA   = nCodCia
+                               AND    IDPOLIZA = nIdPoliza
+                               AND    IDETPOL  = nIDetPol
+                               AND    IDENDOSO = 0;   
+
+                               nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nTotPmaLocal * nNumPagos));
+                            END IF;
+                            SELECT E.PRIMA_NETA_LOCAL, E.PRIMA_NETA_MONEDA
+                            INTO   nPrimaLocal, nPrimaMoneda
+                            FROM   ENDOSOS E
+                            WHERE  E.IDPOLIZA = nIdPoliza
+                            AND    E.IDENDOSO = nIdEndoso;
+
+                            FOR J IN CPRIM_SINIVA_QE LOOP
+                               nMtoPrimaSinIVA       := NVL(nMtoPrimaSinIVA      , 0) + (NVL(J.Prima_Local , 0) / nNumPagos);
+                               nMtoPrimaMonedaSinIVA := NVL(nMtoPrimaMonedaSinIVA, 0) + (NVL(J.Prima_Moneda, 0) / nNumPagos);
+                               DBMS_OUTPUT.PUT_LINE('1 Prima_Local ' ||J.Prima_Local);
+                               DBMS_OUTPUT.PUT_LINE('1 nMtoPrimaSinIVA ' ||nMtoPrimaSinIVA);
+                            END LOOP;
+
+                         END IF;
+                         --
+                         nMtoTotalSinIVA       := NVL(nMtoPrimaSinIVA      , 0) + NVL(nMtoDerechoSinIVA      , 0) + NVL(nMtoRecargoSinIVA      , 0);
+                         nMtoTotalMonedaSinIVA := NVL(nMtoPrimaMonedaSinIVA, 0) + NVL(nMtoDerechoMonedaSinIVA, 0) + NVL(nMtoRecargoMonedaSinIVA, 0);
+                         nMtoDet       := (NVL(nMtoPago      , 0) - NVL(nMtoTotalSinIVA      , 0)) * (nPorcCpto / 100);
+                         nMtoDetMoneda := (NVL(nMtoPagoMoneda, 0) - NVL(nMtoTotalMonedaSinIVA, 0)) * (nPorcCpto / 100);
+
+                         DBMS_OUTPUT.PUT_LINE('1 nMtoTotalSinIVA ' ||nMtoTotalSinIVA);
+                         DBMS_OUTPUT.PUT_LINE('1 nMtoPago ' ||nMtoPago); 
+                         DBMS_OUTPUT.PUT_LINE('1 nMtoDet ' ||nMtoDet); 
+                      ELSE
+                         IF Y.CodCpto IN ('RECACC', 'RECVDA') THEN  --RECARGOS AP Y/O VIDA
+                            IF nMtoPagoRec IS NULL THEN
+                               nMtoPagoRec       := nMtoPago;
+                               nMtoPagoMonedaRec := nMtoPagoMoneda;
+                            END IF;
+                            --
+                            nFactorProrrateo := FACTOR_PRORRATEO_RAMO( nCodCia, nIdPoliza, nIDetPol, cIdRamoReal, (nMtoPagoRec * nNumPagos));
+                            nMtoDet          := (NVL(nMtoPagoRec      , 0) * (nPorcCpto / 100)) * nFactorProrrateo;
+                            nMtoDetMoneda    := (NVL(nMtoPagoMonedaRec, 0) * (nPorcCpto / 100)) * nFactorProrrateo;
+                         ELSE
+                            nMtoDet       := (NVL(nMtoPago      , 0) * (nPorcCpto / 100)) * nFactorProrrateo;
+                            nMtoDetMoneda := (NVL(nMtoPagoMoneda, 0) * (nPorcCpto / 100)) * nFactorProrrateo;
+                         END IF;
+                         --
+                         IF Y.IndGeneraIVA = 'N' THEN
+                            nMtoRecargoSinIVA       := NVL(nMtoRecargoSinIVA      , 0) + nMtoDet;
+                            nMtoRecargoMonedaSinIVA := NVL(nMtoRecargoMonedaSinIVA, 0) + nMtoDetMoneda;
+                         END IF;
+                      END IF;
+                   ELSE
+                      nMtoDet       := NVL(nMtoPago      , 0) * (nPorcCpto / 100);
+                      nMtoDetMoneda := NVL(nMtoPagoMoneda, 0) * (nPorcCpto / 100);
+                   END IF;
+                END IF;
+             END IF;
+             --
+             IF NVL(nMtoDet,0) != 0 THEN
+                OC_DETALLE_FACTURAS.INSERTAR(nIdFactura, Y.CodCpto, 'N', nMtoDet, nMtoDetMoneda);
+                OC_DETALLE_FACTURAS.AJUSTAR(nCodCia, nIdFactura, Y.CodCpto, 'N', nMtoDet, nMtoDetMoneda);
+                nMtoPago       := NVL(nMtoPago,0) + NVL(nMtoDet,0);
+                nMtoPagoMoneda := NVL(nMtoPagoMoneda,0) + NVL(nMtoDetMoneda,0);
+             END IF;
+             --
+             nMtoT := nMtoT + nMtoDet;
+          END IF;
+      END LOOP;
+   EXCEPTION
+   WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR (-20100, ' Existe un error en OC_FACTURAR.GENERA_CONCEPTOS_PAGO');
+   END GENERA_CONCEPTOS_PAGO2;
+
+--MLJS 19/11/2025 PROCESOS PARA MULTIRAMO
+PROCEDURE PROC_AJUSTE_CENTAVOS(P_IDPOLIZA NUMBER, P_IDENDOSO NUMBER, P_TOTAL_A_PRORRATEAR NUMBER)
+IS
+  v_total_base     DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE := 0;
+  v_suma_parcial   DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE := 0;
+  v_diff           DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE := 0;
+  v_ultimo_rec     DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE;
+  N_IMPPRIMAS      DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE := 0;
+  N_IMPPRIBAS      DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE := 0;
+  N_IMPPRIADI      DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE := 0;
+  CCPTOAMODIF      CATALOGO_DE_CONCEPTOS.CODCONCEPTO%TYPE;
+  NMONTOMEN        DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE := 0;
+  N_IMPIVA         DETALLE_FACTURAS.MONTO_DET_LOCAL%TYPE := 0;
+  NPORCCONCEPTO    CATALOGO_DE_CONCEPTOS.PORCCONCEPTO%TYPE;
+  cTipo            VARCHAR2(10);
+
+CURSOR CRECIBOS IS
+  SELECT 'RECIBO' TIPO,DF.CODCPTO, DF.MONTO_DET_LOCAL, CC.INDGENERAIVA
+  FROM   FACTURAS F INNER JOIN DETALLE_FACTURAS DF ON (DF.IDFACTURA = F.IDFACTURA)
+                    INNER JOIN CATALOGO_DE_CONCEPTOS CC ON (CC.CODCONCEPTO = DF.CODCPTO AND
+                                                            CC.INDCPTOPRIMAS = 'S')
+  WHERE  IDPOLIZA = P_IDPOLIZA
+  AND    IDENDOSO = P_IDENDOSO
+  UNION
+  SELECT 'NCR' TIPO,DN.CODCPTO, DN.MONTO_DET_LOCAL, CC.INDGENERAIVA
+  FROM   NOTAS_DE_CREDITO N INNER JOIN DETALLE_NOTAS_DE_CREDITO DN ON (DN.IDNCR = N.IDNCR)
+                    INNER JOIN CATALOGO_DE_CONCEPTOS CC ON (CC.CODCONCEPTO = DN.CODCPTO AND
+                                                            CC.INDCPTOPRIMAS = 'S')
+  WHERE  IDPOLIZA = P_IDPOLIZA
+  AND    IDENDOSO = P_IDENDOSO;
+
+CURSOR CRECIVA IS
+  SELECT DF.CODCPTO, DF.MONTO_DET_LOCAL MONTO_DET_LOCAL, CC.INDGENERAIVA, CC.PORCCONCEPTO
+  FROM   FACTURAS F INNER JOIN DETALLE_FACTURAS DF ON (DF.IDFACTURA = F.IDFACTURA)
+                    INNER JOIN CATALOGO_DE_CONCEPTOS CC ON (CC.CODCONCEPTO = DF.CODCPTO)
+  WHERE  IDPOLIZA = P_IDPOLIZA
+  AND    IDENDOSO = P_IDENDOSO
+  UNION
+  SELECT DN.CODCPTO, DN.MONTO_DET_LOCAL MONTO_DET_LOCAL, CC.INDGENERAIVA, CC.PORCCONCEPTO
+  FROM   NOTAS_DE_CREDITO N INNER JOIN DETALLE_NOTAS_DE_CREDITO DN ON (DN.IDNCR = N.IDNCR)
+                    INNER JOIN CATALOGO_DE_CONCEPTOS CC  ON (CC.CODCONCEPTO = DN.CODCPTO)
+  WHERE  IDPOLIZA = P_IDPOLIZA
+  AND    IDENDOSO = P_IDENDOSO;
+
+BEGIN
+  FOR I IN CRECIBOS LOOP
+    cTipo := I.TIPO;
+    IF    I.CODCPTO = 'PRIMAS' THEN N_IMPPRIMAS := I.MONTO_DET_LOCAL;
+    ELSIF I.CODCPTO = 'PRIBAS' THEN N_IMPPRIBAS := I.MONTO_DET_LOCAL;
+    ELSE  N_IMPPRIADI := I.MONTO_DET_LOCAL;
+    END IF;
+
+    IF    N_IMPPRIMAS > N_IMPPRIBAS AND N_IMPPRIMAS > N_IMPPRIADI THEN        
+       CCPTOAMODIF := 'PRIMAS';
+    ELSIF N_IMPPRIBAS > N_IMPPRIMAS AND N_IMPPRIBAS > N_IMPPRIADI THEN  
+       CCPTOAMODIF := 'PRIBAS';   
+    ELSIF N_IMPPRIADI > N_IMPPRIMAS AND N_IMPPRIADI > N_IMPPRIBAS THEN  
+       CCPTOAMODIF := 'PRIADI';  
+    END IF;
+
+    v_suma_parcial := v_suma_parcial + I.MONTO_DET_LOCAL;
+  END LOOP;  
+
+  --SE OBTIENE DIFERENCIA
+  v_diff := ROUND(p_total_a_prorratear - v_suma_parcial, 2);
+
+  SELECT TIPO, IDRECIBO INTO cTipo, v_ultimo_rec
+  FROM (SELECT 'RECIBO' TIPO, IDFACTURA IDRECIBO FROM FACTURAS         WHERE IDPOLIZA = P_IDPOLIZA AND IDENDOSO = P_IDENDOSO UNION
+        SELECT 'NCR'    TIPO, IDNCR     IDRECIBO FROM NOTAS_DE_CREDITO WHERE IDPOLIZA = P_IDPOLIZA AND IDENDOSO = P_IDENDOSO ORDER BY IDRECIBO DESC) WHERE ROWNUM = 1;
+
+  IF v_diff <> 0 THEN
+     IF cTipo = 'RECIBO' THEN
+        UPDATE DETALLE_FACTURAS DF
+        SET    MONTO_DET_LOCAL = MONTO_DET_LOCAL + v_diff, MONTO_DET_MONEDA = MONTO_DET_MONEDA + v_diff,
+               SALDO_DET_LOCAL = SALDO_DET_LOCAL + v_diff, SALDO_DET_MONEDA = SALDO_DET_MONEDA + v_diff,
+               MTOORIGDETLOCAL = MTOORIGDETLOCAL + v_diff, MTOORIGDETMONEDA = MTOORIGDETMONEDA + v_diff
+        WHERE IDFACTURA  = v_ultimo_rec
+        AND   DF.CODCPTO = CCPTOAMODIF;
+
+        UPDATE FACTURAS F 
+        SET    F.MONTO_FACT_LOCAL = F.MONTO_FACT_LOCAL + v_diff, F.MONTO_FACT_MONEDA = F.MONTO_FACT_MONEDA + v_diff,
+               F.SALDO_LOCAL      = F.SALDO_LOCAL      + v_diff, F.SALDO_MONEDA      = F.SALDO_MONEDA + v_diff
+        WHERE  IDPOLIZA   = P_IDPOLIZA
+        AND    IDFACTURA  = v_ultimo_rec;
+     ELSE
+        UPDATE DETALLE_NOTAS_DE_CREDITO DN
+        SET    DN.MONTO_DET_LOCAL = DN.MONTO_DET_LOCAL + v_diff, DN.MONTO_DET_MONEDA = DN.MONTO_DET_MONEDA + v_diff,
+               DN.MTOORIGDETLOCAL = DN.MTOORIGDETLOCAL + v_diff, DN.MTOORIGDETMONEDA = DN.MTOORIGDETMONEDA + v_diff
+        WHERE  IDNCR  = v_ultimo_rec
+        AND    DN.CODCPTO = CCPTOAMODIF;
+
+        UPDATE NOTAS_DE_CREDITO N 
+        SET    N.MONTO_NCR_LOCAL = N.MONTO_NCR_LOCAL + v_diff, N.MONTO_NCR_MONEDA = N.MONTO_NCR_MONEDA + v_diff,
+               N.SALDO_NCR_LOCAL = N.SALDO_NCR_LOCAL + v_diff, N.SALDO_NCR_MONEDA = N.SALDO_NCR_MONEDA + v_diff
+        WHERE  N.IDPOLIZA   = P_IDPOLIZA
+        AND    N.IDNCR  = v_ultimo_rec;
+     END IF;                 
+  END IF;
+
+  --SE RECALCULA EL IVA
+  FOR J IN CRECIVA LOOP
+    IF J.CODCPTO = 'IVASIN' THEN
+      NPORCCONCEPTO := J.PORCCONCEPTO;
+    ELSIF J.INDGENERAIVA = 'S' THEN
+      N_IMPIVA := N_IMPIVA + J.MONTO_DET_LOCAL;
+    END IF;
+  END LOOP;
+
+  N_IMPIVA := (N_IMPIVA * NPORCCONCEPTO)/100;
+
+  IF cTipo = 'RECIBO' THEN
+     UPDATE DETALLE_FACTURAS DF
+     SET    MONTO_DET_LOCAL = N_IMPIVA, MONTO_DET_MONEDA = N_IMPIVA,
+            SALDO_DET_LOCAL = N_IMPIVA, SALDO_DET_MONEDA = N_IMPIVA,
+            MTOORIGDETLOCAL = N_IMPIVA, MTOORIGDETMONEDA = N_IMPIVA
+      WHERE IDFACTURA  = v_ultimo_rec
+      AND   DF.CODCPTO = 'IVASIN';
+
+      OC_FACTURAS.ACTUALIZA_FACTURA(v_ultimo_rec);
+   ELSE
+      UPDATE DETALLE_NOTAS_DE_CREDITO DN
+        SET    DN.MONTO_DET_LOCAL = N_IMPIVA, DN.MONTO_DET_MONEDA = N_IMPIVA,
+               DN.MTOORIGDETLOCAL = N_IMPIVA, DN.MTOORIGDETMONEDA = N_IMPIVA
+        WHERE  DN.IDNCR      = v_ultimo_rec
+        AND    DN.CODCPTO = 'IVASIN';
+
+        OC_NOTAS_DE_CREDITO.ACTUALIZA_NOTA(v_ultimo_rec);
+   END IF;
+
+END PROC_AJUSTE_CENTAVOS;
+
+FUNCTION FN_FACT_PRORRATEO_RAMO( pnCodCia           COBERT_ACT.CodCia%TYPE
+                                , pnIdPoliza         COBERT_ACT.IdPoliza%TYPE
+                                , pnIDetPol          COBERT_ACT.IDetPol%TYPE
+                                , pcIdRamoReal       COBERT_ACT.IdRamoReal%TYPE) RETURN NUMBER IS
+nPrimaTotSub        NUMBER(12);
+nPrimaTotal         NUMBER(12);
+nPorcentaje         NUMBER(12,6);
+nTieneAsegs       NUMBER(10);
+nIdetpol          COBERT_ACT.IDetPol%TYPE;
+NPRIMANETA          COBERT_ACT.PRIMA_LOCAL%TYPE;
+   BEGIN
+      IF pcIdRamoReal IS NULL THEN
+         nPorcentaje := 1;
+      ELSE
+        -- SE VALIDA SI EL DETALLE TIENE ASEGURADOS
+        SELECT COUNT(*), NVL(SUM(PRIMANETA),0)
+       INTO   nTieneAsegs, NPRIMANETA
+        FROM   ASEGURADO_CERTIFICADO
+        WHERE  CODCIA   = pnCodCia
+        AND    IDPOLIZA = pnIdPoliza
+        AND    IDETPOL  = pnIDetPol;
+        
+        IF nTieneAsegs = 0 OR NPRIMANETA = 0 THEN
+            nIdetpol := 1;
+         ELSE 
+            nIdetpol := pnIDetPol;
+         END IF;
+         BEGIN
+            SELECT SUM(Prima_Local) Prima_Local
+            INTO   nPrimaTotSub
+            FROM   ( SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
+                     FROM   COBERT_ACT             C
+                        ,   COBERTURAS_DE_SEGUROS  CS
+                     WHERE  CS.CodCobert    = C.CodCobert
+                       AND  CS.PlanCob      = C.PlanCob
+                       AND  CS.IdTipoSeg    = C.IdTipoSeg
+                       AND  CS.CodEmpresa   = C.CodEmpresa
+                       AND  CS.CodCia       = C.CodCia
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
+                       AND  C.IDetPol       = nIdetpol
+                       AND  C.IdPoliza      = pnIdPoliza
+                       AND  C.CodCia        = pnCodCia
+                       AND  C.IdRamoReal    = pcIdRamoReal
+                       --HAVING SUM(NVL(C.Prima_Local,0)) != 0
+                     UNION ALL
+                     SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
+                     FROM   COBERT_ACT_ASEG         C
+                        ,   COBERTURAS_DE_SEGUROS  CS
+                     WHERE  CS.CodCobert    = C.CodCobert
+                       AND  CS.PlanCob      = C.PlanCob
+                       AND  CS.IdTipoSeg    = C.IdTipoSeg
+                       AND  CS.CodEmpresa   = C.CodEmpresa
+                       AND  CS.CodCia       = C.CodCia
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
+                       AND  C.IDetPol       = nIdetpol
+                       AND  C.IdPoliza      = pnIdPoliza
+                       AND  C.CodCia        = pnCodCia
+                       AND  C.IdRamoReal    = pcIdRamoReal
+                      -- HAVING SUM(NVL(C.Prima_Local,0)) != 0
+                     GROUP BY C.IdRamoReal );
+         EXCEPTION
+         WHEN OTHERS THEN
+             SELECT SUM(Prima_local) Prima_local
+            INTO nPrimaTotSub
+            FROM (
+
+                SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
+                FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
+                WHERE CS.CodCobert    = C.CodCobert
+                AND CS.PlanCob      = C.PlanCob
+                AND CS.IdTipoSeg    = C.IdTipoSeg
+                AND CS.CodEmpresa   = C.CodEmpresa
+                AND CS.CodCia       = C.CodCia
+                AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')
+                AND C.IdPoliza      = pnIdPoliza
+                AND C.CodCia        = pnCodCia
+                AND C.IdetPol       = 1
+                AND  C.IdRamoReal   = pcIdRamoReal
+                --HAVING SUM(NVL(C.Prima_Local,0)) != 0
+                UNION
+                SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
+                FROM COBERT_ACT_ASEG C, COBERTURAS_DE_SEGUROS CS
+                WHERE CS.CodCobert  = C.CodCobert
+                AND CS.PlanCob      = C.PlanCob
+                AND CS.IdTipoSeg    = C.IdTipoSeg
+                AND CS.CodEmpresa   = C.CodEmpresa
+                AND CS.CodCia       = C.CodCia
+                AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')
+                AND C.IdPoliza      = pnIdPoliza
+                AND C.CodCia        = pnCodCia
+                AND C.IdetPol       = 1
+                AND  C.IdRamoReal   = pcIdRamoReal
+               -- HAVING SUM(NVL(C.Prima_Local,0)) != 0
+
+            );
+         END;
+
+          BEGIN       
+            SELECT SUM(Prima_Local) Prima_Local
+             INTO nPrimaTotal
+             FROM (
+            SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
+                FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
+               WHERE CS.CodCobert    = C.CodCobert
+                 AND CS.PlanCob      = C.PlanCob
+                 AND CS.IdTipoSeg    = C.IdTipoSeg
+                 AND CS.CodEmpresa   = C.CodEmpresa
+                 AND CS.CodCia       = C.CodCia
+                 AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')
+                 AND C.IdPoliza      = pnIdPoliza
+                 AND C.CodCia        = pnCodCia
+                 AND C.IdetPol       = nIdetpol
+                 --HAVING SUM(NVL(C.Prima_Local,0)) != 0
+               UNION
+              SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
+                FROM COBERT_ACT_ASEG C, COBERTURAS_DE_SEGUROS CS
+               WHERE CS.CodCobert    = C.CodCobert
+                 AND CS.PlanCob      = C.PlanCob
+                 AND CS.IdTipoSeg    = C.IdTipoSeg
+                 AND CS.CodEmpresa   = C.CodEmpresa
+                 AND CS.CodCia       = C.CodCia
+                 AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')
+                 AND C.IdPoliza      = pnIdPoliza
+                 AND C.CodCia        = pnCodCia
+                 AND C.IdetPol       = nIdetpol
+                 --HAVING SUM(NVL(C.Prima_Local,0)) != 0
+                 );
+       EXCEPTION
+          WHEN OTHERS THEN
+             SELECT SUM(Prima_Local) Prima_Local
+             INTO nPrimaTotal
+             FROM (
+            SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
+                FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
+               WHERE CS.CodCobert    = C.CodCobert
+                 AND CS.PlanCob      = C.PlanCob
+                 AND CS.IdTipoSeg    = C.IdTipoSeg
+                 AND CS.CodEmpresa   = C.CodEmpresa
+                 AND CS.CodCia       = C.CodCia
+                 AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')
+                 AND C.IdPoliza      = pnIdPoliza
+                 AND C.CodCia        = pnCodCia
+                 AND C.IdetPol       = 1
+               UNION
+              SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
+                FROM COBERT_ACT_ASEG C, COBERTURAS_DE_SEGUROS CS
+               WHERE CS.CodCobert    = C.CodCobert
+                 AND CS.PlanCob      = C.PlanCob
+                 AND CS.IdTipoSeg    = C.IdTipoSeg
+                 AND CS.CodEmpresa   = C.CodEmpresa
+                 AND CS.CodCia       = C.CodCia
+                 AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')
+                 AND C.IdPoliza      = pnIdPoliza
+                 AND C.CodCia        = pnCodCia
+                 AND C.IdetPol       = 1);
+       END;   
+      nPorcentaje := nPrimaTotSub / NVL(nPrimaTotal,0.01);
+   END IF;
+   RETURN (nPorcentaje);
+
+EXCEPTION
+   WHEN OTHERS THEN
+      nPorcentaje := 0;
+      RAISE_APPLICATION_ERROR(-20001,'Error al Calcular el Porcentaje : '||pnIdPoliza||sqlerrm);
+
+END FN_FACT_PRORRATEO_RAMO;
+
+/*
+FUNCTION FUN_FACT_PRORRATEO(pnCodCia           COBERT_ACT.CodCia%TYPE
+                           ,pnIdPoliza         COBERT_ACT.IdPoliza%TYPE
+                           ,pnIDetPol          COBERT_ACT.IDetPol%TYPE
+                           ,pnIdEndoso         COBERT_ACT.IDENDOSO%TYPE
+                           ,pcIdRamoReal       COBERT_ACT.IdRamoReal%TYPE) RETURN NUMBER IS
+
+nPorcentaje  NUMBER;
+nIdEndoso    ENDOSOS.IDENDOSO%TYPE;
+cTipoEndoso  ENDOSOS.TIPOENDOSO%TYPE;
+BEGIN
+   BEGIN
+     SELECT E.TIPOENDOSO
+     INTO   cTipoEndoso
+     FROM   ENDOSOS E
+     WHERE  E.IDENDOSO = pnIdEndoso;
+   EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+       nIdEndoso := 0;
+       cTipoEndoso := NULL; -- POLIZA INICIAL
+   END;
+
+   IF cTipoEndoso IN ('RSS','EAD') THEN
+     nIdEndoso := 0;
+   ELSE
+     nIdEndoso := pnIdEndoso;
+   END IF;
+
+   IF nPorcentaje IS NULL THEN
+      nPorcentaje := 1;
+   ELSE
+      BEGIN
+            SELECT Porcentaje / 100
+            INTO   nPorcentaje
+            FROM   ( SELECT ((SUM(C.Prima_Local) * 100) / nPrimaTotalLocal)  Porcentaje
+                     FROM   COBERT_ACT             C
+                        ,   COBERTURAS_DE_SEGUROS  CS
+                     WHERE  CS.CodCobert    = C.CodCobert
+                       AND  CS.PlanCob      = C.PlanCob
+                       AND  CS.IdTipoSeg    = C.IdTipoSeg
+                       AND  CS.CodEmpresa   = C.CodEmpresa
+                       AND  CS.CodCia       = C.CodCia
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
+                       AND  C.IDetPol       = pnIDetPol
+                       AND  C.IdPoliza      = pnIdPoliza
+                       AND  C.CodCia        = pnCodCia
+                       AND  C.IdEndoso      = pnIdEndoso
+                       AND  C.IdRamoReal    = pcIdRamoReal
+                     GROUP BY C.IdRamoReal
+                     UNION ALL
+                     SELECT ((SUM(C.Prima_Local) * 100) / nPrimaTotalLocal)  Porcentaje
+                     FROM   COBERT_ACT_ASEG         C
+                        ,   COBERTURAS_DE_SEGUROS  CS
+                     WHERE  CS.CodCobert    = C.CodCobert
+                       AND  CS.PlanCob      = C.PlanCob
+                       AND  CS.IdTipoSeg    = C.IdTipoSeg
+                       AND  CS.CodEmpresa   = C.CodEmpresa
+                       AND  CS.CodCia       = C.CodCia
+                       AND  C.StsCobertura IN ('EMI','SOL','XRE','ANU') --MLJS 04/03/2024 SE AGREGA LA SITUACIÓN ANU
+                       AND  C.IDetPol       = pnIDetPol
+                       AND  C.IdPoliza      = pnIdPoliza
+                       AND  C.IdEndoso      = pnIdEndoso
+                       AND  C.CodCia        = pnCodCia
+                       AND  C.IdRamoReal    = pcIdRamoReal
+                     GROUP BY C.IdRamoReal );
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              nPorcentaje := 1;
+         END;
+      END IF;
+      --
+      RETURN nPorcentaje;
+   EXCEPTION
+   WHEN OTHERS THEN
+        nPorcentaje := 0;
+        RETURN nPorcentaje;
+END FUN_FACT_PRORRATEO;
+*/
 END OC_FACTURAR;
+/

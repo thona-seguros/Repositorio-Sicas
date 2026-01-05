@@ -401,7 +401,7 @@ CURSOR CPTO_PRIMAS_Q IS
       AND D.CodCia            = nCodCia
       AND cTpEndoso           = 'NSS'
     GROUP BY CS.CodCpto;
-    
+
 CURSOR CPTO_ASIST_Q IS
    SELECT T.CodCptoServicio, SUM(A.MontoAsistLocal) MontoAsistLocal,
           SUM(A.MontoAsistMoneda) MontoAsistMoneda
@@ -511,7 +511,7 @@ BEGIN
          nMtoPago       := NVL(nPrimaLocal,0) / nNumPagos;
          nMtoPagoMoneda := NVL(nPrimaMoneda,0) /nNumPagos;
       END IF;
-      
+
       --MLJS 03/09/2025 SE OBTIENEN LOS DATOS DEL AGENTE
       BEGIN
         SELECT ADP.Cod_Agente, ADP.Porc_Comision
@@ -530,7 +530,7 @@ BEGIN
             RAISE_APPLICATION_ERROR (-20100,'Existe un error de otros');
       END;
       --MLJS 03/09/2025 SE OBTIENEN LOS DATOS DEL AGENTE
-      
+
       nPrimaRest := NVL(nPrimaLocal,0) - NVL(nMtoPago,0);
       nMtoComisi := (nMtoPago * X.PorcComis / 100) * (nPorc_Comision/100);
       nTotPrimas := NVL(nTotPrimas,0) + NVL(nMtoPago,0);

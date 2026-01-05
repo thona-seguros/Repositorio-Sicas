@@ -24,6 +24,10 @@ CREATE OR REPLACE PACKAGE SICAS_OC.oc_detalle_notas_de_credito IS
 
   FUNCTION MONTO_CONCEPTO_FACT_ELECT(nIdNcr NUMBER, cCodCpto VARCHAR2) RETURN NUMBER;
 
+  --MLJS 18/09/2025 SE AGREGA PROGRAMACION PARA MULTIRAMO
+  FUNCTION FUN_MONTO_PRIMAS(nIdTransaccion NUMBER) RETURN NUMBER; 
+
+
 END OC_DETALLE_NOTAS_DE_CREDITO;
 /
 CREATE OR REPLACE PACKAGE BODY SICAS_OC.oc_detalle_notas_de_credito IS
@@ -50,7 +54,7 @@ BEGIN
                AND CodCpto  = cCodCpto;
          END;
       WHEN OTHERS THEN
-         RAISE_APPLICATION_ERROR(-20225,'Error al Insertar Detalle Nota de Crédito No.: '||TRIM(TO_CHAR(nIdNcr))|| ' ' ||SQLERRM);
+         RAISE_APPLICATION_ERROR(-20225,'Error al Insertar Detalle Nota de Cr dito No.: '||TRIM(TO_CHAR(nIdNcr))|| ' ' ||SQLERRM);
    END ;
    BEGIN
        SELECT CodCia
@@ -126,13 +130,13 @@ BEGIN
     WHEN NO_DATA_FOUND THEN
          cIndMultiRamo := 'N';
     END;
-   
-    -- Actualiza la Base de Prima por si Aplico Retención
+
+    -- Actualiza la Base de Prima por si Aplico Retenci n
    SELECT NVL(SUM(Monto_Det_Local),0), NVL(SUM(Monto_Det_Moneda),0)
      INTO nMtoDetNcrLocal, nMtoDetNcrMoneda
      FROM DETALLE_NOTAS_DE_CREDITO
     WHERE IdNcr   = nIdNcr;
-    
+
    FOR Y IN CPTO_PLAN_Q LOOP
       BEGIN
          SELECT 'S'
@@ -437,6 +441,20 @@ BEGIN
       AND D.CodCpto                 = CC.CodConcepto;
    RETURN(nMonto_Det_Moneda);
 END MONTO_CONCEPTO_FACT_ELECT;
+
+--MLJS 18/09/2025 SE AGREGA PROGRAMACION PARA MULTIRAMO
+ FUNCTION FUN_MONTO_PRIMAS(nIdTransaccion NUMBER) RETURN NUMBER IS
+    nMonto_Det_Local    DETALLE_NOTAS_DE_CREDITO.Monto_Det_Local%TYPE;
+    BEGIN
+       SELECT NVL(SUM(Monto_Det_Local),0)
+         INTO nMonto_Det_Local
+         FROM DETALLE_NOTAS_DE_CREDITO DN, NOTAS_DE_CREDITO NC
+        WHERE DN.IndCptoPrima      = 'S'
+          AND DN.IdNcr            = NC.IdNcr
+          AND (NC.IdTransaccion    = nIdTransaccion
+           OR  NC.IdTransaccionAnu = nIdTransaccion);
+       RETURN(nMonto_Det_Local);
+    END FUN_MONTO_PRIMAS;
 
 END OC_DETALLE_NOTAS_DE_CREDITO;
 /
