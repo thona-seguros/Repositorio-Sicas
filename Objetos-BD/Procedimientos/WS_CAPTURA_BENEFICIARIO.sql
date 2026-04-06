@@ -1,0 +1,117 @@
+create or replace PROCEDURE SICAS_OC.WS_CAPTURA_BENEFICIARIO (
+    P_IDSINIESTRO         IN NUMBER DEFAULT NULL,
+    P_IDPOLIZA            IN NUMBER,
+    P_CERTIFICADO         IN NUMBER DEFAULT NULL,
+    P_COD_ASEGURADO       IN NUMBER,
+    P_NOMBRE              IN VARCHAR2,
+    P_APELLIDO_PATERNO    IN VARCHAR2,
+    P_APELLIDO_MATERNO    IN VARCHAR2,
+    P_FECNAC              IN DATE,
+    P_TIPO_ID_TRIBUTARIO  IN VARCHAR2,
+    P_NUM_DOC_TRIBUTARIO  IN VARCHAR2,
+    P_SEXO                IN VARCHAR2,
+    P_DIRECCION           IN VARCHAR2,
+    P_EMAIL               IN VARCHAR2,
+    P_ENT_FINANCIERA      IN VARCHAR2,
+    P_NUM_CUENTA_BANCARIA IN VARCHAR2,
+    P_CUENTA_CLAVE        IN VARCHAR2,
+    P_TELEFONO_LOCAL      IN VARCHAR2,
+    P_TELEFONO            IN VARCHAR2,
+    P_INDAPLICAISR        IN VARCHAR2,
+    P_CodCia              IN NUMBER,
+    P_CodEmpresa          IN NUMBER,
+    P_NBENEF              OUT NUMBER,
+    P_MENSAJE             OUT VARCHAR2
+) AS
+BEGIN
+    -- Validaciones básicas
+    IF P_IDPOLIZA IS NULL THEN
+        P_MENSAJE := 'El ID de la póliza es obligatorio.';
+        RAISE_APPLICATION_ERROR(-20002, P_MENSAJE);
+    END IF;
+    -- Validación de presencia de IDSINIESTRO o CERTIFICADO
+    IF P_IDSINIESTRO IS NULL AND P_CERTIFICADO IS NULL THEN
+        P_MENSAJE := 'Debe proporcionar IDSINIESTRO o CERTIFICADO (IDETPOL).';
+        RAISE_APPLICATION_ERROR(-20001, P_MENSAJE);
+    END IF;
+    IF P_IDSINIESTRO IS NOT NULL AND P_CERTIFICADO IS NOT NULL THEN
+        P_MENSAJE := 'No debe proporcionar ambos: IDSINIESTRO y CERTIFICADO.';
+        RAISE_APPLICATION_ERROR(-20000, P_MENSAJE);
+    END IF;
+    IF P_COD_ASEGURADO IS NULL THEN
+        P_MENSAJE := 'El código del asegurado es obligatorio.';
+        RAISE_APPLICATION_ERROR(-20003, P_MENSAJE);
+    END IF;
+    IF P_NOMBRE IS NULL OR P_APELLIDO_PATERNO IS NULL THEN
+        P_MENSAJE := 'El nombre y apellido paterno son obligatorios.';
+        RAISE_APPLICATION_ERROR(-20004, P_MENSAJE);
+    END IF;
+    IF P_FECNAC IS NULL THEN
+        P_MENSAJE := 'La fecha de nacimiento es obligatoria.';
+        RAISE_APPLICATION_ERROR(-20005, P_MENSAJE);
+    END IF;
+    IF P_TIPO_ID_TRIBUTARIO IS NULL OR P_NUM_DOC_TRIBUTARIO IS NULL THEN
+        P_MENSAJE := 'El tipo y número de documento tributario son obligatorios.';
+        RAISE_APPLICATION_ERROR(-20006, P_MENSAJE);
+    END IF;
+    IF P_IDSINIESTRO IS NOT NULL THEN
+        -- Alta en BENEF_SIN
+        BEGIN
+            SELECT NVL(MAX(BENEF), 0) + 1
+            INTO P_NBENEF
+            FROM BENEF_SIN
+            WHERE IDSINIESTRO = P_IDSINIESTRO;
+        EXCEPTION
+            WHEN OTHERS THEN
+                P_NBENEF := 1;
+        END;
+        INSERT INTO BENEF_SIN (
+            IDSINIESTRO, IDPOLIZA, COD_ASEGURADO, BENEF, FECALTA, FECESTADO,
+            Nombre, Apellido_Paterno, Apellido_Materno, FecNac, Tipo_Id_Tributario,
+            Num_Doc_Tributario, CodParent, Estado, Sexo, PorcePart, Direccion,
+            EMail, Ent_Financiera, NumCuentaBancaria, Cuenta_Clave,
+            TELEFONO_LOCAL, TELEFONO, FECFIRMARECLAMACION, INDAPLICAISR,
+            CODCIA, CODEMPRESA
+        ) VALUES (
+            P_IDSINIESTRO, P_IDPOLIZA, P_COD_ASEGURADO, P_NBENEF, SYSDATE, SYSDATE,
+            P_NOMBRE, P_APELLIDO_PATERNO, P_APELLIDO_MATERNO, P_FECNAC, P_TIPO_ID_TRIBUTARIO,
+            P_NUM_DOC_TRIBUTARIO, '0001', 'ACT', P_SEXO, 100, P_DIRECCION,
+            P_EMAIL, P_ENT_FINANCIERA, P_NUM_CUENTA_BANCARIA, P_CUENTA_CLAVE,
+            P_TELEFONO_LOCAL, P_TELEFONO, TRUNC(SYSDATE), P_INDAPLICAISR,
+            NVL(P_CodCia, 1), NVL(P_CodEmpresa, 1)
+        );
+    ELSE
+        -- Alta en BENEFICIARIO
+        BEGIN
+            SELECT NVL(MAX(BENEF), 0) + 1
+            INTO P_NBENEF
+            FROM BENEFICIARIO
+            WHERE IDPOLIZA = P_IDPOLIZA AND COD_ASEGURADO = P_COD_ASEGURADO;
+        EXCEPTION
+            WHEN OTHERS THEN
+                P_NBENEF := 1;
+        END;
+        INSERT INTO BENEFICIARIO (
+            IDPOLIZA, IDETPOL, COD_ASEGURADO, BENEF, NOMBRE, PORCEPART,
+            CODPARENT, ESTADO, SEXO, FECESTADO, FECALTA, FECNAC, INDIRREVOCABLE
+        ) VALUES (
+            P_IDPOLIZA, P_CERTIFICADO, P_COD_ASEGURADO, P_NBENEF, 
+            P_NOMBRE || ' ' || P_APELLIDO_PATERNO || ' ' || P_APELLIDO_MATERNO,
+            100, '0001', 'ACT', P_SEXO, SYSDATE, SYSDATE, P_FECNAC, 'N'
+        );
+    END IF;
+    COMMIT;
+    P_MENSAJE := '';
+EXCEPTION
+    WHEN OTHERS THEN
+        P_MENSAJE := 'Error al capturar beneficiario: ' || SQLERRM;
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20007, P_MENSAJE);
+END WS_CAPTURA_BENEFICIARIO;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM WS_CAPTURA_BENEFICIARIO FOR SICAS_OC.WS_CAPTURA_BENEFICIARIO
+/
+
+GRANT EXECUTE ON SICAS_OC.WS_CAPTURA_BENEFICIARIO TO PUBLIC
+/

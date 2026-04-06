@@ -1,9 +1,12 @@
-create or replace PACKAGE OC_ASEGURADO_SERVICIOS_WEB AS
+create or replace PACKAGE SICAS_OC.OC_ASEGURADO_SERVICIOS_WEB AS
+   --
+   -- MASP Servicios Emisión Masiva Vida   25/03/2025
+   --      Eliminar al inicio del proceso los asegurados de los certificados de la póliza que envien, el XML debe contener todos los asegurados a cargar
    PROCEDURE CARGA_ASEGURADOS( nCodCia      NUMBER
                              , nCodEmpresa  NUMBER
                              , nIdPoliza    NUMBER
                              , xAsegurados  XMLTYPE );
-
+   --
 FUNCTION LISTADO_ASEGURADO (nCodCia         IN NUMBER,  nCodEmpresa         IN NUMBER,  nIdPoliza           IN NUMBER,  nCodAgente          IN NUMBER,
                             nLimInferior    IN NUMBER,  nLimSuperior        IN NUMBER,  nTotRegs            OUT NUMBER, nCodAgenteSesion    IN NUMBER,       
                             nNivel          IN NUMBER,  cNombreContratante  IN VARCHAR2,cApePatContratante 	IN VARCHAR2,
@@ -41,7 +44,10 @@ RETURN XMLTYPE;
 
 END OC_ASEGURADO_SERVICIOS_WEB;
 /
-create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
+create or replace PACKAGE BODY SICAS_OC.OC_ASEGURADO_SERVICIOS_WEB AS
+   --
+   -- MASP Servicios Emisión Masiva Vida   25/03/2025
+   --      Eliminar al inicio del proceso los asegurados de los certificados de la póliza que envien, el XML debe contener todos los asegurados a cargar
    PROCEDURE CARGA_ASEGURADOS( nCodCia      NUMBER
                              , nCodEmpresa  NUMBER
                              , nIdPoliza    NUMBER
@@ -81,7 +87,7 @@ create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
       nIdEndoso              ENDOSOS.IdEndoso%TYPE;
       cStsDetalle            DETALLE_POLIZA.StsDetalle%TYPE;
       nIdSolicitud           SOLICITUD_EMISION.IdSolicitud%TYPE;
-
+      --
       nSumaAsegurada         COBERT_ACT_ASEG.SumaAseg_Local%TYPE := 0;
       nIdCotizacion          COTIZACIONES.IdCotizacion%TYPE;
       nIDetCotizacion        COTIZACIONES_DETALLE.IDetCotizacion%TYPE;
@@ -92,29 +98,43 @@ create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
       --
       cIndCotizacionWeb      COTIZACIONES.IndCotizacionWeb%TYPE;
       cIndCotizacionBaseWeb  COTIZACIONES.IndCotizacionBaseWeb%TYPE;
-      --      
+      -- 
+      nIDetPolEli            DETALLE_POLIZA.IdetPol%TYPE;
+      cIndPolCol             POLIZAS.IndPolCol%TYPE;
+      --
+      TYPE t_IDetPol IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+      v_IDetPol              t_IDetPol;
+      cEliminar              VARCHAR2(1) := 'S';
+      nIndice                NUMBER      := 1;
+      --
+	   nNuevaSumAseg          COBERT_ACT_ASEG.SumaAseg_Local%TYPE := 0;
       CURSOR cAseg IS
          WITH
          DET_POL_DATA AS ( SELECT DET.*
-                             FROM   XMLTABLE('/DATA'
-                                       PASSING xAsegurados
-                                          COLUMNS 
-                                             IDetPol        NUMBER(14)   PATH 'IDetPol',
-                                             ASEGURADOS     XMLTYPE      PATH 'ASEGURADOS') DET
-                           ),
+                             FROM XMLTABLE( '/DATA'
+                                            PASSING xAsegurados
+                                            COLUMNS 
+                                               IDetPol     NUMBER(14)  PATH 'IDetPol',
+                                               ASEGURADOS  XMLTYPE     PATH 'ASEGURADOS'
+                                          ) DET
+                         ),
          ASEG_DATA AS ( SELECT IDetPol,
                                ASG.*
                           FROM DET_POL_DATA D,
-                               XMLTABLE('/ASEGURADOS'
-                                    PASSING D.ASEGURADOS
-                                       COLUMNS 
-                                          Nombre            VARCHAR2(100)  PATH 'Nombre',
-                                          ApellidoPaterno   VARCHAR2(100)  PATH 'ApellidoPaterno',
-                                          ApellidoMaterno   VARCHAR2(100)  PATH 'ApellidoMaterno',
-                                          Genero            VARCHAR2(1)    PATH 'Genero',
-                                          FecNacimiento     VARCHAR2(10)   PATH 'FecNacimiento'
-                                          ) ASG
-                           )                     
+                               XMLTABLE( '/ASEGURADOS'
+                                         PASSING D.ASEGURADOS
+                                         COLUMNS 
+                                            Nombre            VARCHAR2(100)  PATH 'Nombre',
+                                            ApellidoPaterno   VARCHAR2(100)  PATH 'ApellidoPaterno',
+                                            ApellidoMaterno   VARCHAR2(100)  PATH 'ApellidoMaterno',
+                                            Genero            VARCHAR2(1)    PATH 'Genero',
+                                            FecNacimiento     VARCHAR2(10)   PATH 'FecNacimiento',
+                                            SalarioMensual    NUMBER(28,2)   PATH 'SalarioMensual',
+                                            VecesSalario      NUMBER(10,0)   PATH 'VecesSalario',
+                                            SumAsegFija       NUMBER(18,2)   PATH 'SumAsegFija',
+                                            RFC               VARCHAR2(20)   PATH 'RFC'
+                                       ) ASG
+                      )
          SELECT * FROM ASEG_DATA;  
       --
       CURSOR cCoberturas IS
@@ -122,222 +142,336 @@ create or replace PACKAGE BODY OC_ASEGURADO_SERVICIOS_WEB AS
                 DeducibleCobMoneda, SalarioMensual  , VecesSalario     , SumaaSegCalculada , Edad_Minima  , Edad_Maxima   , Edad_Exclusion   ,
                 SumaAseg_Minima   , SumaAseg_Maxima , PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada, Franquiciaingresado
          FROM   COTIZACIONES_COBERT_MASTER
-         WHERE  CodCia       = nCodCia
-           AND  CodEmpresa   = nCodEmpresa
-           AND  IdCotizacion = nIdCotizacion;
+         WHERE  CodCia         = nCodCia
+           AND  CodEmpresa     = nCodEmpresa
+           AND  IdCotizacion   = nIdCotizacion
+           AND  IDetCotizacion = nIDetCotizacion;
+      --
+      CURSOR cCoberturas2 IS
+         SELECT CodCobert, SalarioMensual, VecesSalario, SumaIngresada
+         FROM   COTIZACIONES_COBERT_MASTER
+         WHERE  CodCia         = nCodCia
+           AND  CodEmpresa     = nCodEmpresa
+           AND  IdCotizacion   = nIdCotizacion
+           AND  IDetCotizacion = nIDetCotizacion;
       --
       CURSOR cCobertActAseg IS
          SELECT DISTINCT IDetPol, Cod_Asegurado, IdEndoso
          FROM   COBERT_ACT_ASEG
          WHERE  CodCia     = nCodCia
            AND  CodEmpresa = nCodEmpresa
-           AND  IdPoliza   = nIdPoliza;
+           AND  IdPoliza   = nIdPoliza
+           AND  IDetPol    = nIDetPol;
+      --
+      CURSOR cCobertActAseg_2 IS
+         SELECT DISTINCT IDetPol, IdEndoso
+         FROM   COBERT_ACT_ASEG
+         WHERE  CodCia     = nCodCia
+           AND  CodEmpresa = nCodEmpresa
+           AND  IdPoliza   = nIdPoliza
+           AND  IDetPol    = nIDetPol;
    BEGIN
+      --Información de la Póliza
+      BEGIN
+         SELECT StsPoliza , Cod_Moneda, FecIniVig , FecFinVig , Num_Cotizacion, IndPolCol
+         INTO   cStsPoliza, cCodMoneda, dFecIniVig, dFecFinVig, nIdCotizacion , cIndPolCol
+         FROM   POLIZAS
+         WHERE  IdPoliza   = nIdPoliza
+           AND  CodCia     = nCodCia
+           AND  CodEmpresa = CodEmpresa;
+      EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+           RAISE_APPLICATION_ERROR(-20225, 'POLIZA NO EXISTE: ' || nIdPoliza);
+      END;
+      --
+      --Información de la Cotización
+      BEGIN
+         SELECT NVL(IndCotizacionWeb, 'N'), NVL(IndCotizacionBaseWeb, 'N')
+         INTO   cIndCotizacionWeb         , cIndCotizacionBaseWeb
+         FROM   COTIZACIONES
+         WHERE  CodCia       = nCodCia
+           AND  IdPoliza     = nIdPoliza
+           AND  IdCotizacion = nIdCotizacion;
+      EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+           RAISE_APPLICATION_ERROR(-20225, 'COTIZACION NO EXISTE: ' || nIdCotizacion);
+      END;
+      --
+      -- Rutina para eliminar los asegurados relacionados al certificado bajo los criterios establecidos
+      FOR x IN cAseg LOOP
+          nIDetPolEli := x.IDetPol;
+          --
+          BEGIN
+             SELECT StsDetalle
+             INTO   cStsDetalle
+             FROM   DETALLE_POLIZA
+             WHERE  CodCia     = nCodCia
+               AND  CodEmpresa = nCodEmpresa
+               AND  IdPoliza   = nIdpoliza
+               AND  IDetPol    = nIDetPolEli;
+          EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+               RAISE_APPLICATION_ERROR(-20225, 'DETALLE POLIZA NO EXISTE: '|| nIdPoliza || ' - ' || nIDetPolEli);
+          END;
+          --
+          cEliminar := 'S';
+          FOR i IN 1..v_IDetPol.COUNT LOOP
+              IF nIDetPolEli = v_IDetPol(i) THEN
+                 cEliminar := 'N';
+              END IF;
+          END LOOP;
+          --
+          --Valido que sea suceptible de eliminarse (cEliminar = 'S') además de que la Póliza y el Certificado estén en Estatus de Solicitud, que la Póliza sea Colectiva y que
+          --la Cotización venga de Plataforma Digital para proceder a eliminar los asegurados asociados a ese Certificado y todas las Coberturas asociadas a esos Asegurados
+          IF cEliminar = 'S' AND cStsPoliza = 'SOL' AND cStsDetalle = 'SOL' AND cIndPolCol = 'S' AND cIndCotizacionWeb = 'S' AND cIndCotizacionBaseWeb = 'N' THEN
+             DELETE COBERT_ACT_ASEG
+             WHERE  IdPoliza = nIdPoliza
+               AND  IDetPol  = nIDetPolEli;
+             --
+             DELETE ASEGURADO_CERTIFICADO
+             WHERE  IdPoliza = nIdPoliza
+               AND  IDetPol  = nIDetPolEli;
+             --
+             v_IDetPol(nIndice) := nIDetPolEli;
+             nIndice            := nIndice + 1;
+          END IF;
+      END LOOP;
+      --
       FOR W IN cAseg LOOP
-         nIDetPol          := W.IDetPol;
-         cTipoDocIdentAseg := 'RFC';
-         cNumDocIdentAseg  := OC_PERSONA_NATURAL_JURIDICA.NUMERO_TRIBUTARIO_RFC(W.Nombre, W.ApellidoPaterno, W.ApellidoMaterno, TO_DATE(W.FecNacimiento, 'DD/MM/YYYY'), 'FISICA');
-         IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(cTipoDocIdentAseg, cNumDocIdentAseg) = 'N' THEN
-            OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA(cTipoDocIdentAseg,                       --cTipo_Doc_Identificacion
-                                                         cNumDocIdentAseg,                        --cNum_Doc_Identificacion
-                                                         W.Nombre,                                --cNombre
-                                                         W.ApellidoPaterno,                       --cApellidoPat
-                                                         W.ApellidoMaterno,                       --cApellidoMat
-                                                         NULL,                                    --cApeCasada
-                                                         W.Genero,                                --cSexo
-                                                         NULL,                                    --cEstadoCivil
-                                                         TO_DATE(W.FecNacimiento, 'DD/MM/YYYY'),  --dFecNacimiento
-                                                         NULL,                                    --cDirecRes
-                                                         NULL,                                    --cNumInterior
-                                                         NULL,                                    --cNumExterior
-                                                         NULL,                                    --cCodPaisRes
-                                                         NULL,                                    --cCodProvRes
-                                                         NULL,                                    --cCodDistRes       
-                                                         NULL,                                    --cCodCorrRes
-                                                         NULL,                                    --cCodPosRes
-                                                         NULL,                                    --cCodColonia
-                                                         NULL,                                    --cTelRes
-                                                         NULL,                                    --cEmail
-                                                         NULL                                     --cLadaTelRes
+          nIDetPol          := W.IDetPol;
+          cTipoDocIdentAseg := 'RFC';
+          --
+          IF W.RFC IS NOT NULL THEN
+             cNumDocIdentAseg := W.RFC;
+          ELSE
+             cNumDocIdentAseg := OC_PERSONA_NATURAL_JURIDICA.NUMERO_TRIBUTARIO_RFC(W.Nombre, W.ApellidoPaterno, W.ApellidoMaterno, TO_DATE(W.FecNacimiento, 'DD/MM/YYYY'), 'FISICA');
+          END IF;
+          --
+          IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(cTipoDocIdentAseg, cNumDocIdentAseg) = 'N' THEN
+             OC_PERSONA_NATURAL_JURIDICA.INSERTAR_PERSONA( cTipoDocIdentAseg,                       --cTipo_Doc_Identificacion
+                                                           cNumDocIdentAseg,                        --cNum_Doc_Identificacion
+                                                           W.Nombre,                                --cNombre
+                                                           W.ApellidoPaterno,                       --cApellidoPat
+                                                           W.ApellidoMaterno,                       --cApellidoMat
+                                                           NULL,                                    --cApeCasada
+                                                           W.Genero,                                --cSexo
+                                                           NULL,                                    --cEstadoCivil
+                                                           TO_DATE(W.FecNacimiento, 'DD/MM/YYYY'),  --dFecNacimiento
+                                                           NULL,                                    --cDirecRes
+                                                           NULL,                                    --cNumInterior
+                                                           NULL,                                    --cNumExterior
+                                                           NULL,                                    --cCodPaisRes
+                                                           NULL,                                    --cCodProvRes
+                                                           NULL,                                    --cCodDistRes       
+                                                           NULL,                                    --cCodCorrRes
+                                                           NULL,                                    --cCodPosRes
+                                                           NULL,                                    --cCodColonia
+                                                           NULL,                                    --cTelRes
+                                                           NULL,                                    --cEmail
+                                                           NULL                                     --cLadaTelRes
                                                          );
-
-            UPDATE PERSONA_NATURAL_JURIDICA
-               SET Tipo_Persona        = 'FISICA',
-                   Tipo_Id_Tributaria  = cTipoDocIdentAseg,
-                   Num_Tributario      = 'XAXX010101000'
-             WHERE Tipo_Doc_Identificacion   = cTipoDocIdentAseg
-               AND Num_Doc_Identificacion    = cNumDocIdentAseg;                                                      
-         END IF;
-         nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
-         IF nCod_Asegurado = 0 THEN
-            nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa,cTipoDocIdentAseg, cNumDocIdentAseg);
-         END IF;
-         nCodCliente := OC_CLIENTES.CODIGO_CLIENTE(cTipoDocIdentAseg, cNumDocIdentAseg);
-         IF nCodCliente = 0  THEN
-            nCodCliente    := OC_CLIENTES.INSERTAR_CLIENTE(cTipoDocIdentAseg,cNumDocIdentAseg);
-         END IF;
-         BEGIN
-            INSERT INTO CLIENTE_ASEG
-                  (CodCliente, Cod_Asegurado)
-            VALUES(nCodCliente, nCod_Asegurado);
-         EXCEPTION
-            WHEN DUP_VAL_ON_INDEX THEN
+             --
+             UPDATE PERSONA_NATURAL_JURIDICA
+                SET Tipo_Persona        = 'FISICA',
+                    Tipo_Id_Tributaria  = cTipoDocIdentAseg,
+                    Num_Tributario      = 'XAXX010101000'
+              WHERE Tipo_Doc_Identificacion   = cTipoDocIdentAseg
+                AND Num_Doc_Identificacion    = cNumDocIdentAseg;                                                      
+          END IF;
+          nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, cTipoDocIdentAseg, cNumDocIdentAseg);
+          IF nCod_Asegurado = 0 THEN
+             nCod_Asegurado := OC_ASEGURADO.INSERTAR_ASEGURADO(nCodCia, nCodEmpresa,cTipoDocIdentAseg, cNumDocIdentAseg);
+          END IF;
+          nCodCliente := OC_CLIENTES.CODIGO_CLIENTE(cTipoDocIdentAseg, cNumDocIdentAseg);
+          IF nCodCliente = 0  THEN
+             nCodCliente := OC_CLIENTES.INSERTAR_CLIENTE(cTipoDocIdentAseg,cNumDocIdentAseg);
+          END IF;
+          BEGIN
+             INSERT INTO CLIENTE_ASEG (CodCliente, Cod_Asegurado)
+             VALUES (nCodCliente, nCod_Asegurado);
+          EXCEPTION
+          WHEN DUP_VAL_ON_INDEX THEN
                NULL;
-         END;
-
-         BEGIN
-            SELECT StsPoliza, Cod_Moneda, FecIniVig ,FecFinVig, Num_Cotizacion
-              INTO cStsPoliza, cCodMoneda, dFecIniVig,dFecFinVig, nIdCotizacion
-              FROM POLIZAS
-             WHERE IdPoliza   = nIdPoliza
-               AND CodCia     = nCodCia
-               AND CodEmpresa = CodEmpresa;
-         EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-               RAISE_APPLICATION_ERROR(-20225,'POLIZA NO EXISTE: '|| nIdPoliza);
-         END;
-         BEGIN
-            SELECT IndSinAseg, StsDetalle, CodPlanPago, IdTipoSeg, PlanCob
-              INTO cIndSinAseg, cStsDetalle, cCodPlanPago, cIdTipoSeg, cPlanCob
-              FROM DETALLE_POLIZA
-             WHERE CodCia     = nCodCia
-               AND CodEmpresa = nCodEmpresa
-               AND IdPoliza   = nIdpoliza
-               AND IDetPol    = nIDetPol;
-         EXCEPTION
-            WHEN NO_DATA_FOUND THEN
+          END;
+          --
+          BEGIN
+             SELECT IndSinAseg, StsDetalle, CodPlanPago, IdTipoSeg, PlanCob
+               INTO cIndSinAseg, cStsDetalle, cCodPlanPago, cIdTipoSeg, cPlanCob
+               FROM DETALLE_POLIZA
+              WHERE CodCia     = nCodCia
+                AND CodEmpresa = nCodEmpresa
+                AND IdPoliza   = nIdpoliza
+                AND IDetPol    = nIDetPol;
+          EXCEPTION
+          WHEN NO_DATA_FOUND THEN
                RAISE_APPLICATION_ERROR(-20225,'DETALLE POLIZA NO EXISTE: '|| nIDetPol);
-         END;
-         cExiste        := OC_POLIZAS.EXISTE_POLIZA(nCodCia, nCodEmpresa, nIdpoliza);
-         nIdSolicitud   := OC_SOLICITUD_EMISION.SOLICITUD_POLIZA(nCodCia, nCodEmpresa, nIdPoliza);
-         nTasaCambio    := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
-         --
-         IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
-            IF cStsPoliza = 'SOL' OR cStsDetalle = 'SOL' THEN
-               --OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, 0);
-               nIdEndoso := 0;
-            ELSIF cStsPoliza = 'EMI' OR cStsDetalle = 'EMI' THEN
-               SELECT NVL(MAX(IdEndoso),0)
-                 INTO nIdEndoso
-                 FROM ENDOSOS
-                WHERE CodCia     = nCodCia
-                  AND IdPoliza   = nIdPoliza
-                  AND StsEndoso  = 'SOL';
-
-               IF NVL(nIdEndoso,0) = 0 THEN
-                  nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
-                  OC_ENDOSO.INSERTA (nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso,
-                                     'ESV', 'ENDO-' || TRIM(TO_CHAR(nIdPoliza)) || '-' || TRIM(TO_CHAR(nIdEndoso)),
-                                     dFecIniVig, dFecFinVig, cCodPlanPago, 0, 0, 0, '010', NULL);
-               END IF;
-            END IF;
-            OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndoso); --- se debe de quitar para produccion ARH
-         END IF;
-         nIDetCotizacion := nIDetPol;
-         BEGIN
-            SELECT NVL(D.IndEdadPromedio,'N'), NVL(D.IndCuotaPromedio,'N'), NVL(D.IndPrimaPromedio,'N')
-              INTO cIndEdadPromedio, cIndCuotaPromedio, cIndPrimaPromedio
-              FROM COTIZACIONES C, COTIZACIONES_DETALLE D
-             WHERE C.CodCia         = nCodCia
-               AND C.CodEmpresa     = nCodEmpresa
-               AND D.IdCotizacion   = nIdCotizacion
-               AND D.IDetCotizacion = nIDetCotizacion
-               AND C.CodCia         = D.CodCia
-               AND C.CodEmpresa     = D.CodEmpresa
-               AND C.IdCotizacion   = D.IdCotizacion;
-         EXCEPTION
-            WHEN NO_DATA_FOUND THEN
+          END;
+          cExiste        := OC_POLIZAS.EXISTE_POLIZA(nCodCia, nCodEmpresa, nIdpoliza);
+          nIdSolicitud   := OC_SOLICITUD_EMISION.SOLICITUD_POLIZA(nCodCia, nCodEmpresa, nIdPoliza);
+          nTasaCambio    := OC_GENERALES.TASA_DE_CAMBIO(cCodMoneda, TRUNC(SYSDATE));
+          --
+          IF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
+             IF cStsPoliza = 'SOL' OR cStsDetalle = 'SOL' THEN
+                --OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, 0);
+                nIdEndoso := 0;
+             ELSIF cStsPoliza = 'EMI' OR cStsDetalle = 'EMI' THEN
+                SELECT NVL(MAX(IdEndoso),0)
+                  INTO nIdEndoso
+                  FROM ENDOSOS
+                 WHERE CodCia     = nCodCia
+                   AND IdPoliza   = nIdPoliza
+                   AND StsEndoso  = 'SOL';
+                 --
+                IF NVL(nIdEndoso,0) = 0 THEN
+                   nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
+                   OC_ENDOSO.INSERTA( nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nIdEndoso,
+                                      'ESV', 'ENDO-' || TRIM(TO_CHAR(nIdPoliza)) || '-' || TRIM(TO_CHAR(nIdEndoso)),
+                                      dFecIniVig, dFecFinVig, cCodPlanPago, 0, 0, 0, '010', NULL);
+                END IF;
+             END IF;
+             OC_ASEGURADO_CERTIFICADO.INSERTA(nCodCia, nIdpoliza, nIDetPol, nCod_Asegurado, nIdEndoso); --- se debe de quitar para produccion ARH
+          END IF;
+          nIDetCotizacion := nIDetPol;
+          BEGIN
+             SELECT NVL(D.IndEdadPromedio,'N'), NVL(D.IndCuotaPromedio,'N'), NVL(D.IndPrimaPromedio,'N')
+               INTO cIndEdadPromedio, cIndCuotaPromedio, cIndPrimaPromedio
+               FROM COTIZACIONES C, COTIZACIONES_DETALLE D
+              WHERE C.CodCia         = nCodCia
+                AND C.CodEmpresa     = nCodEmpresa
+                AND D.IdCotizacion   = nIdCotizacion
+                AND D.IDetCotizacion = nIDetCotizacion
+                AND C.CodCia         = D.CodCia
+                AND C.CodEmpresa     = D.CodEmpresa
+                AND C.IdCotizacion   = D.IdCotizacion;
+          EXCEPTION
+          WHEN NO_DATA_FOUND THEN
                cIndEdadPromedio  := 'N';
                cIndCuotaPromedio := 'N';
                cIndPrimaPromedio := 'N';
-         END;
-
-         IF cIndEdadPromedio = 'N' AND cIndCuotaPromedio = 'N' AND cIndPrimaPromedio = 'N' THEN
-            IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA (nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
-               IF NVL(cIndSinAseg,'N') = 'N' THEN
-                  IF NVL(nIdSolicitud,0) = 0 THEN
-                     IF NVL(nIdCotizacion,0) = 0 THEN
-                        OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza,
-                                                             nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-                     ELSE
-                        GT_COTIZACIONES_COBERT_MASTER.CREAR_COBERTURAS_POLIZA(nCodCia, nCodEmpresa, nIdCotizacion, nIDetCotizacion, nIdPoliza, nIDetPol, nCod_Asegurado, 'S', nSumaAsegurada);
-                     END IF;
-                  ELSE
-                     OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-                     OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
-                  END IF;
-               ELSE
-                  nSuma := OC_ASEGURADO_CERTIFICADO.SUMA_ASEGURADO(nCodCia, nIdPoliza,nIdetPol,nCod_Asegurado,cCampo);
-                  OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS_SIN_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza, nIDetPol, nTasaCambio, nCod_Asegurado, nSuma);
-               END IF;
-               IF NVL(nIdEndoso,0) != 0 THEN
-                  UPDATE COBERT_ACT_ASEG
-                     SET IdEndoso = nIdEndoso
-                   WHERE CodCia        = nCodCia
-                     AND IdPoliza      = nIdPoliza
-                     AND IDetPol       = nIDetPol
-                     AND Cod_Asegurado = nCod_Asegurado;
-               END IF;
-            END IF;
-         END IF;
+          END;
+          --
+          IF cIndEdadPromedio = 'N' AND cIndCuotaPromedio = 'N' AND cIndPrimaPromedio = 'N' THEN
+             IF OC_COBERT_ACT_ASEG.EXISTE_COBERTURA (nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza, nIDetPol, nCod_Asegurado) = 'N' THEN
+                IF NVL(cIndSinAseg,'N') = 'N' THEN
+                   IF NVL(nIdSolicitud,0) = 0 THEN
+                      IF NVL(nIdCotizacion,0) = 0 THEN
+                         --
+                         -- MASP 20/02/2026 cambiamos el llamado de OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS para no tocar el proceso que se usa en SICAS y lo replicamos en 
+                         -- este Package con los cambios necesarios para SIGO
+                         THONAPI.FLUJO_EMISION_SIGO.CARGAR_COBERTURAS(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza,
+                                                              nIDetPol, nTasaCambio, nCod_Asegurado, NULL, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                      ELSE
+                         GT_COTIZACIONES_COBERT_MASTER.CREAR_COBERTURAS_POLIZA(nCodCia, nCodEmpresa, nIdCotizacion, nIDetCotizacion, nIdPoliza, nIDetPol, nCod_Asegurado, 'S', nSumaAsegurada);
+                      END IF;
+                   ELSE
+                      OC_SOLICITUD_COBERTURAS.TRASLADA_COBERTURAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                      OC_SOLICITUD_ASISTENCIAS.TRASLADA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdSolicitud, nIdPoliza, nIDetPol, nCod_Asegurado);
+                   END IF;
+                ELSE
+                   nSuma := OC_ASEGURADO_CERTIFICADO.SUMA_ASEGURADO(nCodCia, nIdPoliza,nIdetPol,nCod_Asegurado,cCampo);
+                   OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS_SIN_TARIFA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza, nIDetPol, nTasaCambio, nCod_Asegurado, nSuma);
+                END IF;
+                --
+                IF NVL(nIdEndoso,0) != 0 THEN
+                   UPDATE COBERT_ACT_ASEG
+                   SET    IdEndoso = nIdEndoso
+                   WHERE  CodCia        = nCodCia
+                     AND  IdPoliza      = nIdPoliza
+                     AND  IDetPol       = nIDetPol
+                     AND  Cod_Asegurado = nCod_Asegurado;
+                ELSE
+                   IF w.SalarioMensual IS NOT NULL AND w.VecesSalario IS NOT NULL AND w.SumAsegFija IS NOT NULL THEN
+                      nNuevaSumAseg := (NVL(w.SalarioMensual, 0) * NVL(w.VecesSalario, 0)) + NVL(w.SumAsegFija, 0);
+                      --
+                      UPDATE COBERT_ACT_ASEG
+                      SET    SumaAseg_Local    = nNuevaSumAseg
+                        ,    SumaAseg_Moneda   = nNuevaSumAseg
+                        ,    SumaAsegCalculada = nNuevaSumAseg
+                        ,    SumaIngresada     = w.SumAsegFija
+                        ,    SalarioMensual    = w.SalarioMensual
+                        ,    VecesSalario      = w.VecesSalario
+                      WHERE  CodCia        = nCodCia
+                        AND  IdPoliza      = nIdPoliza
+                        AND  IDetPol       = nIDetPol
+                        AND  Cod_Asegurado = nCod_Asegurado;
+                   ELSE
+                      FOR y IN cCoberturas2 LOOP
+                          nNuevaSumAseg := (NVL(NVL(w.SalarioMensual, y.SalarioMensual), 0) * NVL(NVL(w.VecesSalario, y.VecesSalario), 0)) + NVL(NVL(w.SumAsegFija, y.SumaIngresada), 0);
+                          --
+                          UPDATE COBERT_ACT_ASEG
+                          SET    SumaAseg_Local    = nNuevaSumAseg
+                            ,    SumaAseg_Moneda   = nNuevaSumAseg
+                            ,    SumaAsegCalculada = nNuevaSumAseg
+                            ,    SumaIngresada     = NVL(w.SumAsegFija, y.SumaIngresada)
+                            ,    SalarioMensual    = NVL(w.SalarioMensual, y.SalarioMensual)
+                            ,    VecesSalario      = NVL(w.VecesSalario, y.VecesSalario)
+                          WHERE  CodCia        = nCodCia
+                            AND  IdPoliza      = nIdPoliza
+                            AND  IDetPol       = nIDetPol
+                            AND  Cod_Asegurado = nCod_Asegurado
+                            AND  CodCobert     = y.CodCobert;
+                      END LOOP;
+                   END IF;
+                 END IF;
+             END IF;
+          END IF;
       END LOOP;
       --
       --Valido si la carga de asegurados proviene de Plataforma Digital
-      SELECT IndCotizacionWeb , IndCotizacionBaseWeb
-      INTO   cIndCotizacionWeb, cIndCotizacionBaseWeb
-      FROM   COTIZACIONES
-      WHERE  CodCia       = nCodCia
-        AND  IdPoliza     = nIdPoliza
-        AND  IdCotizacion = nIdCotizacion;
-      --
+      --Evaluo si SalarioMensual y VecesSalario vienen NULL (no traía nada el XML) para poner en su lugar lo configurado en COTIZACIONES_COBERT_MASTER
       IF cIndCotizacionWeb = 'S' AND cIndCotizacionBaseWeb = 'N' THEN
          FOR x IN cCoberturas LOOP
-            UPDATE COBERT_ACT_ASEG
-            SET    SumaAseg_Local     = x.SumaAsegCobLocal
-              ,    SumaAseg_Moneda    = x.SumaAsegCobMoneda
-              ,    Tasa               = x.Tasa
-              ,    Prima_Moneda       = x.PrimaCobMoneda
-              ,    Prima_Local        = x.PrimaCobLocal
-              --,    Deducible_Local    = x.DeducibleCobLocal
-              --,    Deducible_Moneda   = x.DeducibleCobMoneda
-              ,    SalarioMensual     = x.SalarioMensual
-              ,    VecesSalario       = x.VecesSalario
-              ,    SumaAsegCalculada  = x.SumaaSegCalculada
-              ,    Edad_Minima        = x.Edad_Minima
-              ,    Edad_Maxima        = x.Edad_Maxima
-              ,    Edad_Exclusion     = x.Edad_Exclusion
-              ,    SumaAseg_Minima    = x.SumaAseg_Minima 
-              ,    SumaAseg_Maxima    = x.SumaAseg_Maxima
-              ,    PorcExtraPrimaDet  = x.PorcExtraPrimaDet
-              ,    MontoExtraPrimaDet = x.MontoExtraPrimaDet
-              ,    SumaIngresada      = x.SumaIngresada
-			  ,    Franquiciaingresado= x.Franquiciaingresado
+
+             UPDATE COBERT_ACT_ASEG
+             SET    Tasa                = x.Tasa
+               ,    Prima_Moneda        = x.PrimaCobMoneda
+               ,    Prima_Local         = x.PrimaCobLocal
+               ----,    Deducible_Local     = x.DeducibleCobLocal
+               ----,    Deducible_Moneda    = x.DeducibleCobMoneda
+               ,    SalarioMensual      = NVL(NVL(SalarioMensual, x.SalarioMensual), 0)
+               ,    VecesSalario        = NVL(NVL(VecesSalario, x.VecesSalario), 0)
+               --,    SumaAsegCalculada   = x.SumaaSegCalculada
+               --,    SumaIngresada       = x.SumaIngresada
+               ,    Edad_Minima         = x.Edad_Minima
+               ,    Edad_Maxima         = x.Edad_Maxima
+               ,    Edad_Exclusion      = x.Edad_Exclusion
+               ,    SumaAseg_Minima     = x.SumaAseg_Minima 
+               ,    SumaAseg_Maxima     = x.SumaAseg_Maxima
+               ,    PorcExtraPrimaDet   = x.PorcExtraPrimaDet
+               ,    MontoExtraPrimaDet  = x.MontoExtraPrimaDet
+               ,    Franquiciaingresado = x.Franquiciaingresado
              WHERE CodCia     = nCodCia
                AND CodEmpresa = nCodEmpresa
                AND IdPoliza   = nIdPoliza
+               AND IDetPol    = nIDetPol
                AND CodCobert  = x.CodCobert;
          END LOOP;
          --
+         --Actualizo Valores de todos los asegurados de todos los certificados de la póliza
          FOR y IN cCobertActAseg LOOP
-            SELECT IndSinAseg
-            INTO   cIndSinAseg
-            FROM   DETALLE_POLIZA
-            WHERE  CodCia     = nCodCia
-              AND  CodEmpresa = nCodEmpresa
-              AND  IdPoliza   = nIdPoliza
-              AND  IDetPol    = y.IDetPol;
-            --
-            OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, y.IDetPol, y.Cod_Asegurado);
-            --
-            IF NVL(cIndSinAseg,'N') = 'N' OR NVL(y.IdEndoso,0) = 0 THEN
-               OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);
-               OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, y.IDetPol, 0);
-            ELSIF NVL(nIdEndoso,0) != 0 THEN
-               OC_ENDOSO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, y.IDetPol, y.IdEndoso);
-            END IF;
+             OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, y.IDetPol, y.Cod_Asegurado);
          END LOOP;
+         --
+         --Actualizo Valores de todos los certificados de la póliza
+         FOR x IN cCobertActAseg_2 LOOP
+             SELECT IndSinAseg
+             INTO   cIndSinAseg
+             FROM   DETALLE_POLIZA
+             WHERE  CodCia     = nCodCia
+               AND  CodEmpresa = nCodEmpresa
+               AND  IdPoliza   = nIdPoliza
+               AND  IDetPol    = x.IDetPol;
+             --
+             IF NVL(cIndSinAseg,'N') = 'N' OR NVL(x.IdEndoso,0) = 0 THEN
+                OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, x.IDetPol, 0);
+             ELSIF NVL(nIdEndoso,0) != 0 THEN
+                OC_ENDOSO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, x.IDetPol, x.IdEndoso);
+             END IF;
+         END LOOP;
+         --
+         --Actualizo Valores de la póliza
+         OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, 0);
       END IF;
-      --
    END CARGA_ASEGURADOS;
 
 /*   _______________________________________________________________________________________________________________________________
@@ -1420,3 +1554,4 @@ BEGIN
 END CONSULTA_POLIZA_UNAM;
 
 END OC_ASEGURADO_SERVICIOS_WEB;
+/

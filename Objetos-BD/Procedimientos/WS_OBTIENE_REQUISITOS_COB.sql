@@ -1,0 +1,72 @@
+create or replace PROCEDURE SICAS_OC.WS_OBTIENE_REQUISITOS_COB (
+    P_IDPOLIZA     IN  NUMBER,
+    P_CODASEGURADO IN  NUMBER,   
+    P_CODSUBGRUPO  IN  NUMBER, 
+    P_CODCIA       IN NUMBER DEFAULT NULL,
+    P_CODEMPRESA   IN NUMBER DEFAULT NULL,  
+    P_RESULTADO     OUT SYS_REFCURSOR
+) IS
+    vl_IdTipoSeg        VARCHAR2(4000);
+    vl_PlanCob          VARCHAR2(4000);
+    
+    vl_CodAseg          VARCHAR2(4000);
+    vl_ApPat            VARCHAR2(4000)  := ' ';
+    vl_ApMat            VARCHAR2(4000)  := ' ';
+    vl_Nombre           VARCHAR2(4000)  := ' ';
+    vl_Zip              NUMBER  :=  0;
+BEGIN  
+    -- Abrir el cursor con los resultados
+    OPEN P_RESULTADO FOR
+            SELECT DISTINCT A.IDTIPOSEG, 
+                    A.PLANCOB,
+                    A.CODCOBERT,
+                    B.DESCCOBERT,
+                    A.CODREQUISITO,
+                    NVL(C.NOMARCHIVO,'') NOMARCHIVO,
+                    C.DESCREQUISITO ,
+                    (CASE A.REQUERIDO WHEN 'S' THEN 'TRUE' ELSE 'FALSE' END) REQUERIDO,
+                    A.ORDENEXPEDIENTE,
+                    A.ORDENPDF,
+                    A.CANTIDAD,
+                    C.TAMANIOBYTES,
+                    NVL(C.FORMATOS,'') FORMATOS,
+                    NVL(C.CLAVEOCR,'') CLAVEOCR,
+                    NVL(C.TOOLTIP,'') TOOLTIP
+            FROM SICAS_OC.REQUISITOS_COBERTURAS A
+            INNER JOIN SICAS_OC.DETALLE_POLIZA D ON D.IDTIPOSEG = A.IDTIPOSEG AND D.PLANCOB = A.PLANCOB
+            INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS  B ON B.IDTIPOSEG = A.IDTIPOSEG AND B.PLANCOB = A.PLANCOB AND B.CODCOBERT = A.CODCOBERT
+            INNER JOIN SICAS_OC.REQUISITOS C ON C.CODREQUISITO = A.CODREQUISITO
+            WHERE D.IDPOLIZA = P_IDPOLIZA
+              AND COD_ASEGURADO = P_CODASEGURADO
+              AND IDETPOL = P_CODSUBGRUPO
+              AND D.CODCIA = P_CODCIA
+              AND D.CODEMPRESA = P_CODEMPRESA
+            ORDER BY A.IDTIPOSEG, A.PLANCOB, A.CODCOBERT, A.CODREQUISITO;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('EXC: '||SQLERRM);
+        OPEN P_RESULTADO FOR
+            SELECT NULL AS IDTIPOSEG, 
+                   NULL AS PLANCOB,
+                   NULL AS CODCOBERT,
+                   NULL AS DESCCOBERT,
+                   NULL AS CODREQUISITO,
+                   NULL AS NOMARCHIVO,
+                   NULL AS DESCREQUISITO,
+                   NULL AS REQUERIDO,
+                   NULL AS ORDENEXPEDIENTE,
+                   NULL AS ORDENPDF,
+                   NULL AS CANTIDAD,
+                   NULL AS TAMANIOBYTES,
+                   NULL AS FORMATOS,
+                   NULL AS CLAVEOCR,
+                   NULL AS TOOLTIP
+            FROM DUAL;
+END WS_OBTIENE_REQUISITOS_COB;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM WS_OBTIENE_REQUISITOS_COB FOR SICAS_OC.WS_OBTIENE_REQUISITOS_COB
+/
+
+GRANT EXECUTE ON SICAS_OC.WS_OBTIENE_REQUISITOS_COB TO PUBLIC
+/

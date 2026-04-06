@@ -1,0 +1,81 @@
+create or replace PROCEDURE SICAS_OC.WS_OBTIENE_POLIZAS_POR_ID (
+    p_id_poliza IN NUMBER DEFAULT NULL,
+    p_num_pol_unico IN VARCHAR2 DEFAULT NULL,
+    p_codcia       IN NUMBER DEFAULT NULL,
+    p_codempresa   IN NUMBER DEFAULT NULL,
+    p_resultado OUT SYS_REFCURSOR
+) AS
+BEGIN
+    OPEN p_resultado FOR
+    SELECT COD_ASEGURADO,NOM_ASEGURADO,CODCLIENTE,NOMCONTRATANTE,NUMPOLUNICO,IDPOLIZA,IDETPOL,FECPAGO,FECINIVIG,FECFINVIG,IDTIPOSEG,PLANCOB,STSDETALLE,CODEMPRESA,INDPOLCOL,DESCTIPOSEG,DESCPLANCOB,DESCSTATUS,NUMPOLREF,CODCIA,TIPOADMINISTRACION,DESCTIPOADMON,PLANPAGO,FRECPAGO,CODGRUPOEC,CODFILIAL,CODCATEGORIA,DESCPOLIZA,CODAGENTE,NOMAGENTE,FECRENOVACION,STSPOLIZA,INDFACTURAPOL,CODAGRUPADOR,DESCAGRUPADOR,DESC_SUBGRUPO,DESC_CATEGORIA,ASEGADHERIDOSPOR,DESCASEGADHERIDOSPOR,ID_Ramo,Desc_Ramo
+FROM (
+    SELECT 
+        a.*, ROWNUM rnum
+    FROM (
+        SELECT DISTINCT 
+            NULL    COD_ASEGURADO,
+            NULL    NOM_ASEGURADO,
+            P.CodCliente,
+            REPLACE(OC_CLIENTES.NOMBRE_CLIENTE(P.CodCliente), ',') AS NomContratante,
+            P.NumPolUnico,
+            DP.IdPoliza,
+            DP.IDetPol,
+            sicas_apex.get_fecha_pago(1, DP.IdPoliza) AS fecpago,
+            DP.FecIniVig,
+            DP.FecFinVig,
+            DP.IdTipoSeg,
+            DP.PlanCob,
+            DP.StsDetalle,
+            DP.CodEmpresa,
+            P.IndPolCol,
+            OC_TIPOS_DE_SEGUROS.TIPO_DE_SEGURO(DP.CodCia, DP.CodEmpresa, DP.IdTipoSeg) AS DescTipoSeg,
+            OC_PLAN_COBERTURAS.NOMBRE_PLANCOB(DP.CodCia, DP.CodEmpresa, DP.IdTipoSeg, DP.PlanCob) AS DescPlanCob,
+            OC_VALORES_DE_LISTAS.BUSCA_LVALOR('ESTADOS', DP.StsDetalle) AS DescStatus,
+            P.NUMPOLREF,    
+            P.CodCia AS CodCia,
+            P.TipoAdministracion,
+            OC_VALORES_DE_LISTAS.BUSCA_LVALOR('ADMINPOL', P.TipoAdministracion) AS DescTipoAdmon,
+            OC_PLAN_DE_PAGOS.DESCRIPCION_PLAN(DP.CodCia, DP.CodEmpresa, DP.CodPlanPago) AS PlanPago,
+            OC_PLAN_DE_PAGOS.FRECUENCIA_PAGOS(DP.CodCia, DP.CodEmpresa, DP.CodPlanPago) AS FrecPago,
+            P.CodGrupoEc AS CodGrupoEc,
+            DP.CodFilial AS CodFilial,
+            DP.CodCategoria AS CodCategoria,
+            P.DescPoliza,
+            AP.Cod_Agente AS CodAgente,
+            OC_AGENTES.NOMBRE_AGENTE(DP.CodCia, AP.Cod_Agente) AS NomAgente,
+            P.FecRenovacion AS FecRenovacion,
+            SICAS_APEX.GET_ESTATUS_PAGO(P.CODCIA, P.IDPOLIZA) AS StsPoliza,
+            P.IndFacturaPol,
+            P.CodAgrupador,
+            OC_VALORES_DE_LISTAS.BUSCA_LVALOR('AGRUPA', P.CodAgrupador) AS DescAgrupador,
+            SICAS_APEX.TRAE_NOMBRE_SUBGRUPO(DP.CodCia, DP.CodFilial, P.CodGrupoEc) AS DESC_SUBGRUPO,
+            OC_FILIALES_CATEGORIAS.DESCRIPCION_CATEGORIA(DP.CODCIA, P.CodGrupoEc, DP.CodFilial, DP.CodCategoria) AS DESC_CATEGORIA,
+            P.ASEGADHERIDOSPOR,
+            OC_VALORES_DE_LISTAS.BUSCA_LVALOR('PRESCONT', P.ASEGADHERIDOSPOR) AS DESCASEGADHERIDOSPOR,
+            VL.CODVALOR AS ID_Ramo,          
+            VL.DESCVALLST AS Desc_Ramo
+        FROM POLIZAS P
+        JOIN DETALLE_POLIZA DP ON DP.IdPoliza = P.IdPoliza AND DP.CodEmpresa = P.CodEmpresa AND DP.CodCia = P.CodCia
+        JOIN TIPOS_DE_SEGUROS TS ON TS.CODCIA  = DP.CODCIA AND TS.CODEMPRESA = DP.CODEMPRESA AND TS.IDTIPOSEG  = DP.IDTIPOSEG
+        JOIN VALORES_DE_LISTAS VL ON VL.CODLISTA = 'CODRAMOS' AND VL.CODVALOR = TS.CODTIPOPLAN
+        --JOIN ASEGURADO_CERTIFICADO AC ON (AC.IdPoliza = DP.IdPoliza AND AC.IDETPOL = DP.IDETPOL)
+        --JOIN ASEGURADO A ON (A.COD_ASEGURADO = AC.COD_ASEGURADO)
+        --JOIN PERSONA_NATURAL_JURIDICA PNJ ON (PNJ.TIPO_DOC_IDENTIFICACION = A.TIPO_DOC_IDENTIFICACION AND PNJ.NUM_DOC_IDENTIFICACION = A.NUM_DOC_IDENTIFICACION)
+        JOIN AGENTE_POLIZA AP ON AP.CODCIA = P.CODCIA AND AP.IDPOLIZA = P.IDPOLIZA AND AP.IND_PRINCIPAL = 'S'
+       WHERE (P.IdPoliza = p_id_poliza OR p_id_poliza IS NULL)
+         AND (P.NUMPOLUNICO = p_num_pol_unico OR p_num_pol_unico IS NULL)
+           AND P.CodCia = p_codcia
+           AND P.codempresa = p_codempresa
+           AND P.StsPoliza <> 'ANU'
+    ) a
+    ORDER BY a.COD_ASEGURADO
+)
+WHERE rnum BETWEEN 1 AND 500;
+END WS_OBTIENE_POLIZAS_POR_ID;
+/
+
+CREATE OR REPLACE PUBLIC SYNONYM WS_OBTIENE_POLIZAS_POR_ID FOR SICAS_OC.WS_OBTIENE_POLIZAS_POR_ID
+/
+
+GRANT EXECUTE ON SICAS_OC.WS_OBTIENE_POLIZAS_POR_ID TO PUBLIC
+/

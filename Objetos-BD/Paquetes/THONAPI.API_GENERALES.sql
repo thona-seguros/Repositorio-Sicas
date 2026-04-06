@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE THONAPI.API_GENERALES AS
+create or replace PACKAGE THONAPI.API_GENERALES AS
 /******************************************************************************
    NOMBRE:       API_GENERALES
    Desarrollado por Darbrain: 22-07-2020 
@@ -165,14 +165,28 @@ PROCEDURE API_COTIZACION_PRE_EMITIR_CFDI(nCodCia IN NUMBER, nCodEmpresa IN NUMBE
     --PROCEDURE API_COBERTURAS(nCodCia IN NUMBER,nCodEmpresa IN NUMBER, nIdCotizacion IN NUMBER, nIdetCotizacion IN NUMBER,nCodGpoCobertWeb IN NUMBER, cCodCobertWeb IN NUMBER, xResultado OUT XMLTYPE);
     --PROCEDURE API_ACTUALIZA_COBERTURAS(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, xDatos IN XMLTYPE, xResultado OUT XMLTYPE, xPrima OUT XMLTYPE);
     PROCEDURE API_COBERTURAS(nCodCia IN NUMBER,nCodEmpresa IN NUMBER, nIdCotizacion IN NUMBER, nIdetCotizacion IN NUMBER,nCodGpoCobertWeb IN NUMBER, cCodCobertWeb IN NUMBER, xResultado OUT XMLTYPE);
-
-    PROCEDURE API_ACTUALIZA_COBERTURAS(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, xDatos IN XMLTYPE, xResultado OUT XMLTYPE,xPrima OUT XMLTYPE);
+   --
+   -- MASP Servicios Emisión Masiva Vida   04/04/2025
+   --      Manejo de errores y estandarización, corrección de funcionalidad para Subgrupos
+   PROCEDURE API_ACTUALIZA_COBERTURAS( nCodCia      IN NUMBER
+                                     , nCodEmpresa  IN NUMBER
+                                     , xDatos       IN XMLTYPE
+                                     , xResultado  OUT XMLTYPE
+                                     , xPrima      OUT XMLTYPE );
+   --
     PROCEDURE API_OBTENER_GUA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, cIdTipoSeg IN VARCHAR2, cPlanCob IN VARCHAR2, cCodCobert IN VARCHAR2, cNivel IN VARCHAR2, nFactor IN VARCHAR2, cCodClausula IN VARCHAR2,xResultado OUT XMLTYPE);
     PROCEDURE API_OBTEN_PADECIMENTO_O_NIVELH(nOpcion IN NUMBER, nCodCia IN NUMBER,nCodEmpresa IN NUMBER,cIdTipoSeg IN VARCHAR2,cPlanCob IN VARCHAR2,cCodCobert IN VARCHAR2,cIndIncluido IN VARCHAR2,nFactor IN VARCHAR2,cCodEndoso IN VARCHAR2,xResultado OUT XMLTYPE);
     PROCEDURE API_GUARDAR_PADEC(nCodCia IN NUMBER,nCodEmpresa IN NUMBER,nIdCotizacion IN VARCHAR2,xXMLDatosPadEsp IN XMLTYPE);
     PROCEDURE API_GUARDAR_FACTORES(nCodCia IN NUMBER,nCodEmpresa IN NUMBER,nIdCotizacion IN VARCHAR2,nTipoGuardado IN NUMBER,xXMLDatosGUA IN XMLTYPE, xResultado OUT NUMBER);
     PROCEDURE API_OBTEN_EQUIPO_REGION(nTipo IN NUMBER, nCodCia IN NUMBER, nCodEmpresa IN NUMBER, cIdTipoSeg IN VARCHAR, cPlanCob IN VARCHAR,nCodPaquete IN NUMBER, cCodigo IN VARCHAR, xResultado OUT XMLTYPE);
-    PROCEDURE API_ENVIAR_ASEGURADOS_MASIVO(nCodCia IN NUMBER,nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER,xAsegurados IN XMLTYPE);
+   --
+   -- MASP Servicios Emisión Masiva Vida   25/03/2025
+   --      Manejo de errores y estandarización
+   PROCEDURE API_ENVIAR_ASEGURADOS_MASIVO( nCodCia      NUMBER
+                                         , nCodEmpresa  NUMBER
+                                         , nIdPoliza    NUMBER
+                                         , xAsegurados  XMLTYPE );
+   --
     PROCEDURE API_SOLICITAR_POLIZA_COLECTIVA(nPoliza IN NUMBER,nCodCia1 IN NUMBER, nCodEmpresa1 IN NUMBER, nIdCotizacion1 IN NUMBER, xDatosCliente IN XMLTYPE, idPoliza OUT NUMBER);
     PROCEDURE API_PRE_EMITE_POLIZA_COLECTIVA(nCodCia IN NUMBER,nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER,cIndRequierePago IN VARCHAR2,cFacturas OUT CLOB) ;
     PROCEDURE API_OBTENER_NUMERO_UNICO(nCodCia IN NUMBER, nIdPoliza IN NUMBER, xDatosPoliza OUT VARCHAR2 );
@@ -209,44 +223,47 @@ PROCEDURE API_COTIZACION_PRE_EMITIR_CFDI(nCodCia IN NUMBER, nCodEmpresa IN NUMBE
 
     /*JACF [28/09/2023] <Se agrega funciÃ³n para consultar catalogo de formas de cobro desde las listas de valores>*/
     PROCEDURE API_CONSULTA_FORMAS_COBRO(LISTA VARCHAR2, xRespuesta OUT CLOB);
-
+   --
+   PROCEDURE API_DISTRIBUYE_AGENTES( nCodCia      POLIZAS.CodCia%TYPE
+                                   , nCodEmpresa  POLIZAS.CodEmpresa%TYPE
+                                   , nIdPoliza    POLIZAS.IdPoliza%TYPE
+                                   , nCod_Agente  POLIZAS.Cod_Agente%TYPE );
 END API_GENERALES;
 /
+create or replace PACKAGE BODY THONAPI.API_GENERALES AS
 
-CREATE OR REPLACE PACKAGE BODY THONAPI.API_GENERALES AS
-
-    PROCEDURE API_REQUISITOS_COBERT( PA_IDPOLIZA        IN  NUMBER,   
-                                        PA_CODASEGURADO     IN  NUMBER,  
-                                        PA_NOMBRE           IN  VARCHAR2, 
-                                        PA_APPATERNO        IN  VARCHAR2, 
-                                        PA_APMATERNO        IN  VARCHAR2, 
-                                        PA_CODCOBERT        IN  VARCHAR2, 
-    
-	PA_IDREQUISITO      IN  VARCHAR2,
-                                        PA_RESPUESTA        OUT CLOB ) IS
-    
-    cHeader VARCHAR2(100);
-    FORMAS CLOB;
-
+    PROCEDURE API_REQUISITOS_COBERT( PA_IDPOLIZA      IN  NUMBER,   
+                                     PA_CODASEGURADO  IN  NUMBER,  
+                                     PA_NOMBRE        IN  VARCHAR2, 
+                                     PA_APPATERNO     IN  VARCHAR2, 
+                                     PA_APMATERNO     IN  VARCHAR2, 
+                                     PA_CODCOBERT     IN  VARCHAR2, 
+                                     PA_IDREQUISITO   IN  VARCHAR2,
+                                     PA_RESPUESTA    OUT  CLOB ) IS
+       cHeader VARCHAR2(100);
+       FORMAS  CLOB;
     BEGIN
-
-            PA_RESPUESTA := GENERALES_PLATAFORMA_DIGITAL.REQUISITOS_COBERT( PA_IDPOLIZA,   
-                                                                            PA_CODASEGURADO,
-                                                                            PA_NOMBRE,
-                                                                            PA_APPATERNO,
-                                                                            PA_APMATERNO,
-                                                                            PA_CODCOBERT,
-                                                                            PA_IDREQUISITO);
+       IF PA_NOMBRE IS NULL AND PA_APPATERNO IS NULL AND PA_APMATERNO IS NULL THEN
+          RAISE_APPLICATION_ERROR(-20205, 'ERROR EN THONAPI.API_GENERALES.API_REQUISITOS_COBERT NO PUEDEN VENIR NULOS LOS TRES PARAMETROS DE: NOMBRE, APELLIDO PATERNO Y APELLIDO MATERNO. POLIZA: ' || PA_IDPOLIZA );
+       END IF;
+       --
+       PA_RESPUESTA := GENERALES_PLATAFORMA_DIGITAL.REQUISITOS_COBERT( PA_IDPOLIZA,   
+                                                                       PA_CODASEGURADO,
+                                                                       PA_NOMBRE,
+                                                                       PA_APPATERNO,
+                                                                       PA_APMATERNO,
+                                                                       PA_CODCOBERT,
+                                                                       PA_IDREQUISITO);
     EXCEPTION
-        WHEN OTHERS THEN
-            cHeader := 'DOCUMENTOS';
-            FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><'|| cHeader || '>';
-            FORMAS := FORMAS || '<DATA><ASEGURADO></ASEGURADO>';
-            FORMAS := FORMAS || '<DOCUMENTO></DOCUMENTO>';
-            FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
-            PA_RESPUESTA := FORMAS;
+    WHEN OTHERS THEN
+         cHeader := 'DOCUMENTOS';
+         FORMAS := '<?xml version="1.0" encoding="UTF-8" ?><'|| cHeader || '>';
+         FORMAS := FORMAS || '<DATA><ASEGURADO></ASEGURADO>';
+         FORMAS := FORMAS || '<DOCUMENTO></DOCUMENTO>';
+         FORMAS :=  FORMAS || '</' || cHeader || '></DATA>';
+         PA_RESPUESTA := FORMAS;
     END API_REQUISITOS_COBERT;
-    
+
     PROCEDURE API_CALCULA_EDAD(FECHANACIMIENTO IN DATE, nEDAD OUT NUMBER ) IS
     BEGIN
         EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_DATE_FORMAT = ''DD/MM/YYYY''';
@@ -2655,11 +2672,19 @@ PROCEDURE API_PERSONA_NATURAL_JURIDICA (IDPOL IN NUMBER, SetXml OUT CLOB) IS
         xResultado := SICAS_OC.OC_COTIZACIONES_COBERT_WEB.SERVICIO_XML(nCodCia,nCodEmpresa,nIdCotizacion,nIdetCotizacion,nCodGpoCobertWeb,cCodCobertWeb );
     END API_COBERTURAS;
     --
-    PROCEDURE API_ACTUALIZA_COBERTURAS(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, xDatos IN XMLTYPE, xResultado OUT XMLTYPE,xPrima OUT XMLTYPE) IS
-    --xPrima      clob;
-    BEGIN
-    xResultado:=SICAS_OC.OC_COTIZACIONES_COBERT_WEB.ACTUALIZAR(nCodCia,nCodEmpresa,xDatos,xPrima);
-
+   --
+   -- MASP Servicios Emisión Masiva Vida   04/04/2025
+   --      Manejo de errores y estandarización, corrección de funcionalidad para Subgrupos
+   PROCEDURE API_ACTUALIZA_COBERTURAS( nCodCia      IN NUMBER
+                                     , nCodEmpresa  IN NUMBER
+                                     , xDatos       IN XMLTYPE
+                                     , xResultado  OUT XMLTYPE
+                                     , xPrima      OUT XMLTYPE ) IS
+   BEGIN
+      xResultado := SICAS_OC.OC_COTIZACIONES_COBERT_WEB.ACTUALIZAR(nCodCia, nCodEmpresa, xDatos, xPrima);
+   EXCEPTION
+   WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20205, 'ERROR EN API_GENERALES.API_ACTUALIZA_COBERTURAS: ' || SQLERRM);
    END API_ACTUALIZA_COBERTURAS;
    --
    PROCEDURE API_OBTENER_GUA(nCodCia IN NUMBER, nCodEmpresa IN NUMBER, cIdTipoSeg IN VARCHAR2, cPlanCob IN VARCHAR2, cCodCobert IN VARCHAR2, cNivel IN VARCHAR2, nFactor IN VARCHAR2, cCodClausula IN VARCHAR2,xResultado OUT XMLTYPE) IS
@@ -2737,12 +2762,20 @@ PROCEDURE API_OBTEN_EQUIPO_REGION(nTipo IN NUMBER, nCodCia IN NUMBER, nCodEmpres
         xResultado := SICAS_OC.OC_FACTOR_REGION.SERVICIO_XML( nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nCodPaquete, cCodigo );
     END IF;
   END API_OBTEN_EQUIPO_REGION;
-  --
-  PROCEDURE API_ENVIAR_ASEGURADOS_MASIVO(nCodCia IN NUMBER,nCodEmpresa IN NUMBER, nIdPoliza IN NUMBER,xAsegurados IN XMLTYPE) IS
-  BEGIN
-        OC_ASEGURADO_SERVICIOS_WEB.CARGA_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, xAsegurados);
-  END API_ENVIAR_ASEGURADOS_MASIVO;
-  --
+   --
+   -- MASP Servicios Emisión Masiva Vida   25/03/2025
+   --      Manejo de errores y estandarización
+   PROCEDURE API_ENVIAR_ASEGURADOS_MASIVO( nCodCia      NUMBER
+                                         , nCodEmpresa  NUMBER
+                                         , nIdPoliza    NUMBER
+                                         , xAsegurados  XMLTYPE ) IS
+   BEGIN
+      OC_ASEGURADO_SERVICIOS_WEB.CARGA_ASEGURADOS(nCodCia, nCodEmpresa, nIdPoliza, xAsegurados);
+   EXCEPTION
+   WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20205, 'ERROR EN API_GENERALES.API_ENVIAR_ASEGURADOS_MASIVO: ' || SQLERRM);
+   END API_ENVIAR_ASEGURADOS_MASIVO;
+   --
   PROCEDURE API_SOLICITAR_POLIZA_COLECTIVA(nPoliza IN NUMBER,nCodCia1 IN NUMBER, nCodEmpresa1 IN NUMBER, nIdCotizacion1 IN NUMBER, xDatosCliente IN XMLTYPE, idPoliza OUT NUMBER) IS
   BEGIN
        idPoliza := OC_POLIZAS_SERVICIOS_WEB.GENERA_POLIZA(nCodCia1, nCodEmpresa1, nIdCotizacion1, xDatosCliente);
@@ -3124,4 +3157,331 @@ PROCEDURE API_CONSULTA_FORMAS_COBRO(LISTA VARCHAR2, xRespuesta OUT CLOB) IS
         xRespuesta := GENERALES_PLATAFORMA_DIGITAL.FORMAS_COBRO(LISTA);
 END API_CONSULTA_FORMAS_COBRO;
 
+   PROCEDURE API_DISTRIBUYE_AGENTES( nCodCia      POLIZAS.CodCia%TYPE
+                                   , nCodEmpresa  POLIZAS.CodEmpresa%TYPE
+                                   , nIdPoliza    POLIZAS.IdPoliza%TYPE
+                                   , nCod_Agente  POLIZAS.Cod_Agente%TYPE ) IS
+      cId_Largo_Plazo         TIPOS_DE_SEGUROS.Id_Largo_Plazo%TYPE;
+      cTipoSeg                TIPOS_DE_SEGUROS.TipoSeg%TYPE;
+      nPorc_Comision          AGENTE_POLIZA.Porc_Comision%TYPE := 100;
+      cPlanCob                DETALLE_POLIZA.PlanCob%TYPE;
+      cIdTipoSeg              DETALLE_POLIZA.IdTipoSeg%TYPE;
+      nComPoliza              AGENTES_DETALLES_POLIZAS.Porc_Comision%TYPE;
+      nSumaComTotAge          AGENTES_DETALLES_POLIZAS.Porc_Comision%TYPE;
+      cJefe                   VARCHAR2(1);
+      cCodTipo                AGENTES.CodTipo%TYPE;
+      nJefe                   AGENTES.Cod_Agente_Jefe%TYPE;
+      nNivel                  NIVEL.CodNivel%TYPE;	
+      nComAgenteNivel         AGENTES_DETALLES_POLIZAS.Porc_Comision%TYPE;
+      nComisionTotalPlan      AGENTES_DETALLES_POLIZAS.Porc_Comision%TYPE;
+      nProporcional           NUMBER(8, 2);
+      nPorc_Com_Distribuida   AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Distribuida%TYPE;
+      nPorc_Com_Proporcional  AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
+      nPorc_Com_Dist          AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Distribuida%TYPE;
+      nPorc_Com_Prop          AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Proporcional%TYPE;
+      nnJefe                  AGENTES.Cod_Agente_Jefe%TYPE;
+      nAnio_Poliza            NUMBER(5);
+      --
+      nCountPoliza            NUMBER(5);
+      nPorComDis              AGENTES_DISTRIBUCION_POLIZA.Porc_Com_Distribuida%TYPE; 	 			    
+   BEGIN
+      SELECT DISTINCT PlanCob, IdTipoSeg
+      INTO   cPlanCob, cIdTipoSeg
+      FROM   DETALLE_POLIZA
+      WHERE  IdPoliza = nIdPoliza
+        AND  CodCia   = nCodCia;
+      --
+      BEGIN 
+         SELECT NVL(TipoSeg, 'N'), Id_Largo_Plazo
+         INTO   cTipoSeg         , cId_Largo_Plazo
+         FROM   TIPOS_DE_SEGUROS
+         WHERE  IdTipoSeg  = cIdTipoSeg
+           AND  CodEmpresa = nCodEmpresa
+           AND  CodCia     = nCodCia;
+      EXCEPTION
+      WHEN NO_DATA_FOUND THEN 
+           cTipoSeg := 'N';
+      END;
+      --
+      UPDATE AGENTE_POLIZA
+      SET    Cod_Agente    = nCod_Agente
+        ,    Origen        = 'C'
+        ,    Porc_Comision = nPorc_Comision
+        ,    Ind_Principal = 'S'
+      WHERE  IdPoliza = nIdPoliza
+        AND  CodCia   = nCodCia;
+      --
+      DELETE AGENTES_DISTRIBUCION_POLIZA
+      WHERE  CodCia   = nCodCia
+        AND  IdPoliza = nIdPoliza;
+      --
+      nComPoliza := 0; 
+      --
+      BEGIN
+         SELECT DISTINCT(PorcComis)
+         INTO   nComPoliza
+         FROM   DETALLE_POLIZA
+         WHERE  IdPoliza = nIdPoliza
+           AND  CodCia   = nCodCia;
+      EXCEPTION
+      WHEN TOO_MANY_ROWS THEN
+           RAISE_APPLICATION_ERROR(-20225, 'Los Detalles o Certificados poseen Diferentes Porcentajes de Comisión');
+      END;
+      --
+      BEGIN
+         SELECT CodNivel
+         INTO   nNivel
+         FROM   AGENTES 
+         WHERE  Cod_Agente = nCod_Agente;
+      EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+           RAISE_APPLICATION_ERROR(-20225, 'Falta Configurar NIVEL en el Agente');
+      END;
+      --
+      IF nNivel IS NULL THEN
+         RAISE_APPLICATION_ERROR(-20225, 'Falta Configurar NIVEL en el Agente');
+      END IF;
+      --
+      IF NVL(cId_Largo_Plazo, 'N') = 'N' THEN
+DBMS_OUTPUT.PUT_LINE('nNivel      '||nNivel);
+DBMS_OUTPUT.PUT_LINE('cPlanCob    '||cPlanCob);
+DBMS_OUTPUT.PUT_LINE('cIdTipoSeg  '||cIdTipoSeg);
+         BEGIN
+            SELECT SUM(nvl(ComAgeNivel, 0))
+            INTO   nSumaComTotAge
+            FROM   NIVEL_PLAN_COBERTURA
+            WHERE  CodNivel <= nNivel
+              AND  PlanCob   = cPlanCob
+              AND  IdTipoSeg = cIdTipoSeg;
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              RAISE_APPLICATION_ERROR(-20225, 'Nivel Agente Invalido favor revisar Configuración');
+         END;
+         --
+         BEGIN	
+            SELECT 'S'  , AG.CodTipo, AG.Cod_Agente_Jefe, NPC.CodNivel, NPC.ComAgeNivel
+            INTO   cJefe, cCodTipo  , nJefe             , nNivel      , nComAgenteNivel
+            FROM   AGENTES               AG
+               ,   AGENTES               JF
+               ,   NIVEL_PLAN_COBERTURA  NPC
+            WHERE  AG.Cod_Agente = JF.Cod_Agente
+              AND  AG.CodNivel   = NPC.CodNivel
+              AND  AG.Cod_Agente = nCod_Agente
+              AND  NPC.PlanCob   = cPlanCob
+              AND  NPC.IdTipoSeg = cIdTipoSeg;
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              RAISE_APPLICATION_ERROR(-20225, 'Nivel Agente Invalido favor revisar Configuración');
+         END;            
+         --
+         BEGIN
+            SELECT NVL(SUM(ComAgeNivel), 0)
+            INTO   nComisionTotalPlan
+            FROM   NIVEL_PLAN_COBERTURA 
+            WHERE  PlanCob   = cPlanCob
+              AND  IdTipoSeg = cIdTipoSeg;
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              nComisionTotalPlan := 0;
+         END;
+      ELSE
+DBMS_OUTPUT.PUT_LINE('ELSE');
+         BEGIN
+            SELECT SUM(NVL(C.PorcComision, 0))
+            INTO   nSumaComTotAge 
+            FROM   COMISION_PLACOB_LARPLA C
+            WHERE  C.CodEmpresa  = nCodEmpresa 
+              AND  C.CodCia      = nCodCia
+              AND  C.IdTipoSeg   = cIdTipoSeg
+              AND  C.PlanCob     = cPlanCob
+              AND  C.Id_Año      = nAnio_Poliza
+              AND  C.CodNivel   <= nNivel
+              AND  C.St_Comision = 'ACT';
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              RAISE_APPLICATION_ERROR(-20225, 'Nivel Agente Invalido favor revisar Configuración');
+         END;
+         --                      
+         BEGIN	
+            SELECT 'S'  , AG.CodTipo, AG.Cod_Agente_Jefe, NPC.CodNivel, NPC.PORCCOMISION
+            INTO   cJefe, cCodTipo  , nJefe             , nNivel      , nComAgenteNivel
+            FROM   AGENTES                 AG
+               ,   AGENTES                 JF
+               ,   COMISION_PLACOB_LARPLA  NPC
+            WHERE  AG.Cod_Agente   = JF.Cod_Agente
+              AND  AG.CodNivel     = NPC.CodNivel
+              AND  AG.Cod_Agente   = nCod_Agente
+              AND  NPC.CodEmpresa  = nCodEmpresa
+              AND  NPC.CodCia      = nCodCia
+              AND  NPC.IdTipoSeg   = cIdTipoSeg
+              AND  NPC.PlanCob     = cPlanCob
+              AND  NPC.Id_Año      = nAnio_Poliza
+              AND  NPC.St_Comision = 'ACT';
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              RAISE_APPLICATION_ERROR(-20225, 'Nivel Agente Invalido favor revisar Configuración');
+         END;
+         --
+         BEGIN
+            SELECT SUM(NVL(C.PORCCOMISION,0))
+            INTO   nComisionTotalPlan 
+            FROM   COMISION_PLACOB_LARPLA  C
+            WHERE  C.CodEmpresa  = nCodEmpresa
+              AND  C.CodCia      = nCodCia
+              AND  C.IdTipoSeg   = cIdTipoSeg
+              AND  C.PlanCob     = cPlanCob
+              AND  C.Id_Año      = nAnio_Poliza
+              AND  C.St_Comision = 'ACT';
+         EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              nComisionTotalPlan := 0;
+         END;
+      END IF;
+DBMS_OUTPUT.PUT_LINE('AQUI VOY');
+      --
+      IF NVL(nComPoliza, 0) != 0 THEN
+         nProporcional := TRUNC(ROUND((nComAgenteNivel * 100) / nComPoliza, 2), 2);
+      ELSE
+         nProporcional := 100;
+      END IF;
+      --
+      IF OC_CONCEPTO_COMISION.TIENE_CONCEPTOS(nCodCia, cCodTipo) = 'N' THEN
+         RAISE_APPLICATION_ERROR(-20225, 'Tipo de Agente '|| cCodTipo || ' del Agente No. ' || nCod_Agente || ' NO Posee Conceptos para Liquidación de Comisiones');
+      END IF;
+      --
+      IF nComPoliza <> nComisionTotalPlan AND NVL(nComPoliza, 0) != 0 THEN
+         nPorc_Com_Distribuida  := nComPoliza * nComAgenteNivel / nComisionTotalPlan;
+         nPorc_Com_Proporcional := nPorc_Com_Distribuida / nComPoliza * 100;
+         nPorc_Com_Dist         := nPorc_Com_Distribuida;
+         nPorc_Com_Prop         := nPorc_Com_Proporcional;
+      ELSE
+         nPorc_Com_Distribuida  := 100;
+         nPorc_Com_Proporcional := 100;
+         nPorc_Com_Dist         := nComAgenteNivel;
+         nPorc_Com_Prop         := ROUND(nProporcional, 2);
+      END IF;
+      --
+      INSERT INTO AGENTES_DISTRIBUCION_POLIZA
+             ( CodCia              , IdPoliza          , Cod_Agente           , CodNivel       , Cod_Agente_Distr, Porc_Comision_Agente,
+               Porc_Com_Distribuida, Porc_Comision_Plan, Porc_Com_Proporcional, Cod_Agente_Jefe, Porc_Com_Poliza , Origen )
+      VALUES ( nCodCia       , nIdPoliza         , nCod_Agente   , nNivel, nCod_Agente, nComAgenteNivel,
+               nPorc_Com_Dist, nComisionTotalPlan, nPorc_Com_Prop, nJefe , nComPoliza , 'C' );
+      --
+      WHILE cJefe = 'S' LOOP
+         IF NVL(nComPoliza, 0) != 0 THEN
+            nProporcional := nComAgenteNivel * 100 / nComPoliza;
+         ELSE
+            nProporcional := 0;
+         END IF;
+         --
+         IF NVL(cId_Largo_Plazo, 'N') = 'N' THEN
+            BEGIN
+               SELECT AG.CodTipo, AG.Cod_Agente_Jefe, NPC.CodNivel, NPC.ComAgeNivel
+               INTO   cCodTipo,   nnJefe            , nNivel      , nComAgenteNivel
+               FROM   AGENTES               AG
+                  ,   AGENTES               JF
+                  ,   NIVEL_PLAN_COBERTURA  NPC
+               WHERE  AG.Cod_Agente = JF.Cod_Agente
+                 AND  AG.CodNivel   = NPC.CodNivel
+                 AND  AG.Cod_Agente = nJefe
+                 AND  NPC.PlanCob   = cPlanCob
+                 AND  NPC.IdTipoSeg = cIdTipoSeg;
+            EXCEPTION 
+            WHEN NO_DATA_FOUND THEN
+                 cJefe    := 'N';
+                 cCodTipo := NULL;
+            END;
+         ELSE
+            BEGIN	
+               SELECT AG.CodTipo, AG.Cod_Agente_Jefe, NPC.CodNivel, NPC.PORCCOMISION
+               INTO   cCodTipo  , nnJefe            , nNivel      , nComAgenteNivel
+               FROM   AGENTES                 AG
+                  ,   AGENTES                 JF
+                  ,   COMISION_PLACOB_LARPLA  NPC
+               WHERE  AG.Cod_Agente   = JF.Cod_Agente
+                 AND  AG.CodNivel     = NPC.CodNivel
+                 AND  AG.Cod_Agente   = nJefe
+                 AND  NPC.CodEmpresa  = nCodEmpresa
+                 AND  NPC.CodCia      = nCodCia
+                 AND  NPC.IdTipoSeg   = cIdTipoSeg
+                 AND  NPC.PlanCob     = cPlanCob
+                 AND  NPC.Id_Año      = nAnio_Poliza
+                 AND  NPC.St_Comision = 'ACT';
+            EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                 cJefe    := 'N';
+                 cCodTipo := NULL;
+            END;            
+         END IF;
+         --
+         IF NVL(nComPoliza,0) != 0 THEN
+            nProporcional := nComAgenteNivel * 100 / nComPoliza;
+         ELSE
+            nProporcional := 0;
+         END IF;
+         --
+         IF nJefe IS NULL OR cJefe = 'N' THEN                                                       
+            EXIT;
+         END IF;
+         --
+         IF OC_CONCEPTO_COMISION.TIENE_CONCEPTOS(nCodCia, cCodTipo) = 'N' THEN
+            RAISE_APPLICATION_ERROR(-20225, 'Tipo de Agente '|| cCodTipo || ' del Agente No. ' || nJefe || ' NO Posee Conceptos para Liquidación de Comisiones');
+         END IF;
+         --
+         IF nComPoliza <> nComisionTotalPlan AND NVL(nComPoliza, 0) != 0 THEN
+            nPorc_Com_Distribuida  := nComPoliza * nComAgenteNivel / nComisionTotalPlan;
+            nPorc_Com_Proporcional := nPorc_Com_Distribuida / nComPoliza * 100;
+            nPorc_Com_Dist         := nPorc_Com_Distribuida;
+            nPorc_Com_Prop         := nPorc_Com_Proporcional;
+         ELSE
+            nPorc_Com_Distribuida  := 100;
+            nPorc_Com_Proporcional := 100;
+            nPorc_Com_Dist         := nComAgenteNivel;
+            nPorc_Com_Prop         := ROUND(nProporcional, 2);
+         END IF;
+         --
+         INSERT INTO AGENTES_DISTRIBUCION_POLIZA
+                ( CodCia              , IdPoliza          , Cod_Agente           , CodNivel       , Cod_Agente_Distr, Porc_Comision_Agente,
+                  Porc_Com_Distribuida, Porc_Comision_Plan, Porc_Com_Proporcional, Cod_Agente_Jefe, Porc_Com_Poliza , Origen )
+         VALUES ( nCodCia       , nIdPoliza         , nCod_Agente   , nNivel, nJefe     , nComAgenteNivel,
+                  nPorc_Com_Dist, nComisionTotalPlan, nPorc_Com_Prop, nnJefe, nComPoliza, 'C' );
+         --
+         IF nnJefe IS NOT NULL THEN
+            nJefe := nnJefe;
+         ELSE
+            EXIT;
+         END IF;
+      END LOOP;
+      --
+      --Copiar a los demás SubGrupos/Detalles
+      SELECT COUNT(*)
+      INTO   nCountPoliza
+      FROM   AGENTES_DISTRIBUCION_COMISION
+      WHERE  CodCia   = nCodCia
+        AND  IdPoliza = nIdPoliza;
+      --
+      DELETE AGENTES_DISTRIBUCION_COMISION
+      WHERE  CodCia   = nCodCia
+        AND  IdPoliza = nIdPoliza;
+      --
+      DELETE AGENTES_DETALLES_POLIZAS
+      WHERE  CodCia   = nCodCia
+        AND  IdPoliza = nIdPoliza;
+      --
+      OC_AGENTES_DISTRIBUCION_POLIZA.COPIAR(nCodCia, nIdPoliza);
+      --
+      SELECT SUM(NVL(PORC_COM_DISTRIBUIDA, 0))
+      INTO   nPorComDis
+      FROM   AGENTES_DISTRIBUCION_POLIZA
+      WHERE  IdPoliza = nIdPoliza;
+      --
+      UPDATE DETALLE_POLIZA
+      SET    PorcComis = nPorComDis 
+      WHERE  IdPoliza = nIdPoliza;
+   EXCEPTION
+   WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20225, 'Nivel Agente Invalido favor revisar Configuración' || SQLERRM);
+   END API_DISTRIBUYE_AGENTES;
+
 END API_GENERALES;
+/
