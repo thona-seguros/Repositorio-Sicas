@@ -1,4 +1,4 @@
-create or replace PACKAGE          OC_COTIZACIONES_COBERT_WEB IS
+create or replace PACKAGE SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
 ---- SE AGREGO EL CAMPO nFranquiciaIngresado EN LAS TABLAS COTIZACIONES_COBERT_WEB Y COTIZACIONES_COBERT_WEB    ARH 26/08/2024 
 ---- SE AGREGO EN LOS PARAMETROS EL CAMPO FRANQUICIAINGRESADO EN EL LLAMADO GT_COTIZACIONES_COBERTURAS.CARGAR_COBERTURAS
 ---- SE AGREGO UN REPLACE EN SERVICIO_XML ARH 26082024
@@ -70,7 +70,7 @@ create or replace PACKAGE          OC_COTIZACIONES_COBERT_WEB IS
 
 END OC_COTIZACIONES_COBERT_WEB;
 /
-create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
+create or replace PACKAGE BODY SICAS_OC.OC_COTIZACIONES_COBERT_WEB IS
    PROCEDURE INSERTAR( nCodCia              IN  COTIZACIONES_COBERT_WEB.CodCia%TYPE
                      , nCodEmpresa          IN  COTIZACIONES_COBERT_WEB.CodEmpresa%TYPE
                      , nIdCotizacion        IN  COTIZACIONES_COBERT_WEB.IdCotizacion%TYPE
@@ -565,15 +565,16 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
          FROM COTIZACIONES_ASEG
         WHERE CodCia           = nCodCia
           AND CodEmpresa       = nCodEmpresa
-          AND IdCotizacion     = nIdCotizacion;
-          --AND IDetCotizacion   = nIdetCotizacion;
+          AND IdCotizacion     = nIdCotizacion
+          AND IDetCotizacion   = nIdetCotizacion;  --masp
 
     CURSOR COT_SUBGPO_Q IS
        SELECT CodCia, CodEmpresa, IdCotizacion, IDetCotizacion
          FROM COTIZACIONES_DETALLE
         WHERE CodCia        = nCodCia
-          AND CodEmpresa    = nCodEmpresa
-          AND IdCotizacion  = nIdCotizacion;
+          AND CodEmpresa     = nCodEmpresa
+          AND IdCotizacion   = nIdCotizacion
+          AND IDetCotizacion = nIdetCotizacion;  --masp
     BEGIN
        EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_DATE_FORMAT = ''DD/MM/YYYY''';
        --
@@ -604,7 +605,7 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
           --
           xElementoPadre := XMLDOM.ITEM( xNodosPadre, x - 1 );
           --
-          -- obtenemos la lista d eelementos que tiene el nodo actual
+          -- obtenemos la lista de elementos que tiene el nodo actual
           xNodosHijo := XMLDOM.GETCHILDNODES( xElementoPadre );
           --
           FOR y IN 1..XMLDOM.GETLENGTH( xNodosHijo ) LOOP
@@ -771,8 +772,11 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                     VERSION '1.0" encoding="UTF-8')
                INTO xFactorEscalaPO
                FROM DUAL;
-
-             GENERALES_PLATAFORMA_DIGITAL.RECIBE_GENERALES_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, xFactorEscalaPO);
+               --
+               -- MASP Servicios Emisión Masiva Vida   03/04/2025
+               --      Se rehabilita el parámetro de nIDetCotizacion para afectar unicamente al Subgrupo necesario y no a todos los Subgrupos,
+               --      para este caso se envía NULL para que afecte a todos los Subgrupos ya que así estaba originalmente
+             GENERALES_PLATAFORMA_DIGITAL.RECIBE_GENERALES_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, NULL, xFactorEscalaPO);
           END IF;
           IF X.CodCobertWeb = 'GF<12' OR X.CodCobertWeb = 'GF>12'  THEN
 
@@ -783,11 +787,11 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
               AND IDCOTIZACION = nIdCotizacion;
 
           END IF;
-           
+
           IF X.CodCobertWeb = 'RDH' OR X.CodCobertWeb = 'INCTPA'  THEN
-             
+
              GT_COTIZACIONES_CLAUSULAS.COTIZACION_WEB_CLAUSULAS(nCodCia, nCodEmpresa, nIdCotizacion, X.CodCobertWeb, X.MontoDiario, X.SumaAsegCobLocal); ---ARH 26/08/2024
-           
+
           END IF; 
        END LOOP;
 
@@ -822,28 +826,33 @@ create or replace PACKAGE BODY          OC_COTIZACIONES_COBERT_WEB IS
                                                              NVL(x.DeducibleIngresado,0), NVL(x.CuotaPromedio,0), 
                                                              NVL(x.PrimaPromedio,0), NVL(x.FranquiciaIngresado,0), 
                                                              NVL(x.MontoDiario,0),  NVL(x.Dias_cal,0)); ---ARH26082024   
-             END LOOP;                                                
+             END LOOP;                                    
              GT_COTIZACIONES_ASEG.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion, I.IDetCotizacion, I.IdAsegurado);
              GT_COTIZACIONES_DETALLE.ACTUALIZAR_VALORES(I.CodCia, I.CodEmpresa, I.IdCotizacion, I.IDetCotizacion);  
           END LOOP;   
        END IF;      
 
        FOR x IN Cotizacion_Coberturas LOOP
-          GT_COTIZACIONES_COBERT_MASTER.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, cIdTipoSeg,
-                                                          cPlanCob, X.IdCotizacion, 
-                                                          X.IdetCotizacion, NULL, X.CodCobertWeb,
-                                                          NVL(X.SumaAsegCalculada,0), NVL(X.SalarioMensual,0),
-                                                          NVL(X.VecesSalario,0), NVL(X.Edad_Minima,0), 
-                                                          NVL(X.Edad_Maxima,0), NVL(X.Edad_Exclusion,0),
-                                                          NVL(X.SumaAseg_Minima,0), NVL(X.SumaAseg_Maxima,0),
-                                                          NVL(X.PorcExtraPrimaDet,0), NVL(X.MontoExtraprimaDet,0), NVL(X.SumaIngresada,0),
-                                                          NVL(X.DeducibleIngresado,0), NVL(X.CuotaPromedio,0), 
-                                                          NVL(X.PrimaPromedio,0), NVL(x.FranquiciaIngresado,0), 
-                                                          NVL(x.MontoDiario,0),  NVL(x.Dias_cal,0)); ---ARH26082024 
+           BEGIN
+              GT_COTIZACIONES_COBERT_MASTER.CARGAR_COBERTURAS(X.CodCia, X.CodEmpresa, cIdTipoSeg,
+                                                              cPlanCob, X.IdCotizacion, 
+                                                              X.IdetCotizacion, NULL, X.CodCobertWeb,
+                                                              NVL(X.SumaAsegCalculada,0), NVL(X.SalarioMensual,0),
+                                                              NVL(X.VecesSalario,0), NVL(X.Edad_Minima,0), 
+                                                              NVL(X.Edad_Maxima,0), NVL(X.Edad_Exclusion,0),
+                                                              NVL(X.SumaAseg_Minima,0), NVL(X.SumaAseg_Maxima,0),
+                                                              NVL(X.PorcExtraPrimaDet,0), NVL(X.MontoExtraprimaDet,0), NVL(X.SumaIngresada,0),
+                                                              NVL(X.DeducibleIngresado,0), NVL(X.CuotaPromedio,0), 
+                                                              NVL(X.PrimaPromedio,0), NVL(x.FranquiciaIngresado,0), 
+                                                              NVL(x.MontoDiario,0),  NVL(x.Dias_cal,0)); ---ARH26082024 
+           EXCEPTION
+           WHEN OTHERS THEN
+                RAISE_APPLICATION_ERROR(-20225, 'ERROR ERROR: ' || SQLERRM);
+           END;
        END LOOP;      
 
        GENERALES_PLATAFORMA_DIGITAL.RECALCULAR_COTIZACION(nCodCia, nCodEmpresa, nIdCotizacion, cIdTipoSeg, cPlanCob, 'N', 'N', 'S');
-       
+
        BEGIN
           SELECT PrimaCotLocal, PrimaCotMoneda--, GastosExpedicion
             INTO nPrimaCotLocal, nPrimaCotMoneda--, nGastosExpedicion

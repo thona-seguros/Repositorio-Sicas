@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_DETALLE_POLIZA IS
+create or replace PACKAGE SICAS_OC.OC_DETALLE_POLIZA IS
 
   FUNCTION INSERTAR_DETALLE(nCodCia NUMBER, nCodEmpresa NUMBER, cIdTipoSeg VARCHAR2,
                             cPlanCob VARCHAR2, nIdPoliza NUMBER, nTasaCambio NUMBER,
@@ -37,9 +37,18 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_DETALLE_POLIZA IS
 
   FUNCTION FN_PRORRATEO_CPTO_RAMO (pnCodCia NUMBER, pnCodEmpresa NUMBER, pnIdPoliza NUMBER, pnIDetPol NUMBER, pvCodCpto VARCHAR2) RETURN NUMBER;
 
+   PROCEDURE RECALCULO_SUBGRUPO( nCodCia      NUMBER
+                               , nCodEmpresa  NUMBER
+                               , nIdPoliza    NUMBER
+                               , nIDetPol     NUMBER
+                               , cPlanCob     VARCHAR2
+                               , cIdTipoSeg   VARCHAR2
+                               , nTasaCambio  NUMBER
+                               , nEndoso      NUMBER );
+
 END OC_DETALLE_POLIZA;
 /
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_DETALLE_POLIZA IS
+create or replace PACKAGE BODY SICAS_OC.OC_DETALLE_POLIZA IS
 --
 -- BITACORA DE CAMBIOS
 -- SE AGREGO LA FUNCIONALIDAD PARA RENOVACION DE CLAUSULAS 10/08/2017  CLAUREN
@@ -75,7 +84,7 @@ BEGIN
              0, cNumDetRef, 'SOL', NULL, NULL, cCodPromotor, 0);
    EXCEPTION
       WHEN DUP_VAL_ON_INDEX THEN
-         RAISE_APPLICATION_ERROR(-20225,'Ya Existe el Detalle de P liza: '||TRIM(TO_CHAR(nIdPoliza))||
+         RAISE_APPLICATION_ERROR(-20225,'Ya Existe el Detalle de Poliza: '||TRIM(TO_CHAR(nIdPoliza))||
                                  '-'||TRIM(TO_CHAR(nIDetPol)));
    END;
    RETURN(nIDetPol);
@@ -135,7 +144,7 @@ BEGIN
       AND IDetPol         = nIDetPol
       AND StsAsistencia NOT IN ('EXCLUI');
 
-   IF NVL(nMontoPrimaCompMoneda,0) > 0 THEN --- SOLO SE DEBER  ACTUALIZAR EL MONTO DE RETIRO CUANDO LA PRIMA COMPLEMENTARIA SEA <= 0 (ALTURA CERO DE LA P LIZA)
+   IF NVL(nMontoPrimaCompMoneda,0) > 0 THEN --- SOLO SE DEBERA ACTUALIZAR EL MONTO DE RETIRO CUANDO LA PRIMA COMPLEMENTARIA SEA <= 0 (ALTURA CERO DE LA POLIZA)
       nMontoPrimaCompMoneda   := 0;
       nMontoPrimaCompLocal    := 0;
    END IF;
@@ -279,11 +288,9 @@ CURSOR ASEG_Q IS
    SELECT IDetPol, Cod_Asegurado
      FROM ASEGURADO_CERTIFICADO
     WHERE IdPoliza = nIdPoliza
-      AND IDetPol = nIDetPol
+      AND IDetPol  = nIDetPol
       AND CodCia   = nCodCia
       AND Estado   = 'EMI';
-
-
 
 CURSOR FONDOS_Q IS -- GTC - 17-12-2018
    SELECT CodAsegurado, IdFondo
@@ -304,7 +311,7 @@ BEGIN
       AND D.IdPoliza      = nIdPoliza
       AND D.CodCia        = nCodCia;
 
-   -- Calcula Fecha de Anulaci n para NO Devolver Prima
+   -- Calcula Fecha de Anulacion para NO Devolver Prima
    nDiasAno      := TRUNC(dFecFinVig) - TRUNC(dFecIniVig);
 
    nTotPrimaPag  := 0;
@@ -332,7 +339,7 @@ BEGIN
    nPrimaCanc     := nTotPrimaEmit * nFactProrrata;
 
    IF NVL(nTotPrimaPag,0) = 0 THEN
-      -- Anula Notas de Cr dito
+      -- Anula Notas de Credito
       FOR X IN NCR_Q LOOP
          IF NVL(nIdTransacNc,0) = 0 THEN
             nIdTransacNc := OC_TRANSACCION.CREA(nCodCia, nCodEmpresa, 8, 'ANUNCR');
@@ -494,7 +501,7 @@ BEGIN
    END LOOP;
 EXCEPTION
    WHEN OTHERS THEN
-      RAISE_APPLICATION_ERROR(-20225,'Error al Anular Detalle de P liza: '||TRIM(TO_CHAR(nIdPoliza))||
+      RAISE_APPLICATION_ERROR(-20225,'Error al Anular Detalle de Poliza: '||TRIM(TO_CHAR(nIdPoliza))||
                                  '-'||TRIM(TO_CHAR(nIDetPol))|| ' ' ||SQLERRM);
 END ANULAR_DETALLE;
 
@@ -804,7 +811,7 @@ BEGIN
          END IF;
       EXCEPTION
          WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nuevo Detalle de P liza ' ||SQLERRM);
+            RAISE_APPLICATION_ERROR(-20225,'Error en Copiado de Nuevo Detalle de Poliza ' ||SQLERRM);
       END;
 
       FOR J IN AGENTES_Q LOOP
@@ -1034,7 +1041,7 @@ BEGIN
 
       OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccion, 'C');
 
-      -- Rehabilita Notas de Cr dito Anuladas
+      -- Rehabilita Notas de Credito Anuladas
       SELECT MAX(T.IdTransaccion)
         INTO nIdTransaccionAnuNc
         FROM TRANSACCION T, DETALLE_TRANSACCION D
@@ -1058,7 +1065,7 @@ BEGIN
          OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransacNcRehab, 'C');
       END IF;
 
-      -- Anula Notas de Cr dito de la Anulaci n
+      -- Anula Notas de Credito de la Anulacion
       SELECT MAX(T.IdTransaccion)
         INTO nIdTransaccionEmiNc
         FROM TRANSACCION T, DETALLE_TRANSACCION D
@@ -1097,7 +1104,7 @@ BEGIN
       END IF;
    ELSE
       RAISE_APPLICATION_ERROR(-20225,'El Certificado/Subgrupo No. ' || TRIM(TO_CHAR(nIDetPol)) ||
-                              ' de la P liza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' NO est  Anulado para Rehabilitarse');
+                              ' de la Poliza No. ' || TRIM(TO_CHAR(nIdPoliza)) || ' NO este Anulado para Rehabilitarse');
    END IF;
 END REHABILITACION;
 
@@ -1228,47 +1235,45 @@ BEGIN
             INTO nPrimaTotSub
             FROM (
 
-                SELECT SUM(C.Prima_Local) Prima_Local
+                SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
                 FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
                 WHERE CS.CodCobert    = C.CodCobert
                 AND CS.PlanCob      = C.PlanCob
                 AND CS.IdTipoSeg    = C.IdTipoSeg
                 AND CS.CodEmpresa   = C.CodEmpresa
                 AND CS.CodCia       = C.CodCia
-                AND C.StsCobertura  IN ('EMI','REN', 'XREN')
+                AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU') --MLJS 26/01/2026 SE AGREGA ANU
                 AND C.IdPoliza      = pnIdPoliza
                 AND C.CodCia        = pnCodCia
                 AND C.IdetPol       = pnIDetPol
                 HAVING SUM(C.Prima_Local) IS NOT NULL
                 UNION
-                SELECT SUM(C.Prima_Local) Prima_Local
+                SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
                 FROM COBERT_ACT_ASEG C, COBERTURAS_DE_SEGUROS CS
                 WHERE CS.CodCobert    = C.CodCobert
                 AND CS.PlanCob      = C.PlanCob
                 AND CS.IdTipoSeg    = C.IdTipoSeg
                 AND CS.CodEmpresa   = C.CodEmpresa
                 AND CS.CodCia       = C.CodCia
-                AND C.StsCobertura  IN ('EMI','REN', 'XREN')
+                AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU') --MLJS 26/01/2026 SE AGREGA ANU
                 AND C.IdPoliza      = pnIdPoliza
                 AND C.CodCia        = pnCodCia
                 AND C.IdetPol       = pnIDetPol
                 HAVING SUM(C.Prima_Local) IS NOT NULL
-
             );
   EXCEPTION
     WHEN OTHERS THEN
        SELECT Prima_local
             INTO nPrimaTotSub
             FROM (
-
-                SELECT SUM(C.Prima_Local) Prima_Local
+                SELECT NVL(SUM(C.Prima_Local),0) Prima_Local
                 FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
                 WHERE CS.CodCobert    = C.CodCobert
                 AND CS.PlanCob      = C.PlanCob
                 AND CS.IdTipoSeg    = C.IdTipoSeg
                 AND CS.CodEmpresa   = C.CodEmpresa
                 AND CS.CodCia       = C.CodCia
-                AND C.StsCobertura  IN ('EMI','REN', 'XREN')
+                AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU') --MLJS 26/01/2026 SE AGREGA ANU
                 AND C.IdPoliza      = pnIdPoliza
                 AND C.CodCia        = pnCodCia
                 AND C.IdetPol       = 1
@@ -1281,15 +1286,14 @@ BEGIN
                 AND CS.IdTipoSeg    = C.IdTipoSeg
                 AND CS.CodEmpresa   = C.CodEmpresa
                 AND CS.CodCia       = C.CodCia
-                AND C.StsCobertura  IN ('EMI','REN', 'XREN')
+                AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU') --MLJS 26/01/2026 SE AGREGA ANU
                 AND C.IdPoliza      = pnIdPoliza
                 AND C.CodCia        = pnCodCia
                 AND C.IdetPol       = 1
                 HAVING SUM(C.Prima_Local) IS NOT NULL
-
             );
-  END;   
-  BEGIN       
+  END;
+  BEGIN
         SELECT Prima_Local
          INTO nPrimaTotCpto
          FROM (
@@ -1300,7 +1304,7 @@ BEGIN
              AND CS.IdTipoSeg    = C.IdTipoSeg
              AND CS.CodEmpresa   = C.CodEmpresa
              AND CS.CodCia       = C.CodCia
-             AND C.StsCobertura  IN ('EMI','REN', 'XREN')
+             AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')  --MLJS 26/01/2026 SE AGREGA ANU
              AND C.IdPoliza      = pnIdPoliza
              AND C.CodCia        = pnCodCia
              AND C.IdetPol       = pnIdetPol
@@ -1314,13 +1318,15 @@ BEGIN
              AND CS.IdTipoSeg    = C.IdTipoSeg
              AND CS.CodEmpresa   = C.CodEmpresa
              AND CS.CodCia       = C.CodCia
-             AND C.StsCobertura  IN ('EMI','REN', 'XREN')
+             AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')  --MLJS 26/01/2026 SE AGREGA ANU
              AND C.IdPoliza      = pnIdPoliza
              AND C.CodCia        = pnCodCia
              AND C.IdetPol       = pnIdetPol
              AND CS.CodCpto      = pvCodCpto
            GROUP BY CS.CodCpto);
    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         nPrimaTotCpto := 0;
       WHEN OTHERS THEN
          SELECT Prima_Local
          INTO nPrimaTotCpto
@@ -1332,7 +1338,7 @@ BEGIN
              AND CS.IdTipoSeg    = C.IdTipoSeg
              AND CS.CodEmpresa   = C.CodEmpresa
              AND CS.CodCia       = C.CodCia
-             AND C.StsCobertura  IN ('EMI','REN', 'XREN')
+             AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')
              AND C.IdPoliza      = pnIdPoliza
              AND C.CodCia        = pnCodCia
              AND C.IdetPol       = 1
@@ -1346,18 +1352,17 @@ BEGIN
              AND CS.IdTipoSeg    = C.IdTipoSeg
              AND CS.CodEmpresa   = C.CodEmpresa
              AND CS.CodCia       = C.CodCia
-             AND C.StsCobertura  IN ('EMI','REN', 'XREN')
+             AND C.StsCobertura  IN ('EMI','REN', 'XREN','ANU')
              AND C.IdPoliza      = pnIdPoliza
              AND C.CodCia        = pnCodCia
              AND C.IdetPol       = 1
              AND CS.CodCpto      = pvCodCpto
            GROUP BY CS.CodCpto);
-   END;     
+   END;
 
     nFactor := (nPrimaTotCpto * 100) / NVL(nPrimaTotSub,0.01);
-   -- nFactor := (nPrimaTotCpto) / NVL(nPrimaTotSub,0.01);
 
-    DBMS_OUTPUT.PUT_LINE('EL FACTOR CALCULADO ES: ' || nFactor); 
+    DBMS_OUTPUT.PUT_LINE('EL FACTOR CALCULADO ES: ' || nFactor);
     RETURN (nFactor);
 
     EXCEPTION
@@ -1365,6 +1370,101 @@ BEGIN
          RAISE_APPLICATION_ERROR(-20001,'Error al Calcular el factor : '||pnIdPoliza||sqlerrm);
 
 END FN_PRORRATEO_CPTO_RAMO;
+
+   PROCEDURE RECALCULO_SUBGRUPO( nCodCia      NUMBER
+                               , nCodEmpresa  NUMBER
+                               , nIdPoliza    NUMBER
+                               , nIDetPol     NUMBER
+                               , cPlanCob     VARCHAR2
+                               , cIdTipoSeg   VARCHAR2
+                               , nTasaCambio  NUMBER
+                               , nEndoso      NUMBER ) IS
+      nCodCobert          COBERTURAS_DE_SEGUROS.CodCobert%TYPE;
+      nAsegura            NUMBER;
+      --
+      CURSOR ASEG_Q IS
+             SELECT Cod_Asegurado, IdEndoso
+             FROM   ASEGURADO_CERTIFICADO
+             WHERE  CodCia   = nCodCia 
+               AND  IdPoliza = nIdPoliza
+               AND  IDetPol  = nIDetPol 
+               AND  Estado   = 'SOL';
+      --
+      CURSOR COBER_Q IS
+             SELECT CodCobert        , Cod_Asegurado     , SumaAseg_Local, SumaAseg_Moneda    , Prima_Moneda, Prima_Local   , Deducible_Local, Deducible_Moneda,
+                    SumaAsegCalculada, SalarioMensual    , VecesSalario  , Edad_Minima        , Edad_Maxima , Edad_Exclusion, SumaAseg_Maxima, SumaAseg_Minima ,
+                    PorcExtraPrimaDet, MontoExtraPrimaDet, SumaIngresada , Franquiciaingresado, MontoDiario , Dias_cal 
+             FROM   COBERT_ACT_ASEG
+             WHERE  CodEmpresa = nCodEmpresa
+               AND  CodCia     = nCodCia
+               AND  IdPoliza   = nIdPoliza
+               AND  IdetPol    = nIDetPol
+               AND  IdTipoSeg  = cIdTipoSeg;
+      --
+      CURSOR COB_Q IS
+             SELECT CodCobert      , SumaAseg_Moneda, SalarioMensual   , VecesSalario      , Edad_Minima  , Edad_Maxima, Edad_Exclusion,
+                    Sumaaseg_Minima, SumaAseg_Maxima, PorcExtraPrimadet, MontoExtraPrimadet, SumaIngresada, Cod_Asegurado
+             FROM   COBERT_ACT
+             WHERE  CodCia     = nCodCia
+               AND  CodEmpresa = nCodEmpresa
+               AND  IdPoliza   = nIdPoliza
+               AND  IDetPol    = nIDetPol
+               AND  IdTipoSeg  = cIdTipoSeg;
+   BEGIN
+      IF OC_COBERT_ACT.EXISTE_COBERTURA(nCodCia, nCodEmpresa, cIdTipoSeg, cPlanCob, nIdPoliza, nIDetPol) = 'N' THEN
+         FOR X IN COBER_Q LOOP
+             nCodCobert := X.CodCobert;
+             nAsegura   := X.Cod_Asegurado;
+             --
+             DELETE COBERT_ACT_ASEG
+             WHERE  CodEmpresa    = nCodEmpresa
+               AND  CodCia        = nCodCia
+               AND  IdPoliza      = nIdPoliza
+               AND  IDetPol       = nIDetPol
+               AND  IdTipoSeg     = cIdTipoSeg
+               AND  CodCobert     = x.CodCobert
+               AND  Cod_Asegurado = x.Cod_Asegurado;
+             --
+             -- MASP 20/02/2026 cambiamos el llamado de OC_COBERT_ACT_ASEG.CARGAR_COBERTURAS para no tocar el proceso que se usa en SICAS y lo replicamos en 
+             -- este Package con los cambios necesarios para SIGO
+             THONAPI.FLUJO_EMISION_SIGO.CARGAR_COBERTURAS( nCodCia             , nCodEmpresa    , cIdTipoSeg           , cPlanCob           , nIdPoliza        , nIDetPol           ,
+                                                           nTasaCambio         , x.Cod_Asegurado, x.CodCobert          , x.SumaAsegCalculada, x.SalarioMensual , x.VecesSalario     ,
+                                                           x.Edad_Minima       , x.Edad_Maxima  , x.Edad_Exclusion     , x.SumaAseg_Minima  , x.SumaAseg_Maxima, x.PorcExtraPrimaDet,
+                                                           x.MontoExtraPrimaDet, x.SumaIngresada, x.Franquiciaingresado, x.MontoDiario      , x.Dias_cal );
+         END LOOP;
+         --
+         FOR Y IN ASEG_Q LOOP
+             OC_ASEGURADO_CERTIFICADO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, Y.Cod_Asegurado);
+             OC_ASEGURADO_CERTIFICADO.ACTUALIZA_ASISTENCIAS(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, Y.Cod_Asegurado);
+             --
+             IF Y.Idendoso > 0 THEN
+                UPDATE COBERT_ACT_ASEG
+                SET    IdEndoso      = Y.Idendoso
+                WHERE  CodEmpresa    = nCodEmpresa
+                  AND  CodCia        = nCodCia
+                  AND  IdPoliza      = nIdPoliza
+                  AND  IDetPol       = nIDetPol
+                  AND  IdTipoSeg     = cIdTipoSeg
+                  AND  Cod_Asegurado = Y.Cod_Asegurado;
+                --
+                OC_ENDOSO.ACTUALIZA_VALORES(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, Y.Idendoso);
+             END IF;
+         END LOOP;
+      ELSE
+         FOR z IN COB_Q LOOP
+             OC_COBERT_ACT.CARGAR_COBERTURAS( nCodCia          , nCodEmpresa      , cIdTipoSeg         , cPlanCob            , nIdPoliza    , nIDetPol     , nTasaCambio     ,
+                                              z.CodCobert      , z.SumaAseg_Moneda, z.SalarioMensual   , z.VecesSalario      , z.Edad_Minima, z.Edad_Maxima, z.Edad_Exclusion,
+                                              z.SumaAseg_Minima, z.SumaAseg_Maxima, z.PorcExtraPrimadet, z.MontoExtraPrimadet, z.SumaIngresada );
+         END LOOP;
+      END IF;
+      --
+      OC_DETALLE_POLIZA.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nIDetPol, nEndoso);
+      OC_POLIZAS.ACTUALIZA_VALORES(nCodCia, nIdPoliza, nEndoso);
+   EXCEPTION
+   WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR( -20225, 'Error al recalcular los SubGrupos: ' || TRIM(TO_CHAR(nIdPoliza)) || '-' || TRIM(TO_CHAR(nIDetPol)) || 
+                                 '-' || TRIM(TO_CHAR(nCodCobert)) || '-' || TRIM(TO_CHAR(nAsegura)) || ' ' || SQLERRM );
+   END RECALCULO_SUBGRUPO;
 
 END OC_DETALLE_POLIZA;
 /
