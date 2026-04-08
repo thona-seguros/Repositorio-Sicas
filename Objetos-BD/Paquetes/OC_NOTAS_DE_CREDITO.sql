@@ -2,10 +2,10 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_NOTAS_DE_CREDITO IS
 
 FUNCTION F_GET_NTCRE ( p_msg_regreso    out  nocopy varchar2 ) RETURN NUMBER; --SEQ XDS 20160727
 
-FUNCTION INSERTA_NOTA_CREDITO(nCodCia         NUMBER,    nIdPoliza      NUMBER,    nIDetPol            NUMBER, 
-                              nIdEndoso       NUMBER,    nCodCliente    NUMBER,    dFecNcr             DATE, 
-                              nMtoNcrLocal    NUMBER,    nMtoNcrMoneda  NUMBER,    nMtoComisLocal      NUMBER, 
-                              nMtoComisMoneda NUMBER,    nCodAgente     NUMBER,    cCodMoneda          VARCHAR2, 
+FUNCTION INSERTA_NOTA_CREDITO(nCodCia         NUMBER,    nIdPoliza      NUMBER,    nIDetPol            NUMBER,
+                              nIdEndoso       NUMBER,    nCodCliente    NUMBER,    dFecNcr             DATE,
+                              nMtoNcrLocal    NUMBER,    nMtoNcrMoneda  NUMBER,    nMtoComisLocal      NUMBER,
+                              nMtoComisMoneda NUMBER,    nCodAgente     NUMBER,    cCodMoneda          VARCHAR2,
                               nTasaCambio     NUMBER,    nIdTransaccion NUMBER,    cIndFactElectronica VARCHAR2) RETURN NUMBER;
 
 PROCEDURE ACTUALIZA_NOTA(nIdNcr NUMBER);
@@ -20,7 +20,7 @@ FUNCTION FUNC_CALCULO_PRORRATA (dFecIniVig DATE ,dFecFinVig DATE ,dFecExc DATE,n
 
 PROCEDURE PAGAR(nCodCia NUMBER, nIdNcr NUMBER, dFecPago DATE);
 
-PROCEDURE APLICAR(nCodCia   NUMBER,    nCodEmpresa   NUMBER,      nIdnCR         NUMBER, 
+PROCEDURE APLICAR(nCodCia   NUMBER,    nCodEmpresa   NUMBER,      nIdnCR         NUMBER,
                   dFecAplic DATE,      cNumReciboRef VARCHAR2,    nIdTransaccion NUMBER);
 
 PROCEDURE ARCHIVO_CLIENTES_FACT_ELECT(nCodCia NUMBER, dFecDesde DATE, dFecHasta DATE);
@@ -35,20 +35,20 @@ FUNCTION CODIGO_PLAN_PAGOS(nCodCia NUMBER, nIdNcr NUMBER) RETURN VARCHAR2;
 
 PROCEDURE REHABILITACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNcrAnu NUMBER, nIdTransaccion NUMBER);
 
-FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoliza      NUMBER, 
-                        nIdEndoso      NUMBER,   dFecDevol      DATE,    dFecFinVigPol  DATE,    
+FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoliza      NUMBER,
+                        nIdEndoso      NUMBER,   dFecDevol      DATE,    dFecFinVigPol  DATE,
                         cCodPlanPago   VARCHAR2) RETURN DATE;
 
 PROCEDURE REVERTIR_APLICACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdnCR NUMBER);
 
-FUNCTION FACTURA_ELECTRONICA(nIdNcr    NUMBER,   nCodCia       NUMBER,   nCodEmpresa  NUMBER, 
+FUNCTION FACTURA_ELECTRONICA(nIdNcr    NUMBER,   nCodCia       NUMBER,   nCodEmpresa  NUMBER,
                              cTipoCfdi VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL) RETURN VARCHAR2;
 
 FUNCTION MONTO_BASE_IMPUESTO(nCodCia       NUMBER, nIdNcr  NUMBER)  RETURN NUMBER;
 
 ---ARH 06/06/2025 procedicimento para insertar datos temporales de los recibos provisionales
 PROCEDURE INSERT_TEMP_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNcr NUMBER, nIdPoliza NUMBER);
-    --                         
+    --
 
 END OC_NOTAS_DE_CREDITO;
 /
@@ -58,7 +58,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_NOTAS_DE_CREDITO IS
 -- CALCULO Y REGISTRO DEL FIN DE VIGENCIA DE RECIBOS Y NOTAS DE CREDITO      2018/03/09  ICOFINVIG
 -- CALCULO DEL AÃ‘O POLIZA DE RECIBOS Y NOTAS DE CREDITO                      2019/03/27  ICO LARPLA
 --
-p_msg_regreso varchar2(50);----var XDS 
+p_msg_regreso varchar2(50);----var XDS
 --------------------------------------------------------------------
   --- Funcion para buscar el proximo numero de Nota de Credito ---
 --------------------------------------------------------------------
@@ -67,13 +67,13 @@ p_msg_regreso varchar2(50);----var XDS
 
       vNumNTCRE       parametros_enum_not_cre.paen_cont_fin%type;
       vNombreTabla    varchar2(30);
-      vIdProducto     number(6); 
+      vIdProducto     number(6);
 
 
    BEGIN
     -- Buscar el nombre de la tabla de la cual se obtendra por la descripcion y la bandera
       select pa.pame_ds_numerador,
-             pa.paem_id_producto 
+             pa.paem_id_producto
         into vNombreTabla,
              vIdProducto
         from PARAMETROS_EMISION pa
@@ -92,7 +92,7 @@ p_msg_regreso varchar2(50);----var XDS
  --  Actualizar al siguiente numero
       update parametros_enum_not_cre pntc
          set pntc.paen_cont_fin = vNumNTCRE +1
-       where pntc.paen_id_nc  = vIdProducto; 
+       where pntc.paen_id_nc  = vIdProducto;
 
 
     -- Hacer permanentes los cambios para evitar bloqueo de la tabla
@@ -115,19 +115,19 @@ p_msg_regreso varchar2(50);----var XDS
  END F_GET_NTCRE;
 
 
-FUNCTION INSERTA_NOTA_CREDITO(nCodCia         NUMBER,    nIdPoliza      NUMBER,    nIDetPol            NUMBER, 
-                              nIdEndoso       NUMBER,    nCodCliente    NUMBER,    dFecNcr             DATE, 
-                              nMtoNcrLocal    NUMBER,    nMtoNcrMoneda  NUMBER,    nMtoComisLocal      NUMBER, 
-                              nMtoComisMoneda NUMBER,    nCodAgente     NUMBER,    cCodMoneda          VARCHAR2, 
+FUNCTION INSERTA_NOTA_CREDITO(nCodCia         NUMBER,    nIdPoliza      NUMBER,    nIDetPol            NUMBER,
+                              nIdEndoso       NUMBER,    nCodCliente    NUMBER,    dFecNcr             DATE,
+                              nMtoNcrLocal    NUMBER,    nMtoNcrMoneda  NUMBER,    nMtoComisLocal      NUMBER,
+                              nMtoComisMoneda NUMBER,    nCodAgente     NUMBER,    cCodMoneda          VARCHAR2,
                               nTasaCambio     NUMBER,    nIdTransaccion NUMBER,    cIndFactElectronica VARCHAR2) RETURN NUMBER IS  --LARPLA
 nIdNcr               NOTAS_DE_CREDITO.IdNcr%TYPE;
 cCodTipoDoc          TIPO_DE_DOCUMENTO.CodTipoDoc%TYPE;
 cCodUsuarioEnvFact   NOTAS_DE_CREDITO.CodUsuarioEnvFact%TYPE;
-nID_año_POLIZA  FACTURAS.id_año_poliza%TYPE;  
-dFECFINVIGNCR   FACTURAS.FECFINVIG%TYPE;      
-dFECFINVIGPOL   POLIZAS.FECFINVIG%TYPE;       
-nCODEMPRESA     POLIZAS.CODEMPRESA%TYPE;      
-cCODPLANPAGO    POLIZAS.CODPLANPAGO%TYPE;     
+nID_año_POLIZA  FACTURAS.id_año_poliza%TYPE;
+dFECFINVIGNCR   FACTURAS.FECFINVIG%TYPE;
+dFECFINVIGPOL   POLIZAS.FECFINVIG%TYPE;
+nCODEMPRESA     POLIZAS.CODEMPRESA%TYPE;
+cCODPLANPAGO    POLIZAS.CODPLANPAGO%TYPE;
 --
 BEGIN
   --
@@ -142,9 +142,9 @@ BEGIN
          cCodTipoDoc := NULL;
   END;
   --
-  BEGIN     
+  BEGIN
     SELECT P.FECFINVIG,   P.CODEMPRESA,   P.CODPLANPAGO
-      INTO dFECFINVIGPOL, nCODEMPRESA,    cCODPLANPAGO   
+      INTO dFECFINVIGPOL, nCODEMPRESA,    cCODPLANPAGO
       FROM POLIZAS P
      WHERE P.IDPOLIZA = nIdPoliza;
   EXCEPTION
@@ -160,39 +160,39 @@ BEGIN
          dFECFINVIGPOL := '';
          nCODEMPRESA   := '';
          cCODPLANPAGO  := '';
-  END;  
-  --     
+  END;
+  --
   nIdNcr := oc_notas_de_credito.F_GET_NTCRE(p_msg_regreso);
   --
-  nID_AÑO_POLIZA := OC_FACTURAS.CALCULA_AÑO_POLIZA(nIdPoliza, dFecNcr); 
+  nID_AÑO_POLIZA := OC_FACTURAS.CALCULA_AÑO_POLIZA(nIdPoliza, dFecNcr);
   --
-  dFECFINVIGNCR := OC_NOTAS_DE_CREDITO.VIGENCIA_FINAL(nCodCia,       nCODEMPRESA,  nIdPoliza, 
-                                                      nIdEndoso,     dFecNcr,      dFecFinVigPol, 
+  dFECFINVIGNCR := OC_NOTAS_DE_CREDITO.VIGENCIA_FINAL(nCodCia,       nCODEMPRESA,  nIdPoliza,
+                                                      nIdEndoso,     dFecNcr,      dFecFinVigPol,
                                                       cCODPLANPAGO);
   --
   IF cIndFactElectronica = 'S' THEN
      cCodUsuarioEnvFact := 'XENVIAR';
-  ELSE      
+  ELSE
      cCodUsuarioEnvFact := NULL;
   END IF;
   --
   BEGIN
     INSERT INTO NOTAS_DE_CREDITO
-     (IdNcr,             IdPoliza,             IDetPol,            IdEndoso,           
+     (IdNcr,             IdPoliza,             IDetPol,            IdEndoso,
       CodCliente,        NumNcr,               FecDevol,           Monto_Ncr_Local,
-      Monto_Ncr_Moneda,  StsNcr,               FecSts,             FecAnul, 
-      MotivAnul,         MtoComisi_Local,      MtoComisi_Moneda,   CodMoneda,  
-      Tasa_Cambio,       CodTipoDoc,           Cod_Agente,         CodCia, 
-      Saldo_NCR_Local,   Saldo_NCR_Moneda,     IdTransaccion,      CtaLiquidadora, 
+      Monto_Ncr_Moneda,  StsNcr,               FecSts,             FecAnul,
+      MotivAnul,         MtoComisi_Local,      MtoComisi_Moneda,   CodMoneda,
+      Tasa_Cambio,       CodTipoDoc,           Cod_Agente,         CodCia,
+      Saldo_NCR_Local,   Saldo_NCR_Moneda,     IdTransaccion,      CtaLiquidadora,
       IdTransaccionAnu,  IndFactElectronica,   CodUsuarioEnvFact,  FECFINVIG,
       CODPLANPAGO,       ID_AÑO_POLIZA)
-     VALUES 
-     (nIdNcr,            nIdPoliza,            nIDetPol,           nIdEndoso, 
+     VALUES
+     (nIdNcr,            nIdPoliza,            nIDetPol,           nIdEndoso,
       nCodCliente,       NULL,                 dFecNcr,            nMtoNcrLocal,
-      nMtoNcrMoneda,     'XEM',                TRUNC(SYSDATE),     NULL, 
-      NULL,              nMtoComisLocal,       nMtoComisMoneda,    cCodMoneda, 
-      nTasaCambio,       cCodTipoDoc,          nCodAgente,         nCodCia, 
-      nMtoNcrLocal,      nMtoNcrMoneda,        nIdTransaccion,     NULL, 
+      nMtoNcrMoneda,     'XEM',                TRUNC(SYSDATE),     NULL,
+      NULL,              nMtoComisLocal,       nMtoComisMoneda,    cCodMoneda,
+      nTasaCambio,       cCodTipoDoc,          nCodAgente,         nCodCia,
+      nMtoNcrLocal,      nMtoNcrMoneda,        nIdTransaccion,     NULL,
       NULL,              cIndFactElectronica,  cCodUsuarioEnvFact, dFECFINVIGNCR,
       cCODPLANPAGO,      nID_AÑO_POLIZA);
    EXCEPTION
@@ -255,7 +255,7 @@ BEGIN
    UPDATE NOTAS_DE_CREDITO
       SET StsNcr               = 'ANU',
           FecSts               = dFecAnul,
-          FecAnul              = dFecAnul,                   
+          FecAnul              = dFecAnul,
           MotivAnul            = cMotivAnul,
           IdTransaccionAnu     = nIdTransaccion,
           CodUsuarioEnvFactAnu = cCodUsuarioEnvFactAnu
@@ -267,9 +267,9 @@ BEGIN
    IF cMotivAnul IN ('REEX', 'CAFP')THEN
       UPDATE ADM_RECIBOS_PROV
       SET Sts                  = 'ANU',
-          FechaTransaccion     = TRUNC(SYSDATE),                 
+          FechaTransaccion     = TRUNC(SYSDATE),
           Usuariogenero        = cCodUsuarioEnvFactAnu
-      WHERE CodCia  = nCodCia 
+      WHERE CodCia  = nCodCia
         AND IdNcr   = nIdNcr;
    END IF;
 END ANULAR;
@@ -334,7 +334,7 @@ cIndMultiRamo           VARCHAR2(1); --MLJS 05/08/2025
 CURSOR ENDOSO_Q IS
    --MLJS 03/09/2025 SE CORRIGE DUPLICIDAD DE NOTAS DE CREDITO
    SELECT E.Prima_Neta_Local PrimaLocal, E.Prima_Neta_Moneda PrimaMoneda, E.CodPlanPago, E.PorcComis,
-          E.FecIniVig, E.FecFinVig, E.FecEmision, E.IDetPol, D.IdTipoSeg, --A.Cod_Agente, A.Porc_Comision, 
+          E.FecIniVig, E.FecFinVig, E.FecEmision, E.IDetPol, D.IdTipoSeg, --A.Cod_Agente, A.Porc_Comision,
           E.FecExc, D.Prima_Local, D.Prima_Moneda, E.TipoEndoso, E.Motivo_Endoso
          ,E.INDCALCDERECHOEMIS  --MLSJ 05/08/2025
      FROM DETALLE_POLIZA D, ENDOSOS E--, AGENTES_DETALLES_POLIZAS A  --MLJS 03/09/2025
@@ -347,7 +347,7 @@ CURSOR ENDOSO_Q IS
       ;
 
 CURSOR CPTO_PRIMAS_Q IS
-   --MLJS 04/08/2025 adecuaciones multiramo, se agregó el ramo real
+   --MLJS 04/08/2025 adecuaciones multiramo
    SELECT CS.CodCpto, SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
      FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
     WHERE CS.CodCobert  = C.CodCobert
@@ -551,15 +551,19 @@ BEGIN
             nMtoComisiMoneda := (nMtoPagoMoneda * X.PorcComis / 100) * (nPorc_comision/100);
          END IF;
 --       LARPLA
-         nIdNcr := OC_NOTAS_DE_CREDITO.INSERTA_NOTA_CREDITO(nCodCia,       nIdPoliza,         X.IDetPol,     nIdEndoso, 
-                                                            nCodCliente,   dFecPago,          nMtoPago,      nMtoPagoMoneda, 
-                                                            nMtoComisi,    nMtoComisiMoneda,  nCod_Agente,  cCodMoneda, 
+         nIdNcr := OC_NOTAS_DE_CREDITO.INSERTA_NOTA_CREDITO(nCodCia,       nIdPoliza,         X.IDetPol,     nIdEndoso,
+                                                            nCodCliente,   dFecPago,          nMtoPago,      nMtoPagoMoneda,
+                                                            nMtoComisi,    nMtoComisiMoneda,  nCod_Agente,  cCodMoneda,
                                                             nTasaCambio,   nIdTransaccion,    cIndFactElectronica);
 
          FOR W IN CPTO_PRIMAS_Q LOOP
             IF nIdEndoso != 0 THEN
                IF cTpEndoso NOT IN ('EXA','NSS') THEN
                   nFactor :=   W.Prima_Moneda / X.Prima_Moneda;-- NVL(nMtoPago,0);
+               --MLJS 06/04/2026
+               ELSIF cTpEndoso IN ('NSS') THEN 
+                  nFactor := OC_DETALLE_POLIZA.FN_PRORRATEO_CPTO_RAMO(nCodCia, nCodCia, nIdPoliza, X.IDetPol, W.CodCpto)/100;
+               --MLJS 06/04/2026
                ELSE
                   nFactor :=   W.Prima_Moneda / X.PrimaMoneda;-- NVL(nMtoPago,0);
                END IF;
@@ -703,12 +707,12 @@ BEGIN
 
    OC_COMISIONES.PAGA_ABONA_COMISION_NC(nIdNcr, nIdNcr, dFecPago, 100, 'T');
 
-   OC_DETALLE_TRANSACCION.CREA (nIdTransac,nCodCia, 1, nIdProceso, cCodSubProceso, 'NOTAS_DE_CREDITO', 
+   OC_DETALLE_TRANSACCION.CREA (nIdTransac,nCodCia, 1, nIdProceso, cCodSubProceso, 'NOTAS_DE_CREDITO',
                                 nIdPoliza, nIDetPol, nIdEndoso, nIdNcr, nMontoNCR);
    OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransac, 'C');
 END PAGAR;
 
-PROCEDURE APLICAR(nCodCia   NUMBER,    nCodEmpresa   NUMBER,      nIdnCR         NUMBER, 
+PROCEDURE APLICAR(nCodCia   NUMBER,    nCodEmpresa   NUMBER,      nIdnCR         NUMBER,
                   dFecAplic DATE,      cNumReciboRef VARCHAR2,    nIdTransaccion NUMBER) IS
 
 nMonto_Ncr_Moneda    NOTAS_DE_CREDITO.Monto_Ncr_Moneda%TYPE;
@@ -764,14 +768,14 @@ cAsignoEjec                VARCHAR2(1)    := 'N';
 
 w1TIPO_ID_TRIBUTARIA       PERSONA_NATURAL_JURIDICA.TIPO_DOC_IDENTIFICACION%TYPE;
 w1NUM_TRIBUTARIO           PERSONA_NATURAL_JURIDICA.NUM_TRIBUTARIO%TYPE;
-W2ID_TRIBUTARIA            PERSONA_NATURAL_JURIDICA.TIPO_DOC_IDENTIFICACION%TYPE;   
+W2ID_TRIBUTARIA            PERSONA_NATURAL_JURIDICA.TIPO_DOC_IDENTIFICACION%TYPE;
 W2NUM_TRIBUTARIO           PERSONA_NATURAL_JURIDICA.NUM_TRIBUTARIO%TYPE;
 
 CURSOR CLI_Q IS
-   SELECT DISTINCT N.CodCliente, 
+   SELECT DISTINCT N.CodCliente,
           P.Nombre || ' ' || P.Apellido_Paterno || ' ' || P.Apellido_Materno NombreCliente,
-          REPLACE(REPLACE(P.DirecRes,CHR(13),' '),CHR(10),' ') DirecRes, P.CodPaisRes, P.CodProvRes, 
-          P.CodDistRes, P.CodCorrRes, P.CodPosRes, P.CodColRes, P.TelRes, P.Email, 
+          REPLACE(REPLACE(P.DirecRes,CHR(13),' '),CHR(10),' ') DirecRes, P.CodPaisRes, P.CodProvRes,
+          P.CodDistRes, P.CodCorrRes, P.CodPosRes, P.CodColRes, P.TelRes, P.Email,
           P.NumInterior, P.NumExterior, P.Tipo_Doc_Identificacion, P.Num_Doc_Identificacion,
           DECODE(P.Tipo_Doc_Identificacion,'RFC',P.Num_Doc_Identificacion,P.Num_Tributario) Num_Tributario,
           0 IdDirecAviCob
@@ -794,7 +798,7 @@ CURSOR CLI_Q IS
       AND N.CodUsuarioEnvFact       = 'XENVIAR'
       AND N.FecEnvFactElec         IS NULL
     UNION
-   SELECT DISTINCT TO_NUMBER('99999' || LPAD(TO_CHAR(D.Cod_Asegurado),9,'0')) CodCliente, 
+   SELECT DISTINCT TO_NUMBER('99999' || LPAD(TO_CHAR(D.Cod_Asegurado),9,'0')) CodCliente,
           P.Nombre || ' ' || P.Apellido_Paterno || ' ' || P.Apellido_Materno NombreCliente,
           REPLACE(P.DirecRes,CHR(13),' ') DirecRes, P.CodPaisRes, P.CodProvRes, P.CodDistRes,
           P.CodCorrRes, P.CodPosRes, P.CodColRes, P.TelRes, P.Email, P.NumInterior, P.NumExterior,
@@ -864,7 +868,7 @@ BEGIN
 
            ----  validamos que si el Tipo de Documento No es RFC, busque en el campo Tipo ID Tributaria. Si esta nulo, deja el  Documento original  AEVS 14072017
            IF W.Tipo_Doc_Identificacion NOT IN ('RFC') THEN
-            BEGIN 
+            BEGIN
              SELECT TIPO_ID_TRIBUTARIA, NUM_TRIBUTARIO
              INTO   w1TIPO_ID_TRIBUTARIA, w1NUM_TRIBUTARIO
              FROM PERSONA_NATURAL_JURIDICA
@@ -878,14 +882,14 @@ BEGIN
                        WHEN OTHERS THEN
                          w1TIPO_ID_TRIBUTARIA := W.Tipo_Doc_Identificacion;
                          w1NUM_TRIBUTARIO     := W.Num_Doc_Identificacion;
-            END; 
+            END;
             IF w1TIPO_ID_TRIBUTARIA IS NULL THEN  w1TIPO_ID_TRIBUTARIA := W.Tipo_Doc_Identificacion;  w1NUM_TRIBUTARIO := W.Num_Doc_Identificacion; END IF;
            END IF;
 
             --- Buscamos si tiene un Correo Especifico. De no tenerlo, buscamos el Principal  AEVS 14062017
-            IF W.CtaMail <> 0 THEN 
+            IF W.CtaMail <> 0 THEN
                   cEmailAgteDirec := OC_CORREOS_ELECTRONICOS_PNJ.EMAIL_ESPECIFICO(w1TIPO_ID_TRIBUTARIA, w1NUM_TRIBUTARIO, W.CtaMail);--W.Tipo_Doc_Identificacion, W.Num_Doc_Identificacion, W.CtaMail);
-            ELSE 
+            ELSE
                   cEmailAgteDirec := OC_CORREOS_ELECTRONICOS_PNJ.EMAIL_PRINCIPAL(w1TIPO_ID_TRIBUTARIA, w1NUM_TRIBUTARIO);
             END IF;
               /*IF W.CodTipo LIKE 'AGTE%' THEN
@@ -916,19 +920,19 @@ BEGIN
       ELSE
          ----  validamos que si el Tipo de Documento No es RFC, busque en el campo Tipo ID Tributaria. Si esta nulo, deja el  Documento original  AEVS 14072017
          IF X.Tipo_Doc_Identificacion NOT IN ('RFC') THEN
-            IF ( X.TIPO_ID_TRIBUTARIA IS NOT NULL AND  X.A_NUM_TRIBUTARIO IS NOT NULL ) THEN                 
+            IF ( X.TIPO_ID_TRIBUTARIA IS NOT NULL AND  X.A_NUM_TRIBUTARIO IS NOT NULL ) THEN
                  W2ID_TRIBUTARIA   := X.TIPO_ID_TRIBUTARIA ;
                  W2NUM_TRIBUTARIO  := X.A_NUM_TRIBUTARIO ;
-            ELSE 
+            ELSE
                  W2ID_TRIBUTARIA   := X.Tipo_Doc_Identificacion ;
                  W2NUM_TRIBUTARIO  := X.Num_Doc_Identificacion ;
             END IF;
-         END IF;         
-         cTipo_Doc_Identificacion  := W2ID_TRIBUTARIA; --X.Tipo_Doc_Identificacion; AEVS 
+         END IF;
+         cTipo_Doc_Identificacion  := W2ID_TRIBUTARIA; --X.Tipo_Doc_Identificacion; AEVS
          cNum_Doc_Identificacion   := W2NUM_TRIBUTARIO;
          BEGIN
             SELECT REPLACE(REPLACE(Direccion,CHR(13),' '),CHR(10),' ') DirecRes,
-                   NumExterior, NumInterior, Codigo_Postal, 
+                   NumExterior, NumInterior, Codigo_Postal,
                    OC_COLONIA.DESCRIPCION_COLONIA(CodPais, CodEstado, CodCiudad, CodMunicipio, Codigo_Postal, CodAsentamiento) Colonia,
                    OC_PROVINCIA.NOMBRE_PROVINCIA(CodPais, CodEstado) Estado,
                    OC_DISTRITO.NOMBRE_DISTRITO(CodPais, CodEstado, CodCiudad) Ciudad
@@ -1084,7 +1088,7 @@ BEGIN
       END LOOP;
 
       -- Prima Neta
-      cDescripcion    := 'PRIMAS DE SEGURO DE LA NOTA DE CREDITO ' || TRIM(TO_CHAR(nIdNcr,'0000000000')) || 
+      cDescripcion    := 'PRIMAS DE SEGURO DE LA NOTA DE CREDITO ' || TRIM(TO_CHAR(nIdNcr,'0000000000')) ||
                          ' DE LA POLIZA ' || cNumPolUnico;
       nMtoIVA         := NVL(NVL(nPrimaNeta,0) * nTasaIVA / 100,0);
 
@@ -1434,8 +1438,8 @@ cStsNcr   NOTAS_DE_CREDITO.StsNcr%TYPE;
 
 
 CURSOR NCR_Q IS
-   SELECT IdPoliza,            IDetPol,             CodCliente,         FecDevol, 
-          Monto_Ncr_Local,     Monto_Ncr_Moneda,    IdEndoso,           MtoComisi_Local, 
+   SELECT IdPoliza,            IDetPol,             CodCliente,         FecDevol,
+          Monto_Ncr_Local,     Monto_Ncr_Moneda,    IdEndoso,           MtoComisi_Local,
           MtoComisi_Moneda,    Tasa_Cambio,         Cod_Agente,         CodTipoDoc,
           CodMoneda,           IndFactElectronica,   FECFINVIG,         CODPLANPAGO           --ICOFINVIG
      FROM NOTAS_DE_CREDITO
@@ -1443,7 +1447,7 @@ CURSOR NCR_Q IS
       AND IdNcr  = nIdNcrAnu;
 CURSOR DET_Q IS
    SELECT CodCpto, Monto_Det_Local, Monto_Det_Moneda,
-          IndCptoPrima, MtoOrigDetLocal, MtoOrigDetMoneda          
+          IndCptoPrima, MtoOrigDetLocal, MtoOrigDetMoneda
      FROM DETALLE_NOTAS_DE_CREDITO
     WHERE IdNcr  = nIdNcrAnu;
 BEGIN
@@ -1455,8 +1459,8 @@ BEGIN
 
       -- ICOFINVIG
       UPDATE NOTAS_DE_CREDITO f
-         SET Fecfinvig     = W.FECFINVIG,     
-             Codplanpago   = W.CODPLANPAGO 
+         SET Fecfinvig     = W.FECFINVIG,
+             Codplanpago   = W.CODPLANPAGO
        WHERE CodCia = nCodCia
          AND IdNcr  = nIdNcr;
       -- ICOFINVIG
@@ -1477,18 +1481,18 @@ BEGIN
       --
       -- ESTE BLOQUE ES EN LA VERSION DE PRUEBAS SE COLOCA PARA NO PERDER EL CAMBIO AEVS
       --
-      BEGIN 
+      BEGIN
         UPDATE NOTAS_DE_CREDITO
            SET IdNcrRehab = nIdNcr
          WHERE CodCia = nCodCia
-           AND IdNcr  = nIdNcrAnu; 
-      EXCEPTION 
+           AND IdNcr  = nIdNcrAnu;
+      EXCEPTION
         WHEN NO_DATA_FOUND THEN
              RAISE_APPLICATION_ERROR (-20100,'No Existe la Nota de Credito Anulada No. ' || nIdNcrAnu);
         WHEN OTHERS THEN
              RAISE_APPLICATION_ERROR (-20100,'Problemas en la Nota de Credito Anulada No. ' || nIdNcrAnu);
       END;
-      --  
+      --
       BEGIN
         SELECT 'S'
           INTO cIndicador
@@ -1507,13 +1511,13 @@ BEGIN
         WHERE IdPoliza      = W.IdPoliza
         AND   IdNcrInicial  = nIdNcrAnu;
          --
-      END IF;  
+      END IF;
    END LOOP;
 END REHABILITACION;
 
 
-FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoliza      NUMBER, 
-                        nIdEndoso      NUMBER,   dFecDevol      DATE,    dFecFinVigPol  DATE,    
+FUNCTION VIGENCIA_FINAL(nCodCia        NUMBER,   nCodEmpresa    NUMBER,  nIdPoliza      NUMBER,
+                        nIdEndoso      NUMBER,   dFecDevol      DATE,    dFecFinVigPol  DATE,
                         cCodPlanPago   VARCHAR2) RETURN DATE IS   -- INICIA FINVIG  LARPLA
 cCodPlanPagos    PLAN_DE_PAGOS.CodPlanPago%TYPE;
 nFrecPagos       PLAN_DE_PAGOS.FrecPagos%TYPE;
@@ -1561,7 +1565,7 @@ END VIGENCIA_FINAL;
 PROCEDURE REVERTIR_APLICACION(nCodCia NUMBER, nCodEmpresa NUMBER, nIdnCR NUMBER) IS
 nIdTransaccion       TRANSACCION.IdTransaccion%TYPE;
 CURSOR NC_Q IS
-   SELECT IdPoliza, IDetPol, IdEndoso, IdNcr, 
+   SELECT IdPoliza, IDetPol, IdEndoso, IdNcr,
           Monto_Ncr_Moneda, Monto_Ncr_Local
      FROM NOTAS_DE_CREDITO
     WHERE IdNcr   = nIdNcr
@@ -1595,20 +1599,20 @@ BEGIN
    OC_COMPROBANTES_CONTABLES.CONTABILIZAR(nCodCia, nIdTransaccion, 'C');
 END REVERTIR_APLICACION;
 
-FUNCTION FACTURA_ELECTRONICA(nIdNcr  NUMBER, nCodCia  NUMBER, nCodEmpresa  NUMBER, 
+FUNCTION FACTURA_ELECTRONICA(nIdNcr  NUMBER, nCodCia  NUMBER, nCodEmpresa  NUMBER,
                              cTipoCfdi VARCHAR2, cIndRelaciona VARCHAR2 DEFAULT NULL) RETURN VARCHAR2 IS
     cCodRespuesta PARAMETROS_GLOBALES.Descripcion%TYPE;
-    cStsNcr      NOTAS_DE_CREDITO.StsNcr%TYPE;         
-    cProceso      VALORES_DE_LISTAS.CodValor%TYPE;  
-    cIndRel       VARCHAR2(1);  
-    cIndEnvia     VARCHAR2(1) := 'N';                  
+    cStsNcr      NOTAS_DE_CREDITO.StsNcr%TYPE;
+    cProceso      VALORES_DE_LISTAS.CodValor%TYPE;
+    cIndRel       VARCHAR2(1);
+    cIndEnvia     VARCHAR2(1) := 'N';
 BEGIN
     BEGIN
         SELECT StsNcr
           INTO cStsNcr
           FROM NOTAS_DE_CREDITO
          WHERE IdNcr = nIdNcr;
-    EXCEPTION 
+    EXCEPTION
         WHEN NO_DATA_FOUND THEN
             RAISE_APPLICATION_ERROR (-20100,'No Es Posible Determinar La Nota De Credito '||nIdNcr||' Para Facturar Electronicamente, Por Favor Valide Que Existe La Factura');
     END;
@@ -1639,7 +1643,7 @@ EXCEPTION
 END FACTURA_ELECTRONICA;
 
 FUNCTION MONTO_BASE_IMPUESTO(nCodCia       NUMBER, nIdNcr  NUMBER)  RETURN NUMBER IS
-nMontoBase  NUMBER(28,2);   
+nMontoBase  NUMBER(28,2);
 BEGIN
    SELECT SUM(Monto_Det_Moneda)
      INTO nMontoBase
@@ -1678,8 +1682,8 @@ PROCEDURE INSERT_TEMP_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdNcr NU
       IF cExiste != 'S' THEN
          FOR X IN RECB1_Q LOOP
            BEGIN
-               INSERT INTO TEMP_RECIBOS_PROV (IdPoliza, IdetPol, IdFacturaOrig, IdFacturaIni, IdNcrInicial, IdFactura1, IdFactura2, IdNcr1) 
-               VALUES (nIdPoliza, X.IdetPol, X.IdFactura, X.IdFactura2, X.IdNcr, NULL, NULL, NULL);		   
+               INSERT INTO TEMP_RECIBOS_PROV (IdPoliza, IdetPol, IdFacturaOrig, IdFacturaIni, IdNcrInicial, IdFactura1, IdFactura2, IdNcr1)
+               VALUES (nIdPoliza, X.IdetPol, X.IdFactura, X.IdFactura2, X.IdNcr, NULL, NULL, NULL);
              EXCEPTION
              WHEN OTHERS THEN
                RAISE_APPLICATION_ERROR(-20225,' NO SE PUDO INSERTAR EL REGISTRO LA NOTA DE CREDITO EN LA TABLA TEMPORAL: ' || TRIM(TO_CHAR(nIdpoliza)));
