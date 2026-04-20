@@ -1,4 +1,4 @@
-CREATE OR REPLACE TRIGGER SICAS_OC.TRG_PERSONA_NATURAL_JURIDICA_PIPE
+create or replace TRIGGER SICAS_OC.TRG_PERSONA_NATURAL_JURIDICA_PIPE
   BEFORE INSERT OR UPDATE OR DELETE ON PERSONA_NATURAL_JURIDICA
   FOR EACH ROW 
 
@@ -7,84 +7,84 @@ DECLARE
     vl_ErrorC   VARCHAR2(4000);
 BEGIN
   /*TRIGGER PARA MONITOREO DE LA TABLA PERSONA_NATURAL_JURIDICA
-    FECHA CREACIÓN: 21/01/2026
+    FECHA CREACIÃ“N: 21/01/2026
     MODIFICO: LUIS ARGENIS REYNOSO ALVAREZ
   */
-  
+
   IF INSERTING THEN 
 
       IF REGEXP_LIKE(:NEW.NUM_TRIBUTARIO, '[^a-zA-Z0-9 ]') THEN
-        :NEW.NUM_TRIBUTARIO := REGEXP_REPLACE(:NEW.NUM_TRIBUTARIO, '[¿?¡!|@$%/()=\ ¤¥;/.&"]', '');
+        :NEW.NUM_TRIBUTARIO := REGEXP_REPLACE(:NEW.NUM_TRIBUTARIO, '[Â¿?Â¡!|@$%/()=\ Â¤Â¥;/."]', '');
       END IF;
-      
+
       IF REGEXP_LIKE(:NEW.CURP, '[^a-zA-Z0-9 ]') THEN
-        :NEW.CURP := REGEXP_REPLACE(:NEW.CURP, '[¿?¡!|@$%/()=\ ¤¥;/."]', '');
+        :NEW.CURP := REGEXP_REPLACE(:NEW.CURP, '[Â¿?Â¡!|@$%/()=\ Â¤Â¥;/."]', '');
       END IF;
-      
+
       IF REGEXP_LIKE(:NEW.NUM_DOC_IDENTIFICACION, '[^a-zA-Z0-9]') THEN
-        :NEW.NUM_DOC_IDENTIFICACION := REGEXP_REPLACE(:NEW.NUM_DOC_IDENTIFICACION, '[¿?¡!|@$%/()=\ ¤¥;/.&"]', '');
+        :NEW.NUM_DOC_IDENTIFICACION := REGEXP_REPLACE(:NEW.NUM_DOC_IDENTIFICACION, '[Â¿?Â¡!|@$%/()=\ Â¤Â¥;/."]', '');
       END IF;
-      
+
       IF (INSTR(:NEW.NOMBRE, '|') > 0) THEN
         :NEW.NOMBRE := REPLACE(:NEW.NOMBRE,'|','');
       END IF;
-      
+
       IF REGEXP_LIKE(:NEW.APELLIDO_PATERNO, '[^a-zA-Z ]') THEN
-        :NEW.APELLIDO_PATERNO := REGEXP_REPLACE(:NEW.APELLIDO_PATERNO, '[¿?¡!|@$%/()=\¤¥;/.&"]', '');
+        :NEW.APELLIDO_PATERNO := REGEXP_REPLACE(:NEW.APELLIDO_PATERNO, '[Â¿?Â¡!|@$%/()=\Â¤Â¥;/."]', '');
       END IF;
-      
+
       IF REGEXP_LIKE(:NEW.APELLIDO_MATERNO, '[^a-zA-Z ]') THEN
-        :NEW.APELLIDO_MATERNO := REGEXP_REPLACE(:NEW.APELLIDO_MATERNO, '[¿?¡!|@$%/()=\¤¥;/.&"]', '');
+        :NEW.APELLIDO_MATERNO := REGEXP_REPLACE(:NEW.APELLIDO_MATERNO, '[Â¿?Â¡!|@$%/()=\Â¤Â¥;/."]', '');
       END IF;
-      
+
       IF REGEXP_LIKE(:NEW.APECASADA, '[^a-zA-Z ]') THEN
-        :NEW.APECASADA := REGEXP_REPLACE(:NEW.APECASADA, '[¿?¡!|@$%/()=\¤¥;/.&"]', '');
+        :NEW.APECASADA := REGEXP_REPLACE(:NEW.APECASADA, '[Â¿?Â¡!|@$%/()=\Â¤Â¥;/."]', '');
       END IF;
   END IF;
 
   IF UPDATING THEN 
     IF (:NEW.NUM_TRIBUTARIO <> :OLD.NUM_TRIBUTARIO) THEN
       IF REGEXP_LIKE(:NEW.NUM_TRIBUTARIO, '[^a-zA-Z0-9 ]') THEN
-        :NEW.NUM_TRIBUTARIO := REGEXP_REPLACE(:NEW.NUM_TRIBUTARIO, '[¿?¡!|@$%/()=\ ¤¥;/.&"]', '');
+        :NEW.NUM_TRIBUTARIO := REGEXP_REPLACE(:NEW.NUM_TRIBUTARIO, '[Â¿?Â¡!|@$%/()=\ Â¤Â¥;/."]', '');
       END IF;
     END IF;
-    
+
     IF (:NEW.CURP <> :OLD.CURP) THEN
       IF REGEXP_LIKE(:NEW.CURP, '[^a-zA-Z0-9 ]') THEN
-        :NEW.CURP := REGEXP_REPLACE(:NEW.CURP, '[¿?¡!|@$%/()=\ ¤¥;/."]', '');
+        :NEW.CURP := REGEXP_REPLACE(:NEW.CURP, '[Â¿?Â¡!|@$%/()=\ Â¤Â¥;/."]', '');
       END IF;
     END IF;
-    
+
     IF (:NEW.NUM_DOC_IDENTIFICACION <> :OLD.NUM_DOC_IDENTIFICACION) THEN
       IF REGEXP_LIKE(:NEW.NUM_DOC_IDENTIFICACION, '[^a-zA-Z0-9]') THEN
-        :NEW.NUM_DOC_IDENTIFICACION := REGEXP_REPLACE(:NEW.NUM_DOC_IDENTIFICACION, '[¿?¡!|@$%/()=\ ¤¥;/.&"]', '');
+        :NEW.NUM_DOC_IDENTIFICACION := REGEXP_REPLACE(:NEW.NUM_DOC_IDENTIFICACION, '[Â¿?Â¡!|@$%/()=\ Â¤Â¥;/."]', '');
       END IF;
     END IF;
-    
+
     IF (:NEW.NOMBRE <> :OLD.NOMBRE) THEN
       IF (INSTR(:NEW.NOMBRE, '|') > 0) THEN
         :NEW.NOMBRE := REPLACE(:NEW.NOMBRE,'|','');
       END IF;
     END IF;
-    
+
     IF (:NEW.APELLIDO_PATERNO <> :OLD.APELLIDO_PATERNO) THEN
       IF REGEXP_LIKE(:NEW.APELLIDO_PATERNO, '[^a-zA-Z ]') THEN
-        :NEW.APELLIDO_PATERNO := REGEXP_REPLACE(:NEW.APELLIDO_PATERNO, '[¿?¡!|@$%/()=\¤¥;/.&"]', '');
+        :NEW.APELLIDO_PATERNO := REGEXP_REPLACE(:NEW.APELLIDO_PATERNO, '[Â¿?Â¡!|@$%/()=\Â¤Â¥;/."]', '');
       END IF;
     END IF;
-    
+
     IF (:NEW.APELLIDO_MATERNO <> :OLD.APELLIDO_MATERNO) THEN
       IF REGEXP_LIKE(:NEW.APELLIDO_MATERNO, '[^a-zA-Z ]') THEN
-        :NEW.APELLIDO_MATERNO := REGEXP_REPLACE(:NEW.APELLIDO_MATERNO, '[¿?¡!|@$%/()=\¤¥;/.&"]', '');
+        :NEW.APELLIDO_MATERNO := REGEXP_REPLACE(:NEW.APELLIDO_MATERNO, '[Â¿?Â¡!|@$%/()=\Â¤Â¥;/."]', '');
       END IF;
     END IF;
-    
+
     IF (:NEW.APECASADA <> :OLD.APECASADA) THEN
       IF REGEXP_LIKE(:NEW.APECASADA, '[^a-zA-Z ]') THEN
-        :NEW.APECASADA := REGEXP_REPLACE(:NEW.APECASADA, '[¿?¡!|@$%/()=\¤¥;/.&"]', '');
+        :NEW.APECASADA := REGEXP_REPLACE(:NEW.APECASADA, '[Â¿?Â¡!|@$%/()=\Â¤Â¥;/."]', '');
       END IF;
     END IF;
-    
+
   END IF;    
 
 EXCEPTION
@@ -93,6 +93,3 @@ EXCEPTION
       vl_ErrorC := 'Error con el disparador de PERSONA_NATURAL_JURIDICA, Contacte al administrador. '||SQLERRM;
       raise_application_error( -20000,vl_ErrorC);
 END;
-/
-
-CREATE OR REPLACE PUBLIC SYNONYM TRG_PERSONA_NATURAL_JURIDICA_PIPE FOR SICAS_OC.TRG_PERSONA_NATURAL_JURIDICA_PIPE;
