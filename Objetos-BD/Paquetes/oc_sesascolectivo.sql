@@ -1,5 +1,6 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
+create or replace PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
 /* 13/03/2024*/
+
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
         nCodEmpresa       SICAS_OC.SESAS_DATGEN.CODEMPRESA%TYPE,
@@ -123,9 +124,10 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_SESASCOLECTIVO IS
     vl_StatusValid6     VARCHAR2(3) := 'SUS';
 
 END OC_SESASCOLECTIVO;
+
 /
 
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
+create or replace PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
     PROCEDURE DATGEN_VI (
         nCodCia           SICAS_OC.SESAS_DATGEN.CODCIA%TYPE,
@@ -1432,7 +1434,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
 
     EXCEPTION
         WHEN OTHERS THEN
-            SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia,nCodEmpresa, cCodUsuario, USER, 'SISTEMA', '', SQLCODE, 'Error en prorrateo comisioneso: '|| SQLERRM);
+            SICAS_OC.OC_LOGERRORES_SESAS.SPINSERTLOGSESAS(nCodCia,nCodEmpresa, cCodUsuario, NVL(V('APP_USER'), USER), 'SISTEMA', '', SQLCODE, 'Error en prorrateo comisioneso: '|| SQLERRM);
     END;
 
     END DATGEN_VI;
@@ -1487,12 +1489,17 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         FROM (
             SELECT D.CODCIA,D.CODEMPRESA,D.CODREPORTE,D.CODUSUARIO,D.NUMPOLIZA,D.IDPOLIZA,D.CODASEGURADO
             FROM SICAS_OC.SESAS_DATGEN D
+				,DETALLE_POLIZA DP
             WHERE D.CODCIA = nCodCia
                 AND D.CODEMPRESA = nCodEmpresa
                 AND D.CODREPORTE = 'SESADATVIG'
                 AND D.CODUSUARIO = cCodUsuario
                 AND D.NUMPOLIZA >= '0'
-                AND D.NUMCERTIFICADO >= '0'
+                AND D.NUMCERTIFICADO >= '0' 
+				AND DP.IDPOLIZA = D.IDPOLIZA  
+				AND DP.CODCIA = D.CODCIA
+				AND DP.CODEMPRESA = D.CODEMPRESA
+				AND DP.CANTASEGMODELO >= 2
                 --GROUP BY D.CODCIA,D.CODEMPRESA,D.CODREPORTE,D.CODUSUARIO,D.NUMPOLIZA,D.IDPOLIZA,D.CODASEGURADO
         ) GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,NUMPOLIZA,IDPOLIZA;
 
@@ -1619,66 +1626,79 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_SESASCOLECTIVO IS
         obj_sesasdatgen4   type_sesasdatgen4;
 
         CURSOR COBERT_Q IS
-         SELECT A.IDPOLIZA,A.IDETPOL,A.CodCobert,
-            A.OrdenSESAS,
-            A.PeriodoEspera,
-              A.ClaveSESAS            ,
-            A.Suma_Moneda,A.Prima_Moneda,COUNT(1) TOTAL
-            FROM (SELECT C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-            NVL(CS.OrdenSESAS, 0)         OrdenSESAS,
-            NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera,
-            NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS            ,
-            0 Suma_Moneda,
-            SUM(C.Prima_Moneda)           Prima_Moneda
-        FROM  SICAS_OC.COBERT_ACT C
-            INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
-                ON CS.IdTipoSeg = C.IdTipoSeg 
-                AND CS.PlanCob = C.PlanCob
-                AND CS.CodCobert = C.CodCobert
-                AND CS.CodEmpresa = C.CodEmpresa
-                AND CS.CodCia = C.CodCia
-        WHERE C.StsCobertura IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
-            AND C.CodCia = nCodCia
-        GROUP BY
-            C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-            NVL(OrdenSESAS, 0),
-            NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99'),
-            0
-
-        UNION ALL
-
-        SELECT C.IDPOLIZA,C.IDETPOL, C.CodCobert,
-            NVL(OrdenSESAS, 0)         OrdenSESAS,
-            NVL(PeriodoEsperaMeses, 0) PeriodoEspera,
-            NVL(CLAVESESASNEW, '99')   ClaveSESAS,
-            0 Suma_Moneda,
-            SUM(C.Prima_Moneda)        Prima_Moneda
-        FROM  SICAS_OC.COBERT_ACT_ASEG C
-            INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
-                ON CS.IdTipoSeg = C.IdTipoSeg 
-                AND CS.PlanCob = C.PlanCob
-                AND CS.CodCobert = C.CodCobert
-                AND CS.CodEmpresa = C.CodEmpresa
-                AND CS.CodCia = C.CodCia
-        WHERE C.StsCobertura IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
-            AND C.CodCia = nCodCia
-        GROUP BY  C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-            NVL(OrdenSESAS, 0),
-            NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99'),
-            0
-        )A
-        INNER JOIN SESAS_DATGEN D
-            ON D.IDPOLIZA = A.IDPOLIZA
-            AND D.IDETPOL = A.IDETPOL
-        WHERE D.CODCIA=nCodCia AND D.CODEMPRESA=nCodEmpresa AND D.CODREPORTE='SESADATVIG' AND D.CODUSUARIO=cCodUsuario AND D.NUMPOLIZA>= '0' AND D.NUMCERTIFICADO>= '0'
-        GROUP BY A.IDPOLIZA,A.IDETPOL,A.CodCobert,
-            A.OrdenSESAS,
-            A.PeriodoEspera,
-              A.ClaveSESAS            ,
-            A.Suma_Moneda,A.Prima_Moneda
+         SELECT A.IDPOLIZA
+            ,A.IDETPOL
+            ,A.CODCOBERT
+            ,A.ORDENSESAS
+            ,A.PERIODOESPERA
+            ,A.CLAVESESAS
+            ,A.SUMA_MONEDA
+            ,A.PRIMA_MONEDA
+            ,COUNT(1) TOTAL 
+        FROM (
+            SELECT C.IDPOLIZA
+                ,C.IDETPOL
+                ,C.CODCOBERT
+                ,NVL(CS.ORDENSESAS, 0) ORDENSESAS
+                ,NVL(CS.PERIODOESPERAMESES, 0) PERIODOESPERA
+                ,NVL(CS.CLAVESESASNEW, '99') CLAVESESAS
+                ,SUMAASEG_MONEDA SUMA_MONEDA
+                ,C.PRIMA_MONEDA PRIMA_MONEDA
+            FROM SICAS_OC.COBERT_ACT C 
+            INNER JOIN SESAS_DATGEN D 
+            ON D.IDPOLIZA = C.IDPOLIZA 
+            AND D.IDETPOL = C.IDETPOL 
+            AND D.CODASEGURADO = C.COD_ASEGURADO
+            AND D.CODCIA=C.CODCIA 
+            AND D.CODEMPRESA=C.CODEMPRESA
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
+                    ON CS.IDTIPOSEG = C.IDTIPOSEG 
+                AND CS.PLANCOB = C.PLANCOB 
+                AND CS.CODCOBERT = C.CODCOBERT 
+                AND CS.CODEMPRESA = C.CODEMPRESA 
+                AND CS.CODCIA = C.CODCIA 
+            WHERE C.STSCOBERTURA IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6) 
+            AND C.CODCIA = nCodCia 
+            AND D.CODREPORTE='SESADATVIG' 
+            AND D.CODUSUARIO= cCodUsuario 
+            AND D.NUMPOLIZA>= '0' 
+            AND D.NUMCERTIFICADO>= '0' 
+            --GROUP BY C.IDPOLIZA, C.IDETPOL, C.CODCOBERT, NVL(ORDENSESAS,0), NVL(PERIODOESPERAMESES,0), NVL(CLAVESESASNEW,'99') 
+            UNION ALL 
+            SELECT C.IDPOLIZA
+                ,C.IDETPOL
+                ,C.CODCOBERT
+                ,NVL(ORDENSESAS, 0) ORDENSESAS
+                ,NVL(PERIODOESPERAMESES, 0) PERIODOESPERA
+                ,NVL(CLAVESESASNEW, '99') CLAVESESAS
+                ,SUMAASEG_MONEDA SUMA_MONEDA
+                ,C.PRIMA_MONEDA PRIMA_MONEDA 
+            FROM SICAS_OC.COBERT_ACT_ASEG C 
+            INNER JOIN SESAS_DATGEN D 
+            ON D.IDPOLIZA = C.IDPOLIZA 
+            AND D.IDETPOL = C.IDETPOL
+            AND D.CODASEGURADO = C.COD_ASEGURADO
+            AND D.CODCIA=C.CODCIA 
+            AND D.CODEMPRESA=C.CODEMPRESA
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS         
+                    ON CS.IDTIPOSEG = C.IDTIPOSEG 
+                AND CS.PLANCOB = C.PLANCOB 
+                AND CS.CODCOBERT = C.CODCOBERT 
+                AND CS.CODEMPRESA = C.CODEMPRESA 
+                AND CS.CODCIA = C.CODCIA 
+            WHERE C.STSCOBERTURA IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
+            AND C.CODCIA = nCodCia 
+            AND D.CODREPORTE='SESADATVIG' 
+            AND D.CODUSUARIO=cCodUsuario 
+            AND D.NUMPOLIZA>= '0' 
+            AND D.NUMCERTIFICADO>= '0'
+            --GROUP BY C.IDPOLIZA, C.IDETPOL, C.CODCOBERT, NVL(ORDENSESAS,0), NVL(PERIODOESPERAMESES,0), NVL(CLAVESESASNEW,'99') 
+            )A 
+        GROUP BY A.IDPOLIZA, A.IDETPOL, A.CODCOBERT, A.ORDENSESAS, A.PERIODOESPERA, A.CLAVESESAS ,A.SUMA_MONEDA, A.PRIMA_MONEDA
         ORDER BY A.IDPOLIZA, A.IDETPOL;
+
+
+
 
         TYPE rec_sesasdatgen3 IS RECORD (
             Cod_Asegurado   NUMBER,
@@ -1948,9 +1968,9 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
 
                 END IF;
 
-            IF NVL(nPrimaMonedaTotPol, 0) = 0 THEN
-                nPrimaMonedaTotPol := 1;
-            END IF;
+				IF NVL(nPrimaMonedaTotPol, 0) = 0 THEN
+					nPrimaMonedaTotPol := 1;
+				END IF;
 
 
                 nPrima_Moneda := NVL(obj_sesasdatgen4(w).Prima_Moneda, 0); --AJUSTE
@@ -1961,7 +1981,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                nPrimaContableAnu := 0;
                nMtoCptoNcrMonedaAnu := 0;
                nMtoCptoNcrMoneda := 0;
-                    SELECT /*+ INDEX(T SYS_C0032162) */ NVL(SUM(DF.Monto_Det_Moneda), 0) + 0
+                    SELECT NVL(SUM(DF.Monto_Det_Moneda), 0) + 0
                     INTO   nPrimaContable
                     FROM   DETALLE_FACTURAS DF, FACTURAS F, TRANSACCION T
                     WHERE  T.FechaTransaccion BETWEEN dFecDesde AND  dFecHasta
@@ -1991,7 +2011,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                    AND  F.Stsfact          IN ('ANU') 
                    AND  DF.IdFactura        = F.IdFactura;
                  --
-                 SELECT /*+ INDEX(T SYS_C0032162) */ NVL(SUM(DNC.Monto_Det_Moneda),0) +0
+                 SELECT NVL(SUM(DNC.Monto_Det_Moneda),0) +0
                  INTO   nMtoCptoNcrMoneda
                  FROM   DETALLE_NOTAS_DE_CREDITO DNC
                  INNER JOIN  NOTAS_DE_CREDITO NC
@@ -2022,9 +2042,13 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                                                    OR IndCptoServicio = 'S'
                                                    OR IndCptoFondo    = 'S' )
                    AND  NC.StsNCR           = 'ANU' ;
-            END IF;
+            END IF;   
 
             nPrimaContable2 := (NVL(nPrimaContable,0) - NVL(nPrimaContableAnu,0)) - ((NVL(nMtoCptoNcrMoneda,0) - NVL(nMtoCptoNcrMonedaAnu,0)));
+
+            IF nPrimaContable2 = 0 THEN
+    nPrimaContable2 := nPrimaMonedaTotPol;
+   END IF;
 
             nPmaEmiCob := ((ROUND((100 / nPrimaMonedaTotPol ), 10) * NVL( nPrima_Moneda, 0)) * ROUND((nPrimaContable2/100), 10) );
 
@@ -2032,7 +2056,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
 
                 BEGIN
 
-                    INSERT INTO SICAS_OC.SESAS_EMISION (
+                    INSERT /*+ APPEND */ INTO SICAS_OC.SESAS_EMISION (
                         CodCia,
                         CodEmpresa,
                         CodReporte,
@@ -2059,6 +2083,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                         cTipoSumaSeg,
                         obj_sesasdatgen4(w).PeriodoEspera,
                         0,
+						--NVL(obj_sesasdatgen4(w).Suma_Moneda, 0),
                         nPmaEmiCob,
                         obj_sesasdatgen4(w).OrdenSESAS,
                         nIdPoliza,
@@ -2136,6 +2161,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
             WHEN OTHERS THEN
                 COMMIT;
         END;
+        COMMIT;
     END EMISION_VI;
 
     PROCEDURE SINIESTROS_VI (
@@ -3903,12 +3929,17 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
         FROM (
             SELECT D.CODCIA,D.CODEMPRESA,D.CODREPORTE,D.CODUSUARIO,D.NUMPOLIZA,D.IDPOLIZA,D.CODASEGURADO
             FROM SICAS_OC.SESAS_DATGEN D
+				,DETALLE_POLIZA DP
             WHERE D.CODCIA = nCodCia
                 AND D.CODEMPRESA = nCodEmpresa
                 AND D.CODREPORTE = 'SESADATAPC'
                 AND D.CODUSUARIO = cCodUsuario
                 AND D.NUMPOLIZA >= '0'
                 AND D.NUMCERTIFICADO >= '0'
+				AND DP.IDPOLIZA = D.IDPOLIZA
+				AND DP.CODCIA = D.CODCIA
+				AND DP.CODEMPRESA = D.CODEMPRESA
+				AND DP.CANTASEGMODELO >= 2
                 --GROUP BY D.CODCIA,D.CODEMPRESA,D.CODREPORTE,D.CODUSUARIO,D.NUMPOLIZA,D.IDPOLIZA,D.CODASEGURADO
         ) GROUP BY CODCIA,CODEMPRESA,CODREPORTE,CODUSUARIO,NUMPOLIZA,IDPOLIZA;
 
@@ -4038,70 +4069,79 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
         obj_sesasdatgen4   type_sesasdatgen4;
 
         CURSOR COBERT_Q IS
-         SELECT A.IDPOLIZA,A.IDETPOL,A.CodCobert,
-            A.OrdenSESAS,
-            A.PeriodoEspera,
-              A.ClaveSESAS            ,
-            A.Suma_Moneda,A.Prima_Moneda,COUNT(1) TOTAL
-            FROM (
-                SELECT C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-                    NVL(CS.OrdenSESAS, 0)         OrdenSESAS,
-                    NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera,
-                    NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS            ,
-                    0 Suma_Moneda,
-                    SUM(C.Prima_Moneda)           Prima_Moneda
-                FROM  SICAS_OC.COBERT_ACT C
+         SELECT A.IDPOLIZA
+            ,A.IDETPOL
+            ,A.CODCOBERT
+            ,A.ORDENSESAS
+            ,A.PERIODOESPERA
+            ,A.CLAVESESAS
+            ,A.SUMA_MONEDA
+            ,A.PRIMA_MONEDA
+            ,COUNT(1) TOTAL 
+        FROM (
+            SELECT C.IDPOLIZA
+                ,C.IDETPOL
+                ,C.CODCOBERT
+                ,NVL(CS.ORDENSESAS, 0) ORDENSESAS
+                ,NVL(CS.PERIODOESPERAMESES, 0) PERIODOESPERA
+                ,NVL(CS.CLAVESESASNEW, '99') CLAVESESAS
+                ,SUMAASEG_MONEDA SUMA_MONEDA
+                ,C.PRIMA_MONEDA PRIMA_MONEDA
+            FROM SICAS_OC.COBERT_ACT C 
+            INNER JOIN SESAS_DATGEN D 
+            ON D.IDPOLIZA = C.IDPOLIZA 
+            AND D.IDETPOL = C.IDETPOL
+            AND D.CODASEGURADO = C.COD_ASEGURADO
+            AND D.CODCIA=C.CODCIA 
+            AND D.CODEMPRESA=C.CODEMPRESA
                 INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
-                    ON CS.IdTipoSeg = C.IdTipoSeg 
-                    AND CS.PlanCob = C.PlanCob
-                    AND CS.CodCobert = C.CodCobert
-                    AND CS.CodEmpresa = C.CodEmpresa
-                    AND CS.CodCia = C.CodCia
-                WHERE C.StsCobertura IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
-                AND C.CodCia = nCodCia
-                GROUP BY C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-                        NVL(OrdenSESAS, 0),
-                        NVL(PeriodoEsperaMeses, 0),
-                        NVL(CLAVESESASNEW, '99'),0
-        UNION ALL
-
-        SELECT C.IDPOLIZA,C.IDETPOL, C.CodCobert,
-            NVL(OrdenSESAS, 0)         OrdenSESAS,
-            NVL(PeriodoEsperaMeses, 0) PeriodoEspera,
-            NVL(CLAVESESASNEW, '99')   ClaveSESAS,
-            0 Suma_Moneda,
-            SUM(C.Prima_Moneda)        Prima_Moneda
-        FROM  SICAS_OC.COBERT_ACT_ASEG C
-            INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
-                ON CS.IdTipoSeg = C.IdTipoSeg 
-                AND CS.PlanCob = C.PlanCob
-                AND CS.CodCobert = C.CodCobert
-                AND CS.CodEmpresa = C.CodEmpresa
-                AND CS.CodCia = C.CodCia
-        WHERE C.StsCobertura IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
-            AND C.CodCia = nCodCia
-        GROUP BY  C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-            NVL(OrdenSESAS, 0),
-            NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99'),0
-
-        )A
-        INNER JOIN SESAS_DATGEN D
-            ON D.IDPOLIZA = A.IDPOLIZA
-            AND D.IDETPOL = A.IDETPOL
-        WHERE D.CODCIA=nCodCia 
-        AND D.CODEMPRESA=nCodEmpresa
-        AND D.CODREPORTE='SESADATAPC'
-        AND D.CODUSUARIO=cCodUsuario
-        AND D.NUMPOLIZA>= '0' 
-        AND D.NUMCERTIFICADO>= '0'
-        --**#AND D.IDPOLIZA IN (43562,43563,43568,43576) --**
-        GROUP BY A.IDPOLIZA,A.IDETPOL,A.CodCobert,
-            A.OrdenSESAS,
-            A.PeriodoEspera,
-              A.ClaveSESAS            ,
-            A.Suma_Moneda,A.Prima_Moneda
+                    ON CS.IDTIPOSEG = C.IDTIPOSEG 
+                AND CS.PLANCOB = C.PLANCOB 
+                AND CS.CODCOBERT = C.CODCOBERT 
+                AND CS.CODEMPRESA = C.CODEMPRESA 
+                AND CS.CODCIA = C.CODCIA 
+            WHERE C.STSCOBERTURA IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6) 
+            AND C.CODCIA = nCodCia 
+            AND D.CODREPORTE='SESADATAPC' 
+            AND D.CODUSUARIO= cCodUsuario 
+            AND D.NUMPOLIZA>= '0' 
+            AND D.NUMCERTIFICADO>= '0' 
+            --GROUP BY C.IDPOLIZA, C.IDETPOL, C.CODCOBERT, NVL(ORDENSESAS,0), NVL(PERIODOESPERAMESES,0), NVL(CLAVESESASNEW,'99') 
+            UNION ALL 
+            SELECT C.IDPOLIZA
+                ,C.IDETPOL
+                ,C.CODCOBERT
+                ,NVL(ORDENSESAS, 0) ORDENSESAS
+                ,NVL(PERIODOESPERAMESES, 0) PERIODOESPERA
+                ,NVL(CLAVESESASNEW, '99') CLAVESESAS
+                ,SUMAASEG_MONEDA SUMA_MONEDA
+                ,C.PRIMA_MONEDA PRIMA_MONEDA 
+            FROM SICAS_OC.COBERT_ACT_ASEG C 
+            INNER JOIN SESAS_DATGEN D 
+            ON D.IDPOLIZA = C.IDPOLIZA 
+            AND D.IDETPOL = C.IDETPOL
+            AND D.CODASEGURADO = C.COD_ASEGURADO
+            AND D.CODCIA=C.CODCIA 
+            AND D.CODEMPRESA=C.CODEMPRESA
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS         
+                    ON CS.IDTIPOSEG = C.IDTIPOSEG 
+                AND CS.PLANCOB = C.PLANCOB 
+                AND CS.CODCOBERT = C.CODCOBERT 
+                AND CS.CODEMPRESA = C.CODEMPRESA 
+                AND CS.CODCIA = C.CODCIA 
+            WHERE C.STSCOBERTURA IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
+            AND C.CODCIA = nCodCia 
+            AND D.CODREPORTE='SESADATAPC' 
+            AND D.CODUSUARIO=cCodUsuario 
+            AND D.NUMPOLIZA>= '0' 
+            AND D.NUMCERTIFICADO>= '0'
+            --GROUP BY C.IDPOLIZA, C.IDETPOL, C.CODCOBERT, NVL(ORDENSESAS,0), NVL(PERIODOESPERAMESES,0), NVL(CLAVESESASNEW,'99') 
+            )A 
+        GROUP BY A.IDPOLIZA, A.IDETPOL, A.CODCOBERT, A.ORDENSESAS, A.PERIODOESPERA, A.CLAVESESAS ,A.SUMA_MONEDA, A.PRIMA_MONEDA
         ORDER BY A.IDPOLIZA, A.IDETPOL;
+
+
+
 
         TYPE rec_sesasdatgen3 IS RECORD (
             Cod_Asegurado   NUMBER,
@@ -4370,7 +4410,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                nPrimaContableAnu := 0;
                nMtoCptoNcrMonedaAnu := 0;
                nMtoCptoNcrMoneda := 0;
-                    SELECT /*+ INDEX(T SYS_C0032162) */ NVL(SUM(DF.Monto_Det_Moneda), 0) + 0
+                    SELECT NVL(SUM(DF.Monto_Det_Moneda), 0) + 0
                     INTO   nPrimaContable
                     FROM   DETALLE_FACTURAS DF, FACTURAS F, TRANSACCION T
                     WHERE  T.FechaTransaccion BETWEEN dFecDesde AND  dFecHasta
@@ -4400,7 +4440,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                    AND  F.Stsfact          IN ('ANU') 
                    AND  DF.IdFactura        = F.IdFactura;
                  --*/
-                 SELECT /*+ INDEX(T SYS_C0032162) */ NVL(SUM(DNC.Monto_Det_Moneda),0) +0
+                 SELECT NVL(SUM(DNC.Monto_Det_Moneda),0) +0
                  INTO   nMtoCptoNcrMoneda
                  FROM   DETALLE_NOTAS_DE_CREDITO DNC
                  INNER JOIN  NOTAS_DE_CREDITO NC
@@ -4434,7 +4474,9 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
             END IF;
 
             nPrimaContable2 := (NVL(nPrimaContable,0) - NVL(nPrimaContableAnu,0)) - ((NVL(nMtoCptoNcrMoneda,0) - NVL(nMtoCptoNcrMonedaAnu,0)));
-
+IF nPrimaContable2 = 0 THEN
+    nPrimaContable2 := nPrimaMonedaTotPol;
+   END IF;
             nPmaEmiCob := ((ROUND((100 / nPrimaMonedaTotPol ), 10) * NVL( nPrima_Moneda, 0)) * ROUND((nPrimaContable2/100), 10) );
 
             --nPmaEmiCob := nPmaEmiCob/ obj_sesasdatgen4(w).total;
@@ -4451,7 +4493,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
 
                 BEGIN
 
-                    INSERT INTO SICAS_OC.SESAS_EMISION (
+                    INSERT /*+ APPEND */ INTO SICAS_OC.SESAS_EMISION (
                         CodCia,
                         CodEmpresa,
                         CodReporte,
@@ -4510,7 +4552,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
     CLOSE COBERT_Q;
 
     COMMIT;
-
+		/*
         FOR i IN CUR1 LOOP
             vl_idPoliza := i.idpoliza;
             FOR COBERT_SUM_LOOP IN COBERT_SUM LOOP
@@ -4534,7 +4576,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
             END LOOP;
         END LOOP;
         COMMIT;
-
+		*/
         BEGIN
             OPEN c_Llenado; LOOP
                 FETCH c_Llenado
@@ -5069,7 +5111,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                     FROM  SICAS_OC.RESERVA_DET
                     WHERE ID_POLIZA = x.IdPoliza
                         AND ID_SINIESTRO = x.NumSiniestro
-                        AND AÑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
+                        AND AÂ¿_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
                     */
                     SELECT  FECREP
                     INTO dFecConSin
@@ -5201,7 +5243,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                     WHERE
                             ID_POLIZA = x.IdPoliza
                         AND ID_SINIESTRO = x.NumSiniestro
-                        AND AÑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
+                        AND AÃ‘O_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
                         AND TIPO_MOVIMIENTO = 'PAGOS';
 
                 EXCEPTION
@@ -5973,63 +6015,75 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
         o_SesasDatGen   t_SesasDatGen;
 
         CURSOR COBERT_Q IS
-         SELECT A.IDPOLIZA,A.IDETPOL,A.CodCobert,
-            A.OrdenSESAS,
-            A.PeriodoEspera,
-              A.ClaveSESAS            ,
-            A.Suma_Moneda,A.Prima_Moneda,COUNT(1) TOTAL
-            FROM (SELECT C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-            NVL(CS.OrdenSESAS, 0)         OrdenSESAS,
-            NVL(CS.PeriodoEsperaMeses, 0) PeriodoEspera,
-            NVL(CS.CLAVESESASNEW, '99')   ClaveSESAS            ,
-            SUM(SumaAseg_Moneda)  Suma_Moneda,
-            SUM(C.Prima_Moneda)           Prima_Moneda
-        FROM  SICAS_OC.COBERT_ACT C
-            INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
-                ON CS.IdTipoSeg = C.IdTipoSeg 
-                AND CS.PlanCob = C.PlanCob
-                AND CS.CodCobert = C.CodCobert
-                AND CS.CodEmpresa = C.CodEmpresa
-                AND CS.CodCia = C.CodCia
-        WHERE C.StsCobertura IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
-            AND C.CodCia = nCodCia
-        GROUP BY
-            C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-            NVL(OrdenSESAS, 0),
-            NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99')
-
-        UNION ALL
-
-        SELECT C.IDPOLIZA,C.IDETPOL, C.CodCobert,
-            NVL(OrdenSESAS, 0)         OrdenSESAS,
-            NVL(PeriodoEsperaMeses, 0) PeriodoEspera,
-            NVL(CLAVESESASNEW, '99')   ClaveSESAS,
-            SUM(SumaAseg_Moneda) Suma_Moneda,
-            SUM(C.Prima_Moneda)        Prima_Moneda
-        FROM  SICAS_OC.COBERT_ACT_ASEG C
-            INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
-                ON CS.IdTipoSeg = C.IdTipoSeg 
-                AND CS.PlanCob = C.PlanCob
-                AND CS.CodCobert = C.CodCobert
-                AND CS.CodEmpresa = C.CodEmpresa
-                AND CS.CodCia = C.CodCia
-        WHERE C.StsCobertura IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
-            AND C.CodCia = nCodCia
-        GROUP BY  C.IDPOLIZA,C.IDETPOL,C.CodCobert,
-            NVL(OrdenSESAS, 0),
-            NVL(PeriodoEsperaMeses, 0),
-            NVL(CLAVESESASNEW, '99')
-        )A
-        INNER JOIN SESAS_DATGEN D
-            ON D.IDPOLIZA = A.IDPOLIZA
-            AND D.IDETPOL = A.IDETPOL
-        WHERE D.CODCIA=nCodCia AND D.CODEMPRESA=nCodEmpresa AND D.CODREPORTE='SESADATGMC' AND D.CODUSUARIO=cCodUsuario AND D.NUMPOLIZA>= '0' AND D.NUMCERTIFICADO>= '0'
-        GROUP BY A.IDPOLIZA,A.IDETPOL,A.CodCobert,
-            A.OrdenSESAS,
-            A.PeriodoEspera,
-              A.ClaveSESAS            ,
-            A.Suma_Moneda,A.Prima_Moneda
+         SELECT A.IDPOLIZA
+            ,A.IDETPOL
+            ,A.CODCOBERT
+            ,A.ORDENSESAS
+            ,A.PERIODOESPERA
+            ,A.CLAVESESAS
+            ,A.SUMA_MONEDA
+            ,A.PRIMA_MONEDA
+            ,COUNT(1) TOTAL 
+        FROM (
+            SELECT C.IDPOLIZA
+                ,C.IDETPOL
+                ,C.CODCOBERT
+                ,NVL(CS.ORDENSESAS, 0) ORDENSESAS
+                ,NVL(CS.PERIODOESPERAMESES, 0) PERIODOESPERA
+                ,NVL(CS.CLAVESESASNEW, '99') CLAVESESAS
+                ,SUMAASEG_MONEDA SUMA_MONEDA
+                ,C.PRIMA_MONEDA PRIMA_MONEDA
+            FROM SICAS_OC.COBERT_ACT C 
+            INNER JOIN SESAS_DATGEN D 
+            ON D.IDPOLIZA = C.IDPOLIZA 
+            AND D.IDETPOL = C.IDETPOL 
+            AND D.CODASEGURADO = C.COD_ASEGURADO
+            AND D.CODCIA=C.CODCIA 
+            AND D.CODEMPRESA=C.CODEMPRESA
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS 
+                    ON CS.IDTIPOSEG = C.IDTIPOSEG 
+                AND CS.PLANCOB = C.PLANCOB 
+                AND CS.CODCOBERT = C.CODCOBERT 
+                AND CS.CODEMPRESA = C.CODEMPRESA 
+                AND CS.CODCIA = C.CODCIA 
+            WHERE C.STSCOBERTURA IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6) 
+            AND C.CODCIA = nCodCia 
+            AND D.CODREPORTE='SESADATGMC' 
+            AND D.CODUSUARIO= cCodUsuario 
+            AND D.NUMPOLIZA>= '0' 
+            AND D.NUMCERTIFICADO>= '0' 
+            --GROUP BY C.IDPOLIZA, C.IDETPOL, C.CODCOBERT, NVL(ORDENSESAS,0), NVL(PERIODOESPERAMESES,0), NVL(CLAVESESASNEW,'99') 
+            UNION ALL 
+            SELECT C.IDPOLIZA
+                ,C.IDETPOL
+                ,C.CODCOBERT
+                ,NVL(ORDENSESAS, 0) ORDENSESAS
+                ,NVL(PERIODOESPERAMESES, 0) PERIODOESPERA
+                ,NVL(CLAVESESASNEW, '99') CLAVESESAS
+                ,SUMAASEG_MONEDA SUMA_MONEDA
+                ,C.PRIMA_MONEDA PRIMA_MONEDA 
+            FROM SICAS_OC.COBERT_ACT_ASEG C 
+            INNER JOIN SESAS_DATGEN D 
+            ON D.IDPOLIZA = C.IDPOLIZA 
+            AND D.IDETPOL = C.IDETPOL
+            AND D.CODASEGURADO = C.COD_ASEGURADO
+            AND D.CODCIA=C.CODCIA 
+            AND D.CODEMPRESA=C.CODEMPRESA
+                INNER JOIN SICAS_OC.COBERTURAS_DE_SEGUROS CS         
+                    ON CS.IDTIPOSEG = C.IDTIPOSEG 
+                AND CS.PLANCOB = C.PLANCOB 
+                AND CS.CODCOBERT = C.CODCOBERT 
+                AND CS.CODEMPRESA = C.CODEMPRESA 
+                AND CS.CODCIA = C.CODCIA 
+            WHERE C.STSCOBERTURA IN (vl_StatusValid1,vl_StatusValid2,vl_StatusValid3,vl_StatusValid4,vl_StatusValid5,vl_StatusValid6)
+            AND C.CODCIA = nCodCia 
+            AND D.CODREPORTE='SESADATGMC' 
+            AND D.CODUSUARIO=cCodUsuario 
+            AND D.NUMPOLIZA>= '0' 
+            AND D.NUMCERTIFICADO>= '0'
+            --GROUP BY C.IDPOLIZA, C.IDETPOL, C.CODCOBERT, NVL(ORDENSESAS,0), NVL(PERIODOESPERAMESES,0), NVL(CLAVESESASNEW,'99') 
+            )A 
+        GROUP BY A.IDPOLIZA, A.IDETPOL, A.CODCOBERT, A.ORDENSESAS, A.PERIODOESPERA, A.CLAVESESAS ,A.SUMA_MONEDA, A.PRIMA_MONEDA
         ORDER BY A.IDPOLIZA, A.IDETPOL;
 
       --
@@ -6190,7 +6244,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                         IF vl_AsegModel <= 1 THEN
 
                             BEGIN
-                                INSERT INTO SICAS_OC.SESAS_EMISION (
+                                INSERT /*+ APPEND */ INTO SICAS_OC.SESAS_EMISION (
                                     CodCia,
                                     CodEmpresa,
                                     CodReporte,
@@ -6263,7 +6317,7 @@ ORDER BY A.IDPOLIZA, A.IDETPOL,A.CodCobert,A.ClaveSESAS
                                         vl_Asegurado2 := TO_CHAR(o_SesasDatGen(x).NumCertificado + vl_Contador2);
 
                                         BEGIN
-                                            INSERT INTO SICAS_OC.SESAS_EMISION (
+                                            INSERT /*+ APPEND */ INTO SICAS_OC.SESAS_EMISION (
                                                 CodCia,
                                                 CodEmpresa,
                                                 CodReporte,
@@ -6680,7 +6734,7 @@ END;
                     FROM SICAS_OC.RESERVA_DET
                     WHERE ID_POLIZA = o_SesasSiniestro(x).IdPoliza
                         AND ID_SINIESTRO = o_SesasSiniestro(x).NumSiniestro
-                        AND AÑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
+                        AND AÂ¿_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'));
 
                 EXCEPTION
                     WHEN OTHERS THEN
@@ -6714,7 +6768,7 @@ END;
                   FROM SICAS_OC.RESERVA_DET
                   WHERE ID_POLIZA = o_SesasSiniestro(x).IdPoliza
                         AND ID_SINIESTRO = o_SesasSiniestro(x).NumSiniestro
-                        AND AÑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
+                        AND AÃ‘O_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
                         AND TIPO_MOVIMIENTO IN ('PAGOS','DESPAG', 'DESCUE', 'DEDUC');
                 EXCEPTION 
                 WHEN OTHERS THEN
@@ -6746,7 +6800,7 @@ END;
                     FROM SICAS_OC.RESERVA_DET
                     WHERE ID_POLIZA = o_SesasSiniestro(x).IdPoliza
                         AND ID_SINIESTRO = o_SesasSiniestro(x).NumSiniestro
-                        AND AÑO_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
+                        AND AÃ‘O_MOVIMIENTO = TO_NUMBER(TO_CHAR(dvarFecDesde, 'YYYY'))
                         AND TIPO_MOVIMIENTO = 'PAGOS';
 
                 EXCEPTION
@@ -6854,9 +6908,8 @@ END;
 END OC_SESASCOLECTIVO;
 /
 
-GRANT EXECUTE ON SICAS_OC.OC_SESASCOLECTIVO TO PUBLIC;
+CREATE OR REPLACE PUBLIC SYNONYM OC_SESASCOLECTIVO FOR SICAS_OC.OC_SESASCOLECTIVO;
 /
 
---SYNONYM
-CREATE OR REPLACE PUBLIC SYNONYM OC_SESASCOLECTIVO FOR SICAS_OC.OC_SESASCOLECTIVO;
+GRANT EXECUTE ON SICAS_OC.OC_SESASCOLECTIVO TO PUBLIC;
 /
