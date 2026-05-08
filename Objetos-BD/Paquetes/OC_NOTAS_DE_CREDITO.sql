@@ -348,7 +348,7 @@ CURSOR ENDOSO_Q IS
 
 CURSOR CPTO_PRIMAS_Q IS
    --MLJS 04/08/2025 adecuaciones multiramo
-   SELECT CS.CodCpto, SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
+   /*SELECT CS.CodCpto, SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
      FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
     WHERE CS.CodCobert  = C.CodCobert
       AND CS.PlanCob    = C.PlanCob
@@ -400,7 +400,77 @@ CURSOR CPTO_PRIMAS_Q IS
       AND D.IdPoliza          = nIdPoliza
       AND D.CodCia            = nCodCia
       AND cTpEndoso           = 'NSS'
-    GROUP BY CS.CodCpto;
+    GROUP BY CS.CodCpto;*/
+    --16/04/2026 SE CORRIGE EL CURSOR PARA QUE NO DISCRIMINE LOS CONCEPTOS DE SOLO BASICA
+    SELECT CS.CodCpto, SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
+     FROM COBERT_ACT C, COBERTURAS_DE_SEGUROS CS
+    WHERE CS.CodCobert  = C.CodCobert
+      AND CS.PlanCob    = C.PlanCob
+      AND CS.IdTipoSeg  = C.IdTipoSeg
+      AND CS.CodEmpresa = C.CodEmpresa
+      AND CS.CodCia     = C.CodCia
+      AND IdEndoso      = nIdEndoso
+      AND C.IDetPol     = nIDetPol
+      AND C.IdPoliza    = nIdPoliza
+      AND C.CodCia      = nCodCia
+    GROUP BY CS.CodCpto
+    UNION
+   SELECT CS.CodCpto, SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
+     FROM COBERTURAS C, COBERTURAS_DE_SEGUROS CS
+    WHERE CS.CodCobert  = C.CodCobert
+      AND CS.PlanCob    = C.PlanCob
+      AND CS.IdTipoSeg  = C.IdTipoSeg
+      AND CS.CodEmpresa = C.CodEmpresa
+      AND CS.CodCia     = C.CodCia
+      AND IdEndoso      = nIdEndoso
+      AND IdEndoso      != 0
+      AND C.IDetPol     = nIDetPol
+      AND C.IdPoliza    = nIdPoliza
+      AND C.CodCia      = nCodCia
+    GROUP BY CS.CodCpto
+    UNION 
+    --MLJS 20/04/2026 SE AGREGA CURSOR PARA LOS ENDOSOS EXA
+     SELECT CS.CodCpto, SUM(C.Prima_Local) Prima_Local, SUM(C.Prima_Moneda) Prima_Moneda
+     FROM COBERTURA_ASEG C, COBERTURAS_DE_SEGUROS CS
+    WHERE CS.CodCobert  = C.CodCobert
+      AND CS.PlanCob    = C.PlanCob
+      AND CS.IdTipoSeg  = C.IdTipoSeg
+      AND CS.CodEmpresa = C.CodEmpresa
+      AND CS.CodCia     = C.CodCia
+      AND IdEndoso      = nIdEndoso	  
+      AND IdEndoso      != 0
+      AND C.IDetPol     = nIDetPol
+      AND C.IdPoliza    = nIdPoliza
+      AND C.CodCia      = nCodCia
+    GROUP BY CS.CodCpto
+    UNION
+    SELECT MAX(CS.CodCpto) CodCpto, nPrimaLocal Prima_Local, nPrimaMoneda Prima_Moneda
+     FROM   DETALLE_POLIZA D, COBERTURAS_DE_SEGUROS CS, COBERT_ACT_ASEG C
+     WHERE  CS.PlanCob          = D.PlanCob
+       AND  CS.IdTipoSeg        = D.IdTipoSeg
+       AND  CS.CodEmpresa       = D.CodEmpresa
+       AND  CS.CodCia           = D.CodCia
+       AND  CS.CODCOBERT        = C.CODCOBERT
+       AND  D.IdPoliza          = C.IdPoliza
+       AND  D.IDetPol           = nIDetPol
+       AND  D.IdPoliza          = nIdPoliza
+       AND  D.CodCia            = nCodCia
+       AND  cTipoEndoso         IN ('NSS')
+     GROUP BY CS.CodCpto
+     UNION
+     SELECT MAX(CS.CodCpto) CodCpto, nPrimaLocal Prima_Local, nPrimaMoneda Prima_Moneda
+     FROM   DETALLE_POLIZA D, COBERTURAS_DE_SEGUROS CS, COBERT_ACT C
+     WHERE  CS.PlanCob          = D.PlanCob
+       AND  CS.IdTipoSeg        = D.IdTipoSeg
+       AND  CS.CodEmpresa       = D.CodEmpresa
+       AND  CS.CodCia           = D.CodCia
+       AND  CS.CODCOBERT        = C.CODCOBERT
+       AND  D.IdPoliza          = C.IdPoliza
+       AND  D.IDetPol           = nIDetPol
+       AND  D.IdPoliza          = nIdPoliza
+       AND  D.CodCia            = nCodCia
+       AND  cTipoEndoso        IN ('NSS')
+     GROUP BY CS.CodCpto;
 
 CURSOR CPTO_ASIST_Q IS
    SELECT T.CodCptoServicio, SUM(A.MontoAsistLocal) MontoAsistLocal,
@@ -615,6 +685,10 @@ BEGIN
          OC_DETALLE_NOTAS_DE_CREDITO.GENERA_CONCEPTOS(nCodCia, nCodEmpresa, cCodPlanPago, X.IdTipoSeg,
                                                       nIdNcr, nTasaCambio);
          OC_NOTAS_DE_CREDITO.ACTUALIZA_NOTA(nIdNcr);
+         --se agrega ajuste MLJS 20/04/2026
+         IF X.TipoEndoso IN ('EXA','NSS') THEN
+            OC_FACTURAR.PROC_AJUSTE_CENTAVOS(nIdPoliza, nIdEndoso, nMtoPago);
+         END IF;--se agrega ajuste MLJS 20/04/2026
          OC_NOTAS_DE_CREDITO.EMITIR(nIdNcr, NULL);
       END LOOP;
       IF NVL(X.PrimaLocal,0) <> NVL(nTotPrimas,0) THEN
