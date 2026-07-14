@@ -44,6 +44,8 @@ PROCEDURE DATOS_COTIZACION (nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER
 
 PROCEDURE CREA_POLIZA_BASE (nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, cNumPolUnicoOrigen VARCHAR2);
 
+PROCEDURE VALIDA_COBER_BASICA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, n_resultado OUT NUMBER); --ARH 05/03/2026
+
 END OC_SOLICITUD_EMISION;
 /
 
@@ -1580,5 +1582,62 @@ BEGIN
         --END IF;
     END LOOP;
 END CREA_POLIZA_BASE;
+--
+PROCEDURE VALIDA_COBER_BASICA(nCodCia NUMBER, nCodEmpresa NUMBER, nIdSolicitud NUMBER, n_resultado OUT NUMBER) IS
+    c_idtiposeg     SOLICITUD_EMISION.IDTIPOSEG%TYPE;
+    c_plancob       SOLICITUD_EMISION.PLANCOB%TYPE;
+    n_cant_basicas  NUMBER := 0;
+
+BEGIN
+
+    -- ----------------------------------------------------------------
+    -- PASO 1: Obtener IDTIPOSEG y PLANCOB de la póliza
+    -- ----------------------------------------------------------------
+    BEGIN
+        SELECT IDTIPOSEG,
+               PLANCOB
+        INTO   c_idtiposeg,
+               c_plancob
+        FROM   SOLICITUD_EMISION 
+        WHERE  IDSOLICITUD   = nIdSolicitud
+        AND    CODCIA        = ncodcia
+        AND    CODEMPRESA    = nCodEmpresa
+        AND    ROWNUM = 1;
+
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            n_resultado := 0;
+            RETURN;
+    END;
+
+   -- PASO 2: Contar directamente cuántas coberturas básicas tiene
+   --         la SOLICITUD usando COBERTURA_BASICA = 'S'
+   -- ----------------------------------------------------------------
+   SELECT COUNT(DISTINCT A.CODCOBERT)
+   INTO   n_cant_basicas
+   FROM   SOLICITUD_COBERTURAS       A
+   JOIN   COBERTURAS_DE_SEGUROS      B  ON  B.CODCOBERT  = A.CODCOBERT
+                                        AND B.CODCIA     = A.CODCIA
+                                        AND B.CODEMPRESA = A.CODEMPRESA
+                                        AND B.IDTIPOSEG  = c_idtiposeg   
+                                        AND B.PLANCOB    = c_plancob    
+   WHERE  A.IDSOLICITUD        = nIdSolicitud      
+   AND    A.CODCIA             = ncodcia
+   AND    A.CODEMPRESA         = nCodEmpresa
+   AND    B.COBERTURA_BASICA   = 'S';
+   
+    IF n_cant_basicas = 0 THEN
+        n_resultado := 0;   -- Ninguna cobertura básica
+    ELSIF n_cant_basicas = 1 THEN
+        n_resultado := 1;   -- Solo UNA cobertura básica
+    ELSE
+        n_resultado := 2;   -- Más de UNA cobertura básica
+    END IF;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        n_resultado := 0;
+        RAISE_APPLICATION_ERROR(-20001, 'Error en valida_cober_basica: ' || SQLERRM);
+END VALIDA_COBER_BASICA;
 
 END OC_SOLICITUD_EMISION;

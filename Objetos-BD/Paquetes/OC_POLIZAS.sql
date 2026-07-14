@@ -102,6 +102,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_POLIZAS IS
     FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RETURN NUMBER; --17/05/2024
     PROCEDURE REHABILITA_RECIBOS_PROV(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER);--09/06/2025 ARH
     PROCEDURE COPIAR_RSA(nCodCia NUMBER, nIdPolizaOrig NUMBER, nIdPolizaNew NUMBER, nIdetPol NUMBER, vUSER VARCHAR2);--10/08/2025 JJG
+	PROCEDURE VALIDA_COBER_BASICA(ncodcia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, n_resultado OUT NUMBER); --05/03/2026 ARH
 
 
 END OC_POLIZAS;
@@ -5778,6 +5779,63 @@ FUNCTION COPIAR_REN(nCodCia NUMBER, nIdPolizaOrig NUMBER, cUsuario VARCHAR2) RET
             RAISE_APPLICATION_ERROR(-20001,'Error en COPIAR_RSA: ' || nIdPolizaOrig || SQLERRM);
 
     END COPIAR_RSA;
+    --
+    PROCEDURE VALIDA_COBER_BASICA(ncodcia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, n_resultado OUT NUMBER) IS
+        c_idtiposeg     DETALLE_POLIZA.IDTIPOSEG%TYPE;
+        c_plancob       DETALLE_POLIZA.PLANCOB%TYPE;
+        n_cant_basicas  NUMBER := 0;
+
+    BEGIN
+
+       BEGIN
+           SELECT IDTIPOSEG,
+                  PLANCOB
+           INTO   c_idtiposeg,
+                  c_plancob
+           FROM   DETALLE_POLIZA 
+           WHERE  IDPOLIZA   = nIdPoliza
+           AND    CODCIA     = ncodcia
+           AND    CODEMPRESA = nCodEmpresa
+           AND    ROWNUM = 1;
+
+       EXCEPTION
+           WHEN NO_DATA_FOUND THEN
+                n_resultado := 0;
+                RETURN;
+       END;
+
+       -- ----------------------------------------------------------------
+       -- PASO 2: Contar directamente cuántas coberturas básicas tiene
+       --         la póliza usando COBERTURA_BASICA = 'S'
+       -- ----------------------------------------------------------------
+       SELECT COUNT(DISTINCT A.CODCOBERT)
+       INTO   n_cant_basicas
+       FROM   COBERT_ACT_ASEG        A
+       JOIN   COBERTURAS_DE_SEGUROS  B  ON  B.CODCOBERT  = A.CODCOBERT
+                                         AND B.IDTIPOSEG  = A.IDTIPOSEG
+                                         AND B.PLANCOB    = A.PLANCOB
+                                         AND B.CODCIA     = A.CODCIA
+                                         AND B.CODEMPRESA = A.CODEMPRESA
+       WHERE  A.IDPOLIZA           = nIdPoliza
+       AND    A.CODCIA             = ncodcia
+       AND    A.CODEMPRESA         = nCodEmpresa
+       AND    A.IDTIPOSEG          = c_idtiposeg
+       AND    A.PLANCOB            = c_plancob
+       AND    B.COBERTURA_BASICA    = 'S';   -- <-- Aquí filtramos solo las básicas
+
+       IF n_cant_basicas = 0 THEN
+          n_resultado := 0;   -- Ninguna cobertura básica
+       ELSIF n_cant_basicas = 1 THEN
+          n_resultado := 1;   -- Solo UNA cobertura básica
+       ELSE
+          n_resultado := 2;   -- Más de UNA cobertura básica
+       END IF;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            n_resultado := 0;
+            RAISE_APPLICATION_ERROR(-20001, 'Error en valida_cober_basica: ' || SQLERRM);
+    END VALIDA_COBER_BASICA;
 
 END OC_POLIZAS;
 /

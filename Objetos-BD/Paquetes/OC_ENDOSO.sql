@@ -42,7 +42,8 @@ create or replace PACKAGE          OC_ENDOSO IS
     PROCEDURE ACTUALIZA_FECHAS_VIG(nCodCia IN NUMBER, nIdPoliza IN NUMBER, nIDetPol IN NUMBER, nIdEndoso IN NUMBER, nNumError OUT NUMBER, cMsjError OUT VARCHAR2);
     --ARH_21-02-2025 <SE CREA PROCESO PARA LA VALIDACION DE DATOS EN LA CARGA DE INCLUISON DE ASEGURADOS PARA LA PRIMA DE AJUSTE ANUAL
     PROCEDURE VALIDA_DATOS(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cNumPolUnico VARCHAR2, cCodUser VARCHAR2, cValidado OUT VARCHAR2);
-    --ARH_26-02-2025 <SE CREA PROCESO PARA LA CARGA DE INCLUISON DE ASEGURADOS PARA LA PRIMA DE AJUSTE ANUAL Y ENDOSOS NOTA DE CREDITO O RECIBO
+    --ARH_29-01-2026 <SE CREA PROCESO PARA LA CARGA DE INCLUISON DE ASEGURADOS PARA LA PRIMA DE AJUSTE ANUAL Y ENDOSOS NOTA DE CREDITO O RECIBO MODIFICACION 
+	--PARA SOLO COBERTURAS BASICAS
     PROCEDURE CALCULA_PRIMA_AJUSTEANUAL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cCodUser VARCHAR2, cMsjvalor OUT VARCHAR2);
     --ARH_07-05-2025 <SE CREA PROCESO PARA INSERTAR RECIBOS O NOTAS DE CREDITO PROVISIONALES DE OTRO RECIBO PARA EL ENDOSOS DE DECLARACION
     PROCEDURE ENDOSO_RECIBO_PROVISIONAL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, nIDetPol NUMBER, nIdEndoso NUMBER, nIdFactura NUMBER,
@@ -2920,18 +2921,32 @@ END EMITIR;
               WHEN TOO_MANY_ROWS THEN
                    cExisTpIden := 'S';
               END;
-
+                           
+              BEGIN
+                  SELECT LENGTH(x.Num_Doc_IDentificacion) 
+                  INTO nCaracteres 
+                  FROM Dual;
+              EXCEPTION
+              WHEN NO_DATA_FOUND THEN
+                   cMsjError2 := 'NO Existen Tipo de Documento de Identificación Definido';
+                   nContador := 2;
+              END;
+                            
               IF cExisTpIden = 'S' THEN
-                 SELECT LENGTH(x.Num_Doc_IDentificacion) 
-                 INTO nCaracteres 
-                 FROM Dual;
-                 IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(x.Tipo_Doc_Identificacion, x.Num_Doc_IDentificacion) = 'N' THEN
-                    IF nCaracteres < 12 OR nCaracteres > 13 THEN
-                       cMsjError2 :='El campo del Numero de Documento de Identificación no contiene el numero de pociones para un RFC Valido';
-                       nContador := 2;
-                    ELSIF OC_PROCESOS_MASIVOS.VALIDA_FECHANAC_NTRIBUTARIO(x.Fecnacimiento,x.Num_Doc_IDentificacion) = 'N' THEN
-                          cMsjError2 := 'El campo del FECHA NACIMIENTO/es diferente al del RFC Favor de validar las fechas';
+                 IF x.Num_Doc_IDentificacion = 'RFC' THEN
+                    IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(x.Tipo_Doc_Identificacion, x.Num_Doc_IDentificacion) = 'N' THEN
+                       IF nCaracteres < 12 OR nCaracteres > 13 THEN
+                          cMsjError2 :='El campo del Numero de Documento de Identificación no contiene el numero de pociones para un RFC Valido';
                           nContador := 2;
+                       ELSIF OC_PROCESOS_MASIVOS.VALIDA_FECHANAC_NTRIBUTARIO(x.Fecnacimiento,x.Num_Doc_IDentificacion) = 'N' THEN
+                             cMsjError2 := 'El campo del FECHA NACIMIENTO/es diferente al del RFC Favor de validar las fechas';
+                             nContador := 2;
+                       END IF;
+                    END IF; 
+                 ELSIF x.Num_Doc_IDentificacion = 'CURP' THEN
+                    IF nCaracteres < 18 OR nCaracteres > 18 THEN
+                        cMsjError2 :='El campo del Numero de Documento de Identificación no contiene el numero de pociones para una CURP Valida';
+                        nContador := 2;
                     END IF;
                  END IF; 
               END IF;
@@ -2972,23 +2987,21 @@ END EMITIR;
   END VALIDA_DATOS;
   --
   PROCEDURE CALCULA_PRIMA_AJUSTEANUAL(nCodCia NUMBER, nCodEmpresa NUMBER, nIdPoliza NUMBER, cCodUser VARCHAR2, cMsjvalor OUT VARCHAR2) IS
+  
     nCod_Asegurado   ASEGURADO.Cod_Asegurado%TYPE;
     nIdEndoso        ENDOSOS.IdEndoso%TYPE;
     cMsjError        VARCHAR2(400);
-    nSmAsegf         ASEGURADO_CERTIFICADO.SumaAseg%TYPE;
     nNumAsegIncl     NUMBER := 0;
-    cTpEndoso        ENDOSOS.TipoEndoso%TYPE;
     nSubgrupo        ASEGURADO_CERTIFICADO.IdetPol%TYPE;
     nValor           NUMBER := 0;
     nIDetPol         ASEGURADO_CERTIFICADO.IdetPol%TYPE;
     dFecIniVig       POLIZAS.FecIniVig%TYPE;
     dFecFinVig       POLIZAS.FecFinVig%TYPE;
     cCodPlanPago     POLIZAS.CodPlanPago%TYPE;
-    nPMA_I           ASEGURADO_CERTIFICADO.PrimaNeta%TYPE; -- Prima Anual Inicial
-    nSA_I            ASEGURADO_CERTIFICADO.SumaAseg%TYPE; -- Suma Asegurada Inicial
-    nSA_f            ASEGURADO_CERTIFICADO.SumaAseg%TYPE; -- Suma Asegurada Final
-    n_DDVIG          NUMBER := 365; -- Días de Vigencia
-    n_PmaAj          ENDOSOS.PRIMA_NETA_LOCAL%TYPE; -- Prima de Ajuste
+    nPMA_I           NUMBER := 0; ---ASEGURADO_CERTIFICADO.PrimaNeta%TYPE; -- Prima Anual Inicial
+    nSA_I            NUMBER := 0; ---ASEGURADO_CERTIFICADO.SumaAseg%TYPE; -- Suma Asegurada Inicial
+    nSA_f            NUMBER := 0; ---ASEGURADO_CERTIFICADO.SumaAseg%TYPE; -- Suma Asegurada Final
+    n_PmaAj          NUMBER := 0; ---ENDOSOS.PRIMA_NETA_LOCAL%TYPE; -- Prima de Ajuste
     cNPolUnico       INCLU_ASEGURADOS_EXT.Numpolunico%TYPE;
     n_Signo          NUMBER; -- Almacena el signo del resultado
     dIniVig          DATE;
@@ -3001,9 +3014,6 @@ END EMITIR;
     cPlanCob         DETALLE_POLIZA.PlanCob%TYPE;
     cCAMPOVAL        VARCHAR2(100);
     nSA_InclASG      ASEGURADO_CERTIFICADO.SumaAseg%TYPE;
-    nSA_ExitASG      ASEGURADO_CERTIFICADO.SumaAseg%TYPE;
-    nSA_TotalASG     NUMBER := 0;
-    nIdPoliza2       NUMBER;
     n_count          NUMBER;
     nNumAsegurados   NUMBER;
     cTpDocIdentifica VARCHAR2(10);
@@ -3012,14 +3022,16 @@ END EMITIR;
     TYPE tSumaAseg IS TABLE OF NUMBER       INDEX BY BINARY_INTEGER;
     cCodCobertura tCobertura;
     nSumaAseg     tSumaAseg;
-    nSAI_Exi        ASEGURADO_CERTIFICADO.SumaAseg%TYPE;
-    nSAIExiTotal    NUMBER := 0;
-    nPMAI_Exi       ASEGURADO_CERTIFICADO.PrimaNeta%TYPE;
-    nPMAIExiTotal   NUMBER := 0;
     cAsegModelo     VARCHAR2(2);
     nTotalAseg      NUMBER;
     nSA_Modelo      ASEGURADO_CERTIFICADO.SumaAseg%TYPE;
     nSA_ModeFin     NUMBER := 0;
+    nSA_ModeFin2    NUMBER := 0;
+    nSA_ITotal      ASEGURADO_CERTIFICADO.SumaAseg%TYPE; -- Suma Asegurada Inicial total
+    nPMA_ITotal     ASEGURADO_CERTIFICADO.PrimaNeta%TYPE; -- Prima Anual Inicial total
+    nAsegAjuste     ASEGURADO.Cod_Asegurado%TYPE; 
+    nPrimeRegistro NUMBER := 0;
+    nSAF_InclExit   NUMBER := 0;
 
     CURSOR Regi_Q IS
              SELECT *
@@ -3045,6 +3057,25 @@ END EMITIR;
            AND IdPoliza       = nIdPoliza
            AND CodUsuario     = cCodUser
            AND Cod_Asegurado IS NOT NULL;
+                                                                                           
+    CURSOR INCLUASEG_Q IS
+           SELECT IDetPol, Incl_CodAseg
+           FROM ASEG_AJUSTEANUAL
+           WHERE CodEmpresa   = nCodEmpresa
+           AND IdPoliza       = nIdPoliza
+           AND CodUsuario     = cCodUser
+           AND IdetPol        = nIDetPol
+           ORDER BY IDetPol, Cod_Asegurado;
+
+    CURSOR ASEGMODELO_Q IS
+           SELECT  IDETPOL, COD_ASEGURADO 
+           FROM   ASEGURADO_CERTIFICADO
+           WHERE  CodCia    = nCodCia
+           AND    IdPoliza  = nIdpoliza
+           AND    IdetPol   = nIDetPol
+           AND    Estado    = 'EMI'
+           AND    IdEndoso  = 0
+           ORDER BY IDetPol, Cod_Asegurado;
     --
 
   BEGIN
@@ -3055,7 +3086,6 @@ END EMITIR;
      WHERE CodEmpresa = nCodEmpresa
        AND IdPoliza   = nIdPoliza
        AND CodUsuario = cCodUser;
-
      IF n_count = 0 THEN
         RAISE_APPLICATION_ERROR(-20225,'NO EXISTEN DATOS PARA PROCESAR: ');
         cMsjError := 'NO EXISTEN DATOS PARA PROCESAR.';
@@ -3069,8 +3099,8 @@ END EMITIR;
      AND  StsEndoso = 'SOL';
 
      BEGIN
-         SELECT A.FecIniVig , A.FecFinVig, A.CodPlanPago, B.IdTipoSeg, B.PlanCob, B.Indasegmodelo
-         INTO   dFecIniVig, dFecFinVig, cCodPlanPago, cIdTipoSeg, cPlanCob, cAsegModelo
+         SELECT A.FecIniVig , A.FecFinVig, B.IdTipoSeg, B.PlanCob, B.Indasegmodelo   --- se quito codigo de plan de pago para deja fijo  A.CodPlanPago
+         INTO   dFecIniVig, dFecFinVig, cIdTipoSeg, cPlanCob, cAsegModelo
          FROM   POLIZAS A, DETALLE_POLIZA B
          WHERE  A.CodCia   = nCodCia
          AND    A.CodEmpresa = nCodEmpresa
@@ -3081,18 +3111,33 @@ END EMITIR;
          WHEN NO_DATA_FOUND THEN
               RAISE_APPLICATION_ERROR (-20225,'DETALLE POLIZA NO EXISTE: ' || TRIM(TO_CHAR(nIdpoliza)));
      END;
+	 ---Se dejo fijo el codigo del plan de pago por cuestiones de distribucion del la creacion del Endoso 06/04/2026
+	 cCodPlanPago := 'ANUA';
+                   
+     BEGIN
+         SELECT IDETPOL
+         INTO nSubgrupo
+         FROM ASEG_AJUSTEANUAL
+         WHERE CodEmpresa = nCodEmpresa
+         AND IdPoliza   = nIdPoliza
+         AND CodUsuario = cCodUser
+         AND IdRegistro = 1;
+     EXCEPTION
+         WHEN NO_DATA_FOUND THEN
+              RAISE_APPLICATION_ERROR (-20225,'El Subgrupo no Existe: ' || TRIM(TO_CHAR(nIdpoliza)));
+     END;
 
      IF NVL(nIdEndoso,0) != 0 THEN
         cMsjError := 'EXISTEN ENDOSOS EN SOLICITUD, QUE NO PERMITEN GENERAR LOS ENDOSOS DE CÁLCULO DE PRIMA DE AJUSTE FAVOR DE VALIDAR.';
      ELSE
        nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
-       nSubgrupo := 1;
+       --nSubgrupo := 1;
        cMsjvalor := 'N';
        FOR X IN Regi_Q LOOP
          nValor := 0;
-         cNPolUnico := X.Numpolunico;
          IF X.IdetPol != nSubgrupo THEN
             nSubgrupo := X.IdetPol;
+            nPrimeRegistro:= 0;
             IF nNumAsegIncl != 0 THEN
                OC_ENDOSO.INSERTA (nCodcia, nCodempresa, nIdPoliza, nIDetPol, nIdEndoso, 'ESV', 'ENDO-AJUSTE ANUAL' ,dFecIniVig, dFecFinVig, cCodPlanPago, 0, 0, 0, '037', NULL);
                OC_COBERT_ACT_ASEG.HEREDA_COBERTURAS_AJUSTEANUAL(nCodCia, nCodEmpresa, nIdPoliza, nIDetPol, nCodAsegCobe, cIdTipoSeg, cPlanCob, nIdEndoso);
@@ -3109,86 +3154,117 @@ END EMITIR;
                 END;
             END IF;
             --
-            IF nSAIExiTotal != 0 THEN
-              BEGIN
-                 SELECT SUM(SUMAASEG), SUM(PRIMANETA)
-                 INTO   nSA_I, nPMA_I
-                 FROM   ASEGURADO_CERTIFICADO
-                 WHERE  CodCia    = nCodCia
-                 AND    IdPoliza  = nIdpoliza
-                 AND    IdetPol   = nIDetPol
-                 AND    Estado    = 'EMI'
-                 AND    PRIMANETA > 0 
-                 AND    IdEndoso  <> nIdEndoso;
-              EXCEPTION
-              WHEN NO_DATA_FOUND THEN
-                   RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-              END;
-              nSA_I := nSA_I + nSAIExiTotal;
-              nPMA_I:= nPMA_I + nPMAIExiTotal;
-            ELSE
-              BEGIN
-                 SELECT SUM(SUMAASEG), SUM(PRIMANETA)
-                 INTO   nSA_I, nPMA_I
-                 FROM   ASEGURADO_CERTIFICADO
-                 WHERE  CodCia    = nCodCia
-                 AND    IdPoliza  = nIdpoliza
-                 AND    IdetPol   = nIDetPol
-                 AND    Estado    = 'EMI'
-                 AND    IdEndoso  <> nIdEndoso;
-              EXCEPTION
-              WHEN NO_DATA_FOUND THEN
-                   RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-              END;
-            END IF;
-            --
-            IF cAsegModelo = 'S' THEN
+            /*IF cAsegModelo = 'S' THEN
                nTotalAseg:= OC_DETALLE_POLIZA.TOTAL_ASEGURADOS( nCodCia, nCodEmpresa, nIdPoliza, nIDetPol);
-               BEGIN
-                  SELECT SUM(SUMAASEG)
-                  INTO   nSA_Modelo
-                  FROM   ASEGURADO_CERTIFICADO
-                  WHERE  CodCia    = nCodCia
-                  AND    IdPoliza  = nIdpoliza
-                  AND    IdetPol   = nIDetPol
-                  AND    Estado    = 'EMI'
-                  AND    IdEndoso  = 0;
-               EXCEPTION
-               WHEN NO_DATA_FOUND THEN
-                   RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-               END;
-               nSA_ModeFin := nSA_Modelo * nTotalAseg;
-               nSA_ModeFin := nSA_ModeFin - nSA_Modelo;
-               nSA_I := nSA_I + nSA_ModeFin;
-            END IF;
-            IF nNumAsegIncl != 0 THEN
-               BEGIN
-                  SELECT SUM(SUMAASEG)
-                  INTO   nSA_InclASG
-                  FROM   ASEGURADO_CERTIFICADO
-                  WHERE  CodCia    = nCodCia
-                  AND    IdPoliza  = nIdpoliza
-                  AND    IdetPol   = nIDetPol
-                  AND    Estado    = 'EMI'
-                  AND    IdEndoso  = nIdEndoso;
-               EXCEPTION
-               WHEN NO_DATA_FOUND THEN
-                    RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-               END;
-               IF nNumAsegExist != 0 THEN
-                  nSA_f := nSA_TotalASG + nSA_InclASG;
-               ELSE
-                  nSA_f := nSA_I + nSA_InclASG;
+               FOR P IN ASEGMODELO_Q LOOP
+                 BEGIN
+                    SELECT  A.SUMAASEG_LOCAL
+                    INTO    nSA_Modelo
+                    FROM    COBERT_ACT_ASEG A
+                    JOIN    COBERTURAS_DE_SEGUROS B
+                           ON B.IDTIPOSEG = A.IDTIPOSEG
+                          AND B.PLANCOB   = A.PLANCOB
+                          AND B.CODCOBERT = A.CODCOBERT
+                    WHERE   A.CODCIA = nCodCia
+                    AND     A.IDPOLIZA = nIdpoliza
+                    AND     A.IDETPOL = P.IDetPol
+                    AND     A.STSCOBERTURA = 'EMI'
+                    AND     A.COD_ASEGURADO = P.Cod_Asegurado
+                    AND     B.COBERTURA_BASICA = 'S'
+                    AND     A.CODCOBERT = (
+                            SELECT T.CODCOBERT
+                            FROM   TP_SEGUROS_PLANES_COBERTURAS T
+                            WHERE  T.IDTIPOSEG = A.IDTIPOSEG
+                            AND    T.PLANCOB   = A.PLANCOB
+                            AND    T.PRIORIDAD > 0                      --  ignora el 0
+                            AND    T.PRIORIDAD = (
+                                   SELECT MIN(T2.PRIORIDAD)
+                                   FROM   TP_SEGUROS_PLANES_COBERTURAS T2
+                                   WHERE  T2.IDTIPOSEG = A.IDTIPOSEG
+                                   AND    T2.PLANCOB   = A.PLANCOB
+                                   AND    T2.PRIORIDAD > 0               --  ignora el 0
+                            )
+                    );
+                 EXCEPTION
+                 WHEN NO_DATA_FOUND THEN
+                      RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+                 END;
+                 nSA_ModeFin := nSA_ModeFin + nSA_Modelo;
+               END LOOP;
+               nSA_ModeFin2 := nSA_ModeFin * nTotalAseg;
+               nSA_ModeFin2 := nSA_ModeFin2 - nSA_ModeFin;
+               nSA_I := nSA_I + nSA_ModeFin2;
+            END IF;*/
+                           
+            IF nNumAsegIncl != 0 OR nNumAsegExist != 0 THEN
+               FOR R IN INCLUASEG_Q LOOP
+                 BEGIN
+                    SELECT  NVL(SUM(A.SUMAASEG_LOCAL),0)
+                    INTO    nSA_InclASG
+                    FROM    COBERT_ACT_ASEG A
+                    JOIN    COBERTURAS_DE_SEGUROS B
+                           ON  B.IDTIPOSEG     = A.IDTIPOSEG
+                          AND  B.PLANCOB       = A.PLANCOB
+                          AND  B.CODCOBERT     = A.CODCOBERT
+                          AND  B.COBERTURA_BASICA = 'S'          -- movido al JOIN para filtrar antes
+                    WHERE   A.CODCIA           = nCodCia
+                    AND     A.IDPOLIZA         = nIdpoliza
+                    AND     A.IDETPOL          = nIDetPol
+                    AND     A.STSCOBERTURA     = 'EMI'
+                    AND     A.COD_ASEGURADO    = R.Incl_CodAseg
+                    -- Validamos que la cobertura del asegurado exista en TP con prioridad > 0
+                    AND EXISTS (
+                        SELECT 1
+                        FROM   TP_SEGUROS_PLANES_COBERTURAS T
+                        WHERE  T.IDTIPOSEG  = A.IDTIPOSEG
+                        AND    T.PLANCOB    = A.PLANCOB
+                        AND    T.CODCOBERT  = A.CODCOBERT
+                        AND    T.PRIORIDAD  > 0
+                    )
+                    -- Y que no exista otra cobertura basica con menor prioridad para ese asegurado
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM   COBERT_ACT_ASEG A2
+                        JOIN   COBERTURAS_DE_SEGUROS B2
+                              ON  B2.IDTIPOSEG      = A2.IDTIPOSEG
+                             AND  B2.PLANCOB        = A2.PLANCOB
+                             AND  B2.CODCOBERT      = A2.CODCOBERT
+                             AND  B2.COBERTURA_BASICA = 'S'
+                        JOIN   TP_SEGUROS_PLANES_COBERTURAS T2
+                              ON  T2.IDTIPOSEG  = A2.IDTIPOSEG
+                             AND  T2.PLANCOB    = A2.PLANCOB
+                             AND  T2.CODCOBERT  = A2.CODCOBERT
+                             AND  T2.PRIORIDAD  > 0
+                        JOIN   TP_SEGUROS_PLANES_COBERTURAS T_ACTUAL
+                              ON  T_ACTUAL.IDTIPOSEG = A.IDTIPOSEG
+                             AND  T_ACTUAL.PLANCOB   = A.PLANCOB
+                             AND  T_ACTUAL.CODCOBERT = A.CODCOBERT
+                             AND  T_ACTUAL.PRIORIDAD > 0
+                        WHERE  A2.CODCIA       = A.CODCIA
+                        AND    A2.IDPOLIZA     = A.IDPOLIZA
+                        AND    A2.IDETPOL      = A.IDETPOL
+                        AND    A2.STSCOBERTURA = 'EMI'
+                        AND    A2.COD_ASEGURADO = A.COD_ASEGURADO  -- mismo asegurado
+                        AND    T2.PRIORIDAD    < T_ACTUAL.PRIORIDAD -- tiene menor prioridad
+                    );
+                 EXCEPTION
+                 WHEN NO_DATA_FOUND THEN
+                   nSA_InclASG:= 0;
+                 WHEN OTHERS THEN
+                   nSA_InclASG:= 0;
+                 END;
+                nSAF_InclExit := nSAF_InclExit + nSA_InclASG;
+               END LOOP;
+               IF nSAF_InclExit = 0 THEN
+                  RAISE_APPLICATION_ERROR(-20225,' NO EXISTE COBERTURAS BASICAS EN ESTA POLIZA PARA LA SUMA FINAL: ' || TRIM(TO_CHAR(nIdpoliza)));
                END IF;
-            ELSIF nNumAsegExist != 0  AND nNumAsegIncl = 0 THEN
-               nSA_f := nSA_TotalASG;
-               nNumAsegExist := 0;
-               nSA_TotalASG := 0;
+               nSA_f := nSAF_InclExit;         
             END IF;
             --
-            n_DDVIG:= dFecFinVig - dFecIniVig;
+            ---n_DDVIG:= dFecFinVig - dFecIniVig;  SE COMENTA ESTA LINEA YA QUE NO SE ESTARA UTILIZANDO EL CALCULO POR FECHA DE VIEGENCIA ARH 20/01/2026
             -- Cálculo de la Prima de Ajuste (PmaAj)
-            n_PmaAj := (nPMA_I / nSA_I) * ((nSA_f - nSA_I) / 2) * (n_DDVIG / 365);
+            --n_PmaAj := (nPMA_I / nSA_I) * ((nSA_f - nSA_I) / 2) * (n_DDVIG / 365); SE ELIMINA EL CALCULO POR FECHA DE VIGENCIA ARH 20/01/2026
+            n_PmaAj := (nPMA_I / nSA_I) * ((nSA_f - nSA_I) / 2);
             -- Extraer el signo usando la función SIGN
             n_Signo := SIGN(n_PmaAj);
             --
@@ -3222,13 +3298,98 @@ END EMITIR;
              cCAMPOVAL := cCAMPOVAL||nIDetPol||',';
              cMsjvalor := '  NO SE DETECTARON MODIFICACIONES EN LOS LISTADOS DE ASEGURADOS DE LOS SUBGRUPOS' || cCAMPOVAL|| 'NO SE GENERAR ENDOSOS';
             END IF;
-            nSAIExiTotal:= 0;
-            nPMAIExiTotal:= 0;
+            nPMA_I:= 0;
+            nSA_I:= 0;
+            nSA_f:= 0;
+            nNumAsegExist := 0;
+            nNumAsegIncl := 0;
+            nSA_ModeFin:= 0;
+            nSA_ModeFin2:= 0;
+            nSAF_InclExit:= 0;
          END IF;
          nIDetPol:= X.IDetPol;
          IF nValor = 1 THEN
             nIdEndoso := OC_ENDOSO.CREAR(nIdPoliza);
-         END IF;
+         END IF;                   
+         IF nSubgrupo = nIDetPol AND nPrimeRegistro = 0 THEN
+            nPrimeRegistro:= 1;
+            BEGIN
+               SELECT  NVL(SUM(A.SUMAASEG_LOCAL),0)
+                INTO    nSA_ITotal
+                FROM    COBERT_ACT_ASEG A
+                JOIN    COBERTURAS_DE_SEGUROS B
+                       ON  B.IDTIPOSEG     = A.IDTIPOSEG
+                      AND  B.PLANCOB       = A.PLANCOB
+                      AND  B.CODCOBERT     = A.CODCOBERT
+                      AND  B.COBERTURA_BASICA = 'S'          -- movido al JOIN para filtrar antes
+                WHERE   A.CODCIA           = nCodCia
+                AND     A.IDPOLIZA         = nIdpoliza
+                AND     A.IDETPOL          = nIDetPol
+                AND     A.STSCOBERTURA     = 'EMI'
+                --AND     A.IDENDOSO         = 0
+                -- Validamos que la cobertura del asegurado exista en TP con prioridad > 0
+                AND EXISTS (
+                    SELECT 1
+                    FROM   TP_SEGUROS_PLANES_COBERTURAS T
+                    WHERE  T.IDTIPOSEG  = A.IDTIPOSEG
+                    AND    T.PLANCOB    = A.PLANCOB
+                    AND    T.CODCOBERT  = A.CODCOBERT
+                    AND    T.PRIORIDAD  > 0
+                )
+                -- Y que no exista otra cobertura basica con menor prioridad para ese asegurado
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM   COBERT_ACT_ASEG A2
+                    JOIN   COBERTURAS_DE_SEGUROS B2
+                          ON  B2.IDTIPOSEG      = A2.IDTIPOSEG
+                         AND  B2.PLANCOB        = A2.PLANCOB
+                         AND  B2.CODCOBERT      = A2.CODCOBERT
+                         AND  B2.COBERTURA_BASICA = 'S'
+                    JOIN   TP_SEGUROS_PLANES_COBERTURAS T2
+                          ON  T2.IDTIPOSEG  = A2.IDTIPOSEG
+                         AND  T2.PLANCOB    = A2.PLANCOB
+                         AND  T2.CODCOBERT  = A2.CODCOBERT
+                         AND  T2.PRIORIDAD  > 0
+                    JOIN   TP_SEGUROS_PLANES_COBERTURAS T_ACTUAL
+                          ON  T_ACTUAL.IDTIPOSEG = A.IDTIPOSEG
+                         AND  T_ACTUAL.PLANCOB   = A.PLANCOB
+                         AND  T_ACTUAL.CODCOBERT = A.CODCOBERT
+                         AND  T_ACTUAL.PRIORIDAD > 0
+                    WHERE  A2.CODCIA       = A.CODCIA
+                    AND    A2.IDPOLIZA     = A.IDPOLIZA
+                    AND    A2.IDETPOL      = A.IDETPOL
+                    AND    A2.STSCOBERTURA = 'EMI'
+                    AND    A2.COD_ASEGURADO = A.COD_ASEGURADO  -- mismo asegurado
+                    AND    T2.PRIORIDAD    < T_ACTUAL.PRIORIDAD -- tiene menor prioridad
+                );
+            EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+              nSA_ITotal := 0;
+              RAISE_APPLICATION_ERROR (-20225,'No existe coberturas Basicas en la Poliza: ' || TRIM(TO_CHAR(nIdpoliza)));
+            WHEN OTHERS THEN
+              nSA_ITotal := 0;
+            END;
+            IF nSA_ITotal = 0 THEN
+			   RAISE_APPLICATION_ERROR(-20225,'NO EXISTE COBERTURAS BASICAS EN ESTA POLIZA PARA LA SUMA INICIAL: ' || TRIM(TO_CHAR(nIdpoliza)));
+            END IF;
+            nSA_I := nSA_ITotal;
+            --
+            BEGIN
+               SELECT  NVL(SUM(Prima_Moneda),0)
+               INTO   nPMA_ITotal
+               FROM   COBERT_ACT_ASEG
+               WHERE  CodCia       = nCodCia
+               AND    IdPoliza     = nIdpoliza
+               AND    IdetPol      = nIDetPol
+               AND    StsCobertura = 'EMI';
+            EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+              nPMA_ITotal := 0;
+            WHEN OTHERS THEN
+              nPMA_ITotal := 0; 
+            END;
+            nPMA_I:= nPMA_ITotal;
+         END IF;             
          IF OC_PERSONA_NATURAL_JURIDICA.EXISTE_PERSONA(X.Tipo_Doc_Identificacion, X.Num_Doc_IDentificacion) = 'N' THEN
             nCod_Asegurado := OC_ASEGURADO.CODIGO_ASEGURADO(nCodCia, nCodEmpresa, X.Tipo_Doc_Identificacion, X.Num_Doc_IDentificacion);
             IF nCod_Asegurado = 0 THEN
@@ -3300,6 +3461,18 @@ END EMITIR;
                            cMsjError := SQLERRM;
                       END;
                    END IF;
+                   BEGIN
+                      UPDATE ASEG_AJUSTEANUAL 
+                      SET  Incl_CodAseg           = nCod_Asegurado
+                      WHERE CodEmpresa            = nCodEmpresa
+                      AND IdPoliza                = nIdPoliza
+                      AND CodUsuario              = cCodUser
+                      AND IDetPol                 = X.IDetPol
+                      AND Num_Doc_Identificacion  = X.Num_Doc_IDentificacion;
+                   EXCEPTION
+                   WHEN OTHERS THEN
+                      cMsjError := SQLERRM;
+                   END;
                    nNumAsegIncl := nNumAsegIncl + 1;
             END IF;
          ELSE
@@ -3395,6 +3568,19 @@ END EMITIR;
                            cMsjError := SQLERRM;
                       END;
                    END IF;
+                          
+                   BEGIN
+                      UPDATE ASEG_AJUSTEANUAL 
+                      SET  Incl_CodAseg           = nCod_Asegurado
+                      WHERE CodEmpresa            = nCodEmpresa
+                      AND IdPoliza                = nIdPoliza
+                      AND CodUsuario              = cCodUser
+                      AND IDetPol                 = X.IDetPol
+                      AND Num_Doc_Identificacion  = X.Num_Doc_IDentificacion;
+                   EXCEPTION
+                   WHEN OTHERS THEN
+                           cMsjError := SQLERRM;
+                   END;
                    nNumAsegIncl := nNumAsegIncl + 1;
                END IF;
             ELSIF OC_ASEGURADO_CERTIFICADO.EXISTE_ASEGURADO_CP(nCodCia, nIdpoliza, X.IDetPol, nCod_Asegurado, 0) = 'N' THEN
@@ -3463,26 +3649,37 @@ END EMITIR;
                            cMsjError := SQLERRM;
                         END;
                      END IF;
+                     BEGIN
+                        UPDATE ASEG_AJUSTEANUAL 
+                        SET  Incl_CodAseg           = nCod_Asegurado
+                        WHERE CodEmpresa            = nCodEmpresa
+                        AND IdPoliza                = nIdPoliza
+                        AND CodUsuario              = cCodUser
+                        AND IDetPol                 = X.IDetPol
+                        AND Num_Doc_Identificacion  = X.Num_Doc_IDentificacion;
+                     EXCEPTION
+                     WHEN OTHERS THEN
+                         cMsjError := SQLERRM;
+                     END;
                      nNumAsegIncl := nNumAsegIncl + 1;
+                  ELSE
+				    BEGIN
+                        UPDATE ASEG_AJUSTEANUAL 
+                        SET  Incl_CodAseg           = nCod_Asegurado
+                        WHERE CodEmpresa            = nCodEmpresa
+                        AND IdPoliza                = nIdPoliza
+                        AND CodUsuario              = cCodUser
+                        AND IDetPol                 = X.IDetPol
+                        AND Num_Doc_Identificacion  = X.Num_Doc_IDentificacion;
+                     EXCEPTION
+                     WHEN OTHERS THEN
+                         cMsjError := SQLERRM;
+                     END;
+					 nNumAsegExist:= nNumAsegExist + 1;
                   END IF;
             ELSE
              nNumAsegExist:= nNumAsegExist + 1;
              IF X.SUELDO != 0 AND X.CODCOBERT1 != 'NA' THEN
-               BEGIN
-                   SELECT SUMAASEG, PRIMANETA
-                   INTO   nSAI_Exi, nPMAI_Exi
-                   FROM   ASEGURADO_CERTIFICADO
-                   WHERE  CodCia    = nCodCia
-                   AND    IdPoliza  = nIdpoliza
-                   AND    IdetPol   = X.IDetPol
-                   AND    Estado    = 'EMI'
-                   AND    Cod_Asegurado = nCod_Asegurado;
-               EXCEPTION
-               WHEN NO_DATA_FOUND THEN
-                 RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-               END;
-               nSAIExiTotal:= nSAIExiTotal + nSAI_Exi;
-               nPMAIExiTotal:= nPMAIExiTotal + nPMAI_Exi;
                BEGIN
                   UPDATE ASEGURADO_CERTIFICADO 
                   SET  SUMAASEG         = X.SUMAASEG 
@@ -3545,21 +3742,18 @@ END EMITIR;
                  END LOOP;
                END LOOP;
              END IF;
-             --
              BEGIN
-                SELECT SUMAASEG
-                INTO   nSA_ExitASG
-                FROM   ASEGURADO_CERTIFICADO
-                WHERE  CodCia    = nCodCia
-                AND    IdPoliza  = nIdpoliza
-                AND    IdetPol   = nIDetPol
-                AND    Estado    = 'EMI'
-                AND    Cod_Asegurado = nCod_Asegurado;
+                UPDATE ASEG_AJUSTEANUAL 
+                SET  Incl_CodAseg           = nCod_Asegurado
+                WHERE CodEmpresa            = nCodEmpresa
+                AND IdPoliza                = nIdPoliza
+                AND CodUsuario              = cCodUser
+                AND IDetPol                 = X.IDetPol
+                AND Num_Doc_Identificacion  = X.Num_Doc_IDentificacion;
              EXCEPTION
-             WHEN NO_DATA_FOUND THEN
-                 RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+             WHEN OTHERS THEN
+                 cMsjError := SQLERRM;
              END;
-             nSA_TotalASG := nSA_TotalASG + nSA_ExitASG;
             END IF;  
          END IF;
        END LOOP;
@@ -3580,88 +3774,122 @@ END EMITIR;
         END;
         --
      END IF;
-
      ---
-     IF nSAIExiTotal != 0 THEN
-        BEGIN
-          SELECT SUM(SUMAASEG), SUM(PRIMANETA)
-          INTO   nSA_I, nPMA_I
-          FROM   ASEGURADO_CERTIFICADO
-          WHERE  CodCia    = nCodCia
-          AND    IdPoliza  = nIdpoliza
-          AND    IdetPol   = nIDetPol
-          AND    Estado    = 'EMI'
-          AND    PRIMANETA > 0 
-          AND    IdEndoso  <> nIdEndoso;
-        EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-        END;
-        nSA_I := nSA_I + nSAIExiTotal;
-        nPMA_I:= nPMA_I + nPMAIExiTotal;
-     ELSE
-       BEGIN
-          SELECT SUM(SUMAASEG), SUM(PRIMANETA)
-          INTO   nSA_I, nPMA_I
-          FROM   ASEGURADO_CERTIFICADO
-          WHERE  CodCia    = nCodCia
-          AND    IdPoliza  = nIdpoliza
-          AND    IdetPol   = nIDetPol
-          AND    Estado    = 'EMI'
-          AND    IdEndoso  <> nIdEndoso;
-       EXCEPTION
-       WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-       END;
-     END IF;
-
-     IF cAsegModelo = 'S' THEN
+     /*IF cAsegModelo = 'S' THEN
         nTotalAseg:= OC_DETALLE_POLIZA.TOTAL_ASEGURADOS( nCodCia, nCodEmpresa, nIdPoliza, nIDetPol);
-        BEGIN
-           SELECT SUM(SUMAASEG)
-           INTO   nSA_Modelo
-           FROM   ASEGURADO_CERTIFICADO
-           WHERE  CodCia    = nCodCia
-           AND    IdPoliza  = nIdpoliza
-           AND    IdetPol   = nIDetPol
-           AND    Estado    = 'EMI'
-           AND    IdEndoso  = 0;
-        EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-        END;
-        nSA_ModeFin := nSA_Modelo * nTotalAseg;
-        nSA_ModeFin := nSA_ModeFin - nSA_Modelo;
-        nSA_I := nSA_I + nSA_ModeFin;
+        FOR P IN ASEGMODELO_Q LOOP
+          BEGIN
+            SELECT  A.SUMAASEG_LOCAL
+            INTO    nSA_Modelo
+            FROM    COBERT_ACT_ASEG A
+            JOIN    COBERTURAS_DE_SEGUROS B
+                   ON B.IDTIPOSEG = A.IDTIPOSEG
+                  AND B.PLANCOB   = A.PLANCOB
+                  AND B.CODCOBERT = A.CODCOBERT
+            WHERE   A.CODCIA = nCodCia
+            AND     A.IDPOLIZA = nIdpoliza
+            AND     A.IDETPOL = P.IDetPol
+            AND     A.STSCOBERTURA = 'EMI'
+            AND     A.COD_ASEGURADO = P.Cod_Asegurado
+            AND     B.COBERTURA_BASICA = 'S'
+            AND     A.CODCOBERT = (
+                    SELECT T.CODCOBERT
+                    FROM   TP_SEGUROS_PLANES_COBERTURAS T
+                    WHERE  T.IDTIPOSEG = A.IDTIPOSEG
+                    AND    T.PLANCOB   = A.PLANCOB
+                    AND    T.PRIORIDAD > 0                      --  ignora el 0
+                    AND    T.PRIORIDAD = (
+                           SELECT MIN(T2.PRIORIDAD)
+                           FROM   TP_SEGUROS_PLANES_COBERTURAS T2
+                           WHERE  T2.IDTIPOSEG = A.IDTIPOSEG
+                           AND    T2.PLANCOB   = A.PLANCOB
+                           AND    T2.PRIORIDAD > 0               --  ignora el 0
+                    )
+            );
+          EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+               RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+          END;
+          nSA_ModeFin := nSA_ModeFin + nSA_Modelo;
+        END LOOP;
+        nSA_ModeFin2 := nSA_ModeFin * nTotalAseg;
+        nSA_ModeFin2 := nSA_ModeFin2 - nSA_ModeFin;
+        nSA_I := nSA_I + nSA_ModeFin2;
+     END IF;*/
+     --
+     IF nNumAsegIncl != 0 OR nNumAsegExist != 0 THEN
+        FOR R IN INCLUASEG_Q LOOP
+          BEGIN
+             SELECT  NVL(SUM(A.SUMAASEG_LOCAL),0)
+              INTO    nSA_InclASG
+              FROM    COBERT_ACT_ASEG A
+              JOIN    COBERTURAS_DE_SEGUROS B
+                     ON  B.IDTIPOSEG     = A.IDTIPOSEG
+                    AND  B.PLANCOB       = A.PLANCOB
+                    AND  B.CODCOBERT     = A.CODCOBERT
+                    AND  B.COBERTURA_BASICA = 'S'          -- movido al JOIN para filtrar antes
+              WHERE   A.CODCIA           = nCodCia
+              AND     A.IDPOLIZA         = nIdpoliza
+              AND     A.IDETPOL          = nIDetPol
+              AND     A.STSCOBERTURA     = 'EMI'
+              AND     A.COD_ASEGURADO    = R.Incl_CodAseg
+              -- Validamos que la cobertura del asegurado exista en TP con prioridad > 0
+              AND EXISTS (
+                  SELECT 1
+                  FROM   TP_SEGUROS_PLANES_COBERTURAS T
+                  WHERE  T.IDTIPOSEG  = A.IDTIPOSEG
+                  AND    T.PLANCOB    = A.PLANCOB
+                  AND    T.CODCOBERT  = A.CODCOBERT
+                  AND    T.PRIORIDAD  > 0
+              )
+              -- Y que no exista otra cobertura basica con menor prioridad para ese asegurado
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM   COBERT_ACT_ASEG A2
+                  JOIN   COBERTURAS_DE_SEGUROS B2
+                        ON  B2.IDTIPOSEG      = A2.IDTIPOSEG
+                       AND  B2.PLANCOB        = A2.PLANCOB
+                       AND  B2.CODCOBERT      = A2.CODCOBERT
+                       AND  B2.COBERTURA_BASICA = 'S'
+                  JOIN   TP_SEGUROS_PLANES_COBERTURAS T2
+                        ON  T2.IDTIPOSEG  = A2.IDTIPOSEG
+                       AND  T2.PLANCOB    = A2.PLANCOB
+                       AND  T2.CODCOBERT  = A2.CODCOBERT
+                       AND  T2.PRIORIDAD  > 0
+                  JOIN   TP_SEGUROS_PLANES_COBERTURAS T_ACTUAL
+                        ON  T_ACTUAL.IDTIPOSEG = A.IDTIPOSEG
+                       AND  T_ACTUAL.PLANCOB   = A.PLANCOB
+                       AND  T_ACTUAL.CODCOBERT = A.CODCOBERT
+                       AND  T_ACTUAL.PRIORIDAD > 0
+                  WHERE  A2.CODCIA       = A.CODCIA
+                  AND    A2.IDPOLIZA     = A.IDPOLIZA
+                  AND    A2.IDETPOL      = A.IDETPOL
+                  AND    A2.STSCOBERTURA = 'EMI'
+                  AND    A2.COD_ASEGURADO = A.COD_ASEGURADO  -- mismo asegurado
+                  AND    T2.PRIORIDAD    < T_ACTUAL.PRIORIDAD -- tiene menor prioridad
+              );
+          EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+               RAISE_APPLICATION_ERROR(-20225,' NO EXISTE COBERTURAS BASICAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+               nSA_InclASG := 0;
+          WHEN OTHERS THEN
+               RAISE_APPLICATION_ERROR(-20225,' NO EXISTE COBERTURAS BASICAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
+               nSA_InclASG := 0;
+          END;
+          nSAF_InclExit := nSAF_InclExit + nSA_InclASG;
+       END LOOP;
+       IF nSAF_InclExit = 0	THEN
+          RAISE_APPLICATION_ERROR(-20225,' NO EXISTE COBERTURAS BASICAS EN ESTA POLIZA PARA LA SUMA FINAL: ' || TRIM(TO_CHAR(nIdpoliza)));
+       END IF;	   
+       nSA_f := nSAF_InclExit;
      END IF;
      --
-     IF nNumAsegIncl != 0 THEN
-        BEGIN
-           SELECT SUM(SUMAASEG)
-           INTO   nSA_InclASG
-           FROM   ASEGURADO_CERTIFICADO
-           WHERE  CodCia    = nCodCia
-           AND    IdPoliza  = nIdpoliza
-           AND    IdetPol   = nIDetPol
-           AND    Estado    = 'EMI'
-           AND    IdEndoso  = nIdEndoso;
-        EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-             RAISE_APPLICATION_ERROR(-20225,' NO EXISTE SUMAS ASEGURADAS PARA ESTA POLIZA: ' || TRIM(TO_CHAR(nIdpoliza)));
-        END;
-        IF nNumAsegExist != 0 THEN
-           nSA_f := nSA_TotalASG + nSA_InclASG;
-        ELSE
-           nSA_f := nSA_I + nSA_InclASG;
-        END IF;
-     ELSIF nNumAsegExist != 0 THEN
-           nSA_f := nSA_TotalASG;
-
-     END IF;
-     --
-     n_DDVIG:= dFecFinVig - dFecIniVig;
-     -- Cálculo de la Prima de Ajuste (PmaAj)
-     n_PmaAj := (nPMA_I / nSA_I) * ((nSA_f - nSA_I) / 2) * (n_DDVIG / 365);
+     ---n_DDVIG:= dFecFinVig - dFecIniVig;SE COMENTA ESTA LINEA YA QUE NO SE ESTARA UTILIZANDO EL CALCULO POR FECHA DE VIEGENCIA ARH 20/01/2026
+     -- Cálculo de la Prima de Ajuste
+     ---n_PmaAj := (nPMA_I / nSA_I) * ((nSA_f - nSA_I) / 2) * (n_DDVIG / 365);SE ELIMINA EL CALCULO POR FECHA DE VIGENCIA ARH 20/01/2026  
+     -- Cálculo de la Prima de Ajuste (PmaAj)  
+     n_PmaAj := (nPMA_I / nSA_I) * ((nSA_f - nSA_I) / 2);
+     --DBMS_OUTPUT.PUT_LINE('La prima Ajuste es    '||n_PmaAj);
      -- Extraer el signo usando la función SIGN
      n_Signo := SIGN(n_PmaAj);
      --
@@ -3688,8 +3916,12 @@ END EMITIR;
         END;
         OC_ENDOSO_TEXTO.INSERTA(nIdPoliza, nIdendoso, cDescEndoso);
      ELSE
-       cCAMPOVAL := cCAMPOVAL||nIDetPol||',';
-       cMsjvalor := '  NO SE DETECTARON MODIFICACIONES EN LOS LISTADOS DE ASEGURADOS DE LOS SUBGRUPOS' || cCAMPOVAL|| '.NO SE GENERA ENDOSOS';
+        IF nSA_I = 0 AND nSA_f = 0 THEN
+           cMsjvalor := '  NO HAY COBERTURAS BASICAS PARA CALCULAR PRIMA AJUSTE' || cCAMPOVAL|| '.NO SE GENERA ENDOSOS';
+        ELSE
+           cCAMPOVAL := cCAMPOVAL||nIDetPol||',';
+           cMsjvalor := '  NO SE DETECTARON MODIFICACIONES EN LOS LISTADOS DE ASEGURADOS DE LOS SUBGRUPOS   ' || cCAMPOVAL|| '.NO SE GENERA ENDOSOS';
+        END IF;
      END IF;
   EXCEPTION
         WHEN OTHERS THEN

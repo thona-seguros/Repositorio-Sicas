@@ -42,7 +42,8 @@ CREATE TABLE SICAS_OC.ASEG_AJUSTEANUAL
   SumaAseg_7               NUMBER(18,2),
   CodCobert8               VARCHAR2(6),
   SumaAseg_8               NUMBER(18,2),
-  Cod_Asegurado            NUMBER(14,0)
+  Cod_Asegurado            NUMBER(14,0),
+  Incl_CodAseg             NUMBER(14,0)
 )
 TABLESPACE TS_SICASOC
   PCTFREE 10
@@ -136,6 +137,8 @@ comment on column SICAS_OC.ASEG_AJUSTEANUAL.SumaAseg_8
   is 'Suma Asegurada del Asegurado de la cobertura8';
 comment on column SICAS_OC.ASEG_AJUSTEANUAL.Cod_Asegurado
   is 'Codigo de Asegurado a Modificar';
+comment on column SICAS_OC.ASEG_AJUSTEANUAL.Incl_CodAseg
+  is 'Codigo de Asegurado de Inclusion';
 /
 -- =============================
 -- Genera Primary key
