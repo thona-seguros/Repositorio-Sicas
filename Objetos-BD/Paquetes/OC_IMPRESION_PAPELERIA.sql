@@ -1,14 +1,20 @@
-CREATE OR REPLACE PACKAGE SICAS_OC.OC_IMPRESION_PAPELERIA as
+SET DEFINE OFF;
+
+create or replace PACKAGE SICAS_OC.OC_IMPRESION_PAPELERIA as
 /*------------------------------------------------------------------------
     Nombre: OC_IMPRESION_PAPELERIA
     Autor: Laura Ramos y Gustavo Morfin / Equipo Desarrollo
-    VersiÛn: 1.0
-    Fecha CreaciÛn: 12/05/2026
-    DescripciÛn:Paquete encargado de la gestiÛn operativa de pÛlizas, 
-	incluyendo distribuciÛn multinivel, cambios de cliente, asegurados, 
-	generaciÛn de reportes y archivos ZIP.
-    Fechas ModificaciÛn:
+    Versi√≥n: 1.0
+    Fecha Creaci√≥n: 12/05/2026
+    Descripci√≥n:Paquete encargado de la gesti√≥n operativa de p√≥lizas, 
+	incluyendo distribuci√≥n multinivel, cambios de cliente, asegurados, 
+	generaci√≥n de reportes y archivos ZIP.
+    Fechas Modificaci√≥n:
 ------------------------------------------------------------------------*/
+    vl_EsIntermedio     VARCHAR2(1);
+    exc_ExcepcionPorMi   EXCEPTION;
+    PRAGMA EXCEPTION_INIT(exc_ExcepcionPorMi  , -06503);
+
     PROCEDURE ADD_REPORTE_ZIP_(
     p_url         IN VARCHAR2,
     p_nombre      IN VARCHAR2,
@@ -17,7 +23,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_IMPRESION_PAPELERIA as
     p_pdf_size    OUT NUMBER,
     p_tiene_texto OUT BOOLEAN
     );
-    
+
     PROCEDURE GENERA_REPORTE(vPoliza NUMBER,
         vFecha_Ini DATE,
         vFecha_Fin DATE,
@@ -135,7 +141,7 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_IMPRESION_PAPELERIA as
             P_Aseg_Ini NUMBER,
             P_vAseg_Fin NUMBER
     );
-    
+
     PROCEDURE AGREGA_POLIZA_ZIP (
             p_poliza      VARCHAR2,
             p_det_ini     VARCHAR2,
@@ -143,8 +149,8 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_IMPRESION_PAPELERIA as
             p_endoso_ini  VARCHAR2,
             p_endoso_fin  VARCHAR2,
             p_usuario     VARCHAR2,
-            vCH_Regla     VARCHAR2,
-            vCH_Suma      VARCHAR2,
+            CH_Regla     VARCHAR2,
+            CH_Suma      VARCHAR2,
             p_zip_blob    IN OUT NOCOPY BLOB,
             p_count       OUT NUMBER,
             p_tiene_texto OUT BOOLEAN, 
@@ -152,14 +158,25 @@ CREATE OR REPLACE PACKAGE SICAS_OC.OC_IMPRESION_PAPELERIA as
             P_vAseg_Fin NUMBER
     );
         vl_Existe   NUMBER;
+
+    PROCEDURE AGREGA_FONDOS_POLIZA(
+            P_POLIZA NUMBER,
+            P_IDETPOL NUMBER,
+            P_CODCIA  NUMBER, 
+            P_FACTURA NUMBER, 
+            P_APORTACION_REGULAR VARCHAR2
+
+    );
+        
 end OC_IMPRESION_PAPELERIA;
 /
 
-CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
+create or replace PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
 
     /*cambio de liga dependiendo el ambiente en el que este montada la app */
 
-     C_URL_BASE CONSTANT VARCHAR2(200) := 'http://sicascloud:8889/reports/rwservlet';
+    C_URL_BASE CONSTANT VARCHAR2(200) := 'http://sicascloud:8889/reports/rwservlet';
+           
     v_credenciales_j CONSTANT VARCHAR2(200)  := '&'||'j_username=jasperadmin'||'&'||'j_password=jasperadmin';
     v_jasper CONSTANT VARCHAR2(200)  :=  'http://sicascloud:8081/jasperserver/rest_v2/reports/';
 
@@ -217,10 +234,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
             BEGIN
                 l_req := UTL_HTTP.begin_request(p_url);
                 UTL_HTTP.set_header(l_req, 'User-Agent', 'Mozilla/5.0');
-    
+
                 l_resp        := UTL_HTTP.get_response(l_req);
                 l_resp_abierta := TRUE;
-    
+
                 LOOP
                     BEGIN
                         UTL_HTTP.read_raw(l_resp, l_buffer, l_amount);
@@ -229,10 +246,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                         WHEN UTL_HTTP.end_of_body THEN EXIT;
                     END;
                 END LOOP;
-    
+
                 UTL_HTTP.end_response(l_resp);
                 l_resp_abierta := FALSE;
-    
+
             EXCEPTION
                 WHEN UTL_HTTP.request_failed THEN
                     IF l_resp_abierta THEN
@@ -242,7 +259,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                     p_pdf_size    := 0;
                     p_tiene_texto := FALSE;
                     RETURN;  -- Sale limpiamente sin explotar el proceso padre
-    
+
                 WHEN UTL_HTTP.transfer_timeout THEN
                     IF l_resp_abierta THEN
                         BEGIN UTL_HTTP.end_response(l_resp); EXCEPTION WHEN OTHERS THEN NULL; END;
@@ -251,7 +268,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                     p_pdf_size    := 0;
                     p_tiene_texto := FALSE;
                     RETURN;
-    
+
                 WHEN OTHERS THEN
                     IF l_resp_abierta THEN
                         BEGIN UTL_HTTP.end_response(l_resp); EXCEPTION WHEN OTHERS THEN NULL; END;
@@ -262,7 +279,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                     RETURN;
             END;
         END IF;
-        
+
         IF p_url IS NOT NULL THEN --Todos los productos
             p_pdf_size := DBMS_LOB.GETLENGTH(l_pdf_blob);
             l_total    := p_pdf_size;
@@ -376,16 +393,18 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
         l_zip_size    INTEGER;
         nnum_cons     NUMBER;
         nnum_cert     NUMBER;
-        
+
         v_nombre_reporte VARCHAR2(50);
-         
+
          --Argenis
-        vl_IsGMPRTEC    NUMBER;
-        vl_asist_GMPROTECT   VARCHAR2(100) := 'Asistencias_GMProtect.pdf'; 
+        vl_IsGMPRTEC            NUMBER;
+        vl_asist_GMPROTECT      VARCHAR2(100) := 'Asistencias_PRPlus.pdf'; 
+        vl_siniestro_GMPROTECT  VARCHAR2(100) := 'Siniestros_GPRPlus.pdf'; 
+        vl_Condiciones_Gral_GMPR VARCHAR2(100) := 'Condiciones_Generales_PRPlus.pdf'; 
         v_blob          BLOB;
         v_mime_type     VARCHAR2(100);
         v_file_name     VARCHAR2(200);
-        
+
         --JJG 20/07/2026
         l_titulo_archivo  VARCHAR2(500);
         l_nombre_archivo  VARCHAR2(1000);
@@ -393,7 +412,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
         DBMS_OUTPUT.put_line('1. Inicio proceso');
         DBMS_LOB.createtemporary(l_zip_blob, TRUE);
         UTL_HTTP.set_persistent_conn_support(FALSE);
-        
+
         /*Argenis*/
         SELECT COUNT(1) 
         INTO vl_IsGMPRTEC
@@ -443,7 +462,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
         END IF;
 
                -- COLECTIVOS SUBGRUPO Y Caratula de GMPROTECT
-               
+
         IF vRep_Gmm_GMProtect = 'S' THEN
                 SELECT COUNT(1)
                 INTO vl_Existe
@@ -453,7 +472,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                                 FROM SICAS_OC.VALORES_DE_LISTAS 
                                 WHERE CODLISTA = 'GMPRCALC' 
                                     AND CVE_CNSF = 'PRODNEW' /*IDTIPOSEG*/);
-                
+
              IF vl_Existe > 0 THEN
                 l_url := 'http://sicascloud:8081/jasperserver/rest_v2/reports/Caratulas_2026_1/POLIZA_GMPRO.pdf?'||
                     'IDPOLIZA='||vPoliza||
@@ -464,19 +483,19 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                     '&'||'ENDOSOINI='||vEndoso_Ini||
                     '&'||'ENDOSOFIN='||vEndoso_Fin||
                     v_credenciales_j;
-    
-                ADD_REPORTE_ZIP_(l_url, 'GMPROTECT_'||vPoliza||'.pdf', l_zip_blob,NULL, l_pdf_size, l_tiene_texto);
+
+                ADD_REPORTE_ZIP_(l_url, 'PRPLUS_'||vPoliza||'.pdf', l_zip_blob,NULL, l_pdf_size, l_tiene_texto);
                 l_idx := l_idx + 1;
                 l_reportes(l_idx)    := 'P138_REP_GMM_PROTECT';
                 l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_zip_blob);
                 l_colores_arr(l_idx) := CASE WHEN l_tiene_texto THEN '#0AC756' ELSE '#ff0000' END;
-                GENERA_KITEMISION('POLIZACA.rep', 1, vPoliza, vUsuario);
+                GENERA_KITEMISION('PRPLUS', 1, vPoliza, vUsuario);
             ELSE
-            
-                RAISE_APPLICATION_ERROR(-20001, 'LA P”LIZA SELECCIONADA NO ES DE TIPO GMPROTECT');
+
+                RAISE_APPLICATION_ERROR(-20001, 'LA P”LIZA SELECCIONADA NO ES DE TIPO PROTECT PLUS');
             END IF;
         END IF;
-        
+
         IF vRep_Acci_Col_Sub = 'S' THEN
             l_url :=   C_URL_BASE ||
                       '?keyreportappx'||
@@ -530,8 +549,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                         p_endoso_ini  => TO_CHAR(vEndoso_Ini),
                         p_endoso_fin  => TO_CHAR(vEndoso_Fin),
                         p_usuario     => vUsuario,
-                        vCH_Regla     => vCH_Regla,
-                        vCH_Suma      => vCH_Suma,
+                        CH_Regla     => vCH_Regla,
+                        CH_Suma      => vCH_Suma,
                         p_zip_blob    => l_zip_blob,
                         p_count       => nnum_cert,
                         p_tiene_texto => l_tiene_texto,
@@ -647,46 +666,72 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
 
                -- SINIESTRO AP
                IF vRep_Sini_AP = 'S' THEN
-            l_url := C_URL_BASE ||
-                      '?keyreportappx'||
-                      '&' ||'report=CARSINAP.rep'||
-                      '&' ||'P_CODCIA=1'||
-                      '&' ||'P_CODEMPRESA=1'||
-                      '&' ||'P_IDPOLIZA='||vPoliza;
-
-            ADD_REPORTE_ZIP_(l_url, 'SINIESTRO_AP_'||vPoliza||'.pdf', l_zip_blob, null,l_pdf_size, l_tiene_texto);
-            l_idx := l_idx + 1;
-            l_reportes(l_idx)    := 'P138_REP_SINI_AP';
-            l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_zip_blob);
-            l_colores_arr(l_idx) := CASE WHEN l_tiene_texto THEN '#0AC756' ELSE '#ff0000' END;
-            GENERA_KITEMISION('CARSINAP.rep', 1, vPoliza, vUsuario);
-        END IF;
-
-               -- ENDOSO ASISTENCIA
-            IF vRep_Endoso_Asis = 'S' THEN
+               
                 IF vl_IsGMPRTEC = 1 THEN
                         BEGIN
-                            
+
                             SELECT file_content, mime_type, file_name
                             INTO v_blob, v_mime_type, v_file_name
                             FROM apex_application_static_files
-                            WHERE application_id = v('APP_ID')  -- Filtra por tu aplicaciÛn actual
-                                AND file_name      = vl_asist_GMPROTECT;
-                            --Se manda la URL en null, ya que no se ejecutar· una peticiÛn a jasper, se descargar· directamente el blob del pdf que esta en apex
-                            ADD_REPORTE_ZIP_(NULL, 'ASISTENCIAS_GMProtect_'||vPoliza||'.pdf', l_zip_blob,v_blob, l_pdf_size, l_tiene_texto);
+                            WHERE application_id = v('APP_ID')  -- Filtra por tu aplicaci√≥n actual
+                                AND file_name      = vl_siniestro_GMPROTECT;
+                            --Se manda la URL en null, ya que no se ejecutar√° una petici√≥n a jasper, se descargar√° directamente el blob del pdf que esta en apex
+                            ADD_REPORTE_ZIP_(NULL, 'SINIESTRO_PRPLUS_'||vPoliza||'.pdf', l_zip_blob,v_blob, l_pdf_size, l_tiene_texto);
                             l_idx := l_idx + 1;
                             l_reportes(l_idx)    := 'P138_REP_ENDOSO_ASIS';
                             l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_zip_blob);
                             l_colores_arr(l_idx) := CASE WHEN l_tiene_texto THEN '#0AC756' ELSE '#ff0000' END;
-                            GENERA_KITEMISION('ENDASIST.rep', 1, vPoliza, vUsuario);
-                
+                            GENERA_KITEMISION('SINPRPLUS', 1, vPoliza, vUsuario);
+
                         EXCEPTION
                              WHEN NO_DATA_FOUND THEN
                                 RAISE_APPLICATION_ERROR(-20001, 'El archivo PDF especificado no existe.');
                             WHEN OTHERS THEN
                                 RAISE_APPLICATION_ERROR(-20001, 'Error: '||SQLERRM);
                         END;
-                
+
+                ELSE
+                    l_url := C_URL_BASE ||
+                              '?keyreportappx'||
+                              '&' ||'report=CARSINAP.rep'||
+                              '&' ||'P_CODCIA=1'||
+                              '&' ||'P_CODEMPRESA=1'||
+                              '&' ||'P_IDPOLIZA='||vPoliza;
+        
+                    ADD_REPORTE_ZIP_(l_url, 'SINIESTRO_AP_'||vPoliza||'.pdf', l_zip_blob, null,l_pdf_size, l_tiene_texto);
+                    l_idx := l_idx + 1;
+                    l_reportes(l_idx)    := 'P138_REP_SINI_AP';
+                    l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_zip_blob);
+                    l_colores_arr(l_idx) := CASE WHEN l_tiene_texto THEN '#0AC756' ELSE '#ff0000' END;
+                    GENERA_KITEMISION('CARSINAP.rep', 1, vPoliza, vUsuario);
+                END IF;
+            END IF;
+
+               -- ENDOSO ASISTENCIA
+            IF vRep_Endoso_Asis = 'S' THEN
+                IF vl_IsGMPRTEC = 1 THEN
+                        BEGIN
+
+                            SELECT file_content, mime_type, file_name
+                            INTO v_blob, v_mime_type, v_file_name
+                            FROM apex_application_static_files
+                            WHERE application_id = v('APP_ID')  -- Filtra por tu aplicaci√≥n actual
+                                AND file_name      = vl_asist_GMPROTECT;
+                            --Se manda la URL en null, ya que no se ejecutar√° una petici√≥n a jasper, se descargar√° directamente el blob del pdf que esta en apex
+                            ADD_REPORTE_ZIP_(NULL, 'ASISTENCIAS_PRPLUS_'||vPoliza||'.pdf', l_zip_blob,v_blob, l_pdf_size, l_tiene_texto);
+                            l_idx := l_idx + 1;
+                            l_reportes(l_idx)    := 'P138_REP_ENDOSO_ASIS';
+                            l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_zip_blob);
+                            l_colores_arr(l_idx) := CASE WHEN l_tiene_texto THEN '#0AC756' ELSE '#ff0000' END;
+                            GENERA_KITEMISION('ENDASISPR', 1, vPoliza, vUsuario);
+
+                        EXCEPTION
+                             WHEN NO_DATA_FOUND THEN
+                                RAISE_APPLICATION_ERROR(-20001, 'El archivo PDF especificado no existe.');
+                            WHEN OTHERS THEN
+                                RAISE_APPLICATION_ERROR(-20001, 'Error: '||SQLERRM);
+                        END;
+
                     ELSE
                          /*  
                      FOR I  IN (
@@ -726,7 +771,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                          AND V.CODVALOR = A.ID_PAQUETE 
                      ) 
                      LOOP
-        
+
                     l_url :=  C_URL_BASE
                               || '?keyreportappx'||
                               '&' ||'report=ENDASISM.rep'||
@@ -734,27 +779,32 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                               '&' ||'P_CODCIA=1'||
                               '&' || 'P_PAQUETE='|| I.ID_PAQUETE;
                              --'&' ||'P_ID_PAQUETE='||vRep_Endoso_Asis;
-                    
+
                     ADD_REPORTE_ZIP_(l_url, 'ENDOSO_ASISTENCIA_'||vPoliza|| '_' || I.DESCVALLST || '.pdf', l_zip_blob,null, l_pdf_size, l_tiene_texto);
-        
-        
+
+
                     END LOOP;
-        
+
                     --http://sicascloud:8889/reports/rwservlet/?keyreportappx&report=ENDASISM.rep&P_POLIZA=77622&P_CODCIA=1&P_PAQUETE=P4          
-                   
-                 
+
+
                     l_idx := l_idx + 1;
                     l_reportes(l_idx)    := 'P138_REP_ENDOSO_ASIS';
                     l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_zip_blob);
                     l_colores_arr(l_idx) := CASE WHEN l_tiene_texto THEN '#0AC756' ELSE '#ff0000' END;
                     GENERA_KITEMISION('ENDASISM.rep', 1, vPoliza, vUsuario);
                     */
-                    
+
                     --JJG Reporte de Clausulas Asistencias
-                        FOR paquete IN (
+                         FOR paquete IN (
+                            SELECT DISTINCT
+                                   X.Id_Paquete,
+                                   X.Titulo_Reporte
+                              FROM (
+                                    -- Paquetes actuales obtenidos por cl√°usula 
                                     SELECT DISTINCT
-                                           VL.CodValor   AS Id_Paquete,
-                                           TRIM(VL.DescValLst) AS Titulo_Reporte
+                                           VL.CodValor             AS Id_Paquete,
+                                           TRIM(VL.DescValLst)     AS Titulo_Reporte
                                       FROM Valores_De_Listas VL,
                                            Clausulas_Poliza CL
                                      WHERE VL.CodLista      = 'PAQUEASIS'
@@ -762,13 +812,51 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                                        AND CL.Tipo_Clausula = VL.Cve_Cnsf
                                        AND CL.CodCia        = 1
                                        AND CL.IdPoliza      = vPoliza
-                                     ORDER BY VL.CodValor
-                                )
-                                LOOP
+                    
+                                    UNION
+                    
+                                    -- Paquetes hist√≥ricos asignados al asegurado 
+                                    SELECT DISTINCT
+                                           A.Id_Paquete             AS Id_Paquete,
+                                           TRIM(VL.DescValLst)      AS Titulo_Reporte
+                                      FROM Asistencias_Asegurado AA,
+                                           Asistencias A,
+                                           Valores_De_Listas VL
+                                     WHERE A.CodCia        = AA.CodCia
+                                       AND A.CodEmpresa    = AA.CodEmpresa
+                                       AND A.CodAsistencia = AA.CodAsistencia
+                                       AND VL.CodLista     = 'PAQUEASIS'
+                                       AND VL.CodValor     = A.Id_Paquete
+                                       AND AA.CodCia       = 1
+                                       AND AA.IdPoliza     = vPoliza
+                                       AND A.Id_Paquete    IS NOT NULL
+                    
+                                    UNION
+                    
+                                    -- Paquetes hist√≥ricos asignados al detalle de p√≥liza 
+                                    SELECT DISTINCT
+                                           A.Id_Paquete             AS Id_Paquete,
+                                           TRIM(VL.DescValLst)      AS Titulo_Reporte
+                                      FROM Asistencias_Detalle_Poliza ADP,
+                                           Asistencias A,
+                                           Valores_De_Listas VL
+                                     WHERE A.CodCia        = ADP.CodCia
+                                       AND A.CodEmpresa    = ADP.CodEmpresa
+                                       AND A.CodAsistencia = ADP.CodAsistencia
+                                       AND VL.CodLista     = 'PAQUEASIS'
+                                       AND VL.CodValor     = A.Id_Paquete
+                                       AND ADP.CodCia      = 1
+                                       AND ADP.IdPoliza    = vPoliza
+                                       AND A.Id_Paquete    IS NOT NULL
+                              ) X
+                             WHERE X.Id_Paquete IS NOT NULL
+                             ORDER BY X.Id_Paquete
+                        )
+                        LOOP
                                     l_titulo_archivo :=
                                     TRANSLATE(
                                         UPPER(TRIM(paquete.Titulo_Reporte)),
-                                        '¡…Õ”⁄‹—',
+                                        '√?√â√?”√ö√ú√ë',
                                         'AEIOUUN'
                                     );
                                     l_nombre_archivo :=
@@ -781,7 +869,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                                    vPoliza || 
                                    '&'||'CODCIA=1' ||
                                    '&' || 'ID_PAQUETE=' || paquete.Id_Paquete ||  v_credenciales_j;
- 
+
                                    ADD_REPORTE_ZIP_(l_url, l_nombre_archivo, l_zip_blob, NULL,l_pdf_size, l_tiene_texto);
                                    l_idx := l_idx + 1;
                                    l_reportes(l_idx)    := 'P138_REP_ENDOSO_ASIS';
@@ -789,8 +877,8 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                                    l_colores_arr(l_idx) := CASE WHEN l_tiene_texto THEN '#0AC756' ELSE '#ff0000' END;
                                    GENERA_KITEMISION('ENDASIS_CLAU.rep', 1, vPoliza, vUsuario);
                                 END LOOP;
-                    
-                    
+
+
                 END IF;
             END IF;
                -- AUTOADMINISTRADAS
@@ -950,40 +1038,60 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                -- CERTIFICADO INDIVIDUAL POR BLOQUES
                IF vRep_Cer_Ind_Bloque = 'S' THEN
                    IF vl_IsGMPRTEC = 1 THEN    
+                    
+                    SELECT CASE WHEN PLANCOB LIKE '%PREFER%' THEN 'S' ELSE 'N' END 
+                    INTO vl_EsIntermedio
+                    FROM SICAS_OC.DETALLE_POLIZA  
+                    WHERE IDPOLIZA = vPoliza 
+                        AND ROWNUM <= 1;
+                                
                     IF vCH_Regla = 'S' THEN
-                        --Certificado 2026                    
-                            l_url :=v_jasper||'Caratulas_2026_1/CER_IND_GMPRO.pdf?IDPOLIZA=' || vPoliza ||  
-                            '&'||'IDETPOLINI=' || vDet_Ini      || 
+                        --Certificado 2026    
+                            IF vl_EsIntermedio = 'S' THEN 
+                                l_url :=v_jasper||'Caratulas_2026_1/EP_CER_IND_RSA_GMPRO.pdf?IDPOLIZA=' || vPoliza;
+                            ELSE
+                                l_url :=v_jasper||'Caratulas_2026_1/CER_IND_RSA_PO_GMPRO.pdf?IDPOLIZA=' || vPoliza;
+                            END IF;
+                            
+                            l_url := l_url ||'&'||'IDETPOLINI=' || vDet_Ini      || 
                             '&'||'IDETPOLFIN=' || vDet_Fin      ||
                             '&'||'CODASEGINI=' || vAseg_Ini     ||
                             '&'||'CODASEGFIN=' || vAseg_FiN     ||
                             '&'||'ENDOSOINI='  || vEndoso_Ini   ||
                             '&'||'ENDOSOFIN='  || vEndoso_Fin   ||  
                             v_credenciales_j;
-                            
+
                          ADD_REPORTE_ZIP_(l_url, 'CER_INDIVIDUAL_BLOQUES_'||vPoliza||'.pdf', l_zip_blob,NULL, l_pdf_size, l_tiene_texto);
                          l_idx := l_idx + 1;
                         l_reportes(l_idx)    := 'P138_REP_CER_IND_BLOQUE';
                         l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_zip_blob);
                         l_colores_arr(l_idx) := CASE WHEN l_tiene_texto THEN '#0AC756' ELSE '#ff0000' END;
                         GENERA_KITEMISION('CERTIND.rep', 1, vPoliza, vUsuario);
+                        
                     ELSE
-                        l_url :=  v_jasper|| 'Caratulas_2026_1/CER_IND_RSA_PO_GMPRO.pdf?IDPOLIZA=' || vPoliza ||  
-                        '&'||'IDETPOLINI=' || vDet_Ini      || 
+                    
+                        IF vl_EsIntermedio = 'S' THEN 
+                            l_url :=v_jasper||'Caratulas_2026_1/EP_CER_IND_RSA_GMPRO.pdf?IDPOLIZA=' || vPoliza;
+                        ELSE
+                            l_url :=v_jasper||'Caratulas_2026_1/CER_IND_GMPRO.pdf?IDPOLIZA=' || vPoliza;
+                        END IF;
+                            
+                        
+                        l_url := l_url ||'&'||'IDETPOLINI=' || vDet_Ini      || 
                         '&'||'IDETPOLFIN=' || vDet_Fin      ||
                         '&'||'CODASEGINI=' || vAseg_Ini     ||
                         '&'||'CODASEGFIN=' || vAseg_FiN     ||
                         '&'||'ENDOSOINI='  || vEndoso_Ini   ||
                         '&'||'ENDOSOFIN='  || vEndoso_Fin   ||  
                         v_credenciales_j;
-                        
+
                         ADD_REPORTE_ZIP_(l_url, 'CER_INDIVIDUAL_BLOQUES_'||vPoliza||'.pdf', l_zip_blob, NULL,l_pdf_size, l_tiene_texto);
                         l_idx := l_idx + 1;
                         l_reportes(l_idx)    := 'P138_REP_CER_IND_BLOQUE';
                         l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_zip_blob);
                         l_colores_arr(l_idx) := CASE WHEN l_tiene_texto THEN '#0AC756' ELSE '#ff0000' END;
                         GENERA_KITEMISION('CERTIND.rep', 1, vPoliza, vUsuario);
-                        
+
                     END IF;
                 ELSE
                       AGREGA_BLOQUE_ZIP(
@@ -1033,56 +1141,72 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                     GENERA_KITEMISION('CERTINDI', 1, vPoliza, vUsuario);
                 END IF;
 
-               -- CONDICIONES GENERALES (archivo est·tico desde APEX)
+               -- CONDICIONES GENERALES (archivo est√°tico desde APEX)
                IF vRep_Condiciones_Gral = 'S' THEN
-            SELECT BLOB_CONTENT, DOC_SIZE
-            INTO   l_file_blob, l_sizes_cond
-            FROM   apex_application_files
-            WHERE  FILENAME = 'ARCH_GENERALES/' || vRep_ARCHIVO_Condiciones_Gral;
-
-            APEX_ZIP.ADD_FILE(
-                p_zipped_blob => l_zip_blob,
-                p_file_name   => vRep_ARCHIVO_Condiciones_Gral,
-                p_content     => l_file_blob
-            );
-            l_idx := l_idx + 1;
-            l_reportes(l_idx)    := 'P138_REP_CONDICIONES_GRAL';
-            l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_file_blob);
-            l_colores_arr(l_idx) := '#0AC756';
-            GENERA_KITEMISION('CONDGENE', 1, vPoliza, vUsuario);
-        END IF;
+                    IF vl_IsGMPRTEC = 1 THEN 
+                        SELECT file_content
+                            INTO l_file_blob
+                            FROM apex_application_static_files
+                            WHERE application_id = v('APP_ID')  -- Filtra por tu aplicaci√≥n actual
+                                AND file_name      = vl_Condiciones_Gral_GMPR;
+                                
+                        APEX_ZIP.ADD_FILE(
+                        p_zipped_blob => l_zip_blob,
+                        p_file_name   => vl_Condiciones_Gral_GMPR,
+                        p_content     => l_file_blob
+                    );
+                    ELSE
+                        SELECT BLOB_CONTENT, DOC_SIZE
+                        INTO   l_file_blob, l_sizes_cond
+                        FROM   apex_application_files
+                        WHERE  FILENAME = 'ARCH_GENERALES/' || vRep_ARCHIVO_Condiciones_Gral;
+                        
+                        APEX_ZIP.ADD_FILE(
+                        p_zipped_blob => l_zip_blob,
+                        p_file_name   => vRep_ARCHIVO_Condiciones_Gral,
+                        p_content     => l_file_blob
+                    );
+                    
+                    END IF;
+                    
+                    l_idx := l_idx + 1;
+                    l_reportes(l_idx)    := 'P138_REP_CONDICIONES_GRAL';
+                    l_sizes(l_idx)       := DBMS_LOB.GETLENGTH(l_file_blob);
+                    l_colores_arr(l_idx) := '#0AC756';
+                    GENERA_KITEMISION('CONDGENE', 1, vPoliza, vUsuario);
+                END IF;
 
                -- RECIBOS FACTURA ELECTRONICA
             IF vRep_Rec_Fact_Elec = 'S' THEN
 
                     DECLARE
-                        v_pdf_blob_fe    BLOB;
-                        v_xml_blob_fe    BLOB;
-                        v_IDAGRUPAENV    NUMBER;
-                        v_filename_fe    VARCHAR2(200);
-                        v_count_fe       NUMBER  := 0;
-                        v_count_ok       NUMBER  := 0;
-                        v_count_err      NUMBER  := 0;
-                        vl_dest          INTEGER := 1;
-                        vl_src           INTEGER := 1;
-                        l_lang_ctx_fe    INTEGER := DBMS_LOB.default_lang_ctx;
-                        l_warning_fe     INTEGER;
-                        vLeidos          NUMBER;
-                        vIncorrectos     NUMBER;
-                        vCorrectos       NUMBER;
-                        vTextoSalida     VARCHAR2(4000);
-                        vIdAgrupaEnv     NUMBER;
-                        vResultado       VARCHAR2(1);
-                        v_IDFACTURA      NUMBER;
-                        v_archivo_id_ant NUMBER;
-                        v_archivo_id_nvo NUMBER;
-                        v_txt_blob_fe    BLOB;
-                        v_nombre_arch    VARCHAR2(200);
-                        v_docs_generados NUMBER := 0;  
-                        cCodUser            VARCHAR2(30); 
-
-
-
+                        v_pdf_blob_fe        BLOB;
+                        v_xml_blob_fe        BLOB;
+                        v_IDAGRUPAENV        NUMBER;
+                        v_filename_fe        VARCHAR2(200);
+                        v_count_fe           NUMBER  := 0;
+                        v_count_ok           NUMBER  := 0;
+                        v_count_err          NUMBER  := 0;
+                        vl_dest              INTEGER := 1;
+                        vl_src               INTEGER := 1;
+                        l_lang_ctx_fe        INTEGER := DBMS_LOB.default_lang_ctx;
+                        l_warning_fe         INTEGER;
+                        vLeidos              NUMBER;
+                        vIncorrectos         NUMBER;
+                        vCorrectos           NUMBER;
+                        vTextoSalida         VARCHAR2(4000);
+                        vIdAgrupaEnv         NUMBER;
+                        vResultado           VARCHAR2(1);
+                        v_IDFACTURA          NUMBER;
+                        v_archivo_id_ant     NUMBER;
+                        v_archivo_id_nvo     NUMBER;
+                        v_txt_blob_fe        BLOB;
+                        v_nombre_arch        VARCHAR2(200);
+                        v_docs_generados     NUMBER := 0;  
+                        cCodUser             VARCHAR2(30); 
+                        Vfacturas            VARCHAR2(4000); 
+                        v_pdf_blob_fe_paso   cLOB;
+                        v_xml_blob_fe_paso   cLOB;
 
                         CURSOR CONSULTA IS
                             SELECT F.IDFACTURA, F.NUMCUOTA,
@@ -1091,7 +1215,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                             LEFT JOIN FACT_ELECT_DOCTOS_TIMBRE T ON T.IDFACTURA = F.IDFACTURA
                             WHERE  F.IDPOLIZA = vPoliza
                             AND F.IDENDOSO BETWEEN vEndoso_Ini AND vEndoso_Fin
-                            ORDER  BY F.NUMCUOTA;
+                             and stsfact = 'EMI'
+                            --AND F.IDFACTURA NOT IN (SELECT IDFACTURA FROM FACT_ELECT_DOCTOS_TIMBRE WHERE IDFACTURA = F.IDFACTURA )
+                            and f.IDFACTURA   IN (     SELECT REGEXP_SUBSTR(VFacturas, '[^,]+', 1, LEVEL)     FROM DUAL     CONNECT BY REGEXP_SUBSTR(VFacturas, '[^,]+', 1, LEVEL) IS NOT NULL)
+                            ORDER  BY F.NUMCUOTA;         
 
                     BEGIN
                             SELECT COALESCE(
@@ -1111,6 +1238,18 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                         END;
 
                         BEGIN
+                          
+                          SELECT listagg(F.IDFACTURA, ',') 
+                            into Vfacturas
+                            FROM   FACTURAS F
+                            LEFT JOIN FACT_ELECT_DOCTOS_TIMBRE T ON T.IDFACTURA = F.IDFACTURA
+                            WHERE  F.IDPOLIZA = vPoliza
+                            AND F.IDENDOSO BETWEEN vEndoso_Ini AND vEndoso_Fin
+                             and stsfact = 'EMI'
+                            AND F.IDFACTURA NOT IN (SELECT IDFACTURA FROM FACT_ELECT_DOCTOS_TIMBRE WHERE IDFACTURA = F.IDFACTURA );
+                            
+                           
+
                             vResultado := OC_FACT_ELECT_CONF_DOCTO.Genera_Fact_Elect(
                                                 cGenerar      => 'FAC',
                                                 nCodCia       => 1,
@@ -1123,17 +1262,14 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                                                 cTextoSalida  => vTextoSalida,
                                                 nIdAgrupaEnv  => vIdAgrupaEnv
                                             );
-                        EXCEPTION
+                        EXCEPTION 
+                            when exc_ExcepcionPorMi then
+                              RAISE_APPLICATION_ERROR(-20001, 'La funcion no regreso un valor ' ||vResultado );
                             WHEN OTHERS THEN
-                                IF SQLCODE = -6503 THEN
-                                    vResultado   := NULL;
-                                    vTextoSalida := NVL(vTextoSalida, SQLERRM);
-                                ELSE
-                                    RAISE;  -- Cualquier otro error se propaga normalmente
-                                END IF;
+                              RAISE_APPLICATION_ERROR(-20001, 'Error' || sqlerrm);
                         END;
 
-                        BEGIN
+                       /* BEGIN
                             SELECT NVL(MAX(ARCHIVO_ID), 0)
                             INTO   v_archivo_id_nvo
                             FROM   TEMP_GEN_ARCHIVO
@@ -1142,11 +1278,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                         EXCEPTION
                             WHEN OTHERS THEN v_archivo_id_nvo := 0;
                         END;
+*/
 
-
-                        IF vResultado IS NULL THEN
+                       IF vResultado IS NULL THEN
                             BEGIN
-                                SELECT COUNT(*)
+                                SELECT COUNT(1)
                                 INTO   v_docs_generados
                                 FROM   FACT_ELECT_DOCTOS_TIMBRE T
                                 JOIN   FACTURAS F ON F.IDFACTURA = T.IDFACTURA
@@ -1159,22 +1295,45 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                             IF v_docs_generados > 0 THEN
                                 vResultado := 'S';  
                             END IF;
+                            
                         END IF;
+
 
                         IF NVL(vResultado, 'N') <> 'S' THEN
                             RAISE_APPLICATION_ERROR(-20004,
-                                'Error al Generar FacturaciÛn ElectrÛnica: ' || vTextoSalida);
+                                'Error al Generar Facturaci√≥n Electr√≥nica: ' || vTextoSalida);
                         END IF;
 
+                      
+
+                        begin
+
                         FOR factura IN CONSULTA LOOP
+
                             v_count_fe    := v_count_fe + 1;
                             v_IDAGRUPAENV := factura.IDAGRUPAENV;
                             v_IDFACTURA   := factura.IDFACTURA;
                             v_filename_fe := 'FACTURA_' || NVL(TO_CHAR(v_IDFACTURA), TO_CHAR(v_count_fe));
 
+                            begin 
+                            select DOCTOPDF , DOCTOXML
+                            into v_pdf_blob_fe_paso, v_xml_blob_fe_paso
+                            from FACT_ELECT_DOCTOS_TIMBRE
+                            where idfactura= factura.idFactura;
+                            EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                               null;
+                            WHEN TOO_MANY_ROWS THEN
+                               null;
+                            WHEN OTHERS THEN
+                               null;
+                        END;
+
+                            
+                            
                             -- PDF al ZIP
-                            IF factura.DOCTOPDF IS NOT NULL THEN
-                                v_pdf_blob_fe := APEX_WEB_SERVICE.clobbase642blob(factura.DOCTOPDF);
+                            IF v_pdf_blob_fe_paso IS NOT NULL THEN
+                                v_pdf_blob_fe := APEX_WEB_SERVICE.clobbase642blob(v_pdf_blob_fe_paso);
                                 IF DBMS_LOB.GETLENGTH(v_pdf_blob_fe) > 0 THEN
                                     APEX_ZIP.ADD_FILE(
                                         p_zipped_blob => l_zip_blob,
@@ -1184,12 +1343,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                             END IF;
 
                             -- XML al ZIP
-                            IF factura.DOCTOXML IS NOT NULL THEN
+                            IF v_xml_blob_fe_paso IS NOT NULL THEN
                                 DBMS_LOB.createtemporary(v_xml_blob_fe, FALSE);
                                 vl_dest := 1; vl_src := 1;
                                 DBMS_LOB.converttoblob(
                                     dest_lob     => v_xml_blob_fe,
-                                    src_clob     => factura.DOCTOXML,
+                                    src_clob     => v_xml_blob_fe_paso ,
                                     amount       => DBMS_LOB.lobmaxsize,
                                     dest_offset  => vl_dest,
                                     src_offset   => vl_src,
@@ -1205,13 +1364,15 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                                 DBMS_LOB.freetemporary(v_xml_blob_fe);
                             END IF;
 
-                            IF factura.DOCTOPDF IS NOT NULL OR factura.DOCTOXML IS NOT NULL THEN
+                            IF v_pdf_blob_fe_paso IS NOT NULL OR v_xml_blob_fe IS NOT NULL THEN
                                 v_count_ok := v_count_ok + 1;
                             ELSE
                                 v_count_err := v_count_err + 1;
                             END IF;
 
                         END LOOP;
+                        
+                            end;
 
                         l_idx := l_idx + 1;
                         l_reportes(l_idx)    := 'P138_REP_REC_FACT_ELEC';
@@ -1221,52 +1382,11 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                         GENERA_KITEMISION('INDFACTELEC', 1, vPoliza, vUsuario);
 
 
-                        BEGIN
-                            BEGIN
-                                SELECT DATA,
-                                       NVL(NOMBREARCHIVO, 'FACT_ELECT_' || TO_CHAR(vPoliza) || '.txt')
-                                INTO   v_txt_blob_fe,
-                                       v_nombre_arch
-                                FROM   TEMP_GEN_ARCHIVO
-                                WHERE  ARCHIVO_ID = (
-                                    SELECT MAX(ARCHIVO_ID)
-                                    FROM   TEMP_GEN_ARCHIVO
-                                    WHERE  ARCHIVO_ID > v_archivo_id_ant
-                                     AND   REGEXP_SUBSTR(NOMBREARCHIVO, '_([^_]+)_\d{7}_', 1,1,'i',1) = vUsuario
-                                );
-                            EXCEPTION
-                                WHEN NO_DATA_FOUND THEN
-                                    v_txt_blob_fe := NULL;
-                                    v_nombre_arch := 'FACT_ELECT_' || TO_CHAR(vPoliza) || '.txt';
-                                WHEN TOO_MANY_ROWS THEN
-                                    -- No deberÌa ocurrir con MAX(), pero por seguridad
-                                    v_txt_blob_fe := NULL;
-                            END;
-
-                            IF v_txt_blob_fe IS NOT NULL
-                               AND DBMS_LOB.GETLENGTH(v_txt_blob_fe) > 0 THEN
-                                APEX_ZIP.ADD_FILE(
-                                    p_zipped_blob => l_zip_blob,
-                                    p_file_name   => v_nombre_arch,
-                                    p_content     => v_txt_blob_fe);
-                            END IF;
-                        END;
-
-                    EXCEPTION
-                        WHEN OTHERS THEN
-                            IF SQLCODE = -20876 THEN RAISE; END IF;
-                            RAISE_APPLICATION_ERROR(-20003,
-                                'Error en FACT_ELECT: ' || SQLERRM ||
-                                ' | Backtrace: ' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
-                    END;
-
+                    end;    
                 END IF;                                       
                 commit;
 
-
-
-
- DECLARE
+        DECLARE
             l_url_kit   VARCHAR2(2000);
             l_size_kit  NUMBER;
             l_texto_kit BOOLEAN;
@@ -1337,11 +1457,10 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
             htp.init;
             owa_util.mime_header('text/plain', FALSE);
             owa_util.http_header_close;
-            htp.p('El archivo ZIP est· vacÌo, no se puede descargar.');
+            htp.p('El archivo ZIP est√° vac√≠o, no se puede descargar.');
             apex_application.stop_apex_engine;
             RETURN;
         END IF;
-
         owa_util.mime_header('application/zip', FALSE);
         htp.p('Content-Disposition: attachment; filename="'||l_nombre||'"');
         htp.p('Content-Length: '||l_size);
@@ -1355,12 +1474,9 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
             htp.init;
             owa_util.mime_header('text/plain', FALSE);
             owa_util.http_header_close;
-            htp.p('NO se EncontrÛ el Archivo.');
+            htp.p('NO se Encontr√≥ el Archivo.');
             apex_application.stop_apex_engine;
     END GENERA_ZIP;
-
-
-
 
     -- GENERA_KITEMISION
 
@@ -1372,7 +1488,7 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
     ) IS
         cDescReporte VARCHAR2(100);
     BEGIN
-    
+
         BEGIN
             SELECT Descripcion 
             INTO cDescReporte 
@@ -1406,9 +1522,12 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
                     WHEN 'CERTINDI'     THEN cDescReporte := 'CERTIFICADO INDIVIDUAL X ASEGURADO';
                     WHEN 'CONDGENE'     THEN cDescReporte := 'CONDICIONES GENERALES';
                     WHEN 'INDFACTELEC'  THEN cDescReporte := 'RECIBOS FACT. ELECTR”NICA';
+                    WHEN 'PRPLUS'       THEN cDescReporte := 'PROTECT PLUS';
+                    WHEN 'ENDASISPR'    THEN cDescReporte := 'ENSOSOS ASISTENCIAS';
+                    WHEN 'SINPRPLUS'    THEN cDescReporte := 'QUE HACER EN CASO DE SINIESTRO';
                     ELSE                     cDescReporte := cNombRepor;
                 END CASE;
-
+                
         BEGIN
             INSERT INTO LISTADO_KITEMISION
                 (IDPOLIZA, REPORTE, DESCRIPCION, CODVALOR, DESCVALLST,
@@ -1430,7 +1549,6 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
         END;
 
     END GENERA_KITEMISION;
-
 
     PROCEDURE AGREGA_CONSENTIMIENTOS_ZIP (
     p_poliza      VARCHAR2,
@@ -1455,8 +1573,6 @@ CREATE OR REPLACE PACKAGE BODY SICAS_OC.OC_IMPRESION_PAPELERIA as
     v_nombre_pdf VARCHAR2(255);
     nnum        NUMBER := 0;
 
-
-
 BEGIN
     p_count       := 0;
     p_tiene_texto := FALSE;
@@ -1470,7 +1586,7 @@ BEGIN
 
     ) LOOP
 
-        -- Construir URL seg˙n regla
+        -- Construir URL seg√∫n regla
         IF vCH_Regla = 'S' THEN
           v_url := v_jasper
           || 'Cert_Cons_Asegurados/CON_IND_ASE_PO_SUMA.pdf'
@@ -1779,14 +1895,11 @@ PROCEDURE AGREGA_BLOQUE_ZIP (
 BEGIN
     p_count       := 0;
     p_tiene_texto := FALSE;
- 
- 
-  
-    APEX_DEBUG.ENABLE(p_level => APEX_DEBUG.C_LOG_LEVEL_INFO);
 
+    --APEX_DEBUG.ENABLE(p_level => APEX_DEBUG.C_LOG_LEVEL_INFO);
 
     v_nombre_reporte := CASE WHEN vCH_Regla = 'S'
-                                 THEN 'CER_IND_REGLA_PO.pdf'
+                                 THEN 'CER_IND_RSA_PO.pdf'
                                  ELSE 'CER_IND_PO.pdf'
                             END;
 
@@ -1801,34 +1914,34 @@ BEGIN
              v_credenciales_j;
 
     v_nombre_pdf := 'CER_INDIVIDUAL_BLOQUES_' || p_poliza || '.pdf';
-
+    /*
     APEX_DEBUG.INFO('CER_INDIVIDUAL_BLOQUES - INICIO - poliza=%s det_ini=%s det_fin=%s endoso_ini=%s endoso_fin=%s',
         p_poliza, p_det_ini, p_det_fin, p_endoso_ini, p_endoso_fin);
-
+    */
     v_inicio := SYSTIMESTAMP;
 
     DBMS_LOB.CREATETEMPORARY(l_pdf_temp, TRUE);
 
     BEGIN
         l_req := UTL_HTTP.BEGIN_REQUEST(v_url);
-        UTL_HTTP.SET_HEADER(l_req, 'User-Agent', 'Mozilla/4.0');
+        UTL_HTTP.SET_HEADER(l_req, 'User-Agent', 'Mozilla/5.0');
 
         UTL_HTTP.SET_PERSISTENT_CONN_SUPPORT(TRUE);
 
         UTL_HTTP.SET_TRANSFER_TIMEOUT(l_req, 5400);
-
+        /*
         APEX_DEBUG.INFO(
             'CER_INDIVIDUAL_BLOQUES - ESPERANDO RESPUESTA DE JASPER - poliza=%s '||
             '(este paso puede tardar varios minutos, es normal no ver mas '||
             'mensajes hasta que Jasper responda)', p_poliza);
-
+        */
         l_resp := UTL_HTTP.GET_RESPONSE(l_req);
-
+        /*
         APEX_DEBUG.INFO('CER_INDIVIDUAL_BLOQUES - RESPUESTA RECIBIDA - poliza=%s status=%s duracion_seg=%s',
             p_poliza, l_resp.status_code,
             ROUND(EXTRACT(SECOND FROM (SYSTIMESTAMP - v_inicio)) +
                   EXTRACT(MINUTE FROM (SYSTIMESTAMP - v_inicio))*60, 1));
-
+        */
         FOR j IN 1..UTL_HTTP.GET_HEADER_COUNT(l_resp) LOOP
             UTL_HTTP.GET_HEADER(l_resp, j, v_header_name, v_header_value);
             IF UPPER(v_header_name) = 'CONTENT-LENGTH' THEN
@@ -1857,11 +1970,12 @@ BEGIN
                     WHEN OTHERS THEN
                         l_err_text := NVL(l_err_text, '(no se pudo leer el body: ' || SQLERRM || ')');
                 END;
-
+                /*
                 APEX_DEBUG.ERROR(
                     'CER_INDIVIDUAL_BLOQUES - HTTP_ERROR - poliza=%s status=%s reason=%s body=%s',
                     p_poliza, l_resp.status_code, l_resp.reason_phrase,
                     SUBSTR(NVL(l_err_text, '(body vacio)'), 1, 3000));
+                */
             END;
 
             UTL_HTTP.END_RESPONSE(l_resp);
@@ -1879,7 +1993,7 @@ BEGIN
         WHEN UTL_HTTP.END_OF_BODY THEN
             UTL_HTTP.END_RESPONSE(l_resp);
             l_ok := TRUE;
-
+            /*
             APEX_DEBUG.INFO(
                 'CER_INDIVIDUAL_BLOQUES - OK - poliza=%s bytes=%s content_length=%s duracion_seg=%s',
                 p_poliza, l_total_bytes, l_content_length,
@@ -1891,7 +2005,7 @@ BEGIN
                     'CER_INDIVIDUAL_BLOQUES - DESCARGA_INCOMPLETA - poliza=%s recibidos=%s esperados=%s',
                     p_poliza, l_total_bytes, l_content_length);
             END IF;
-
+            */
         WHEN OTHERS THEN
             BEGIN
                 IF l_resp.private_hndl IS NOT NULL THEN
@@ -1900,13 +2014,13 @@ BEGIN
             EXCEPTION
                 WHEN OTHERS THEN NULL;
             END;
-
+            /*
             APEX_DEBUG.ERROR('CER_INDIVIDUAL_BLOQUES - ERROR - poliza=%s det_ini=%s det_fin=%s endoso_ini=%s endoso_fin=%s error=%s duracion_seg=%s',
                 p_poliza, p_det_ini, p_det_fin, p_endoso_ini, p_endoso_fin,
                 SQLERRM,
                 ROUND(EXTRACT(SECOND FROM (SYSTIMESTAMP - v_inicio)) +
                       EXTRACT(MINUTE FROM (SYSTIMESTAMP - v_inicio))*60, 1));
-
+            */
             IF DBMS_LOB.ISTEMPORARY(l_pdf_temp) = 1 THEN
                 DBMS_LOB.FREETEMPORARY(l_pdf_temp);
             END IF;
@@ -1923,8 +2037,8 @@ BEGIN
 
 
     IF DBMS_LOB.GETLENGTH(l_pdf_temp) < 500 THEN
-        APEX_DEBUG.WARN('CER_INDIVIDUAL_BLOQUES - VACIO - poliza=%s bytes=%s sin contenido valido',
-            p_poliza, DBMS_LOB.GETLENGTH(l_pdf_temp));
+        /*APEX_DEBUG.WARN('CER_INDIVIDUAL_BLOQUES - VACIO - poliza=%s bytes=%s sin contenido valido',
+            p_poliza, DBMS_LOB.GETLENGTH(l_pdf_temp));*/
         DBMS_LOB.FREETEMPORARY(l_pdf_temp);
         RETURN;
     END IF;
@@ -1949,7 +2063,7 @@ EXCEPTION
             WHEN OTHERS THEN NULL;
         END;
 
-        APEX_DEBUG.ERROR('CER_INDIVIDUAL_BLOQUES - ERROR_FATAL - poliza=%s error=%s', p_poliza, SQLERRM);
+        /*APEX_DEBUG.ERROR('CER_INDIVIDUAL_BLOQUES - ERROR_FATAL - poliza=%s error=%s', p_poliza, SQLERRM);*/
         RAISE_APPLICATION_ERROR(-20002,
             'Error en AGREGA_BLOQUE_ZIP - ' || SQLERRM);
 END AGREGA_BLOQUE_ZIP;
@@ -1962,8 +2076,8 @@ PROCEDURE AGREGA_POLIZA_ZIP (
     p_endoso_ini   VARCHAR2,
     p_endoso_fin   VARCHAR2,
     p_usuario      VARCHAR2,
-    vCH_Regla      VARCHAR2,
-    vCH_Suma       VARCHAR2,
+    CH_Regla      VARCHAR2,
+    CH_Suma       VARCHAR2,
     p_zip_blob     IN OUT NOCOPY BLOB,
     p_count        OUT NUMBER,
     p_tiene_texto  OUT BOOLEAN,
@@ -1986,14 +2100,12 @@ PROCEDURE AGREGA_POLIZA_ZIP (
 BEGIN
     p_count       := 0;
     p_tiene_texto := FALSE;
- 
- 
-  
+    /*
     APEX_DEBUG.ENABLE(p_level => APEX_DEBUG.C_LOG_LEVEL_INFO);
+    */
 
-
-    v_nombre_reporte := CASE WHEN vCH_Regla = 'S'
-                                 THEN 'CON_IND_RSA_PO.pdf'
+    v_nombre_reporte := CASE WHEN CH_Regla = 'S'
+                                 THEN 'CON_IND_REGLA_PO.pdf'
                                  ELSE 'CON_IND_PO.pdf'
                             END;
 
@@ -2008,34 +2120,34 @@ BEGIN
              v_credenciales_j;
 
     v_nombre_pdf := 'CONS_INDIVIDUAL_' || p_poliza || '.pdf';
-
+    /*
     APEX_DEBUG.INFO('CONS_INDIVIDUAL_- INICIO - poliza=%s det_ini=%s det_fin=%s endoso_ini=%s endoso_fin=%s',
         p_poliza, p_det_ini, p_det_fin, p_endoso_ini, p_endoso_fin);
-
+    */
     v_inicio := SYSTIMESTAMP;
 
     DBMS_LOB.CREATETEMPORARY(l_pdf_temp, TRUE);
 
     BEGIN
         l_req := UTL_HTTP.BEGIN_REQUEST(v_url);
-        UTL_HTTP.SET_HEADER(l_req, 'User-Agent', 'Mozilla/4.0');
+        UTL_HTTP.SET_HEADER(l_req, 'User-Agent', 'Mozilla/5.0');
 
         UTL_HTTP.SET_PERSISTENT_CONN_SUPPORT(TRUE);
 
-        UTL_HTTP.SET_TRANSFER_TIMEOUT(l_req, 5400);
-
+        UTL_HTTP.SET_TRANSFER_TIMEOUT(l_req, 5400); ---54000
+        /*
         APEX_DEBUG.INFO(
             'CONS_INDIVIDUAL_ - ESPERANDO RESPUESTA DE JASPER - poliza=%s '||
             '(este paso puede tardar varios minutos, es normal no ver mas '||
             'mensajes hasta que Jasper responda)', p_poliza);
-
+        */
         l_resp := UTL_HTTP.GET_RESPONSE(l_req);
-
+        /*
         APEX_DEBUG.INFO('CONS_INDIVIDUAL_ - RESPUESTA RECIBIDA - poliza=%s status=%s duracion_seg=%s',
             p_poliza, l_resp.status_code,
             ROUND(EXTRACT(SECOND FROM (SYSTIMESTAMP - v_inicio)) +
                   EXTRACT(MINUTE FROM (SYSTIMESTAMP - v_inicio))*60, 1));
-
+        */
         FOR j IN 1..UTL_HTTP.GET_HEADER_COUNT(l_resp) LOOP
             UTL_HTTP.GET_HEADER(l_resp, j, v_header_name, v_header_value);
             IF UPPER(v_header_name) = 'CONTENT-LENGTH' THEN
@@ -2046,7 +2158,7 @@ BEGIN
                 END;
             END IF;
         END LOOP;
-
+        --DBMS_OUTPUT.PUT_LINE('status_code' || l_resp.status_code);
         IF l_resp.status_code <> 200 THEN
 
             DECLARE
@@ -2064,41 +2176,43 @@ BEGIN
                     WHEN OTHERS THEN
                         l_err_text := NVL(l_err_text, '(no se pudo leer el body: ' || SQLERRM || ')');
                 END;
-
+                /*
                 APEX_DEBUG.ERROR(
                     'CONS_INDIVIDUAL_ - HTTP_ERROR - poliza=%s status=%s reason=%s body=%s',
                     p_poliza, l_resp.status_code, l_resp.reason_phrase,
                     SUBSTR(NVL(l_err_text, '(body vacio)'), 1, 3000));
+                */
             END;
 
             UTL_HTTP.END_RESPONSE(l_resp);
             DBMS_LOB.FREETEMPORARY(l_pdf_temp);
             RETURN;
         END IF;
-
+        --DBMS_OUTPUT.PUT_LINE('*** l_pdf_temp:: ' || DBMS_LOB.GETLENGTH(l_pdf_temp));
         LOOP
             UTL_HTTP.READ_RAW(l_resp, l_raw, 32767);
             DBMS_LOB.WRITEAPPEND(l_pdf_temp, UTL_RAW.LENGTH(l_raw), l_raw);
             l_total_bytes := l_total_bytes + UTL_RAW.LENGTH(l_raw);
         END LOOP;
-
+        --######
+         UTL_HTTP.END_RESPONSE(l_resp);
     EXCEPTION
         WHEN UTL_HTTP.END_OF_BODY THEN
             UTL_HTTP.END_RESPONSE(l_resp);
             l_ok := TRUE;
-
+            /*
             APEX_DEBUG.INFO(
                 'CONS_INDIVIDUAL_ - OK - poliza=%s bytes=%s content_length=%s duracion_seg=%s',
                 p_poliza, l_total_bytes, l_content_length,
                 ROUND(EXTRACT(SECOND FROM (SYSTIMESTAMP - v_inicio)) +
                       EXTRACT(MINUTE FROM (SYSTIMESTAMP - v_inicio))*60, 1));
-
+            
             IF l_content_length IS NOT NULL AND l_total_bytes < l_content_length THEN
                 APEX_DEBUG.WARN(
                     'CONS_INDIVIDUAL_ - DESCARGA_INCOMPLETA - poliza=%s recibidos=%s esperados=%s',
                     p_poliza, l_total_bytes, l_content_length);
             END IF;
-
+            */
         WHEN OTHERS THEN
             BEGIN
                 IF l_resp.private_hndl IS NOT NULL THEN
@@ -2107,31 +2221,37 @@ BEGIN
             EXCEPTION
                 WHEN OTHERS THEN NULL;
             END;
-
+            /*
             APEX_DEBUG.ERROR('CONS_INDIVIDUAL_ - ERROR - poliza=%s det_ini=%s det_fin=%s endoso_ini=%s endoso_fin=%s error=%s duracion_seg=%s',
                 p_poliza, p_det_ini, p_det_fin, p_endoso_ini, p_endoso_fin,
                 SQLERRM,
                 ROUND(EXTRACT(SECOND FROM (SYSTIMESTAMP - v_inicio)) +
                       EXTRACT(MINUTE FROM (SYSTIMESTAMP - v_inicio))*60, 1));
-
+            */
             IF DBMS_LOB.ISTEMPORARY(l_pdf_temp) = 1 THEN
                 DBMS_LOB.FREETEMPORARY(l_pdf_temp);
             END IF;
-
+            
             RETURN;
     END;
-
+    /*DBMS_OUTPUT.PUT_LINE('l_ok' || case
+                                      when l_ok then 'TRUE'
+                                      when l_ok is null then 'NULL'
+                                      else 'FALSE'
+                                   end
+    );*/
     IF NOT l_ok THEN
         IF DBMS_LOB.ISTEMPORARY(l_pdf_temp) = 1 THEN
             DBMS_LOB.FREETEMPORARY(l_pdf_temp);
         END IF;
         RETURN;
     END IF;
-
-
+    --DBMS_OUTPUT.PUT_LINE('### l_pdf_temp' || DBMS_LOB.GETLENGTH(l_pdf_temp));
     IF DBMS_LOB.GETLENGTH(l_pdf_temp) < 500 THEN
+       /*
         APEX_DEBUG.WARN('CONS_INDIVIDUAL_ - VACIO - poliza=%s bytes=%s sin contenido valido',
             p_poliza, DBMS_LOB.GETLENGTH(l_pdf_temp));
+       */
         DBMS_LOB.FREETEMPORARY(l_pdf_temp);
         RETURN;
     END IF;
@@ -2156,10 +2276,128 @@ EXCEPTION
             WHEN OTHERS THEN NULL;
         END;
 
-        APEX_DEBUG.ERROR('CONS_INDIVIDUAL_ - ERROR_FATAL - poliza=%s error=%s', p_poliza, SQLERRM);
+        /*APEX_DEBUG.ERROR('CONS_INDIVIDUAL_ - ERROR_FATAL - poliza=%s error=%s', p_poliza, SQLERRM);*/
+        DBMS_OUTPUT.PUT_LINE('ERROR:: ' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE_APPLICATION_ERROR(-20002,
             'Error en AGREGA_BLOQUE_ZIP - ' || SQLERRM);
 END AGREGA_POLIZA_ZIP;
+
+
+PROCEDURE AGREGA_FONDOS_POLIZA(
+            P_POLIZA NUMBER,
+            P_IDETPOL NUMBER,
+            P_CODCIA  NUMBER, 
+            P_FACTURA NUMBER, 
+            P_APORTACION_REGULAR VARCHAR2
+
+    )IS 
+      v_blob          BLOB;
+      v_nombre_arch   VARCHAR2(300);
+      v_reporte       VARCHAR2(200);
+      v_url           VARCHAR2(2000);
+      l_req           UTL_HTTP.req;
+      l_resp          UTL_HTTP.resp;
+      l_buffer        RAW(32767);
+      l_amount        BINARY_INTEGER := 32767;
+      v_id            REPORTES_PDF.ID%TYPE;
+
+BEGIN
+     IF P_FACTURA = 0 THEN
+        owa_util.mime_header('text/plain', FALSE);
+        htp.p('NO_FACTURA');
+        apex_application.stop_apex_engine;
+     END IF;
+ 
+    IF P_APORTACION_REGULAR = 'S' THEN
+     v_reporte     := 'AportReg';
+     v_nombre_arch := P_POLIZA || '_Aportacion_Regular.pdf';
+
+        v_url := C_URL_BASE ||'?keyreportappx&report=AportReg.rep&P_CODCIA=1&P_IDETPOLINI='||P_IDETPOL||'&P_IDETPOLFIN=0'||P_IDETPOL||'&P_POLIZA='||P_POLIZA;
+
+    else 
+     v_reporte     := 'AportExt';
+     v_nombre_arch := P_POLIZA || '_Aportacion_Extraordinaria.pdf';
+     v_url := C_URL_BASE ||'?keyreportappx&report=AportExt.rep&P_CODCIA=1&P_IDETPOLINI='||P_IDETPOL||'&P_IDETPOLFIN='||P_IDETPOL||'&P_POLIZA='||P_POLIZA;
+
+
+    end if;
+ ---http://192.168.0.224:8889/reports/rwservlet?keyreportappx&report=AportReg.rep&P_CODCIA=1&P_IDETPOLINI=1&P_IDETPOLFIN=1&P_POLIZA=69102
+ ---http://192.168.0.224:8889/reports/rwservlet?keyreportappx&report=AportExt.rep&P_CODCIA=1&P_IDETPOLINI=1&P_IDETPOLFIN=1&P_POLIZA=69102
+  /*v_url := C_URL_BASE ||'?keyreportappx'||
+           '&' ||'report='||v_reporte||'.rep'||
+           '&' ||'P_CODCIA=1'||
+           '&' || 'P_IDETPOLINI=' || :P322_IDEPOL||
+           '&' || 'P_IDETPOLFIN=' || :P322_IDEPOL||
+           '&' ||'P_IDPOLIZA='||:P322_IDPOLIZA;*/
+ 
+  DBMS_LOB.createtemporary(v_blob, TRUE);
+ 
+  l_req := UTL_HTTP.begin_request(v_url);
+  UTL_HTTP.set_header(l_req, 'User-Agent', 'Mozilla/5.0');
+  l_resp := UTL_HTTP.get_response(l_req);
+ 
+  LOOP
+     BEGIN
+        UTL_HTTP.read_raw(l_resp, l_buffer, l_amount);
+        DBMS_LOB.writeappend(v_blob, UTL_RAW.length(l_buffer), l_buffer);
+     EXCEPTION
+        WHEN UTL_HTTP.end_of_body THEN EXIT;
+     END;
+  END LOOP;
+  UTL_HTTP.end_response(l_resp);
+ 
+  INSERT INTO REPORTES_PDF (
+     ID,
+     NOMBRE,
+     ARCHIVO,
+     CODUSUARIO,
+     FECHA,
+     MIMETYPE,
+     TAMANO_ARCHIVO,
+     NOMBRE_ARCHIVO
+  ) VALUES (
+    SEQ_REPORTES_PDF.NEXTVAL,   
+     v_reporte,
+     v_blob,
+     '&'||'APP_USER.',
+     SYSDATE,
+     'application/pdf',
+     DBMS_LOB.getlength(v_blob),
+     v_nombre_arch
+  )
+  RETURNING ID INTO v_id;
+ 
+  COMMIT;
+ 
+  DBMS_LOB.freetemporary(v_blob);
+ 
+  DECLARE
+     v_blob_out REPORTES_PDF.ARCHIVO%TYPE;
+     v_len      NUMBER;
+  BEGIN
+     SELECT ARCHIVO, DBMS_LOB.getlength(ARCHIVO)
+       INTO v_blob_out, v_len
+       FROM REPORTES_PDF
+      WHERE ID = v_id;
+ 
+     owa_util.mime_header('application/pdf', FALSE);
+     htp.p('Content-Disposition: attachment; filename="' || v_nombre_arch || '"');
+     htp.p('Content-Length: ' || v_len);
+     owa_util.http_header_close;
+ 
+     wpg_docload.download_file(v_blob_out);
+  END;
+ 
+  apex_application.stop_apex_engine;
+ 
+EXCEPTION
+  WHEN OTHERS THEN
+     IF DBMS_LOB.istemporary(v_blob) = 1 THEN
+        DBMS_LOB.freetemporary(v_blob);
+     END IF;
+     RAISE;
+END; 
+
 end OC_IMPRESION_PAPELERIA;
 /
 
@@ -2168,7 +2406,3 @@ GRANT EXECUTE ON SICAS_OC.OC_IMPRESION_PAPELERIA TO PUBLIC;
 
 CREATE OR REPLACE PUBLIC SYNONYM OC_IMPRESION_PAPELERIA FOR SICAS_OC.OC_IMPRESION_PAPELERIA;
 /
-
-
-
-
